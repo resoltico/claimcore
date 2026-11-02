@@ -259,3 +259,26 @@ module ReminderState =
     let vocabulary = Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
+
+module ReminderCommand =
+    let parent = function
+        | ReminderCommand.Create(parent, _)
+        | ReminderCommand.Change(parent, _, _, _) -> parent
+
+    let kind = function
+        | ReminderCommand.Create _ -> ReminderActKind.Create
+        | ReminderCommand.Change(_, _, _, change) ->
+            match change with
+            | ReminderChange.Update _ -> ReminderActKind.Update
+            | ReminderChange.Complete -> ReminderActKind.Complete
+            | ReminderChange.Cancel -> ReminderActKind.Cancel
+            | ReminderChange.Reopen _ -> ReminderActKind.Reopen
+            | ReminderChange.CompleteAndPlanNext _ -> ReminderActKind.CompleteAndPlanNext
+
+    let target operation = function
+        | ReminderCommand.Create _ -> ReminderId.ofOperationId operation
+        | ReminderCommand.Change(_, id, _, _) -> id
+
+    let resultingRevision = function
+        | ReminderCommand.Create _ -> Revision.first
+        | ReminderCommand.Change(_, _, revision, _) -> Revision.successor revision
