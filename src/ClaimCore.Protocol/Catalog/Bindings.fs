@@ -276,6 +276,11 @@ module Bindings =
         | InteractionInput.Target InputTarget.Reason -> Some InputTarget.Reason
         | InteractionInput.Target InputTarget.Role -> Some InputTarget.Role
         | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
+        | InteractionInput.Target(InputTarget.ReminderId as target)
+        | InteractionInput.Target(InputTarget.ReminderAction as target)
+        | InteractionInput.Target(InputTarget.ReminderDueDate as target)
+        | InteractionInput.Target(InputTarget.ExpectedWorkRevision as target)
+        | InteractionInput.Target(InputTarget.ExpectedReminderRevision as target) -> Some target
         | _ -> None
 
     let private authoredRequired input annotation =

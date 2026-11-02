@@ -9,7 +9,7 @@ open ClaimCore.Json
 module CatalogValidation =
     let validateIdentity known identity =
         if not (Set.contains identity known) then
-            invalidOp "Unknown core presentation identity."
+            invalidOp ("Unknown core presentation identity: " + identity)
 
     let private presentationIds () =
         let rec collect =
