@@ -33,11 +33,6 @@ module ReminderRecord =
         |> field "state" Reminder.state (enumeration [ ReminderState.Pending, "PENDING"; ReminderState.Completed, "COMPLETED"; ReminderState.Cancelled, "CANCELLED" ])
         |> build
 
-    let private changeFields construct project =
-        record construct
-        |> field "reminderId" (project >> fun (id, _, _) -> id) reminderId
-        |> field "expectedRevision" (project >> fun (_, revision, _) -> revision) (revision 1L)
-
     let private act =
         let changeKind expected = function
             | RecordedReminderAct.Change(id, revision, act) when expected act -> Some(id, revision, act)
@@ -123,8 +118,17 @@ module ReminderRecord =
         |> build
 
     let encodeRequest request = requestCodec.Write request |> CanonicalWriter.bytes |> RecordLimits.requestBytes
-    let decodeRequest bytes = decode requestCodec bytes
+    let decodeRequest (bytes: byte array) =
+        if bytes.Length > RecordLimits.MaximumRequestRecordBytes then
+            Error { Field = "$"; Message = "Retained request exceeds its byte bound." }
+        else decode requestCodec bytes
     let encodeEffects effects = effectsCodec.Write effects |> CanonicalWriter.bytes
     let decodeEffects bytes = decode effectsCodec bytes
-    let encodeSnapshot value = reminder.Write value |> CanonicalWriter.bytes
-    let decodeSnapshot bytes = decode reminder bytes
+    let private snapshotCodec =
+        record (fun value () -> value)
+        |> field "reminder" id reminder
+        |> field "format" (fun _ -> ()) (version RecordVersions.Reminder)
+        |> build
+
+    let encodeSnapshot value = snapshotCodec.Write value |> CanonicalWriter.bytes
+    let decodeSnapshot bytes = decode snapshotCodec bytes

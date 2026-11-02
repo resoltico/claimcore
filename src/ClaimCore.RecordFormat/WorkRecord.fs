@@ -84,6 +84,14 @@ module WorkRecord =
         |> build
 
     let encodeRequest request = requestCodec.Write request |> CanonicalWriter.bytes |> RecordLimits.requestBytes
-    let decodeRequest bytes = decode requestCodec bytes
+    let decodeRequest (bytes: byte array) =
+        if bytes.Length > RecordLimits.MaximumRequestRecordBytes then
+            Error { Field = "$"; Message = "Retained request exceeds its byte bound." }
+        else decode requestCodec bytes
     let encodeSnapshot snapshot = snapshotCodec.Write snapshot |> CanonicalWriter.bytes
-    let decodeSnapshot bytes = decode snapshotCodec bytes
+    let decodeSnapshot bytes =
+        decode snapshotCodec bytes
+        |> Result.bind (fun value ->
+            if value.Revision = Revision.zero && value.Work <> CaseWork.empty then
+                Error { Field = "$.work"; Message = "Work revision zero must be empty." }
+            else Ok value)
