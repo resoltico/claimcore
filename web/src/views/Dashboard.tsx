@@ -330,7 +330,7 @@ export const Dashboard = () => {
               response?.outcome.kind === "SUCCEEDED" && response.outcome.data.maintenance.active
             }
           />
-          <WorkOverview />
+          <WorkOverview compact={route.screen !== "work"} />
           <div ref={content}>
             <WorkspaceRoute
               key={owner}

@@ -42,7 +42,7 @@ const useBusinessDayObservation = (value: WorkOverviewData | null) => {
     }
   }, [date, cache]);
 };
-const OverviewValues = ({ value }: { value: WorkOverviewData }) => {
+const OverviewCounts = ({ value }: { value: WorkOverviewData }) => {
   const p = usePresentation();
   const dimensions = [
     ["ui.actionableCases", value.actionableCases],
@@ -54,15 +54,20 @@ const OverviewValues = ({ value }: { value: WorkOverviewData }) => {
     ["ui.attentionCases", value.attentionCases],
   ] as const;
   return (
+    <dl className="work-counts">
+      {dimensions.map(([key, count]) => (
+        <div key={key}>
+          <dt>{p.text(key)}</dt>
+          <dd>{p.integer(count)}</dd>
+        </div>
+      ))}
+    </dl>
+  );
+};
+const OverviewBasis = ({ value }: { value: WorkOverviewData }) => {
+  const p = usePresentation();
+  return (
     <>
-      <dl className="work-counts">
-        {dimensions.map(([key, count]) => (
-          <div key={key}>
-            <dt>{p.text(key)}</dt>
-            <dd>{p.integer(count)}</dd>
-          </div>
-        ))}
-      </dl>
       <p className="observation-basis">
         {p.text("ui.workDateBasis", {
           date: p.date(value.basis.businessDate),
@@ -77,32 +82,83 @@ const OverviewValues = ({ value }: { value: WorkOverviewData }) => {
     </>
   );
 };
-export const WorkOverview = ({ mine = false }: { mine?: boolean }) => {
+const OverviewValues = ({ value, compact }: { value: WorkOverviewData; compact: boolean }) => {
+  const p = usePresentation();
+  if (!compact) {
+    return (
+      <>
+        <OverviewCounts value={value} />
+        <OverviewBasis value={value} />
+      </>
+    );
+  }
+  return (
+    <>
+      <dl className="work-attention-count">
+        <div>
+          <dt>{p.text("ui.attentionCases")}</dt>
+          <dd>{p.integer(value.attentionCases)}</dd>
+        </div>
+      </dl>
+      <OverviewBasis value={value} />
+      <details>
+        <summary>{p.text("ui.summaryDetails")}</summary>
+        <p>{p.text("ui.workScopeHint")}</p>
+        <OverviewCounts value={value} />
+      </details>
+    </>
+  );
+};
+const OverviewHeading = ({ mine, compact }: { mine: boolean; compact: boolean }) => {
+  const p = usePresentation();
+  const scope = p.text(mine ? "ui.myWork" : "ui.accessibleWork");
+  return compact ? (
+    scope
+  ) : (
+    <>
+      {p.text("ui.workOverview")} · {scope}
+    </>
+  );
+};
+const observedOverview = (
+  overview: ReturnType<typeof useEndpoint<"work.overview">>,
+): WorkOverviewData | null =>
+  !overview.loading && overview.value?.outcome.kind === "SUCCEEDED"
+    ? overview.value.outcome.data
+    : null;
+export const WorkOverview = ({
+  mine = false,
+  compact = false,
+}: {
+  mine?: boolean;
+  compact?: boolean;
+}) => {
   const p = usePresentation();
   const requester = useRequesterContext();
   const titleId = `work-overview-${String(mine)}`;
   const enabled = requester !== null && requester.views.includes("CASES");
   const overview = useEndpoint("work.overview", mine ? { mine: true } : {}, enabled);
   useWorkRefresh(overview.reload, enabled);
-  const value =
-    !overview.loading && overview.value?.outcome.kind === "SUCCEEDED"
-      ? overview.value.outcome.data
-      : null;
+  const value = observedOverview(overview);
   useBusinessDayObservation(value);
   if (!enabled) {
     return null;
   }
   return (
-    <section className="work-overview" aria-labelledby={titleId} aria-busy={overview.loading}>
+    <section
+      className={compact ? "work-overview compact-work-overview" : "work-overview"}
+      aria-labelledby={titleId}
+      aria-busy={overview.loading}
+    >
       <div className="section-heading">
         <h2 id={titleId}>
-          {p.text("ui.workOverview")} · {p.text(mine ? "ui.myWork" : "ui.accessibleWork")}
+          <OverviewHeading mine={mine} compact={compact} />
         </h2>
         <button type="button" disabled={overview.loading} onClick={overview.reload}>
           {p.text("ui.refreshWork")}
         </button>
       </div>
-      <p>{p.text("ui.workScopeHint")}</p>
+      {compact ? null : <p>{p.text("ui.workScopeHint")}</p>}
       {overview.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {overview.message === null ? null : (
         <p role="status">
@@ -112,7 +168,7 @@ export const WorkOverview = ({ mine = false }: { mine?: boolean }) => {
       {value === null ? (
         <p>{p.text("ui.workOverviewUnavailable")}</p>
       ) : (
-        <OverviewValues value={value} />
+        <OverviewValues value={value} compact={compact} />
       )}
     </section>
   );
