@@ -22,6 +22,7 @@ type AuthorityReview =
 
 type WorkReview =
     {
+        Reference: CaseReference
         Before: CaseWorkSnapshot
         Proposed: CaseWorkSnapshot
         Context: RuntimeContext
@@ -29,6 +30,7 @@ type WorkReview =
 
 type ReminderReview =
     {
+        Reference: CaseReference
         CaseId: CaseId
         Before: Reminder option
         Effects: ReminderEffects
