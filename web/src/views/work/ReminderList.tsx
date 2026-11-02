@@ -59,9 +59,10 @@ export const ReminderList = ({
       {result.items.length === 0 && !result.loading && result.message === null ? (
         <p>{p.text("ui.noReminders")}</p>
       ) : null}
+      <p className="observation-basis">{p.text("ui.liveWorkPages")}</p>
       <ol>
         {result.items.map((row) => (
-          <li key={row.reminder.reminderId}>
+          <li key={`${row.reminder.reminderId}:${row.reminder.revision}`}>
             {target === undefined ? (
               <a
                 href={casePath(row.reminder.caseId)}
