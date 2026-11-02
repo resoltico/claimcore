@@ -7,7 +7,7 @@ open ClaimCore.Application.VerificationChecks
 
 /// New projections and their derived case facets are checked against the causal ledger fold.
 module internal WorkProjectionVerification =
-    let verify connection installation (state: LedgerVerification.Scan) token =
+    let verify connection (state: LedgerVerification.Scan) workIndexes token =
         task {
             let! work =
                 DatabaseSession.namedRows
@@ -20,13 +20,6 @@ module internal WorkProjectionVerification =
                 DatabaseSession.namedRows
                     connection
                     ($"SELECT {WorkStorage.reminderColumns} FROM claimcore.reminders r")
-                    [||]
-                    token
-
-            let! cases =
-                DatabaseSession.namedRows
-                    connection
-                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases c")
                     [||]
                     token
 
@@ -47,12 +40,6 @@ module internal WorkProjectionVerification =
                     do! ProjectionVerification.workRows state.Work work
                     do! ProjectionVerification.reminderRows state.Reminders reminders
 
-                    let! records =
-                        VerificationRows.capture
-                            None
-                            VerificationFinding.CaseWorkProjection
-                            (fun () -> cases |> List.map (Projections.caseRow installation))
-
-                    return! ProjectionVerification.workIndexes state.Work state.Reminders records
+                    return! ProjectionVerification.workIndexes state.Work state.Reminders workIndexes
                 }
         }
