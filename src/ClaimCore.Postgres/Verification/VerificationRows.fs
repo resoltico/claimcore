@@ -138,6 +138,15 @@ module internal VerificationRows =
                                             VerificationFinding.CaseWorkProjection
                                             (fun () -> Projections.caseFollowUp row)
 
+                                    let! workSearchText =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseWorkProjection
+                                            (fun () ->
+                                                DatabaseSession.namedOptional<string>
+                                                    "work_search_text"
+                                                    row)
+
                                     let index: CaseIndex =
                                         {
                                             Responsible = responsible
@@ -146,6 +155,7 @@ module internal VerificationRows =
                                             Progress = progress
                                             ChangedAt = changedAt
                                             SearchText = searchText
+                                            WorkSearchText = workSearchText
                                             NotifiedOn = notifiedOn
                                             Claimed =
                                                 Projections.indexedMoney

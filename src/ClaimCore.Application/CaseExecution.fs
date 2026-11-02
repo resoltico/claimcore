@@ -79,6 +79,7 @@ module internal CaseExecution =
                 { indexed with
                     Responsible = record.Index.Responsible
                     FollowUp = record.Index.FollowUp
+                    WorkSearchText = record.Index.WorkSearchText
                 }
                     =
                     record.Index

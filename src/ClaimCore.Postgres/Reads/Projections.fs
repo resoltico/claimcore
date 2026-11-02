@@ -19,7 +19,7 @@ module internal Projections =
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
     let caseColumns =
-        "case_id,case_reference,revision,state,snapshot,status,progress,search_text,"
+        "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
         + DatabaseSession.instantExpression "changed_at"
         + " AS changed_at,"
         + DatabaseSession.dateExpression "notified_on"
@@ -86,6 +86,7 @@ module internal Projections =
             Progress = caseProgress row
             ChangedAt = caseChangedAt row
             SearchText = caseSearchText row
+            WorkSearchText = DatabaseSession.namedOptional<string> "work_search_text" row
             NotifiedOn = caseNotifiedOn row
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)

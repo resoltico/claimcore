@@ -444,11 +444,30 @@ let private projectionRepair database =
         Expect.isOk repaired "Rebuild reconstructs the original date from verified causal history"
         let! _ = verified database
 
+        do! sql database "UPDATE claimcore.cases SET follow_up=DATE '2027-01-02'" [||]
+        let! inconsistent = Service.get actor { Target = target } token
+
+        Expect.equal
+            inconsistent
+            (Outcome.Failed CoreFault.StoreIntegrityError)
+            "A point read checks derived scheduling against the independent reminder owner"
+
+        do! finding VerificationFinding.CaseWorkProjection database
+        let! repairedDate = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
+        Expect.isOk repairedDate "Rebuild reconciles the denormalized next-date projection"
+
         do!
             sql
                 database
                 "UPDATE claimcore.cases SET work_search_text='unrelated search payload'"
                 [||]
+
+        let! inconsistentSearch = Service.get actor { Target = target } token
+
+        Expect.equal
+            inconsistentSearch
+            (Outcome.Failed CoreFault.StoreIntegrityError)
+            "A point read checks the work search projection against the summary owner"
 
         do! finding VerificationFinding.CaseWorkProjection database
         let! repairedSearch = ProjectionRebuild.rebuild database.OwnerSource checkpoint token

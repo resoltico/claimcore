@@ -26,7 +26,7 @@ module internal WorkProjectionVerification =
             let! cases =
                 DatabaseSession.namedRows
                     connection
-                    ($"SELECT {Projections.caseColumns},work_search_text FROM claimcore.cases c")
+                    ($"SELECT {Projections.caseColumns} FROM claimcore.cases c")
                     [||]
                     token
 
@@ -53,40 +53,6 @@ module internal WorkProjectionVerification =
                             VerificationFinding.CaseWorkProjection
                             (fun () -> cases |> List.map (Projections.caseRow installation))
 
-                    do! ProjectionVerification.workIndexes state.Work state.Reminders records
-
-                    return!
-                        cases
-                        |> List.fold
-                            (fun checkedRows row ->
-                                checkedRows
-                                |> Result.bind (fun () ->
-                                    result {
-                                        let! record =
-                                            VerificationRows.capture
-                                                None
-                                                VerificationFinding.CaseWorkProjection
-                                                (fun () -> Projections.caseRow installation row)
-
-                                        let expected =
-                                            state.Work
-                                            |> Map.tryFind record.CaseId
-                                            |> Option.bind _.Snapshot
-                                            |> Option.bind _.Work.Summary
-                                            |> Option.map (
-                                                HandlingSummary.format >> CaseSearch.normalize
-                                            )
-
-                                        do!
-                                            require
-                                                None
-                                                VerificationFinding.CaseWorkProjection
-                                                (DatabaseSession.namedOptional<string>
-                                                    "work_search_text"
-                                                    row
-                                                    =
-                                                    expected)
-                                    }))
-                            (Ok())
+                    return! ProjectionVerification.workIndexes state.Work state.Reminders records
                 }
         }

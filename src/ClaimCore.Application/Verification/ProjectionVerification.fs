@@ -216,11 +216,19 @@ module ProjectionVerification =
                         |> Option.bind _.Snapshot
                         |> Option.bind _.Work.Responsible
 
+                    let search =
+                        work
+                        |> Map.tryFind record.CaseId
+                        |> Option.bind _.Snapshot
+                        |> Option.bind _.Work.Summary
+                        |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+
                     require
                         None
                         VerificationFinding.CaseWorkProjection
                         (record.Index.Responsible = responsible
-                         && record.Index.FollowUp = Map.tryFind record.CaseId dates)))
+                         && record.Index.FollowUp = Map.tryFind record.CaseId dates
+                         && record.Index.WorkSearchText = search)))
             (Ok())
 
     let workIndex work reminders record = workIndexes work reminders [ record ]
