@@ -18,7 +18,8 @@ const observation = {
   overdueReminders: 3,
   unassignedCases: 3,
   unavailableAssigneeCases: 1,
-  attentionCases: 3,
+  // Missing-plan and overdue cases are disjoint; assignment flags overlap within those four.
+  attentionCases: 4,
 };
 afterEach(() => vi.unstubAllGlobals());
 it("shows named case/reminder dimensions and the server's distinct attention union", async () => {
@@ -26,7 +27,7 @@ it("shows named case/reminder dimensions and the server's distinct attention uni
   vi.stubGlobal("fetch", fetch);
   render(<WorkOverview />);
   const label = await screen.findByText("Distinct cases needing attention");
-  expect(label.parentElement).toHaveTextContent("3");
+  expect(label.parentElement).toHaveTextContent("4");
   expect(screen.getByText("Overdue reminders").parentElement).toHaveTextContent("3");
   expect(screen.getByText("Cases without a next action").parentElement).toHaveTextContent("2");
   expect(fetch).toHaveBeenCalledWith("/api/work.overview", expect.objectContaining({ body: "{}" }));

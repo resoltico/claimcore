@@ -277,6 +277,7 @@ let private projectionBindings () =
                 "progress", box "PAID"
                 "changed_at", box "1970-01-01T00:00:00.000000Z AD"
                 "search_text", box "synthetic claimant\u001fsynthetic insurer\u001fsynthetic-layout"
+                "work_search_text", box DBNull.Value
                 "notified_on", box "2026-08-03 AD"
                 "responsible_actor", box DBNull.Value
                 "follow_up", box DBNull.Value
@@ -304,6 +305,7 @@ let private projectionBindings () =
             "progress", box "UNKNOWN"
             "changed_at", box "invalid"
             "search_text", box 44
+            "work_search_text", box 44
             "responsible_actor", box Guid.Empty
             "follow_up", box "invalid"
         ] do
