@@ -24,7 +24,7 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   ) {
     throw new Error("Expected the accepted reminder creation identity.");
   }
-  const reminderId = receipt.subject.effects.reminder.reminderId;
+  const { reminderId } = receipt.subject.effects.reminder;
   await expect(page.locator(`[id="reminder-${reminderId}-COMPLETE"]`)).toBeVisible();
   return receipt;
 };
