@@ -35,8 +35,8 @@ module CaseIndex =
         let fields = CaseState.fields snapshot.State
 
         {
-            Responsible = fields |> Option.bind _.Work.Responsible
-            FollowUp = fields |> Option.bind _.Work.FollowUp
+            Responsible = None
+            FollowUp = None
             Status = fields |> Option.map _.Status
             Progress = fields |> Option.map (fun fields -> CaseProgress.ofPayment fields.Progress)
             ChangedAt = changedAt
@@ -64,6 +64,8 @@ type EntryTarget =
     | NonAcceptance of targetOperationId: OperationId
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: ActorId * act: AuthorityKind
+    | Work of WorkEntryMetadata
+    | Reminder of ReminderEntryMetadata
 
 type StoredEntry =
     {
@@ -78,6 +80,61 @@ type StoredEntry =
         PayloadNonce: byte array option
         Payload: byte array option
     }
+
+type StoredWork =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        Snapshot: CaseWorkSnapshot option
+        SnapshotBytes: byte array
+        ChangedAt: DateTimeOffset option
+        RecordedBy: ActorId option
+    }
+
+type StoredReminder =
+    {
+        ReminderId: ReminderId
+        CaseId: CaseId
+        Revision: Revision
+        Snapshot: Reminder option
+        SnapshotBytes: byte array
+        RecordedAt: DateTimeOffset
+        RecordedBy: ActorId
+    }
+
+type CaseWorkSummary =
+    {
+        Work: StoredWork
+        Next: Reminder option
+        Pending: int64
+        Overdue: int64
+    }
+
+type WorkProjection =
+    {
+        Snapshot: CaseWorkSnapshot
+        ChangedAt: DateTimeOffset
+        RecordedBy: ActorId
+    }
+
+type ReminderProjection =
+    {
+        Effects: ReminderEffects
+        ChangedAt: DateTimeOffset
+        RecordedBy: ActorId
+    }
+
+[<RequireQualifiedAccess>]
+type WorkChangeProjection =
+    | Work of WorkProjection
+    | Reminder of ReminderProjection
+
+[<RequireQualifiedAccess>]
+type ReceiptCurrent =
+    | Case of StoredCase option
+    | Work of parent: StoredCase option * current: StoredWork option
+    | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
+    | Authority
 
 [<RequireQualifiedAccess>]
 type CaseProjection =
@@ -216,12 +273,48 @@ type CaseHistorySlice =
         Previous: StoredEntry option
     }
 
+type ReminderPosition = { Due: CalendarDate; ReminderId: ReminderId }
+
+type ReminderPageQuery =
+    {
+        Selection: CaseSelection
+        TargetCaseId: CaseId option
+        State: ReminderState
+        Due: ReminderDue option
+        Text: CaseSearchText option
+        IncludeInactive: bool
+        After: ReminderPosition option
+        Limit: int
+    }
+
+type ReminderRow =
+    {
+        Stored: StoredReminder
+        Reference: CaseReference
+        Lifecycle: Lifecycle
+        Status: CaseStatus option
+    }
+
+type ActivityPageQuery =
+    {
+        CaseId: CaseId
+        BeforeSequence: Sequence option
+        Limit: int
+    }
+
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Maintenance: unit -> Task<RegisterMaintenance>
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
+    abstract FindWork: CaseId -> Task<StoredWork option>
+    abstract FindReminder: ReminderId -> Task<StoredReminder option>
+    abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>
+    abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId, AssignedAccount>>
+    abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
+    abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
+    abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract FindEntry: OperationId -> Task<StoredEntry option>
     abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
@@ -246,6 +339,7 @@ type IWriteTx =
     abstract Append: EntryDraft -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>
+    abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
     abstract Fence: FenceKey -> Task<unit>
 
 [<NoEquality; NoComparison>]
