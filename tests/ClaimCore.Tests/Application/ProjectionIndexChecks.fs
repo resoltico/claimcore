@@ -81,6 +81,18 @@ let checks installation instant =
             (ProjectionVerification.workIndex work Map.empty record)
             "Valid independent work-index control"
 
+        Expect.isError
+            (ProjectionVerification.workIndex
+                work
+                Map.empty
+                { record with
+                    Index =
+                        { index with
+                            WorkSearchText = Some "tampered"
+                        }
+                })
+            "Summary-search corruption remains independently detectable"
+
         ProjectionVerification.workIndex work Map.empty { record with Index = mutate index }
         |> unitResult
 

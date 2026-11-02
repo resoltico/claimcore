@@ -119,6 +119,7 @@ type internal Writer(inputs: WriteInputs) =
                                     Status = None
                                     Progress = None
                                     SearchText = None
+                                    WorkSearchText = None
                                     NotifiedOn = None
                                     Claimed = None
                                     Payable = None

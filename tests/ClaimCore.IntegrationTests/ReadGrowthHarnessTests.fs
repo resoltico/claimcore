@@ -23,6 +23,11 @@ let tests =
                         "summary"
                         "case-work-follow-up"
                         "case-work-summary"
+                        "reminder-pending"
+                        "reminder-completed"
+                        "reminder-current-case"
+                        "reminder-financial-isolation"
+                        "reminder-work-overview"
                     ])
                 "Every declared case read workload executes"
 

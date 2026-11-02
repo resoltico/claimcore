@@ -104,6 +104,10 @@ let internal reindex state (record: StoredCase) =
                 Responsible = work |> Option.bind (fun value -> value.Work.Responsible)
                 FollowUp = next |> Option.map Reminder.due
                 SearchText = facts.SearchText
+                WorkSearchText =
+                    work
+                    |> Option.bind (fun value -> value.Work.Summary)
+                    |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
             }
     }
 

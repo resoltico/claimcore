@@ -34,8 +34,23 @@ let private subject (vector: JsonElement) =
         RecordedTarget.Work
             {
                 CaseId = CaseFixtures.caseId (Guid.Parse(text vector "subjectId"))
-                Revision = CaseFixtures.revision (vector.GetProperty("caseRevision").GetInt64())
+                Revision = CaseFixtures.revision (vector.GetProperty("entityRevision").GetInt64())
                 Act = WorkActKind.UpdateWork
+                BusinessDate =
+                    DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
+            }
+    elif text vector "subject" = "REMINDER" then
+        RecordedTarget.Reminder
+            {
+                CaseId = CaseFixtures.caseId (Guid.Parse(text vector "parentCaseId"))
+                ReminderId = ReminderId.create (Guid.Parse(text vector "subjectId")) |> Option.get
+                Revision = CaseFixtures.revision (vector.GetProperty("entityRevision").GetInt64())
+                Act =
+                    Vocabulary.tryParse ReminderActKind.vocabulary (text vector "act") |> Option.get
+                NextReminderId =
+                    match vector.GetProperty("nextReminderId").ValueKind with
+                    | JsonValueKind.Null -> None
+                    | _ -> ReminderId.create (Guid.Parse(text vector "nextReminderId"))
                 BusinessDate =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
             }
@@ -43,7 +58,7 @@ let private subject (vector: JsonElement) =
         RecordedTarget.Case
             {
                 CaseId = CaseFixtures.caseId (Guid.Parse(text vector "subjectId"))
-                Revision = CaseFixtures.revision (vector.GetProperty("caseRevision").GetInt64())
+                Revision = CaseFixtures.revision (vector.GetProperty("entityRevision").GetInt64())
                 Act = CaseActKind.parse (text vector "act") |> Option.get
                 BusinessDate =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
@@ -93,7 +108,7 @@ let private expectedPayload vector =
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal vectors.Length 4 "All independent business, work and control vectors"
+        Expect.equal vectors.Length 10 "All independent fact, work, reminder and control vectors"
 
         for vector in vectors do
             let payload = expectedPayload vector

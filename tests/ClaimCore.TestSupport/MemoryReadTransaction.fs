@@ -52,15 +52,10 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
         record.Index.Progress
         (record.Index.SearchText
          |> Option.map (fun text ->
-             let summary =
-                 state.Work
-                 |> Map.tryFind record.CaseId
-                 |> Option.bind _.Snapshot
-                 |> Option.bind (fun work -> work.Work.Summary)
-
-             match summary with
+             match record.Index.WorkSearchText with
              | None -> text
-             | Some value -> text + "\u001f" + CaseSearch.normalize (HandlingSummary.format value)))
+             | Some summary -> text + "\u001f" + summary))
+
 
 let private total money =
     money

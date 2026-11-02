@@ -339,6 +339,25 @@ let private workRequests () =
                 encoded
                 "Independent typed work request bytes")
 
+let private reminderRecords () =
+    withVectors (fun root ->
+        let check (name: string) count decode encode =
+            let vectors = root.GetProperty(name).EnumerateArray() |> Seq.toList
+            Expect.equal vectors.Length count "Complete independent reminder grammar witnesses"
+
+            for vector in vectors do
+                let encoded = bytes vector
+                let value = decode encoded |> Fixtures.accepted
+
+                Expect.equal
+                    (encode value)
+                    encoded
+                    "Independent literal reminder bytes and meaning"
+
+        check "reminderRequests" 6 ReminderRecord.decodeRequest ReminderRecord.encodeRequest
+        check "reminderSnapshots" 6 ReminderRecord.decodeSnapshot ReminderRecord.encodeSnapshot
+        check "reminderEffects" 6 ReminderRecord.decodeEffects ReminderRecord.encodeEffects)
+
 [<Tests>]
 let tests =
     testList
@@ -351,6 +370,7 @@ let tests =
             testCase "snapshots reproduce independent bytes and meaning" snapshot
             testCase "nonempty work snapshots reproduce independent bytes and meaning" workSnapshots
             testCase "work requests reproduce independent bytes and meanings" workRequests
+            testCase "all reminder records reproduce independent literal bytes" reminderRecords
             testCase "authority requests reproduce independent bytes and meaning" authority
             testCase "unknown formats and noninteger format lexemes refuse" formats
         ]
