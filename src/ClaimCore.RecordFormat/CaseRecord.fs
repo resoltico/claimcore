@@ -26,7 +26,7 @@ module CaseRecord =
             })
         |> Codec.field
             "caseId"
-            _.CaseId
+            (fun (snapshot: CaseSnapshot) -> snapshot.CaseId)
             (Codec.uuid |> Codec.map (CaseId.create >> Option.get) CaseId.value)
         |> Codec.field
             DurableNames.Revision
