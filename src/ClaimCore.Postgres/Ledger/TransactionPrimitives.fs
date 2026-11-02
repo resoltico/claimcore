@@ -244,20 +244,9 @@ type private ReadTx
                  CaseId = caseId
              })
             =
-            task {
-                let! actor = Projections.actor connection principal (Option.toList caseId) token
-
-                match caseId with
-                | Some _ -> return actor
-                | None ->
-                    return!
-                        Projections.scopedCases
-                            connection
-                            principal
-                            (Authority.readRoles principal)
-                            actor
-                            token
-            }
+            match caseId with
+            | Some id -> Projections.actor connection principal [ id ] token
+            | None -> Projections.actorWithVisibility connection principal token
 
         member _.AuthorityCases(principal, ids) =
             Projections.actor connection principal (List.distinct ids) token

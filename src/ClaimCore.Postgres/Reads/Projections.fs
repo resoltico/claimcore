@@ -217,47 +217,66 @@ module internal Projections =
 
             AuthorityView.ofActor (Some stored)
 
+    let private actorQuery columns =
+        $"SELECT {columns} FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+
+    let private actorParameters principal (caseIds: CaseId list) =
+        let kind, issuer, subject = PrincipalKey.parts principal
+
+        [|
+            box (DurableNames.principalKind kind)
+            box issuer
+            box subject
+            box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
+        |]
+
+    let private actorColumns = "a.actor_id,a.enabled,g.role,g.case_id"
+
     let actor connection principal (caseIds: CaseId list) token =
         task {
-            let kind, issuer, subject = PrincipalKey.parts principal
-
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT a.actor_id,a.enabled,g.role,g.case_id FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
-                    [|
-                        box (DurableNames.principalKind kind)
-                        box issuer
-                        box subject
-                        box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
-                    |]
+                    (actorQuery actorColumns)
+                    (actorParameters principal caseIds)
                     token
 
             return authorityRows principal rows
         }
 
-    let scopedCases connection principal readRoles (view: AuthorityView) token =
+    /// Global visibility and actor/grant facts belong to the same read snapshot, without a second round trip.
+    let actorWithVisibility connection principal token =
         task {
-            match view.Actor with
-            | None -> return view
-            | Some actor ->
-                let forbidden =
-                    Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray
+            let scoped =
+                "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($5::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($6::text[])))"
 
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
-                        [|
-                            box (ActorId.value actor.ActorId)
-                            box (readRoles |> List.map DurableNames.role |> List.toArray)
-                            box forbidden
-                        |]
-                        token
+            let sql = actorQuery (actorColumns + "," + scoped)
 
-                return
+            let parameters =
+                Array.append
+                    (actorParameters principal [])
+                    [|
+                        box (
+                            Authority.readRoles principal
+                            |> List.map DurableNames.role
+                            |> List.toArray
+                        )
+                        box (
+                            Authority.invalidRoles principal
+                            |> List.map DurableNames.role
+                            |> List.toArray
+                        )
+                    |]
+
+            let! rows = DatabaseSession.rows connection sql parameters token
+            let view = authorityRows principal rows
+
+            return
+                match rows with
+                | [] -> view
+                | first :: _ ->
                     { view with
-                        HasScopedCases = DatabaseSession.value<bool> 0 rows.Head
+                        HasScopedCases = DatabaseSession.value<bool> 4 first
                     }
         }
 
