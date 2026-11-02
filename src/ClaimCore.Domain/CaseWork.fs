@@ -112,4 +112,3 @@ module WorkActKind =
 type WorkAct<'value> = UpdateWork of 'value
 
 type AuthoredWorkAct = WorkAct<CaseWorkInput>
-type ValidWorkAct = WorkAct<ValidCaseWorkUpdate>

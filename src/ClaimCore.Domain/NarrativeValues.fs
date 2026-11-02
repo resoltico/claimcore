@@ -10,7 +10,7 @@ module IncidentDescription =
     [<Literal>]
     let MaximumBytes = 4096
 
-    let constraints =
+    let constraints: PlainTextConstraints =
         {
             MaximumScalars = MaximumScalars
             MaximumUtf8Bytes = MaximumBytes
@@ -21,11 +21,11 @@ module IncidentDescription =
 
     /// Permanent representability does not apply today's admission policy to retained text.
     let parse value =
-        ScalarText.parse (Some MaximumBytes) MaximumScalars value
+        ScalarText.parse (Some constraints.MaximumUtf8Bytes) constraints.MaximumScalars value
         |> Result.map IncidentDescription
 
     let admit (IncidentDescription value) =
-        ScalarText.admitPlain MaximumScalars true value
+        ScalarText.admitPlain constraints.MaximumScalars constraints.AllowsLineFeed value
         |> Result.map IncidentDescription
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
@@ -38,7 +38,7 @@ module HandlingSummary =
     [<Literal>]
     let MaximumBytes = 4096
 
-    let constraints =
+    let constraints: PlainTextConstraints =
         {
             MaximumScalars = MaximumScalars
             MaximumUtf8Bytes = MaximumBytes
@@ -48,11 +48,12 @@ module HandlingSummary =
     let format (HandlingSummary value) = value
 
     let parse value =
-        ScalarText.parse (Some MaximumBytes) MaximumScalars value
+        ScalarText.parse (Some constraints.MaximumUtf8Bytes) constraints.MaximumScalars value
         |> Result.map HandlingSummary
 
     let admit (HandlingSummary value) =
-        ScalarText.admitPlain MaximumScalars true value |> Result.map HandlingSummary
+        ScalarText.admitPlain constraints.MaximumScalars constraints.AllowsLineFeed value
+        |> Result.map HandlingSummary
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type ReminderAction = private ReminderAction of string
@@ -64,7 +65,7 @@ module ReminderAction =
     [<Literal>]
     let MaximumBytes = 1024
 
-    let constraints =
+    let constraints: PlainTextConstraints =
         {
             MaximumScalars = MaximumScalars
             MaximumUtf8Bytes = MaximumBytes
@@ -74,8 +75,9 @@ module ReminderAction =
     let format (ReminderAction value) = value
 
     let parse value =
-        ScalarText.parse (Some MaximumBytes) MaximumScalars value
+        ScalarText.parse (Some constraints.MaximumUtf8Bytes) constraints.MaximumScalars value
         |> Result.map ReminderAction
 
     let admit (ReminderAction value) =
-        ScalarText.admitPlain MaximumScalars false value |> Result.map ReminderAction
+        ScalarText.admitPlain constraints.MaximumScalars constraints.AllowsLineFeed value
+        |> Result.map ReminderAction
