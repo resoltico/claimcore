@@ -22,7 +22,7 @@ module internal TextWorkReply =
 
     let reminder language value =
         [
-            line language "input.reminderId.label" (ReminderId.format (Reminder.id value))
+            line language "field.reminderId.label" (ReminderId.format (Reminder.id value))
             line language "label.reminderRevision" (Revision.format (Reminder.revision value))
             line
                 language
@@ -30,9 +30,9 @@ module internal TextWorkReply =
                 (term language ReminderState.vocabulary (Reminder.state value))
             line
                 language
-                "input.reminderAction.label"
+                "field.reminderAction.label"
                 (Reminder.action value |> ReminderAction.format |> Some |> displayed language)
-            line language "input.reminderDueDate.label" (Reminder.due value |> CalendarDate.format)
+            line language "field.reminderDueDate.label" (Reminder.due value |> CalendarDate.format)
         ]
 
     let effects language =

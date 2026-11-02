@@ -95,7 +95,7 @@ module internal TextCaseReply =
                 (value.Work.FollowUp |> Option.map CalendarDate.format |> displayed language)
             line
                 language
-                "input.reminderAction.label"
+                "field.reminderAction.label"
                 (value.Work.NextAction |> Option.map ReminderAction.format |> displayed language)
             line language "label.pendingReminders" (number value.Work.PendingReminders)
             line language "label.overdueReminders" (number value.Work.OverdueReminders)
