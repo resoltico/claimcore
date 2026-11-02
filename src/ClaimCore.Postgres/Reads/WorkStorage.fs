@@ -266,10 +266,18 @@ module internal WorkStorage =
                 .Replace("%", "\\%")
                 .Replace("_", "\\_"))
 
+    let private duePredicate =
+        function
+        | ReminderDue.Overdue -> "r.due<$11::date"
+        | ReminderDue.Today -> "r.due=$11::date"
+        | ReminderDue.Upcoming -> "r.due>$11::date"
+
     let page connection (query: ReminderPageQuery) token =
         task {
+            let due = query.Due |> Option.map duePredicate |> Option.defaultValue "TRUE"
+
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate} AND r.snapshot IS NOT NULL AND ($12::uuid IS NULL OR r.case_id=$12) AND r.state=$13 AND ($14 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ($15::text IS NULL OR CASE WHEN r.due<$11::date THEN 'OVERDUE' WHEN r.due=$11::date THEN 'TODAY' ELSE 'UPCOMING' END=$15) AND ($16::text IS NULL OR r.search_text LIKE '%%'||$16||'%%' ESCAPE chr(92)) AND ($17::date IS NULL OR (r.due,r.reminder_id)>($17::date,$18::uuid)) ORDER BY r.due,r.reminder_id LIMIT $19"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate} AND r.snapshot IS NOT NULL AND ($12::uuid IS NULL OR r.case_id=$12) AND r.state=$13 AND ($14 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($15::text IS NULL OR r.search_text LIKE '%%'||$15||'%%' ESCAPE chr(92)) AND ($16::date IS NULL OR (r.due,r.reminder_id)>($16::date,$17::uuid)) ORDER BY r.due,r.reminder_id LIMIT $18"
 
             let parameters =
                 Array.append
@@ -278,7 +286,6 @@ module internal WorkStorage =
                         DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
                         box (ReminderState.token query.State)
                         box query.IncludeInactive
-                        DatabaseSession.parameter (query.Due |> Option.map ReminderDue.token)
                         DatabaseSession.parameter (literalSearch query.Text)
                         DatabaseSession.parameter (
                             query.After |> Option.map (fun p -> CalendarDate.format p.Due)
