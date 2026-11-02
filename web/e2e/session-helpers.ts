@@ -384,6 +384,13 @@ export const logout = async (page: Page): Promise<void> => {
   expect(reply.payload.outcome.data.authenticated).toBe(false);
 };
 
+const contextFailureCode = (status: number, payload: unknown): string => {
+  if (isHostFailure(payload, status)) {
+    return payload.hostFailure.code;
+  }
+  return isResponse("context", payload) ? payload.outcome.kind : "MALFORMED";
+};
+
 /** Raw mutation fixtures bind to the authenticated installation, just like both production clients. */
 export const installationId = async (page: Page, token: string): Promise<string> => {
   const reply = await browserRequest(page, "/api/context", {
@@ -396,7 +403,9 @@ export const installationId = async (page: Page, token: string): Promise<string>
     !isResponse("context", reply.payload) ||
     reply.payload.outcome.kind !== "SUCCEEDED"
   ) {
-    throw new Error("Synthetic installation context is unavailable.");
+    throw new Error(
+      `Synthetic installation context HTTP ${reply.status} ${contextFailureCode(reply.status, reply.payload)} (context).`,
+    );
   }
   return reply.payload.outcome.data.installationId;
 };

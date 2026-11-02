@@ -15,7 +15,18 @@ const plan = async (page: Parameters<typeof openCase>[0], action: string, due: s
   await fillBusinessField(page, "reminderAction", action);
   await fillBusinessField(page, "reminderDueDate", due);
   await reviewDraft(page);
-  return recordWorkReview(page, "REMINDER");
+  const receipt = await recordWorkReview(page, "REMINDER");
+  // The raw fixture is a separate client; observe the accepted current page before its next request.
+  if (
+    receipt.subject.kind !== "REMINDER" ||
+    receipt.subject.act !== "CREATE" ||
+    receipt.subject.effects.kind !== "SINGLE"
+  ) {
+    throw new Error("Expected the accepted reminder creation identity.");
+  }
+  const reminderId = receipt.subject.effects.reminder.reminderId;
+  await expect(page.locator(`[id="reminder-${reminderId}-COMPLETE"]`)).toBeVisible();
+  return receipt;
 };
 
 test("stores exact optional LF incident text and clears it without a financial assertion", async ({
