@@ -322,6 +322,11 @@
       "token": "case.activity",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "reminder.get",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -472,6 +477,10 @@
       "detail",
       "cursor",
       "limit"
+    ],
+    "reminder.get": [
+      "target",
+      "reminderId"
     ]
   },
   "caseLifecycles": [

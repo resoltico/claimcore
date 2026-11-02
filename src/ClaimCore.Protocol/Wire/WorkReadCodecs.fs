@@ -8,6 +8,18 @@ module WorkReadCodecs =
     open Codec
     open ResponseScalars
 
+    let reminder =
+        (record (fun basis item ->
+            {
+                ReminderRead.Basis = basis
+                Item = item
+            })
+        : Fields<ReminderRead, _>)
+        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "item" _.Item WorkCodecs.reminderRead
+        |> build
+        |> named "ReminderRead"
+
     let reminders =
         (record (fun basis items next ->
             {

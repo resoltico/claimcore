@@ -2122,6 +2122,19 @@
           }
         }
       }
+    },
+    {
+      "id": "reminder-direct-current-get",
+      "endpoint": "reminder.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "reminderId": "30000000-0000-4000-8000-000000000001"
+      }
     }
   ]
 }

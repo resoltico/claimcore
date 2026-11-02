@@ -206,63 +206,65 @@ module RequestCodecs =
         |> field "reminderId" fst uuid
         |> field "expectedRevision" snd revision
 
-    let private reminderPlanFields =
+    let private reminderPlanFields targetFields =
         record (fun (id, revision) plan -> id, revision, plan)
-        |> flatten (fun (id, revision, _) -> id, revision) reminderTargetFields
+        |> flatten (fun (id, revision, _) -> id, revision) targetFields
         |> flatten (fun (_, _, plan) -> plan) planFields
 
-    let reminderAct =
+    let reminderActWith targetFields =
         tagged
             ReminderActKind.vocabulary
             "ReminderAct"
             [
                 variant
                     "CREATE"
-                    AuthoredReminderAct.Create
+                    ReminderAct.Create
                     (function
-                    | AuthoredReminderAct.Create value -> Some value
+                    | ReminderAct.Create value -> Some value
                     | _ -> None)
                     planFields
                 variant
                     "UPDATE"
-                    (fun (id, revision, plan) -> AuthoredReminderAct.Update(id, revision, plan))
+                    (fun (id, revision, plan) -> ReminderAct.Update(id, revision, plan))
                     (function
-                    | AuthoredReminderAct.Update(id, revision, plan) -> Some(id, revision, plan)
+                    | ReminderAct.Update(id, revision, plan) -> Some(id, revision, plan)
                     | _ -> None)
-                    reminderPlanFields
+                    (reminderPlanFields targetFields)
                 variant
                     "COMPLETE"
-                    (fun (id, revision) -> AuthoredReminderAct.Complete(id, revision))
+                    (fun (id, revision) -> ReminderAct.Complete(id, revision))
                     (function
-                    | AuthoredReminderAct.Complete(id, revision) -> Some(id, revision)
+                    | ReminderAct.Complete(id, revision) -> Some(id, revision)
                     | _ -> None)
-                    reminderTargetFields
+                    targetFields
                 variant
                     "CANCEL"
-                    (fun (id, revision) -> AuthoredReminderAct.Cancel(id, revision))
+                    (fun (id, revision) -> ReminderAct.Cancel(id, revision))
                     (function
-                    | AuthoredReminderAct.Cancel(id, revision) -> Some(id, revision)
+                    | ReminderAct.Cancel(id, revision) -> Some(id, revision)
                     | _ -> None)
-                    reminderTargetFields
+                    targetFields
                 variant
                     "REOPEN"
-                    (fun (id, revision, due) -> AuthoredReminderAct.Reopen(id, revision, due))
+                    (fun (id, revision, due) -> ReminderAct.Reopen(id, revision, due))
                     (function
-                    | AuthoredReminderAct.Reopen(id, revision, due) -> Some(id, revision, due)
+                    | ReminderAct.Reopen(id, revision, due) -> Some(id, revision, due)
                     | _ -> None)
                     (record (fun (id, revision) due -> id, revision, due)
-                     |> flatten (fun (id, revision, _) -> id, revision) reminderTargetFields
+                     |> flatten (fun (id, revision, _) -> id, revision) targetFields
                      |> field "dueDate" (fun (_, _, due) -> due) text)
                 variant
                     "COMPLETE_AND_PLAN_NEXT"
                     (fun (id, revision, plan) ->
-                        AuthoredReminderAct.CompleteAndPlanNext(id, revision, plan))
+                        ReminderAct.CompleteAndPlanNext(id, revision, plan))
                     (function
-                    | AuthoredReminderAct.CompleteAndPlanNext(id, revision, plan) ->
+                    | ReminderAct.CompleteAndPlanNext(id, revision, plan) ->
                         Some(id, revision, plan)
                     | _ -> None)
-                    reminderPlanFields
+                    (reminderPlanFields targetFields)
             ]
+
+    let reminderAct = reminderActWith reminderTargetFields
 
     let registrationGroup =
         tagged
@@ -848,3 +850,15 @@ module RequestCodecs =
         |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         |> build
         |> named "CaseActivityRequest"
+
+    let reminderGetRequest =
+        (record (fun target reminder ->
+            {
+                ReminderGetRequest.Target = target
+                ReminderId = reminder
+            })
+        : Fields<ReminderGetRequest, _>)
+        |> field "target" _.Target caseSelector
+        |> field "reminderId" _.ReminderId uuid
+        |> build
+        |> named "ReminderGetRequest"

@@ -92,6 +92,15 @@ module internal VerbRunner =
 
                 let! reply = processor.Exchange(frame, token)
                 processor.Deliver(render prepared frame, reply)
+
+                if prepared.Format = VerbFormat.Text then
+                    do!
+                        WorkRefresh.run
+                            (fun frame token -> processor.Exchange(frame, token))
+                            (fun frame reply -> processor.Deliver(render prepared frame, reply))
+                            reply
+                            token
+
                 return reply.ExitCode
         }
 
