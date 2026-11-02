@@ -269,6 +269,13 @@ module Api =
             RequestCodecs.reminderListRequest
             (ReplyCodecs.readReply "ReminderListReply" WorkReadCodecs.reminders)
 
+    let reminder =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet))
+            HttpMethod.Post
+            RequestCodecs.reminderGetRequest
+            (ReplyCodecs.readReply "ReminderReadReply" WorkReadCodecs.reminder)
+
     let workOverview =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkOverview))
@@ -395,6 +402,7 @@ module Api =
     let private defineActor =
         function
         | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> EndpointDefinition.create reminders
+        | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> EndpointDefinition.create reminder
         | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> EndpointDefinition.create workOverview
         | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> EndpointDefinition.create caseActivity
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
@@ -552,6 +560,20 @@ module ReplyCorrelation =
             | Some "REMINDER" -> reminderEffects false input subject
             | _ -> false)
 
+    let private observedParent input subject =
+        memberValue "parent" subject
+        |> Option.exists (fun parent ->
+            caseTarget input parent
+            && sameReference
+                (stringMember "caseReference" parent)
+                (stringMember "caseReference" subject)
+            && (match stringMember "kind" subject with
+                | Some "WORK" ->
+                    memberValue "proposed" subject
+                    |> Option.exists (fun work -> guid "caseId" work = guid "caseId" parent)
+                | Some "REMINDER" -> guid "caseId" subject = guid "caseId" parent
+                | _ -> false))
+
     let matches token input reply =
         let outcome = memberValue "outcome" reply
         let kind = outcome |> Option.bind (stringMember "kind")
@@ -599,6 +621,32 @@ module ReplyCorrelation =
             match token, kind, data with
             | ("case.get" | "case.history" | "case.activity"), Some "SUCCEEDED", Some value ->
                 caseTarget input value
+            | "reminder.get", Some "SUCCEEDED", Some value ->
+                memberValue "item" value
+                |> Option.exists (fun item ->
+                    (memberValue "reminder" item
+                     |> Option.exists (fun reminder ->
+                         let actual =
+                             match reminder with
+                             | JsonValue.Object fields ->
+                                 JsonValue.Object(
+                                     ("caseReference",
+                                      memberValue "caseReference" item
+                                      |> Option.defaultValue JsonValue.Null)
+                                     :: fields
+                                 )
+                             | _ -> reminder
+
+                         caseTarget input actual
+                         && guid "reminderId" reminder = guid "reminderId" input
+                         && (match
+                                 memberValue "target" input |> Option.bind (stringMember "kind")
+                             with
+                             | Some "ID" ->
+                                 memberValue "target" input
+                                 |> Option.exists (fun selector ->
+                                     guid "caseId" selector = guid "caseId" reminder)
+                             | _ -> true))))
             | "authority.grants", Some "SUCCEEDED", Some value ->
                 memberValue "actor" value
                 |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)
@@ -616,6 +664,7 @@ module ReplyCorrelation =
                 |> Option.bind (memberValue "subject")
                 |> Option.exists (fun subject ->
                     stringMember "kind" subject = Some "WORK"
+                    && observedParent input subject
                     && (memberValue "proposed" subject
                         |> Option.exists (fun proposed ->
                             let actual =
@@ -637,6 +686,7 @@ module ReplyCorrelation =
                 |> Option.bind (memberValue "subject")
                 |> Option.exists (fun subject ->
                     stringMember "kind" subject = Some "REMINDER"
+                    && observedParent input subject
                     && caseTarget input subject
                     && reminderEffects true input subject)
             | _ -> true

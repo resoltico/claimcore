@@ -5302,6 +5302,82 @@
       ]
     },
     {
+      "endpoint": "reminder.get",
+      "subject": "REMINDER",
+      "kind": "reminder.get",
+      "labelId": "endpoint.reminder.get.label",
+      "meaningId": "endpoint.reminder.get.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "reminderId",
+          "field": "reminderId",
+          "path": [
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
       "endpoint": "case.activity",
       "subject": "CASE",
       "kind": "case.activity",

@@ -14,7 +14,8 @@ module internal TextCaseReply =
     let fieldLines language (fields: CaseFields) =
         let rows placement =
             CaseFields.declarations
-            |> List.filter (fun row -> row.Group = placement)
+            |> List.filter (fun row ->
+                row.Group = placement && row.Section <> Some CaseSection.Work)
             |> List.map (fun row ->
                 line
                     language
@@ -82,6 +83,13 @@ module internal TextCaseReply =
                [ label language "diagnostic.REGISTER_MAINTENANCE" ]
            else
                [])
+        @ [
+            instant value.Work.Basis.ObservedAt
+            + "  "
+            + CalendarDate.format (CalendarDate.ofDate value.Work.Basis.BusinessDate)
+            + "  "
+            + TerminalText.data value.Work.Basis.TimeZoneId
+        ]
         @ workAccount language value.Work
         @ [
             line language "label.workRevision" (Revision.format value.Work.Revision)

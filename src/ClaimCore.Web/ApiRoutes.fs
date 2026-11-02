@@ -18,6 +18,7 @@ module internal ApiRoutes =
     // fsharplint:disable-next-line CyclomaticComplexity
     let route =
         function
+        | ActorEndpoint.Query QueryEndpoint.ReminderGet -> Route.bind Api.reminder Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
             Route.bind Api.reminders Service.reminders
         | ActorEndpoint.Query QueryEndpoint.WorkOverview ->

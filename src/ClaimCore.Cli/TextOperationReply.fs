@@ -28,7 +28,7 @@ module internal TextOperationReply =
                 TerminalText.data (CaseReference.format value.Reference),
                 [ label language "label.workRevision"; Revision.format value.Revision ]
             | ReceiptSubject.Reminder value ->
-                let version item =
+                let version (item: ReminderVersion) =
                     ReminderId.format item.ReminderId + " " + Revision.format item.Revision
 
                 let versions =
@@ -139,20 +139,34 @@ module internal TextOperationReply =
                     (term language CorrectionGroupAction.vocabulary action))
         | _ -> []
 
+    let private observedFacts language (parent: CaseSnapshot) =
+        [
+            label language "label.observedCaseFacts"
+            line
+                language
+                (CliMessages.key CliMessage.RevisionLabel)
+                (Revision.format parent.Revision)
+        ]
+        @ (CaseState.fields parent.State
+           |> Option.map (TextCaseReply.fieldLines language)
+           |> Option.defaultValue [])
+
     let reviewLines language request review =
         let input = requestInput request
 
         let changes =
             match review with
             | OperationReview.Work value ->
-                TextWorkReply.work language value.Before
+                observedFacts language value.Parent
+                @ TextWorkReply.work language value.Before
                 @ [ "→" ]
                 @ TextWorkReply.work language value.Proposed
                 @ [ label language "label.financialFactsPreserved" ]
             | OperationReview.Reminder value ->
-                (value.Before
-                 |> Option.map (TextWorkReply.reminder language)
-                 |> Option.defaultValue [])
+                observedFacts language value.Parent
+                @ (value.Before
+                   |> Option.map (TextWorkReply.reminder language)
+                   |> Option.defaultValue [])
                 @ [ "→" ]
                 @ TextWorkReply.effects language value.Effects
                 @ [ label language "label.financialFactsPreserved" ]

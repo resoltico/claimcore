@@ -137,3 +137,46 @@ let tests =
                         "first\\u{000A}second"
                         "Single-line renderer remains protected")
         ]
+
+[<Tests>]
+let editorCleanup =
+    testCase "real editor backup cleanup failure refuses before returning authored text" (fun () ->
+        let root = Directory.CreateTempSubdirectory "claimcore-editor-control-"
+        let report = Path.Combine(root.FullName, "owned-path")
+        let editor = Path.Combine(root.FullName, "editor")
+        let quote (value: string) = "'" + value.Replace("'", "'\\''") + "'"
+
+        File.WriteAllText(
+            editor,
+            "#!/bin/sh\nprintf '%s' \"$1\" > "
+            + quote report
+            + "\nprintf 'private synthetic text' > \"$1\"\nprintf 'synthetic editor backup' > \"$1.backup\"\n"
+        )
+
+        File.SetUnixFileMode(
+            editor,
+            UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+        )
+
+        try
+            Expect.throws
+                (fun () -> TextInputs.editor 8192 "en" editor |> ignore)
+                "Backup prevents successful cleanup and text cannot be returned"
+
+            let path = File.ReadAllText report
+            Expect.isFalse (File.Exists path) "Primary editor text was removed"
+
+            Expect.isTrue
+                (File.Exists(path + ".backup"))
+                "The intended failure leaves useful synthetic evidence"
+
+            let directory = Path.GetDirectoryName path |> nonNull
+
+            Expect.equal
+                (File.GetUnixFileMode directory)
+                (UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute)
+                "Remaining owned directory stays private"
+
+            Directory.Delete(directory, true)
+        finally
+            root.Delete true)

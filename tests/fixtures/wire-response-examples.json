@@ -4626,6 +4626,37 @@
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
                   "businessDate": "2026-11-02"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
                 }
               }
             }
@@ -5014,6 +5045,37 @@
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
                   "businessDate": "2026-11-02"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
                 }
               }
             }
@@ -5058,6 +5120,37 @@
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
                   "businessDate": "2026-11-02"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
                 }
               }
             }
@@ -5110,6 +5203,37 @@
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
                   "businessDate": "2026-11-02"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
                 }
               }
             }
@@ -5613,6 +5737,71 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "reminder-direct-current-get",
+      "endpoint": "reminder.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-10",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "COMPLETE_AND_PLAN_NEXT"
+              ],
+              "active": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder.get-REJECTED",
+      "endpoint": "reminder.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "NONE_REQUIRED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder.get-FAILED",
+      "endpoint": "reminder.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      }
     }
   ]
 }

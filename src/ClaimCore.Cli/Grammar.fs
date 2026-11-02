@@ -502,3 +502,11 @@ module Grammar =
 
     let internal caseIntent arguments = intent RequestCodecs.caseAct arguments
     let internal workIntent arguments = intent RequestCodecs.workAct arguments
+
+    let internal reminderIntent arguments =
+        let target =
+            Codec.record (fun id revision -> id, revision)
+            |> Codec.field "reminderId" fst Codec.uuid
+            |> Codec.optionalField "expectedRevision" snd RequestCodecs.revision
+
+        intent (RequestCodecs.reminderActWith target) arguments

@@ -472,14 +472,6 @@
         {
           "field": "responsibleActor",
           "code": "ACTOR_ID_REQUIRED"
-        },
-        {
-          "field": "followUpDate",
-          "code": "CALENDAR_DATE_REQUIRED"
-        },
-        {
-          "field": "followUpDate",
-          "code": "UPDATE_REQUIRED"
         }
       ]
     },
@@ -491,6 +483,83 @@
     {
       "code": "REGISTER_MAINTENANCE",
       "action": "ReadCurrent",
+      "target": null
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "code": "TEXT_REQUIRED",
+          "field": "incidentDescription"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "issues": [
+        {
+          "field": "handlingSummary",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "handlingSummary",
+          "code": "UPDATE_REQUIRED"
+        },
+        {
+          "field": "expectedWorkRevision",
+          "code": "EXPECTED_REVISION_RANGE"
+        },
+        {
+          "field": "reminderId",
+          "code": "REMINDER_ID_REQUIRED"
+        },
+        {
+          "field": "expectedReminderRevision",
+          "code": "EXPECTED_REVISION_RANGE"
+        },
+        {
+          "field": "reminderAction",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "reminderDueDate",
+          "code": "CALENDAR_DATE_REQUIRED"
+        },
+        {
+          "field": "reminderAction",
+          "code": "TOO_LONG"
+        },
+        {
+          "field": "handlingSummary",
+          "code": "TOO_LONG"
+        }
+      ]
+    },
+    {
+      "code": "REMINDER_PARENT_NOT_ACTIVE",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "REMINDER_PARENT_NOT_OPEN",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "REMINDER_PENDING_REQUIRED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "REMINDER_TERMINAL_REQUIRED",
+      "action": "NoneRequired",
+      "target": null
+    },
+    {
+      "code": "REMINDER_NO_CHANGES",
+      "action": "NoneRequired",
       "target": null
     }
   ]
