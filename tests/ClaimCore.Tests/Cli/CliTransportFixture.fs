@@ -153,19 +153,40 @@ let frameForReply endpoint bytes =
         StrictJson.read Limits.MaximumResponseBytes bytes
         |> Result.defaultWith (fun _ -> failtest "Positive mock JSON")
 
-    let authority =
-        at [ "outcome"; "data"; "subject"; "kind" ] root = Some(JsonValue.String "AUTHORITY")
-        || at [ "outcome"; "data"; "review"; "subject"; "kind" ] root =
-            Some(JsonValue.String "AUTHORITY")
+    let subject =
+        at [ "outcome"; "data"; "subject" ] root
+        |> Option.orElseWith (fun () -> at [ "outcome"; "data"; "review"; "subject" ] root)
 
-    if authority && List.contains endpoint [ "operation.execute"; "operation.preview" ] then
-        let input = OperationInput.Authority CliReplyFixtures.authorityRequest
+    let family = subject |> Option.bind (memberText "kind")
 
-        (if endpoint = "operation.execute" then
-             Frames.create Api.operationExecute input
-         else
-             Frames.create Api.operationPreview input)
-        |> Result.defaultWith (fun _ -> failtest "Typed authority transport input")
+    let act =
+        subject
+        |> Option.bind (fun subject ->
+            memberText "act" subject
+            |> Option.orElseWith (fun () ->
+                match family, at [ "effects"; "kind" ] subject with
+                | Some "WORK", _ -> Some "UPDATE_WORK"
+                | Some "REMINDER", Some(JsonValue.String "CREATED") -> Some "CREATE"
+                | Some "REMINDER", Some(JsonValue.String "COMPLETED_AND_PLANNED") ->
+                    Some "COMPLETE_AND_PLAN_NEXT"
+                | Some "REMINDER", Some(JsonValue.String "CHANGED") ->
+                    match at [ "effects"; "reminder"; "state" ] subject with
+                    | Some(JsonValue.String "COMPLETED") -> Some "COMPLETE"
+                    | Some(JsonValue.String "CANCELLED") -> Some "CANCEL"
+                    | _ -> Some "UPDATE"
+                | _ -> None))
+
+    if List.contains endpoint [ "operation.execute"; "operation.preview" ] then
+        examples "wire-request-examples.json" endpoint
+        |> List.tryFind (fun value ->
+            memberText "kind" value = family
+            && (act.IsNone || at [ "act"; "kind" ] value = (act |> Option.map JsonValue.String)))
+        |> Option.map (fun input ->
+            JsonValue.Object [ "endpoint", JsonValue.String endpoint; "input", input ]
+            |> WireWriter.bytes
+            |> Frames.admit
+            |> Result.defaultWith (fun _ -> failtest "Independent authored family transport input"))
+        |> Option.defaultValue invocation
     else
         invocation
 

@@ -84,8 +84,7 @@ module ResponseCodecs =
                     |> Option.map (fun value -> BusinessField.IncidentDescription, value)
                     |> Option.toList
             ]
-            |> Registration.create
-            |> Result.defaultWith invalidOp)
+            |> Registration.create)
         : Fields<Registration, _>)
         |> field
             "incidentDate"
@@ -119,7 +118,7 @@ module ResponseCodecs =
             "incidentDescription"
             (Registration.description >> Option.map Admitted.Description)
             (nullable (scalar FieldValueKind.IncidentDescription))
-        |> build
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
     let private payment = group RecordGroup.Payment Payment.create Payment.values

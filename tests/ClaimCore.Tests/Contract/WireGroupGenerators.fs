@@ -23,7 +23,8 @@ let private members group admitted =
                 | "COUNTRY" -> uppercase 2
                 | "CURRENCY" -> uppercase 3
                 | "AMOUNT" -> amount
-                | "NAME" -> scalarText
+                | "NAME"
+                | "DESCRIPTION" -> scalarText
                 | _ -> invalidOp "The independent group inventory requires a value generator."
 
         generator |> Gen.map (fun value -> field, value))
