@@ -315,5 +315,7 @@ module ReminderCommand =
 
     let resultingRevision =
         function
-        | ReminderCommand.Create _ -> Revision.first
-        | ReminderCommand.Change(_, _, revision, _) -> Revision.successor revision
+        | ReminderCommand.Create _ -> Some Revision.first
+        | ReminderCommand.Change(_, _, revision, _) when Revision.value revision < Revision.Maximum ->
+            Some(Revision.successor revision)
+        | ReminderCommand.Change _ -> None

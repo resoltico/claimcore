@@ -11,6 +11,7 @@ module HistoricalWorkEffects =
         if
             request.CaseId <> before.CaseId
             || request.ExpectedRevision <> before.Revision
+            || Revision.value before.Revision = Revision.Maximum
             || after = before.Work
         then
             Error "Invalid retained work effects."
@@ -50,6 +51,7 @@ module HistoricalWorkEffects =
             Reminder.caseId old = parent
             && Reminder.id old = id
             && Reminder.revision old = expected
+            && Revision.value expected < Revision.Maximum
             ->
             let pending = Reminder.state old = ReminderState.Pending
 
@@ -88,7 +90,7 @@ module HistoricalWorkEffects =
         let primary value =
             Reminder.caseId value = parent
             && Reminder.id value = id
-            && Reminder.revision value = revision
+            && Some(Reminder.revision value) = revision
 
         let planMatches (plan: ReminderPlan) value =
             Reminder.action value = plan.Action && Reminder.due value = plan.Due

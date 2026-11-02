@@ -190,7 +190,12 @@ module internal WorkQueries =
                         |> Result.mapError (fun issue ->
                             Refusal.invalidInput (InputTarget.Text, issue))
 
-                match text with
+                let selector =
+                    request.Target
+                    |> Option.map CaseExecution.validateSelector
+                    |> Option.defaultValue (Ok())
+
+                match Admission.map2 (fun () text -> text) selector text with
                 | Error refusal -> return Outcome.Rejected refusal
                 | Ok text ->
                     let! result =
