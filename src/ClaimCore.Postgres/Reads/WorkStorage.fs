@@ -156,57 +156,64 @@ module internal WorkStorage =
             if List.isEmpty ids then
                 return Map.empty
             else
-                let parameters = [| box (ids |> List.map CaseId.value |> List.toArray); box today |]
-
-                let! works =
-                    DatabaseSession.namedRows
-                        connection
-                        ($"SELECT {workColumns} FROM claimcore.case_work WHERE case_id=ANY($1::uuid[])")
-                        [| parameters[0] |]
-                        token
-
-                let! counts =
-                    DatabaseSession.namedRows
-                        connection
-                        "SELECT case_id,count(*) AS pending,count(*) FILTER(WHERE due<$2::date) AS overdue FROM claimcore.reminders WHERE case_id=ANY($1::uuid[]) AND state='PENDING' GROUP BY case_id"
-                        parameters
-                        token
-
-                let! next =
-                    DatabaseSession.namedRows
-                        connection
-                        ($"SELECT DISTINCT ON(r.case_id) {reminderColumns} FROM claimcore.reminders r WHERE r.case_id=ANY($1::uuid[]) AND r.state='PENDING' ORDER BY r.case_id,r.due,r.reminder_id")
-                        [| parameters[0] |]
-                        token
-
-                let counts =
-                    counts
-                    |> List.map (fun row ->
-                        caseId "case_id" row,
-                        (DatabaseSession.namedValue<int64> "pending" row,
-                         DatabaseSession.namedValue<int64> "overdue" row))
-                    |> Map.ofList
+                let work =
+                    "w.case_id,w.revision,w.snapshot,w.responsible_actor,w.handling_summary,w.search_text,"
+                    + DatabaseSession.instantExpression "w.changed_at"
+                    + " AS changed_at,w.recorded_by"
 
                 let next =
-                    next
-                    |> List.map (fun row ->
-                        let value = reminderRow row in value.CaseId, value.Snapshot)
-                    |> Map.ofList
+                    "r.reminder_id AS next_reminder_id,r.case_id AS next_case_id,r.revision AS next_revision,r.snapshot AS next_snapshot,r.state AS next_state,r.action AS next_action,"
+                    + DatabaseSession.dateExpression "r.due"
+                    + " AS next_due,r.search_text AS next_search_text,"
+                    + DatabaseSession.instantExpression "r.changed_at"
+                    + " AS next_changed_at,r.recorded_by AS next_recorded_by"
+
+                let sql =
+                    $"SELECT {work},n.pending,n.overdue,{next} FROM claimcore.case_work w CROSS JOIN LATERAL(SELECT count(*) AS pending,count(*) FILTER(WHERE due<$2::date) AS overdue FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING') n LEFT JOIN LATERAL(SELECT * FROM claimcore.reminders WHERE case_id=w.case_id AND state='PENDING' ORDER BY due,reminder_id LIMIT 1) r ON true WHERE w.case_id=ANY($1::uuid[])"
+
+                let! rows =
+                    DatabaseSession.namedRows
+                        connection
+                        sql
+                        [| box (ids |> List.map CaseId.value |> List.toArray); box today |]
+                        token
 
                 return
-                    works
+                    rows
                     |> List.map (fun row ->
                         let work = workRow row
 
-                        let pending, overdue =
-                            Map.tryFind work.CaseId counts |> Option.defaultValue (0L, 0L)
+                        let next =
+                            if
+                                DatabaseSession.namedOptional<Guid> "next_reminder_id" row
+                                |> Option.isNone
+                            then
+                                None
+                            else
+                                let fields =
+                                    row
+                                    |> Map.toList
+                                    |> List.choose (fun (key, value) ->
+                                        if key.StartsWith("next_", StringComparison.Ordinal) then
+                                            Some(key.Substring(5), value)
+                                        else
+                                            None)
+                                    |> Map.ofList
+
+                                match (reminderRow fields).Snapshot with
+                                | Some next -> Some next
+                                | None ->
+                                    raise (
+                                        RecordCorruptException
+                                            "Current next reminder has no payload."
+                                    )
 
                         work.CaseId,
                         {
                             CaseWorkSummary.Work = work
-                            Next = Map.tryFind work.CaseId next |> Option.flatten
-                            Pending = pending
-                            Overdue = overdue
+                            Next = next
+                            Pending = DatabaseSession.namedValue<int64> "pending" row
+                            Overdue = DatabaseSession.namedValue<int64> "overdue" row
                         })
                     |> Map.ofList
         }
