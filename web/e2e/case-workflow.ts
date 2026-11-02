@@ -30,6 +30,15 @@ const visibleFieldCount = (fields: CaseFields): number =>
   inventory.workFields.length -
   (fields.decision === null ? inventory.groups.decision.length : 0) -
   (fields.payment === null ? inventory.groups.payment.length : 0);
+const refuseSubmitHttp = async (response: Response): Promise<never> => {
+  const status = response.status();
+  const failure: unknown = await response.json().catch(() => null);
+  const classification = isHostFailure(failure, status)
+    ? `${failure.hostFailure.code}_${failure.hostFailure.phase ?? "NONE"}`
+    : "UNCLASSIFIED_NONE";
+  throw new Error(`E2E_SUBMIT_HTTP_${status}_${classification}`);
+};
+
 export const recordReviewed = async (
   page: Page,
   confirmation = "I confirm these changes.",
@@ -58,12 +67,7 @@ export const recordReviewed = async (
   await page.getByRole("button", { name: "Record changes" }).click();
   const response = await responseEvent;
   if (response.status() !== 200) {
-    const status = response.status();
-    const failure: unknown = await response.json().catch(() => null);
-    const classification = isHostFailure(failure, status)
-      ? `${failure.hostFailure.code}_${failure.hostFailure.phase ?? "NONE"}`
-      : "UNCLASSIFIED_NONE";
-    throw new Error(`E2E_SUBMIT_HTTP_${status}_${classification}`);
+    await refuseSubmitHttp(response);
   }
   const payload: unknown = await response.json();
   if (!isResponse("operation.execute", payload)) {
