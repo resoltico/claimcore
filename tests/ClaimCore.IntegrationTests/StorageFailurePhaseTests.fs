@@ -51,7 +51,7 @@ let private controls (database: PostgresFixture.Database) =
         cancelled.Cancel()
 
         let! unopened =
-            Transactions.read database.RuntimeSource cancelled.Token (fun _ -> Task.FromResult 0)
+            Transactions.read database.RuntimeSource cancelled.Token (fun _ _ -> Task.FromResult 0)
 
         Expect.equal
             unopened
@@ -59,7 +59,7 @@ let private controls (database: PostgresFixture.Database) =
             "Pre-work cancellation is definite and does not invoke work"
 
         let! read =
-            Transactions.read database.RuntimeSource token (fun connection ->
+            Transactions.read database.RuntimeSource token (fun connection _ ->
                 DatabaseSession.rows connection ("SELECT '" + sensitive + "'::integer") [||] token)
 
         Expect.equal
@@ -68,7 +68,7 @@ let private controls (database: PostgresFixture.Database) =
             "Real provider read failure is mapped before exception details reach callers"
 
         let! internalFailure =
-            Transactions.read database.RuntimeSource token (fun _ ->
+            Transactions.read database.RuntimeSource token (fun _ _ ->
                 Task.FromException<int>(InvalidOperationException sensitive))
 
         Expect.equal
@@ -183,9 +183,69 @@ let private controls (database: PostgresFixture.Database) =
             "A throwing observer cannot prevent the next real acceptance"
     }
 
+let private readSetup (database: PostgresFixture.Database) =
+    task {
+        use! beforeConnection = database.OwnerSource.OpenConnectionAsync()
+
+        let! beforeRows =
+            DatabaseSession.rows beforeConnection "SELECT clock_timestamp()" [||] token
+
+        let before = DatabaseSession.instant 0 beforeRows.Head
+
+        let! observed =
+            Transactions.read database.RuntimeSource token (fun connection observedAt ->
+                task {
+                    let! rows =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT current_setting('lock_timeout'),current_setting('statement_timeout'),current_setting('idle_in_transaction_session_timeout'),current_setting('transaction_isolation'),clock_timestamp()"
+                            [||]
+                            token
+
+                    return observedAt, rows.Head
+                })
+
+        let instant, row =
+            observed
+            |> Result.defaultWith (fun error -> failtestf "Read setup failed: %A" error)
+
+        Expect.equal
+            (DatabaseSession.value<string> 0 row)
+            "5s"
+            "The original lock timeout is applied to this read transaction"
+
+        Expect.equal
+            (DatabaseSession.value<string> 1 row)
+            "30s"
+            "The original statement timeout is applied to this read transaction"
+
+        Expect.equal
+            (DatabaseSession.value<string> 2 row)
+            "15s"
+            "The original idle timeout is applied to this read transaction"
+
+        Expect.equal
+            (DatabaseSession.value<string> 3 row)
+            "repeatable read"
+            "The existing read snapshot isolation is preserved"
+
+        let after = DatabaseSession.instant 4 row
+
+        Expect.isTrue
+            (before <= instant && instant <= after)
+            "The supplied observation is an actual server-clock sample within the read setup"
+    }
+
 [<Tests>]
 let tests =
     testSequenced
-    <| testCaseAsync
-        "safe diagnostics preserve real pre-work read append projection and commit failures"
-        (run controls)
+    <| testList
+        "read setup and storage diagnostics"
+        [
+            testCaseAsync
+                "transaction-local read settings and observation share one setup"
+                (run readSetup)
+            testCaseAsync
+                "safe diagnostics preserve real pre-work read append projection and commit failures"
+                (run controls)
+        ]
