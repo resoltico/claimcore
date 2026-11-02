@@ -4,7 +4,7 @@ import { fillNamedField } from "./typed-entry";
 import { businessFieldCount, inventory } from "../tests/support/inventory";
 import { expect, type Page, type Response } from "@playwright/test";
 
-import { isResponse } from "../src/protocol/client";
+import { isHostFailure, isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { progress } from "./session-helpers";
 
@@ -58,7 +58,12 @@ export const recordReviewed = async (
   await page.getByRole("button", { name: "Record changes" }).click();
   const response = await responseEvent;
   if (response.status() !== 200) {
-    throw new Error("E2E_SUBMIT_HTTP_FAILURE");
+    const status = response.status();
+    const failure: unknown = await response.json().catch(() => null);
+    const classification = isHostFailure(failure, status)
+      ? `${failure.hostFailure.code}_${failure.hostFailure.phase ?? "NONE"}`
+      : "UNCLASSIFIED_NONE";
+    throw new Error(`E2E_SUBMIT_HTTP_${status}_${classification}`);
   }
   const payload: unknown = await response.json();
   if (!isResponse("operation.execute", payload)) {
