@@ -216,10 +216,6 @@ module LedgerEntries =
 
     let private caseContent _installationId (entry: StoredEntry) (data: LedgerPayload) =
         match entry.Subject with
-        | EntryTarget.Authority _
-        | EntryTarget.Work _
-        | EntryTarget.Reminder _
-        | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match RequestRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
             | Ok request when caseRequestMatches entry id revision act request ->
@@ -239,6 +235,7 @@ module LedgerEntries =
                         Ok(EntryContent.Case(request, Some snapshot))
                     | _ -> Error CoreFault.StoreIntegrityError
             | _ -> Error CoreFault.StoreIntegrityError
+        | _ -> Error CoreFault.StoreIntegrityError
 
     let private authorityContent (entry: StoredEntry) target act (data: LedgerPayload) =
         match AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with

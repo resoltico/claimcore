@@ -331,17 +331,23 @@ module internal WorkExecution =
 
     let private reminderRefusal =
         function
-        | ReminderRefusal.RevisionConflict actual -> Refusal.RevisionConflict actual
+        | ReminderRefusal.IdentityReserved -> Verdict.Fail CoreFault.StoreIntegrityError
+        | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.RevisionConflict actual)
         | ReminderRefusal.InvalidAction violation ->
-            Refusal.invalidInput (InputTarget.ReminderAction, violation)
+            Verdict.Refuse(Refusal.invalidInput (InputTarget.ReminderAction, violation))
         | ReminderRefusal.NotFound
-        | ReminderRefusal.ParentMismatch -> Refusal.Access AccessRefusal.ResourceUnavailable
-        | ReminderRefusal.ParentNotActive -> Refusal.Reminder ReminderRuleRefusal.ParentNotActive
-        | ReminderRefusal.ParentNotOpen -> Refusal.Reminder ReminderRuleRefusal.ParentNotOpen
-        | ReminderRefusal.IdentityReserved -> Refusal.Reminder ReminderRuleRefusal.IdentityReserved
-        | ReminderRefusal.PendingRequired -> Refusal.Reminder ReminderRuleRefusal.PendingRequired
-        | ReminderRefusal.TerminalRequired -> Refusal.Reminder ReminderRuleRefusal.TerminalRequired
-        | ReminderRefusal.NoChanges -> Refusal.Reminder ReminderRuleRefusal.NoChanges
+        | ReminderRefusal.ParentMismatch ->
+            Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+        | ReminderRefusal.ParentNotActive ->
+            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.ParentNotActive)
+        | ReminderRefusal.ParentNotOpen ->
+            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.ParentNotOpen)
+        | ReminderRefusal.PendingRequired ->
+            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.PendingRequired)
+        | ReminderRefusal.TerminalRequired ->
+            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.TerminalRequired)
+        | ReminderRefusal.NoChanges ->
+            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.NoChanges)
 
     let private reminderProposal
         (services: ServiceContext)
@@ -411,7 +417,7 @@ module internal WorkExecution =
                         next.IsSome
 
                 match Reminder.decide operation parent.Snapshot before reserved command with
-                | Error refusal -> return Verdict.Refuse(reminderRefusal refusal)
+                | Error refusal -> return reminderRefusal refusal
                 | Ok effects ->
                     let recordedBy = LedgerEnvelope.actorId view.Actor
 
