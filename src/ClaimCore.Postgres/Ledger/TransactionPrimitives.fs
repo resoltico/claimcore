@@ -238,6 +238,10 @@ type private ReadTx
         member _.Maintenance() =
             RegisterMaintenanceStore.read connection token
 
+        member _.GlobalReadFacts principal =
+            Projections.globalReadFacts connection principal token
+
+
         member _.Authority
             ({
                  AuthorityQuery.Principal = principal

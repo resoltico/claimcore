@@ -315,9 +315,17 @@ type ActivityPageQuery =
         Limit: int
     }
 
+/// Independently owned global facts observed together by read consumers that require both.
+type GlobalReadFacts =
+    {
+        Authority: AuthorityView
+        Maintenance: RegisterMaintenance
+    }
+
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Maintenance: unit -> Task<RegisterMaintenance>
+    abstract GlobalReadFacts: PrincipalKey -> Task<GlobalReadFacts>
     abstract Authority: AuthorityQuery -> Task<AuthorityView>
     abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>

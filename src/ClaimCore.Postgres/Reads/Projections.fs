@@ -244,40 +244,77 @@ module internal Projections =
             return authorityRows principal rows
         }
 
+    let private globalActorQuery principal =
+        let scoped =
+            "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($5::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($6::text[])))"
+
+        let sql = actorQuery (actorColumns + "," + scoped)
+
+        let parameters =
+            Array.append
+                (actorParameters principal [])
+                [|
+                    box (
+                        Authority.readRoles principal |> List.map DurableNames.role |> List.toArray
+                    )
+                    box (
+                        Authority.invalidRoles principal
+                        |> List.map DurableNames.role
+                        |> List.toArray
+                    )
+                |]
+
+        sql, parameters
+
+    let private globalAuthority principal rows =
+        let actorRows =
+            rows
+            |> List.filter (fun row -> DatabaseSession.optional<Guid> 0 row |> Option.isSome)
+
+        let view = authorityRows principal actorRows
+
+        match actorRows with
+        | [] -> view
+        | first :: _ ->
+            { view with
+                HasScopedCases = DatabaseSession.value<bool> 4 first
+            }
+
     /// Global visibility and actor/grant facts belong to the same read snapshot, without a second round trip.
     let actorWithVisibility connection principal token =
         task {
-            let scoped =
-                "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($5::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($6::text[])))"
+            let sql, parameters = globalActorQuery principal
+            let! rows = DatabaseSession.rows connection sql parameters token
+            return globalAuthority principal rows
+        }
 
-            let sql = actorQuery (actorColumns + "," + scoped)
+    let globalReadFacts connection principal token =
+        task {
+            let actor, parameters = globalActorQuery principal
 
-            let parameters =
-                Array.append
-                    (actorParameters principal [])
-                    [|
-                        box (
-                            Authority.readRoles principal
-                            |> List.map DurableNames.role
-                            |> List.toArray
-                        )
-                        box (
-                            Authority.invalidRoles principal
-                            |> List.map DurableNames.role
-                            |> List.toArray
-                        )
-                    |]
+            let sql =
+                $"WITH current_mode AS MATERIALIZED(SELECT active,generation,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.generation,m.mode_count FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
 
             let! rows = DatabaseSession.rows connection sql parameters token
-            let view = authorityRows principal rows
+
+            let mode =
+                match rows with
+                | first :: _ when DatabaseSession.value<int64> 7 first = 1L ->
+                    RegisterMaintenance.create
+                        (DatabaseSession.value<bool> 5 first)
+                        (DatabaseSession.value<int64> 6 first)
+                    |> Result.defaultWith (fun _ ->
+                        raise (RecordCorruptException "Invalid register maintenance state."))
+                | _ ->
+                    raise (
+                        RecordCorruptException "Register maintenance state is absent or duplicated."
+                    )
 
             return
-                match rows with
-                | [] -> view
-                | first :: _ ->
-                    { view with
-                        HasScopedCases = DatabaseSession.value<bool> 4 first
-                    }
+                {
+                    GlobalReadFacts.Authority = globalAuthority principal rows
+                    Maintenance = mode
+                }
         }
 
     let operationCases entry =

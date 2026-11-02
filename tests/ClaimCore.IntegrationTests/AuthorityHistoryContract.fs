@@ -246,6 +246,10 @@ let private changingHistory (fixture: Fixture) change =
                                     { new IReadTx with
                                         member _.ObservedAt = tx.ObservedAt
                                         member _.Maintenance() = tx.Maintenance()
+
+                                        member _.GlobalReadFacts principal =
+                                            tx.GlobalReadFacts principal
+
                                         member _.Authority query = tx.Authority query
 
                                         member _.AuthorityCases(principal, ids) =
