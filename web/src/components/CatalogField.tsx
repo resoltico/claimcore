@@ -29,11 +29,11 @@ const isCode = (field: FieldCatalogEntry) =>
   (field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined);
 
 const ScalarControl = ({ field, name }: { field: FieldCatalogEntry; name: string }) =>
-  field.scalar.kind === "PLAIN_TEXT" && field.scalar.allowsLineFeed ? (
+  field.scalar.kind === "PLAIN_TEXT" ? (
     <TextArea
       name={name}
       data-field-name={field.name}
-      rows={5}
+      rows={field.scalar.allowsLineFeed ? 5 : 1}
       autoCapitalize="off"
       spellCheck
       dir="auto"
@@ -48,7 +48,7 @@ const ScalarControl = ({ field, name }: { field: FieldCatalogEntry; name: string
       inputMode={field.scalar.kind === "AMOUNT" ? "decimal" : "text"}
       autoCapitalize="off"
       spellCheck={false}
-      dir={field.scalar.kind === "TEXT" || field.scalar.kind === "PLAIN_TEXT" ? "auto" : "ltr"}
+      dir={field.scalar.kind === "TEXT" ? "auto" : "ltr"}
       autoComplete="off"
     />
   );

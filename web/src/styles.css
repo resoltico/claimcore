@@ -181,6 +181,10 @@ button:disabled {
 }
 
 .text-field input,
+.text-field textarea,
+.work-queue input[type="search"],
+.work-queue select,
+.case-reminders select,
 .lookup input,
 .operation-editor select,
 .authority-panel select,

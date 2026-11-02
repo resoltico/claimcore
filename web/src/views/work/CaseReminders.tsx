@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import type { OperationReceipt, ReminderReadModel, CaseWorkView } from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
@@ -36,18 +36,27 @@ export const CaseReminders = ({
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
   const [recorded, setRecorded] = useState<"WORK" | "REMINDER" | null>(null);
-  const returnFocus = useRef<HTMLElement | null>(null);
+  const returnFocus = useRef<string | null>(null);
+  const focusPending = useRef(false);
+  useEffect(() => {
+    if (editor === null && focusPending.current) {
+      const target =
+        returnFocus.current === null ? null : document.getElementById(returnFocus.current);
+      (target ?? document.getElementById("case-detail-title"))?.focus();
+      focusPending.current = false;
+    }
+  }, [editor]);
   const target = useMemo(() => ({ kind: "ID" as const, caseId: current.caseId }), [current.caseId]);
   const filter = useMemo(() => ({ state, includeInactive: true }), [state]);
   const open = (next: Editor) => {
     returnFocus.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+      document.activeElement instanceof HTMLElement ? document.activeElement.id : null;
     setRecorded(null);
     setEditor(next);
   };
   const close = () => {
     setEditor(null);
-    returnFocus.current?.focus();
+    focusPending.current = true;
   };
   const accepted = (receipt: OperationReceipt) => {
     if (receipt.subject.kind !== "WORK" && receipt.subject.kind !== "REMINDER") {
@@ -56,6 +65,7 @@ export const CaseReminders = ({
     setRecorded(receipt.subject.kind);
     setRefresh((value) => value + 1);
     setEditor(null);
+    focusPending.current = true;
     onChanged();
   };
   if (!disclosureAvailable && editor === null) {
@@ -95,7 +105,7 @@ export const CaseReminders = ({
         </>
       ) : null}
       {editor === null ? (
-        <section aria-labelledby="case-reminders-title">
+        <section className="case-reminders" aria-labelledby="case-reminders-title">
           <h2 id="case-reminders-title">{p.text("ui.reminders")}</h2>
           <label>
             {p.text("ui.reminderState")}

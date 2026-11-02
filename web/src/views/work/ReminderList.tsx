@@ -91,6 +91,7 @@ export const ReminderList = ({
                     .filter((kind) => row.acts.includes(kind))
                     .map((kind) => (
                       <button
+                        id={`reminder-${row.reminder.reminderId}-${kind}`}
                         key={kind}
                         type="button"
                         onClick={() => {

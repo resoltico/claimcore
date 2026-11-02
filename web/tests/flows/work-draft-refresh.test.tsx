@@ -58,4 +58,7 @@ it("retains a work draft through same-owner session refresh while masking the un
     "private work draft\nثانٍ",
   );
   expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
+  await user.click(screen.getByRole("button", { name: "Back to case" }));
+  await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
+  expect(await screen.findByRole("button", { name: "Update case work" })).toHaveFocus();
 });

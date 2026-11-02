@@ -126,6 +126,7 @@ it("rejects plausible compound effects with wrong causal identity state parent r
 it("checks the advisory compound pair independently of mere schema parsing", () => {
   const subject = {
     kind: "REMINDER",
+    parent: { caseId, caseReference: "REF-1", revision: 99 },
     caseId,
     caseReference: "REF-1",
     before: { ...completed.snapshot.view, revision: 3, state: "PENDING" },
@@ -137,6 +138,18 @@ it("checks the advisory compound pair independently of mere schema parsing", () 
   };
   const answer = { operationId, outcome: { kind: "REVIEWED", data: { review: { subject } } } };
   expect(replyCorrelates("operation.preview", command, answer)).toBe(true);
+  expect(
+    replyCorrelates("operation.preview", command, {
+      ...answer,
+      outcome: {
+        kind: "REVIEWED",
+        data: {
+          review: { subject: { ...subject, parent: { ...subject.parent, caseId: otherId } } },
+        },
+      },
+    }),
+  ).toBe(false);
+
   expect(
     replyCorrelates("operation.preview", command, {
       ...answer,

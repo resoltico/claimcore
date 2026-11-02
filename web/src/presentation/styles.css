@@ -175,3 +175,16 @@
   border-inline-start: 0.25rem solid var(--color-danger);
   padding-inline-start: 0.75rem;
 }
+
+.case-work dl > div:has(.plain-text-value) {
+  flex-basis: 100%;
+  min-inline-size: 0;
+}
+.work-queue-filters {
+  display: grid;
+  gap: var(--space-3);
+}
+
+.text-field textarea[rows="1"] {
+  min-block-size: var(--target-primary);
+}

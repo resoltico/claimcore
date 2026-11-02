@@ -207,10 +207,26 @@ const readTargetMatches = (
   if (endpoint === "reminder.list") {
     return reminderPageTargetMatches(request, data);
   }
+  if (endpoint === "reminder.get") {
+    const row = object(data["item"]);
+    const reminder = object(row["reminder"]);
+    return (
+      caseTargetMatches(request, { ...reminder, caseReference: row["caseReference"] }) &&
+      sameIdentity(request["reminderId"], reminder["reminderId"])
+    );
+  }
   return (
     endpoint !== "authority.grants" ||
     sameIdentity(request["actorId"], object(data["actor"])["actorId"])
   );
+};
+const previewParentMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+  parentId: unknown,
+): boolean => {
+  const parent = object(subject["parent"]);
+  return sameIdentity(parent["caseId"], parentId) && caseTargetMatches(request, parent);
 };
 const previewWorkMatches = (
   request: Record<string, unknown>,
@@ -222,7 +238,8 @@ const previewWorkMatches = (
     caseTargetMatches(request, { ...proposed, caseReference: subject["caseReference"] }) &&
     before["revision"] === request["expectedRevision"] &&
     nextRevision(before["revision"], proposed["revision"]) &&
-    sameIdentity(before["caseId"], proposed["caseId"])
+    sameIdentity(before["caseId"], proposed["caseId"]) &&
+    previewParentMatches(request, subject, before["caseId"])
   );
 };
 const createdReminderMatches = (
@@ -269,7 +286,10 @@ const previewReminderMatches = (
   request: Record<string, unknown>,
   subject: Record<string, unknown>,
 ): boolean => {
-  if (!caseTargetMatches(request, subject)) {
+  if (
+    !caseTargetMatches(request, subject) ||
+    !previewParentMatches(request, subject, subject["caseId"])
+  ) {
     return false;
   }
   const act = object(request["act"]);

@@ -1,5 +1,6 @@
+import { useEndpointCache } from "../../hooks/EndpointProvider";
 import type { WorkOverview as WorkOverviewData } from "@contracts/client";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { usePresentation } from "../../presentation/context";
@@ -25,6 +26,21 @@ const useWorkRefresh = (reload: () => void, enabled: boolean) => {
       window.clearInterval(timer);
     };
   }, [reload, enabled]);
+};
+/** A newly observed server business day refreshes date-dependent panes without inventing local dates. */
+const useBusinessDayObservation = (value: WorkOverviewData | null) => {
+  const date = value?.basis.businessDate ?? null;
+  const cache = useEndpointCache();
+  const previous = useRef<string | null>(null);
+  useEffect(() => {
+    if (date !== null) {
+      const changed = previous.current !== null && previous.current !== date;
+      previous.current = date;
+      if (changed) {
+        cache?.invalidate();
+      }
+    }
+  }, [date, cache]);
 };
 const OverviewValues = ({ value }: { value: WorkOverviewData }) => {
   const p = usePresentation();
@@ -68,13 +84,14 @@ export const WorkOverview = ({ mine = false }: { mine?: boolean }) => {
   const enabled = requester !== null && requester.views.includes("CASES");
   const overview = useEndpoint("work.overview", mine ? { mine: true } : {}, enabled);
   useWorkRefresh(overview.reload, enabled);
-  if (!enabled) {
-    return null;
-  }
   const value =
     !overview.loading && overview.value?.outcome.kind === "SUCCEEDED"
       ? overview.value.outcome.data
       : null;
+  useBusinessDayObservation(value);
+  if (!enabled) {
+    return null;
+  }
   return (
     <section className="work-overview" aria-labelledby={titleId} aria-busy={overview.loading}>
       <div className="section-heading">
