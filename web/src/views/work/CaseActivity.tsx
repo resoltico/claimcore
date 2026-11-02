@@ -69,6 +69,7 @@ export const CaseActivity = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loadingHistory")}</p> : null}
+      <p className="observation-basis">{p.text("ui.liveWorkPages")}</p>
       <ol>
         {result.items.map((event) => {
           const entry = productMetadata.catalog.entries.find(
@@ -91,7 +92,8 @@ export const CaseActivity = ({
                   {p.text("ui.recordedBy")}: <IdentifierValue value={event.recordedBy} />
                 </p>
                 <IdentifierValue value={event.operationId} />
-                <p>{p.integer(event.subject.revision)}</p>
+                <p>{p.text(event.subject.kind === "WORK" ? "ui.workRevision" : event.subject.kind === "REMINDER" ? "ui.reminderRevision" : "ui.revision", {revision:p.integer(event.subject.revision)})}</p>
+                {event.subject.kind === "REMINDER" ? <><IdentifierValue value={event.subject.reminderId} />{event.subject.next === null ? null : <p><IdentifierValue value={event.subject.next.reminderId} /> · {p.text("ui.reminderRevision",{revision:p.integer(event.subject.next.revision)})}</p>}</> : null}
               </details>
               {event.detail === null || entry === undefined ? null : (
                 <ProtocolSummary value={event.detail} entry={entry} />
