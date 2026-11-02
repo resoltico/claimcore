@@ -23,7 +23,7 @@ Its [project boundaries](docs/contributing.md#project-boundaries) and
 
 | Task | Guide |
 | --- | --- |
-| Record and correct case facts | [Case work](docs/case-work.md) |
+| Plan work, record and correct case facts | [Case work](docs/case-work.md) |
 | Host, administer, back up or restore an installation | [Operating](docs/operating.md) |
 | Connect a client or automate work | [Integrating](docs/integrating.md) |
 | Find a CLI verb or flag | [Generated CLI reference](docs/cli.md) |

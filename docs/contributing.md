@@ -231,8 +231,8 @@ the implementation. Keep those source cases independent of production codecs and
 [transport boundary rules](../web/browser-transport-lint.config.ts). Maintained import rules separate
 presentation from request coordination and reject computed imports there. The strict composite
 [protocol project](../web/tsconfig.protocol.json) uses ES2024, no ambient package types and a closed source
-manifest. Its explicit JSON inputs include contract-owned locale data; portable encoding/clone
-declarations support the byte boundary without enabling DOM or Node types. Pure DTOs live under protocol.
+manifest. Its explicit JSON inputs are the generated contract artifacts; full language catalogs load through
+presentation. Portable encoding/clone declarations support the byte boundary without DOM or Node types. Pure DTOs live under protocol.
 React, DOM, Node and outside source imports must fail that project. Browser and test projects still check
 actual platform declarations. The app-only build references the strict protocol project, whose declarations
 are emitted only into the ignored Node cache; whole-solution typecheck includes test and e2e sources.
@@ -421,7 +421,8 @@ their workload inputs and fingerprints. The authority workloads have their own d
 After those common measurements, one open case per thousand receives explicit responsibility and a past
 follow-up based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
 independently named cases, account identity, dates and counts before recording their separate latency
-samples. These feature workloads have their own fingerprints; older references without them yield no ratio.
+samples. These feature workloads have their own fingerprints; a reference without a matching workload
+yields no ratio.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements

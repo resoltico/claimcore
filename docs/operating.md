@@ -187,6 +187,11 @@ correlation UUID, phase, classification and at most eight adapter method identif
 data, SQL/provider details, credentials, principals, references and payloads are excluded. Collector
 failures cannot replace a confirmed transaction result or prevent remaining provider cleanup.
 
+The host's framework logger emits only Error/Critical exceptions, using exception type and method names
+without source locations. It ignores framework message/state formatting. Request failures use the same
+safe exception representation; routine request records remain separate. These diagnostics contain no
+exception messages, request bodies, headers or connection values.
+
 Counters restart with the process; they are operational observations, not a ledger inventory.
 
 | Instrument | Unit | Tags |

@@ -8,7 +8,8 @@ it does not adjudicate coverage or transfer money. Start with the Cases worklist
 
 Choose a saved view, search, or combine lifecycle, status and progress filters. Open and undecided means
 ACTIVE + OPENED + UNDECIDED; Decided and unpaid means ACTIVE + DECIDED. Recently changed orders by the last
-accepted change. Closed and Voided select their respective status or lifecycle; All clears the filters.
+accepted change. Closed and Voided select their respective status or lifecycle; All accessible clears
+the filters. My cases, Unassigned, Due today and Overdue select explicit case-work facts.
 
 Search finds substrings in the reference, claimant and insurer. It applies Unicode compatibility
 normalization and invariant lowercase to both stored text and queries. Percent, underscore and backslash
@@ -37,19 +38,33 @@ rather than the browser clock. `--order notified` still orders by the current no
 
 `claimcore case summary` uses the same filters to count lifecycle, status and progress and to sum
 claimed and payable amounts per currency. Counts remain inside the selected filter. Voided facts
-contribute when selected; erased cases contribute only to lifecycle counts. Totals are exact, with
-no rounding or currency conversion.
+contribute when selected. Erased cases contribute to total, lifecycle and inactive-due counts, with no
+status, progress, assignment or money. Totals are exact, with no rounding or currency conversion.
 
 The browser keeps responsibility and due filters in the URL. Summary counts include those dimensions
 inside the selected filter. Totals and the loaded page may come from different observations and display
 their own date basis. Row age uses the page's business date.
 
+## Web case navigation
+
+The Cases queue and accepted operations open `/cases/id/CASE-ID`. These canonical links retain case
+identity independently of how its reference looks. Exact reference lookup uses
+`/cases/reference/REFERENCE` with an encoded reference segment, including UUID-shaped references.
+The two selectors remain distinct through reads, history and editing; a UUID-shaped reference is never
+inferred to be a CaseId. Task links append `/acts/ACT` to the selected route; actions use the admitted
+case identity.
+
+The case workspace groups current facts, case work, decision/payment and history. Its primary action is
+chosen from the actual offered tasks; closed and voided cases do not automatically recommend reopening.
+Technical details keep copyable CaseId and revision available. Targeted edits and review preserve raw
+entry context, exact canonical values and the authored expected revision.
+
 ## Plan case work
 
 UPDATE_WORK changes responsibility, follow-up, or both atomically while a case is active and open.
 Each field is independently set or cleared; omission leaves it unchanged. At least one field must change.
-A human CASE_HANDLER with case access can manage work. Service handlers keep their existing business
-rights but cannot manage responsibility or follow-up.
+A human CASE_HANDLER with case access can manage work. Service handlers can register, decide and close
+within their grants, but cannot manage responsibility or follow-up.
 
 The case-scoped candidate picker discloses only eligible human accounts' subject and ActorId, in bounded
 pages. A selected account must still be enabled and hold both case-read and case-work rights when the
@@ -60,7 +75,7 @@ Erasure removes work with the other business payloads.
 
 ## Open a case
 
-Choose OPEN when it is offered, then supply the reference and every registration value: incident date,
+Choose **Open a case** when it is offered, then supply the reference and every registration value: incident date,
 this handler's first notification date, incident country, claimant, responsible insurer, claimed amount
 and currency. Review the proposed facts and confirm to record revision one. Acceptance returns to the case
 page with a notice naming the act and revision. Status begins OPENED;
@@ -138,6 +153,20 @@ form before confirmation. Language, display locale and theme are separate presen
 suspicious-Unicode warnings do not rewrite authored values. Navigation is locked while a mutation is in
 flight. Follow [delivery recovery](integrating.md#delivery-recovery) if submission or reload is interrupted.
 
+## Recover an uncertain result
+
+Open Recovery to inspect this actor's attempts in the current installation. **Check operation status** is
+read-only: accepted, final nonacceptance and unresolved are different results. Unresolved does not mean
+rejected. **Send again**, when offered in the active editor, uses the exact in-memory reviewed request.
+
+**Settle operation permanently** is a separate confirmed write. It records nonacceptance only if the
+operation has not been accepted, permanently blocking that actor/operation pair. Do not use it merely to
+refresh status. A valid registered actor can use Recovery without case or Access roles.
+
+Reloading or closing a tab retains committed identity-only recovery records, not the business request.
+The interface asks before discarding an undiscarded draft or in-memory retry. Follow
+[delivery recovery](integrating.md#delivery-recovery) for result meanings, storage failures and CLI steps.
+
 ## Business record
 
 The [business-field declaration](../src/ClaimCore.Domain/CaseFields.fs) owns each field's kind, group and
@@ -152,7 +181,7 @@ The `work` section holds independently optional responsibility and follow-up fac
 are in [MoneyValues](../src/ClaimCore.Domain/MoneyValues.fs). The
 [validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns failures to input targets. Retained
 reads and verification enforce permanent format/state invariants without applying today's admission to
-old assertions. Unchanged retained names and dates may be reaffirmed.
+retained assertions. Accepted names and dates may be reaffirmed without asserting a different value.
 
 Dates are real YYYY-MM-DD values in years 0001–9999. Recorded dates follow incident ≤ notification ≤
 decision ≤ payment. Planned follow-up dates may be in the future. Newly asserted event dates cannot exceed the business date derived from the database
@@ -192,17 +221,3 @@ are not inferred; an unavailable comparison is shown as unavailable.
 
 History follows the current summary/full disclosure modes. Superseded snapshots need full-history rights;
 current case access alone does not grant them. See the [glossary](glossary.md) for project terms.
-
-## Web case navigation
-
-The Cases queue and accepted operations open `/cases/id/CASE-ID`. These canonical links retain case
-identity independently of how its reference looks. Exact reference lookup uses
-`/cases/reference/REFERENCE` with an encoded reference segment, including UUID-shaped references.
-The two selectors remain distinct through reads, history and editing; a UUID-shaped reference is never
-inferred to be a CaseId. Update bookmarks that used the former unqualified reference path. Task links add
-`/acts/ACT` to the selected route, and actual case actions use the admitted case identity.
-
-The case workspace groups current facts, case work, decision/payment and history. Its primary action is
-chosen from the actual offered tasks; closed and voided cases do not automatically recommend reopening.
-Technical details keep copyable CaseId and revision available. Targeted edits and review preserve raw
-entry context, exact canonical values and the authored expected revision.

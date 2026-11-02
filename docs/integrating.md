@@ -8,7 +8,7 @@ defines terms.
 Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
 References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
 reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
-Case request, snapshot and ledger entry records support format 3. Authority and control records retain format 2. Installation initialization
+Case request, snapshot and ledger entry records support format 3. Authority and control records use format 2. Installation initialization
 requires the declared SQL baseline; schema conversion and compatibility readers are not supported.
 
 Case reads/history and case operations use a tagged `target`: either
@@ -20,7 +20,7 @@ uses the resolved CaseId; changing selector form cannot redirect an existing ope
 
 Case-scoped authority inputs use `scope: {"kind":"CASE","target": SELECTOR}`. Published grant scopes
 and retained authority records carry both CaseId and immutable creation reference. CLI/browser lookup
-forms remain reference-based; dynamic `call` and HTTP inputs also support ID selectors.
+forms accept references; case links use CaseIds. Dynamic `call` and HTTP inputs accept either selector.
 
 Disclosed case fields include the core-supplied `progress` value. Clients render it directly, along with
 core review changes and correction choices. CLI reviews consume the supplied changes and lifecycle
@@ -59,9 +59,9 @@ CLI human output uses translated labels; machine frames retain exact wire tokens
 The catalog's `roles` declares `admittedPrincipalKinds` and `admittedScopes` from Domain admission policy.
 Its `capabilities` separately declares principal-kind and scope applicability. OWNER admits installation
 scope only; a role is meaningful at a scope when at least one of its capabilities applies there.
-Use this metadata for new grant choices and require an explicit role. Revocation remains available for
-recognized grants that would no longer be admitted. Disabled targets and overlapping meaningful grants
-remain admissible. Execution independently checks current authority and action state.
+Use this metadata for grant choices and require an explicit role. Recognized grants remain revocable
+even when their role/scope combination is not admissible for a grant. Disabled targets and overlapping
+meaningful grants remain admissible. Execution independently checks current authority and action state.
 
 Authority previews include `accessScope` and before/after `access` explanations. Each capability identifies
 its direct and installation-derived role sources and whether it is currently effective. Disabled actors
@@ -101,7 +101,7 @@ consumers do not infer a family by trying prefixes. Authored principal fields ar
 principal outputs. Stored identity-token decoding belongs to storage adapters; corruption is an integrity
 fault, never a request-correction refusal.
 
-HTTP replies carry `outcome`; preview, execution, observe and resolve echo `operationId`. Receipts contain shared
+HTTP replies carry `outcome`; preview, execution, observe, status and resolve echo `operationId`. Receipts contain shared
 acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
 [host failure policy](../src/ClaimCore.Protocol/Wire/HostFailures.fs).
@@ -114,8 +114,8 @@ The command-line tools share version/help codecs and one typed usage-error vocab
 owns its supported exit-code subset. Database `USAGE_ERROR.issue` is a structured issue with applicable
 syntax in `usage`; scripts must read the issue kind and its declared fields. HELP and VERSION use kind tags.
 The [exit-code reference](cli.md#exit-codes) lists the numeric codes supported by each executable.
-Execute `OUTCOME_UNKNOWN` is a distinct outcome with exit 4; preserve its exact retry frame and use final
-resolution rather than treating it as a known failure.
+Execute `OUTCOME_UNKNOWN` is a distinct outcome with exit 4; preserve its exact retry frame and use passive
+status or deliberate settlement as described in [delivery recovery](#delivery-recovery).
 
 ## CLI use
 
@@ -168,7 +168,7 @@ and refresh tokens remain in memory. After 15 idle minutes at a command or confi
 tokens are discarded; the next authenticated action signs in again. Refresh failure also starts browser
 sign-in again. `exit`, EOF and SIGTERM discard tokens. Ctrl-C cancels the current command and returns
 to the prompt; a second Ctrl-C at an empty prompt exits. Outcomes use stdout; prompts and each command's
-exit code use stderr. Exit 4 prints the frozen retry frame and resolve command, then the shell continues.
+exit code use stderr. Exit 4 prints the frozen retry frame and recovery guidance, then the shell continues.
 Interactive review requires terminal stdout. `call` returns one result; NDJSON `session` stops on
 uncertain delivery or cancellation.
 
@@ -277,7 +277,6 @@ it cannot create a payment. Omitted and unchanged accepted values retain their m
 use current admission. Empty partial updates, null required facts, half money and unknown members
 refuse. A correction cannot add missing groups or create a no-op revision. Revision conflicts require
 fresh intent. Chronology diagnostics identify the asserted field and carry typed counterpart context.
-The old whole-group partial-update shapes and REPLACE tags for registration/decision are refused.
 
 Case-list continuations use format 5; assignee continuations use format 1; other continuations use
 format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
@@ -295,7 +294,8 @@ CRLF line endings and RFC 4180 quoting, and writes one header row of actual qual
 CSV is a spreadsheet-safe export: a cell beginning with `=`, `+`, `-`, `@`, TAB or CR, or with one of
 those triggers after leading spaces/TABs, receives an apostrophe before RFC 4180 quoting. This rule
 applies to every column and alters affected cells. Use `--format json` when exact values are required;
-JSON and text output retain authored values.
+JSON preserves exact authored values. Human text visibly escapes terminal controls, line separators,
+directional formatting and literal backslashes; see [CLI text output](cli.md).
 The header order is:
 
 ```text
@@ -316,11 +316,15 @@ implicitly retries a prepared client request.
 
 ## Browser routes and presentation
 
-The browser supports worklist URLs under `/cases`, case links under `/cases/:reference`, act editors at
-`/cases/:reference/acts/:act`, operation lookup under `/operations/:operationId`, and authority actor links
-under `/authority/:actorId`. `/cases/new` opens a new case. Worklist query parameters carry selected view,
-filters, search and order; page cursors are not stored in the URL. Back/forward, reload and sign-in return
-preserve the intended same-origin path.
+The browser has three authorized areas: Cases (`/cases`), Recovery (`/operations`) and Access
+(`/authority`). Canonical case links use `/cases/id/CASE-ID`; exact reference links use
+`/cases/reference/REFERENCE`. Editors append `/acts/ACT` to either selector route. `/cases/new` opens a
+case, `/operations/OPERATION-ID` selects a general receipt lookup, and `/authority/ACTOR-ID` selects an actor.
+
+Worklist query parameters carry selected view, filters, search and order; page cursors are not stored in
+the URL. Back/forward, reload and sign-in return preserve the same-origin path. Returning from case
+inspection restores the live work query, scroll position and invoking control when available; a missing
+row falls back to the area heading. Navigation state stores no business payload.
 
 `/authority?tab=history` shows installation authority history; adding `?tab=history` to an actor detail
 filters by that actor. Unknown routes keep their URL and render a localized not-found page without an API
@@ -328,10 +332,11 @@ request. Browser history uses the installation zone and selected locale, retaini
 entry details. Links to authority details appear only for authority readers.
 
 Use the client's link builder for exact references. Ordinary reference segments use `encodeURIComponent`:
-`A/B` becomes `/cases/A%2FB`. Exact `new`, `.` and `..`, and references beginning with `~`, instead use a
-`~` prefix followed by unpadded base64url of the UTF-8 reference. Examples are `/cases/~bmV3` for `new`,
-`/cases/~Lg` for `.`, `/cases/~Li4` for `..` and `/cases/~fg` for `~`. `NEW` remains `/cases/NEW`. This
-avoids route keywords, dot-segment normalization and prefix collisions without changing case identity.
+`A/B` becomes `/cases/reference/A%2FB`. Exact `.` and `..`, and references beginning with `~`, use a
+`~` prefix followed by unpadded base64url of the UTF-8 reference: `/cases/reference/~Lg`,
+`/cases/reference/~Li4` and `/cases/reference/~fg`. The reference `new` uses `/cases/reference/new`.
+This avoids dot-segment normalization and prefix collisions. A UUID-shaped reference stays a reference;
+only the explicit `/cases/id/` route selects by CaseId.
 
 The actor directory uses a labelled table on desktop and compact cards on mobile, with kind, subject,
 enabled state and a count from the selected actor's fully loaded grant pages. Partial pages, reloads
@@ -368,7 +373,7 @@ and takes no ledger-head write lock. An unresolved status never establishes nona
 
 `operation.resolve` is the deliberate ordered settlement write: it returns the author's accepted receipt
 with current disclosure or records permanent actor/ID nonacceptance. The CLI names this command
-`operation settle OPERATION_ID`; the former `operation resolve` verb is refused. Final settlement blocks
+`operation settle OPERATION_ID`. Final settlement blocks
 delayed acceptance by that actor; foreign acceptance is neither revealed nor changed. After a lost reply,
 inspect status before deciding whether to settle again. After final nonacceptance, load current state and
 prepare a new operation with a new ID. Human interactive settlement identifies the exact operation and
@@ -411,10 +416,12 @@ The native client publishes private per-attempt files under `$XDG_STATE_HOME/cla
 current authenticated service/installation/actor scope. `claimcore recovery check ATTEMPT_ID` reads status;
 `claimcore recovery settle ATTEMPT_ID` explicitly requests permanent settlement. Text is the default;
 `--format json` preserves machine output, and `--language en|lv|ar` selects text. Interactive mode requires
-terminal confirmation for settlement; automation must explicitly choose `settle`. The former recovery
-`resolve` command is refused. Only complete correlated accepted/final results can clear the selected owned
-record. Unresolved/error/stale replies and storage failures retain identity; a cleanup failure does not
-hide the known server result. `claimcore schema recovery` describes the unchanged identity-only listing. Prepared retry frames retain their original installation binding. Clients refuse a prepared request whose installation binding differs from authenticated context.
+terminal confirmation for settlement; automation must explicitly choose `settle`. Only complete
+correlated accepted/final results can clear the selected owned record. Unresolved/error/stale replies and storage failures retain identity; a cleanup failure does not
+hide the known server result. `claimcore schema recovery` describes the identity-only listing. Prepared
+retry frames retain their
+installation binding. Clients refuse a prepared request whose installation binding differs from
+authenticated context.
 
 ## Disclosure and cursors
 
