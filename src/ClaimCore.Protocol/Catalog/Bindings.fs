@@ -106,6 +106,7 @@ module Bindings =
                 Value = value
                 Branches = position.Branches
                 Vocabulary = position.Vocabulary
+                RequiresParent = not position.Required
             }
 
     let private branch definitions tag (token, target) =
@@ -140,12 +141,7 @@ module Bindings =
                     (definition definitions name)
             | Schema.Object(properties, optional) -> objects position properties optional
             | Schema.OneOf(_, Some(tag, mapping)) -> tagged position tag mapping
-            | Schema.OneOf([ Schema.String _; Schema.Null ], None)
-            | Schema.OneOf([ Schema.Null; Schema.String _ ], None) ->
-                [ input position BindingKind.Text schema ]
-            | Schema.OneOf(cases, None) ->
-                input position (BindingKind.Choice(vocabulary position, enumTokens cases)) schema
-                |> List.singleton
+            | Schema.OneOf(cases, None) -> untagged position cases schema
             | Schema.String _ -> [ input position BindingKind.Text schema ]
             | Schema.Integer _ -> [ input position BindingKind.Integer schema ]
             | Schema.Boolean -> [ input position BindingKind.Boolean schema ]
@@ -154,6 +150,18 @@ module Bindings =
                 let name, choices = finiteChoices definitions items
                 [ input position (BindingKind.Choices(name, choices)) schema ]
             | Schema.Null -> refuse "request input is not a finite scalar or tagged object"
+
+        and untagged position cases schema =
+            match cases with
+            | [ Schema.String _; Schema.Null ]
+            | [ Schema.Null; Schema.String _ ] -> [ input position BindingKind.Text schema ]
+            | _ ->
+                [
+                    input
+                        position
+                        (BindingKind.Choice(vocabulary position, enumTokens cases))
+                        schema
+                ]
 
         and objects position properties optional =
             properties
@@ -359,6 +367,7 @@ module Bindings =
                                     Value = value
                                     Branches = input.Branches
                                     Vocabulary = BindingKind.vocabulary input.Kind
+                                    RequiresParent = false
                                 }
                             ]
                         | None -> inputs @ [ bindInput annotation input ], constants)

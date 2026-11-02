@@ -49,6 +49,7 @@
   "cli.text.authorityHistoryEmpty": "لا توجد تغييرات صلاحيات مطابقة لهذا الاختيار.",
   "cli.text.code": "الرمز",
   "cli.text.cursorReached": "توقف عند المؤشر {cursor}.",
+  "cli.text.editorCleanupUnavailable": "تعذر حذف نص المحرر الخاص. لم يحضر أي طلب. راجع الملفات المؤقتة المحلية قبل إعادة المحاولة.",
   "cli.text.grants": "الأدوار",
   "cli.text.next": "التالي",
   "cli.text.recoveryAttempt": "المحاولة {attemptId}: {subject} {act}؛ العملية {operationId}.",

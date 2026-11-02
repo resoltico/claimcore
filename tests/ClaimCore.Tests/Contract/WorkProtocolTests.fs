@@ -139,3 +139,48 @@ let tests =
                 Expect.isFalse summary.Binding.Required "Omission keeps"
                 Expect.isFalse summary.Binding.WireRequired "Not an invented required field")
         ]
+
+[<Tests>]
+let optionalSelector =
+    testCase "optional reminder selector is absent until its reference is authored" (fun () ->
+        let operation = CatalogOperation.Query QueryEndpoint.ReminderList
+        let _, constants = OperationCatalog.derive operation
+
+        let selector =
+            constants |> List.find (fun value -> value.Path = [ "target"; "kind" ])
+
+        Expect.isTrue selector.RequiresParent "Optional parent is a codec-owned condition"
+
+        let prepared =
+            ClaimCore.Cli.Grammar.prepare
+                (fun () -> operation.ToString())
+                [ "reminder"; "list"; "--limit"; "5" ]
+            |> accepted
+
+        match ClaimCore.Cli.Frames.value Api.reminders prepared.Invocation with
+        | Some value -> Expect.isNone value.Target "Global queue does not invent a target"
+        | None -> failtest "Expected queue request")
+
+[<Tests>]
+let causalReceipts =
+    testCase "bounded compound receipts reject structurally valid wrong causal effects" (fun () ->
+        let path =
+            System.IO.Path.Combine(
+                ClaimCore.TestSupport.RepositoryRoot.find (),
+                "tests/fixtures/reminder-receipt-controls.json"
+            )
+
+        use document = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllText path)
+        let cases = document.RootElement.GetProperty("cases").EnumerateArray() |> Seq.toList
+        Expect.hasLength cases 4 "One positive and three intended corruption controls"
+
+        for case in cases do
+            let actual =
+                Api.operationExecute.Output.Read
+                    "$"
+                    (json (case.GetProperty("value").GetRawText()))
+
+            Expect.equal
+                (Result.isOk actual)
+                (case.GetProperty("valid").GetBoolean())
+                (case.GetProperty("name").GetString()))

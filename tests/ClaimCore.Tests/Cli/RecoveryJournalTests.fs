@@ -210,3 +210,104 @@ let processTermination =
                 child.WaitForExit(5000) |> ignore
         finally
             owned.Delete true)
+
+[<Tests>]
+let strictFamilies =
+    testList
+        "native recovery family correlation"
+        [
+            testCase
+                "restart recovery must match the retained operation family and action"
+                (fun () ->
+                    let identity =
+                        { record "10000000-0000-4000-8000-000000000004" with
+                            Subject = "REMINDER"
+                            Act = "COMPLETE_AND_PLAN_NEXT"
+                        }
+
+                    let operation =
+                        ClaimCore.Domain.OperationId.create identity.OperationId |> Option.get
+
+                    let version id revision : ClaimCore.Application.Contracts.ReminderVersion =
+                        {
+                            ReminderId = ClaimCore.Domain.ReminderId.create id |> Option.get
+                            Revision = ClaimCore.Domain.Revision.create revision |> Option.get
+                            Snapshot = ClaimCore.Application.Contracts.ReminderDisclosure.Withheld
+                        }
+
+                    let receipt =
+                        { CliReplyFixtures.receipt with
+                            OperationId = operation
+                            Subject =
+                                ClaimCore.Application.Contracts.ReceiptSubject.Reminder
+                                    {
+                                        CaseId =
+                                            ClaimCore.Domain.CaseId.create (
+                                                Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                            )
+                                            |> Option.get
+                                        Reference =
+                                            ClaimCore.Domain.CaseReference.parse "R-1"
+                                            |> Result.defaultWith (fun _ -> failtest "Reference")
+                                        Act = ClaimCore.Domain.ReminderActKind.CompleteAndPlanNext
+                                        Effects =
+                                            ClaimCore.Application.Contracts
+                                                .ReminderReceiptEffects.CompletedAndPlanned(
+                                                    version
+                                                        (Guid.Parse
+                                                            "30000000-0000-4000-8000-000000000001")
+                                                        4L,
+                                                    version identity.OperationId 1L
+                                                )
+                                    }
+                        }
+
+                    Expect.isTrue
+                        (RecoveryJournal.matchesReceipt identity receipt)
+                        "Correct bounded pair and family control"
+
+                    Expect.isFalse
+                        (RecoveryJournal.matchesReceipt
+                            { identity with
+                                Subject = "WORK"
+                                Act = "UPDATE_WORK"
+                            }
+                            receipt)
+                        "Same operation ID cannot clear another family"
+
+                    Expect.isFalse
+                        (RecoveryJournal.matchesReceipt { identity with Act = "COMPLETE" } receipt)
+                        "Same family must preserve the authored action"
+
+                    Expect.isFalse
+                        (RecoveryJournal.matchesReceipt
+                            { identity with
+                                OperationId = Guid.Parse "10000000-0000-4000-8000-000000000099"
+                            }
+                            receipt)
+                        "Foreign operation cannot clear this attempt")
+            testCase
+                "old journal format errors preserve the owned file for deliberate recovery"
+                (fun () ->
+                    let root = Directory.CreateTempSubdirectory "claimcore-journal-format-"
+
+                    try
+                        let directory = Path.Combine(root.FullName, "journal")
+                        let identity = record "10000000-0000-4000-8000-000000000004"
+
+                        Expect.isOk
+                            (RecoveryJournal.save directory identity)
+                            "Current format publishes"
+
+                        let path = Directory.GetFiles directory |> Array.exactlyOne
+                        let old = File.ReadAllText(path).Replace("\"format\":2", "\"format\":1")
+                        File.WriteAllText(path, old)
+
+                        Expect.isError
+                            (RecoveryJournal.list directory identity.Scope)
+                            "Old grammar is an actionable strict error"
+
+                        Expect.equal (File.ReadAllText path) old "No silent conversion or deletion"
+                    finally
+                        root.Delete true)
+        ]

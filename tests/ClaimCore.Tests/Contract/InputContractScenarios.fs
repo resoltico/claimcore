@@ -273,6 +273,8 @@ let internal authorityFieldPresentation () =
             InteractionInput.technical
             |> List.find (fun input -> InteractionInput.key input = name)
 
+        // This exhaustive owner table independently checks every semantic input namespace.
+        // fsharplint:disable-next-line CyclomaticComplexity
         let prefix =
             match identity with
             | InteractionInput.Target _ -> "field."

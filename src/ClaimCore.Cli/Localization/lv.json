@@ -49,6 +49,7 @@
   "cli.text.authorityHistoryEmpty": "Šai atlasei nav atbilstošu pilnvaru izmaiņu.",
   "cli.text.code": "Kods",
   "cli.text.cursorReached": "Apturēts pie kursora {cursor}.",
+  "cli.text.editorCleanupUnavailable": "Privātā redaktora teksta dzēšana neizdevās. Pieprasījums netika sagatavots. Pirms atkārtošanas pārbaudiet lokālos pagaidu failus.",
   "cli.text.grants": "Lomas",
   "cli.text.next": "Nākamais",
   "cli.text.recoveryAttempt": "Mēģinājums {attemptId}: {subject} {act}; darbība {operationId}.",
