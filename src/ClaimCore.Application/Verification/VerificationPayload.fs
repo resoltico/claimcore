@@ -12,6 +12,8 @@ type internal VerifiedPayload =
     | NonAcceptance of OperationId
     | Case of CaseCommand * CaseSnapshot option
     | Authority of AuthorityRequestRecord
+    | Work of WorkRequestRecord * CaseWorkSnapshot
+    | Reminder of ReminderRequestRecord * ReminderEffects
     | Erased
 
 /// Record-format interpretation deliberately excludes current admission and capability policy.
@@ -25,6 +27,8 @@ module internal VerificationPayload =
     let private case _installationId (entry: StoredEntry) (payload: LedgerPayload) =
         match entry.Subject with
         | EntryTarget.Authority _
+        | EntryTarget.Work _
+        | EntryTarget.Reminder _
         | EntryTarget.NonAcceptance _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, _) ->
@@ -88,7 +92,7 @@ module internal VerificationPayload =
 
     let read installationId (entry: StoredEntry) =
         match entry.Payload, entry.PayloadNonce, entry.Subject with
-        | None, None, EntryTarget.Case _ -> Ok VerifiedPayload.Erased
+        | None, None, (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _) -> Ok VerifiedPayload.Erased
         | Some bytes, Some nonce, _ ->
             result {
                 let! commitment =
@@ -117,5 +121,13 @@ module internal VerificationPayload =
                         |> Result.map (fun () -> VerifiedPayload.NonAcceptance operation)
                     | EntryTarget.Case _ -> case installationId entry payload
                     | EntryTarget.Authority(_, kind) -> authority entry kind payload
+                    | EntryTarget.Work subject ->
+                        match WorkRecord.decodeRequest payload.Request, WorkRecord.decodeSnapshot payload.Snapshot with
+                        | Ok request, Ok snapshot when request.OperationId = entry.OperationId && request.CaseId = subject.CaseId && snapshot.CaseId = subject.CaseId && snapshot.Revision = subject.Revision && Revision.value request.ExpectedRevision + 1L = Revision.value subject.Revision -> Ok(VerifiedPayload.Work(request, snapshot))
+                        | _ -> Error(problem entry.Sequence)
+                    | EntryTarget.Reminder subject ->
+                        match ReminderRecord.decodeRequest payload.Request, ReminderRecord.decodeEffects payload.Snapshot with
+                        | Ok request, Ok effects when request.OperationId = entry.OperationId && ReminderCommand.parent request.Command = subject.CaseId && ReminderCommand.target request.OperationId request.Command = subject.ReminderId && ReminderCommand.resultingRevision request.Command = subject.Revision && ReminderCommand.kind request.Command = subject.Act && HistoricalWorkEffects.boundedReminderRequest request effects -> Ok(VerifiedPayload.Reminder(request, effects))
+                        | _ -> Error(problem entry.Sequence)
             }
         | _ -> Error(problem entry.Sequence)

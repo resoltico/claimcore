@@ -12,7 +12,7 @@ module internal Resolution =
         operation
         (actor: AuthorityView)
         (entry: StoredEntry option)
-        (current: StoredCase option)
+        (current: ReceiptCurrent)
         =
         let installation = services.InstallationId
         let principal = services.Principal

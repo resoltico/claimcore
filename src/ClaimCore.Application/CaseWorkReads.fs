@@ -3,7 +3,7 @@ namespace ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-/// Labels and eligibility are current relation-scoped disclosure, never retained case facts.
+/// Current account labels/availability are batched for the page under its read snapshot.
 module internal CaseWorkReads =
     let basis (services: ServiceContext) observed =
         {
@@ -12,62 +12,50 @@ module internal CaseWorkReads =
             TimeZoneId = services.Calendar.TimeZoneId
         }
 
-    let view (tx: IReadTx) basis (record: StoredCase) =
+    let views (tx: IReadTx) basis (records: StoredCase list) =
         task {
-            let fields = CaseState.fields record.Snapshot.State
-            let work = fields |> Option.map _.Work |> Option.defaultValue CaseWork.empty
+            let! summaries = tx.WorkSummaries(records |> List.map _.CaseId, basis.BusinessDate)
+            let assignments =
+                summaries |> Map.toList |> List.choose (fun (id, summary) ->
+                    summary.Work.Snapshot |> Option.bind (fun snapshot -> snapshot.Work.Responsible |> Option.map (fun actor -> id, actor)))
+            let! accounts = tx.AssignedAccounts assignments
+            let mutable result = Ok Map.empty
+            for record in records do
+                let erased = CaseState.lifecycle record.Snapshot.State = Lifecycle.Erased
+                match Map.tryFind record.CaseId summaries with
+                | None when not erased -> result <- Error CoreFault.StoreIntegrityError
+                | summary ->
+                    let work = summary |> Option.bind _.Work.Snapshot |> Option.map _.Work |> Option.defaultValue CaseWork.empty
+                    let responsible = accounts |> Map.tryFind record.CaseId
+                    if work.Responsible.IsSome && responsible.IsNone then result <- Error CoreFault.StoreIntegrityError
+                    let fields = CaseState.fields record.Snapshot.State
+                    let next = summary |> Option.bind _.Next
+                    let followUp = next |> Option.map Reminder.due
+                    let due = CaseDue.at basis.BusinessDate (CaseState.lifecycle record.Snapshot.State) (fields |> Option.map _.Status) followUp
+                    let pending = summary |> Option.map _.Pending |> Option.defaultValue 0L
+                    let actionable = due <> CaseDue.Inactive
+                    let view =
+                        {
+                            CaseWorkView.Revision = summary |> Option.map _.Work.Revision |> Option.defaultValue Revision.zero
+                            Summary = if erased then None else work.Summary
+                            NextAction = if erased then None else next |> Option.map Reminder.action
+                            PendingReminders = if erased then 0L else pending
+                            OverdueReminders = if actionable then summary |> Option.map _.Overdue |> Option.defaultValue 0L else 0L
+                            NeedsNextAction = actionable && pending = 0L
+                            CanUpdateSummary = false
+                            CanAssign = false
+                            CanCreateReminder = false
+                            Responsible = if erased then None else responsible
+                            FollowUp = if erased then None else followUp
+                            Basis = basis
+                            Due = due
+                        }
+                    result <- result |> Result.map (Map.add record.CaseId view)
+            return result
+        }
 
-            let! account =
-                task {
-                    match work.Responsible with
-                    | None -> return Ok None
-                    | Some id ->
-                        let! actor = tx.FindActor id
-
-                        match actor with
-                        | Some actor when actor.ActorId = id && PrincipalKey.isHuman actor.Principal ->
-                            let! authority =
-                                tx.Authority
-                                    {
-                                        Principal = actor.Principal
-                                        CaseId = Some record.CaseId
-                                    }
-
-                            let _, _, subject = PrincipalKey.parts actor.Principal
-
-                            return
-                                Ok(
-                                    Some
-                                        {
-                                            Account = { ActorId = id; Subject = subject }
-                                            Available =
-                                                Authority.can
-                                                    actor.Principal
-                                                    authority
-                                                    Capability.ReadCase
-                                                    (Scope.Case record.CaseId)
-                                                && Authority.can
-                                                    actor.Principal
-                                                    authority
-                                                    Capability.ManageCaseWork
-                                                    (Scope.Case record.CaseId)
-                                        }
-                                )
-                        | _ -> return Error CoreFault.StoreIntegrityError
-                }
-
-            return
-                account
-                |> Result.map (fun account ->
-                    {
-                        Responsible = account
-                        FollowUp = work.FollowUp
-                        Basis = basis
-                        Due =
-                            CaseDue.at
-                                basis.BusinessDate
-                                (CaseState.lifecycle record.Snapshot.State)
-                                (fields |> Option.map _.Status)
-                                work
-                    })
+    let view tx basis record =
+        task {
+            let! values = views tx basis [ record ]
+            return values |> Result.map (Map.find record.CaseId)
         }

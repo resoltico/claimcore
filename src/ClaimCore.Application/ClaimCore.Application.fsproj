@@ -22,11 +22,13 @@
     <Compile Include="Queries.fs" />
     <Compile Include="Resolution.fs" />
     <Compile Include="RecoveryStatus.fs" />
+    <Compile Include="WorkExecution.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />
     <Compile Include="Verification/VerificationPayload.fs" />
     <Compile Include="Verification/CaseFold.fs" />
+    <Compile Include="Verification/WorkFold.fs" />
     <Compile Include="Verification/ProjectionVerification.fs" />
     <Compile Include="Verification/LedgerVerification.fs" />
   </ItemGroup>
