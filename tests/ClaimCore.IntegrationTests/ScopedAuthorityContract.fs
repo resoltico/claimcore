@@ -364,6 +364,95 @@ let internal scopedAuthority fixture =
         Expect.isEmpty context.Cases "Context never enumerates assigned grants"
         Expect.isTrue context.HasScopedCases "EXISTS reports assigned visibility"
 
+        let admin = core fixture fixture.Owner
+
+        let unknown =
+            PrincipalKey.human "https://issuer.example/" "unknown-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! missing = inspectAuthority fixture unknown CancellationToken.None
+
+        Expect.equal
+            (storedPage missing)
+            AuthorityView.empty
+            "A missing principal remains a genuinely absent actor"
+
+        let roleless =
+            PrincipalKey.human "https://issuer.example/" "roleless-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registered =
+            Service.execute
+                admin
+                (OperationInput.Authority(authorityRequest (id 430) roleless AuthorityAct.Register))
+                CancellationToken.None
+
+        acceptedAuthority registered
+        let! noGrants = inspectAuthority fixture roleless CancellationToken.None
+        let noGrants = storedPage noGrants
+        Expect.isSome noGrants.Actor "A zero-grant actor is retained by the left join"
+
+        Expect.equal
+            (noGrants.Installation, noGrants.Cases, noGrants.HasScopedCases)
+            ([], Map.empty, false)
+            "A zero-grant actor has no invented visibility"
+
+        for operation, act, enabled in
+            [ 420, AuthorityAct.Disable, false; 421, AuthorityAct.Enable, true ] do
+            let! changed =
+                Service.execute
+                    admin
+                    (OperationInput.Authority(authorityRequest (id operation) principal act))
+                    CancellationToken.None
+
+            acceptedAuthority changed
+            let! observed = inspectAuthority fixture principal CancellationToken.None
+            let observed = storedPage observed
+
+            Expect.equal
+                (observed.Actor |> Option.map _.Enabled)
+                (Some enabled)
+                "Current actor availability remains independently reported"
+
+            Expect.isTrue
+                observed.HasScopedCases
+                "Scoped presence is a fact even while the actor is disabled"
+
+            Expect.isEmpty observed.Cases "Global authority does not enumerate scoped grants"
+
+        let service =
+            PrincipalKey.service "https://issuer.example/" "service-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registeredService =
+            Service.execute
+                admin
+                (OperationInput.Authority(authorityRequest (id 440) service AuthorityAct.Register))
+                CancellationToken.None
+
+        acceptedAuthority registeredService
+
+        let! grantedService =
+            grant
+                admin
+                (id 441)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                }
+                true
+
+        acceptedAuthority grantedService
+        let! serviceContext = inspectAuthority fixture service CancellationToken.None
+        let serviceContext = storedPage serviceContext
+        Expect.isTrue serviceContext.HasScopedCases "A service's valid scoped read remains visible"
+        Expect.isEmpty serviceContext.Installation "A scoped read is not an installation grant"
+
+        Expect.isEmpty
+            serviceContext.Cases
+            "Service global context does not enumerate case identities"
+
         let pending =
             request
                 102
