@@ -35,6 +35,7 @@ type WorkDisclosure =
 
 type WorkReceipt =
     {
+        Reference: CaseReference
         CaseId: CaseId
         Revision: Revision
         Act: WorkActKind
@@ -61,6 +62,7 @@ type ReminderReceiptEffects =
 
 type ReminderReceipt =
     {
+        Reference: CaseReference
         CaseId: CaseId
         Act: ReminderActKind
         Effects: ReminderReceiptEffects
