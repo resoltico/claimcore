@@ -47,7 +47,9 @@ module internal WorkExecution =
     let private reminderId raw =
         ReminderId.create raw
         |> Option.map Ok
-        |> Option.defaultValue (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+        |> Option.defaultValue (
+            Error(Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired))
+        )
 
     let private plan (raw: ReminderPlanInput) =
         Admission.map2
@@ -334,7 +336,12 @@ module internal WorkExecution =
             Refusal.invalidInput (InputTarget.ReminderAction, violation)
         | ReminderRefusal.NotFound
         | ReminderRefusal.ParentMismatch -> Refusal.Access AccessRefusal.ResourceUnavailable
-        | refusal -> Refusal.Reminder refusal
+        | ReminderRefusal.ParentNotActive -> Refusal.Reminder ReminderRuleRefusal.ParentNotActive
+        | ReminderRefusal.ParentNotOpen -> Refusal.Reminder ReminderRuleRefusal.ParentNotOpen
+        | ReminderRefusal.IdentityReserved -> Refusal.Reminder ReminderRuleRefusal.IdentityReserved
+        | ReminderRefusal.PendingRequired -> Refusal.Reminder ReminderRuleRefusal.PendingRequired
+        | ReminderRefusal.TerminalRequired -> Refusal.Reminder ReminderRuleRefusal.TerminalRequired
+        | ReminderRefusal.NoChanges -> Refusal.Reminder ReminderRuleRefusal.NoChanges
 
     let private reminderProposal
         (services: ServiceContext)

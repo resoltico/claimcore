@@ -12,6 +12,7 @@ type Violation =
     | CountryFormat
     | PrincipalFormat
     | ActorIdRequired
+    | ReminderIdRequired
     | UpdateRequired
     | CalendarDateRequired
     | ChronologicalOrder

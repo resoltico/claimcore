@@ -164,7 +164,7 @@ module BusinessField =
                 else
                     FieldValueKind.HandlingSummary
 
-            { descriptor field kind None false None with
+            { descriptor field kind None (field = BusinessField.HandlingSummary) None with
                 Section = Some CaseSection.Work
                 AllowsAbsence = true
             }
