@@ -301,6 +301,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       expect(
         await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
       ).toBe(true);
+      const heading = await page.locator(".case-heading").boundingBox();
+      const title = await page.locator("#case-detail-title").boundingBox();
+      expect(heading).not.toBeNull();
+      expect(title).not.toBeNull();
+      // A long primary action must wrap before it squeezes the reference into one-character lines.
+      expect(title!.width).toBeGreaterThanOrEqual(Math.min(320, heading!.width * 0.75));
       await expectAccessible(page);
       await page.screenshot({
         path: test.info().outputPath(`work-${language}-${mode}.png`),
