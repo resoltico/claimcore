@@ -183,4 +183,4 @@ let causalReceipts =
             Expect.equal
                 (Result.isOk actual)
                 (case.GetProperty("valid").GetBoolean())
-                (case.GetProperty("name").GetString()))
+                (case.GetProperty("name").GetString() |> nonNull))
