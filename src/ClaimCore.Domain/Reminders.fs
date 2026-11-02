@@ -65,6 +65,16 @@ type ReminderRefusal =
     | NoChanges
     | InvalidAction of Violation
 
+/// Public business-rule refusals exclude identity privacy, revision and input boundary failures.
+[<RequireQualifiedAccess>]
+type ReminderRuleRefusal =
+    | ParentNotActive
+    | ParentNotOpen
+    | IdentityReserved
+    | PendingRequired
+    | TerminalRequired
+    | NoChanges
+
 /// A compound result is a fixed pair. Persistence must accept the whole result in one transaction.
 [<RequireQualifiedAccess>]
 type ReminderEffects =
