@@ -1,6 +1,6 @@
 import { chooseChoice } from "./workspace-navigation";
 import { registration } from "../tests/support/inputs";
-import { seedPresentation, ui } from "./localization-support";
+import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { casePath } from "../src/routing/routes";
 import { isResponse } from "@contracts/client";
 import { randomUUID } from "node:crypto";
@@ -85,6 +85,18 @@ test("supports multiple independently revised reminders, terminal records, reope
   const second = await plan(page, "Ask insurer", "9999-12-31");
   expect(first.operationId).not.toBe(second.operationId);
   await expect(page.locator(".reminder-list li")).toHaveCount(2);
+  await expect(
+    page
+      .locator(".reminder-list li")
+      .filter({ hasText: "Call claimant" })
+      .locator(".reminder-timing"),
+  ).toHaveText("Overdue");
+  await expect(
+    page
+      .locator(".reminder-list li")
+      .filter({ hasText: "Ask insurer" })
+      .locator(".reminder-timing"),
+  ).toHaveText("Upcoming");
   await page
     .locator(".reminder-list li")
     .filter({ hasText: "Call claimant" })
@@ -102,6 +114,7 @@ test("supports multiple independently revised reminders, terminal records, reope
   await expect(page.locator(".case-work .work-attention")).toBeVisible();
   await page.locator('[aria-labelledby="case-reminders-title"] select').selectOption("COMPLETED");
   await expect(page.locator(".reminder-list li")).toHaveCount(1);
+  await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
   await page
     .locator(".reminder-list li")
     .getByRole("button", { name: "Reopen reminder", exact: true })
@@ -398,6 +411,8 @@ test("paid description correction preserves payment, then a closed case accepts 
   ).toHaveCount(0);
   const pending = page.locator(".reminder-list li");
   await expect(pending).toHaveCount(1);
+  await expect(pending).toContainText(ui("en", "ui.caseWorkInactive"));
+  await expect(pending.locator(".reminder-timing")).toHaveCount(0);
   await expect(pending.getByRole("button", { name: "Update reminder", exact: true })).toHaveCount(
     0,
   );
@@ -532,4 +547,66 @@ test("a reminder revision change after compound preview refuses both effects wit
     reminderId: reviewed.operationId,
   });
   expect(replacement.outcome.kind).toBe("REJECTED");
+});
+
+test("published reminder rows show server timing in case and queue views across languages", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const reference = `TIMING-${randomUUID()}`;
+  await openCase(page, reference);
+  const observed = await workRequest(page, "work.overview", {});
+  if (observed.outcome.kind !== "SUCCEEDED") throw new Error("Expected server date basis");
+  const { businessDate, timeZone } = observed.outcome.data.basis;
+  const actions = ["Past planned action", "Current planned action", "Future planned action"];
+  for (const [index, dueDate] of ["0001-01-01", businessDate, "9999-12-31"].entries()) {
+    const accepted = await workRequest(page, "operation.execute", {
+      kind: "REMINDER",
+      operationId: randomUUID(),
+      target: { kind: "REFERENCE", caseReference: reference },
+      act: { kind: "CREATE", action: actions[index]!, dueDate },
+    });
+    expect(accepted.outcome.kind).toBe("ACCEPTED");
+  }
+  await page.clock.setFixedTime(new Date("2031-06-15T12:00:00Z"));
+  await page.reload();
+  for (const language of ["en", "lv", "ar"] as const) {
+    await selectLanguage(page, language);
+    for (const [index, timing] of (["OVERDUE", "TODAY", "UPCOMING"] as const).entries()) {
+      const item = page.locator(".reminder-list li").filter({ hasText: actions[index]! });
+      await expect(item.locator(".reminder-timing")).toHaveText(
+        ui(language, `reminderDue.${timing}.label`),
+      );
+      await expect(item).toContainText(ui(language, "reminderState.PENDING.label"));
+      await expect(item.locator(".observation-basis")).toContainText(timeZone);
+    }
+  }
+  await page.goto("/work");
+  await page.getByRole("searchbox").fill(reference);
+  await page.getByRole("search").getByRole("button").click();
+  await expect(page.locator(".reminder-list li")).toHaveCount(3);
+  for (const [index, label] of ["متأخر", "اليوم", "قادم"].entries()) {
+    const item = page.locator(".reminder-list li").filter({ hasText: actions[index]! });
+    await expect(item.locator(".reminder-timing")).toHaveText(label);
+    await expect(item.getByRole("link")).toHaveText(reference);
+  }
+  const voided = await workRequest(page, "operation.execute", {
+    kind: "CASE",
+    operationId: randomUUID(),
+    target: { kind: "REFERENCE", caseReference: reference },
+    expectedRevision: 1,
+    act: { kind: "VOID", reason: "Synthetic timing test entry error" },
+  });
+  expect(voided.outcome.kind).toBe("ACCEPTED");
+  await page.reload();
+  await page.getByRole("searchbox").fill(reference);
+  await page.getByRole("search").getByRole("button").click();
+  await expect(page.locator(".reminder-list li")).toHaveCount(0);
+  await page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") }).check();
+  await expect(page.locator(".reminder-list li")).toHaveCount(3);
+  await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
+  for (const item of await page.locator(".reminder-list li").all()) {
+    await expect(item).toContainText(ui("ar", "ui.caseWorkInactive"));
+    await expect(item).toContainText(ui("ar", "reminderState.PENDING.label"));
+  }
 });
