@@ -527,7 +527,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
                 Expect.stringContains
                     rendered
-                    (read.GetProperty("basis").GetProperty("timeZoneId").GetString() |> nonNull)
+                    (read.GetProperty("basis").GetProperty("timeZone").GetString() |> nonNull)
                     "Human output states installation date basis"
 
         for language, inactive, labels in
