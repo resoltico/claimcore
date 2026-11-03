@@ -85,16 +85,25 @@ assignee remains recorded until explicitly changed.
 
 A reminder is an identified, independently revisioned action and planned date in Pending, Completed or
 Cancelled state. Its creation ID equals its operation UUID. Next follow-up is the minimum Pending due
-date, with stable reminder-ID ties. Pending includes overdue dates. Only active open cases have active
-due classification; close/void retains the dates for reactivation. Complete-and-plan-next has exactly two
-atomic effects under one accepted operation identity.
+date, with stable reminder-ID ties. Pending includes overdue dates. Current Pending reminders on active
+open cases have Overdue, Today or Upcoming timing; terminal reminders and reminders on inactive parents
+have no actionable timing label. Close/void retains planned dates for reactivation.
+Complete-and-plan-next completes one reminder and creates one replacement atomically under one accepted
+operation identity.
 
 ## Work attention
 
 An active open case needs a next action when it has no Pending reminders. This monitored condition does
 not block completion or require a fake action. Missing plan, overdue work, unassigned and unavailable
-assignee overlap; affected-case totals count their union. Date classification uses the read snapshot's
-database instant and installation business zone and does not append synthetic history.
+assignee overlap; affected-case totals count each case in their union once. Date classification uses
+the [observation basis](#observation-basis) and does not append synthetic history.
+
+## Observation basis
+
+A work read reports the database observation instant, the business date derived from that instant and
+the installation's business time zone. The client clock does not determine whether work is overdue.
+Separate reads and loaded pages can have different bases; a loaded reminder retains its own page's
+basis until refreshed.
 
 ## Incident description and Handling summary
 

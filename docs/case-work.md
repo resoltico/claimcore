@@ -33,17 +33,18 @@ changes who may read or update a case. All accessible cases is the initial view.
 Next follow-up is the earliest Pending reminder date; it is derived and cannot be edited separately. Reminder dates may be past or future. Overdue, Today, Upcoming and Unscheduled
 apply only to active, open cases; closed, voided and erased cases are Inactive. Follow-up ordering puts
 dated work first and absent dates last, with stable reference ties. Page and summary
-responses each report their own database observation, installation business date and zone; use that basis
-rather than the browser clock. `--order notified` still orders by the current notification assertion.
+responses each report their own [observation basis](glossary.md#observation-basis); use the installation
+business date rather than the browser clock. `--order notified` orders by the current notification
+assertion.
 
 `claimcore case summary` uses the same filters to count lifecycle, status and progress and to sum
 claimed and payable amounts per currency. Counts remain inside the selected filter. Voided facts
 contribute when selected. Erased cases contribute to total, lifecycle and inactive-due counts, with no
 status, progress, assignment or money. Totals are exact, with no rounding or currency conversion.
 
-The browser keeps responsibility and due filters in the URL. Summary counts include those dimensions
-inside the selected filter. Totals and the loaded page may come from different observations and display
-their own date basis. Row age uses the page's business date.
+Summary counts include responsibility and due dimensions inside the selected filter. Totals and the
+loaded page may come from different observations and display their own date basis. Row age uses the
+page's business date.
 
 ## Web case navigation
 
@@ -64,8 +65,8 @@ entry context, exact canonical values and the authored expected revision.
 Case work has its own revision, starting at zero when OPEN is accepted. It contains responsibility and
 an optional Handling summary, independently of financial case facts. A work update sets or clears either
 value; omission preserves it. It must change an accepted value. Summary changes are allowed on active
-open or closed cases; changing responsibility requires an active open case. Service handlers retain their
-financial/read capabilities and cannot manage work.
+open or closed cases; changing responsibility requires an active open case. Service principals retain
+their permitted financial/read capabilities but cannot manage work.
 
 The case-scoped candidate picker discloses only eligible human accounts' subject and ActorId in bounded
 pages. A selected account must still be enabled with both case-read and case-work rights when the write
@@ -90,21 +91,23 @@ action. Opening a case and subsequently planning work are explicitly separate ac
 
 ## Work attention and queues
 
-An active open case needs a next action exactly when it has no Pending reminders. Overdue reminders are
-still Pending and supply coverage. Missing plan, overdue work, unassigned and unavailable assignee are
+An active open case needs a next action exactly when it has no Pending reminders. Overdue reminders
+remain Pending and count as a plan. Missing plan, overdue work, unassigned and unavailable assignee are
 separate overlapping conditions; a total of affected cases counts their distinct union.
 
 The accessible-work overview ignores the current case page/search and includes only cases the requester
 can read. Mine follows current responsibility inside that scope. Counts identify case and reminder units
 and show database observation, installation business date and zone. Loading, failed or stale observations
 are not a fresh zero. Refresh after accepted/replayed writes, access changes, focus/resume or date passage;
-an absent or suspended client does not deliver alarms. Date passage creates no ledger event.
+an absent or suspended client does not deliver alarms. There is no notification delivery, automatic
+completion or recurring-reminder scheduler. Date passage creates no ledger event.
 
-The reminder queue defaults to actionable Pending reminders ordered by due date and stable ID. Explicit
-state/lifecycle choices inspect bounded completed, cancelled or inactive pages. Queue due filters classify
-each reminder. A case with overdue and today reminders is Overdue in case-next-due filtering, while its
-today reminder remains in the Today queue. Case financial totals count each selected case once regardless
-of reminder count. Reminder search finds current action text, not prior versions.
+Open **Reminders** for the cross-case queue. It defaults to Pending reminders on active open cases,
+ordered by due date and stable ID. The state filter and **Include inactive case work** inspect bounded
+Completed, Cancelled or inactive Pending records. Queue due filters compare each reminder's retained
+date. A case with overdue and today reminders is Overdue in case-next-due filtering, while its today
+reminder remains in the Today queue. Case financial totals count each selected case once regardless of
+reminder count. Reminder search finds current action text, not prior versions.
 
 Current reminder reads label active Pending records Overdue, Today or Upcoming against that response's
 installation business date, never the client clock. Each loaded browser row retains its originating

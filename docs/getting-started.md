@@ -113,14 +113,27 @@ Choose **Open a case** and enter synthetic values. Use dates no later than the c
 | Claimed amount | 100.00 |
 | Currency | EUR |
 
-Review the canonical proposal and confirm. Expect a success notice naming revision 1 and a case page
-showing the registration facts. Return to Cases and search for `START-0001`; its row shows the claimant,
-claimed amount, Undecided progress, Unassigned work and last-change time. The Open and undecided view
+Incident description is optional; use it for a short account of what happened. Review the canonical
+proposal and confirm. Expect a success notice naming revision 1 and a case page showing the registration
+facts. Return to Cases and search for `START-0001`; its row shows the claimant, claimed amount,
+Undecided progress, Unassigned work and last-change time. The Open and undecided view
 includes it. My cases includes it only after responsibility is explicitly assigned to your account.
 
-You now have one accepted case and a worklist that can find it. [Case work](case-work.md) explains decisions,
-payments, correction and stewardship; [Integrating](integrating.md#delivery-recovery) explains recovery
-from interrupted submission.
+## Plan the next action
+
+A newly opened case has empty work at revision zero and needs a next action. On its case page, choose
+**Add reminder**, enter a single-line action and a planned date, review and confirm. Past and future
+planned dates are allowed. The reminder has its own identity and revision; creating it preserves the
+case's financial facts and fact revision.
+
+Use **Update case work** to record responsibility or an optional Handling summary. Assigning
+responsibility does not grant access. Overdue, Today and Upcoming labels use the installation's business
+date, which appears with the reminder. A past-due reminder remains Pending until someone explicitly
+completes, cancels or reschedules it. ClaimCore does not send reminder notifications.
+
+[Case work](case-work.md#plan-case-work) explains multiple reminders, complete-and-plan-next, decisions,
+payments and correction. [Integrating](integrating.md#delivery-recovery) explains recovery from
+interrupted submission.
 
 ## Optional CLI setup
 
@@ -167,9 +180,3 @@ can remove unrelated work.
 For startup or login problems, inspect this project's status and private diagnostics. Check ports,
 certificate trust/expiry, private-file permissions and the pinned tools. See [Support](../SUPPORT.md) for
 redacted reporting and [Operations](operating.md) for backups and erasure limits.
-
-
-After accepting OPEN, optionally record the Incident description and plan a reminder as a separate work
-step. A case starts with empty work at revision zero and needs a next action until it has a Pending
-reminder. Handling summary and reminder edits use their own revisions and preserve financial facts.
-See [case work](case-work.md#plan-case-work) for lifecycle, responsibility and atomic complete-and-plan-next.
