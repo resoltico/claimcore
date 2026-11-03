@@ -195,6 +195,7 @@ let private qualify () =
         let selected = profiles ()
         let mutable count = 0
         let mutable readCount = 0
+        let mutable lastCompletedReadReport: string option = None
 
         let nativeRun =
             Environment.GetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY")
@@ -252,16 +253,30 @@ let private qualify () =
 
             if selected.Length = 9 || GrowthWorkloadPlan.comparison then
                 do!
-                    GrowthReadWorkloads.run (fun environment report ->
-                        atomic
-                            (sprintf "read-workload-%02d.json" readCount)
-                            {|
-                                environment = environment
-                                workload = report
-                            |}
+                    GrowthReadWorkloads.run
+                        (fun progress ->
+                            atomic
+                                "read-progress.json"
+                                {|
+                                    kind = "read-progress"
+                                    completedReadProfiles = readCount
+                                    requiredReadProfiles = GrowthWorkloadPlan.readProfileCount
+                                    lastCompletedReport = lastCompletedReadReport
+                                    progress = progress
+                                |})
+                        (fun environment report ->
+                            let name = sprintf "read-workload-%02d.json" readCount
 
-                        readCount <- readCount + 1
-                        state "incomplete")
+                            atomic
+                                name
+                                {|
+                                    environment = environment
+                                    workload = report
+                                |}
+
+                            readCount <- readCount + 1
+                            lastCompletedReadReport <- Some name)
+                        (fun () -> state "incomplete")
 
                 Expect.equal
                     readCount
