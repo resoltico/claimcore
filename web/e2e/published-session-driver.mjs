@@ -7,6 +7,7 @@ const [root, origin, owned, phase, name] = process.argv.slice(2);
 const modes = new Set(["login", "verify", "logout", "stale"]);
 const statePath = path.join(owned, "published-session-state.json");
 let failedCheck = "UNEXPECTED";
+let activeStep = "BROWSER";
 const require = (condition, code) => {
   if (!condition) {
     failedCheck = code;
@@ -23,6 +24,7 @@ const headers = (fingerprint, csrf, cookie) => ({
   ...(cookie === undefined ? {} : { Cookie: cookie }),
 });
 const session = async (context, fingerprint, cookie) => {
+  activeStep = "SESSION";
   const response = await context.request.get(`${origin}/api/session`, {
     headers: headers(fingerprint, undefined, cookie),
   });
@@ -30,11 +32,13 @@ const session = async (context, fingerprint, cookie) => {
   require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "SESSION_UNAVAILABLE");
   return reply.outcome.data;
 };
-const contextRequest = (context, fingerprint, csrf, cookie) =>
-  context.request.post(`${origin}/api/context`, {
+const contextRequest = (context, fingerprint, csrf, cookie) => {
+  activeStep = "CONTEXT";
+  return context.request.post(`${origin}/api/context`, {
     headers: headers(fingerprint, csrf, cookie),
     data: {},
   });
+};
 const protectedContext = async (context, fingerprint, csrf) => {
   const response = await contextRequest(context, fingerprint, csrf);
   const reply = await response.json();
@@ -60,11 +64,39 @@ const login = async (context, fingerprint) => {
       return route.continue();
     },
   );
-  await page.goto(`${origin}/auth/login`);
+  activeStep = "NAVIGATE";
+  await page.goto(`${origin}/auth/login`, { waitUntil: "domcontentloaded" });
+  activeStep = "USERNAME";
   await page.locator('input[name="username"]').fill(owner.username);
+  activeStep = "PASSWORD";
   await page.locator('input[name="password"]').fill(owner.password);
-  await page.locator('input[type="submit"], button[type="submit"]').first().click();
-  await page.waitForURL((url) => url.origin === origin && url.pathname === "/");
+  // Observe isolation before submitting so a fast redirect cannot outrun the listener.
+  // Capture a rejected wait until its own stage is reached, without an unhandled rejection.
+  const blockedBootstrap = page
+    .waitForEvent("requestfailed", {
+      predicate: (request) =>
+        new URL(request.url()).origin === origin && request.resourceType() === "script",
+    })
+    .then(
+      () => undefined,
+      (error) => error,
+    );
+  activeStep = "SUBMIT";
+  await page
+    .locator('input[type="submit"], button[type="submit"]')
+    .first()
+    .click({ noWaitAfter: true });
+  activeStep = "RETURN";
+  // The committed return document establishes the session. Its styles/images are irrelevant
+  // to this API probe and must not become login readiness prerequisites.
+  await page.waitForURL((url) => url.origin === origin && url.pathname === "/", {
+    waitUntil: "commit",
+  });
+  activeStep = "BOOTSTRAP";
+  const bootstrapError = await blockedBootstrap;
+  if (bootstrapError !== undefined) {
+    throw bootstrapError;
+  }
   require(blockedScripts > 0, "BOOTSTRAP_NOT_ISOLATED");
   const current = await session(context, fingerprint);
   require(current.authenticated && typeof current.antiforgeryToken === "string", "LOGIN_REFUSED");
@@ -97,6 +129,7 @@ const probe = async (context, fingerprint, state) => {
   require(current.authenticated, "RETAINED_SESSION_MISSING");
   await protectedContext(context, fingerprint, state.csrf);
   if (phase === "logout") {
+    activeStep = "LOGOUT";
     const response = await context.request.post(`${origin}/api/session.logout`, {
       headers: headers(fingerprint, state.csrf),
       data: {},
@@ -131,7 +164,7 @@ try {
   await run();
 } catch (error) {
   process.stderr.write(
-    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${error?.name === "TimeoutError" ? "TIMEOUT" : failedCheck}\n`,
+    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${error?.name === "TimeoutError" ? `${activeStep}_TIMEOUT` : failedCheck}\n`,
   );
   process.exitCode = 1;
 }
