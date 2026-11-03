@@ -41,26 +41,26 @@ it("removes a queued obsolete scope without invoking its network handoff", async
 });
 it("checks scope cancellation again after a queued read receives a turn, before dispatch", async () => {
   const admission = new ReadAdmission();
-  const firstController = new AbortController();
   const controller = new AbortController();
   const first = Promise.withResolvers<ApiResult<string>>();
   const second = Promise.withResolvers<ApiResult<string>>();
-  const a = admission.run(firstController.signal, () => first.promise);
+  const a = admission.run(new AbortController().signal, () => first.promise);
   const b = admission.run(new AbortController().signal, () => second.promise);
   const network = vi.fn(() => Promise.resolve(result("stale")));
   const cancelled = admission.run(controller.signal, network);
-  firstController.abort();
+  first.resolve(result("first"));
+  await Promise.resolve();
+  // Release grants the queued turn before execute's continuation rechecks cancellation.
   controller.abort();
   expect(await cancelled).toMatchObject({ kind: "deliveryFailure", dispatched: false });
   expect(network).not.toHaveBeenCalled();
-  first.resolve(result("first"));
   second.resolve(result("second"));
   await Promise.all([a, b]);
   expect(
     await admission.run(new AbortController().signal, () => Promise.resolve(result("current"))),
   ).toEqual(result("current"));
 });
-it("an active cancelled read releases its turn without a late completion releasing another turn", async () => {
+it("retains an active cancelled read until its work settles, then releases exactly one turn", async () => {
   const admission = new ReadAdmission();
   const controller = new AbortController();
   const first = Promise.withResolvers<ApiResult<string>>();
@@ -73,9 +73,10 @@ it("an active cancelled read releases its turn without a late completion releasi
   await Promise.resolve();
   controller.abort();
   await Promise.resolve();
-  expect(next).toHaveBeenCalledTimes(1);
+  expect(next).not.toHaveBeenCalled();
   first.resolve(result("obsolete"));
   await a;
+  expect(next).toHaveBeenCalledTimes(1);
   const fourth = vi.fn(() => Promise.resolve(result("fourth")));
   const d = admission.run(new AbortController().signal, fourth);
   await Promise.resolve();

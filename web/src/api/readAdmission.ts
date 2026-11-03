@@ -15,18 +15,17 @@ export class ReadAdmission {
   private active = 0;
   private readonly waiting = new Set<WaitingRead>();
 
-  private start(signal: AbortSignal): Release {
+  // Cancellation requests transport cleanup; only settled work proves this turn is free.
+  private start(): Release {
     this.active += 1;
     let held = true;
     const release = () => {
       if (held) {
         held = false;
-        signal.removeEventListener("abort", release);
         this.active -= 1;
         this.advance();
       }
     };
-    signal.addEventListener("abort", release, { once: true });
     return release;
   }
 
@@ -37,7 +36,7 @@ export class ReadAdmission {
       }
       this.waiting.delete(next);
       next.signal.removeEventListener("abort", next.cancel);
-      next.resolve(next.signal.aborted ? null : this.start(next.signal));
+      next.resolve(next.signal.aborted ? null : this.start());
     }
   }
 
@@ -76,7 +75,7 @@ export class ReadAdmission {
       return this.execute(signal, null, work);
     }
     if (this.active < maximumConcurrentReads) {
-      return this.execute(signal, this.start(signal), work);
+      return this.execute(signal, this.start(), work);
     }
     return this.wait(signal).then((release) => this.execute(signal, release, work));
   }
