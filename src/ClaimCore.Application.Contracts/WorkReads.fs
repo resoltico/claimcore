@@ -11,6 +11,7 @@ type ReminderReadModel =
         RecordedBy: ActorId
         Acts: ReminderActKind list
         Active: bool
+        Timing: ReminderDue option
     }
 
 type ReminderRead =

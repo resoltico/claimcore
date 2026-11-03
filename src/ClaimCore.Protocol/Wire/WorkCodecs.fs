@@ -78,7 +78,7 @@ module WorkCodecs =
             ]
 
     let reminderRead =
-        (record (fun reminder reference recordedAt recordedBy acts active ->
+        (record (fun reminder reference recordedAt recordedBy acts active timing ->
             {
                 ReminderReadModel.Reminder = reminder
                 Reference = reference
@@ -86,6 +86,7 @@ module WorkCodecs =
                 RecordedBy = recordedBy
                 Acts = acts
                 Active = active
+                Timing = timing
             })
         : Fields<ReminderReadModel, _>)
         |> field "reminder" _.Reminder reminder
@@ -97,5 +98,6 @@ module WorkCodecs =
             _.Acts
             (list ReminderActKind.all.Length (VocabularyCodec.create ReminderActKind.vocabulary))
         |> field "active" _.Active boolean
+        |> field "timing" _.Timing (nullable (VocabularyCodec.create ReminderDue.vocabulary))
         |> build
         |> named "ReminderReadModel"

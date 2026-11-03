@@ -284,6 +284,17 @@ module ReminderDue =
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
 
+    /// Current timing uses the owning read's business date; retained terminal/inactive work has none.
+    let at (today: DateOnly) active reminder =
+        if not active || Reminder.state reminder <> ReminderState.Pending then
+            None
+        elif CalendarDate.value (Reminder.due reminder) < today then
+            Some ReminderDue.Overdue
+        elif CalendarDate.value (Reminder.due reminder) = today then
+            Some ReminderDue.Today
+        else
+            Some ReminderDue.Upcoming
+
 module ReminderState =
     let vocabulary =
         Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None

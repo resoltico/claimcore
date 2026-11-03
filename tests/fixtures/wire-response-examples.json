@@ -5273,7 +5273,8 @@
                   "CANCEL",
                   "COMPLETE_AND_PLAN_NEXT"
                 ],
-                "active": true
+                "active": true,
+                "timing": "UPCOMING"
               },
               {
                 "reminder": {
@@ -5290,7 +5291,8 @@
                 "acts": [
                   "REOPEN"
                 ],
-                "active": false
+                "active": false,
+                "timing": null
               },
               {
                 "reminder": {
@@ -5307,7 +5309,8 @@
                 "acts": [
                   "REOPEN"
                 ],
-                "active": true
+                "active": true,
+                "timing": null
               }
             ],
             "nextCursor": null
@@ -5769,7 +5772,8 @@
                 "CANCEL",
                 "COMPLETE_AND_PLAN_NEXT"
               ],
-              "active": true
+              "active": true,
+              "timing": "UPCOMING"
             }
           }
         }
@@ -5823,6 +5827,228 @@
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "PROVISION_OWNER"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-current-timing-overdue",
+      "endpoint": "reminder.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-01",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "COMPLETE_AND_PLAN_NEXT"
+              ],
+              "active": true,
+              "timing": "OVERDUE"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-current-timing-today",
+      "endpoint": "reminder.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-02",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "COMPLETE_AND_PLAN_NEXT"
+              ],
+              "active": true,
+              "timing": "TODAY"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-inactive-pending-has-no-current-timing",
+      "endpoint": "reminder.get",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-10",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [],
+              "active": false,
+              "timing": null
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-current-timing-missing-refused",
+      "endpoint": "reminder.get",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-10",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "COMPLETE_AND_PLAN_NEXT"
+              ],
+              "active": true
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-current-timing-unknown-refused",
+      "endpoint": "reminder.get",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-10",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "COMPLETE_AND_PLAN_NEXT"
+              ],
+              "active": true,
+              "timing": "PAST_DUE"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-current-timing-wrong-type-refused",
+      "endpoint": "reminder.get",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Europe/Riga"
+            },
+            "item": {
+              "reminder": {
+                "reminderId": "30000000-0000-4000-8000-000000000001",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "revision": 3,
+                "action": "Contact insurer",
+                "dueDate": "2026-11-10",
+                "state": "PENDING"
+              },
+              "caseReference": "NARRATIVE-REMINDERS",
+              "recordedAt": "2026-11-02T04:00:00.000000Z",
+              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "acts": [
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "COMPLETE_AND_PLAN_NEXT"
+              ],
+              "active": true,
+              "timing": true
             }
           }
         }

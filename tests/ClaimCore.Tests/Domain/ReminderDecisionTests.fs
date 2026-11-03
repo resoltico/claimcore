@@ -82,6 +82,61 @@ let tests =
         "reminder decisions"
         [
             testCase
+                "current reminder timing uses its supplied business date and retained state"
+                (fun () ->
+                    let parent = parent ()
+                    let pending = created parent 2
+
+                    for today, expected in
+                        [
+                            DateOnly(2026, 10, 31), ReminderDue.Upcoming
+                            DateOnly(2026, 11, 1), ReminderDue.Today
+                            DateOnly(2026, 11, 2), ReminderDue.Overdue
+                        ] do
+                        Expect.equal
+                            (ReminderDue.at today true pending)
+                            (Some expected)
+                            "The read's date owns the classification"
+
+                        Expect.equal
+                            (Reminder.state pending)
+                            ReminderState.Pending
+                            "Elapsed dates never complete outstanding work"
+
+                        Expect.equal
+                            (ReminderDue.at today false pending)
+                            None
+                            "Inactive parents have no actionable timing"
+
+                    for state in [ ReminderState.Completed; ReminderState.Cancelled ] do
+                        let terminal =
+                            Reminder.ofAccepted
+                                (Reminder.id pending)
+                                parent.CaseId
+                                Revision.first
+                                (Reminder.action pending)
+                                (Reminder.due pending)
+                                state
+                            |> required
+
+                        Expect.equal
+                            (ReminderDue.at (DateOnly(2031, 1, 1)) true terminal)
+                            None
+                            "Terminal reminders are not actionable overdue work")
+            testCase "actionable parent policy excludes closed voided and erased work" (fun () ->
+                for lifecycle, status, expected in
+                    [
+                        Lifecycle.Active, Some CaseStatus.Opened, true
+                        Lifecycle.Active, Some CaseStatus.Closed, false
+                        Lifecycle.Voided, Some CaseStatus.Opened, false
+                        Lifecycle.Voided, Some CaseStatus.Closed, false
+                        Lifecycle.Erased, None, false
+                    ] do
+                    Expect.equal
+                        (CaseState.isActionable lifecycle status)
+                        expected
+                        "Parent lifecycle and status are evaluated together")
+            testCase
                 "creation derives identity and owns revision without changing financial parent"
                 (fun () ->
                     let parent = parent ()

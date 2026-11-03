@@ -8901,6 +8901,20 @@
           },
           "active": {
             "type": "boolean"
+          },
+          "timing": {
+            "oneOf": [
+              {
+                "enum": [
+                  "OVERDUE",
+                  "TODAY",
+                  "UPCOMING"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -8909,7 +8923,8 @@
           "recordedAt",
           "recordedBy",
           "acts",
-          "active"
+          "active",
+          "timing"
         ]
       },
       "ReminderReadReply": {

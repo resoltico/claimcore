@@ -138,13 +138,15 @@ module internal WorkQueries =
                                                     CaseState.fields parent.Snapshot.State
                                                     |> Option.map _.Status
 
+                                                let basis =
+                                                    CaseWorkReads.basis services tx.ObservedAt
+
+                                                let active = CaseState.isActionable lifecycle status
+
                                                 return
                                                     Outcome.Succeeded
                                                         {
-                                                            ReminderRead.Basis =
-                                                                CaseWorkReads.basis
-                                                                    services
-                                                                    tx.ObservedAt
+                                                            ReminderRead.Basis = basis
                                                             Item =
                                                                 {
                                                                     Reminder = reminder
@@ -160,10 +162,12 @@ module internal WorkQueries =
                                                                             lifecycle
                                                                             status
                                                                             reminder
-                                                                    Active =
-                                                                        lifecycle = Lifecycle.Active
-                                                                        && status =
-                                                                            Some CaseStatus.Opened
+                                                                    Active = active
+                                                                    Timing =
+                                                                        ReminderDue.at
+                                                                            basis.BusinessDate
+                                                                            active
+                                                                            reminder
                                                                 }
                                                         }
                                             | _ -> return QueryResults.unavailable
@@ -332,6 +336,11 @@ module internal WorkQueries =
                                                             | None ->
                                                                 Error CoreFault.StoreIntegrityError
                                                             | Some reminder ->
+                                                                let active =
+                                                                    CaseState.isActionable
+                                                                        row.Lifecycle
+                                                                        row.Status
+
                                                                 Ok
                                                                     {
                                                                         ReminderReadModel.Reminder =
@@ -349,13 +358,13 @@ module internal WorkQueries =
                                                                                 row.Lifecycle
                                                                                 row.Status
                                                                                 reminder
-                                                                        Active =
-                                                                            row.Lifecycle =
-                                                                                Lifecycle.Active
-                                                                            && row.Status =
-                                                                                Some
-                                                                                    CaseStatus
-                                                                                        .Opened
+                                                                        Active = active
+                                                                        Timing =
+                                                                            ReminderDue.at
+                                                                                selection.DateBasis
+                                                                                    .BusinessDate
+                                                                                active
+                                                                                reminder
                                                                     })
                                                         |> QueryResults.collect
 

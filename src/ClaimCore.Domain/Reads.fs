@@ -43,7 +43,7 @@ module CaseDue =
     let token = Vocabulary.token vocabulary
 
     let at (today: DateOnly) lifecycle status (nextDue: CalendarDate option) =
-        if lifecycle <> Lifecycle.Active || status <> Some CaseStatus.Opened then
+        if not (CaseState.isActionable lifecycle status) then
             CaseDue.Inactive
         else
             match nextDue with
