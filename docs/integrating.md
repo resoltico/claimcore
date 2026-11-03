@@ -8,8 +8,9 @@ defines terms.
 Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
 References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
 reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
-Case request, snapshot and ledger entry records support format 4. Independent work/reminder records use format 1; authority and control records remain format 2. Installation initialization
-requires the declared SQL baseline; schema conversion and compatibility readers are not supported.
+Case request, snapshot and ledger entry records use format 4. Work/reminder records use format 1;
+authority and control records use format 2. Installation initialization requires the declared SQL baseline;
+schema conversion and compatibility readers are not supported.
 
 Case reads/history and case operations use a tagged `target`: either
 `{"kind":"REFERENCE","caseReference":"Demo-0001"}` or
@@ -257,7 +258,7 @@ value. Empty or unchanged work refuses. Summary edits work on active open/closed
 changes require active open state. Only current human ReadCase + ManageCaseWork rights permit writes.
 Service CASE_HANDLER financial/read rights remain valid and do not include ManageCaseWork.
 
-`case.assignees` remains a bounded case-scoped read of eligible human ActorIds/subjects, without issuer
+`case.assignees` is a bounded case-scoped read of eligible human ActorIds/subjects, without issuer
 or grant-directory disclosure. Explicitly selected accounts are rechecked at execution. Later disable or
 revocation retains factual responsibility and reports the account unavailable; assignment grants no
 access. Every reminder inherits current responsibility. Case/work views distinguish work and financial
@@ -273,10 +274,10 @@ changes neither. Terminal records must reopen explicitly with a supplied date be
 Create/update/reopen and compound planning require active open parents. Complete/cancel can tidy Pending
 reminders on active closed parents. Close/void preserves inactive reminders and their exact dates;
 reopening/reinstatement reactivates them. Erasure clears all related erasable payloads and projections
-while reserving identities. Work/reminder writes do not advance financial case revisions.
+while reserving identities. Work/reminder writes do not advance case revisions.
 
-Next follow-up is the minimum Pending due date, with stable ReminderId ties; no separate followUpDate
-write remains. Dates may be past/future and use the query's database instant and installation zone.
+Next follow-up is the minimum Pending due date, with stable ReminderId ties. `followUpDate` is derived
+and has no independent write operation. Dates may be past/future and use the query's database instant and installation zone.
 Case filters classify that minimum as OVERDUE, TODAY, UPCOMING, UNSCHEDULED or INACTIVE. Reminder queue
 filters classify individual actions, so a case classified Overdue can still have a Today reminder.
 `FOLLOW_UP` orders case minima with absent dates last and stable reference ties. Live continuations bind
@@ -286,9 +287,10 @@ Bounded reminder pages default to actionable Pending work; terminal/inactive rec
 selection. Reminder get/list items include required nullable `timing`: `OVERDUE`, `TODAY` or `UPCOMING`
 only for active Pending work, otherwise null. `active` describes the current parent; terminal state is
 independent. Timing uses the enclosing read/page's server `basis`, not a consumer clock. Retain each
-page's basis when accumulating rows. The existing date filter remains date-based even when explicit
-state/include-inactive selections inspect retained work. Regenerate strict consumers for this read-model
-member; historical receipts do not acquire current timing.
+page's basis when accumulating rows. Date filters compare the retained due date even when explicit state/include-inactive selections inspect
+terminal or inactive work. Such a record can match an OVERDUE date filter while its `timing` is null.
+Generate strict consumers from the matching schema; `timing` is required even when null. Historical
+receipts have no current timing classification.
 
 The work overview ignores case page/search filters and reports accessible or Mine actionable
 cases with observation/date/zone. Missing-plan, overdue, unassigned and unavailable dimensions overlap;
@@ -304,8 +306,8 @@ changes stored content. On OPEN omitted/null description is absent; partial omis
 explicit null clears. Required registration null and half-money assertions remain invalid. File/editor
 CRLF conversion happens before review/freezing, never after prepared request confirmation.
 
-Typed case activity orders fact/work/reminder events by ledger sequence. Dedicated fact history still
-compares consecutive financial revisions; current terminal reminder access is distinct from prior-version
+Typed case activity orders fact/work/reminder events by ledger sequence. Dedicated fact history
+compares consecutive case revisions; current terminal reminder access is distinct from prior-version
 ReadHistoryFull disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
 effects. Native/IndexedDB journals remain identity-only and never reconstruct business text after restart.
 
@@ -355,8 +357,8 @@ implicitly retries a prepared client request.
 
 ## Browser routes and presentation
 
-The browser has three authorized areas: Cases (`/cases`), Recovery (`/operations`) and Access
-(`/authority`). Canonical case links use `/cases/id/CASE-ID`; exact reference links use
+The browser has four authorized areas: Cases (`/cases`), Work (`/work`), Recovery (`/operations`) and
+Access (`/authority`). Canonical case links use `/cases/id/CASE-ID`; exact reference links use
 `/cases/reference/REFERENCE`. Editors append `/acts/ACT` to either selector route. `/cases/new` opens a
 case, `/operations/OPERATION-ID` selects a general receipt lookup, and `/authority/ACTOR-ID` selects an actor.
 
@@ -364,6 +366,16 @@ Worklist query parameters carry selected view, filters, search and order; page c
 the URL. Back/forward, reload and sign-in return preserve the same-origin path. Returning from case
 inspection restores the live work query, scroll position and invoking control when available; a missing
 row falls back to the area heading. Navigation state stores no business payload.
+
+The Work area lists accessible Pending reminders by due date and provides explicit state, assignment,
+text and inactive-work filters. Each loaded row retains its own response's timing and business-date
+basis. Loading another page does not reclassify previously loaded rows against the newer page's basis.
+Refresh starts a new observation.
+
+Browser read admission permits two concurrent responses per document. Cancellation prevents queued
+reads from dispatching; a dispatched obsolete read drains under its own bounded deadline and its result
+is discarded. Caller deadlines include queue time. This does not coordinate tabs or replace the server's
+[per-process admission policy](operating.md#request-admission).
 
 `/authority?tab=history` shows installation authority history; adding `?tab=history` to an actor detail
 filters by that actor. Unknown routes keep their URL and render a localized not-found page without an API

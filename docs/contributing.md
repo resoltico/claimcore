@@ -21,9 +21,9 @@ dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
 ```
 
-The locked npm graph includes matcher/traversal overrides in [package.json](../web/package.json).
-The [import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured upstream
-rule exports directly. Audit and import-boundary checks are required when changing this tooling.
+[package.json](../web/package.json) and its lockfile own the frontend dependency graph, including overrides.
+The [import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured rule exports.
+Run dependency audits and import-boundary checks when changing that tooling.
 
 Use the declared versions before restoring. The frontend can build without executable .NET or Python;
 ordinary .NET builds run neither npm nor generation. Framework-dependent apphost publication is qualified;
@@ -172,7 +172,11 @@ The baseline also owns the pinned `pg_trgm` extension declaration. PostgreSQL mu
 available for fresh initialization and full restore. Its GIN indexes support the existing literal
 `LIKE` predicates without changing search normalization, query admission or runtime DDL privileges.
 
-The financial case projection contains identity/revision/lifecycle, a bounded nullable fact snapshot, status/progress, financial last-change time, normalized fact search, notification date and exact claimed/payable amounts/currencies. Case work and reminder entities have independent bounded records/revisions; current responsibility, summary search and minimum Pending due date have transactional read projections. Live snapshots store
+The case projection contains identity/revision/lifecycle, a bounded nullable fact snapshot,
+status/progress, fact last-change time, normalized fact search, notification date and exact
+claimed/payable amounts/currencies. Case work and reminder entities have independent bounded records
+and revisions. Current responsibility, summary search and minimum Pending due date have transactional
+read projections. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
 returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
@@ -198,10 +202,8 @@ producer. Custom output directories contain only contract artifacts. Core messag
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
 Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
-Failed JavaScript modulepreloads can poison the WebKit resource cache across document reloads
-([WebKit 270357](https://bugs.webkit.org/show_bug.cgi?id=270357)). The published failure/recovery journeys
-exercise missing chunks, actual document replacement and offline draft preservation; do not replace them
-with shape or build-only checks.
+Published failure/recovery journeys exercise missing chunks, document replacement and offline draft
+preservation in each supported browser engine. Build or schema checks alone do not cover these paths.
 
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
@@ -245,9 +247,10 @@ policy; review the complete `oxlint --print-config` output when changing it.
 
 [ReadAdmission](../web/src/api/readAdmission.ts) bounds complete read responses per document. Queued
 obsolete reads never dispatch. Once handed off, [service](../web/src/api/service.ts) drains a read under
-its own response deadline while the obsolete consumer discards its outcome; caller cancellation does
-not establish that the server released capacity. The caller deadline still includes queue time. Writes
-keep their existing cancellation and uncertainty rules. This is not coordination across documents/tabs.
+its own 20-second response deadline while the obsolete consumer discards its outcome. The caller has a
+separate 20-second deadline that includes queue time; draining can continue after that caller deadline.
+Cancellation does not establish that the server released capacity. Writes keep their cancellation and
+uncertainty rules. This client admission state is local to one document.
 
 Keep files and functions focused by responsibility. File length, parameter counts and change-locality
 measurements are review guidance, not representation requirements. Correctness, dependency, compiler,
@@ -409,7 +412,7 @@ reference → candidate three times. Write and cardinality profiles use fresh Po
 read profiles share the fresh database for their case population. The compared set
 is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and read profiles
 at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
-authority history and actor-filtered authority history. The candidate also measures seven reminder-feature
+authority history and actor-filtered authority history. Reminder-feature measurements comprise seven
 profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
 and global work overview. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
 exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
@@ -438,12 +441,12 @@ qualification evidence and does not permit skipping outstanding workloads.
 
 Read reports include measured latency samples in observation order, excluding warmups, with the percentile
 index rule recorded beside them. Comparison reports add informational per-pair ratios, run spread and
-available sample evidence for latency percentiles. Older harnesses can lack progress and raw samples;
-missing samples are reported rather than reconstructed. These observations do not change sampling, budgets or the median
-comparison rule. Retain the source patch, harness patches, build logs and workload fingerprints together
-when reproducing a result; a source hash alone does not establish which assembly a separate diagnostic loaded.
+available sample evidence for latency percentiles. Missing reference samples are reported rather than
+reconstructed. These observations do not change sampling, budgets or the median comparison rule. Retain
+the source patch, harness patches, build logs and workload fingerprints together when reproducing a
+result; a source hash alone does not identify the assembly loaded by a separate diagnostic.
 
-References without workload fingerprints require a recorded manual review of act cycles, populations,
+A reference without workload fingerprints requires a recorded manual review of act cycles, populations,
 authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
 `reference` and `candidate` commit IDs, `candidatePatchSha256` when working changes are present,
 a `workloads` array of reviewed keys (for example
@@ -452,10 +455,10 @@ a `workloads` array of reviewed keys (for example
 before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
 Single-profile diagnostics also require review of `cardinality/1` and `cardinality/100`.
 
-Only the disposable test harnesses receive an ownership label; reference harnesses without comparison
-selection also receive that selection. Every adaptation is retained as a patch in the report. Product code
-stays at the recorded commit. The comparison removes its worktrees, build outputs and labelled
-containers on success or failure, while preserving reports and failure output.
+The comparison labels its disposable test containers and, when needed, adapts reference harness selection.
+Every adaptation is retained as a patch in the report. Product code stays at the recorded commit.
+The comparison removes its worktrees, build outputs and labelled containers on success or failure,
+while preserving reports and failure output.
 
 The full `bash eng/verify.sh growth` observation includes nine write-contention profiles,
 three cardinality comparisons and search/filtered, notification-order, summary and explicit-work
@@ -466,7 +469,11 @@ their workload inputs and fingerprints. The authority workloads have their own d
 After those common measurements, one open case per thousand receives explicit responsibility and a past
 Pending reminder based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
 independently named cases, account identity, dates and counts before recording their separate latency
-samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one case, independently checking queue continuations, bounded current views, unique financial totals and global attention. The `reminder-derived-follow-up` and `reminder-derived-work-summary` profiles use the independent Work/Reminder seed and are distinct from older authored-follow-up profiles. Feature profiles without matching keys yield no ratio; common read/write/cardinality comparisons retain their budgets.
+samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one
+case, independently checking queue continuations, bounded current views, unique financial totals and
+global attention. The `reminder-derived-follow-up` and `reminder-derived-work-summary` profiles use the
+independent Work/Reminder seed. Only profiles with matching workload keys and fingerprints yield ratios;
+common read/write/cardinality comparisons retain their budgets.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements
@@ -488,8 +495,18 @@ Native-language and assistive-technology review remain human work.
 
 ## Source releases
 
-[Releases](https://github.com/resoltico/claimcore/releases) distribute source archives. The owner authorizes
-release version/date/tag assignment and publication. A completed change or green gate does not grant that
-authority. See [CHANGELOG.md](../CHANGELOG.md) and the [release workflow](../.github/workflows/release.yml).
-The workflow requires main membership, the exact annotated tag/SHA, matching version and successful tag CI;
-branch evidence does not substitute for those inputs.
+[Releases](https://github.com/resoltico/claimcore/releases) distribute source archives. Version, date,
+tag assignment and publication require owner authorization. Prepare the final version, dated changelog
+section, dependencies and documentation before publishing that source commit.
+
+1. Push the final release commit to `main` and wait for its complete push-triggered CI run to succeed.
+2. Create an annotated `vVERSION` tag for that exact commit and push the tag. A tag push does not start
+   another CI run.
+3. Dispatch [Publish source release](../.github/workflows/release.yml) from `main`, supplying the tag and
+   its full commit SHA.
+
+The workflow verifies the annotated tag, expected SHA, membership in `main`, matching version and a
+successful main-branch push CI run for that exact SHA. It publishes the tagged commit's dated
+[CHANGELOG.md](../CHANGELOG.md) section. A branch result for another commit, a local gate or a manual CI
+run does not replace the required push result. Inspect the workflow and resulting release before
+reporting publication complete.

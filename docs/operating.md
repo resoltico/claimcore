@@ -22,11 +22,13 @@ Initialize an empty database with `claimcore-database initialize ZONE`. The cano
 fixed for that installation. Provision its first human owner with `claimcore-database provision-owner`, then
 grant the case roles needed for actual work. OWNER alone grants no case viewing or editing.
 
-The fresh baseline requires PostgreSQL's `pg_trgm` server module, version 1.6. Make its server files
+The baseline requires PostgreSQL's `pg_trgm` server module, version 1.6. Make its server files
 available before initialization or a full restore. Initialization installs the extension in `public`
 and creates two GIN indexes for the existing literal case search; keep that schema protected from
 untrusted creation, as in the deployment setup. The database owner installs the module; runtime
 credentials gain no DDL privileges. The module version is declared in [baseline.sql](../db/baseline.sql).
+Include the GIN indexes in storage, backup and write/WAL capacity planning; their search benefit does
+not imply a constant-cost write or a production capacity guarantee.
 
 ### Database administration
 
@@ -63,10 +65,11 @@ are owned by
 
 Maintenance uses database-owner credentials, independently of application OWNER grants. Inspect
 `claimcore-database status`, then use `maintenance enter`. Entry takes the ledger head, so earlier accepted
-register transactions commit or roll back before entry commits. It pauses new case/authority writes,
-initial owner provisioning and new final-resolution controls. Existing acceptance and final-control
-observations remain readable. Case/authority reads, passive status and authentication/session operations
-continue under their existing rules. Read advice is a snapshot; execution checks actual mode under the head.
+register transactions commit or roll back before entry commits. It pauses new case, work, reminder and
+authority writes, initial owner provisioning and new final-resolution controls. Existing acceptance and
+final-control observations remain readable. Authorized reads, passive status and authentication/session
+operations continue under their existing rules. Read advice is a snapshot; execution checks actual mode
+under the head.
 
 Repeated entry reports the same active generation. `maintenance resume --generation N` requires that
 active generation; `MAINTENANCE_CONFLICT` returns the observed state if it is stale or no longer active.
@@ -308,6 +311,10 @@ Actor work has separate pools of four ordinary reads, four register writes and t
 One canonical authenticated principal can hold two ordinary reads, one write and one recovery read;
 caller-supplied IDs and headers cannot select a different admission identity. Completed identities do not
 remain in a partition cache.
+
+The browser separately bounds reads within each document and drains dispatched obsolete responses.
+That client coordination does not combine the activity of multiple tabs, CLI processes or Web hosts.
+All clients remain subject to the server limits, including HTTP 429 admission refusals.
 
 `CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
 `CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
