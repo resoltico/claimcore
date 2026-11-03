@@ -424,3 +424,96 @@ let qualify (fixture: PublishedFixture.Fixture) =
     Expect.isTrue
         (final.GetProperty("mine").GetBoolean())
         "Responsibility remains factual and current"
+
+    // Current timing is an observation of the installation date, not the CLI clock.
+    let businessDate =
+        queue.GetProperty("basis").GetProperty("businessDate").GetString()
+        |> nonNull
+        |> DateOnly.Parse
+
+    let timed =
+        [ "OVERDUE", "Overdue", -1; "TODAY", "Today", 0; "UPCOMING", "Upcoming", 1 ]
+        |> List.map (fun (timing, label, offset) ->
+            let due = businessDate.AddDays(offset).ToString("yyyy-MM-dd")
+            let identity = reminder "create" [ "--action"; "Timing " + timing; "--due"; due ] |> reminderId
+            identity, timing, label, due)
+
+    let localizedText language arguments =
+        let result = invoke fixture environment (arguments @ [ "--format"; "text"; "--language"; language ]) Array.empty 0
+        Expect.equal result.ExitCode 0 "Published human reminder read succeeds"
+        Expect.equal result.StandardError.Length 0 "Human reminder reads leave stderr empty"
+        Encoding.UTF8.GetString result.StandardOutput
+
+    let text = localizedText "en"
+
+    let getArguments identity = [ "reminder"; "get"; reference; "--reminder-id"; identity ]
+    let listArguments = [ "reminder"; "list"; "--case-reference"; reference; "--limit"; "50" ]
+
+    let assertCurrent active =
+        let listed =
+            verb fixture environment (listArguments @ [ "--include-inactive" ]) 0
+            |> require "SUCCEEDED"
+        let listText = text (listArguments @ [ "--include-inactive" ])
+
+        for identity, timing, label, due in timed do
+            let arguments = getArguments identity
+            let read = verb fixture environment arguments 0 |> require "SUCCEEDED"
+            let current = read.GetProperty("item")
+            let row =
+                listed.GetProperty("items").EnumerateArray()
+                |> Seq.find (fun value -> value.GetProperty("reminder").GetProperty("reminderId").GetString() = identity)
+
+            for value in [ current; row ] do
+                Expect.equal (value.GetProperty("active").GetBoolean()) active "Actual current parent activity"
+                Expect.equal (value.GetProperty("reminder").GetProperty("state").GetString()) "PENDING" "Lifecycle never fabricates completion"
+                Expect.equal (value.GetProperty("reminder").GetProperty("dueDate").GetString()) due "Retained due date survives parent lifecycle changes"
+                if active then
+                    Expect.equal (value.GetProperty("timing").GetString()) timing "Exact server timing survives published JSON output"
+                else
+                    Expect.equal (value.GetProperty("timing").ValueKind) JsonValueKind.Null "Dormant dates are not actionable timing"
+
+            for rendered in [ text arguments; listText ] do
+                Expect.equal (rendered.Contains("Inactive work", StringComparison.Ordinal)) (not active) "Published single and page distinguish inactive work"
+                if active then
+                    Expect.stringContains rendered label "Published human output shows server timing"
+                else
+                    for suppressed in [ "Overdue"; "Today"; "Upcoming" ] do
+                        Expect.isFalse (rendered.Contains(suppressed, StringComparison.Ordinal)) "Inactive work has no actionable timing label"
+                Expect.stringContains rendered due "Human output preserves retained due date"
+                Expect.stringContains rendered (read.GetProperty("basis").GetProperty("timeZoneId").GetString() |> nonNull) "Human output states installation date basis"
+
+        for language, inactive, labels in [
+            "lv", "Neaktīvs darbs", [ "Nokavēts"; "Šodien"; "Gaidāms" ]
+            "ar", "عمل غير نشط", [ "متأخر"; "اليوم"; "قادم" ]
+        ] do
+            let firstIdentity, _, _, _ = List.head timed
+            let single = localizedText language (getArguments firstIdentity)
+            let page = localizedText language (listArguments @ [ "--include-inactive" ])
+            for rendered in [ single; page ] do
+                Expect.equal (rendered.Contains inactive) (not active) "Published localized single and page distinguish inactive work"
+                if not active then
+                    for label in labels do
+                        Expect.isFalse (rendered.Contains label) "Dormant localized output has no actionable timing"
+            if active then
+                Expect.stringContains single (List.head labels) "Published localized single timing"
+                for label in labels do
+                    Expect.stringContains page label "Published localized page timing"
+
+        let terminal = verb fixture environment (getArguments second) 0 |> require "SUCCEEDED"
+        Expect.equal (terminal.GetProperty("item").GetProperty("timing").ValueKind) JsonValueKind.Null "Terminal reminder has no current timing"
+
+    assertCurrent true
+    fact "close" 8 [] |> ignore
+    assertCurrent false
+
+    let activeOnly = verb fixture environment listArguments 0 |> require "SUCCEEDED"
+    Expect.equal (activeOnly.GetProperty("items").GetArrayLength()) 0 "Inactive parents require explicit list inclusion"
+
+    verb
+        fixture
+        (interactiveEnvironment fixture "synthetic-steward" "valid")
+        [ "case"; "void"; reference; "--operation-id"; id (); "--expected-revision"; "9"; "--reason"; "Synthetic timing qualification" ]
+        0
+    |> require "ACCEPTED"
+    |> ignore
+    assertCurrent false

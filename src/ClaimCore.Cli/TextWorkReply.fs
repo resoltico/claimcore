@@ -51,29 +51,27 @@ module internal TextWorkReply =
             + TerminalText.data value.TimeZoneId
         ]
 
-    let single language (value: ReminderRead) =
-        basis language value.Basis
-        @ [ TerminalText.data (CaseReference.format value.Item.Reference) ]
-        @ reminder language value.Item.Reminder
+    let private currentReminder language (value: ReminderReadModel) =
+        [ TerminalText.data (CaseReference.format value.Reference) ]
+        @ reminder language value.Reminder
+        @ (value.Timing
+           |> Option.map (fun timing ->
+               [ line language "input.reminderDue.label" (term language ReminderDue.vocabulary timing) ])
+           |> Option.defaultValue [])
+        @ (if value.Active then [] else [ term language CaseDue.vocabulary CaseDue.Inactive ])
         @ [
-            instant value.Item.RecordedAt + "  " + ActorId.format value.Item.RecordedBy
-            value.Item.Acts
+            instant value.RecordedAt + "  " + ActorId.format value.RecordedBy
+            value.Acts
             |> List.map (fun act -> term language ReminderActKind.vocabulary act)
             |> String.concat ", "
         ]
 
+    let single language (value: ReminderRead) =
+        basis language value.Basis @ currentReminder language value.Item
+
     let page language (page: ReminderPage) =
         basis language page.Basis
-        @ (page.Items
-           |> List.collect (fun value ->
-               [ TerminalText.data (CaseReference.format value.Reference) ]
-               @ reminder language value.Reminder
-               @ [
-                   instant value.RecordedAt + "  " + ActorId.format value.RecordedBy
-                   value.Acts
-                   |> List.map (fun act -> term language ReminderActKind.vocabulary act)
-                   |> String.concat ", "
-               ]))
+        @ (page.Items |> List.collect (currentReminder language))
         @ nextLines language page.NextCursor
 
     let overview language (value: WorkOverview) =
