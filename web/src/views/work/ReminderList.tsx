@@ -19,13 +19,15 @@ import { followLink } from "../../routing/followLink";
 import { renderCatalogKey } from "../../presentation/messages";
 import { operationEntry } from "../../protocol/operationCatalog";
 
-type ObservedReminder = ReminderReadModel & { basis: WorkDateBasis };
+type ObservedReminder = { item: ReminderReadModel; basis: WorkDateBasis };
 type ObservedReminderPage = Omit<ReminderPage, "items"> & { items: ObservedReminder[] };
 const select = (reply: ResponseByEndpoint["reminder.list"]): ObservedReminderPage | null => {
-  if (reply.outcome.kind !== "SUCCEEDED") return null;
+  if (reply.outcome.kind !== "SUCCEEDED") {
+    return null;
+  }
   const page = reply.outcome.data;
   // Each loaded row keeps its own server observation rather than the latest page basis.
-  return { ...page, items: page.items.map((row) => ({ ...row, basis: page.basis })) };
+  return { ...page, items: page.items.map((item) => ({ item, basis: page.basis })) };
 };
 export const ReminderList = ({
   target,
@@ -68,7 +70,7 @@ export const ReminderList = ({
       ) : null}
       <p className="observation-basis">{p.text("ui.liveWorkPages")}</p>
       <ol>
-        {result.items.map((row) => (
+        {result.items.map(({ item: row, basis }) => (
           <li key={`${row.reminder.reminderId}:${row.reminder.revision}`}>
             {target === undefined ? (
               <a
@@ -98,8 +100,8 @@ export const ReminderList = ({
             </p>
             <p className="observation-basis">
               {p.text("ui.workDateBasis", {
-                date: p.date(row.basis.businessDate),
-                zone: row.basis.timeZone,
+                date: p.date(basis.businessDate),
+                zone: basis.timeZone,
               })}
             </p>
             {row.active ? null : <p>{p.text("ui.caseWorkInactive")}</p>}

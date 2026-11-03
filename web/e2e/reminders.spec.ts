@@ -557,7 +557,9 @@ test("published reminder rows show server timing in case and queue views across 
   const reference = `TIMING-${randomUUID()}`;
   await openCase(page, reference);
   const observed = await workRequest(page, "work.overview", {});
-  if (observed.outcome.kind !== "SUCCEEDED") throw new Error("Expected server date basis");
+  if (observed.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Expected server date basis");
+  }
   const { businessDate, timeZone } = observed.outcome.data.basis;
   const actions = [
     `${reference} past planned action`,
