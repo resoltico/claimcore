@@ -9,52 +9,68 @@ const statePath = path.join(owned, "published-session-state.json");
 let failedCheck = "UNEXPECTED";
 let activeStep = "BROWSER";
 let firstFailure;
-const failureDetails = (error) => {
-  const message = typeof error?.message === "string" ? error.message : "";
-  const token = message.match(
+const networks = new Map([
+  ["net::ERR_CONNECTION_REFUSED", "REFUSED"],
+  ["ECONNREFUSED", "REFUSED"],
+  ["net::ERR_CONNECTION_RESET", "RESET"],
+  ["ECONNRESET", "RESET"],
+  ["net::ERR_CONNECTION_CLOSED", "CLOSED"],
+  ["ECONNABORTED", "ABORTED"],
+  ["net::ERR_EMPTY_RESPONSE", "EMPTY"],
+  ["net::ERR_ABORTED", "ABORTED"],
+  ["net::ERR_TIMED_OUT", "TIMEOUT"],
+  ["net::ERR_CONNECTION_TIMED_OUT", "TIMEOUT"],
+  ["ETIMEDOUT", "TIMEOUT"],
+  ["net::ERR_CERT_AUTHORITY_INVALID", "TLS"],
+  ["net::ERR_CERT_DATE_INVALID", "TLS"],
+  ["net::ERR_CERT_COMMON_NAME_INVALID", "TLS"],
+  ["net::ERR_SSL_PROTOCOL_ERROR", "TLS"],
+  ["net::ERR_BLOCKED_BY_CLIENT", "BLOCKED"],
+  ["net::ERR_BLOCKED_BY_RESPONSE", "BLOCKED"],
+  ["net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS", "BLOCKED"],
+  ["net::ERR_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_CHECKS", "BLOCKED"],
+]);
+const errorMessage = (error) => (typeof error?.message === "string" ? error.message : "");
+const failureNetwork = (error) => {
+  const token = errorMessage(error).match(
     /\b(?:net::ERR_[A-Z0-9_]+|ECONNREFUSED|ECONNRESET|ECONNABORTED|ETIMEDOUT)\b/u,
   )?.[0];
-  const networks = new Map([
-    ["net::ERR_CONNECTION_REFUSED", "REFUSED"],
-    ["ECONNREFUSED", "REFUSED"],
-    ["net::ERR_CONNECTION_RESET", "RESET"],
-    ["ECONNRESET", "RESET"],
-    ["net::ERR_CONNECTION_CLOSED", "CLOSED"],
-    ["ECONNABORTED", "ABORTED"],
-    ["net::ERR_EMPTY_RESPONSE", "EMPTY"],
-    ["net::ERR_ABORTED", "ABORTED"],
-    ["net::ERR_TIMED_OUT", "TIMEOUT"],
-    ["net::ERR_CONNECTION_TIMED_OUT", "TIMEOUT"],
-    ["ETIMEDOUT", "TIMEOUT"],
-    ["net::ERR_CERT_AUTHORITY_INVALID", "TLS"],
-    ["net::ERR_CERT_DATE_INVALID", "TLS"],
-    ["net::ERR_CERT_COMMON_NAME_INVALID", "TLS"],
-    ["net::ERR_SSL_PROTOCOL_ERROR", "TLS"],
-    ["net::ERR_BLOCKED_BY_CLIENT", "BLOCKED"],
-    ["net::ERR_BLOCKED_BY_RESPONSE", "BLOCKED"],
-    ["net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS", "BLOCKED"],
-    ["net::ERR_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_CHECKS", "BLOCKED"],
-  ]);
-  const network = token === undefined ? "NONE" : (networks.get(token) ?? "OTHER");
-  let kind = "OTHER";
-  if (failedCheck !== "UNEXPECTED") kind = "CHECK";
-  else if (error?.name === "TimeoutError") kind = "TIMEOUT";
-  else if (
-    message.includes("pthread_create") ||
-    message.includes("Resource temporarily unavailable") ||
-    message.includes("Failed to create thread")
-  )
-    kind = "RESOURCE";
-  else if (
-    error?.constructor?.name === "TargetClosedError" ||
-    message.includes("Target page, context or browser has been closed")
-  )
-    kind = "TARGET_CLOSED";
-  else if (network !== "NONE") kind = "NETWORK";
-  else if (error?.name === "SyntaxError") kind = "SYNTAX";
-  else if (error?.name === "TypeError") kind = "TYPE";
-  else if (["ENOENT", "EACCES", "EPERM", "EIO"].includes(error?.code)) kind = "IO";
-  return { step: activeStep, kind, network };
+  return token === undefined ? "NONE" : (networks.get(token) ?? "OTHER");
+};
+const targetClosed = (error) =>
+  error?.constructor?.name === "TargetClosedError" ||
+  errorMessage(error).includes("Target page, context or browser has been closed");
+const namedFailureKinds = new Map([
+  ["SyntaxError", "SYNTAX"],
+  ["TypeError", "TYPE"],
+]);
+const failureIoKind = (error) =>
+  ["ENOENT", "EACCES", "EPERM", "EIO"].includes(error?.code) ? "IO" : "OTHER";
+const failureKind = (error, network) => {
+  if (failedCheck !== "UNEXPECTED") {
+    return "CHECK";
+  }
+  if (error?.name === "TimeoutError") {
+    return "TIMEOUT";
+  }
+  if (
+    ["pthread_create", "Resource temporarily unavailable", "Failed to create thread"].some(
+      (message) => errorMessage(error).includes(message),
+    )
+  ) {
+    return "RESOURCE";
+  }
+  if (targetClosed(error)) {
+    return "TARGET_CLOSED";
+  }
+  if (network !== "NONE") {
+    return "NETWORK";
+  }
+  return namedFailureKinds.get(error?.name) ?? failureIoKind(error);
+};
+const failureDetails = (error) => {
+  const network = failureNetwork(error);
+  return { step: activeStep, kind: failureKind(error, network), network };
 };
 const require = (condition, code) => {
   if (!condition) {
