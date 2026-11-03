@@ -313,12 +313,7 @@ let tests =
                         task {
                             use! connection = database.OwnerSource.OpenConnectionAsync()
 
-                            let! _ =
-                                DatabaseSession.execute
-                                    connection
-                                    "DROP SCHEMA claimcore CASCADE"
-                                    [||]
-                                    token
+                            do! DatabaseScenarios.resetForInitialization connection
 
                             let settings =
                                 NpgsqlConnectionStringBuilder(
