@@ -22,6 +22,7 @@
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="NamedRowTests.fs" />
+    <Compile Include="SearchIndexTests.fs" />
     <Compile Include="ReminderPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />

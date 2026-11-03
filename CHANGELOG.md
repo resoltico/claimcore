@@ -2,7 +2,7 @@
 
 ## [Unreleased]
 
-- Use a fresh database: case request/snapshot/ledger format 4 and separate work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installations refuse without migration.
+- Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.
 - Next follow-up is derived from Pending reminders; remove followUpDate writes. Work and each reminder have independent revisions, so scheduling does not invalidate financial edits.
 - Regenerate clients for WORK/REMINDER operations, entity-specific revisions, bounded pages and correlated effects. Complete-and-plan-next commits exactly two effects under one operation ID.
 - New strict identity-only recovery journals refuse old formats without deletion or conversion. In-memory reviewed requests retain exact retry bytes; restart recovery never reconstructs business text.
@@ -48,6 +48,7 @@
 - Incident description and Handling summary are optional LF plain text, each up to 600 Unicode scalars. Omission preserves, explicit clear removes; action text is single-line, up to 200 scalars.
 - Complete, cancel and explicitly reopen reminders without rewriting prior history. Completing the last Pending action is valid and exposes missing-plan attention.
 - Accessible work attention ignores case page/search filters, distinguishes case/reminder units and counts overlapping attention once. Mine inherits current case responsibility within read access.
+- GIN indexes support literal search across case facts and Handling summaries; account for their database storage and write-ahead-log overhead.
 
 ## [0.14.0] - 2026-10-30
 

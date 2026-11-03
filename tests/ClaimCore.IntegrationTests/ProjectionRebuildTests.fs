@@ -224,13 +224,24 @@ let private erasedIdentity database =
                     "postgres"
                     "-d"
                     "postgres"
-                    "-n"
-                    "claimcore"
                     "-f"
                     "/tmp/foundation-erased.sql"
                 |]
 
         do! sql database "DROP SCHEMA claimcore CASCADE" [||]
+        do! sql database "DROP EXTENSION pg_trgm" [||]
+
+        let! absentModule =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT EXISTS(SELECT FROM pg_extension WHERE extname='pg_trgm')"
+                    [||]
+                    token)
+
+        Expect.isFalse
+            (DatabaseSession.value<bool> 0 absentModule.Head)
+            "Restore cannot reuse an installed extension"
 
         do!
             DatabaseScenarios.exec
@@ -246,6 +257,19 @@ let private erasedIdentity database =
                     "-f"
                     "/tmp/foundation-erased.sql"
                 |]
+
+        let! restoredModule =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT extversion FROM pg_extension WHERE extname='pg_trgm'"
+                    [||]
+                    token)
+
+        Expect.equal
+            (restoredModule |> List.map (DatabaseSession.value<string> 0))
+            [ "1.6" ]
+            "Full dump restores the required module before its dependent indexes"
 
         let! restored = Verification.verify database.OwnerSource (Some checkpoint) token
 

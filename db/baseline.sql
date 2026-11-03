@@ -19,6 +19,9 @@
 -- Narrative syntax is at most 4096 UTF-8 bytes; reminder action syntax is at most 1024 bytes.
 -- Each framed request plus affected-entity snapshot payload is at most 32768 bytes.
 
+-- Server module supplied with PostgreSQL; used only by indexes for existing literal LIKE searches.
+CREATE EXTENSION pg_trgm WITH SCHEMA public VERSION '1.6';
+
 CREATE SCHEMA claimcore;
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
 
@@ -322,6 +325,9 @@ CREATE TABLE claimcore.cases (
 
 -- One case per reference regardless of ASCII letter case; also the list order and keyset.
 CREATE UNIQUE INDEX cases_reference_key ON claimcore.cases (upper(case_reference COLLATE "C"));
+
+CREATE INDEX cases_search ON claimcore.cases USING gin (search_text public.gin_trgm_ops);
+CREATE INDEX cases_work_search ON claimcore.cases USING gin (work_search_text public.gin_trgm_ops);
 
 CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));

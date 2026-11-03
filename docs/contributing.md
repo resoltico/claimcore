@@ -168,6 +168,10 @@ checksum-bound schema source; its SHA-256 installation identity derives from the
 Baseline edits require a rebuild and a fresh installation. The runtime refuses unsupported installation
 identities without modifying them.
 
+The baseline also owns the pinned `pg_trgm` extension declaration. PostgreSQL must have that module
+available for fresh initialization and full restore. Its GIN indexes support the existing literal
+`LIKE` predicates without changing search normalization, query admission or runtime DDL privileges.
+
 The financial case projection contains identity/revision/lifecycle, a bounded nullable fact snapshot, status/progress, financial last-change time, normalized fact search, notification date and exact claimed/payable amounts/currencies. Case work and reminder entities have independent bounded records/revisions; current responsibility, summary search and minimum Pending due date have transactional read projections. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
