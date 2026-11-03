@@ -464,10 +464,10 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     let assertCurrent active =
         let listed =
-            verb fixture environment (listArguments @ [ "--include-inactive" ]) 0
+            verb fixture environment (listArguments @ [ "--include-inactive"; "true" ]) 0
             |> require "SUCCEEDED"
 
-        let listText = text (listArguments @ [ "--include-inactive" ])
+        let listText = text (listArguments @ [ "--include-inactive"; "true" ])
 
         for identity, timing, label, due in timed do
             let arguments = getArguments identity
@@ -537,7 +537,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
             ] do
             let firstIdentity, _, _, _ = List.head timed
             let single = localizedText language (getArguments firstIdentity)
-            let page = localizedText language (listArguments @ [ "--include-inactive" ])
+            let page = localizedText language (listArguments @ [ "--include-inactive"; "true" ])
 
             for rendered in [ single; page ] do
                 Expect.equal
