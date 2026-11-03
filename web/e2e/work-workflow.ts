@@ -2,6 +2,7 @@ import { expect, type Page } from "@playwright/test";
 import { endpoints, isResponse, type RequestByEndpoint } from "@contracts/client";
 import { browserRequest, installationId, sessionToken } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
+import { isHostFailure } from "../src/protocol/client";
 
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
   await retainResponseBodies(page);
@@ -40,7 +41,8 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
     await expect(reminders.getByRole("alert")).toHaveCount(0);
     const observed = reminders.getByText(/^Work observed for /u).first();
     const empty = reminders.getByText("No reminders match this view.", { exact: true });
-    await expect(observed.or(empty)).toBeVisible();
+    // A successful empty page can show both its message and its observation basis.
+    await expect(observed.or(empty).first()).toBeVisible();
   }
   const overview = page.locator(".work-overview");
   await expect(overview).toHaveAttribute("aria-busy", "false");
@@ -66,7 +68,10 @@ export const workRequest = async <K extends keyof RequestByEndpoint>(
     body: JSON.stringify(body),
   });
   if (result.status !== 200 || !isResponse(endpoint, result.payload)) {
-    throw new Error("E2E_WORK_READBACK_INVALID");
+    const detail = isHostFailure(result.payload, result.status)
+      ? result.payload.hostFailure.code
+      : "INVALID_RESPONSE";
+    throw new Error(`E2E_WORK_READBACK_HTTP_${result.status}_${detail}`);
   }
   return result.payload;
 };
