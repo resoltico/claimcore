@@ -65,6 +65,19 @@ class GrowthComparisonTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             stage.validate_completion({**full, "completedReadProfiles":0}, preparation, None)
 
+    def test_partial_incremental_read_counts_cannot_qualify_a_completed_write_side(self):
+        preparation = {"hasReadWorkloads": True}
+        for expected in (13, 35):
+            state = {"result": "completed", "completed": 3, "expected": 3,
+                     "requiredReadProfiles": expected, "completedReadProfiles": expected - 1}
+            with self.assertRaisesRegex(ValueError, "Incomplete comparison read profiles"):
+                stage.validate_completion(state, preparation, None)
+            state["completedReadProfiles"] = expected
+            self.assertEqual(stage.validate_completion(state, preparation, None), expected)
+            state["result"] = "incomplete"
+            with self.assertRaises(ValueError):
+                stage.validate_completion(state, preparation, None)
+
     def test_diagnostic_scope_never_returns_qualification_success(self):
         self.assertEqual(stage.qualification_exit(True, True), 0)
         self.assertEqual(stage.qualification_exit(False, True), 1)

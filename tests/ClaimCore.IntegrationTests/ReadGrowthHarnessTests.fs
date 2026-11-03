@@ -67,10 +67,12 @@ let tests =
                 Expect.equal workload.warmupRequests 5 "The existing warmup count is unchanged"
 
                 let samples = workload.latencySamples
+
                 Expect.equal
                     samples.milliseconds.Length
                     100
                     "Raw evidence contains every measured read"
+
                 Expect.equal samples.order "observation" "Raw samples retain observation order"
                 Expect.isFalse samples.warmupsIncluded "Raw read evidence excludes warmup requests"
 
@@ -80,6 +82,7 @@ let tests =
                     "The existing percentile definition is recorded"
 
                 let ordered = samples.milliseconds |> Array.sort
+
                 Expect.equal
                     ordered[94]
                     workload.p95Milliseconds
