@@ -291,12 +291,7 @@ let private lostCommit
     (connection: NpgsqlConnection)
     =
     task {
-        let! _ =
-            DatabaseSession.execute
-                connection
-                "DROP SCHEMA claimcore CASCADE"
-                [||]
-                CancellationToken.None
+        do! DatabaseScenarios.resetForInitialization connection
 
         let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
 
