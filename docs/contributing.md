@@ -339,6 +339,11 @@ projects use automatic nonempty discovery and explicit stage assignment. Focused
 skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
 PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
 
+Acceptance uses [its own run settings](../eng/expecto.acceptance.runsettings) with one worker so
+container startup and teardown cannot overlap browser authentication in another fixture. These
+fixtures share host networking. Keep these settings when running focused acceptance cases; unit and
+store tests retain their separate concurrency settings.
+
 Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
 engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
 mode explicitly reports incomplete qualification. Native report directories under

@@ -269,7 +269,7 @@ acceptance() {
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
   local project
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release 40m
+    tests "${project}" Release 40m eng/expecto.acceptance.runsettings
   done
 }
 
