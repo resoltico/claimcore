@@ -1,117 +1,191 @@
 # Narratives and reminders verification
 
-This review record covers the local replacement of the single editable follow-up with independent
-case work and reminders, including optional incident description and Handling summary. The governing
-handoff is `claimcore-narratives-reminders-handoff-2026-11-02.tar.gz`; baseline source is
-`b5e21690191482d6a5ea15cdccd7bb9ae5f31dc9`. The adjacent checksum and extracted delivery inventory
-passed: 1201 files, including 1171 baseline source files. This establishes delivery identity, not
-implementation correctness.
+Current local qualification is for `35b3c5639e593575e18de323d6dbe411a05f5853` on
+`codex/narratives-reminders`, against baseline `b5e21690191482d6a5ea15cdccd7bb9ae5f31dc9`.
+The ordinary full gate, complete Chromium/Firefox/WebKit suites, refreshed actual-source query probe,
+offline CLI captures, full standalone growth and full three-pair comparison all passed. The comparison
+passed all 31 unchanged budgets with ten matching common workload fingerprints; independent recomputation
+also passed. Earlier complete failed campaigns remain failures in the retained record.
 
-Last complete local functional checkpoint: `f1019126ebb5c8fde9af3b3b69517f6e5406563c` on
-`codex/narratives-reminders`. Its ordinary full gate and full standalone growth passed, but its full
-three-pair comparison failed four common case-page budgets. Corrective product commits `c87bcb0f`,
-`5a9d79b3` and `1eea998e` preserve the required checks while combining bounded page reads, global
-authority facts and read setup. Their full requalification is outstanding; smaller diagnostics do not
-establish a budget pass. Concrete before/after offline CLI capture remains pending. Declared native
-CI-platform jobs remain unrun. This document does not claim readiness or authorize rollout.
+The physical-design correction is implemented: pinned `pg_trgm` 1.6 and full GIN search indexes preserve
+literal search/authorization/erasure semantics. The subsequent owned-fixture reset correction is included
+in this exact source. The subsequent verification-tooling refactors passed separate runtime QA and are integrated. The full
+product results remain attributed to source35; product `src`, `db` and `web` inputs are unchanged by
+those tooling changes. No cross-platform readiness or rollout is claimed.
+
+The governing delivery is `claimcore-narratives-reminders-handoff-2026-11-02.tar.gz`. Its adjacent checksum
+and extracted inventory passed: 1,201 files, including 1,171 baseline source files. Delivery identity does
+not establish implementation quality. Live `AGENTS.md`/`AGENTS_EXTRA.md` and referenced handoff documents
+were read. Neither instruction file was changed.
 
 ## Evidence and qualification scope
 
-Evidence filenames below denote local outputs under `artifacts/verification/narratives-reminders/`,
-unless stated otherwise. They are intentionally excluded from source control; preserve them alongside
-this review. The external query readout is under the extracted handoff execution directory, at
-`query-count-probe/evidence/run.CGbP1gyR/READOUT.md`. Do not copy whole private acceptance fixtures:
-they contain synthetic authentication state and private keys as well as useful failure evidence.
+Paths below are relative to `artifacts/verification/narratives-reminders/` unless explicitly rooted
+elsewhere. These ignored local outputs must accompany review; code-formatted paths intentionally do
+not become clean-checkout documentation links. Private fixture directories can contain credentials,
+authentication state and keys. Only allowlisted reports/loading measurements/synthetic screenshots were
+copied; private fixture contents are not public attachments.
 
-| Evidence | Source and actual result | Qualification limit |
+| Evidence | Actual result and source | Limit |
 | --- | --- | --- |
-| `delivery-verification.json`, `baseline-ci.json`, `published-releases.json` | Delivery verified; baseline CI observed green; actual latest published stable baseline was v0.14.0 | Baseline observations do not qualify the replacement |
-| `full-gate-foreground.log`, `full-gate-foreground-source.*`, `foreground-native-reports/` | Full ordinary gate at f1019126 passed: 804 native unit/architecture, 133 frontend files/663 tests, 262 actual PostgreSQL, 101 HTTP/server and 58 published acceptance tests; zero required skips | Local macOS27.2 arm64 qualification, not the declared CI runner matrix |
-| `foreground-browser-chromium.json`, `foreground-browser-firefox.json`, `foreground-browser-webkit.json` | Complete supported suites passed: Chromium211, Firefox189, WebKit189; zero retries/skips. Real service/IndexedDB and native/published journeys included | Automated supported-engine evidence, not accessibility certification |
-| `full-growth-summary.json`, `full-growth.log`, `full-growth-results.trx`, `full-growth-directory.txt` | Full standalone f101 growth passed in35m05s: 9/9 write profiles, 35/35 read profiles, cardinality1/100/1000; high fan-out100/1000/10000 pending plus equal completed population. Native wrapper1/1, zero skips; no diagnostic selector | Raw report directory: `artifacts/verification/growth/e65eecf43ef0408f860c4e504cad438e`. Standalone observations are not baseline ratios or an SLA |
-| `maximum-text-visual-review/`, `foreground-connected-screens/`, `reused-input-tree-checks.json` | Connected English/Latvian/Arabic maximum-text/layout captures reviewed; original/corrected heading geometry retained. Final all-engine tests include usable-heading-width assertions. Earlier reviewed web source tree matches f101 | Before web capture is partial; visual/automated checks do not establish full WCAG certification |
-| `independent-oracles-and-races.log`, `focused-postgres-reminders.log`, `protocol-cli/isolated-checks/evidence.json` | Selected26 native/46 PG controls,42 typed-wire properties and7 actual process/PTY input controls passed; their maintained replacement tests also run in the full gate | Earlier focused scopes complement definitive integrated results; they are not substitutes |
-| External query-count/plan readout; `reused-input-tree-checks.json` | 105 actual production-backend/PG checks:50 assigned cases,1050 pending/1000 completed, exact distinct EUR25000. Case pages8 commands at1/50 rows; global queue7; targeted pages9. Actual per-row negative control4→102 rejected | Six exact SQL bindings/plans retained; targeted queues chose sequential scan/top-N at that population. Relevant backend/schema trees match f101. No100k-case plan or constant server-work claim |
-| `performance-preflight.json`, `comparison-f1019126-failed.log`, `failed-comparison-f1019126-directory.txt` | Full three-pair f101 comparison completed all six raw runs and failed four metrics: filtered throughput0.768; notified throughput0.714, p951.347, p991.439. Ten shared fingerprints matched; cleanup passed | Genuine common-read regression; original0.85/1.30 budgets unchanged. Corrective source requires renewed full qualification |
-| `case-page-diagnostic/`, `case-page-phase-profile/`, `page-read-performance/`, `global-authority-read/`, `read-setup/` | Focused functional controls and explicitly scoped1k/100k diagnostics support the corrective read changes; actual SQL/bindings/plans and instrumentation patches retained | Instrumented or reduced observations are not full-gate/growth/comparison passes; uninstrumented large-read diagnostic is in progress |
-| `musl-unit.log`, retained TRX, `musl-qualification-readout.json` | Supplemental pinned Alpine3.24/.NET10.0.403 linux-musl-x64 under Rosetta:804 discovered,799 passed,5 failed, zero skips | FAILED; not native CI qualification. Selected diagnosis does not supersede the failed full run |
+| `delivery-verification.json`, `baseline-ci.json`, `published-releases.json` | Delivery verified; baseline CI observed green; published stable baseline v0.14.0 | Baseline observations do not qualify current source |
+| `gate-35b3c563.log`, `gate-source-35b3c563.*`, `qualification-35b3c563-source.json`, `gate-35b3c563-reports/inventory.json` | Ordinary full gate passed: 805 native unit/architecture, 133 frontend files/663 tests, 274 PostgreSQL, 101 HTTP/server and 58 published acceptance; zero required skips | Local macOS 27.2 arm64 only; declared native CI platforms remain unrun |
+| `gate-35b3c563-reports/native.sRKTlTPy/` | Complete Chromium 211, Firefox 189 and WebKit 189 passed; zero retries/skips; canonical summaries and six loading measurements retained. All four native-stage TRX retained | Actual service, IndexedDB, native and browser journeys; no accessibility certification claim |
+| `connected-screens-35b3c563/inventory.json` | 121 safe current PNGs: English/Latvian/Arabic, RTL/themes/layout/maximum text; connected heading geometry controls pass. Earlier `maximum-text-visual-review/` and original/corrected controls retained | Screenshots/axe do not establish full WCAG certification; older visual inspection is identified separately |
+| `baseline-design-capture/run-20261103T015108Z-jtta5vk9/{capture.json,CLEANUP-FOLLOWUP.json,VISUAL-REVIEW.json}`, `baseline-design-capture/run-20261103T015108Z-jtta5vk9/native/screens/` | Original b5 gallery passed 26 dimensions, 91 PNGs, 754 page loads and 780 axe/reflow checks; native 1/1, zero skips. Three representative English/light/dark and Arabic/narrow frames reviewed; baseline product/TS untouched | Gallery completion, not a new full 193-case/all-engine baseline gate. Original collector FAILED immediate transient-Ryuk postflight; separate later `CLEANUP_VERIFIED` evidence is retained |
+| `cli-before-after/run-20261103T043611Z-v6v_9jke/capture.json`, per-command stdout/stderr | 11 actual commands passed with declared b5/current35 executables: help/describe and independent expected dry-run frames; authored file preserved; exact CRLF→LF Arabic/emoji summary; isolated XDG directories empty | Offline presentation/acquisition only. DLL/runtime/declared-source provenance limits remain; full gate supplies service/native/PTY evidence |
+| `query-probe-35b3c563.log`, `query-probe-35b3c563-directory.txt`; external `query-count-probe/evidence/run.6UAC6HwQ/report.json` and raw bindings/plans/catalogs | 134 passing observations/118 distinct labels; 50 assigned cases, 1,050 Pending/1,000 Completed and distinct EUR25,000. Case pages/global queues use five commands at 1/50 rows; targeted pages seven; actual per-row negative control 3→101 rejected. Seven custom replays plus two naturally GENERIC executions | Exact current source/assembly evidence checked below; no 100k-case plan qualification, SLA or constant server-work claim. This run has no `AUDIT.json`; do not substitute old `run.UIP9W2Je` attribution |
+| `growth-35b3c563-{summary.json,results.trx,log,directory.txt}`; raw `artifacts/verification/growth/b85a1c30a9584adb971d269490bf45db` | Full current growth PASSED in about 33m32s: 9/9 writes, 35/35 reads, cardinality 1/100/1000, fan-out 100/1000/10000 Pending plus equal Completed; native wrapper 1/1, zero failed/skipped; no diagnostic selector | Standalone current-source qualification, separate from comparison; native test duration 33m30.827s; no SLA |
+| `comparison-35b3c563-summary.json`, `comparison-35b3c563-directory.txt`; raw `artifacts/verification/growth-compare-dbbad32d-5936-48a6-a7d0-23410d273a91/{comparison.json,comparison.md,AUDIT.json,AUDIT.md}` | Full three alternating reference→candidate pairs PASSED 31/31; all six native runs 1/1 Passed, zero other counters; ten common fingerprints match; cleanup passed. Independent audit reconstructed 87 raw workloads, checked six run states/93 fingerprint digests and recomputed all separate-median budgets | Same-host/session comparison, not an SLA or platform matrix. Three write profiles/six common reads/one cardinality profile per side; nine asymmetric feature keys are N/A, never comparable passes |
+| `gate-8917f6b1-{failure-summary.json,postgres-failed.trx,log}` | Earlier GIN-source gate FAILED six of 274 PostgreSQL tests (268 passed): fresh-initializer fixtures dropped only `claimcore`, leaving database-wide `pg_trgm`, then hit 42710 before intended checks | Test setup defect corrected in35 by resetting owned schema+extension; strict production duplicate-object refusal and original assertions retained. Current274/274 passed independently |
+| `comparison-f1019126-failure-readout.json`, `comparison-ff9c0cf0-failure-readout.json`, `comparison-e1ed05a9-failure-readout.json` and their raw directories | Three COMPLETE failed campaigns retained: f101 four common-page failures; ff9 seven/31; e1ed search p99 20.7815→29.4042ms, ratio1.41492. Six runs/fingerprints/cleanup completed in each | Genuine historical failures under unchanged ≥0.85 throughput/≤1.30 latency-verifier budgets; favorable diagnostics or later35 pass do not erase them |
+| `growth-e1ed05a9-summary.json`, `corrective-full-growth-summary.json`, associated logs/TRX/raw directories | Earlier e1ed/ff9 full standalone growth passed 9/35 plus cardinality and high fan-out | Historical evidence; current35 growth passed independently |
+| `common-read-cardinality-b6ba/`, `artifacts/verification/{named-row,global-grants-narrow-page,direct-search-fields}/summary.md`, `fixed-query-prepare/` | Scoped four-fingerprint 100k diagnostic and focused pure/PG/memory/provider controls passed; mapper/root verification, narrow financial pages, global joins, typed search and two selectively prepared fixed reads exercised | Overlapping focused scopes, not additive full-suite discovery or replacement for full comparison |
+| `search-index-write-e1ed/{readout.json,pair-readout.json,SOURCE-IDENTITY.json}`, `search-index-read-e1ed/{readout.json,SOURCE-IDENTITY.json}` | Actual pre-adoption diagnostics: three write pairs gave median throughput1.024/p950.996/p991.059; WAL +32.43%. Actual100k GIN search diagnostic used stock five warmups/100 requests, p99 3.437ms; BitmapOr/exact indexes, one heap row, pending-list488/35pages retained unflushed | Scoped physical-design diagnostics, not full budgets; full correction and separate35 gate/growth/comparison now implemented and passed. WAL increase remains an operator consequence |
+| Rejected operator diagnostics, including `search-operator-regex-e1ed/` | `strpos` selected wrong/slower plan; `COLLATE C` gave no gain; quoted regex about2.8× slower | Rejected without product changes or relaxed assertions/budgets |
+| `final-integrated-fast.log`, `final-integrated-fast-summary.json`, `final-integrated-fast-unit.trx` | Final integrated lint/unit/frontend gate passed: 805 native unit/architecture, 133 frontend files/663 tests, retention and both Python suites. The current verification report and cumulative changelog were included | Reuses unchanged product35 full runtime/growth/comparison inputs; does not relabel this fast gate as a full runtime or platform gate |
+| `read-measurement-evidence-refactor/CHECKS.json`, `verification-prerequisites-refactor/CHECKS.json` | Integrated tooling QA: Release build, read harness native1/1 with11 workloads/1100 raw samples; Python21+driver4; retention; owner3, acceptance lifecycle4, publication/discovery10, documentation3; formatting/lint. Zero native skips. Retained old passing/failing comparison verdicts and metric values are identical | Observational test/driver/report changes, not a repeated full product campaign. New publish control discovery was checked explicitly; initial typing/format/prerequisite failures remain retained |
+| `musl-unit.log`, retained TRX, `musl-qualification-readout.json` | Old pinned Alpine3.24/.NET10.0.403 linux-musl-x64 under Rosetta: 804 discovered, 799 passed, five failed, zero skips | FAILED supplemental emulation run; selected diagnosis does not establish native CI qualification |
 
-The full-gate source archive SHA-256 is
-`be9336aba8058dce817b81c67e63211f20c528e4d91e605cbc500036ff679af3`.
-The local host is macOS27.2 arm64 with .NET SDK10.0.403, Node26.12.1/npm11.21.1, PostgreSQL18.6 in
-owned synthetic containers and pinned browsers. Exact environment and loaded DLL identities for the
-query probe remain with that probe. Existing declarations remain authoritative for toolchain/package/
-image pins. No product version or instruction baseline was changed.
+Exact source35 archive SHA-256:
+`6fed81592fa6b75516f402b1e43275129b26476f3473cb16141ed0b27f1e1d41`.
+Host: macOS27.2 arm64, .NET SDK10.0.403/runtime10.0.14, Node26.12.1/npm11.21.1, locked browsers
+and pinned PostgreSQL18.6. Existing repository declarations own pins. Source was frozen for definitive
+runs. Product version remains unchanged.
+
+Current query evidence is specifically external
+`/Users/erst/tools/claimcore-handoff-execution-2026-11-02/query-count-probe/evidence/run.6UAC6HwQ/`.
+`source-commit.txt`/`compiled-source-commit-per-root.txt` name35; six paired backend source-tree entries
+match; before/after source status is empty and root Release DLL hashes are unchanged. `report.json`
+records five loaded product assemblies with hash/MVID plus Npgsql. ClaimCore.Json's copied/reference
+DLL hash matches; no separate loaded Json location/MVID is claimed.
+
+The two natural prepared plans used the held backend **PID 95**, `plan_cache_mode=auto`, after eight
+production warm calls under repeatable read. `global-read-facts` (`_p1`) generic counters increase8→9,
+custom remains5, and returns two rows; `work-summaries` (`_p2`) generic increases9→10, custom remains5,
+and returns50. These are actual current-run observations, distinct from old UIP9/PID 94. Exact identities,
+SQL, types and catalog deltas are in each `*-prepared-natural-identity-and-bindings.json` and companion
+before/after files. Npgsql renders only the first ten UUIDs plus ellipsis; independent full50-parent
+Guid-array/typed-literal replay and all50 business-value assertions supplement that rendering. Full
+interception of the actual bound array or a stored full-response capture is not claimed. Fixed command
+counts do not imply fixed total database work as reminder populations grow.
+
+The full comparison uses ratio of the three candidate observations' median to the three reference
+observations' median, separately for every metric. Required throughput ≥0.85 and p95/p99/verifier ≤1.30
+are unchanged. Current search p99 is25.5641→2.9144ms (ratio0.114004); worst latency ratio is1.11930
+(global authority p99), worst verifier1.08191, minimum read throughput0.985014 and minimum write
+throughput1.00561. Unmatched keys are exactly two historical authored-follow-up/summary profiles plus
+seven reminder-derived/queue/current/financial/overview profiles; different seed semantics remain
+separate. The independent audit used no comparison-engine imports. Cleanup is recorded passed with
+no errors; the root separately observed no remaining containers. It does not qualify all unrelated
+host activity. Later tooling changes have their own focused runtime QA below.
 
 ## Work-package matrix
 
-Every package is implemented. Passing evidence below refers to f101 unless a different source is
-named. Corrective read commits require renewed integration and performance qualification. WP12 local
-closure, offline capture and the external platform limits remain open.
+All twelve product work packages are implemented. Current local product evidence is exact35.
+Subsequent verification tooling is integrated with separate focused runtime QA; owned temporary
+worktrees were removed after preserving evidence. Native CI limits remain explicit.
 
-| Package | Implemented source / representative commits | Current evidence and outstanding work |
+| Package | Delivered responsibility | Current status and evidence |
 | --- | --- | --- |
-| WP01 Baseline and integration map | Clean b5e2169 audited; delivery/source inventory, CI/releases, producer/consumer inspection and before captures | Delivery passed; before web capture is partial. Offline baseline/current CLI capture pending |
-| WP02 Text and field contracts | `10153f9c`, `b35c3adc`: owned scalar/LF/byte profiles, optional registration/partial semantics and generated metadata | Full native/frontend/service/browser gate passed, including boundaries, permanent bytes and process input |
-| WP03 Case-work ownership | `735613cc`, `7832fc15`: bounded Work/revision-zero root; summary/responsibility independent of financial state | Full gate passed independent revision/root/current-policy controls |
-| WP04 Reminder lifecycle/atomic actions | `7832fc15`, `ab8481cb`: typed lifecycle/compound decisions and head-locked execution | Full gate passed stale revisions, races, actual PG second-effect rollback and replay; full high-fan-out growth passed |
-| WP05 Durable effects/recovery | `6d52c1db`, `d660b750`, `d6f79210`: bounded records, explicit formats, causal metadata, correlated receipts and strict journals | Full gate passed independent literal/corruption controls and actual all-engine/native recovery |
-| WP06 PostgreSQL integrity lifecycle | `de33bd7c`, `0c2c152b`, `d4694914`, `425e3293`: fresh schema, related erasure, verified rebuild/restore and memory mirror | Full PG/native gate and growth passed storage bytes/rollback/rebuild/restore/isolation; external platforms unrun |
-| WP07 Queries/attention/read efficiency | `fd70d46e`, `1df0828b`, `56f265e5`, `13172ef8`: scoped queues/overview/activity, derived date/search and batched account reads | Full gate/growth and query-count controls passed; f101 common-read comparison failed; corrective-source requalification pending |
-| WP08 CLI/shell workflows | `bdd540e4`, `000e9c06`, `fcaf7c5b`, `d359f5c2`: correct revisions/reviews/paging, file/stdin/editor, safe output and identity recovery | Published service/native/PTY/private-file controls passed; concrete offline before/after capture pending |
-| WP09 Connected web workflows | `45b8f5a0`, `a6b13518`, `ba2d15aa`, `09c1108e`, `9108f968`: current theme, Work/Reminder UI, scoped ownership, read admission and focus | Complete final three-engine suites and corrected zoom assertions passed; reviewed safe captures retained |
-| WP10 Independent contract/privacy checks | `163f2efd`, `d6f79210`, `ab8481cb`, `0734fd62`: literal oracles, wrong effects, races, rollback, erasure and ownership controls | Definitive full native/PG/client gate passed; actual query amplification negative control retained |
-| WP11 Growth/setup/current docs | `7fc8400e`, `996534e4`, `dec84e5a`: populated growth, guides/examples/generated contracts/help and Unreleased consequences | Full tooling/build/publish-input checks and full standalone f101 growth passed; corrective-source comparison pending |
-| WP12 Delivered-state closure | Local commits, exact-source archives, safe reports and per-WP/per-A matrices | f101 gate/growth passed; comparison failed. Corrective-source full gate/growth/comparison, offline CLI capture, final evidence and cleanup pending; external limits explicit |
+| WP01 Baseline/integration map | Delivery/source/CI/releases, boundaries and before captures | Verified delivery; actual b5/current35 CLI captures; original gallery26/91 completed with failed immediate collector and separate cleanup follow-up retained |
+| WP02 Text/field contracts | Owned scalar/LF/permanent-byte types, optional registration/partial semantics, generated constraints | Complete35 native/PG/browser/PTY gate passed boundaries, keep/set/clear, financial safeguards and exact output |
+| WP03 Independent case work | Revision-zero bounded Work root; summary/responsibility independent of financial state/revisions | Complete35 gate passed root reconstruction, independent revision and actual-state policy controls |
+| WP04 Reminder/atomic actions | Typed lifecycle/compound acts; head-locked revision/lifecycle policy | Complete35 rule/race/replay/PG rollback controls and full populated growth passed |
+| WP05 Durable effects/recovery | Bounded records/formats, causal identities, compound effects, receipts and journals | Literal-byte/corruption/ownership/recovery controls passed in35 native/PG/all engines |
+| WP06 PostgreSQL integrity lifecycle | Fresh schema, scoped related erasure, verified rebuild/restore and memory mirror | Complete35 storage/root/canonical-byte/precedence/rollback/restore/isolation controls and full growth passed; six earlier owned-reset failures retained |
+| WP07 Queries/attention/efficiency | Scoped dates/coverage/queues/activity, narrow financial pages, bounded work batches and GIN literal search | Complete35 gate, refreshed134/118-label query probe, full9/35 growth and full31/31 comparison passed; historical failed campaigns and WAL cost retained |
+| WP08 CLI/shell workflows | Revisions/reviews, file/stdin/editor, paging, inert/exact output and scoped recovery | Complete35 actual service/native/PTY controls and11-command b5/current35 offline captures passed |
+| WP09 Connected web workflows | Narratives/work/reminders in existing themes/routes; ownership, truthful state, admission and focus | Complete35 Chromium211/Firefox189/WebKit189, safe121PNG inventory/loading and geometry controls passed |
+| WP10 Independent contracts/privacy | Authored oracles, wrong identities/effects, races/rollback/erasure and late callbacks | Complete35 native/PG/client controls and actual query-amplification negative control passed |
+| WP11 Growth/setup/current docs | Populated growth, guides/examples/generated/help, release consequences and selective preparation | Product35 full gate/growth/comparison passed. Integrated measurement/progress/retention/publish-input/contributor-guide refactors passed focused runtime QA; criteria unchanged |
+| WP12 Delivered-state closure | Local commits/archives, safe reports, per-package/acceptance outcomes and retained failures | Exact35 archive, current matrices and independent audit retained; tooling QA integrated and owned temporary worktrees cleaned with disposition proofs. Exact native CI-platform qualification remains unrun |
 
 ## Acceptance matrix
 
-| Group | Specific implemented behavior and passing local evidence | Limits or outstanding evidence |
+| Group | Exercised current functional evidence | Limit or outstanding qualification |
 | --- | --- | --- |
-| A01 Text/optional semantics | Full native/PG/browser/PTY gate covers scalar/LF/control rules, permanent decoding, keep/set/clear, required facts, paid description correction and exact output; all-language maximum-text/zoom assertions passed | No accessibility certification claim |
-| A02 Reminder model/lifecycle | Full domain/store/CLI/browser gate covers creation identity/revision, terminal/no-op rules, inactive retention/reactivation, closed cleanup and replay; full growth accepted high pending/completed populations | Local platform scope |
-| A03 Concurrency/atomicity | Shared memory+actual PG races cover distinct/same revisions, fact preview independence, close/erase/assignment/revoke. Injected PG trigger proves rollback. All-engine lost-ack retry checks identical bytes and one replacement identity | Local platform scope |
-| A04 Scope/date/coverage | PG Kiritimati/Pago_Pago/Riga compare each get/list/summary observation with PG AT TIME ZONE; scope/Mine/distinct attention/no date-ledger writes checked. Focus and60s timer controls refresh server Nov2→Nov3 with client2031 and dependent TODAY→OVERDUE reads | Tests cover a DST-observing zone, not an actual DST-transition instant |
-| A05 Query/search/financial isolation | PG keysets/extreme dates/current search/derived ownership, distinct money and SQL command-count controls passed. Full growth passed100k cases and10000 pending+10000 completed on one parent with independent identities/counts/money | f101 comparison failed four budgets; corrective-source full comparison pending. Diagnostic plans are source/population-specific |
-| A06 Records/history/vocabulary | Full gate passed literal commands/snapshots/effects/header bytes, root/creation/causal relations, invalid parent/due/max revision, typed activity/current-vs-prior disclosure and generated/publish-input checks | Local platform scope |
-| A07 Complete erasure | Actual related rows/payloads/nonces/tombstones inspected; all reminder states/compound content cleared, identities reserved, identical other case preserved and erase races checked. Client cache/recovery suites passed all engines | Local platform scope |
-| A08 Rebuild/restore/owner operations | Full PG/native gate passed maintenance/checkpoint/head exclusion, FK reconstruction, rollback, projection repair, old-backup refusal, accepted-erasure reconciliation and owner/process behavior; full growth passed | Declared native CI platforms unrun |
-| A09 Delivery/recovery/ownership | Actual native publication-before-send/private journals and all-engine IndexedDB attempts/foreign scopes/tab loss/old formats/WORK+REMINDER identities passed; exact compound retry does not duplicate | No old real journals converted or deleted; declared native CI platforms unrun |
-| A10 CLI/shell | Full native/service/PTY gate passed generated discovery, lifecycle/paging/revisions, file/stdin/editor cleanup refusal, inert text and exact JSON/NDJSON/CSV | Concrete offline before/after capture pending; declared native CI platforms unrun |
-| A11 Web/interaction | Complete final Chromium211/Firefox189/WebKit189 suites cover permissions, recovery, uncertainty, financial safety and work; language/RTL/theme/narrow/zoom/reduced-motion/focus checks and reviewed captures retained | Before captures partial; no WCAG certification claim |
-| A12 Integration/growth | Full ordinary gate and full9-write/35-read standalone growth passed on f101; generated/schema/format/source/publish consumers, unchanged version/instructions and exact source evidence retained | f101 comparison failed; corrective-source full gate/growth/comparison, offline CLI capture, final evidence/cleanup and exact native-platform limits remain open |
+| A01 Narrative/optional semantics | Complete35 native/PG/browser/PTY: scalar/LF/Unicode/control admission, permanent bytes, keep/set/clear, seven facts, paid-description correction and exact output | Local platform; no accessibility certification |
+| A02 Reminder lifecycle | Domain/store/CLI/browser creation IDs/revisions, terminal/no-op rules, inactive retention/reactivation, closed cleanup, replay/bounded pages; current populated growth passed | Local platform scope |
+| A03 Concurrency/atomicity | Memory+PG races, distinct/same revisions, financial preview, close/erase/assignment/revoke, second-effect rollback; all-engine identical-byte compound retry creates one replacement | Local platform scope |
+| A04 Coverage/scope/business dates | Kiritimati/Pago_Pago/Riga compare observed instants with PG AT TIME ZONE; Mine/access/distinct union/no date-ledger writes; focus+60s timer refreshes server Nov2→Nov3 with client2031 and dependent reads | DST-observing zone covered; actual DST-transition instant not exercised |
+| A05 Queries/search/financial isolation | Complete35 extreme dates/keysets/current search/derived ownership/distinct money; query134/118 labels, seven custom/two actual natural plans; full growth and31/31 comparison passed | Command counts do not bound total server work; probe is50cases,100k plan diagnostics separate; WAL+32.43%; historical failures retained |
+| A06 Durable records/history/vocabulary | Literal command/snapshot/effect/header bytes; root/creation/causal identity, wrong parent/due/max revision, typed activity/current-prior disclosure and generated/publish inputs passed | Local platform scope |
+| A07 Complete erasure | Related rows/payloads/nonces/tombstones inspected; all reminder states/compound content cleared, reserved IDs, identical other case preserved, races/all-engine cache/recovery passed | Local platform scope |
+| A08 Rebuild/restore/owner operations | Maintenance/checkpoint/head exclusion, FK reconstruction, rollback, derived repair, old-backup refusal, accepted-erasure reconciliation and process checks passed; current growth passed | Three exact native CI environments unrun |
+| A09 Delivery/recovery/ownership | Native publication-before-send/private journals; all-engine IndexedDB scopes/attempts/tab loss/old formats/new families; exact compound retry avoids duplication | No real old journals converted/deleted; native CI platforms unrun |
+| A10 CLI/shell UX | Complete35 service/native/PTY discovery/lifecycle/paging/revisions/file/stdin/editor/inert JSON/NDJSON/CSV;11 b5/current35 offline commands passed | Offline capture supplements service/PTY evidence; declared DLL source alone is not provenance; native CI platforms unrun |
+| A11 Web/interaction UX | Complete35 engines211/189/189: permissions/recovery/uncertainty/financial safety, languages/RTL/themes/narrow/zoom/reduced motion/focus;121safe PNGs | Baseline26/91 gallery separately complete; no WCAG certification |
+| A12 Integration/growth | Complete35 gate805/663/274/101/58, all engines, query134/118, CLI11,9/35 standalone growth,31/31 full comparison and exact-source archive passed | Product35 qualification plus focused integrated-tooling QA passed; evidence retained and owned worktrees cleaned. Three native CI environments remain unrun; no rollout/readiness claim |
 
-## Corrections and retained limitations
+## Preserved failures and practical limits
 
-Failed gates and partial browser runs remain in their original logs; the artifact acceptance matrix
-records their source-specific diagnosis. Corrections preserve assertions and budgets: fixtures now
-bind actual independent revisions/projection owners; diagnostic cluster setup respects worker bounds;
-browser reads queue within unchanged server admission through body decoding; action replacement
-transfers focus; fixture writes await accepted readback. Visual review detected unreadable zoom
-wrapping despite no horizontal overflow; corrected usable-heading geometry now passes connected tests.
-Later successful gates do not erase those failed observations.
+Three complete failed comparisons remain retained under their original sources and reports. f101 failed
+four common-page budgets: filtered throughput0.768; notified throughput0.714/p951.347/p991.439.
+ff9 failed seven/31: filtered throughput0.656/p951.568/p991.775; notified
+throughput0.594/p951.740/p991.807; cardinality verifier1.312. e1ed passed30/31 and failed search
+p99: reference20.7815ms/candidate29.4042ms, ratio1.41492. All six runs, common fingerprints and cleanup
+completed in each campaign. None is reclassified as passing or an outlier. The later35 correction
+passed its own complete unchanged-budget campaign, not a reduced rerun or threshold waiver.
 
-Initial iterative diagnostics were not all archived as complete source patches. Later source archives
-and commits identify stronger evidence. The query probe retains prerequisite/parser failures and final
-raw plans; its initially failed raw plan was not saved before the parser exception. Before web captures
-are partial, and a concrete baseline CLI transcript is not yet retained.
+The 8917 GIN-source full gate stopped in PostgreSQL with six fresh-initializer fixture failures:
+`claimcore` was dropped while database-wide `pg_trgm` survived; 42710 occurred before the intended
+commit-boundary controls. Source35 resets only newly owned fixtures' schema and extension together;
+production strict duplicate-object refusal/commit semantics and the tests' intended assertions remain.
+The failed log/TRX and exact failed source archive are preserved. Current35 independently passed274/274.
+Earlier b6b stopped at formatting in three verification files before tests; e1ed formatter wrapping and
+a fresh complete gate resolved that checkpoint without hiding its failed log.
 
-Old authored-follow-up workloads and new reminder-derived workloads have different seed semantics and
-fingerprints. They were separated before measurements; unmatched feature observations cannot claim
-comparable budget passes. The six unchanged read keys and0.85 throughput/1.30 latency-and-verification
-ratio budgets remain intact. Full standalone f101 growth passed; three alternating full same-host comparison
-pairs against b5e2169 completed and failed four common-page metrics. The corrective changes remove
-round trips without dropping ownership, integrity, authorization, date or timeout checks. Their full
-qualification remains required; no reduced or instrumented diagnostic substitutes for it.
+Other material native/browser failures and their corrections remain in original logs and the earlier
+report: independent-revision fixtures, bounded diagnostic setup, body-lifetime read admission, focus
+transfer, accepted-readback synchronization and independently checked zoom geometry. Initial iterative
+diagnostics were not all archived as full source patches; later exact-source archives identify stronger
+evidence. The initial query parser failure did not save its returned raw plan; subsequent actual plans
+are retained. Seven custom replays are not natural warm-plan captures; only the two specifically
+identified current prepared executions have actual PID/catalog/mode evidence.
 
-The supplemental Rosetta musl run remains failed799/804. Four watchdog cases passed separately with
-the original compiled assertions/deadlines; parallel emulation pressure is an inference. The fifth
-failed the empty-HOME precondition before the shell scenario. Independent `/bin/true` and `dotnet --info`
-controls each created `.cache/rosetta` without a ClaimCore operation. No assertion or deadline was
-changed, and selected passes do not establish full or native qualification.
+The original baseline attempt kept46 frames before a120-second smoke-wrapper cutoff. QA later ran
+the unchanged26-dimension gallery within its normal20-minute bound, adding45 missing frames, once
+without retry; no new full baseline suite/assertion was imposed. An isolated-XDG/mise preflight was
+corrected with actual pinned Node/npm paths before browser execution. The completed matrix passed,
+but its collector immediately saw one Ryuk sidecar and reported FAILED. That original report remains
+unchanged. Exact Docker create/destroy events tie the reaper/Keycloak/PostgreSQL containers to the
+owned session and show natural removal; eight preexisting containers were unchanged. Separate
+`CLEANUP-FOLLOWUP.json` records `CLEANUP_VERIFIED`, no remaining scoped processes/containers and no
+broad prune/manual deletion. Three representative frames were visually reviewed, not every91 frame.
 
-The declared native CI matrix is Ubuntu24.04 `linux-x64`/`linux-musl-x64` and macOS15 `osx-arm64`.
-All three new-source CI environments remain unrun: local macOS27.2 and Rosetta/Docker are distinct.
-No push is authorized. No push, merge, tag, release, product-version bump, deployment, migration or
-real-installation/data operation is part of this delivery. AGENTS.md and AGENTS_EXTRA.md remain
-unchanged; no supplement change is proposed.
+Pre-adoption physical-design diagnostics measured favorable read/write ratios and WAL+32.43%; they
+remain scoped evidence and the WAL cost is retained. Rejected operators changed no product code.
+Old authored-follow-up versus new reminder-derived workloads keep distinct seed semantics/keys.
+The six common reads, fingerprint requirements, stock five warmups/100 measured reads and original
+0.85/1.30 budgets were not reduced to obtain35's full pass.
+
+The old supplemental Rosetta musl result remains FAILED799/804. Four watchdogs passed separately
+with original compiled assertions/deadlines; parallel emulation pressure remains an inference. The
+fifth failed an empty-HOME precondition: independent `/bin/true` and `dotnet --info` controls each
+created `.cache/rosetta` without ClaimCore. Selected passes do not establish native qualification.
+
+All three declared native CI environments remain unrun: Ubuntu24.04 `linux-x64` and `linux-musl-x64`,
+and macOS15 `osx-arm64`. Local macOS27.2/Rosetta/Docker do not substitute for those platforms. No push,
+merge, tag, release, version bump, deployment, migration or real-installation/data operation is authorized
+by this report. Product35 results are separate from the later verification-tooling runtime qualification described above.
+
+## Delivered-state boundaries
+
+The product/runtime, fresh database baseline and frontend inputs are unchanged from the fully qualified
+source35. Verification refactors add raw samples after the original timing boundary, incremental
+completed read reports, small atomic progress, informational variability and conservative failure
+retention. They preserve the five warmups/100 measured reads, fingerprints, workloads, alternating
+pair order, ratio-of-separate-medians gates and 0.85/1.30 thresholds. Separate focused runtime QA
+covers their actual discovery, publication, retention and prerequisite paths; no new full-product
+performance campaign is claimed for these observational changes.
+
+The contributor verification guide owns the updated workflow and evidence-scope instructions.
+`AGENTS_EXTRA.md` already links that guide and remains unchanged; the protected `AGENTS.md` baseline
+also remains unchanged. Exact native CI-platform qualification is still outstanding as described above.
+
+Owned-resource disposition evidence is under `cleanup/`: ten old task-created worktrees and two
+completed tooling worktrees were removed after exact source/status checks. Three dirty task worktrees
+were independently proven to contain already-integrated patches or the exact archived executed
+baseline-capture harness. Branch references, local commits, raw results and useful private failure
+fixtures remain; shared caches, preexisting containers and unrelated resources were not pruned.

@@ -50,6 +50,8 @@
 - Accessible work attention ignores case page/search filters, distinguishes case/reminder units and counts overlapping attention once. Mine inherits current case responsibility within read access.
 - GIN indexes support literal search across case facts and Handling summaries; account for their database storage and write-ahead-log overhead.
 
+- Growth reports retain raw latency samples and live progress; failed native runs and bounded private publication diagnostics survive cleanup.
+
 ## [0.14.0] - 2026-10-30
 
 - Use a fresh database: notification/amount projections and authority-history indexes change the SQL checksum. Earlier installations are refused; no migration or reader is supplied.
