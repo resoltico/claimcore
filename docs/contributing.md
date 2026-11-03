@@ -499,7 +499,9 @@ Native-language and assistive-technology review remain human work.
 tag assignment and publication require owner authorization. Prepare the final version, dated changelog
 section, dependencies and documentation before publishing that source commit.
 
-1. Push the final release commit to `main` and wait for its complete push-triggered CI run to succeed.
+1. Open a pull request with the finalized release changes. After its required `Gate` passes, use the
+   authorized PR merge path to update protected `main`. Wait for the resulting main commit's complete
+   push-triggered CI run to succeed.
 2. Create an annotated `vVERSION` tag for that exact commit and push the tag. A tag push does not start
    another CI run.
 3. Dispatch [Publish source release](../.github/workflows/release.yml) from `main`, supplying the tag and
