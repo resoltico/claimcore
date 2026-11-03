@@ -158,6 +158,20 @@ let private initialize
 
         for arguments in [ [ "initialize"; "Etc/UTC" ]; [ "provision-owner" ] ] do
             let result = ProcessRunner.dotnet 60_000 admin arguments environment None
+
+            if result.ExitCode <> 0 then
+                FixtureFiles.write
+                    directory
+                    ("administration-" + arguments.Head + ".stdout")
+                    result.StandardOutput
+                |> ignore
+
+                FixtureFiles.write
+                    directory
+                    ("administration-" + arguments.Head + ".stderr")
+                    result.StandardError
+                |> ignore
+
             Expect.equal result.ExitCode 0 ("Published administration " + arguments.Head)
 
         let settings = NpgsqlConnectionStringBuilder(postgres.GetConnectionString())

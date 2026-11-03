@@ -8,6 +8,54 @@ const modes = new Set(["login", "verify", "logout", "stale"]);
 const statePath = path.join(owned, "published-session-state.json");
 let failedCheck = "UNEXPECTED";
 let activeStep = "BROWSER";
+let firstFailure;
+const failureDetails = (error) => {
+  const message = typeof error?.message === "string" ? error.message : "";
+  const token = message.match(
+    /\b(?:net::ERR_[A-Z0-9_]+|ECONNREFUSED|ECONNRESET|ECONNABORTED|ETIMEDOUT)\b/u,
+  )?.[0];
+  const networks = new Map([
+    ["net::ERR_CONNECTION_REFUSED", "REFUSED"],
+    ["ECONNREFUSED", "REFUSED"],
+    ["net::ERR_CONNECTION_RESET", "RESET"],
+    ["ECONNRESET", "RESET"],
+    ["net::ERR_CONNECTION_CLOSED", "CLOSED"],
+    ["ECONNABORTED", "ABORTED"],
+    ["net::ERR_EMPTY_RESPONSE", "EMPTY"],
+    ["net::ERR_ABORTED", "ABORTED"],
+    ["net::ERR_TIMED_OUT", "TIMEOUT"],
+    ["net::ERR_CONNECTION_TIMED_OUT", "TIMEOUT"],
+    ["ETIMEDOUT", "TIMEOUT"],
+    ["net::ERR_CERT_AUTHORITY_INVALID", "TLS"],
+    ["net::ERR_CERT_DATE_INVALID", "TLS"],
+    ["net::ERR_CERT_COMMON_NAME_INVALID", "TLS"],
+    ["net::ERR_SSL_PROTOCOL_ERROR", "TLS"],
+    ["net::ERR_BLOCKED_BY_CLIENT", "BLOCKED"],
+    ["net::ERR_BLOCKED_BY_RESPONSE", "BLOCKED"],
+    ["net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS", "BLOCKED"],
+    ["net::ERR_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_CHECKS", "BLOCKED"],
+  ]);
+  const network = token === undefined ? "NONE" : (networks.get(token) ?? "OTHER");
+  let kind = "OTHER";
+  if (failedCheck !== "UNEXPECTED") kind = "CHECK";
+  else if (error?.name === "TimeoutError") kind = "TIMEOUT";
+  else if (
+    message.includes("pthread_create") ||
+    message.includes("Resource temporarily unavailable") ||
+    message.includes("Failed to create thread")
+  )
+    kind = "RESOURCE";
+  else if (
+    error?.constructor?.name === "TargetClosedError" ||
+    message.includes("Target page, context or browser has been closed")
+  )
+    kind = "TARGET_CLOSED";
+  else if (network !== "NONE") kind = "NETWORK";
+  else if (error?.name === "SyntaxError") kind = "SYNTAX";
+  else if (error?.name === "TypeError") kind = "TYPE";
+  else if (["ENOENT", "EACCES", "EPERM", "EIO"].includes(error?.code)) kind = "IO";
+  return { step: activeStep, kind, network };
+};
 const require = (condition, code) => {
   if (!condition) {
     failedCheck = code;
@@ -46,10 +94,12 @@ const protectedContext = async (context, fingerprint, csrf) => {
   require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "OWNER_MISSING");
 };
 const login = async (context, fingerprint) => {
+  activeStep = "CREDENTIALS";
   const credentials = JSON.parse(readFileSync(path.join(owned, "credentials.json"), "utf8"));
   const [owner] = credentials.users;
   require(typeof owner.username === "string" &&
     typeof owner.password === "string", "CREDENTIALS_MISSING");
+  activeStep = "BROWSER";
   const page = await context.newPage();
   // Redirect chains can bypass a homepage route. Block the separate application script request
   // so React cannot race this API-session probe's own cookie/antiforgery capture.
@@ -101,6 +151,7 @@ const login = async (context, fingerprint) => {
   const current = await session(context, fingerprint);
   require(current.authenticated && typeof current.antiforgeryToken === "string", "LOGIN_REFUSED");
   await protectedContext(context, fingerprint, current.antiforgeryToken);
+  activeStep = "STATE";
   const cookies = await context.cookies();
   const cookie = cookies
     .filter((value) => value.name.startsWith("__Host-ClaimCore"))
@@ -141,8 +192,11 @@ const probe = async (context, fingerprint, state) => {
 };
 const run = async () => {
   require(modes.has(phase) && /^[a-z-]+$/u.test(name), "INVALID_PHASE");
+  activeStep = "CONTRACT";
   const { consumerContractIdentity } = await import(path.join(root, "contracts/client.ts"));
+  activeStep = "STATE";
   const state = phase === "login" ? undefined : saved();
+  activeStep = "BROWSER";
   const browser = await chromium.launch({ headless: true });
   try {
     // Only the owned synthetic browser ignores fixture certificates; fixture readiness verifies its CA.
@@ -155,16 +209,24 @@ const run = async () => {
       phase === "login"
         ? await login(context, consumerContractIdentity)
         : await probe(context, consumerContractIdentity, state);
+    activeStep = "REPORT";
     retain({ phase, ...result, completed: true });
+  } catch (error) {
+    firstFailure = failureDetails(error);
+    throw error;
   } finally {
+    activeStep = "CLOSE";
     await browser.close();
   }
 };
 try {
   await run();
 } catch (error) {
+  // Emit only fixed categories. Never retain exception text, URLs, provider bodies or credentials.
+  const detail = firstFailure ?? failureDetails(error);
+  const code = detail.kind === "TIMEOUT" ? `${detail.step}_TIMEOUT` : failedCheck;
   process.stderr.write(
-    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${error?.name === "TimeoutError" ? `${activeStep}_TIMEOUT` : failedCheck}\n`,
+    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${code};step=${detail.step};error=${detail.kind};network=${detail.network}\n`,
   );
   process.exitCode = 1;
 }

@@ -14,6 +14,13 @@ open Microsoft.AspNetCore.DataProtection.KeyManagement
 open Microsoft.Extensions.DependencyInjection
 open Npgsql
 
+let private safeFailureMarker (marker: string) =
+    Regex.IsMatch(
+        marker,
+        @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE)_TIMEOUT|UNEXPECTED)(?:;step=(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE);error=(?:CHECK|TIMEOUT|RESOURCE|TARGET_CLOSED|NETWORK|SYNTAX|TYPE|IO|OTHER);network=(?:NONE|REFUSED|RESET|CLOSED|ABORTED|EMPTY|TIMEOUT|TLS|BLOCKED|OTHER))?\z",
+        RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+    )
+
 let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
     let arguments =
         [
@@ -38,12 +45,7 @@ let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
     if result.ExitCode <> 0 then
         let marker = Encoding.UTF8.GetString(result.StandardError).Trim()
 
-        let safe =
-            Regex.IsMatch(
-                marker,
-                @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|(?:BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT)_TIMEOUT|UNEXPECTED)\z",
-                RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
-            )
+        let safe = safeFailureMarker marker
 
         Console.WriteLine("Published session failure: " + (if safe then marker else "UNCLASSIFIED"))
 
@@ -297,3 +299,31 @@ let tests =
     testCaseAsync
         "published certificate and key rollover retain live tickets across hosts and logout survives stale cookies"
         (async { do! qualify () |> Async.AwaitTask })
+
+[<Tests>]
+let failureMarkerTests =
+    testCase "published session failure detail admits only closed categories" (fun () ->
+        for marker in
+            [
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED"
+                "PUBLISHED_SESSION_LOGIN_RETURN_TIMEOUT"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=SYNTAX;network=NONE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=CONTEXT;error=NETWORK;network=RESET"
+                "PUBLISHED_SESSION_LOGIN_CONTEXT_REFUSED;step=CONTEXT;error=CHECK;network=NONE"
+                "PUBLISHED_SESSION_LOGIN_BOOTSTRAP_TIMEOUT;step=BOOTSTRAP;error=TIMEOUT;network=NONE"
+            ] do
+            Expect.isTrue (safeFailureMarker marker) "Literal safe evidence is admitted"
+
+        for marker in
+            [
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=PRIVATE;error=OTHER;network=NONE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=private;network=NONE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=NETWORK;network=ECONNRESET"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=NONE;private=secret"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=https://private.invalid"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED\nprivate-marker"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=NONE\n"
+            ] do
+            Expect.isFalse
+                (safeFailureMarker marker)
+                "Unapproved fields and captured content stay private")
