@@ -17,6 +17,36 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.GrowthMeasurements
 
 
+let private atomic directory name value =
+    let path = Path.Combine(directory, name)
+    File.WriteAllBytes(path + ".writing", JsonSerializer.SerializeToUtf8Bytes value)
+    File.Move(path + ".writing", path, true)
+
+let internal writeReadProgress
+    directory
+    completedReadProfiles
+    requiredReadProfiles
+    (lastCompletedReport: string option)
+    (progress: GrowthReadWorkloads.ReadProgress)
+    =
+    atomic
+        directory
+        "read-progress.json"
+        {|
+            kind = "read-progress"
+            completedReadProfiles = completedReadProfiles
+            requiredReadProfiles = requiredReadProfiles
+            lastCompletedReport = lastCompletedReport
+            progress =
+                {|
+                    cases = progress.Cases
+                    phase = progress.Phase
+                    completed = progress.Completed
+                    expected = progress.Expected
+                    observedAt = progress.ObservedAt
+                |}
+        |}
+
 let private cardinalityWrites cases keyRing (database: PostgresFixture.Database) =
     task {
         let database =
@@ -187,10 +217,7 @@ let private qualify () =
 
         Directory.CreateDirectory directory |> ignore
 
-        let atomic name value =
-            let path = Path.Combine(directory, name)
-            File.WriteAllBytes(path + ".writing", JsonSerializer.SerializeToUtf8Bytes value)
-            File.Move(path + ".writing", path, true)
+        let atomic name value = atomic directory name value
 
         let selected = profiles ()
         let mutable count = 0
@@ -255,15 +282,12 @@ let private qualify () =
                 do!
                     GrowthReadWorkloads.run
                         (fun progress ->
-                            atomic
-                                "read-progress.json"
-                                {|
-                                    kind = "read-progress"
-                                    completedReadProfiles = readCount
-                                    requiredReadProfiles = GrowthWorkloadPlan.readProfileCount
-                                    lastCompletedReport = lastCompletedReadReport
-                                    progress = progress
-                                |})
+                            writeReadProgress
+                                directory
+                                readCount
+                                GrowthWorkloadPlan.readProfileCount
+                                lastCompletedReadReport
+                                progress)
                         (fun environment report ->
                             let name = sprintf "read-workload-%02d.json" readCount
 
