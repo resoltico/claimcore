@@ -236,6 +236,9 @@ test("a lost compound acknowledgement retries the identical pair without another
   await expect(page.locator(".work-operation")).toHaveCount(0);
   expect(captured).toHaveLength(2);
   expect(captured[1]).toBe(captured[0]);
+  const replacement = page.locator(".reminder-list li");
+  await expect(replacement).toHaveCount(1);
+  await expect(replacement).toContainText("Replacement after uncertainty");
   const reminders = await workRequest(page, "reminder.list", {
     target: { kind: "REFERENCE", caseReference: reference },
     includeInactive: true,

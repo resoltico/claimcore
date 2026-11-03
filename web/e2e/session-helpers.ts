@@ -186,7 +186,10 @@ export const browserRequest = (
 export const sessionToken = async (page: Page): Promise<string> => {
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {
-    throw new Error("Invalid session response.");
+    const detail = isHostFailure(reply.payload, reply.status)
+      ? reply.payload.hostFailure.code
+      : "invalid wire shape";
+    throw new Error(`Invalid session response: HTTP ${reply.status}; ${detail}.`);
   }
   if (reply.payload.outcome.kind !== "SUCCEEDED") {
     throw new Error("Session refused.");
