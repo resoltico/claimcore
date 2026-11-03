@@ -188,15 +188,18 @@ export const sessionToken = async (page: Page): Promise<string> => {
   if (!isResponse("session", reply.payload)) {
     const detail = isHostFailure(reply.payload, reply.status)
       ? reply.payload.hostFailure.code
-      : "invalid wire shape";
-    throw new Error(`Invalid session response: HTTP ${reply.status}; ${detail}.`);
+      : "INVALID_WIRE";
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_${detail}`);
   }
   if (reply.payload.outcome.kind !== "SUCCEEDED") {
-    throw new Error("Session refused.");
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_${reply.payload.outcome.data.code}`);
   }
   const snapshot = reply.payload.outcome.data;
-  if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
-    throw new Error("Session response did not provide an antiforgery token.");
+  if (reply.status !== 200) {
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_UNEXPECTED_STATUS`);
+  }
+  if (snapshot.antiforgeryToken === null) {
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_MISSING_ANTIFORGERY`);
   }
   return snapshot.antiforgeryToken;
 };

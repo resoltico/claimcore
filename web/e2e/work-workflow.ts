@@ -1,8 +1,10 @@
 import { expect, type Page } from "@playwright/test";
 import { endpoints, isResponse, type RequestByEndpoint } from "@contracts/client";
 import { browserRequest, installationId, sessionToken } from "./session-helpers";
+import { retainResponseBodies } from "./response-bodies";
 
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
+  await retainResponseBodies(page);
   const label =
     family === "WORK"
       ? "I confirm these work changes."
@@ -21,6 +23,27 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
     throw new Error("E2E_WORK_SUBMIT_FAILED");
   }
   await expect(page.locator(".work-operation")).toHaveCount(0);
+  const current = page.locator(".case-detail");
+  // This status is hidden during revalidation and returns only with current disclosure.
+  await expect(
+    current.getByText(family === "WORK" ? "Case work recorded." : "Reminder operation recorded.", {
+      exact: true,
+    }),
+  ).toBeVisible();
+  await expect(current.getByText("Loading current case…", { exact: true })).toHaveCount(0);
+  await expect(current.locator(":scope > .error")).toHaveCount(0);
+  await expect(current.locator(".case-work")).toBeVisible();
+  await expect(current.locator(".case-reminders")).toBeVisible();
+  const reminders = current.locator(".reminder-list");
+  if ((await reminders.count()) > 0) {
+    await expect(reminders).toHaveAttribute("aria-busy", "false");
+    await expect(reminders.getByRole("alert")).toHaveCount(0);
+    // A successful empty page also has a basis; initial/loading/refused pages do not.
+    await expect(reminders.getByText(/^Work observed for /u).first()).toBeVisible();
+  }
+  const overview = page.locator(".work-overview");
+  await expect(overview).toHaveAttribute("aria-busy", "false");
+  await expect(overview.getByText(/^Work observed for /u)).toBeVisible();
   return payload.outcome.data;
 };
 export const workRequest = async <K extends keyof RequestByEndpoint>(
