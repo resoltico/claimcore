@@ -9,6 +9,15 @@ const statePath = path.join(owned, "published-session-state.json");
 let failedCheck = "UNEXPECTED";
 let activeStep = "BROWSER";
 let firstFailure;
+let navigationRequest;
+let navigationObservation = { code: "NONE", timing: "NONE" };
+const navigationSteps = new Set(["NAVIGATE", "SUBMIT", "RETURN"]);
+const mainFrameNavigation = (page, request) =>
+  request.isNavigationRequest() && request.frame() === page.mainFrame();
+const nativeNavigationCode = (value) =>
+  typeof value === "string" && /^net::ERR_[A-Z0-9_]{1,64}$/u.exec(value)?.[0] === value
+    ? value
+    : "NONE";
 const networks = new Map([
   ["net::ERR_CONNECTION_REFUSED", "REFUSED"],
   ["ECONNREFUSED", "REFUSED"],
@@ -122,6 +131,34 @@ const login = async (context, fingerprint) => {
     typeof owner.password === "string", "CREDENTIALS_MISSING");
   activeStep = "BROWSER";
   const page = await context.newPage();
+  page.on("request", (request) => {
+    if (
+      firstFailure === undefined &&
+      navigationSteps.has(activeStep) &&
+      mainFrameNavigation(page, request)
+    ) {
+      navigationRequest = request;
+      navigationObservation = { code: "NONE", timing: "NONE" };
+    }
+  });
+  page.on("requestfailed", (request) => {
+    if (
+      request !== navigationRequest ||
+      navigationObservation.code !== "NONE" ||
+      !mainFrameNavigation(page, request)
+    ) {
+      return;
+    }
+    const code = nativeNavigationCode(request.failure()?.errorText);
+    if (code !== "NONE") {
+      // Playwright can dispatch this event after the operation rejects. Keep that provenance
+      // separate from the original failure, and never let cleanup replace the first observation.
+      navigationObservation = {
+        code,
+        timing: firstFailure === undefined && activeStep !== "CLOSE" ? "BEFORE_FAILURE" : "CLEANUP",
+      };
+    }
+  });
   // Redirect chains can bypass a homepage route. Block the separate application script request
   // so React cannot race this API-session probe's own cookie/antiforgery capture.
   let blockedScripts = 0;
@@ -247,7 +284,7 @@ try {
   const detail = firstFailure ?? failureDetails(error);
   const code = detail.kind === "TIMEOUT" ? `${detail.step}_TIMEOUT` : failedCheck;
   process.stderr.write(
-    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${code};step=${detail.step};error=${detail.kind};network=${detail.network}\n`,
+    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${code};step=${detail.step};error=${detail.kind};network=${detail.network};navigation=${navigationObservation.code};navigationTiming=${navigationObservation.timing}\n`,
   );
   process.exitCode = 1;
 }

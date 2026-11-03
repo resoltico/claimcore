@@ -327,6 +327,8 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page.screenshot({
         path: test.info().outputPath(`work-${language}-${mode}.png`),
         fullPage: true,
+        // Keep the full zoomed page below Linux WebKit's device-bitmap limit.
+        scale: "css",
         animations: "disabled",
       });
     });

@@ -17,9 +17,22 @@ open Npgsql
 let private safeFailureMarker (marker: string) =
     Regex.IsMatch(
         marker,
-        @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE)_TIMEOUT|UNEXPECTED)(?:;step=(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE);error=(?:CHECK|TIMEOUT|RESOURCE|TARGET_CLOSED|NETWORK|SYNTAX|TYPE|IO|OTHER);network=(?:NONE|REFUSED|RESET|CLOSED|ABORTED|EMPTY|TIMEOUT|TLS|BLOCKED|INVALID_RESPONSE|HTTP2_PROTOCOL|REDIRECT_LOOP|INVALID_REDIRECT|UNSAFE_PORT|OTHER))?\z",
+        @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE)_TIMEOUT|UNEXPECTED)(?:;step=(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE);error=(?:CHECK|TIMEOUT|RESOURCE|TARGET_CLOSED|NETWORK|SYNTAX|TYPE|IO|OTHER);network=(?:NONE|REFUSED|RESET|CLOSED|ABORTED|EMPTY|TIMEOUT|TLS|BLOCKED|INVALID_RESPONSE|HTTP2_PROTOCOL|REDIRECT_LOOP|INVALID_REDIRECT|UNSAFE_PORT|OTHER)(?:;navigation=(?:NONE;navigationTiming=NONE|net::ERR_[A-Z0-9_]{1,64};navigationTiming=(?:BEFORE_FAILURE|CLEANUP)))?)?\z",
         RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
     )
+
+let private maximumEvidenceBytes = 16384
+
+let private readFailureTail path =
+    use source =
+        new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite)
+
+    let count = int (min source.Length (int64 maximumEvidenceBytes))
+    let offset = source.Length - int64 count
+    let bytes = Array.zeroCreate<byte> count
+    source.Seek(offset, SeekOrigin.Begin) |> ignore
+    source.ReadExactly(bytes.AsSpan())
+    bytes, offset > 0L
 
 // HttpsProxy owns this safe exception-code/stack log; never copy other private fixture files.
 let private retainProxyFailure reportDirectory directory name =
@@ -27,18 +40,7 @@ let private retainProxyFailure reportDirectory directory name =
         match reportDirectory with
         | None -> ()
         | Some report ->
-            use source =
-                new FileStream(
-                    Path.Combine(directory, "proxy-failures.log"),
-                    FileMode.Open,
-                    FileAccess.Read,
-                    FileShare.ReadWrite
-                )
-
-            let count = int (min source.Length 16384L)
-            let bytes = Array.zeroCreate<byte> count
-            source.Seek(-int64 count, SeekOrigin.End) |> ignore
-            source.ReadExactly(bytes.AsSpan())
+            let bytes, _ = readFailureTail (Path.Combine(directory, "proxy-failures.log"))
             let output = Path.Combine(report, "browser-failure")
             Directory.CreateDirectory output |> ignore
 
@@ -46,6 +48,121 @@ let private retainProxyFailure reportDirectory directory name =
             |> ignore
     with _ ->
         // Evidence is best effort and must preserve the original browser failure.
+        ()
+
+let private metadataName (value: string | null) =
+    match value with
+    | null -> false
+    | value ->
+        value.Length > 0
+        && value.Length <= 2048
+        && (value
+            |> Seq.forall (fun character ->
+                Char.IsLetterOrDigit character || "._$+<>`@,[]= -&*|'".Contains character))
+
+// RequestLog.exceptionLine emits only type and method metadata, never formatted exceptions.
+let private safeExceptionLine (line: string) =
+    try
+        use document = JsonDocument.Parse line
+        let value = document.RootElement
+
+        if value.ValueKind <> JsonValueKind.Object then
+            None
+        else
+            let properties = value.EnumerateObject() |> Seq.toArray
+            let names = properties |> Array.map _.Name |> Set.ofArray
+
+            if properties.Length <> 3 || names <> set [ "kind"; "exceptionType"; "stack" ] then
+                None
+            else
+                let kind = value.GetProperty "kind"
+                let exceptionType = value.GetProperty "exceptionType"
+                let stack = value.GetProperty "stack"
+
+                if
+                    kind.ValueKind <> JsonValueKind.String
+                    || kind.GetString() <> "exception"
+                    || exceptionType.ValueKind <> JsonValueKind.String
+                    || not (metadataName (exceptionType.GetString()))
+                    || stack.ValueKind <> JsonValueKind.Array
+                then
+                    None
+                else
+                    let frames = stack.EnumerateArray() |> Seq.toArray
+
+                    if
+                        frames
+                        |> Array.exists (fun frame ->
+                            frame.ValueKind <> JsonValueKind.String
+                            || not (metadataName (frame.GetString())))
+                    then
+                        None
+                    else
+                        Some(
+                            JsonSerializer.Serialize
+                                {|
+                                    kind = "exception"
+                                    exceptionType = exceptionType.GetString()
+                                    stack = frames |> Array.map _.GetString()
+                                |}
+                        )
+    with _ ->
+        None
+
+let private retainWebExceptions reportDirectory directory =
+    try
+        match reportDirectory with
+        | None -> ()
+        | Some report ->
+            let bytes, clipped = readFailureTail (Path.Combine(directory, "web.stderr"))
+
+            let start =
+                if clipped then
+                    bytes
+                    |> Array.tryFindIndex ((=) 10uy)
+                    |> Option.map ((+) 1)
+                    |> Option.defaultValue bytes.Length
+                else
+                    0
+
+            let finish = bytes |> Array.tryFindIndexBack ((=) 10uy) |> Option.defaultValue -1
+
+            let text =
+                if finish < start then
+                    ""
+                else
+                    UTF8Encoding(false, true).GetString(bytes.AsSpan(start, finish - start + 1))
+
+            let candidates =
+                text.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                |> Array.choose safeExceptionLine
+
+            let _, lines =
+                candidates
+                |> Array.rev
+                |> Array.fold
+                    (fun (size, lines) line ->
+                        let count = Encoding.UTF8.GetByteCount(line) + 1
+
+                        if size + count <= maximumEvidenceBytes then
+                            size + count, line :: lines
+                        else
+                            size, lines)
+                    (0, [])
+
+            let output = Path.Combine(report, "browser-failure")
+            Directory.CreateDirectory output |> ignore
+
+            let retained =
+                if List.isEmpty lines then
+                    ""
+                else
+                    String.concat "\n" lines + "\n"
+
+            FixtureFiles.text output "published-session-web-exceptions.jsonl" retained
+            |> ignore
+    with _ ->
+        // Missing logs, partial writes and output failures never replace the test failure.
         ()
 
 let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
@@ -320,16 +437,27 @@ let private rollover (fixture: PublishedFixture.Fixture) before =
 
 let private qualify () =
     task {
-        use fixture = new PublishedFixture.Fixture()
-        do! fixture.Start()
-        browserPhase fixture "login" "primary-login"
-        let! before = lifetimes fixture
-        Expect.equal before.Length 1 "Real OIDC login creates exactly one server-side ticket"
-        do! rollover fixture before
-        do! fixture.WithAdditionalWeb(concurrentHosts fixture before)
-        peerServed fixture "context"
-        peerServed fixture "session.logout"
-        fixture.Complete()
+        let fixture = new PublishedFixture.Fixture()
+
+        try
+            use _ownership = fixture
+            do! fixture.Start()
+            browserPhase fixture "login" "primary-login"
+            let! before = lifetimes fixture
+            Expect.equal before.Length 1 "Real OIDC login creates exactly one server-side ticket"
+            do! rollover fixture before
+            do! fixture.WithAdditionalWeb(concurrentHosts fixture before)
+            peerServed fixture "context"
+            peerServed fixture "session.logout"
+            fixture.Complete()
+        with error ->
+            // Web stderr is materialized by fixture disposal, so read it after that scope ends.
+            retainWebExceptions
+                (Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY"
+                 |> Option.ofObj)
+                fixture.Directory
+
+            return System.Runtime.ExceptionServices.ExceptionDispatchInfo.Capture(error).Throw()
     }
 
 [<Tests>]
@@ -354,6 +482,12 @@ let failureMarkerTests =
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=UNSAFE_PORT"
                 "PUBLISHED_SESSION_LOGIN_CONTEXT_REFUSED;step=CONTEXT;error=CHECK;network=NONE"
                 "PUBLISHED_SESSION_LOGIN_BOOTSTRAP_TIMEOUT;step=BOOTSTRAP;error=TIMEOUT;network=NONE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_HTTP_RESPONSE_CODE_FAILURE;navigationTiming=CLEANUP"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=HTTP2_PROTOCOL;navigation=net::ERR_HTTP2_PROTOCOL_ERROR;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_CONTEXT_REFUSED;step=CONTEXT;error=CHECK;network=NONE;navigation=NONE;navigationTiming=NONE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_"
+                + String('A', 64)
+                + ";navigationTiming=BEFORE_FAILURE"
             ] do
             Expect.isTrue (safeFailureMarker marker) "Literal safe evidence is admitted"
 
@@ -371,6 +505,20 @@ let failureMarkerTests =
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=https://private.invalid"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED\nprivate-marker"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=NONE\n"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_"
+                + String('A', 65)
+                + ";navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation= net::ERR_FAILED;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_failed;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_FAILED\n;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_FAILED;navigationTiming=BEFORE_FAILURE;private=secret"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=https://private.invalid;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;navigation=net::ERR_FAILED;navigationTiming=BEFORE_FAILURE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=NONE;navigationTiming=CLEANUP"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_FAILED;navigationTiming=NONE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_FAILED;navigationTiming=UNKNOWN"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=NAVIGATE;error=NETWORK;network=OTHER;navigation=net::ERR_FAILED"
             ] do
             Expect.isFalse
                 (safeFailureMarker marker)
@@ -430,3 +578,97 @@ let proxyFailureEvidenceTests =
             retainProxyFailure None directory "unconfigured"
         finally
             Directory.Delete(directory, true))
+
+[<Tests>]
+let webExceptionEvidenceTests =
+    testCase
+        "published session web exception evidence admits only owned metadata records"
+        (fun () ->
+            let valid =
+                """{"kind":"exception","exceptionType":"System.InvalidOperationException","stack":["ClaimCore.Web.AuthMiddleware+oidc@90-1.MoveNext"]}"""
+
+            Expect.isSome
+                (safeExceptionLine valid)
+                "The owned RequestLog metadata shape is admitted"
+
+            for invalid in
+                [
+                    """{"kind":"exception","exceptionType":"System.Exception","stack":[],"message":"private-marker"}"""
+                    """{"kind":"exception","kind":"exception","exceptionType":"System.Exception","stack":[]}"""
+                    """{"kind":"exception","exceptionType":"System.Exception: private-marker","stack":[]}"""
+                    """{"kind":"exception","exceptionType":"https://private.invalid","stack":[]}"""
+                    """{"kind":"exception","exceptionType":"System.Exception","stack":["at Method in /private/file"]}"""
+                    """{"kind":"exception","exceptionType":"System.Exception","stack":[{"private":"marker"}]}"""
+                    """{"kind":"request","exceptionType":"System.Exception","stack":[]}"""
+                    "info: framework formatted private-marker"
+                    "[]"
+                ] do
+                Expect.isNone
+                    (safeExceptionLine invalid)
+                    "Formatted content, unknown fields and non-metadata values are rejected"
+
+            let directory = FixtureFiles.directory ()
+            let report = Path.Combine(directory, "reports")
+
+            try
+                retainWebExceptions (Some report) directory
+
+                Expect.isFalse
+                    (Directory.Exists report)
+                    "Missing stderr cannot mask the original failure"
+
+                FixtureFiles.text
+                    directory
+                    "owner.principal"
+                    "private sibling must never be copied"
+                |> ignore
+
+                let content =
+                    String('X', 20000)
+                    + "\n"
+                    + valid
+                    + "\n"
+                    + """{"kind":"exception","exceptionType":"System.Exception","stack":[],"private":"private-marker"}"""
+                    + "\nframework private-marker\n"
+                    + valid
+
+                FixtureFiles.text directory "web.stderr" content |> ignore
+                retainWebExceptions (Some report) directory
+
+                let output =
+                    Path.Combine(
+                        report,
+                        "browser-failure",
+                        "published-session-web-exceptions.jsonl"
+                    )
+
+                let bytes = File.ReadAllBytes output
+
+                Expect.isTrue
+                    (bytes.Length <= 16384)
+                    "Retained structured evidence has a16KiB ceiling"
+
+                let retained = Encoding.UTF8.GetString bytes
+                let lines = retained.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+                Expect.equal lines.Length 1 "Only the complete owned exception line is retained"
+
+                Expect.isSome
+                    (safeExceptionLine lines[0])
+                    "The retained line still satisfies the strict shape"
+
+                Expect.isFalse
+                    (retained.Contains "private-marker")
+                    "Private fields/framework text never reach the artifact"
+
+                Expect.equal
+                    (File.GetUnixFileMode output)
+                    (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+                    "Structured evidence is privately written"
+
+                let unavailable =
+                    FixtureFiles.text directory "not-a-directory" "owned synthetic file"
+
+                retainWebExceptions (Some unavailable) directory
+                retainWebExceptions None directory
+            finally
+                Directory.Delete(directory, true))
