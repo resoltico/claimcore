@@ -15,7 +15,7 @@ export class ReadAdmission {
   private active = 0;
   private readonly waiting = new Set<WaitingRead>();
 
-  // Cancellation requests transport cleanup; only settled work proves this turn is free.
+  // An obsolete observation still owns capacity until its dispatched work settles.
   private start(): Release {
     this.active += 1;
     let held = true;

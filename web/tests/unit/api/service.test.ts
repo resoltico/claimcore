@@ -64,7 +64,10 @@ const reply = (value: unknown) =>
     status: 200,
     headers: { "content-type": "application/json" },
   });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.unstubAllGlobals();
+  vi.useRealTimers();
+});
 it("real fetch admission checks execute envelope and receipt identities before accepting", async () => {
   vi.stubGlobal("fetch", vi.fn());
   const matching = { operationId: operation, outcome: { kind: "ACCEPTED", data: receipt } };
@@ -181,4 +184,106 @@ it("coordinates list summary and overview through complete response admission, n
   streams[1]!.enqueue(new TextEncoder().encode(JSON.stringify(wireReply("case.summary"))));
   streams[1]!.close();
   expect((await summary).kind).toBe("outcome");
+});
+
+it("drains dispatched obsolete reads before admitting replacements and never dispatches queued cancellations", async () => {
+  const { requestEndpoint } = await import("../../../src/api/service");
+  const { wireReply } = await import("../../support/contract-corpus.fixtures");
+  const streams: NodeController<Uint8Array>[] = [];
+  const deliveredSignals: AbortSignal[] = [];
+  const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
+    deliveredSignals.push(init!.signal!);
+    if (path === "/api/work.overview") {
+      return Promise.resolve(reply(wireReply("work.overview")));
+    }
+    return Promise.resolve(
+      new Response(
+        new NodeReadableStream<Uint8Array>({
+          start(controller) {
+            streams.push(controller);
+          },
+        }) as unknown as BodyInit,
+        { status: 200, headers: { "content-type": "application/json" } },
+      ),
+    );
+  });
+  vi.stubGlobal("fetch", fetch);
+  const obsolete = new AbortController();
+  const queued = new AbortController();
+  const list = requestEndpoint("case.list", "token", { limit: 50 }, obsolete.signal);
+  const summary = requestEndpoint("case.summary", "token", {});
+  const canceled = requestEndpoint("work.overview", "token", {}, queued.signal);
+  const replacement = requestEndpoint("work.overview", "token", {});
+  try {
+    await vi.waitFor(() => {
+      expect(fetch).toHaveBeenCalledTimes(2);
+    });
+    queued.abort();
+    expect(await canceled).toMatchObject({
+      kind: "deliveryFailure",
+      notice: { reason: "cancelled" },
+      dispatched: false,
+    });
+    obsolete.abort();
+    await new Promise<void>((resolve) => {
+      setTimeout(resolve, 0);
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(deliveredSignals[0]!.aborted).toBe(false);
+    streams[0]!.enqueue(new TextEncoder().encode(JSON.stringify(wireReply("case.list"))));
+    streams[0]!.close();
+    expect(await list).toMatchObject({ kind: "deliveryFailure", notice: { reason: "cancelled" } });
+    expect((await replacement).kind).toBe("outcome");
+    expect(fetch).toHaveBeenCalledTimes(3);
+    streams[1]!.enqueue(new TextEncoder().encode(JSON.stringify(wireReply("case.summary"))));
+    streams[1]!.close();
+    expect((await summary).kind).toBe("outcome");
+  } finally {
+    for (const stream of streams) {
+      try {
+        stream.close();
+      } catch {
+        /* Already drained or canceled. */
+      }
+    }
+    await Promise.allSettled([list, summary, canceled, replacement]);
+  }
+});
+
+it("bounds dispatched read draining by the independent transport deadline even when source cancellation stalls", async () => {
+  const { requestEndpoint } = await import("../../../src/api/service");
+  vi.useFakeTimers();
+  const cancel = vi.fn(
+    () =>
+      new Promise<void>(() => {
+        /* Hostile source never settles. */
+      }),
+  );
+  let deliveredSignal: AbortSignal | undefined;
+  vi.stubGlobal(
+    "fetch",
+    vi.fn<typeof globalThis.fetch>().mockImplementation((_path, init) => {
+      deliveredSignal = init!.signal!;
+      return Promise.resolve(
+        new Response(new NodeReadableStream<Uint8Array>({ cancel }) as unknown as BodyInit, {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        }),
+      );
+    }),
+  );
+  const caller = new AbortController();
+  const pending = requestEndpoint("case.list", "token", { limit: 50 }, caller.signal);
+  await vi.advanceTimersByTimeAsync(0);
+  caller.abort();
+  expect(deliveredSignal!.aborted).toBe(false);
+  await vi.advanceTimersByTimeAsync(19_999);
+  expect(deliveredSignal!.aborted).toBe(false);
+  await vi.advanceTimersByTimeAsync(1);
+  expect(await pending).toMatchObject({
+    kind: "deliveryFailure",
+    notice: { reason: "responseTimeout" },
+  });
+  expect(deliveredSignal!.aborted).toBe(true);
+  expect(cancel).toHaveBeenCalledTimes(1);
 });

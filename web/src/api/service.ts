@@ -96,18 +96,26 @@ const send = <K extends EndpointId>(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
-  const network = async (): Promise<ApiResult<ServiceResponse<K>>> => {
-    if (signal.aborted) {
+  const network = async (deliveredSignal: AbortSignal): Promise<ApiResult<ServiceResponse<K>>> => {
+    if (deliveredSignal.aborted) {
       return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
     }
     try {
-      const response = await sendHttp(endpoint, headers, body, signal);
-      return await result(id, response, signal, input);
+      const response = await sendHttp(endpoint, headers, body, deliveredSignal);
+      return await result(id, response, deliveredSignal, input);
     } catch {
       return { kind: "deliveryFailure", notice: localNotice("unreachable") };
     }
   };
-  return endpoint.effect === "READ" ? readAdmission.run(signal, network) : network();
+  if (endpoint.effect !== "READ") {
+    return network(signal);
+  }
+  return readAdmission.run(signal, async () => {
+    // Obsolete observations still drain their bounded response after dispatch. Aborting the
+    // fetch can finish before the server releases its request capacity.
+    const reply = await withinResponseDeadline(network);
+    return signal.aborted ? { kind: "deliveryFailure", notice: localNotice("cancelled") } : reply;
+  });
 };
 const request = <K extends EndpointId>(
   id: K,
