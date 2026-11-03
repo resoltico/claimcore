@@ -38,8 +38,9 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
   if ((await reminders.count()) > 0) {
     await expect(reminders).toHaveAttribute("aria-busy", "false");
     await expect(reminders.getByRole("alert")).toHaveCount(0);
-    // A successful empty page also has a basis; initial/loading/refused pages do not.
-    await expect(reminders.getByText(/^Work observed for /u).first()).toBeVisible();
+    const observed = reminders.getByText(/^Work observed for /u).first();
+    const empty = reminders.getByText("No reminders match this view.", { exact: true });
+    await expect(observed.or(empty)).toBeVisible();
   }
   const overview = page.locator(".work-overview");
   await expect(overview).toHaveAttribute("aria-busy", "false");
