@@ -12,7 +12,7 @@ import subprocess
 import unittest
 from unittest.mock import patch
 
-from growth_comparison import compare, differences, metric_result, validate_fingerprint
+from growth_comparison import compare, differences, markdown, metric_result, validate_fingerprint
 from growth_reference import prepare, replace_once
 
 specification = importlib.util.spec_from_file_location("growth_stage", Path(__file__).with_name("growth-compare.py"))
@@ -128,6 +128,71 @@ class GrowthComparisonTests(unittest.TestCase):
         self.assertEqual(row["candidateMedian"], 100)
         self.assertEqual(row["referenceRuns"], [100, 110, 1000])
         self.assertTrue(row["passed"])
+
+    def test_pair_information_cannot_replace_the_existing_ratio_of_medians_gate(self):
+        row = metric_result("requestsPerSecond", [10, 100, 1000], [11, 80, 1100])
+        self.assertEqual(row["ratio"], 0.8)
+        self.assertEqual(row["pairedRatios"], [1.1, 0.8, 1.1])
+        self.assertEqual(row["runSpread"], {
+            "reference": {"minimum": 10, "maximum": 1000},
+            "candidate": {"minimum": 11, "maximum": 1100},
+        })
+        self.assertFalse(row["passed"])
+
+    def test_optional_read_samples_describe_ranks_without_requiring_historical_raw_data(self):
+        samples = runs()
+        for run in samples:
+            run["workloads"]["read/search/100000"]["requests"] = 100
+        for run in samples[1::2]:
+            run["workloads"]["read/search/100000"]["latencySamples"] = {
+                "milliseconds": list(reversed([1] * 94 + [10] * 4 + [20] * 2)),
+                "order": "observation", "warmupsIncluded": False,
+                "percentileIndex": "floor((sampleCount - 1) * percentile)",
+            }
+        result = compare(samples, {})
+        self.assertTrue(result["passed"])
+        p99 = next(row for row in result["metrics"]
+                   if row["workload"] == "read/search/100000" and row["metric"] == "p99Milliseconds")
+        self.assertEqual(p99["sampleEvidence"]["reference"],
+                         [{"reportedSampleCount": 100, "rawSamples": "not recorded"}] * 3)
+        for evidence in p99["sampleEvidence"]["candidate"]:
+            self.assertEqual(evidence["rawSampleCount"], 100)
+            self.assertEqual(evidence["sortedIndexZeroBased"], 98)
+            self.assertEqual(evidence["rankOneBased"], 99)
+            self.assertEqual(evidence["rankFromLargest"], 2)
+            self.assertEqual(evidence["millisecondsAtRank"], 20)
+            self.assertTrue(evidence["matchesReportedValue"])
+        rendered = markdown({**result, "reference": "before", "candidate": "after"})
+        self.assertIn("raw not recorded", rendered)
+        self.assertIn("sorted rank 99/100 (index 98)", rendered)
+        self.assertIn("gate remains the ratio of medians", rendered)
+
+    def test_invalid_or_disagreeing_optional_samples_are_visible_without_changing_verdicts(self):
+        invalid = (None, {"milliseconds": []}, {"milliseconds": [True]},
+                   {"milliseconds": [float("nan")]}, {"milliseconds": [-1]},
+                   {"milliseconds": [1], "warmupsIncluded": True})
+        for raw in invalid:
+            samples = runs()
+            for run in samples[1::2]:
+                run["workloads"]["read/search/100000"]["latencySamples"] = raw
+            result = compare(samples, {})
+            self.assertTrue(result["passed"])
+            row = next(row for row in result["metrics"]
+                       if row["workload"] == "read/search/100000" and row["metric"] == "p99Milliseconds")
+            expected = "not recorded" if raw is None else "invalid"
+            self.assertEqual(row["sampleEvidence"]["candidate"][0]["rawSamples"], expected)
+        samples = runs()
+        for run in samples[1::2]:
+            run["workloads"]["read/search/100000"]["p99Milliseconds"] = 30
+            run["workloads"]["read/search/100000"]["latencySamples"] = {
+                "milliseconds": [1] * 100, "order": "observation", "warmupsIncluded": False,
+                "percentileIndex": "floor((sampleCount - 1) * percentile)",
+            }
+        result = compare(samples, {})
+        self.assertFalse(result["passed"])
+        row = next(row for row in result["metrics"]
+                   if row["workload"] == "read/search/100000" and row["metric"] == "p99Milliseconds")
+        self.assertFalse(row["sampleEvidence"]["candidate"][0]["matchesReportedValue"])
 
     def test_tolerances_have_inclusive_boundaries(self):
         for name in ("writesPerSecond", "requestsPerSecond"):
