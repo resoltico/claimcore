@@ -551,6 +551,7 @@ test("a reminder revision change after compound preview refuses both effects wit
 
 test("published reminder rows show server timing in case and queue views across languages", async ({
   page,
+  browser,
 }) => {
   await openAuthenticated(page);
   const reference = `TIMING-${randomUUID()}`;
@@ -558,7 +559,11 @@ test("published reminder rows show server timing in case and queue views across 
   const observed = await workRequest(page, "work.overview", {});
   if (observed.outcome.kind !== "SUCCEEDED") throw new Error("Expected server date basis");
   const { businessDate, timeZone } = observed.outcome.data.basis;
-  const actions = ["Past planned action", "Current planned action", "Future planned action"];
+  const actions = [
+    `${reference} past planned action`,
+    `${reference} current planned action`,
+    `${reference} future planned action`,
+  ];
   for (const [index, dueDate] of ["0001-01-01", businessDate, "9999-12-31"].entries()) {
     const accepted = await workRequest(page, "operation.execute", {
       kind: "REMINDER",
@@ -590,14 +595,24 @@ test("published reminder rows show server timing in case and queue views across 
     await expect(item.locator(".reminder-timing")).toHaveText(label);
     await expect(item.getByRole("link")).toHaveText(reference);
   }
-  const voided = await workRequest(page, "operation.execute", {
-    kind: "CASE",
-    operationId: randomUUID(),
-    target: { kind: "REFERENCE", caseReference: reference },
-    expectedRevision: 1,
-    act: { kind: "VOID", reason: "Synthetic timing test entry error" },
+  const stewardContext = await browser.newContext({
+    baseURL: new URL(page.url()).origin,
+    ignoreHTTPSErrors: true,
   });
-  expect(voided.outcome.kind).toBe("ACCEPTED");
+  try {
+    const steward = await stewardContext.newPage();
+    await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
+    const voided = await workRequest(steward, "operation.execute", {
+      kind: "CASE",
+      operationId: randomUUID(),
+      target: { kind: "REFERENCE", caseReference: reference },
+      expectedRevision: 1,
+      act: { kind: "VOID", reason: "Synthetic timing test entry error" },
+    });
+    expect(voided.outcome.kind).toBe("ACCEPTED");
+  } finally {
+    await stewardContext.close();
+  }
   await page.reload();
   await page.getByRole("searchbox").fill(reference);
   await page.getByRole("search").getByRole("button").click();

@@ -1,5 +1,10 @@
 # Narratives and reminders verification
 
+A subsequent independent audit found two client omissions in the qualified source below: per-reminder
+current timing labels, and CLI inactive-parent disclosure. Their fixes are currently under integrated
+qualification. A10/A11 client-detail completion is not claimed until the maintained and published
+regressions pass; the earlier source35 results remain historical evidence with that limitation.
+
 Current local qualification is for `35b3c5639e593575e18de323d6dbe411a05f5853` on
 `codex/narratives-reminders`, against baseline `b5e21690191482d6a5ea15cdccd7bb9ae5f31dc9`.
 The ordinary full gate, complete Chromium/Firefox/WebKit suites, refreshed actual-source query probe,

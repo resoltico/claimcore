@@ -24,7 +24,7 @@ type ObservedReminderPage = Omit<ReminderPage, "items"> & { items: ObservedRemin
 const select = (reply: ResponseByEndpoint["reminder.list"]): ObservedReminderPage | null => {
   if (reply.outcome.kind !== "SUCCEEDED") return null;
   const page = reply.outcome.data;
-  // Loaded pages can straddle a business-day or installation time-zone change.
+  // Each loaded row keeps its own server observation rather than the latest page basis.
   return { ...page, items: page.items.map((row) => ({ ...row, basis: page.basis })) };
 };
 export const ReminderList = ({

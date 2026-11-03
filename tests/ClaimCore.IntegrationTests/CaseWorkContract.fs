@@ -635,6 +635,19 @@ let internal dueFiltersAndOrder fixture =
 let internal reminderTiming fixture =
     task {
         let! initialOwner = caseWorker fixture
+
+        let! stewardship =
+            grant
+                initialOwner
+                (id 699)
+                fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority stewardship
         let! context = Service.context initialOwner () token
         let initialDate = (read context).Runtime.EffectiveBusinessDate
         let mutable businessDate = initialDate
@@ -663,7 +676,10 @@ let internal reminderTiming fixture =
                                 AuthoredReminderAct.Create
                                     {
                                         Action = sprintf "Timing action %d" operation
-                                        Due = initialDate.AddDays offset |> CalendarDate.ofDate |> CalendarDate.format
+                                        Due =
+                                            initialDate.AddDays offset
+                                            |> CalendarDate.ofDate
+                                            |> CalendarDate.format
                                     }
                         })
                     token
@@ -671,10 +687,21 @@ let internal reminderTiming fixture =
             accepted created |> ignore
 
         for operation, act in
-            [ 706, AuthoredReminderAct.Complete(id 704, 1L)
-              707, AuthoredReminderAct.Cancel(id 705, 1L) ] do
+            [
+                706, AuthoredReminderAct.Complete(id 704, 1L)
+                707, AuthoredReminderAct.Cancel(id 705, 1L)
+            ] do
             let! changed =
-                Service.execute owner (OperationInput.Reminder { OperationId = id operation; Target = target; Act = act }) token
+                Service.execute
+                    owner
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id operation
+                            Target = target
+                            Act = act
+                        })
+                    token
+
             accepted changed |> ignore
 
         let request: ReminderListRequest =
@@ -691,10 +718,27 @@ let internal reminderTiming fixture =
 
         let single operation =
             task {
-                let! response = Service.reminder owner { Target = target; ReminderId = id operation } token
+                let! response =
+                    Service.reminder
+                        owner
+                        {
+                            Target = target
+                            ReminderId = id operation
+                        }
+                        token
+
                 let response = read response
-                Expect.equal response.Basis.BusinessDate businessDate "Single timing uses its actual installation business date"
-                Expect.equal response.Basis.TimeZoneId calendar.TimeZoneId "Single observation identifies installation zone"
+
+                Expect.equal
+                    response.Basis.BusinessDate
+                    businessDate
+                    "Single timing uses its actual installation business date"
+
+                Expect.equal
+                    response.Basis.TimeZoneId
+                    calendar.TimeZoneId
+                    "Single observation identifies installation zone"
+
                 return response.Item
             }
 
@@ -702,60 +746,141 @@ let internal reminderTiming fixture =
             task {
                 let! response = Service.reminders owner query token
                 let response = read response
-                Expect.equal response.Basis.BusinessDate businessDate "Page timing uses its actual installation business date"
-                Expect.equal response.Basis.TimeZoneId calendar.TimeZoneId "Page observation identifies installation zone"
+
                 Expect.equal
-                    (response.Items |> List.map (fun item -> Reminder.id item.Reminder |> ReminderId.value, item.Timing) |> Map.ofList)
-                    (expected |> List.map (fun (operation, timing) -> id operation, timing) |> Map.ofList)
+                    response.Basis.BusinessDate
+                    businessDate
+                    "Page timing uses its actual installation business date"
+
+                Expect.equal
+                    response.Basis.TimeZoneId
+                    calendar.TimeZoneId
+                    "Page observation identifies installation zone"
+
+                Expect.equal
+                    (response.Items
+                     |> List.map (fun item ->
+                         Reminder.id item.Reminder |> ReminderId.value, item.Timing)
+                     |> Map.ofList)
+                    (expected
+                     |> List.map (fun (operation, timing) -> id operation, timing)
+                     |> Map.ofList)
                     "Independent expected current timing for each selected reminder"
+
                 return response
             }
 
         let expected =
-            [ 701, Some ReminderDue.Overdue
-              702, Some ReminderDue.Today
-              703, Some ReminderDue.Upcoming
-              704, None
-              705, None ]
+            [
+                701, Some ReminderDue.Overdue
+                702, Some ReminderDue.Today
+                703, Some ReminderDue.Upcoming
+                704, None
+                705, None
+            ]
 
         for operation, timing in expected do
             let! item = single operation
             Expect.isTrue item.Active "An open parent remains active even for terminal reminders"
-            Expect.equal item.Timing timing "Single read distinguishes pending timing from terminal state"
 
-        let! _ = checkPage request expected
-        let! _ = checkPage { request with Target = None } expected
-        let! first = checkPage { request with State = Some ReminderState.Pending; Due = Some ReminderDue.Today; Limit = 1 } [ 702, Some ReminderDue.Today ]
-        Expect.isNone first.NextCursor "Terminal reminders matching the date are excluded by the pending-state filter"
+            Expect.equal
+                item.Timing
+                timing
+                "Single read distinguishes pending timing from terminal state"
+
+        let pendingExpected = expected |> List.take 3
+        let! _ = checkPage request pendingExpected
+        let! _ = checkPage { request with Target = None } pendingExpected
+
+        for state, operation in [ ReminderState.Completed, 704; ReminderState.Cancelled, 705 ] do
+            let explicitState = { request with State = Some state }
+            let! _ = checkPage explicitState [ operation, None ]
+            let! _ = checkPage { explicitState with Target = None } [ operation, None ]
+            ()
+
+        let! first =
+            checkPage
+                { request with
+                    State = Some ReminderState.Pending
+                    Due = Some ReminderDue.Today
+                    Limit = 1
+                }
+                [ 702, Some ReminderDue.Today ]
+
+        Expect.isNone
+            first.NextCursor
+            "Terminal reminders matching the date are excluded by the pending-state filter"
 
         let stored () =
             fixture.Store.Read
                 {
                     CancellationToken = token
-                    Work = fun tx ->
-                        task {
-                            let! activity = tx.ActivityPage { CaseId = caseId; BeforeSequence = None; Limit = 50 }
-                            let! reminder = tx.FindReminder(ReminderId.create (id 702) |> Option.get)
-                            return activity, reminder
-                        }
+                    Work =
+                        fun tx ->
+                            task {
+                                let! activity =
+                                    tx.ActivityPage
+                                        {
+                                            CaseId = caseId
+                                            BeforeSequence = None
+                                            Limit = 50
+                                        }
+
+                                let! reminder =
+                                    tx.FindReminder(ReminderId.create (id 702) |> Option.get)
+
+                                return activity, reminder
+                            }
                 }
 
         let! beforePassage = stored ()
         businessDate <- initialDate.AddDays 1
         let! yesterday = single 702
-        Expect.equal yesterday.Timing (Some ReminderDue.Overdue) "Date passage reclassifies retained pending work"
-        let! _ = checkPage { request with State = Some ReminderState.Pending; Due = Some ReminderDue.Today } [ 703, Some ReminderDue.Today ]
+
+        Expect.equal
+            yesterday.Timing
+            (Some ReminderDue.Overdue)
+            "Date passage reclassifies retained pending work"
+
+        let! _ =
+            checkPage
+                { request with
+                    State = Some ReminderState.Pending
+                    Due = Some ReminderDue.Today
+                }
+                [ 703, Some ReminderDue.Today ]
+
         let! afterPassage = stored ()
-        Expect.equal afterPassage beforePassage "Read-time reclassification writes neither reminder state nor ledger activity"
+
+        Expect.equal
+            afterPassage
+            beforePassage
+            "Read-time reclassification writes neither reminder state nor ledger activity"
 
         let! closed = execute owner 708 reference 1L (CaseAct.Bare BareAct.Close)
         accepted closed |> ignore
-        let inactive = expected |> List.map (fun (operation, _) -> operation, None)
+        let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
         let! hidden = checkPage request []
         Expect.isNone hidden.NextCursor "Inactive work does not leak through pagination"
         let! _ = checkPage { request with IncludeInactive = true } inactive
-        let! _ = checkPage { request with Target = None; IncludeInactive = true } inactive
-        let! _ = checkPage { request with IncludeInactive = true; State = Some ReminderState.Completed; Due = Some ReminderDue.Overdue } [ 704, None ]
+
+        let! _ =
+            checkPage
+                { request with
+                    Target = None
+                    IncludeInactive = true
+                }
+                inactive
+
+        let! _ =
+            checkPage
+                { request with
+                    IncludeInactive = true
+                    State = Some ReminderState.Completed
+                    Due = Some ReminderDue.Overdue
+                }
+                [ 704, None ]
+
         let! closedItem = single 702
         Expect.isFalse closedItem.Active "Closed single read clearly marks retained work inactive"
         Expect.isNone closedItem.Timing "Closed pending work has no actionable timing"
@@ -764,8 +889,16 @@ let internal reminderTiming fixture =
         accepted reopened |> ignore
         let! reopenedItem = single 702
         Expect.isTrue reopenedItem.Active "Reopening reactivates retained pending work"
-        Expect.equal reopenedItem.Timing (Some ReminderDue.Overdue) "Reopened work is classified against the current date"
-        Expect.equal (Reminder.due reopenedItem.Reminder) (Reminder.due yesterday.Reminder) "Reopening retains the authored due date"
+
+        Expect.equal
+            reopenedItem.Timing
+            (Some ReminderDue.Overdue)
+            "Reopened work is classified against the current date"
+
+        Expect.equal
+            (Reminder.due reopenedItem.Reminder)
+            (Reminder.due yesterday.Reminder)
+            "Reopening retains the authored due date"
 
         let! voided = execute owner 710 reference 3L (CaseAct.Void "Timing lifecycle check")
         accepted voided |> ignore
@@ -774,11 +907,17 @@ let internal reminderTiming fixture =
         Expect.isFalse voidedItem.Active "Voided single read marks retained work inactive"
         Expect.isNone voidedItem.Timing "Voided pending work has no actionable timing"
 
-        let! reinstated = execute owner 711 reference 4L (CaseAct.Reinstate "Restore timing lifecycle check")
+        let! reinstated =
+            execute owner 711 reference 4L (CaseAct.Reinstate "Restore timing lifecycle check")
+
         accepted reinstated |> ignore
         let! reinstatedItem = single 702
         Expect.isTrue reinstatedItem.Active "Reinstatement reactivates work"
-        Expect.equal reinstatedItem.Timing (Some ReminderDue.Overdue) "Reinstatement uses retained dates and current basis"
+
+        Expect.equal
+            reinstatedItem.Timing
+            (Some ReminderDue.Overdue)
+            "Reinstatement uses retained dates and current basis"
     }
 
 let internal lifecycleAndErasure fixture =

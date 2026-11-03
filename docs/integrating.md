@@ -283,7 +283,14 @@ filters classify individual actions, so a case classified Overdue can still have
 filters/order/scope, each rechecking current visibility; they do not promise a pinned export.
 
 Bounded reminder pages default to actionable Pending work; terminal/inactive records require explicit
-selection. The work overview ignores case page/search filters and reports accessible or Mine actionable
+selection. Reminder get/list items include required nullable `timing`: `OVERDUE`, `TODAY` or `UPCOMING`
+only for active Pending work, otherwise null. `active` describes the current parent; terminal state is
+independent. Timing uses the enclosing read/page's server `basis`, not a consumer clock. Retain each
+page's basis when accumulating rows. The existing date filter remains date-based even when explicit
+state/include-inactive selections inspect retained work. Regenerate strict consumers for this read-model
+member; historical receipts do not acquire current timing.
+
+The work overview ignores case page/search filters and reports accessible or Mine actionable
 cases with observation/date/zone. Missing-plan, overdue, unassigned and unavailable dimensions overlap;
 attentionCases counts their distinct union. Counts distinguish cases from reminders. Zero Pending on an
 active open case is monitored attention, not a hard validity refusal. Date passage writes no ledger event.

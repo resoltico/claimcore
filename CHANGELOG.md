@@ -52,6 +52,8 @@
 
 - Growth reports retain raw latency samples and live progress; failed native runs and bounded private publication diagnostics survive cleanup.
 
+- Reminder get/list replies add server-derived timing; regenerate strict clients. Both clients label active Pending due buckets and inactive work without reclassifying historical receipts.
+
 ## [0.14.0] - 2026-10-30
 
 - Use a fresh database: notification/amount projections and authority-history indexes change the SQL checksum. Earlier installations are refused; no migration or reader is supplied.

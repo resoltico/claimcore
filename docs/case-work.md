@@ -106,6 +106,14 @@ each reminder. A case with overdue and today reminders is Overdue in case-next-d
 today reminder remains in the Today queue. Case financial totals count each selected case once regardless
 of reminder count. Reminder search finds current action text, not prior versions.
 
+Current reminder reads label active Pending records Overdue, Today or Upcoming against that response's
+installation business date, never the client clock. Each loaded browser row retains its originating
+page's date and zone. Closed/voided parents are explicitly inactive; terminal and inactive reminders
+have no actionable timing label, while their authored date and Pending/Completed/Cancelled state remain
+visible. Date filters still compare the retained date independently of state: an explicitly selected
+Completed or inactive record can match an Overdue date filter without becoming actionable overdue work.
+Historical snapshots and receipts have no current timing classification.
+
 ## Open a case
 
 Choose **Open a case** when it is offered, then supply the reference and every registration value: incident date,

@@ -56,9 +56,17 @@ module internal TextWorkReply =
         @ reminder language value.Reminder
         @ (value.Timing
            |> Option.map (fun timing ->
-               [ line language "input.reminderDue.label" (term language ReminderDue.vocabulary timing) ])
+               [
+                   line
+                       language
+                       "input.reminderDue.label"
+                       (term language ReminderDue.vocabulary timing)
+               ])
            |> Option.defaultValue [])
-        @ (if value.Active then [] else [ term language CaseDue.vocabulary CaseDue.Inactive ])
+        @ (if value.Active then
+               []
+           else
+               [ term language CaseDue.vocabulary CaseDue.Inactive ])
         @ [
             instant value.RecordedAt + "  " + ActorId.format value.RecordedBy
             value.Acts
