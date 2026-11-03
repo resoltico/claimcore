@@ -141,6 +141,7 @@
     <Compile Include="Cli/CliReplyFixtures.fs" />
     <Compile Include="Cli/GenericReplyTests.fs" />
     <Compile Include="Cli/HistoryReplyTests.fs" />
+    <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />
     <Compile Include="Cli/TransportBodyScenarios.fs" />
