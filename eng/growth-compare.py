@@ -20,6 +20,26 @@ PROJECT = "tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj"
 TEST = "FullyQualifiedName~synthetic write contention and verifier growth qualification"
 
 
+def progress(report, phase, **active):
+    """Publish observational state only; comparison.json owns every qualification judgement."""
+    directory = Path(report["directory"])
+    value = {
+        "status": "finished" if phase == "finished" else "incomplete",
+        "phase": phase,
+        "reference": report["reference"],
+        "candidate": report["candidate"],
+        "candidatePatchSha256": report.get("candidatePatchSha256"),
+        "harnessSha256": report.get("harnessSha256", {}),
+        "completedRuns": len(report.get("runs", [])),
+        "active": active,
+        "resultFile": str(directory / "comparison.json"),
+    }
+    path = directory / "comparison-progress.json"
+    temporary = path.with_name(path.name + ".writing")
+    temporary.write_text(json.dumps(value, indent=2) + "\n")
+    temporary.replace(path)
+
+
 def requested_profile():
     profile = os.environ.get("CLAIMCORE_GROWTH_PROFILE")
     if profile is not None and "write/" + profile.replace(":", "/") not in REQUIRED_WRITES:
@@ -193,6 +213,7 @@ def prepare_checkouts(root, workspace, report, owner, candidate_patch):
     preparations = {}
     for side in ("reference", "candidate"):
         checkout = workspace / side
+        progress(report, "prepare-started", side=side, checkout=str(checkout))
         subprocess.run([
             "git", "-C", str(root), "worktree", "add", "--detach", str(checkout), report[side],
         ], check=True, capture_output=True)
@@ -201,6 +222,9 @@ def prepare_checkouts(root, workspace, report, owner, candidate_patch):
                            input=candidate_patch, check=True, capture_output=True)
         preparations[side] = prepare(checkout, owner)
         (Path(report["directory"]) / f"{side}-harness.patch").write_text(preparations[side]["patch"])
+        report.setdefault("harnessSha256", {})[side] = hashlib.sha256(
+            preparations[side]["patch"].encode()
+        ).hexdigest()
         print(f"Building isolated {side} {report[side]}", flush=True)
         for action, arguments in (
             ("restore", ["restore", PROJECT, "--locked-mode"]),
@@ -208,6 +232,7 @@ def prepare_checkouts(root, workspace, report, owner, candidate_patch):
         ):
             execute(["dotnet", *arguments], checkout,
                     Path(report["directory"]) / f"{side}-{action}.log", os.environ.copy())
+        progress(report, "prepare-completed", side=side, checkout=str(checkout))
     return preparations
 
 
@@ -218,6 +243,9 @@ def alternate(workspace, report, preparations, profile):
         for side in ("reference", "candidate"):
             print(f"Growth pair {pair + 1}/3: {side}", flush=True)
             destination = Path(report["directory"]) / f"pair-{pair + 1}-{side}"
+            progress(report, "run-started", pair=pair + 1, side=side,
+                     checkout=str(workspace / side), reportDirectory=str(destination),
+                     readProgressRoot=str(workspace / side / "artifacts/verification/growth"))
             run = run_workloads(workspace / side, destination, os.environ.copy(), preparations[side], profile)
             runs.append({"side": side, **run})
             report["runs"] = runs
@@ -232,6 +260,8 @@ def alternate(workspace, report, preparations, profile):
                         runs[-2]["workloads"][key], runs[-1]["workloads"][key],
                         report.get("reviewedFingerprints", {}).get(key),
                     )
+            progress(report, "run-collected", pair=pair + 1, side=side,
+                     reportDirectory=str(destination))
     required = REQUIRED_WRITES if profile is None else {"write/" + profile.replace(":", "/")}
     return compare(runs, report.get("reviewedFingerprints", {}), required)
 
@@ -255,6 +285,7 @@ def main(reference):
               "directory": str(directory), "owner": owner, "manualEquivalence": review}
     (directory / "candidate-source.patch").write_bytes(candidate_patch)
     print(f"Comparison evidence: {directory}", flush=True)
+    progress(report, "preparing")
     with tempfile.TemporaryDirectory(prefix="claimcore-growth-compare-") as temporary:
         workspace = Path(temporary)
         try:
@@ -282,6 +313,7 @@ def main(reference):
             (directory / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
             table = markdown(report)
             (directory / "comparison.md").write_text(table)
+            progress(report, "finished")
             print(table, flush=True)
     return qualification_exit(report["passed"], report["completeQualification"])
 
