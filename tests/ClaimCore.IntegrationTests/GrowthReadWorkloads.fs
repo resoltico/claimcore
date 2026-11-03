@@ -14,8 +14,29 @@ open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
 
-let private seed actor count =
+type ReadProgress =
+    {
+        Cases: int
+        Phase: string
+        Completed: int
+        Expected: int
+        ObservedAt: DateTimeOffset
+    }
+
+let private progress progressed cases phase completed expected =
+    progressed
+        {
+            Cases = cases
+            Phase = phase
+            Completed = completed
+            Expected = expected
+            ObservedAt = DateTimeOffset.UtcNow
+        }
+
+let private seed progressed actor count =
     task {
+        progress progressed count "case-seed" 0 count
+
         for index in 0 .. count - 1 do
             let reference = GrowthWorkloadPlan.readReference index
             let registration = GrowthWorkloadPlan.readRegistration count index
@@ -65,6 +86,9 @@ let private seed actor count =
                         token
 
                 accepted closed |> ignore
+
+            if (index + 1) % 10000 = 0 || index + 1 = count then
+                progress progressed count "case-seed" (index + 1) count
     }
 
 let private read actor filter =
@@ -87,8 +111,17 @@ let private read actor filter =
         | _ -> return failtestf "Read growth workload failed: %A" result
     }
 
-let private measure cases (name, order, expectedItems, fingerprint) (limit: Nullable<int>) read =
+let private measure
+    progressed
+    publish
+    cases
+    (name, order, expectedItems, fingerprint)
+    (limit: Nullable<int>)
+    read
+    =
     task {
+        progress progressed cases ("measure/" + name) 0 GrowthWorkloadPlan.measuredRequests
+
         for _ in 1 .. GrowthWorkloadPlan.warmupRequests do
             let! found = read ()
             Expect.equal found expectedItems "Warmup observes the independent seeded population"
@@ -111,7 +144,8 @@ let private measure cases (name, order, expectedItems, fingerprint) (limit: Null
 
         let latencies = durations.ToArray() |> Array.sort
 
-        return
+        // Keep the original aggregate construction, including the seconds boundary after sorting.
+        let report =
             {|
                 name = name
                 cases = cases
@@ -128,10 +162,30 @@ let private measure cases (name, order, expectedItems, fingerprint) (limit: Null
                 maximumMilliseconds = Array.last latencies
                 workloadFingerprint = fingerprint
             |}
+
+        elapsed.Stop()
+
+        let observed =
+            {| report with
+                latencySamples =
+                    {|
+                        milliseconds = durations.ToArray()
+                        order = "observation"
+                        warmupsIncluded = false
+                        percentileIndex = "floor((sampleCount - 1) * percentile)"
+                    |}
+            |}
+
+        // Export and progress callbacks run only after every existing metric has been frozen.
+        publish observed
+        progress progressed cases ("measure/" + name) observed.requests observed.requests
+        return observed
     }
 
-let private authorityProfiles (database: PostgresFixture.Database) actor cases =
+let private authorityProfiles progressed publish (database: PostgresFixture.Database) actor cases =
     task {
+        progress progressed cases "authority-seed" 0 GrowthWorkloadPlan.authorityEntries
+
         for index in 0 .. GrowthWorkloadPlan.authorityEntries - 1 do
             let! reply =
                 grant
@@ -145,6 +199,14 @@ let private authorityProfiles (database: PostgresFixture.Database) actor cases =
                     (index % 2 = 0)
 
             acceptedAuthority reply
+
+            if (index + 1) % 10000 = 0 || index + 1 = GrowthWorkloadPlan.authorityEntries then
+                progress
+                    progressed
+                    cases
+                    "authority-seed"
+                    (index + 1)
+                    GrowthWorkloadPlan.authorityEntries
 
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
@@ -185,6 +247,8 @@ let private authorityProfiles (database: PostgresFixture.Database) actor cases =
 
             let! report =
                 measure
+                    progressed
+                    publish
                     cases
                     (name,
                      "SEQUENCE",
@@ -226,8 +290,9 @@ let private readSummary actor (cases: int) =
     }
 
 // These new-feature measurements follow every common query, keeping its population unchanged.
-let private workProfiles (actor: ServiceContext) cases =
+let private workProfiles progressed publish (actor: ServiceContext) cases =
     task {
+        progress progressed cases "work-seed" 0 (cases / 1000)
         let! context = Service.context actor () token
 
         let context =
@@ -280,6 +345,9 @@ let private workProfiles (actor: ServiceContext) cases =
 
             accepted planned |> ignore
             references.Add reference
+
+            if references.Count % 100 = 0 || references.Count = cases / 1000 then
+                progress progressed cases "work-seed" references.Count (cases / 1000)
 
         // Independent population/count and row-content witnesses, rather than an empty Mine query.
         Expect.equal references.Count (cases / 1000) "One open case per thousand has explicit work"
@@ -365,6 +433,8 @@ let private workProfiles (actor: ServiceContext) cases =
 
         let! listing =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-derived-follow-up",
                  "FOLLOW_UP",
@@ -375,6 +445,8 @@ let private workProfiles (actor: ServiceContext) cases =
 
         let! totals =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-derived-work-summary",
                  "GROUPED",
@@ -388,8 +460,9 @@ let private workProfiles (actor: ServiceContext) cases =
 
 // Large child populations are seeded after common-case measurements, so feature cost cannot
 // change the unchanged-read comparison inputs. Each population is checked independently.
-let private reminderProfiles actor cases =
+let private reminderProfiles progressed publish actor cases =
     task {
+        progress progressed cases "reminder-pair-seed" 0 (cases / 10)
         let! contextResult = Service.context actor () token
 
         let context =
@@ -456,6 +529,9 @@ let private reminderProfiles actor cases =
             accepted completed |> ignore
             pendingIds.Add(pendingOperation.ToString("D"))
             completedIds.Add(terminalOperation.ToString("D"))
+
+            if (index + 1) % 1000 = 0 || index + 1 = population then
+                progress progressed cases "reminder-pair-seed" (index + 1) population
 
         let request state cursor : ReminderListRequest =
             {
@@ -540,6 +616,8 @@ let private reminderProfiles actor cases =
 
         let! pending =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-pending", "DUE_ID", min 50 population, fingerprint "pending")
                 (Nullable 50)
@@ -547,6 +625,8 @@ let private reminderProfiles actor cases =
 
         let! completed =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-completed", "DUE_ID", min 50 population, fingerprint "completed")
                 (Nullable 50)
@@ -585,6 +665,8 @@ let private reminderProfiles actor cases =
 
         let! currentReport =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-current-case", "CASE_ID", 1, fingerprint "current")
                 (Nullable 1)
@@ -617,6 +699,8 @@ let private reminderProfiles actor cases =
 
         let! financialReport =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-financial-isolation", "GROUPED", 1, fingerprint "financial")
                 (Nullable())
@@ -663,6 +747,8 @@ let private reminderProfiles actor cases =
 
         let! overviewReport =
             measure
+                progressed
+                publish
                 cases
                 ("reminder-work-overview", "ACCESSIBLE", cases / 2, fingerprint "overview")
                 (Nullable())
@@ -671,14 +757,15 @@ let private reminderProfiles actor cases =
         return [| pending; completed; currentReport; financialReport; overviewReport |]
     }
 
-let profile cases =
+let profileWithProgress cases progressed completed =
     task {
         let! database = PostgresFixture.create ()
 
         try
             let environment = GrowthEnvironment.source ()
+            let publish = completed environment
             let! actor = caseWorker database.Fixture
-            do! seed actor cases
+            do! seed progressed actor cases
             let! population = GrowthEnvironment.database database
 
             Expect.equal
@@ -711,6 +798,8 @@ let profile cases =
             for name, filter, expectedItems in workloads do
                 let! report =
                     measure
+                        progressed
+                        publish
                         cases
                         (name,
                          CaseListOrder.token filter.Order,
@@ -723,6 +812,8 @@ let profile cases =
 
             let! summary =
                 measure
+                    progressed
+                    publish
                     cases
                     ("summary", "GROUPED", cases, GrowthWorkloadPlan.summaryFingerprint cases)
                     (Nullable())
@@ -733,13 +824,13 @@ let profile cases =
             // Seed authority events only after the existing query measurements; their declared
             // inputs and fingerprints remain unchanged for historical comparisons.
             if cases = 100000 then
-                let! history = authorityProfiles database actor cases
+                let! history = authorityProfiles progressed publish database actor cases
                 reports.AddRange history
 
-            let! work = workProfiles actor cases
+            let! work = workProfiles progressed publish actor cases
             reports.AddRange work
 
-            let! reminders = reminderProfiles actor cases
+            let! reminders = reminderProfiles progressed publish actor cases
             reports.AddRange reminders
 
             return
@@ -752,11 +843,13 @@ let profile cases =
             database.Fixture.Dispose()
     }
 
-let run completed =
+let profile cases =
+    profileWithProgress cases ignore (fun _ _ -> ())
+
+let run progressed completed populationCompleted =
     async {
         for cases in GrowthWorkloadPlan.readPopulations do
-            let! report = profile cases |> Async.AwaitTask
-
-            for workload in report.workloads do
-                completed report.environment workload
+            let! _ = profileWithProgress cases progressed completed |> Async.AwaitTask
+            // Aggregate bookkeeping stays after population work and fixture disposal.
+            populationCompleted ()
     }
