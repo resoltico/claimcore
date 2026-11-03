@@ -2,7 +2,10 @@
 
 ## [Unreleased]
 
+## [0.15.0] - 2026-11-03
+
 - Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.
+- Build with Node 26.13.0 and npm 12.2.1; source toolchains, dependencies and pinned CI/container inputs are refreshed.
 - Next follow-up is derived from Pending reminders; remove followUpDate writes. Work and each reminder have independent revisions, so scheduling does not invalidate financial edits.
 - Regenerate clients for WORK/REMINDER operations, entity-specific revisions, bounded pages and correlated effects. Complete-and-plan-next commits exactly two effects under one operation ID.
 - Reminder get/list replies add server-derived timing; regenerate strict clients. Both clients label active Pending due buckets and inactive work without reclassifying historical receipts.
@@ -51,6 +54,7 @@
 - Accessible work attention ignores case page/search filters, distinguishes case/reminder units and counts overlapping attention once. Mine inherits current case responsibility within read access.
 - GIN indexes support literal search across case facts and Handling summaries; account for their database storage and write-ahead-log overhead.
 - Growth reports retain raw latency samples and live progress; failed native runs and bounded private publication diagnostics survive cleanup.
+- Source releases reuse successful main-branch CI for the exact annotated commit; publishing a tag does not repeat the gates.
 
 ## [0.14.0] - 2026-10-30
 
