@@ -3,6 +3,7 @@ import { endpoints, isResponse, type RequestByEndpoint } from "@contracts/client
 import { browserRequest, installationId, sessionToken } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
 import { isHostFailure } from "../src/protocol/client";
+import { expectCaseReadsSettled } from "./case-readiness";
 
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
   await retainResponseBodies(page);
@@ -31,22 +32,9 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       exact: true,
     }),
   ).toBeVisible();
-  await expect(current.getByText("Loading current case…", { exact: true })).toHaveCount(0);
-  await expect(current.locator(":scope > .error")).toHaveCount(0);
   await expect(current.locator(".case-work")).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
-  const reminders = current.locator(".reminder-list");
-  if ((await reminders.count()) > 0) {
-    await expect(reminders).toHaveAttribute("aria-busy", "false");
-    await expect(reminders.getByRole("alert")).toHaveCount(0);
-    const observed = reminders.getByText(/^Work observed for /u).first();
-    const empty = reminders.getByText("No reminders match this view.", { exact: true });
-    // A successful empty page can show both its message and its observation basis.
-    await expect(observed.or(empty).first()).toBeVisible();
-  }
-  const overview = page.locator(".work-overview");
-  await expect(overview).toHaveAttribute("aria-busy", "false");
-  await expect(overview.getByText(/^Work observed for /u)).toBeVisible();
+  await expectCaseReadsSettled(page);
   return payload.outcome.data;
 };
 export const workRequest = async <K extends keyof RequestByEndpoint>(

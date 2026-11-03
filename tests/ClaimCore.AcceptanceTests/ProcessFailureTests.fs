@@ -259,6 +259,59 @@ let private categoryControls () =
         [ "GLOBAL_TIMEOUT" ]
         "The whole-campaign timeout is distinct from individual test deadlines"
 
+let private readTransportControls () =
+    let categories text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.failureCategories
+
+    for marker, expected in
+        [
+            "E2E_SESSION_HTTP_429_RATE_LIMITED", "SESSION_HTTP_429_RATE_LIMITED"
+            "E2E_SESSION_HTTP_401_SESSION_REJECTED", "SESSION_HTTP_401_SESSION_REJECTED"
+            "E2E_SESSION_HTTP_200_CORE_STORE_UNAVAILABLE", "SESSION_HTTP_200_CORE_STORE_UNAVAILABLE"
+            "E2E_SESSION_HTTP_200_RESOURCE_UNAVAILABLE", "SESSION_HTTP_200_RESOURCE_UNAVAILABLE"
+            "E2E_SESSION_HTTP_200_INVALID_WIRE", "SESSION_HTTP_200_INVALID_WIRE"
+            "E2E_SESSION_HTTP_201_UNEXPECTED_STATUS", "SESSION_HTTP_201_UNEXPECTED_STATUS"
+            "E2E_SESSION_HTTP_200_MISSING_ANTIFORGERY", "SESSION_HTTP_200_MISSING_ANTIFORGERY"
+            "E2E_WORK_READBACK_HTTP_429_RATE_LIMITED", "WORK_READBACK_HTTP_429_RATE_LIMITED"
+            "E2E_WORK_READBACK_HTTP_401_SESSION_REJECTED", "WORK_READBACK_HTTP_401_SESSION_REJECTED"
+            "E2E_WORK_READBACK_HTTP_200_INVALID_RESPONSE", "WORK_READBACK_HTTP_200_INVALID_RESPONSE"
+        ] do
+        Expect.equal
+            (categories ("    Error: " + marker + " \t\r\n"))
+            [ expected ]
+            "Only the independently specified status/code category survives"
+
+    for invalid in
+        [
+            "E2E_SESSION_HTTP_401_RATE_LIMITED"
+            "E2E_SESSION_HTTP_200_SESSION_REJECTED"
+            "E2E_SESSION_HTTP_500_CORE_STORE_UNAVAILABLE"
+            "E2E_SESSION_HTTP_403_RESOURCE_UNAVAILABLE"
+            "E2E_SESSION_HTTP_200_TEXT_REQUIRED"
+            "E2E_WORK_READBACK_HTTP_200_CORE_STORE_UNAVAILABLE"
+            "E2E_WORK_READBACK_HTTP_401_RATE_LIMITED"
+            "E2E_SESSION_HTTP_429_PRIVATE_TOKEN"
+            "E2E_WORK_READBACK_HTTP_429_PRIVATE_TOKEN"
+            "E2E_SESSION_HTTP_200_INVALID_RESPONSE"
+            "E2E_WORK_READBACK_HTTP_200_INVALID_WIRE"
+            "E2E_SESSION_HTTP_429_RATE_LIMITED private-token"
+            "E2E_WORK_READBACK_HTTP_429_RATE_LIMITED;private=secret"
+            "E2E_SESSION_HTTP_429_RATE_LIMITED?token=private"
+            "E2E_SESSION_HTTP_429_RATE_LIMITEDhttps://private.invalid"
+            "E2E_WORK_READBACK_HTTP_200_INVALID_RESPONSE private-token"
+            "E2E_SESSION_HTTP_0429_RATE_LIMITED"
+            "E2E_SESSION_HTTP_600_INVALID_WIRE"
+            "E2E_WORK_READBACK_HTTP_200_" + String('A', 513)
+        ] do
+        Expect.equal
+            (categories ("    Error: " + invalid))
+            [ "ERROR" ]
+            "Wrong pairs, unknown codes and private suffixes remain generic"
+
+    Expect.isEmpty
+        (categories "payload Error: E2E_SESSION_HTTP_429_RATE_LIMITED")
+        "A payload prefix cannot become transport evidence"
+
 let private durationControls () =
     let row =
         "  ✘  1 [chromium] › e2e/localization-editor.spec.ts:58:1 › private-title (30.0s)"
@@ -423,6 +476,7 @@ let private browserMetadataControls () =
     locationControls ()
     stackControls ()
     categoryControls ()
+    readTransportControls ()
     durationControls ()
     timeoutControls ()
     layoutControls ()

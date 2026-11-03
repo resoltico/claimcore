@@ -8,6 +8,7 @@ import { isHostFailure, isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { progress } from "./session-helpers";
 import { retainResponseBodies } from "./response-bodies";
+import { expectCaseReadsSettled } from "./case-readiness";
 
 export type ReviewIdentity = Readonly<{ operationId: string }>;
 
@@ -102,6 +103,7 @@ export const recordReviewed = async (
   const { snapshot } = receipt.subject;
   const expected = snapshot.kind === "DISCLOSED" ? visibleFieldCount(snapshot.view.fields) : 0;
   await expect(page.locator("section.case-fields dl > div")).toHaveCount(expected);
+  await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
 };
 
