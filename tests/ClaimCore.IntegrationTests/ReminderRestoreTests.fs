@@ -328,23 +328,12 @@ let private assertErased (database: PostgresFixture.Database) =
     }
 
 let private dump database path =
-    DatabaseScenarios.exec
-        database
-        [|
-            "pg_dump"
-            "-U"
-            "postgres"
-            "-d"
-            "postgres"
-            "-n"
-            "claimcore"
-            "-f"
-            path
-        |]
+    DatabaseScenarios.exec database [| "pg_dump"; "-U"; "postgres"; "-d"; "postgres"; "-f"; path |]
 
 let private restore database path =
     task {
         do! sql database "DROP SCHEMA claimcore CASCADE" [||]
+        do! sql database "DROP EXTENSION pg_trgm" [||]
 
         do!
             DatabaseScenarios.exec
@@ -360,6 +349,19 @@ let private restore database path =
                     "-f"
                     path
                 |]
+
+        let! moduleRows =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT extversion FROM pg_extension WHERE extname='pg_trgm'"
+                    [||]
+                    token)
+
+        Expect.equal
+            (moduleRows |> List.map (DatabaseSession.value<string> 0))
+            [ "1.6" ]
+            "Each full restore recreates its module dependency"
     }
 
 let private oldHead database =

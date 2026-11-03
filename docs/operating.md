@@ -22,6 +22,12 @@ Initialize an empty database with `claimcore-database initialize ZONE`. The cano
 fixed for that installation. Provision its first human owner with `claimcore-database provision-owner`, then
 grant the case roles needed for actual work. OWNER alone grants no case viewing or editing.
 
+The fresh baseline requires PostgreSQL's `pg_trgm` server module, version 1.6. Make its server files
+available before initialization or a full restore. Initialization installs the extension in `public`
+and creates two GIN indexes for the existing literal case search; keep that schema protected from
+untrusted creation, as in the deployment setup. The database owner installs the module; runtime
+credentials gain no DDL privileges. The module version is declared in [baseline.sql](../db/baseline.sql).
+
 ### Database administration
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Provisioning also needs
@@ -154,6 +160,8 @@ matching software, identity state and protected key ring with the installation's
 
 Keep restored databases isolated from actor traffic. Restore into an empty database, then run `claimcore-database verify --expect SEQUENCE:HASH` with the retained
 checkpoint before reopening actor access. A data-only restore into an initialized schema is unsupported.
+Use a full database backup that includes the `pg_trgm` extension declaration and the dependent
+indexes; a dump limited to the `claimcore` schema does not include that extension dependency.
 An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
 newer acceptance or recovery control existed elsewhere.
 
