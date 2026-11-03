@@ -282,6 +282,12 @@ npm --prefix web run test:unit:watch -- tests/unit/protocol/preparedRequest.test
 ```
 
 Build current native inputs before using `--no-build`; choose the affected test suite or frontend file.
+Published-process tests also require current Release application outputs, even when their test assembly
+is Debug. Build the affected application projects in Release before a direct focused invocation;
+`eng/verify.sh` prepares these inputs for its stages. Publication runs before owned database startup,
+so a missing Release input fails before that setup cost.
+Published Web tests also need current frontend assets from `npm --prefix web ci` followed by
+`npm --prefix web run build`; the acceptance stage prepares those assets.
 Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
@@ -327,8 +333,22 @@ PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
 Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
 engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
 mode explicitly reports incomplete qualification. Native report directories under
-`artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
+`artifacts/verification/` retain TRX and browser summaries. Automatic pruning retains the ten newest
+explicitly successful completed native runs; failed, active and historical runs without a known outcome
+are preserved. Review retained failures before manually removing their exact owned directories.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
+
+Failed publication retains bounded stdout/stderr in the printed private fixture directory. Generated
+published binaries are removed separately; diagnostic files and other unique failure inputs remain.
+These directories can contain credentials and are not public report attachments. Review them privately,
+then remove only the owned fixture after its useful evidence is secured. Failure retention can grow disk
+use; it does not authorize deleting active fixtures, shared caches or unrelated containers.
+
+Fresh-initialization PostgreSQL controls must reset all objects owned by their disposable fixture.
+The baseline installs database-wide `pg_trgm` as well as `claimcore`; dropping only the schema leaves
+the extension behind. Use the existing `DatabaseScenarios.resetForInitialization` helper for owned
+fresh-initialization scenarios. Schema-only refusal and restore controls have different prerequisites;
+do not broaden their cleanup or weaken the initializer's strict duplicate-object refusal.
 
 Independent closed inventories live in [inventory.json](../tests/fixtures/inventory.json), authored by hand
 rather than generated from product declarations. Input builders belong to
@@ -401,6 +421,21 @@ time exceeds 1.30× the reference. Reports retain all six raw runs, medians, rat
 fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*` (or beneath
 `CLAIMCORE_TEST_REPORT_DIRECTORY`). These are same-host, same-session relative measurements, not an SLA.
 Different workload fingerprints refuse comparison, naming the differing members.
+
+`comparison-progress.json` is an atomic observation of preparation and alternating child runs. It records
+source and harness identities, completed side count and the active owned checkout/report paths; it never
+reports a partial pass. `comparison.json` remains the final verdict, including cleanup failures. Current
+harnesses publish `artifacts/verification/growth/*/read-progress.json` in the checkout with seed/measurement
+phase, counts and the last completed read report. Each completed read report is published immediately;
+`run.json` bookkeeping can lag until the population fixture has been disposed. Incomplete progress is not
+qualification evidence and does not permit skipping outstanding workloads.
+
+Read reports include measured latency samples in observation order, excluding warmups, with the percentile
+index rule recorded beside them. Comparison reports add informational per-pair ratios, run spread and
+available sample evidence for latency percentiles. Older harnesses can lack progress and raw samples;
+missing samples are reported rather than reconstructed. These observations do not change sampling, budgets or the median
+comparison rule. Retain the source patch, harness patches, build logs and workload fingerprints together
+when reproducing a result; a source hash alone does not establish which assembly a separate diagnostic loaded.
 
 References without workload fingerprints require a recorded manual review of act cycles, populations,
 authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact

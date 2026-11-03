@@ -31,6 +31,17 @@ let start executable arguments (environment: IReadOnlyDictionary<string, string>
 let run timeout value input =
     ClaimCore.TestSupport.BoundedProcess.run value input 1_048_576 timeout
 
+let private retainPublishFailure directory name stdout stderr =
+    Directory.CreateDirectory(
+        directory,
+        UnixFileMode.UserRead ||| UnixFileMode.UserWrite ||| UnixFileMode.UserExecute
+    )
+    |> ignore
+
+    FixtureFiles.write directory ("publish-" + name + ".stdout") stdout |> ignore
+    FixtureFiles.write directory ("publish-" + name + ".stderr") stderr |> ignore
+    Console.Error.WriteLine("Publish diagnostics retained privately: " + directory)
+
 let publish root directory name =
     let output = Path.Combine(directory, name)
 
@@ -46,8 +57,39 @@ let publish root directory name =
             output
         ]
 
-    let result = run 120_000 (start "dotnet" args (Dictionary<string, string>())) None
-    Expect.equal result.ExitCode 0 ("Publish " + name)
+    let result =
+        try
+            run 120_000 (start "dotnet" args (Dictionary<string, string>())) None
+        with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
+            ClaimCore.TestSupport.FixtureDisposal.afterFailure
+                failure
+                [
+                    fun () ->
+                        retainPublishFailure
+                            directory
+                            name
+                            failure.StandardOutput
+                            failure.StandardError
+                ]
+
+            reraise ()
+
+    try
+        Expect.equal
+            result.ExitCode
+            0
+            ("Publish "
+             + name
+             + "; build the current Release inputs first. Private failure diagnostics: "
+             + directory)
+    with failure ->
+        ClaimCore.TestSupport.FixtureDisposal.afterFailure
+            failure
+            [
+                fun () ->
+                    retainPublishFailure directory name result.StandardOutput result.StandardError
+            ]
+
     ThirdPartyNotices.qualify root output name |> ignore
 
     if name = "ClaimCore.Cli" then
@@ -56,6 +98,45 @@ let publish root directory name =
             "Published CLI excludes server assemblies and resolved dependencies"
 
     Path.Combine(output, ThirdPartyNoticeAssets.assemblyName root name + ".dll")
+
+let publicationFailure () =
+    let directory = FixtureFiles.directory ()
+
+    try
+        Expect.throws
+            (fun () ->
+                publish (Path.Combine(directory, "missing-source")) directory "ClaimCore.Missing"
+                |> ignore)
+            "The missing owned project cannot be published"
+
+        let stdout = Path.Combine(directory, "publish-ClaimCore.Missing.stdout")
+        let stderr = Path.Combine(directory, "publish-ClaimCore.Missing.stderr")
+        let files = [ stdout; stderr ]
+
+        for path in files do
+            Expect.isTrue (File.Exists path) "Each bounded output stream is retained"
+
+            Expect.isLessThanOrEqual
+                (FileInfo(path).Length)
+                1_048_576L
+                "Existing process output bound remains in force"
+
+            Expect.equal
+                (File.GetUnixFileMode path)
+                (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+                "Publish diagnostics are private files"
+
+        Expect.isGreaterThan
+            (files |> List.sumBy (fun path -> FileInfo(path).Length))
+            0L
+            "The actual failed SDK invocation leaves actionable evidence"
+
+        Expect.stringContains
+            (files |> List.map File.ReadAllText |> String.concat "\n")
+            "MSB1009"
+            "The missing-project refusal is retained without requiring a database fixture"
+    finally
+        Directory.Delete(directory, true)
 
 type Web(binary, environment, directory, ?logPrefix: string) =
     let logPrefix = defaultArg logPrefix "web"
