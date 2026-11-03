@@ -5,6 +5,7 @@ import type {
   ReminderPage,
   ReminderListRequest,
   ResponseByEndpoint,
+  WorkDateBasis,
 } from "@contracts/client";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
@@ -18,8 +19,14 @@ import { followLink } from "../../routing/followLink";
 import { renderCatalogKey } from "../../presentation/messages";
 import { operationEntry } from "../../protocol/operationCatalog";
 
-const select = (reply: ResponseByEndpoint["reminder.list"]): ReminderPage | null =>
-  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
+type ObservedReminder = ReminderReadModel & { basis: WorkDateBasis };
+type ObservedReminderPage = Omit<ReminderPage, "items"> & { items: ObservedReminder[] };
+const select = (reply: ResponseByEndpoint["reminder.list"]): ObservedReminderPage | null => {
+  if (reply.outcome.kind !== "SUCCEEDED") return null;
+  const page = reply.outcome.data;
+  // Loaded pages can straddle a business-day or installation time-zone change.
+  return { ...page, items: page.items.map((row) => ({ ...row, basis: page.basis })) };
+};
 export const ReminderList = ({
   target,
   filter,
@@ -41,7 +48,7 @@ export const ReminderList = ({
     }),
     [filter, target],
   );
-  const result = useEndpointPage<"reminder.list", ReminderReadModel, ReminderPage>(
+  const result = useEndpointPage<"reminder.list", ObservedReminder, ObservedReminderPage>(
     "reminder.list",
     input,
     select,
@@ -82,6 +89,18 @@ export const ReminderList = ({
             <p>
               <bdi dir="ltr">{p.date(row.reminder.dueDate)}</bdi> ·{" "}
               {p.term("reminderState", row.reminder.state)}
+              {row.timing === null ? null : (
+                <>
+                  {" "}
+                  · <span className="reminder-timing">{p.term("reminderDue", row.timing)}</span>
+                </>
+              )}
+            </p>
+            <p className="observation-basis">
+              {p.text("ui.workDateBasis", {
+                date: p.date(row.basis.businessDate),
+                zone: row.basis.timeZone,
+              })}
             </p>
             {row.active ? null : <p>{p.text("ui.caseWorkInactive")}</p>}
             <div className="actions">
@@ -121,7 +140,7 @@ export const ReminderList = ({
           </li>
         ))}
       </ol>
-      {result.page === null ? null : (
+      {result.page === null || result.items.length > 0 ? null : (
         <p className="observation-basis">
           {p.text("ui.workDateBasis", {
             date: p.date(result.page.basis.businessDate),
