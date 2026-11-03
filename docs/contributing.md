@@ -243,6 +243,12 @@ Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenari
 without a matching source module. Categories, explicit rules and overrides together define the effective
 policy; review the complete `oxlint --print-config` output when changing it.
 
+[ReadAdmission](../web/src/api/readAdmission.ts) bounds complete read responses per document. Queued
+obsolete reads never dispatch. Once handed off, [service](../web/src/api/service.ts) drains a read under
+its own response deadline while the obsolete consumer discards its outcome; caller cancellation does
+not establish that the server released capacity. The caller deadline still includes queue time. Writes
+keep their existing cancellation and uncertainty rules. This is not coordination across documents/tabs.
+
 Keep files and functions focused by responsibility. File length, parameter counts and change-locality
 measurements are review guidance, not representation requirements. Correctness, dependency, compiler,
 formatting and actionable lint controls remain enforced. Only a total exhaustive table may suppress

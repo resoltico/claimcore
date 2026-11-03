@@ -53,6 +53,7 @@
 - Growth reports retain raw latency samples and live progress; failed native runs and bounded private publication diagnostics survive cleanup.
 
 - Reminder get/list replies add server-derived timing; regenerate strict clients. Both clients label active Pending due buckets and inactive work without reclassifying historical receipts.
+- Browser reads retain admission through bounded response draining after a view becomes obsolete, reducing busy responses during rapid navigation without resending writes.
 
 ## [0.14.0] - 2026-10-30
 

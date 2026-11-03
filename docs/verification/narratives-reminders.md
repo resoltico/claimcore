@@ -1,11 +1,52 @@
 # Narratives and reminders verification
 
-A subsequent independent audit found two client omissions in the qualified source below: per-reminder
-current timing labels, and CLI inactive-parent disclosure. Their fixes are currently under integrated
-qualification. A10/A11 client-detail completion is not claimed until the maintained and published
-regressions pass; the earlier source35 results remain historical evidence with that limitation.
+A subsequent independent audit found two client omissions in source35: per-reminder current timing
+labels and CLI inactive-parent disclosure. The corrections are implemented at
+`22c53e3224dd88589743afdfcbc0265201e2c65d` and are undergoing published-client and full growth qualification.
+A10/A11 client-detail completion is not claimed until those regressions pass.
 
-Current local qualification is for `35b3c5639e593575e18de323d6dbe411a05f5853` on
+## Audit corrections and current-source verification
+
+Current get/list responses expose required nullable server-derived `timing`; only active Pending work
+has `OVERDUE`, `TODAY` or `UPCOMING`. The browser retains each loaded row's originating server basis.
+CLI current single/page output uses the same timing and explicitly labels inactive parents in all three
+languages. Historical effects/receipts retain their existing presenter without current timing. Authored
+dates, states, date-filter semantics, permissions and persisted data are unchanged. Strict consumers
+must regenerate; the generated client, schema, literal wire examples and integration guide are updated.
+
+Evidence is under `artifacts/verification/implementation-audit-reminders-um0_7wgb/`. Original audit probes
+remain unchanged, including their original failures; current required-field responses have separate
+maintained tests. At source7c9401f9, all 814 native unit/architecture, 671 frontend, 276 PostgreSQL and
+101 HTTP tests passed, with zero native skips. At source34c09890, 58 of 59 native acceptance cases
+passed, including the published CLI timing/inactivity checks; the browser wrapper failed in WebKit
+(154 passed, one failed, 35 not run). Chromium212 and Firefox190 completed successfully with no
+retries/skips. WebKit failed an existing compound-retry readback while UI reads were still loading;
+the original session HTTP payload was not retained. A later independent projection of the retained
+server log confirms HTTP429, without identifying the limiting layer. Source22
+waits for the visible replacement row before the independent read and adds safe status/code diagnostics.
+The source22 complete WebKit rerun then failed a different existing canonical-route test after22 passes
+(one failed,167 not run); its visible busy alert and retained server `case.list`429 establish admission
+rejection. The failed run again passed58/59 native acceptance cases. Separate negative controls prove
+premature browser-slot release on cancellation and premature replacement transport handoff. Subsequent
+corrections retain the slot through bounded response draining, cancel queued reads before dispatch,
+and discard obsolete outcomes. The full frontend and all-engine browser qualification are being
+refreshed; full growth remains pending. This is staged qualification,
+not one uninterrupted passing full gate. Product inputs were unchanged by source22 test-only
+corrections; the subsequent read-lifetime correction changes browser transport coordination.
+Independent review also caught a wrong test wire-field lookup; the first published attempt caught a
+bare boolean CLI option. Those interrupted/failed runs and earlier lint/oracle/fixture failures remain
+retained without reclassification.
+
+The source35 three-pair comparison below remains historical common-path evidence. Since that source,
+the SQL/schema, growth plans, write cycles, protection and measured common-path inputs are unchanged;
+`CaseDue.at` now shares an equivalent active/open predicate. This is semantic reuse, not binary identity.
+Reminder get/list response construction changed, so the feature workloads require fresh current-source
+growth. The historical 31/31 pass is not a new measurement of this binary. Exact native CI platforms
+remain unrun and no rollout is claimed.
+
+## Historical source35 qualification
+
+Historical local qualification is for `35b3c5639e593575e18de323d6dbe411a05f5853` on
 `codex/narratives-reminders`, against baseline `b5e21690191482d6a5ea15cdccd7bb9ae5f31dc9`.
 The ordinary full gate, complete Chromium/Firefox/WebKit suites, refreshed actual-source query probe,
 offline CLI captures, full standalone growth and full three-pair comparison all passed. The comparison
@@ -23,7 +64,7 @@ and extracted inventory passed: 1,201 files, including 1,171 baseline source fil
 not establish implementation quality. Live `AGENTS.md`/`AGENTS_EXTRA.md` and referenced handoff documents
 were read. Neither instruction file was changed.
 
-## Evidence and qualification scope
+## Historical evidence and qualification scope
 
 Paths below are relative to `artifacts/verification/narratives-reminders/` unless explicitly rooted
 elsewhere. These ignored local outputs must accompany review; code-formatted paths intentionally do
@@ -87,11 +128,12 @@ host activity. Later tooling changes have their own focused runtime QA below.
 
 ## Work-package matrix
 
-All twelve product work packages are implemented. Current local product evidence is exact35.
+All twelve product work packages were implemented at source35, with the two client omissions corrected
+as described above. The following matrix records historical exact35 evidence.
 Subsequent verification tooling is integrated with separate focused runtime QA; owned temporary
 worktrees were removed after preserving evidence. Native CI limits remain explicit.
 
-| Package | Delivered responsibility | Current status and evidence |
+| Package | Delivered responsibility | Historical source35 status and evidence |
 | --- | --- | --- |
 | WP01 Baseline/integration map | Delivery/source/CI/releases, boundaries and before captures | Verified delivery; actual b5/current35 CLI captures; original gallery26/91 completed with failed immediate collector and separate cleanup follow-up retained |
 | WP02 Text/field contracts | Owned scalar/LF/permanent-byte types, optional registration/partial semantics, generated constraints | Complete35 native/PG/browser/PTY gate passed boundaries, keep/set/clear, financial safeguards and exact output |
@@ -108,7 +150,7 @@ worktrees were removed after preserving evidence. Native CI limits remain explic
 
 ## Acceptance matrix
 
-| Group | Exercised current functional evidence | Limit or outstanding qualification |
+| Group | Exercised historical source35 functional evidence | Limit or outstanding qualification |
 | --- | --- | --- |
 | A01 Narrative/optional semantics | Complete35 native/PG/browser/PTY: scalar/LF/Unicode/control admission, permanent bytes, keep/set/clear, seven facts, paid-description correction and exact output | Local platform; no accessibility certification |
 | A02 Reminder lifecycle | Domain/store/CLI/browser creation IDs/revisions, terminal/no-op rules, inactive retention/reactivation, closed cleanup, replay/bounded pages; current populated growth passed | Local platform scope |
@@ -177,13 +219,14 @@ by this report. Product35 results are separate from the later verification-tooli
 
 ## Delivered-state boundaries
 
-The product/runtime, fresh database baseline and frontend inputs are unchanged from the fully qualified
-source35. Verification refactors add raw samples after the original timing boundary, incremental
+Before the two audit corrections above, the product/runtime, fresh database baseline and frontend inputs
+were unchanged from source35. Those verification refactors add raw samples after the original timing boundary, incremental
 completed read reports, small atomic progress, informational variability and conservative failure
 retention. They preserve the five warmups/100 measured reads, fingerprints, workloads, alternating
 pair order, ratio-of-separate-medians gates and 0.85/1.30 thresholds. Separate focused runtime QA
 covers their actual discovery, publication, retention and prerequisite paths; no new full-product
-performance campaign is claimed for these observational changes.
+performance campaign is claimed for those observational changes. The audit correction does change
+current reminder DTO construction and presentation; its current-source qualification is reported above.
 
 The contributor verification guide owns the updated workflow and evidence-scope instructions.
 `AGENTS_EXTRA.md` already links that guide and remains unchanged; the protected `AGENTS.md` baseline
@@ -194,3 +237,7 @@ completed tooling worktrees were removed after exact source/status checks. Three
 were independently proven to contain already-integrated patches or the exact archived executed
 baseline-capture harness. Branch references, local commits, raw results and useful private failure
 fixtures remain; shared caches, preexisting containers and unrelated resources were not pruned.
+
+The three subsequent reminder-audit worktrees were clean and removed after their commits were
+integrated with reviewed corrections. Their branch references, zero-diff disposition inventory and
+original commits remain under the audit evidence directory. Only task-owned worktrees were removed.
