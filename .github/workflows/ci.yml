@@ -268,7 +268,8 @@ jobs:
       matrix:
         engine: [chromium, firefox, webkit]
     runs-on: ubuntu-24.04
-    timeout-minutes: 35
+    # Allow 10 minutes for setup/reporting around acceptance's existing 40-minute MTP bound.
+    timeout-minutes: 50
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
