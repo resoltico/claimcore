@@ -17,9 +17,36 @@ open Npgsql
 let private safeFailureMarker (marker: string) =
     Regex.IsMatch(
         marker,
-        @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE)_TIMEOUT|UNEXPECTED)(?:;step=(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE);error=(?:CHECK|TIMEOUT|RESOURCE|TARGET_CLOSED|NETWORK|SYNTAX|TYPE|IO|OTHER);network=(?:NONE|REFUSED|RESET|CLOSED|ABORTED|EMPTY|TIMEOUT|TLS|BLOCKED|OTHER))?\z",
+        @"\APUBLISHED_SESSION_(LOGIN|VERIFY|LOGOUT|STALE|INVALID)_(SESSION_UNAVAILABLE|CONTEXT_REFUSED|OWNER_MISSING|CREDENTIALS_MISSING|BOOTSTRAP_NOT_ISOLATED|LOGIN_REFUSED|DELETED_SESSION_AUTHENTICATED|STALE_COOKIE_ADMITTED|RETAINED_SESSION_MISSING|LOGOUT_REFUSED|INVALID_PHASE|TIMEOUT|(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE)_TIMEOUT|UNEXPECTED)(?:;step=(?:CONTRACT|CREDENTIALS|STATE|BROWSER|NAVIGATE|USERNAME|PASSWORD|SUBMIT|RETURN|BOOTSTRAP|SESSION|CONTEXT|LOGOUT|REPORT|CLOSE);error=(?:CHECK|TIMEOUT|RESOURCE|TARGET_CLOSED|NETWORK|SYNTAX|TYPE|IO|OTHER);network=(?:NONE|REFUSED|RESET|CLOSED|ABORTED|EMPTY|TIMEOUT|TLS|BLOCKED|INVALID_RESPONSE|HTTP2_PROTOCOL|REDIRECT_LOOP|INVALID_REDIRECT|UNSAFE_PORT|OTHER))?\z",
         RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
     )
+
+// HttpsProxy owns this safe exception-code/stack log; never copy other private fixture files.
+let private retainProxyFailure reportDirectory directory name =
+    try
+        match reportDirectory with
+        | None -> ()
+        | Some report ->
+            use source =
+                new FileStream(
+                    Path.Combine(directory, "proxy-failures.log"),
+                    FileMode.Open,
+                    FileAccess.Read,
+                    FileShare.ReadWrite
+                )
+
+            let count = int (min source.Length 16384L)
+            let bytes = Array.zeroCreate<byte> count
+            source.Seek(-int64 count, SeekOrigin.End) |> ignore
+            source.ReadExactly(bytes.AsSpan())
+            let output = Path.Combine(report, "browser-failure")
+            Directory.CreateDirectory output |> ignore
+
+            FixtureFiles.write output ("published-session-" + name + "-proxy.txt") bytes
+            |> ignore
+    with _ ->
+        // Evidence is best effort and must preserve the original browser failure.
+        ()
 
 let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
     let arguments =
@@ -34,7 +61,17 @@ let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
 
     let start = PublishedProcesses.start "node" arguments fixture.Environment
     start.WorkingDirectory <- fixture.Root
-    let result = PublishedProcesses.run 120_000 start None
+
+    let reportDirectory =
+        Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY"
+        |> Option.ofObj
+
+    let result =
+        try
+            PublishedProcesses.run 120_000 start None
+        with _ ->
+            retainProxyFailure reportDirectory fixture.Directory name
+            reraise ()
 
     FixtureFiles.write fixture.Directory (name + ".stdout") result.StandardOutput
     |> ignore
@@ -43,6 +80,7 @@ let private browserPhase (fixture: PublishedFixture.Fixture) phase name =
     |> ignore
 
     if result.ExitCode <> 0 then
+        retainProxyFailure reportDirectory fixture.Directory name
         let marker = Encoding.UTF8.GetString(result.StandardError).Trim()
 
         let safe = safeFailureMarker marker
@@ -309,6 +347,11 @@ let failureMarkerTests =
                 "PUBLISHED_SESSION_LOGIN_RETURN_TIMEOUT"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=SYNTAX;network=NONE"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=CONTEXT;error=NETWORK;network=RESET"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=INVALID_RESPONSE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=HTTP2_PROTOCOL"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=REDIRECT_LOOP"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=INVALID_REDIRECT"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=UNSAFE_PORT"
                 "PUBLISHED_SESSION_LOGIN_CONTEXT_REFUSED;step=CONTEXT;error=CHECK;network=NONE"
                 "PUBLISHED_SESSION_LOGIN_BOOTSTRAP_TIMEOUT;step=BOOTSTRAP;error=TIMEOUT;network=NONE"
             ] do
@@ -319,6 +362,11 @@ let failureMarkerTests =
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=PRIVATE;error=OTHER;network=NONE"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=private;network=NONE"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=NETWORK;network=ECONNRESET"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=net::ERR_INVALID_HTTP_RESPONSE"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=net::ERR_HTTP2_PROTOCOL_ERROR"
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network="
+                + String('A', 513)
+                "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=RETURN;error=NETWORK;network=REDIRECT_LOOP;private=secret"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=NONE;private=secret"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED;step=SESSION;error=OTHER;network=https://private.invalid"
                 "PUBLISHED_SESSION_LOGIN_UNEXPECTED\nprivate-marker"
@@ -327,3 +375,58 @@ let failureMarkerTests =
             Expect.isFalse
                 (safeFailureMarker marker)
                 "Unapproved fields and captured content stay private")
+
+[<Tests>]
+let proxyFailureEvidenceTests =
+    testCase "published session failure retains only the bounded safe proxy tail" (fun () ->
+        let directory = FixtureFiles.directory ()
+        let report = Path.Combine(directory, "reports")
+
+        try
+            FixtureFiles.text directory "owner.principal" "private sibling must never be copied"
+            |> ignore
+
+            retainProxyFailure (Some report) directory "missing"
+
+            Expect.isFalse
+                (Directory.Exists report)
+                "Missing proxy evidence never replaces the browser failure"
+
+            let prefix = Encoding.UTF8.GetBytes("old diagnostic prefix\n")
+            let tail = Array.create 20000 65uy
+            let bytes = Array.append prefix tail
+            FixtureFiles.write directory "proxy-failures.log" bytes |> ignore
+            retainProxyFailure (Some report) directory "primary-login"
+
+            let output =
+                Path.Combine(
+                    report,
+                    "browser-failure",
+                    "published-session-primary-login-proxy.txt"
+                )
+
+            let actual = File.ReadAllBytes output
+            Expect.equal actual.Length 16384 "The retained tail has a fixed16KiB ceiling"
+
+            Expect.sequenceEqual
+                actual
+                bytes[bytes.Length - 16384 ..]
+                "Only the newest proxy bytes survive"
+
+            Expect.equal
+                (Directory.GetFiles(Path.Combine(report, "browser-failure")).Length)
+                1
+                "No sibling private files are copied"
+
+            Expect.equal
+                (File.GetUnixFileMode output)
+                (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+                "Evidence stays private until explicit artifact upload"
+
+            let unavailable =
+                FixtureFiles.text directory "not-a-directory" "owned synthetic file"
+
+            retainProxyFailure (Some unavailable) directory "io-failure"
+            retainProxyFailure None directory "unconfigured"
+        finally
+            Directory.Delete(directory, true))
