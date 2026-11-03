@@ -5,6 +5,7 @@
 - Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.
 - Next follow-up is derived from Pending reminders; remove followUpDate writes. Work and each reminder have independent revisions, so scheduling does not invalidate financial edits.
 - Regenerate clients for WORK/REMINDER operations, entity-specific revisions, bounded pages and correlated effects. Complete-and-plan-next commits exactly two effects under one operation ID.
+- Reminder get/list replies add server-derived timing; regenerate strict clients. Both clients label active Pending due buckets and inactive work without reclassifying historical receipts.
 - New strict identity-only recovery journals refuse old formats without deletion or conversion. In-memory reviewed requests retain exact retry bytes; restart recovery never reconstructs business text.
 - Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
@@ -16,6 +17,7 @@
 - Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
 - Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.
 - Web admission separates principal/read/write/passive-recovery budgets; the write queue maximum is eight. Enable pooling with at least 16 connections at defaults; limits apply per process.
+- Browser reads retain admission through bounded response draining after a view becomes obsolete, reducing busy responses during rapid navigation without resending writes.
 - Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.
 - Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
 - Publish the full web build with its verified asset inventory; restart for new bytes. Only verified public assets use immutable caching; APIs and HTML remain no-store.
@@ -44,16 +46,11 @@
 - Patch transitive tooling matcher/traversal dependencies; import-boundary lint loads the configured upstream runtime rules without disabling the audit or boundary checks.
 - Use the pinned Keycloak 26.8.1-2 vendor image rebuild for local deployment and identity qualification.
 - Work in a redesigned Cases, Recovery and Access workspace with grouped queue facts, task-specific editing, before/after review, case-work cards and accessible preferences.
-
 - Incident description and Handling summary are optional LF plain text, each up to 600 Unicode scalars. Omission preserves, explicit clear removes; action text is single-line, up to 200 scalars.
 - Complete, cancel and explicitly reopen reminders without rewriting prior history. Completing the last Pending action is valid and exposes missing-plan attention.
 - Accessible work attention ignores case page/search filters, distinguishes case/reminder units and counts overlapping attention once. Mine inherits current case responsibility within read access.
 - GIN indexes support literal search across case facts and Handling summaries; account for their database storage and write-ahead-log overhead.
-
 - Growth reports retain raw latency samples and live progress; failed native runs and bounded private publication diagnostics survive cleanup.
-
-- Reminder get/list replies add server-derived timing; regenerate strict clients. Both clients label active Pending due buckets and inactive work without reclassifying historical receipts.
-- Browser reads retain admission through bounded response draining after a view becomes obsolete, reducing busy responses during rapid navigation without resending writes.
 
 ## [0.14.0] - 2026-10-30
 

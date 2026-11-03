@@ -1,9 +1,11 @@
 # Narratives and reminders verification
 
-A subsequent independent audit found two client omissions in source35: per-reminder current timing
-labels and CLI inactive-parent disclosure. The corrections are implemented at
-`22c53e3224dd88589743afdfcbc0265201e2c65d` and are undergoing published-client and full growth qualification.
-A10/A11 client-detail completion is not claimed until those regressions pass.
+All twelve work packages are implemented locally, including the two omissions found by the subsequent
+independent audit: current reminder timing labels and CLI inactive-parent disclosure. Product source
+`be3379e0c5bc97ea18df5bbe893fc5281273c704` passed fresh complete Chromium212/Firefox190/WebKit190 suites
+and full standalone growth9/35. Native checks are reused only for unchanged relevant inputs, with their
+actual source attribution below. This is staged local qualification, not one uninterrupted full-gate pass.
+The three declared native CI environments remain unrun; no cross-platform readiness or rollout is claimed.
 
 ## Audit corrections and current-source verification
 
@@ -14,35 +16,58 @@ languages. Historical effects/receipts retain their existing presenter without c
 dates, states, date-filter semantics, permissions and persisted data are unchanged. Strict consumers
 must regenerate; the generated client, schema, literal wire examples and integration guide are updated.
 
-Evidence is under `artifacts/verification/implementation-audit-reminders-um0_7wgb/`. Original audit probes
-remain unchanged, including their original failures; current required-field responses have separate
-maintained tests. At source7c9401f9, all 814 native unit/architecture, 671 frontend, 276 PostgreSQL and
-101 HTTP tests passed, with zero native skips. At source34c09890, 58 of 59 native acceptance cases
-passed, including the published CLI timing/inactivity checks; the browser wrapper failed in WebKit
-(154 passed, one failed, 35 not run). Chromium212 and Firefox190 completed successfully with no
-retries/skips. WebKit failed an existing compound-retry readback while UI reads were still loading;
-the original session HTTP payload was not retained. A later independent projection of the retained
-server log confirms HTTP429, without identifying the limiting layer. Source22
-waits for the visible replacement row before the independent read and adds safe status/code diagnostics.
-The source22 complete WebKit rerun then failed a different existing canonical-route test after22 passes
-(one failed,167 not run); its visible busy alert and retained server `case.list`429 establish admission
-rejection. The failed run again passed58/59 native acceptance cases. Separate negative controls prove
-premature browser-slot release on cancellation and premature replacement transport handoff. Subsequent
-corrections retain the slot through bounded response draining, cancel queued reads before dispatch,
-and discard obsolete outcomes. The full frontend and all-engine browser qualification are being
-refreshed; full growth remains pending. This is staged qualification,
-not one uninterrupted passing full gate. Product inputs were unchanged by source22 test-only
-corrections; the subsequent read-lifetime correction changes browser transport coordination.
-Independent review also caught a wrong test wire-field lookup; the first published attempt caught a
-bare boolean CLI option. Those interrupted/failed runs and earlier lint/oracle/fixture failures remain
-retained without reclassification.
+The browser correction also retains read admission until work settles and drains already-dispatched
+obsolete reads under their own response deadline. Queued canceled reads never dispatch; obsolete results
+stay hidden. The caller deadline includes queue time and is a separate bound. Mutation transport and
+server capacity limits are unchanged. This is per-document coordination, not a cross-document/tab guarantee.
 
-The source35 three-pair comparison below remains historical common-path evidence. Since that source,
-the SQL/schema, growth plans, write cycles, protection and measured common-path inputs are unchanged;
-`CaseDue.at` now shares an equivalent active/open predicate. This is semantic reuse, not binary identity.
-Reminder get/list response construction changed, so the feature workloads require fresh current-source
-growth. The historical 31/31 pass is not a new measurement of this binary. Exact native CI platforms
-remain unrun and no rollout is claimed.
+Current evidence is under `artifacts/verification/implementation-audit-reminders-um0_7wgb/` unless stated.
+
+| Evidence | Actual result and tested source | Scope |
+| --- | --- | --- |
+| `gate-7c9401f9.log`, `gate-7c9401f9-reports/passing-stage-inventory.json` | 814 native unit/architecture, 276 PostgreSQL and 101 HTTP tests passed at7c9401f9; zero skips | Relevant F# product/db/contracts/native test inputs remain unchanged; `source-scope-reuse-be3379e0.json` records the checked paths. Original frontend671 is superseded below |
+| `acceptance-22c53e32.log`, `acceptance-22c53e32-reports/results.trx` | 58 nonbrowser native acceptance cases passed at22c53e32, including actual published CLI timing/inactivity in English/Latvian/Arabic and JSON | That run failed its browser wrapper; no59/59 pass is claimed. Relevant CLI/server inputs are unchanged. Changed browser assets are exercised by the fresh complete suites below |
+| `artifacts/verification/read-admission-lifetime/{drain-all-unit.log,drain-affected-flows.log,drain-negative-control.log,negative-control.log}` | 134 frontend files/673 tests passed; focused API/privacy set23/23, typecheck/lint passed at01b53c21 (same browser source asbe) | Original implementations fail intended unresolved-read/third-fetch-before-drain controls. Late receipt/history/private-field suppression remains asserted. Counts overlap the673, not additional coverage |
+| `browsers-be3379e0-summary.json`, `browsers-be3379e0-reports/`, `connected-screens-be3379e0/inventory.json` | Fresh complete Chromium212, Firefox190 and WebKit190 passed; zero retries/skips; native browser wrapper1/1;121 safe PNGs and six loading reports retained | Current product sourcebe; Release/frontend builds passed with zero native warnings. Existing structured completion guards checked discovered files and every result. Local platform only; no WCAG certification |
+| `growth-be3379e0-{summary.json,results.trx,run.json,log}`, raw `artifacts/verification/growth/f9fd8f36e33d4c6f9efd5e98772b081d/` | Fresh full qualification PASSED:9/9 writes,35/35 reads, cardinality1/100/1000 and high fan-out100/1000/10000 Pending plus equal Completed; native1/1, zero skips, about29m47s | Exact product sourcebe, no diagnostic/comparison selector. This is standalone qualification, not a new baseline comparison or SLA. Nested progress phase fields were missing; completed counts and workload measurements remain intact |
+| `artifacts/verification/read-progress-serialization/verification-summary.json`, build/test logs and TRX | Progress-only repair e0a93324 PASSED2/2: atomic on-disk serializer and actual1k runtime emitter,11 workloads/1100 samples; zero skips/warnings | Compiled old-shape negative control fails on missing `progress.cases`; original compile failure retained. Fullbe evidence remains immutable; no repeated full campaign is claimed |
+
+The frozen sourcebe archive SHA-256 is
+`be495d0414c299d2537aa12d39b0e9dc6d338ee08050e86040fe57d17756143b`.
+Subsequent e0a93324 changes only progress-reporting test tooling. Product `src`, `db`, `contracts` and
+`web` are unchanged frombe; five warmups/100 measurements, workload inputs, metrics and acceptance
+criteria remain unchanged. Product version is unchanged. The final documentation update has its own
+link/anchor checks; it does not relabel older test binaries as newly qualified.
+
+The current A01–A09 functional coverage comes from the unchanged native inputs plus the complete current
+frontend/browser suites. A10's omitted CLI details are covered by the current presenter tests and
+source22's published journeys; A11's omitted row details and adjacent cancellation defect pass all three
+current engines. A12 combines those scoped results with full current-product growth. The historical
+matrices below identify the remaining governing cases by group; their older source attribution is retained.
+
+The source35 query probe and three-pair comparison below remain historical common-path evidence. Since
+that source, SQL/schema, growth plans, write cycles, protection and measured common-path inputs are
+unchanged; `CaseDue.at` now shares an equivalent active/open predicate. This is semantic reuse, not
+binary identity. Reminder DTO construction changed and has fresh current-product growth. The historical
+31/31 comparison pass is not a new measurement of this binary. Exact native CI qualification is outstanding.
+
+The original audit probes remain unchanged, including their failures. Maintained current-contract tests
+provide separate positive evidence; adding a required wire member does not turn an old malformed probe
+into a passing behavior check. Initial new-test defects (wrong wire-field lookup, bare boolean CLI flag,
+Pending-default oracle and fixture stewardship) and lint failures remain retained.
+
+The source34 full acceptance attempt passed Chromium212/Firefox190, then failed WebKit after154 passes
+(one failed,35 not run) at an existing compound-retry readback. Source22's corrective attempt failed a
+different canonical-route journey after22 passes (one failed,167 not run). Retained server excerpts
+confirm `session`429 and `case.list`429 respectively, without identifying the exact limiting layer.
+Independent negative controls established premature client-slot release and replacement dispatch before
+drain. The subsequent sourcebe complete suites passed both paths without retry; the earlier failures
+remain failures. Original private fixtures and safe `admission-failure-server-excerpts.json` are retained.
+
+Manual visual review at source34 covered actual English320px and Arabic390px reminder rows, including
+localized timing/basis and fitting actions. `current-visual-review.json` records those two frames.
+Reminder presentation is unchanged atbe; its121 current frames and automated geometry controls are separate
+fresh evidence, not a claim that every frame was manually reviewed.
 
 ## Historical source35 qualification
 
