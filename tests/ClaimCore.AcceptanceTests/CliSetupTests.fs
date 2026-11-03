@@ -36,6 +36,12 @@ let private failureEvidence () =
             "page-created", "page-created"
             "authorization-navigation-started", "authorization-navigation-started"
             "driver-refused-after-password-filled", "driver-refused-after-password-filled"
+            "login-submission-started", "login-submission-started"
+            "callback-wait-started", "callback-wait-started"
+            "driver-refused-after-login-submission-started",
+            "driver-refused-after-login-submission-started"
+            "driver-refused-after-callback-wait-started",
+            "driver-refused-after-callback-wait-started"
             "driver-refused-after-private-marker", "unknown"
             "callback-observed\nprivate-marker", "unknown"
             "unavailable", "unavailable"
