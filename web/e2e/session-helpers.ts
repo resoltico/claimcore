@@ -363,10 +363,7 @@ export const login = async (
   const submitted = observeOidcSubmission(page, issuerOrigin, owner);
   await fillOidcCredentials(page, owner);
   const callbackStatus = trackOidcCallback(page, applicationOrigin);
-  await page
-    .locator('input[type="submit"], button[type="submit"]')
-    .first()
-    .click({ noWaitAfter: true });
+  await page.locator('input[type="submit"], button[type="submit"]').first().click();
   await progress("oidc-submitted");
   await awaitOidcReturn(page, requestedAddress, callbackStatus, submitted, issuerOrigin);
   await progress("oidc-callback-returned");
