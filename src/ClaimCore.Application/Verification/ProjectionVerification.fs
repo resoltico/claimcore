@@ -8,6 +8,23 @@ open ClaimCore.Application.VerificationChecks
 
 /// Projections are comparison targets only after the ledger has been folded.
 module ProjectionVerification =
+    /// Only these already-decoded case columns participate in independent work-index validation.
+    type CaseWorkIndex =
+        {
+            CaseId: CaseId
+            Responsible: ActorId option
+            FollowUp: CalendarDate option
+            SearchText: string option
+        }
+
+    let caseWorkIndex (record: StoredCase) =
+        {
+            CaseId = record.CaseId
+            Responsible = record.Index.Responsible
+            FollowUp = record.Index.FollowUp
+            SearchText = record.Index.WorkSearchText
+        }
+
     let actor (actors: Map<ActorId, ActorAuthority>) (row: Actor) =
         result {
             let id = row.ActorId
@@ -115,13 +132,6 @@ module ProjectionVerification =
             do!
                 require
                     None
-                    VerificationFinding.CaseWorkProjection
-                    (record.Index.Responsible = expected.Responsible
-                     && record.Index.FollowUp = expected.FollowUp)
-
-            do!
-                require
-                    None
                     VerificationFinding.CaseNotifiedOnProjection
                     (record.Index.NotifiedOn = expected.NotifiedOn)
 
@@ -188,3 +198,98 @@ module ProjectionVerification =
 
     let fences expected actual =
         require None VerificationFinding.FenceProjection (actual = expected)
+
+
+    let workIndexes
+        (work: Map<CaseId, WorkHistory>)
+        (reminders: Map<ReminderId, ReminderHistory>)
+        (records: CaseWorkIndex list)
+        =
+        let dates =
+            reminders
+            |> Map.values
+            |> Seq.fold
+                (fun dates history ->
+                    match history.State, history.Snapshot with
+                    | ReminderState.Pending, Some value ->
+                        let due = Reminder.due value
+
+                        Map.change
+                            history.CaseId
+                            (fun old ->
+                                Some(old |> Option.map (min due) |> Option.defaultValue due))
+                            dates
+                    | _ -> dates)
+                Map.empty
+
+        records
+        |> List.fold
+            (fun state record ->
+                state
+                |> Result.bind (fun () ->
+                    let current =
+                        work
+                        |> Map.tryFind record.CaseId
+                        |> Option.bind _.Snapshot
+                        |> Option.map _.Work
+
+                    let responsible = current |> Option.bind _.Responsible
+
+                    let search =
+                        current
+                        |> Option.bind _.Summary
+                        |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+
+                    require
+                        None
+                        VerificationFinding.CaseWorkProjection
+                        (record.Responsible = responsible
+                         && record.FollowUp = Map.tryFind record.CaseId dates
+                         && record.SearchText = search)))
+            (Ok())
+
+    let workIndex work reminders record =
+        workIndexes work reminders [ caseWorkIndex record ]
+
+    let workRows (expected: Map<CaseId, WorkHistory>) (actual: StoredWork list) =
+        let matches (row: StoredWork) =
+            match Map.tryFind row.CaseId expected with
+            | None -> false
+            | Some history ->
+                row.Revision = history.Revision
+                && row.Snapshot = history.Snapshot
+                && row.SnapshotBytes =
+                    (history.Snapshot
+                     |> Option.map ClaimCore.RecordFormat.WorkRecord.encodeSnapshot
+                     |> Option.defaultValue Array.empty)
+                && row.ChangedAt = history.ChangedAt
+                && row.RecordedBy = history.RecordedBy
+
+        require
+            None
+            VerificationFinding.CaseWorkProjection
+            (actual.Length = expected.Count
+             && (actual |> List.map _.CaseId |> Set.ofList |> Set.count) = expected.Count
+             && List.forall matches actual)
+
+    let reminderRows (expected: Map<ReminderId, ReminderHistory>) (actual: StoredReminder list) =
+        let matches (row: StoredReminder) =
+            match Map.tryFind row.ReminderId expected with
+            | None -> false
+            | Some history ->
+                row.CaseId = history.CaseId
+                && row.Revision = history.Revision
+                && row.Snapshot = history.Snapshot
+                && row.SnapshotBytes =
+                    (history.Snapshot
+                     |> Option.map ClaimCore.RecordFormat.ReminderRecord.encodeSnapshot
+                     |> Option.defaultValue Array.empty)
+                && row.RecordedAt = history.RecordedAt
+                && row.RecordedBy = history.RecordedBy
+
+        require
+            None
+            VerificationFinding.CaseWorkProjection
+            (actual.Length = expected.Count
+             && (actual |> List.map _.ReminderId |> Set.ofList |> Set.count) = expected.Count
+             && List.forall matches actual)

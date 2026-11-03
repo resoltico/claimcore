@@ -50,8 +50,7 @@ let tests =
 
                     let fields =
                         {
-                            CaseFields.Work = CaseWork.empty
-                            CaseReference = Inputs.reference "CASE-1"
+                            CaseFields.CaseReference = Inputs.reference "CASE-1"
                             Status = CaseStatus.Opened
                             Registration = registration
                             Progress = PaymentProgress.Undecided
@@ -61,6 +60,45 @@ let tests =
                         (CaseSearch.text fields)
                         "rīga%\u001fa_b\\c\u001fcase-1"
                         "Only declared searchable values are joined by U+001F"
+
+                    Expect.equal
+                        (CaseFields.value BusinessField.ClaimantName fields)
+                        (Some "ＲĪＧＡ%")
+                        "Field lookup preserves authored claimant spelling"
+
+                    Expect.equal
+                        (CaseFields.value BusinessField.InsurerName fields)
+                        (Some "A_B\\C")
+                        "Field lookup preserves authored insurer spelling"
+
+                    Expect.equal
+                        (CaseFields.value BusinessField.IncidentDescription fields)
+                        None
+                        "An absent description remains absent"
+
+                    for description, expected in
+                        [
+                            "ＡＢＣ\nالعربية 😀", "abc\nالعربية 😀\u001frīga%\u001fa_b\\c\u001fcase-1"
+                            String.replicate 600 "X",
+                            String.replicate 600 "x" + "\u001frīga%\u001fa_b\\c\u001fcase-1"
+                        ] do
+                        let described =
+                            { fields with
+                                Registration =
+                                    Registration.withDescription
+                                        (Some(IncidentDescription.parse description |> admitted))
+                                        registration
+                            }
+
+                        Expect.equal
+                            (CaseFields.value BusinessField.IncidentDescription described)
+                            (Some description)
+                            "Field lookup preserves complete authored description text"
+
+                        Expect.equal
+                            (CaseSearch.text described)
+                            expected
+                            "Search keeps descriptor order and exact NFKC text with paragraphs"
 
                     Expect.equal
                         (CaseSearchText.parse "ＲĪＧＡ" |> admitted |> CaseSearchText.value)

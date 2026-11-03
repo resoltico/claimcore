@@ -55,10 +55,14 @@ export const useSession = () => {
   const [state, setState] = useState<SessionState>({ kind: "loading", epoch: 0 });
   const epoch = useRef(0);
   const requestSerial = useRef(0);
+  const read = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async (): Promise<void> => {
     const requestId = ++requestSerial.current;
-    const result = await service.session();
+    read.current?.abort();
+    const controller = new AbortController();
+    read.current = controller;
+    const result = await service.session(controller.signal);
     if (requestSerial.current !== requestId) {
       return;
     }
@@ -70,6 +74,7 @@ export const useSession = () => {
     void refresh();
     return () => {
       requestSerial.current += 1;
+      read.current?.abort();
     };
   }, [refresh]);
 
@@ -78,6 +83,7 @@ export const useSession = () => {
       return;
     }
     const requestId = ++requestSerial.current;
+    read.current?.abort();
     const result = await service.logout(state.token);
     if (requestSerial.current !== requestId) {
       return;

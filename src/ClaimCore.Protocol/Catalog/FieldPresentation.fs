@@ -28,6 +28,8 @@ module FieldPresentation =
                     MaximumCharacters = Some 36
                 }
         | FieldValueKind.CalendarDate -> ScalarRule.CalendarDate CalendarDate.descriptor
+        | FieldValueKind.HandlingSummary -> ScalarRule.PlainText HandlingSummary.constraints
+        | FieldValueKind.IncidentDescription -> ScalarRule.PlainText IncidentDescription.constraints
         | FieldValueKind.Country -> ScalarRule.Text CountryCode.descriptor
         | FieldValueKind.PartyName -> ScalarRule.Text PartyName.descriptor
         | FieldValueKind.Amount -> ScalarRule.Amount Money.descriptor.Amount

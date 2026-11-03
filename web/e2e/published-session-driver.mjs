@@ -7,6 +7,85 @@ const [root, origin, owned, phase, name] = process.argv.slice(2);
 const modes = new Set(["login", "verify", "logout", "stale"]);
 const statePath = path.join(owned, "published-session-state.json");
 let failedCheck = "UNEXPECTED";
+let activeStep = "BROWSER";
+let firstFailure;
+let navigationRequest;
+let navigationObservation = { code: "NONE", timing: "NONE" };
+const navigationSteps = new Set(["NAVIGATE", "SUBMIT", "RETURN"]);
+const mainFrameNavigation = (page, request) =>
+  request.isNavigationRequest() && request.frame() === page.mainFrame();
+const nativeNavigationCode = (value) =>
+  typeof value === "string" && /^net::ERR_[A-Z0-9_]{1,64}$/u.exec(value)?.[0] === value
+    ? value
+    : "NONE";
+const networks = new Map([
+  ["net::ERR_CONNECTION_REFUSED", "REFUSED"],
+  ["ECONNREFUSED", "REFUSED"],
+  ["net::ERR_CONNECTION_RESET", "RESET"],
+  ["ECONNRESET", "RESET"],
+  ["net::ERR_CONNECTION_CLOSED", "CLOSED"],
+  ["ECONNABORTED", "ABORTED"],
+  ["net::ERR_EMPTY_RESPONSE", "EMPTY"],
+  ["net::ERR_ABORTED", "ABORTED"],
+  ["net::ERR_INVALID_HTTP_RESPONSE", "INVALID_RESPONSE"],
+  ["net::ERR_HTTP2_PROTOCOL_ERROR", "HTTP2_PROTOCOL"],
+  ["net::ERR_TOO_MANY_REDIRECTS", "REDIRECT_LOOP"],
+  ["net::ERR_INVALID_REDIRECT", "INVALID_REDIRECT"],
+  ["net::ERR_UNSAFE_PORT", "UNSAFE_PORT"],
+  ["net::ERR_TIMED_OUT", "TIMEOUT"],
+  ["net::ERR_CONNECTION_TIMED_OUT", "TIMEOUT"],
+  ["ETIMEDOUT", "TIMEOUT"],
+  ["net::ERR_CERT_AUTHORITY_INVALID", "TLS"],
+  ["net::ERR_CERT_DATE_INVALID", "TLS"],
+  ["net::ERR_CERT_COMMON_NAME_INVALID", "TLS"],
+  ["net::ERR_SSL_PROTOCOL_ERROR", "TLS"],
+  ["net::ERR_BLOCKED_BY_CLIENT", "BLOCKED"],
+  ["net::ERR_BLOCKED_BY_RESPONSE", "BLOCKED"],
+  ["net::ERR_BLOCKED_BY_LOCAL_NETWORK_ACCESS_CHECKS", "BLOCKED"],
+  ["net::ERR_BLOCKED_BY_PRIVATE_NETWORK_ACCESS_CHECKS", "BLOCKED"],
+]);
+const errorMessage = (error) => (typeof error?.message === "string" ? error.message : "");
+const failureNetwork = (error) => {
+  const token = errorMessage(error).match(
+    /\b(?:net::ERR_[A-Z0-9_]+|ECONNREFUSED|ECONNRESET|ECONNABORTED|ETIMEDOUT)\b/u,
+  )?.[0];
+  return token === undefined ? "NONE" : (networks.get(token) ?? "OTHER");
+};
+const targetClosed = (error) =>
+  error?.constructor?.name === "TargetClosedError" ||
+  errorMessage(error).includes("Target page, context or browser has been closed");
+const namedFailureKinds = new Map([
+  ["SyntaxError", "SYNTAX"],
+  ["TypeError", "TYPE"],
+]);
+const failureIoKind = (error) =>
+  ["ENOENT", "EACCES", "EPERM", "EIO"].includes(error?.code) ? "IO" : "OTHER";
+const failureKind = (error, network) => {
+  if (failedCheck !== "UNEXPECTED") {
+    return "CHECK";
+  }
+  if (error?.name === "TimeoutError") {
+    return "TIMEOUT";
+  }
+  if (
+    ["pthread_create", "Resource temporarily unavailable", "Failed to create thread"].some(
+      (message) => errorMessage(error).includes(message),
+    )
+  ) {
+    return "RESOURCE";
+  }
+  if (targetClosed(error)) {
+    return "TARGET_CLOSED";
+  }
+  if (network !== "NONE") {
+    return "NETWORK";
+  }
+  return namedFailureKinds.get(error?.name) ?? failureIoKind(error);
+};
+const failureDetails = (error) => {
+  const network = failureNetwork(error);
+  return { step: activeStep, kind: failureKind(error, network), network };
+};
 const require = (condition, code) => {
   if (!condition) {
     failedCheck = code;
@@ -23,6 +102,7 @@ const headers = (fingerprint, csrf, cookie) => ({
   ...(cookie === undefined ? {} : { Cookie: cookie }),
 });
 const session = async (context, fingerprint, cookie) => {
+  activeStep = "SESSION";
   const response = await context.request.get(`${origin}/api/session`, {
     headers: headers(fingerprint, undefined, cookie),
   });
@@ -30,11 +110,13 @@ const session = async (context, fingerprint, cookie) => {
   require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "SESSION_UNAVAILABLE");
   return reply.outcome.data;
 };
-const contextRequest = (context, fingerprint, csrf, cookie) =>
-  context.request.post(`${origin}/api/context`, {
+const contextRequest = (context, fingerprint, csrf, cookie) => {
+  activeStep = "CONTEXT";
+  return context.request.post(`${origin}/api/context`, {
     headers: headers(fingerprint, csrf, cookie),
     data: {},
   });
+};
 const protectedContext = async (context, fingerprint, csrf) => {
   const response = await contextRequest(context, fingerprint, csrf);
   const reply = await response.json();
@@ -42,11 +124,41 @@ const protectedContext = async (context, fingerprint, csrf) => {
   require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "OWNER_MISSING");
 };
 const login = async (context, fingerprint) => {
+  activeStep = "CREDENTIALS";
   const credentials = JSON.parse(readFileSync(path.join(owned, "credentials.json"), "utf8"));
   const [owner] = credentials.users;
   require(typeof owner.username === "string" &&
     typeof owner.password === "string", "CREDENTIALS_MISSING");
+  activeStep = "BROWSER";
   const page = await context.newPage();
+  page.on("request", (request) => {
+    if (
+      firstFailure === undefined &&
+      navigationSteps.has(activeStep) &&
+      mainFrameNavigation(page, request)
+    ) {
+      navigationRequest = request;
+      navigationObservation = { code: "NONE", timing: "NONE" };
+    }
+  });
+  page.on("requestfailed", (request) => {
+    if (
+      request !== navigationRequest ||
+      navigationObservation.code !== "NONE" ||
+      !mainFrameNavigation(page, request)
+    ) {
+      return;
+    }
+    const code = nativeNavigationCode(request.failure()?.errorText);
+    if (code !== "NONE") {
+      // Playwright can dispatch this event after the operation rejects. Keep that provenance
+      // separate from the original failure, and never let cleanup replace the first observation.
+      navigationObservation = {
+        code,
+        timing: firstFailure === undefined && activeStep !== "CLOSE" ? "BEFORE_FAILURE" : "CLEANUP",
+      };
+    }
+  });
   // Redirect chains can bypass a homepage route. Block the separate application script request
   // so React cannot race this API-session probe's own cookie/antiforgery capture.
   let blockedScripts = 0;
@@ -60,15 +172,44 @@ const login = async (context, fingerprint) => {
       return route.continue();
     },
   );
-  await page.goto(`${origin}/auth/login`);
+  activeStep = "NAVIGATE";
+  await page.goto(`${origin}/auth/login`, { waitUntil: "domcontentloaded" });
+  activeStep = "USERNAME";
   await page.locator('input[name="username"]').fill(owner.username);
+  activeStep = "PASSWORD";
   await page.locator('input[name="password"]').fill(owner.password);
-  await page.locator('input[type="submit"], button[type="submit"]').first().click();
-  await page.waitForURL((url) => url.origin === origin && url.pathname === "/");
+  // Observe isolation before submitting so a fast redirect cannot outrun the listener.
+  // Capture a rejected wait until its own stage is reached, without an unhandled rejection.
+  const blockedBootstrap = page
+    .waitForEvent("requestfailed", {
+      predicate: (request) =>
+        new URL(request.url()).origin === origin && request.resourceType() === "script",
+    })
+    .then(
+      () => undefined,
+      (error) => error,
+    );
+  activeStep = "SUBMIT";
+  await page
+    .locator('input[type="submit"], button[type="submit"]')
+    .first()
+    .click({ noWaitAfter: true });
+  activeStep = "RETURN";
+  // The committed return document establishes the session. Its styles/images are irrelevant
+  // to this API probe and must not become login readiness prerequisites.
+  await page.waitForURL((url) => url.origin === origin && url.pathname === "/", {
+    waitUntil: "commit",
+  });
+  activeStep = "BOOTSTRAP";
+  const bootstrapError = await blockedBootstrap;
+  if (bootstrapError !== undefined) {
+    throw bootstrapError;
+  }
   require(blockedScripts > 0, "BOOTSTRAP_NOT_ISOLATED");
   const current = await session(context, fingerprint);
   require(current.authenticated && typeof current.antiforgeryToken === "string", "LOGIN_REFUSED");
   await protectedContext(context, fingerprint, current.antiforgeryToken);
+  activeStep = "STATE";
   const cookies = await context.cookies();
   const cookie = cookies
     .filter((value) => value.name.startsWith("__Host-ClaimCore"))
@@ -97,6 +238,7 @@ const probe = async (context, fingerprint, state) => {
   require(current.authenticated, "RETAINED_SESSION_MISSING");
   await protectedContext(context, fingerprint, state.csrf);
   if (phase === "logout") {
+    activeStep = "LOGOUT";
     const response = await context.request.post(`${origin}/api/session.logout`, {
       headers: headers(fingerprint, state.csrf),
       data: {},
@@ -108,8 +250,11 @@ const probe = async (context, fingerprint, state) => {
 };
 const run = async () => {
   require(modes.has(phase) && /^[a-z-]+$/u.test(name), "INVALID_PHASE");
+  activeStep = "CONTRACT";
   const { consumerContractIdentity } = await import(path.join(root, "contracts/client.ts"));
+  activeStep = "STATE";
   const state = phase === "login" ? undefined : saved();
+  activeStep = "BROWSER";
   const browser = await chromium.launch({ headless: true });
   try {
     // Only the owned synthetic browser ignores fixture certificates; fixture readiness verifies its CA.
@@ -122,16 +267,24 @@ const run = async () => {
       phase === "login"
         ? await login(context, consumerContractIdentity)
         : await probe(context, consumerContractIdentity, state);
+    activeStep = "REPORT";
     retain({ phase, ...result, completed: true });
+  } catch (error) {
+    firstFailure = failureDetails(error);
+    throw error;
   } finally {
+    activeStep = "CLOSE";
     await browser.close();
   }
 };
 try {
   await run();
 } catch (error) {
+  // Emit only fixed categories. Never retain exception text, URLs, provider bodies or credentials.
+  const detail = firstFailure ?? failureDetails(error);
+  const code = detail.kind === "TIMEOUT" ? `${detail.step}_TIMEOUT` : failedCheck;
   process.stderr.write(
-    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${error?.name === "TimeoutError" ? "TIMEOUT" : failedCheck}\n`,
+    `PUBLISHED_SESSION_${modes.has(phase) ? phase.toUpperCase() : "INVALID"}_${code};step=${detail.step};error=${detail.kind};network=${detail.network};navigation=${navigationObservation.code};navigationTiming=${navigationObservation.timing}\n`,
   );
   process.exitCode = 1;
 }

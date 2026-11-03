@@ -54,7 +54,6 @@ let private p0, p1 =
 
 let private fields registration progress status : CaseFields =
     {
-        Work = CaseWork.empty
         CaseReference = reference
         Registration = Inputs.admittedRegistration registration
         Progress = progress
@@ -132,23 +131,6 @@ let private cases =
         snapshot
             5L
             (CaseState.Active(fields registration1 (PaymentProgress.Paid(d1, p1)) CaseStatus.Opened))
-        "UPDATE_WORK",
-        Some(snapshot 1L (CaseState.Active opened)),
-        AuthoredCaseAct.UpdateWork
-            {
-                Responsible = WorkValue.Keep
-                FollowUp = WorkValue.Set "2027-12-31"
-            },
-        snapshot
-            2L
-            (CaseState.Active
-                { opened with
-                    Work =
-                        {
-                            Responsible = None
-                            FollowUp = Some(CaseFixtures.date "2027-12-31")
-                        }
-                })
         "ERASE",
         Some(snapshot 6L (CaseState.Voided closed)),
         AuthoredCaseAct.Bare BareAct.Erase,
@@ -162,6 +144,10 @@ let private history (before: CaseSnapshot) : CaseHistory =
         Snapshot = Some before
         Reference = Some reference
         State = CaseState.map ignore before.State
+        Status =
+            CaseState.fields before.State
+            |> Option.map _.Status
+            |> Option.defaultValue CaseStatus.Opened
         MissingPayloadAt = None
         PresentPayloadAt = Some(Sequence.first)
         ErasedAt = None
@@ -192,13 +178,6 @@ let private tamper token (expected: CaseSnapshot) =
         | "CORRECT" ->
             { value with
                 Status = CaseStatus.Closed
-            }
-        | "UPDATE_WORK" ->
-            { value with
-                Work =
-                    { value.Work with
-                        FollowUp = Some(CaseFixtures.date "2028-01-01")
-                    }
             }
         | "DECIDE" ->
             { value with

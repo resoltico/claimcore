@@ -80,7 +80,45 @@ def metric_result(name, reference, candidate):
         "ratio": ratio,
         "rule": ">= 0.85" if throughput else "<= 1.30",
         "passed": passed,
+        "pairedRatios": [after / before for before, after in zip(reference, candidate)],
+        "runSpread": {
+            "reference": {"minimum": min(reference), "maximum": max(reference)},
+            "candidate": {"minimum": min(candidate), "maximum": max(candidate)},
+        },
     }
+
+
+def latency_evidence(workload, metric):
+    """Describe optional observations without adding or changing qualification gates."""
+    count = workload.get("requests", workload.get("writes"))
+    reported_count = count if isinstance(count, int) and not isinstance(count, bool) and count > 0 else None
+    evidence = {"reportedSampleCount": reported_count, "rawSamples": "not recorded"}
+    samples = workload.get("latencySamples")
+    if samples is None:
+        return evidence
+    if not isinstance(samples, dict):
+        return {**evidence, "rawSamples": "invalid", "detail": "Sample metadata is not an object"}
+    raw = samples.get("milliseconds")
+    if (not isinstance(raw, list) or not raw
+            or any(isinstance(value, bool) or not isinstance(value, (int, float))
+                   or (isinstance(value, float) and not math.isfinite(value)) or value < 0 for value in raw)):
+        return {**evidence, "rawSamples": "invalid", "detail": "Raw durations are not finite, nonnegative samples"}
+    evidence.update({"rawSamples": "recorded", "rawSampleCount": len(raw),
+                     "order": samples.get("order"), "warmupsIncluded": samples.get("warmupsIncluded")})
+    if reported_count is not None and len(raw) != reported_count:
+        return {**evidence, "rawSamples": "invalid", "detail": "Raw count differs from the reported sample count"}
+    if samples.get("warmupsIncluded") is True:
+        return {**evidence, "rawSamples": "invalid", "detail": "Raw durations include warmup requests"}
+    definition = samples.get("percentileIndex")
+    if definition == "floor((sampleCount - 1) * percentile)":
+        percentile = {"p95Milliseconds": 0.95, "p99Milliseconds": 0.99}[metric]
+        index = math.floor((len(raw) - 1) * percentile)
+        value_at_rank = sorted(raw)[index]
+        evidence.update({"percentileIndex": definition, "sortedIndexZeroBased": index,
+                         "rankOneBased": index + 1, "rankFromLargest": len(raw) - index,
+                         "millisecondsAtRank": value_at_rank,
+                         "matchesReportedValue": value_at_rank == workload[metric]})
+    return evidence
 
 
 def validate_runs(runs, required_writes):
@@ -123,6 +161,11 @@ def compare(runs, equivalence, required_writes=REQUIRED_WRITES):
         for metric in metrics:
             values = [run["workloads"][key][metric] for run in runs]
             result = metric_result(metric, values[::2], values[1::2])
+            if metric in ("p95Milliseconds", "p99Milliseconds"):
+                result["sampleEvidence"] = {
+                    "reference": [latency_evidence(run["workloads"][key], metric) for run in runs[::2]],
+                    "candidate": [latency_evidence(run["workloads"][key], metric) for run in runs[1::2]],
+                }
             results.append({"workload": key, "identity": witnesses[0], **result})
     return {
         "passed": all(result["passed"] for result in results),
@@ -139,6 +182,8 @@ def markdown(report):
         ("Scope: full qualification." if report.get("completeQualification", True)
          else "Scope: diagnostic only; this run cannot qualify the candidate."), "",
         "Medians of three alternating pairs. This is relative same-session evidence, not an SLA.", "",
+        "Pair ratios, run ranges and raw sample ranks below are observational; the gate remains the ratio of medians. "
+        "Historical raw samples may be absent. Quantiles are per run, not pooled across requests.", "",
         "| Workload | Metric | Reference median | Candidate median | Ratio | Rule | Result |",
         "| --- | --- | ---: | ---: | ---: | --- | --- |",
     ]
@@ -150,7 +195,25 @@ def markdown(report):
         )
     lines.append("")
     for row in report.get("metrics", []):
-        lines.append(f"- {row['workload']} / {row['metric']}: reference `{row['referenceRuns']}`; candidate `{row['candidateRuns']}`.")
+        detail = f"- {row['workload']} / {row['metric']}: reference `{row['referenceRuns']}`; candidate `{row['candidateRuns']}`."
+        if "pairedRatios" in row:
+            detail += f" Pair ratios `{row['pairedRatios']}`; run ranges `{row['runSpread']}`."
+        if "sampleEvidence" in row:
+            for side in ("reference", "candidate"):
+                observations = []
+                for sample in row["sampleEvidence"][side]:
+                    count = sample.get("rawSampleCount", sample["reportedSampleCount"])
+                    rank = sample.get("rankOneBased")
+                    description = f"{count if count is not None else 'unknown'} samples, raw {sample['rawSamples']}"
+                    if rank is not None:
+                        description += f", sorted rank {rank}/{count} (index {sample['sortedIndexZeroBased']})"
+                    if sample.get("matchesReportedValue") is False:
+                        description += ", raw rank differs from reported value"
+                    if "detail" in sample:
+                        description += f", {sample['detail']}"
+                    observations.append(description)
+                detail += f" {side.capitalize()} sampling `{observations}`."
+        lines.append(detail)
     for key in report.get("notApplicable", []):
         lines.append(f"\nNot applicable on both revisions: `{key}`.")
     if "error" in report:

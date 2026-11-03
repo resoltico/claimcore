@@ -84,6 +84,69 @@ module internal ProjectionRebuild =
                 ()
         }
 
+    let private replaceWork connection (state: LedgerVerification.Scan) token =
+        task {
+            for KeyValue(id, history) in state.Work do
+                match history.Snapshot with
+                | Some snapshot when snapshot.Revision > Revision.zero ->
+                    do!
+                        Persistence.workChange
+                            connection
+                            (WorkChangeProjection.Work
+                                {
+                                    Snapshot = snapshot
+                                    ChangedAt = history.ChangedAt.Value
+                                    RecordedBy = history.RecordedBy.Value
+                                })
+                            token
+                | Some _ -> ()
+                | None ->
+                    let! _ =
+                        DatabaseSession.execute
+                            connection
+                            "INSERT INTO claimcore.case_work(case_id,revision,changed_at,recorded_by) VALUES($1,$2,$3,$4)"
+                            [|
+                                box (CaseId.value id)
+                                box (Revision.value history.Revision)
+                                DatabaseSession.parameter history.ChangedAt
+                                DatabaseSession.parameter (
+                                    history.RecordedBy |> Option.map ActorId.value
+                                )
+                            |]
+                            token
+
+                    ()
+
+            for KeyValue(id, history) in state.Reminders do
+                match history.Snapshot with
+                | Some snapshot ->
+                    do!
+                        Persistence.workChange
+                            connection
+                            (WorkChangeProjection.Reminder
+                                {
+                                    Effects = ReminderEffects.Created snapshot
+                                    ChangedAt = history.RecordedAt
+                                    RecordedBy = history.RecordedBy
+                                })
+                            token
+                | None ->
+                    let! _ =
+                        DatabaseSession.execute
+                            connection
+                            "INSERT INTO claimcore.reminders(reminder_id,case_id,revision,changed_at,recorded_by) VALUES($1,$2,$3,$4,$5)"
+                            [|
+                                box (ReminderId.value id)
+                                box (CaseId.value history.CaseId)
+                                box (Revision.value history.Revision)
+                                box history.RecordedAt
+                                box (ActorId.value history.RecordedBy)
+                            |]
+                            token
+
+                    ()
+        }
+
     let private replaceGrants connection (state: LedgerVerification.Scan) token =
         task {
             for KeyValue(id, actor) in state.Actors do
@@ -122,7 +185,15 @@ module internal ProjectionRebuild =
                     | Ok state ->
                         let! before = Verification.projections connection installation state token
                         // DELETE preserves old MVCC snapshots; TRUNCATE and table swapping do not.
-                        for table in [ "grants"; "cases"; "actors"; "operation_fences" ] do
+                        for table in
+                            [
+                                "grants"
+                                "reminders"
+                                "case_work"
+                                "cases"
+                                "actors"
+                                "operation_fences"
+                            ] do
                             let! _ =
                                 DatabaseSession.execute
                                     connection
@@ -134,6 +205,7 @@ module internal ProjectionRebuild =
 
                         do! replaceAuthority connection state token
                         do! replaceCases connection state token
+                        do! replaceWork connection state token
                         do! replaceGrants connection state token
 
                         let! validated =

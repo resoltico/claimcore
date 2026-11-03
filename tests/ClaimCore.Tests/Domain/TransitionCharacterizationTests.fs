@@ -49,7 +49,6 @@ let snapshot status progress state : CaseSnapshot =
         State =
             state
                 {
-                    Work = CaseWork.empty
                     CaseReference = CaseFixtures.reference "DEMO-1"
                     Status = status
                     Registration = registration "Synthetic claimant" |> CaseFixtures.registration

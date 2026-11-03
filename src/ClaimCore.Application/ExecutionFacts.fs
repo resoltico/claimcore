@@ -30,6 +30,8 @@ module internal ExecutionFacts =
     let private operationCase (entry: StoredEntry option) =
         match entry |> Option.map _.Subject with
         | Some(EntryTarget.Case(id, _, _, _)) -> Some id
+        | Some(EntryTarget.Work subject) -> Some subject.CaseId
+        | Some(EntryTarget.Reminder subject) -> Some subject.CaseId
         | _ -> None
 
     let authority (tx: IReadTx) principal caseIds =
@@ -43,36 +45,7 @@ module internal ExecutionFacts =
                             CaseId = None
                         }
                     )
-            | first :: rest ->
-                let! initial =
-                    tx.Authority(
-                        {
-                            AuthorityQuery.Principal = principal
-                            CaseId = Some first
-                        }
-                    )
-
-                let mutable actor = initial
-
-                for id in rest do
-                    let! scoped =
-                        tx.Authority(
-                            {
-                                AuthorityQuery.Principal = principal
-                                CaseId = Some id
-                            }
-                        )
-
-                    actor <-
-                        { actor with
-                            Cases =
-                                Map.fold
-                                    (fun cases id roles -> Map.add id roles cases)
-                                    actor.Cases
-                                    scoped.Cases
-                        }
-
-                return actor
+            | ids -> return! tx.AuthorityCases(principal, ids)
         }
 
     let findCase (tx: IReadTx) =
@@ -161,7 +134,29 @@ module internal ExecutionFacts =
                 | Some id -> tx.FindCase id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
-            return actor, entry, record
+            let! current =
+                task {
+                    match entry |> Option.map _.Subject with
+                    | Some(EntryTarget.Work subject) ->
+                        let! work = tx.FindWork subject.CaseId
+                        return ReceiptCurrent.Work(record, work)
+                    | Some(EntryTarget.Reminder subject) ->
+                        let ids = subject.ReminderId :: (subject.NextReminderId |> Option.toList)
+                        let mutable values = Map.empty
+
+                        for id in ids do
+                            let! value = tx.FindReminder id
+
+                            match value with
+                            | Some value -> values <- Map.add id value values
+                            | None -> ()
+
+                        return ReceiptCurrent.Reminder(record, values)
+                    | Some(EntryTarget.Case _) -> return ReceiptCurrent.Case record
+                    | _ -> return ReceiptCurrent.Authority
+                }
+
+            return actor, entry, current
         }
 
     let fenced (services: ServiceContext) (tx: IReadTx) (actor: AuthorityView) operation existing =

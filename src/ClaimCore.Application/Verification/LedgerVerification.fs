@@ -13,6 +13,8 @@ module LedgerVerification =
         {
             Head: LedgerPosition
             Cases: Map<CaseId, CaseHistory>
+            Work: Map<CaseId, WorkHistory>
+            Reminders: Map<ReminderId, ReminderHistory>
             Actors: Map<ActorId, ActorAuthority>
             Fences: Map<ActorId * OperationId, DateTimeOffset>
             Accepted: Map<OperationId, ActorId>
@@ -33,36 +35,12 @@ module LedgerVerification =
                 entry
                 request
             |> Result.map (fun actors -> state.Cases, actors)
-        | EntryTarget.Case(caseId, _, act, _), _ ->
+        | EntryTarget.Case(_, _, act, _), _ ->
             result {
                 let! cases = CaseFold.apply state.Cases entry payload
 
-                let eligible id =
-                    state.Actors
-                    |> Map.tryFind id
-                    |> Option.exists (HistoricalCaseEffects.workEligible caseId)
-
-                do!
-                    require
-                        (Some entry.Sequence)
-                        VerificationFinding.AuthorityFold
-                        (act <> CaseActKind.UpdateWork || eligible entry.ActorId)
-
-                do!
-                    match act, payload with
-                    | CaseActKind.UpdateWork, VerifiedPayload.Case(request, _) ->
-                        match request.Act with
-                        | CaseAct.UpdateWork { Responsible = WorkValue.Set id } ->
-                            require
-                                (Some entry.Sequence)
-                                VerificationFinding.AuthorityFold
-                                (eligible id)
-                        | _ -> Ok()
-                    | _ -> Ok()
-
                 let human =
                     match act with
-                    | CaseActKind.UpdateWork
                     | CaseActKind.Void
                     | CaseActKind.Reinstate
                     | CaseActKind.Erase -> true
@@ -71,6 +49,7 @@ module LedgerVerification =
                 do! AuthorityFold.executor state.Actors entry human false
                 return cases, state.Actors
             }
+        | (EntryTarget.Work _ | EntryTarget.Reminder _), _ -> Ok(state.Cases, state.Actors)
         | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
 
     let link (state: Scan) sequence previous =
@@ -94,6 +73,8 @@ module LedgerVerification =
 
             let subject =
                 match entry.Subject with
+                | EntryTarget.Work subject -> RecordedTarget.Work subject
+                | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
                 | EntryTarget.NonAcceptance operation -> RecordedTarget.NonAcceptance operation
                 | EntryTarget.Authority(id, act) ->
                     RecordedTarget.Authority { TargetActorId = id; Act = act }
@@ -159,6 +140,9 @@ module LedgerVerification =
 
             let! cases, actors = histories installationId state entry payload
 
+            let! work, reminders =
+                WorkFold.apply state.Cases state.Actors state.Work state.Reminders entry payload
+
             let seen =
                 expected
                 |> Option.exists (fun position ->
@@ -172,6 +156,8 @@ module LedgerVerification =
                             Sequence = sequence
                             EntryHash = EntryHash.ofBytes entry.EntryHash |> Option.get
                         }
+                    Work = work
+                    Reminders = reminders
                     Cases = cases
                     Actors = actors
                     Accepted =
@@ -193,6 +179,8 @@ module LedgerVerification =
 
         {
             Head = head
+            Work = Map.empty
+            Reminders = Map.empty
             Cases = Map.empty
             Actors = Map.empty
             Fences = Map.empty
@@ -215,4 +203,6 @@ module LedgerVerification =
         else
             Ok(state.Head)
 
-    let erasure (state: Scan) = CaseFold.erasure state.Cases
+    let erasure (state: Scan) =
+        CaseFold.erasure state.Cases
+        |> Result.bind (fun () -> WorkFold.erasure state.Cases state.Work state.Reminders)

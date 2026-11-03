@@ -146,7 +146,11 @@ module Grammar =
 
         let fixedValues () =
             for item in constants do
-                if applies item.Branches then
+                if
+                    applies item.Branches
+                    && (not item.RequiresParent
+                        || (at (item.Path |> List.take (item.Path.Length - 1)) body).IsSome)
+                then
                     assign item.Path (constant item.Value)
 
         fixedValues ()
@@ -182,9 +186,19 @@ module Grammar =
                 incomplete
                 && raw.IsNone
                 && (item.Binding.Source = InputSource.OperationIdentity
-                    || item.Binding.Identity = "expectedRevision")
+                    || item.Binding.Source = InputSource.ExpectedRevision)
                 ->
                 None
+            | _ when
+                item.Binding.AllowsNull
+                && options.ContainsKey(
+                    "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName item.Name)
+                )
+                ->
+                if raw.IsSome then
+                    problems.Add(UsageError.DuplicateOption name)
+
+                Some JsonValue.Null
             | _ -> scalarValue newId item name raw problems
 
         for item in derived do
@@ -283,14 +297,25 @@ module Grammar =
             let named =
                 inputs |> List.filter (fun input -> input.Argument = CatalogArgument.Named)
 
-            let flags = named |> List.map (fun input -> flag input.Name)
-
-            let switches =
+            let clearFlags =
                 named
                 |> List.choose (fun input ->
-                    match input.Atom with
-                    | CatalogAtom.Switch _ -> Some(flag input.Name)
-                    | _ -> None)
+                    if input.Binding.AllowsNull then
+                        Some(
+                            "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
+                        )
+                    else
+                        None)
+
+            let flags = (named |> List.map (fun input -> flag input.Name)) @ clearFlags
+
+            let switches =
+                (named
+                 |> List.choose (fun input ->
+                     match input.Atom with
+                     | CatalogAtom.Switch _ -> Some(flag input.Name)
+                     | _ -> None))
+                @ clearFlags
 
             let repeated =
                 named
@@ -331,11 +356,28 @@ module Grammar =
             let format = option "--format" "text"
             let language = option "--language" "en"
 
-            let listing = entry.Endpoint = ActorEndpoint.Query QueryEndpoint.CaseList
+            let listing =
+                List.contains
+                    entry.Endpoint
+                    [
+                        ActorEndpoint.Query QueryEndpoint.CaseList
+                        ActorEndpoint.Query QueryEndpoint.ReminderList
+                        ActorEndpoint.Query QueryEndpoint.CaseActivity
+                        ActorEndpoint.Query QueryEndpoint.CaseHistory
+                    ]
+
+            let csvListing =
+                List.contains
+                    entry.Endpoint
+                    [
+                        ActorEndpoint.Query QueryEndpoint.CaseList
+                        ActorEndpoint.Query QueryEndpoint.ReminderList
+                    ]
 
             let formats =
                 if
-                    listing || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
+                    csvListing
+                    || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
                 then
                     [ "text"; "json"; "csv" ]
                 else
@@ -432,11 +474,11 @@ module Grammar =
         prepareWith false admit finish newId arguments
 
     /// Authored intent is admitted without inventing an executable operation or revision.
-    let internal caseIntent arguments =
+    let private intent actCodec arguments =
         let codec =
             Codec.record (fun reference act operation -> reference, act, operation)
             |> Codec.field "target" (fun (target, _, _) -> target) RequestCodecs.caseSelector
-            |> Codec.field "act" (fun (_, act, _) -> act) RequestCodecs.caseAct
+            |> Codec.field "act" (fun (_, act, _) -> act) actCodec
             |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
             |> Codec.build
 
@@ -457,3 +499,14 @@ module Grammar =
             finish
             (fun () -> invalidOp "Intent does not allocate an operation ID.")
             arguments
+
+    let internal caseIntent arguments = intent RequestCodecs.caseAct arguments
+    let internal workIntent arguments = intent RequestCodecs.workAct arguments
+
+    let internal reminderIntent arguments =
+        let target =
+            Codec.record (fun id revision -> id, revision)
+            |> Codec.field "reminderId" fst Codec.uuid
+            |> Codec.optionalField "expectedRevision" snd RequestCodecs.revision
+
+        intent (RequestCodecs.reminderActWith target) arguments

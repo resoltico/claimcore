@@ -42,6 +42,12 @@ module internal VerbRunner =
 
         if (Frames.endpoint frame).Id = Api.authorityHistory.Id then
             AuthorityHistoryCommand.run pageIO prepared token
+        elif
+            List.contains
+                (Frames.endpoint frame).Id
+                [ Api.reminders.Id; Api.caseActivity.Id; Api.caseHistory.Id ]
+        then
+            WorkListCommand.run pageIO prepared token
         else
             CaseListCommand.run pageIO prepared token
 
@@ -86,20 +92,36 @@ module internal VerbRunner =
 
                 let! reply = processor.Exchange(frame, token)
                 processor.Deliver(render prepared frame, reply)
+
+                if prepared.Format = VerbFormat.Text then
+                    do!
+                        WorkRefresh.run
+                            (fun frame token -> processor.Exchange(frame, token))
+                            (fun frame reply -> processor.Deliver(render prepared frame, reply))
+                            reply
+                            token
+
                 return reply.ExitCode
         }
 
     let run io (processor: RemoteFrameProcessor) arguments token =
         task {
-            match InteractiveReview.prepare io.Review arguments with
+            let expanded = TextInputs.expand io.Review.IsInteractive arguments
+
+            match
+                expanded
+                |> Result.bind (fun arguments ->
+                    InteractiveReview.prepare io.Review arguments
+                    |> Result.map (fun draft -> arguments, draft))
+            with
             | Error issues ->
                 CliDiscovery.writeText
                     io.Errors
                     (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
 
                 return ExitCode.value ExitCode.Usage
-            | Ok None -> return! prepared io processor arguments token
-            | Ok(Some draft) ->
+            | Ok(arguments, None) -> return! prepared io processor arguments token
+            | Ok(_, Some draft) ->
                 let transport =
                     {
                         Exchange = fun frame token -> processor.Exchange(frame, token)

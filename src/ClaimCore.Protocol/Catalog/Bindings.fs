@@ -106,6 +106,7 @@ module Bindings =
                 Value = value
                 Branches = position.Branches
                 Vocabulary = position.Vocabulary
+                RequiresParent = not position.Required
             }
 
     let private branch definitions tag (token, target) =
@@ -140,9 +141,7 @@ module Bindings =
                     (definition definitions name)
             | Schema.Object(properties, optional) -> objects position properties optional
             | Schema.OneOf(_, Some(tag, mapping)) -> tagged position tag mapping
-            | Schema.OneOf(cases, None) ->
-                input position (BindingKind.Choice(vocabulary position, enumTokens cases)) schema
-                |> List.singleton
+            | Schema.OneOf(cases, None) -> untagged position cases schema
             | Schema.String _ -> [ input position BindingKind.Text schema ]
             | Schema.Integer _ -> [ input position BindingKind.Integer schema ]
             | Schema.Boolean -> [ input position BindingKind.Boolean schema ]
@@ -151,6 +150,18 @@ module Bindings =
                 let name, choices = finiteChoices definitions items
                 [ input position (BindingKind.Choices(name, choices)) schema ]
             | Schema.Null -> refuse "request input is not a finite scalar or tagged object"
+
+        and untagged position cases schema =
+            match cases with
+            | [ Schema.String _; Schema.Null ]
+            | [ Schema.Null; Schema.String _ ] -> [ input position BindingKind.Text schema ]
+            | _ ->
+                [
+                    input
+                        position
+                        (BindingKind.Choice(vocabulary position, enumTokens cases))
+                        schema
+                ]
 
         and objects position properties optional =
             properties
@@ -273,6 +284,11 @@ module Bindings =
         | InteractionInput.Target InputTarget.Reason -> Some InputTarget.Reason
         | InteractionInput.Target InputTarget.Role -> Some InputTarget.Role
         | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
+        | InteractionInput.Target(InputTarget.ReminderId as target)
+        | InteractionInput.Target(InputTarget.ReminderAction as target)
+        | InteractionInput.Target(InputTarget.ReminderDueDate as target)
+        | InteractionInput.Target(InputTarget.ExpectedWorkRevision as target)
+        | InteractionInput.Target(InputTarget.ExpectedReminderRevision as target) -> Some target
         | _ -> None
 
     let private authoredRequired input annotation =
@@ -311,6 +327,10 @@ module Bindings =
                     Prefill = annotation.Prefill
                     Required = authoredRequired input annotation
                     WireRequired = input.Required
+                    AllowsNull =
+                        match input.Schema with
+                        | Schema.OneOf(cases, None) -> List.contains Schema.Null cases
+                        | _ -> false
                     Default =
                         annotation.Default
                         |> Option.orElseWith (fun () -> annotation.Implicit |> Option.map fst)
@@ -347,6 +367,7 @@ module Bindings =
                                     Value = value
                                     Branches = input.Branches
                                     Vocabulary = BindingKind.vocabulary input.Kind
+                                    RequiresParent = false
                                 }
                             ]
                         | None -> inputs @ [ bindInput annotation input ], constants)

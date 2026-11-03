@@ -2,6 +2,7 @@ import type { CaseSelector } from "@contracts/client";
 import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
+  | { screen: "work" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector }
   | { screen: "caseAct"; target: CaseSelector; act: string }
@@ -61,11 +62,24 @@ const caseRoute = (segments: string[]): Route => {
     ? { screen: "caseAct", target, act: decodeURIComponent(segments[4]!) }
     : { screen: "missing" };
 };
+const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | null => {
+  if (segments.length === 0) {
+    return { screen: "cases", query };
+  }
+  if (segments.length !== 1) {
+    return null;
+  }
+  if (segments[0] === "cases") {
+    return { screen: "cases", query };
+  }
+  return segments[0] === "work" ? { screen: "work" } : null;
+};
 export const parseRoute = (location: Pick<Location, "pathname" | "search">): Route => {
   const segments = location.pathname.split("/").filter(Boolean);
   try {
-    if (segments.length === 0 || (segments[0] === "cases" && segments.length === 1)) {
-      return { screen: "cases", query: location.search };
+    const simple = singleRoute(segments, location.search);
+    if (simple !== null) {
+      return simple;
     }
     if (segments[0] === "cases") {
       return caseRoute(segments);

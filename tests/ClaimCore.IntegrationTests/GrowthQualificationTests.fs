@@ -17,6 +17,36 @@ open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.GrowthMeasurements
 
 
+let private atomic directory name value =
+    let path = Path.Combine(directory, name)
+    File.WriteAllBytes(path + ".writing", JsonSerializer.SerializeToUtf8Bytes value)
+    File.Move(path + ".writing", path, true)
+
+let internal writeReadProgress
+    directory
+    completedReadProfiles
+    requiredReadProfiles
+    (lastCompletedReport: string option)
+    (progress: GrowthReadWorkloads.ReadProgress)
+    =
+    atomic
+        directory
+        "read-progress.json"
+        {|
+            kind = "read-progress"
+            completedReadProfiles = completedReadProfiles
+            requiredReadProfiles = requiredReadProfiles
+            lastCompletedReport = lastCompletedReport
+            progress =
+                {|
+                    cases = progress.Cases
+                    phase = progress.Phase
+                    completed = progress.Completed
+                    expected = progress.Expected
+                    observedAt = progress.ObservedAt
+                |}
+        |}
+
 let private cardinalityWrites cases keyRing (database: PostgresFixture.Database) =
     task {
         let database =
@@ -187,14 +217,12 @@ let private qualify () =
 
         Directory.CreateDirectory directory |> ignore
 
-        let atomic name value =
-            let path = Path.Combine(directory, name)
-            File.WriteAllBytes(path + ".writing", JsonSerializer.SerializeToUtf8Bytes value)
-            File.Move(path + ".writing", path, true)
+        let atomic name value = atomic directory name value
 
         let selected = profiles ()
         let mutable count = 0
         let mutable readCount = 0
+        let mutable lastCompletedReadReport: string option = None
 
         let nativeRun =
             Environment.GetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY")
@@ -252,16 +280,27 @@ let private qualify () =
 
             if selected.Length = 9 || GrowthWorkloadPlan.comparison then
                 do!
-                    GrowthReadWorkloads.run (fun environment report ->
-                        atomic
-                            (sprintf "read-workload-%02d.json" readCount)
-                            {|
-                                environment = environment
-                                workload = report
-                            |}
+                    GrowthReadWorkloads.run
+                        (fun progress ->
+                            writeReadProgress
+                                directory
+                                readCount
+                                GrowthWorkloadPlan.readProfileCount
+                                lastCompletedReadReport
+                                progress)
+                        (fun environment report ->
+                            let name = sprintf "read-workload-%02d.json" readCount
 
-                        readCount <- readCount + 1
-                        state "incomplete")
+                            atomic
+                                name
+                                {|
+                                    environment = environment
+                                    workload = report
+                                |}
+
+                            readCount <- readCount + 1
+                            lastCompletedReadReport <- Some name)
+                        (fun () -> state "incomplete")
 
                 Expect.equal
                     readCount

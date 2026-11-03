@@ -14,8 +14,29 @@ open ClaimCore.TestSupport.StoreFixtures
 
 let private token = CancellationToken.None
 
-let private seed actor count =
+type ReadProgress =
+    {
+        Cases: int
+        Phase: string
+        Completed: int
+        Expected: int
+        ObservedAt: DateTimeOffset
+    }
+
+let private progress progressed cases phase completed expected =
+    progressed
+        {
+            Cases = cases
+            Phase = phase
+            Completed = completed
+            Expected = expected
+            ObservedAt = DateTimeOffset.UtcNow
+        }
+
+let private seed progressed actor count =
     task {
+        progress progressed count "case-seed" 0 count
+
         for index in 0 .. count - 1 do
             let reference = GrowthWorkloadPlan.readReference index
             let registration = GrowthWorkloadPlan.readRegistration count index
@@ -65,6 +86,9 @@ let private seed actor count =
                         token
 
                 accepted closed |> ignore
+
+            if (index + 1) % 10000 = 0 || index + 1 = count then
+                progress progressed count "case-seed" (index + 1) count
     }
 
 let private read actor filter =
@@ -87,8 +111,17 @@ let private read actor filter =
         | _ -> return failtestf "Read growth workload failed: %A" result
     }
 
-let private measure cases (name, order, expectedItems, fingerprint) (limit: Nullable<int>) read =
+let private measure
+    progressed
+    publish
+    cases
+    (name, order, expectedItems, fingerprint)
+    (limit: Nullable<int>)
+    read
+    =
     task {
+        progress progressed cases ("measure/" + name) 0 GrowthWorkloadPlan.measuredRequests
+
         for _ in 1 .. GrowthWorkloadPlan.warmupRequests do
             let! found = read ()
             Expect.equal found expectedItems "Warmup observes the independent seeded population"
@@ -111,7 +144,8 @@ let private measure cases (name, order, expectedItems, fingerprint) (limit: Null
 
         let latencies = durations.ToArray() |> Array.sort
 
-        return
+        // Keep the original aggregate construction, including the seconds boundary after sorting.
+        let report =
             {|
                 name = name
                 cases = cases
@@ -128,10 +162,30 @@ let private measure cases (name, order, expectedItems, fingerprint) (limit: Null
                 maximumMilliseconds = Array.last latencies
                 workloadFingerprint = fingerprint
             |}
+
+        elapsed.Stop()
+
+        let observed =
+            {| report with
+                latencySamples =
+                    {|
+                        milliseconds = durations.ToArray()
+                        order = "observation"
+                        warmupsIncluded = false
+                        percentileIndex = "floor((sampleCount - 1) * percentile)"
+                    |}
+            |}
+
+        // Export and progress callbacks run only after every existing metric has been frozen.
+        publish observed
+        progress progressed cases ("measure/" + name) observed.requests observed.requests
+        return observed
     }
 
-let private authorityProfiles (database: PostgresFixture.Database) actor cases =
+let private authorityProfiles progressed publish (database: PostgresFixture.Database) actor cases =
     task {
+        progress progressed cases "authority-seed" 0 GrowthWorkloadPlan.authorityEntries
+
         for index in 0 .. GrowthWorkloadPlan.authorityEntries - 1 do
             let! reply =
                 grant
@@ -145,6 +199,14 @@ let private authorityProfiles (database: PostgresFixture.Database) actor cases =
                     (index % 2 = 0)
 
             acceptedAuthority reply
+
+            if (index + 1) % 10000 = 0 || index + 1 = GrowthWorkloadPlan.authorityEntries then
+                progress
+                    progressed
+                    cases
+                    "authority-seed"
+                    (index + 1)
+                    GrowthWorkloadPlan.authorityEntries
 
         use! connection = database.OwnerSource.OpenConnectionAsync()
 
@@ -185,6 +247,8 @@ let private authorityProfiles (database: PostgresFixture.Database) actor cases =
 
             let! report =
                 measure
+                    progressed
+                    publish
                     cases
                     (name,
                      "SEQUENCE",
@@ -226,8 +290,9 @@ let private readSummary actor (cases: int) =
     }
 
 // These new-feature measurements follow every common query, keeping its population unchanged.
-let private workProfiles (actor: ServiceContext) cases =
+let private workProfiles progressed publish (actor: ServiceContext) cases =
     task {
+        progress progressed cases "work-seed" 0 (cases / 1000)
         let! context = Service.context actor () token
 
         let context =
@@ -246,21 +311,43 @@ let private workProfiles (actor: ServiceContext) cases =
             let! changed =
                 Service.execute
                     actor
-                    (Inputs.caseOperation (
-                        request
-                            (3000000 + index)
-                            reference
-                            1L
-                            (AuthoredCaseAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
-                                    FollowUp = WorkValue.Set(CalendarDate.format followUp)
-                                })
-                    ))
+                    (OperationInput.Work
+                        {
+                            OperationId = id (3000000 + index * 2)
+                            Target = CaseSelector.Reference reference
+                            ExpectedRevision = 0L
+                            Act =
+                                WorkAct.UpdateWork
+                                    {
+                                        Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                                        Summary = WorkValue.Keep
+                                    }
+                        })
                     token
 
             accepted changed |> ignore
+
+            let! planned =
+                Service.execute
+                    actor
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id (3000001 + index * 2)
+                            Target = CaseSelector.Reference reference
+                            Act =
+                                AuthoredReminderAct.Create
+                                    {
+                                        Action = "Growth planned action"
+                                        Due = CalendarDate.format followUp
+                                    }
+                        })
+                    token
+
+            accepted planned |> ignore
             references.Add reference
+
+            if references.Count % 100 = 0 || references.Count = cases / 1000 then
+                progress progressed cases "work-seed" references.Count (cases / 1000)
 
         // Independent population/count and row-content witnesses, rather than an empty Mine query.
         Expect.equal references.Count (cases / 1000) "One open case per thousand has explicit work"
@@ -346,8 +433,10 @@ let private workProfiles (actor: ServiceContext) cases =
 
         let! listing =
             measure
+                progressed
+                publish
                 cases
-                ("case-work-follow-up",
+                ("reminder-derived-follow-up",
                  "FOLLOW_UP",
                  min 50 (cases / 1000),
                  GrowthWorkloadPlan.workReadFingerprint cases filter false)
@@ -356,8 +445,10 @@ let private workProfiles (actor: ServiceContext) cases =
 
         let! totals =
             measure
+                progressed
+                publish
                 cases
-                ("case-work-summary",
+                ("reminder-derived-work-summary",
                  "GROUPED",
                  cases / 1000,
                  GrowthWorkloadPlan.workReadFingerprint cases filter true)
@@ -367,14 +458,314 @@ let private workProfiles (actor: ServiceContext) cases =
         return [| listing; totals |]
     }
 
-let profile cases =
+// Large child populations are seeded after common-case measurements, so feature cost cannot
+// change the unchanged-read comparison inputs. Each population is checked independently.
+let private reminderProfiles progressed publish actor cases =
+    task {
+        progress progressed cases "reminder-pair-seed" 0 (cases / 10)
+        let! contextResult = Service.context actor () token
+
+        let context =
+            match contextResult with
+            | Outcome.Succeeded value -> value
+            | other -> failtestf "Reminder growth context unavailable: %A" other
+
+        let reference = GrowthWorkloadPlan.readReference 3
+        let population = cases / 10
+
+        let due =
+            context.Runtime.EffectiveBusinessDate
+                .AddDays(-2)
+                .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
+
+        let target = CaseSelector.Reference reference
+        let pendingIds = ResizeArray<string>()
+        let completedIds = ResizeArray<string>()
+
+        for index in 0 .. population - 1 do
+            let pendingOperation = id (4000000 + index * 3)
+            let terminalOperation = id (4000001 + index * 3)
+
+            for operation in [ pendingOperation; terminalOperation ] do
+                let! reply =
+                    Service.execute
+                        actor
+                        (OperationInput.Reminder
+                            {
+                                OperationId = operation
+                                Target = target
+                                Act =
+                                    AuthoredReminderAct.Create
+                                        {
+                                            Action = "High fanout action"
+                                            Due = due
+                                        }
+                            })
+                        token
+
+                let receipt = accepted reply
+
+                match receipt.Subject with
+                | ReceiptSubject.Reminder {
+                                              Effects = ReminderReceiptEffects.Single version
+                                          } ->
+                    Expect.equal
+                        (ReminderId.value version.ReminderId)
+                        operation
+                        "Every creation uses the operation ID"
+                | other -> failtestf "Creation must have one correlated reminder effect: %A" other
+
+            let! completed =
+                Service.execute
+                    actor
+                    (OperationInput.Reminder
+                        {
+                            OperationId = id (4000002 + index * 3)
+                            Target = target
+                            Act = AuthoredReminderAct.Complete(terminalOperation, 1L)
+                        })
+                    token
+
+            accepted completed |> ignore
+            pendingIds.Add(pendingOperation.ToString("D"))
+            completedIds.Add(terminalOperation.ToString("D"))
+
+            if (index + 1) % 1000 = 0 || index + 1 = population then
+                progress progressed cases "reminder-pair-seed" (index + 1) population
+
+        let request state cursor : ReminderListRequest =
+            {
+                Target = Some target
+                State = Some state
+                Due = None
+                Assignment = None
+                Text = Some "High fanout action"
+                AfterCursor = cursor
+                Limit = 50
+                IncludeInactive = false
+            }
+
+        let assertPage state expected =
+            task {
+                let! result = Service.reminders actor (request state None) token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    let actual =
+                        page.Items
+                        |> List.map (fun item -> Reminder.id item.Reminder |> ReminderId.format)
+
+                    Expect.equal
+                        actual
+                        (expected |> List.sort |> List.truncate 50)
+                        "Stable due/identity first-page order"
+
+                    for row in page.Items do
+                        Expect.equal (Reminder.state row.Reminder) state "Explicit state filter"
+
+                        Expect.equal
+                            (ReminderAction.format (Reminder.action row.Reminder))
+                            "High fanout action"
+                            "Bounded current action"
+
+                        Expect.equal
+                            (CalendarDate.format (Reminder.due row.Reminder))
+                            due
+                            "Retained planned date"
+
+                    return page.Items.Length
+                | other -> return failtestf "Actual reminder page failed: %A" other
+            }
+        // Walk each actual continuation once before latency sampling. Missing/duplicate rows fail.
+        for state, expected in
+            [
+                ReminderState.Pending, List.ofSeq pendingIds
+                ReminderState.Completed, List.ofSeq completedIds
+            ] do
+            let found = ResizeArray<string>()
+            let mutable cursor = None
+            let mutable more = true
+
+            while more do
+                let! result = Service.reminders actor (request state cursor) token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    for row in page.Items do
+                        found.Add(Reminder.id row.Reminder |> ReminderId.format)
+
+                    Expect.isLessThanOrEqual
+                        found.Count
+                        population
+                        "Continuation must make bounded progress"
+
+                    if page.NextCursor = cursor && page.NextCursor.IsSome then
+                        failtest "Continuation repeated without progress"
+
+                    cursor <- page.NextCursor
+                    more <- cursor.IsSome
+                | other -> failtestf "Continuation query failed: %A" other
+
+            Expect.equal
+                (List.ofSeq found)
+                (List.sort expected)
+                "Exact independent population, no omissions or duplicates"
+
+        let fingerprint name =
+            GrowthWorkloadPlan.reminderReadFingerprint cases population name
+
+        let! pending =
+            measure
+                progressed
+                publish
+                cases
+                ("reminder-pending", "DUE_ID", min 50 population, fingerprint "pending")
+                (Nullable 50)
+                (fun () -> assertPage ReminderState.Pending (List.ofSeq pendingIds))
+
+        let! completed =
+            measure
+                progressed
+                publish
+                cases
+                ("reminder-completed", "DUE_ID", min 50 population, fingerprint "completed")
+                (Nullable 50)
+                (fun () -> assertPage ReminderState.Completed (List.ofSeq completedIds))
+
+        let current () =
+            task {
+                let! result = Service.get actor { Target = target } token
+
+                match result with
+                | Outcome.Succeeded view ->
+                    Expect.equal
+                        (Revision.value view.Snapshot.Revision)
+                        1L
+                        "Child activity does not advance financial facts"
+
+                    Expect.equal
+                        view.Work.PendingReminders
+                        (int64 population)
+                        "Pending count ignores completed rows"
+
+                    Expect.equal
+                        view.Work.OverdueReminders
+                        (int64 population)
+                        "Past-due reminders remain pending"
+
+                    Expect.equal
+                        (view.Work.FollowUp |> Option.map CalendarDate.format)
+                        (Some due)
+                        "Minimum pending date"
+
+                    Expect.isFalse view.Work.NeedsNextAction "Pending work supplies coverage"
+                    return 1
+                | other -> return failtestf "Bounded current case query failed: %A" other
+            }
+
+        let! currentReport =
+            measure
+                progressed
+                publish
+                cases
+                ("reminder-current-case", "CASE_ID", 1, fingerprint "current")
+                (Nullable 1)
+                current
+
+        let financial () =
+            task {
+                let filter =
+                    { CaseListFilter.empty<string> with
+                        Text = Some reference
+                    }
+
+                let! result = Service.caseSummary actor filter token
+
+                match result with
+                | Outcome.Succeeded summary ->
+                    Expect.equal summary.Counts.Total 1L "Child fanout selects exactly one case"
+
+                    Expect.equal
+                        (summary.Claimed
+                         |> List.map (fun total ->
+                             Currency.format total.Currency, DecimalTotal.format total.Amount))
+                        [ ("EUR", "1000") ]
+                        "Money is counted once despite high pending and completed fanout"
+
+                    Expect.isEmpty summary.Payable "Seeded case 3 has no decision"
+                    return 1
+                | other -> return failtestf "Fanout financial query failed: %A" other
+            }
+
+        let! financialReport =
+            measure
+                progressed
+                publish
+                cases
+                ("reminder-financial-isolation", "GROUPED", 1, fingerprint "financial")
+                (Nullable())
+                financial
+
+        let overview () =
+            task {
+                let! result = Service.workOverview actor { Mine = false } token
+
+                match result with
+                | Outcome.Succeeded overview ->
+                    Expect.equal
+                        overview.ActionableCases
+                        (int64 (cases / 2))
+                        "Only active open cases"
+
+                    Expect.equal
+                        overview.MissingPlanCases
+                        (int64 (cases / 2 - cases / 1000 - 1))
+                        "Each covered case counted once"
+
+                    Expect.equal overview.OverdueCases (int64 (cases / 1000 + 1)) "Case units"
+
+                    Expect.equal
+                        overview.OverdueReminders
+                        (int64 (cases / 1000 + population))
+                        "Reminder units"
+
+                    Expect.equal
+                        overview.UnassignedCases
+                        (int64 (cases / 2 - cases / 1000))
+                        "Inherited assignment"
+
+                    Expect.equal overview.UnavailableAssigneeCases 0L "Enabled seeded assignee"
+
+                    Expect.equal
+                        overview.AttentionCases
+                        (int64 (cases / 2))
+                        "Union of overlapping attention conditions"
+
+                    return int overview.ActionableCases
+                | other -> return failtestf "Accessible-scope overview failed: %A" other
+            }
+
+        let! overviewReport =
+            measure
+                progressed
+                publish
+                cases
+                ("reminder-work-overview", "ACCESSIBLE", cases / 2, fingerprint "overview")
+                (Nullable())
+                overview
+
+        return [| pending; completed; currentReport; financialReport; overviewReport |]
+    }
+
+let profileWithProgress cases progressed completed =
     task {
         let! database = PostgresFixture.create ()
 
         try
             let environment = GrowthEnvironment.source ()
+            let publish = completed environment
             let! actor = caseWorker database.Fixture
-            do! seed actor cases
+            do! seed progressed actor cases
             let! population = GrowthEnvironment.database database
 
             Expect.equal
@@ -407,6 +798,8 @@ let profile cases =
             for name, filter, expectedItems in workloads do
                 let! report =
                     measure
+                        progressed
+                        publish
                         cases
                         (name,
                          CaseListOrder.token filter.Order,
@@ -419,6 +812,8 @@ let profile cases =
 
             let! summary =
                 measure
+                    progressed
+                    publish
                     cases
                     ("summary", "GROUPED", cases, GrowthWorkloadPlan.summaryFingerprint cases)
                     (Nullable())
@@ -429,11 +824,14 @@ let profile cases =
             // Seed authority events only after the existing query measurements; their declared
             // inputs and fingerprints remain unchanged for historical comparisons.
             if cases = 100000 then
-                let! history = authorityProfiles database actor cases
+                let! history = authorityProfiles progressed publish database actor cases
                 reports.AddRange history
 
-            let! work = workProfiles actor cases
+            let! work = workProfiles progressed publish actor cases
             reports.AddRange work
+
+            let! reminders = reminderProfiles progressed publish actor cases
+            reports.AddRange reminders
 
             return
                 {|
@@ -445,11 +843,13 @@ let profile cases =
             database.Fixture.Dispose()
     }
 
-let run completed =
+let profile cases =
+    profileWithProgress cases ignore (fun _ _ -> ())
+
+let run progressed completed populationCompleted =
     async {
         for cases in GrowthWorkloadPlan.readPopulations do
-            let! report = profile cases |> Async.AwaitTask
-
-            for workload in report.workloads do
-                completed report.environment workload
+            let! _ = profileWithProgress cases progressed completed |> Async.AwaitTask
+            // Aggregate bookkeeping stays after population work and fixture disposal.
+            populationCompleted ()
     }

@@ -3,9 +3,16 @@ import type { FieldCatalogEntry } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { suspiciousCodePoints } from "../utils/text";
 
-export const CharacterWarning = ({ value }: { value: string | null }) => {
+export const CharacterWarning = ({
+  value,
+  allowLineFeed = false,
+}: {
+  value: string | null;
+  allowLineFeed?: boolean;
+}) => {
   const p = usePresentation();
-  const points = value === null ? [] : suspiciousCodePoints(value);
+  const points =
+    value === null ? [] : suspiciousCodePoints(allowLineFeed ? value.replaceAll("\n", "") : value);
   return points.length === 0 ? null : (
     <small className="character-warning">
       {p.text("label.characterWarning", { characters: points.join(", ") })}
@@ -20,6 +27,12 @@ const valueDirection = (field: FieldCatalogEntry): "ltr" | "auto" =>
   field.scalar.kind === "PLANNED_DATE"
     ? "ltr"
     : "auto";
+const valueClass = (field: FieldCatalogEntry) => {
+  if (field.name === "caseReference") {
+    return "identifier-value";
+  }
+  return field.scalar.kind === "PLAIN_TEXT" ? "plain-text-value" : undefined;
+};
 export const BusinessValue = ({
   value,
   field,
@@ -39,10 +52,7 @@ export const BusinessValue = ({
   return (
     <span>
       {context === undefined ? (
-        <bdi
-          dir={valueDirection(field)}
-          className={field.name === "caseReference" ? "identifier-value" : undefined}
-        >
+        <bdi dir={valueDirection(field)} className={valueClass(field)}>
           {display}
         </bdi>
       ) : (
@@ -50,17 +60,16 @@ export const BusinessValue = ({
           p,
           context,
           { value: display },
-          <bdi
-            key="value"
-            dir={valueDirection(field)}
-            className={field.name === "caseReference" ? "identifier-value" : undefined}
-          >
+          <bdi key="value" dir={valueDirection(field)} className={valueClass(field)}>
             {display}
           </bdi>,
           "value",
         )
       )}
-      <CharacterWarning value={value} />
+      <CharacterWarning
+        value={value}
+        allowLineFeed={field.scalar.kind === "PLAIN_TEXT" && field.scalar.allowsLineFeed}
+      />
     </span>
   );
 };

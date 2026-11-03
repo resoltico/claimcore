@@ -9,7 +9,6 @@ it.each(["UNDECIDED", "DECIDED", "PAID"] as const)(
       "ERASE",
       "REINSTATE",
       "VOID",
-      "UPDATE_WORK",
       "AMEND_REGISTRATION",
       "DECIDE",
       "RECORD_PAYMENT",

@@ -22,15 +22,21 @@ module internal Transactions =
             IdleMilliseconds = 15000
         }
 
+    let private timeoutExpressions =
+        "set_config('lock_timeout',$1,true),set_config('statement_timeout',$2,true),set_config('idle_in_transaction_session_timeout',$3,true)"
+
+    let private timeoutParameters settings =
+        [|
+            box $"{settings.LockMilliseconds}ms"
+            box $"{settings.StatementMilliseconds}ms"
+            box $"{settings.IdleMilliseconds}ms"
+        |]
+
     let configure connection settings token =
         DatabaseSession.execute
             connection
-            "SELECT set_config('lock_timeout',$1,true),set_config('statement_timeout',$2,true),set_config('idle_in_transaction_session_timeout',$3,true)"
-            [|
-                box $"{settings.LockMilliseconds}ms"
-                box $"{settings.StatementMilliseconds}ms"
-                box $"{settings.IdleMilliseconds}ms"
-            |]
+            ("SELECT " + timeoutExpressions)
+            (timeoutParameters settings)
             token
 
     let head connection token =
@@ -134,8 +140,16 @@ module internal Transactions =
                     DatabaseSession.read source token (fun connection ->
                         task {
                             FailureDiagnostics.phase FailurePhase.Read
-                            let! _ = configure connection timeouts token
-                            return! action connection
+
+                            let! rows =
+                                DatabaseSession.rows
+                                    connection
+                                    ("SELECT " + timeoutExpressions + ",clock_timestamp()")
+                                    (timeoutParameters timeouts)
+                                    token
+
+                            let observedAt = DatabaseSession.instant 3 rows.Head
+                            return! action connection observedAt
                         })
 
                 return Ok value

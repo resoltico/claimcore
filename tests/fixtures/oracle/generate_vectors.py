@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, resolved case identities, framed ledger payloa
 salted commitments, framed retained creation identities and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 3 --snapshot 3 --authority 2 --ledger 3
+  python3 -I generate_vectors.py --request 4 --snapshot 4 --authority 2 --ledger 4
 
 Writes JSON to standard output.
 """
@@ -24,8 +24,9 @@ SHORT = {0x08: "\\b", 0x09: "\\t", 0x0A: "\\n", 0x0C: "\\f", 0x0D: "\\r"}
 ACT_CODES = {
     "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
-    "REINSTATE": 11, "ERASE": 12, "UPDATE_WORK": 13, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
+    "REINSTATE": 11, "ERASE": 12, "UPDATE_WORK": 80, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
     "ENABLE": 36, "DISABLE": 37, "NOT_ACCEPTED": 64,
+    "CREATE": 81, "UPDATE": 82, "COMPLETE": 83, "CANCEL": 84, "REMINDER_REOPEN": 85, "COMPLETE_AND_PLAN_NEXT": 86,
 }
 
 
@@ -150,7 +151,7 @@ def day_number(text):
     return datetime.date.fromisoformat(text).toordinal() - 1 if text else 0
 
 
-def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots):
+def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots, work_requests, reminder_requests, reminder_effects):
     installation = sources["installationId"]
     previous = bytes(32)
     vectors = []
@@ -161,7 +162,19 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             request_bytes = canonical(selected_request).encode("utf-8")
             snapshot_bytes = canonical(selected_snapshot).encode("utf-8")
             subject = spec.get("subjectId", selected_request["operationId"])
-            subject_byte, revision = 1, spec["caseRevision"]
+            subject_byte, revision = 1, spec["entityRevision"]
+        elif spec["subject"] == "WORK":
+            selected_request = work_requests[spec["workRequestIndex"]]
+            selected_snapshot = work_snapshots[spec["workSnapshotIndex"]]
+            request_bytes = canonical(selected_request).encode("utf-8")
+            snapshot_bytes = canonical(selected_snapshot).encode("utf-8")
+            subject = spec["subjectId"]
+            subject_byte, revision = 4, spec["entityRevision"]
+        elif spec["subject"] == "REMINDER":
+            request_bytes = canonical(reminder_requests[spec["reminderRequestIndex"]]).encode("utf-8")
+            snapshot_bytes = canonical(reminder_effects[spec["reminderEffectsIndex"]]).encode("utf-8")
+            subject = spec["subjectId"]
+            subject_byte, revision = 5, spec["entityRevision"]
         elif spec["subject"] == "CONTROL":
             request_bytes = b'{"format":2,"kind":"NOT_ACCEPTED"}'
             snapshot_bytes = b""
@@ -175,18 +188,24 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
         payload = frame(request_bytes, snapshot_bytes)
         nonce = bytes.fromhex(spec["payloadNonce"])
         commitment = hashlib.sha256(nonce + payload).digest()
+        act_code = ACT_CODES["REMINDER_REOPEN" if spec["subject"] == "REMINDER" and spec["act"] == "REOPEN" else spec["act"]]
+        related = b""
+        if spec["subject"] == "REMINDER":
+            related = uuid.UUID(spec["parentCaseId"]).bytes
+            related += (b"\x01" + uuid.UUID(spec["nextReminderId"]).bytes + (1).to_bytes(8,"big",signed=True)) if spec.get("nextReminderId") else b"\x00"
         preimage = b"".join([
             f"claimcore/ledger-entry/{ledger_format}\n".encode("ascii"),
             uuid.UUID(spec["installationId"]).bytes,
             spec["sequence"].to_bytes(8, "big"),
             previous,
-            bytes([subject_byte, ACT_CODES[spec["act"]]]),
+            bytes([subject_byte, act_code]),
             uuid.UUID(spec["operationId"]).bytes,
             uuid.UUID(spec["actorId"]).bytes,
             micros(spec["recordedAt"]).to_bytes(8, "big", signed=True),
             uuid.UUID(subject).bytes,
             revision.to_bytes(8, "big", signed=True),
             day_number(spec["businessDate"]).to_bytes(4, "big", signed=True),
+            related,
             (b"\x01" + len(requests[0]["caseReference"].encode("utf-8")).to_bytes(4,"big") + requests[0]["caseReference"].encode("utf-8")) if spec["subject"] == "CASE" and spec["act"] == "OPEN" else b"\x00",
             commitment,
         ])
@@ -194,10 +213,11 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
         vectors.append({
             "name": spec["name"], "installationId": spec["installationId"],
             "sequence": spec["sequence"], "previousHash": previous.hex(),
-            "subject": spec["subject"], "act": spec["act"], "actCode": ACT_CODES[spec["act"]],
+            "subject": spec["subject"], "act": spec["act"], "actCode": act_code,
             "operationId": spec["operationId"], "actorId": spec["actorId"],
             "recordedAt": spec["recordedAt"], "recordedAtUnixMicroseconds": micros(spec["recordedAt"]),
-            "subjectId": subject, "caseRevision": spec["caseRevision"],
+            "subjectId": subject, "entityRevision": spec["entityRevision"],
+            "parentCaseId": spec.get("parentCaseId"), "nextReminderId": spec.get("nextReminderId"),
             "businessDate": spec["businessDate"], "creationReference": requests[0]["caseReference"] if spec["subject"] == "CASE" and spec["act"] == "OPEN" else None,
             "businessDateDayNumber": day_number(spec["businessDate"]),
             "requestUtf8": request_bytes.decode("utf-8"), "snapshotUtf8": snapshot_bytes.decode("utf-8"),
@@ -206,7 +226,7 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             "entryHash": entry_hash.hex(),
         })
         previous = entry_hash
-    return {"entryFormat": ledger_format, "tag": f"claimcore/ledger-entry/{ledger_format}\n", "preimageBytes": "variable: 184 plus OPEN reference framing",
+    return {"entryFormat": ledger_format, "tag": f"claimcore/ledger-entry/{ledger_format}\n", "preimageBytes": "variable: 184 plus OPEN reference framing and reminder parent/next framing",
             "actCodes": ACT_CODES, "vectors": vectors}
 
 
@@ -235,7 +255,10 @@ def main():
     requests = [with_format(item["value"], arguments.request) for item in sources["caseRequests"]]
     snapshot = with_format(sources["snapshot"]["value"], arguments.snapshot)
     authority = with_format(sources["authorityRecord"]["value"], arguments.authority)
-    work_snapshots = [with_format(item["value"], arguments.snapshot) for item in sources["workSnapshots"]]
+    work_snapshots = [with_format(item["value"], 1) for item in sources["workSnapshots"]]
+    work_requests = [with_format(item["value"], 1) for item in sources["workRequests"]]
+    reminder_requests = [with_format(item["value"], 1) for item in sources["reminderRequests"]]
+    reminder_effects = [with_format(item["value"], 1) for item in sources["reminderEffects"]]
     document = {
         "purpose": "Independent Python oracle for ClaimCore durable formats; regenerate with "
                    "python3 -I generate_vectors.py",
@@ -245,7 +268,11 @@ def main():
                          for item, value in zip(sources["caseRequests"], requests)],
         "canonicalIdentity": identity_vectors(sources, arguments.request, arguments.authority),
         "snapshot": vector(sources["snapshot"]["name"], snapshot),
+        "workRequests": [vector(item["name"], value) for item, value in zip(sources["workRequests"], work_requests)],
         "workSnapshots": [vector(item["name"], value) for item, value in zip(sources["workSnapshots"], work_snapshots)],
+        "reminderRequests": [vector(item["name"], value) for item, value in zip(sources["reminderRequests"], reminder_requests)],
+        "reminderSnapshots": [vector(item["name"], with_format(item["value"], 1)) for item in sources["reminderSnapshots"]],
+        "reminderEffects": [vector(item["name"], value) for item, value in zip(sources["reminderEffects"], reminder_effects)],
         "authorityRecord": vector(sources["authorityRecord"]["name"], authority),
         "ledgerPayloads": {
             "caseRequest": canonical(requests[0]),
@@ -253,7 +280,7 @@ def main():
             "authorityRequest": canonical(authority),
         },
         "permanentLimits": permanent_limits(sources, arguments.request, arguments.snapshot, arguments.authority),
-        "ledgerEntries": ledger(sources, requests, snapshot, authority, arguments.ledger, work_snapshots),
+        "ledgerEntries": ledger(sources, requests, snapshot, authority, arguments.ledger, work_snapshots, work_requests, reminder_requests, reminder_effects),
     }
     print(json.dumps(document, ensure_ascii=False, indent=2))
 

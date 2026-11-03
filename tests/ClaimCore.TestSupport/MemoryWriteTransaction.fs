@@ -119,6 +119,7 @@ type internal Writer(inputs: WriteInputs) =
                                     Status = None
                                     Progress = None
                                     SearchText = None
+                                    WorkSearchText = None
                                     NotifiedOn = None
                                     Claimed = None
                                     Payable = None
@@ -132,26 +133,189 @@ type internal Writer(inputs: WriteInputs) =
                         }
                         state.Cases
 
-            let entries =
+            let parentId =
                 match projection with
+                | CaseProjection.Insert(id, _, _)
+                | CaseProjection.Update(id, _, _)
+                | CaseProjection.Erase(id, _, _) -> id
+
+            let erased =
+                match projection with
+                | CaseProjection.Erase _ -> true
+                | _ -> false
+
+            let work =
+                match projection with
+                | CaseProjection.Insert(id, _, _) ->
+                    if Map.containsKey id state.Work then
+                        invalidOp "A work root already exists."
+
+                    let root =
+                        {
+                            CaseWorkSnapshot.CaseId = id
+                            Revision = Revision.zero
+                            Work = CaseWork.empty
+                        }
+
+                    Map.add
+                        id
+                        {
+                            StoredWork.CaseId = id
+                            Revision = Revision.zero
+                            Snapshot = Some root
+                            SnapshotBytes = WorkRecord.encodeSnapshot root
+                            ChangedAt = None
+                            RecordedBy = None
+                        }
+                        state.Work
                 | CaseProjection.Erase(id, _, _) ->
+                    state.Work
+                    |> Map.change
+                        id
+                        (Option.map (fun row ->
+                            { row with
+                                Snapshot = None
+                                SnapshotBytes = Array.empty
+                            }))
+                | _ -> state.Work
+
+            let reminders =
+                if erased then
+                    state.Reminders
+                    |> Map.map (fun _ row ->
+                        if row.CaseId = parentId then
+                            { row with
+                                Snapshot = None
+                                SnapshotBytes = Array.empty
+                            }
+                        else
+                            row)
+                else
+                    state.Reminders
+
+            let entries =
+                if erased then
                     state.Entries
                     |> Map.map (fun _ entry ->
-                        match entry.Subject with
-                        | EntryTarget.Case(caseId, _, _, _) when caseId = id ->
+                        let parent =
+                            match entry.Subject with
+                            | EntryTarget.Case(id, _, _, _) -> Some id
+                            | EntryTarget.Work work -> Some work.CaseId
+                            | EntryTarget.Reminder reminder -> Some reminder.CaseId
+                            | _ -> None
+
+                        if parent = Some parentId then
                             { entry with
                                 Payload = None
                                 PayloadNonce = None
                             }
-                        | _ -> entry)
-                | _ -> state.Entries
+                        else
+                            entry)
+                else
+                    state.Entries
 
-            set
+            let next =
                 { state with
                     Cases = cases
+                    Work = work
+                    Reminders = reminders
                     Entries = entries
                 }
 
+            let next =
+                { next with
+                    Cases = Map.change parentId (Option.map (reindex next)) next.Cases
+                }
+
+            set next
+            Task.FromResult(())
+
+        member _.ProjectWorkChange projection =
+            let state = get ()
+
+            let changed, parentId =
+                match projection with
+                | WorkChangeProjection.Work update ->
+                    let snapshot = update.Snapshot
+                    let before = state.Work[snapshot.CaseId]
+
+                    if
+                        before.Snapshot.IsNone
+                        || snapshot.Revision <> Revision.successor before.Revision
+                    then
+                        raise CorruptProjection
+
+                    let work =
+                        {
+                            StoredWork.CaseId = snapshot.CaseId
+                            Revision = snapshot.Revision
+                            Snapshot = Some snapshot
+                            SnapshotBytes = WorkRecord.encodeSnapshot snapshot
+                            ChangedAt = Some update.ChangedAt
+                            RecordedBy = Some update.RecordedBy
+                        }
+
+                    { state with
+                        Work = Map.add snapshot.CaseId work state.Work
+                    },
+                    snapshot.CaseId
+                | WorkChangeProjection.Reminder update ->
+                    let put isNew (reminder: Reminder) (rows: Map<ReminderId, StoredReminder>) =
+                        let id = Reminder.id reminder
+                        let parent = Reminder.caseId reminder
+
+                        match Map.tryFind id rows with
+                        | Some _ when isNew -> raise CorruptProjection
+                        | None when not isNew -> raise CorruptProjection
+                        | Some previous when
+                            previous.CaseId <> parent
+                            || previous.Snapshot.IsNone
+                            || Reminder.revision reminder <> Revision.successor previous.Revision
+                            ->
+                            raise CorruptProjection
+                        | _ -> ()
+
+                        if
+                            not (Map.containsKey parent state.Cases)
+                            || CaseState.lifecycle state.Cases[parent].Snapshot.State =
+                                Lifecycle.Erased
+                        then
+                            raise CorruptProjection
+
+                        Map.add
+                            id
+                            {
+                                StoredReminder.ReminderId = id
+                                CaseId = parent
+                                Revision = Reminder.revision reminder
+                                Snapshot = Some reminder
+                                SnapshotBytes = ReminderRecord.encodeSnapshot reminder
+                                RecordedAt = update.ChangedAt
+                                RecordedBy = update.RecordedBy
+                            }
+                            rows
+
+                    let rows, parent =
+                        match update.Effects with
+                        | ReminderEffects.Created reminder ->
+                            put true reminder state.Reminders, Reminder.caseId reminder
+                        | ReminderEffects.Changed reminder ->
+                            put false reminder state.Reminders, Reminder.caseId reminder
+                        | ReminderEffects.CompletedAndPlanned(completed, next) ->
+                            if Reminder.caseId completed <> Reminder.caseId next then
+                                raise CorruptProjection
+
+                            state.Reminders |> put false completed |> put true next,
+                            Reminder.caseId completed
+
+                    { state with Reminders = rows }, parent
+
+            let updated =
+                { changed with
+                    Cases = Map.change parentId (Option.map (reindex changed)) changed.Cases
+                }
+
+            set updated
             Task.FromResult(())
 
         member _.ProjectAuthority projection =

@@ -5,7 +5,7 @@ import { IdentifierValue } from "../../components/IdentifierValue";
 import { useRecovery } from "../../recovery/RecoveryContext";
 import type { RecoveryRecord } from "../../protocol/recoveryJournal";
 import { NoticeView } from "../../presentation/Message";
-import { operationEntry } from "../../protocol/operationCatalog";
+import { operationEntry, operationEntryForInput } from "../../protocol/operationCatalog";
 import { renderCatalogKey } from "../../presentation/messages";
 import { usePresentation } from "../../presentation/context";
 
@@ -33,7 +33,10 @@ const RecoveryRows = ({
           <p>{p.text("ui.savedRecoveryAttempt")}</p>
           <p>
             <IdentifierValue value={record.operationId} />
-            {record.subject === "CASE" ? p.actLabel(record.act) : p.authorityLabel(record.act)}
+            {renderCatalogKey(
+              p,
+              operationEntryForInput({ kind: record.subject, act: { kind: record.act } }).labelId,
+            )}
           </p>
           <button type="button" disabled={busy !== null} onClick={() => void check(record)}>
             {p.text("ui.checkUnresolvedOperation")}

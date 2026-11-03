@@ -9,20 +9,20 @@ type WorkValue<'value> =
     | Set of 'value
     | Clear
 
-type CaseWorkUpdate<'actor, 'date> =
+type CaseWorkUpdate<'actor, 'summary> =
     {
         Responsible: WorkValue<'actor>
-        FollowUp: WorkValue<'date>
+        Summary: WorkValue<'summary>
     }
 
 type CaseWorkInput = CaseWorkUpdate<string, string>
-type ValidCaseWorkUpdate = CaseWorkUpdate<ActorId, CalendarDate>
+type ValidCaseWorkUpdate = CaseWorkUpdate<ActorId, HandlingSummary>
 
 /// Work is erasable case state. Labels and current availability never become retained facts.
 type CaseWork =
     {
         Responsible: ActorId option
-        FollowUp: CalendarDate option
+        Summary: HandlingSummary option
     }
 
 module WorkValue =
@@ -43,18 +43,18 @@ module WorkValue =
         | WorkValue.Set value -> Some value
 
 module CaseWork =
-    let empty = { Responsible = None; FollowUp = None }
+    let empty = { Responsible = None; Summary = None }
 
     let apply (update: ValidCaseWorkUpdate) current =
         {
             Responsible = WorkValue.apply current.Responsible update.Responsible
-            FollowUp = WorkValue.apply current.FollowUp update.FollowUp
+            Summary = WorkValue.apply current.Summary update.Summary
         }
 
     let authored (update: ValidCaseWorkUpdate) : CaseWorkInput =
         {
             Responsible = WorkValue.map ActorId.format update.Responsible
-            FollowUp = WorkValue.map CalendarDate.format update.FollowUp
+            Summary = WorkValue.map HandlingSummary.format update.Summary
         }
 
 module CaseWorkInput =
@@ -68,25 +68,47 @@ module CaseWorkInput =
 
     let parse (input: CaseWorkInput) =
         let responsible = WorkValue.traverse actor input.Responsible
-        // Planned dates share permanent calendar syntax, without event-date admission's maximum.
-        let followUp = WorkValue.traverse CalendarDate.parse input.FollowUp
+        let summary = WorkValue.traverse HandlingSummary.parse input.Summary
 
-        match responsible, followUp with
+        match responsible, summary with
         | Ok WorkValue.Keep, Ok WorkValue.Keep ->
-            Error [ BusinessField.FollowUpDate, Violation.UpdateRequired ]
-        | Ok responsible, Ok followUp ->
+            Error [ BusinessField.HandlingSummary, Violation.UpdateRequired ]
+        | Ok responsible, Ok summary ->
             Ok
                 {
                     ValidCaseWorkUpdate.Responsible = responsible
-                    FollowUp = followUp
+                    Summary = summary
                 }
         | _ ->
             [
                 BusinessField.ResponsibleActor, responsible |> Result.map ignore
-                BusinessField.FollowUpDate, followUp |> Result.map ignore
+                BusinessField.HandlingSummary, summary |> Result.map ignore
             ]
             |> List.choose (fun (field, result) ->
                 match result with
                 | Ok() -> None
                 | Error issue -> Some(field, issue))
             |> Error
+
+
+type CaseWorkSnapshot =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        Work: CaseWork
+    }
+
+[<RequireQualifiedAccess>]
+type WorkActKind = | UpdateWork
+
+module WorkActKind =
+    let vocabulary =
+        Vocabulary.ofUnion<WorkActKind> "workAct" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+[<RequireQualifiedAccess>]
+type WorkAct<'value> = UpdateWork of 'value
+
+type AuthoredWorkAct = WorkAct<CaseWorkInput>

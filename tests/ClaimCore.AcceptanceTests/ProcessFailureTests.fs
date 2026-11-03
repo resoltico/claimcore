@@ -476,3 +476,9 @@ let tests =
     testCase
         "bounded child failures retain partial private evidence without exposing output"
         controls
+
+[<Tests>]
+let publicationTests =
+    testCase
+        "failed publication retains bounded private output before fixture startup"
+        PublishedProcesses.publicationFailure

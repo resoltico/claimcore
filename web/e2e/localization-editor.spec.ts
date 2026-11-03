@@ -20,7 +20,7 @@ import {
   reviewFrom,
   selectFormat,
   selectLanguage,
-  trackRequests,
+  trackForegroundRequests,
   ui,
 } from "./localization-support";
 
@@ -195,7 +195,7 @@ test("preserves authored Unicode and cleared calendar input, then localizes a re
     element.setSelectionRange(1, 3);
   });
   const originalNode = await name.elementHandle();
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   await editorLanguage(page);
   expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
   expect(
@@ -216,7 +216,7 @@ test("switches language and independent display format during draft review witho
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   const pending = await pauseJsonReply(page, "operation.preview");
   try {
     await page.getByRole("button", { name: "Review changes" }).click();

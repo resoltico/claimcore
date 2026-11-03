@@ -2,7 +2,8 @@ import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { ReceiptFields } from "../../src/components/ReceiptFields";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { corpusCases, wireReply } from "../support/contract-corpus.fixtures";
+import { isResponse } from "../../src/protocol/client";
 import { definition, response } from "../support/service-ui.fixtures";
 it.each([
   ["WITHHELD", "The recorded fields are withheld under your current access rights."],
@@ -28,8 +29,12 @@ it.each([
   expect(view.container.querySelector(".case-fields")).toBeNull();
 });
 it("observes authority receipts as attributed metadata without assuming a case snapshot", async () => {
-  const source = wireReply("operation.execute", "AUTHORITY").outcome;
-  if (source.kind !== "ACCEPTED" || source.data.subject.kind !== "AUTHORITY") {
+  const sample = corpusCases().find((row) => row.id === "owner-provisioning-own-observation");
+  if (sample === undefined || !isResponse("operation.observe", sample.value)) {
+    throw new Error("Owner provisioning observation fixture absent.");
+  }
+  const source = sample.value.outcome;
+  if (source.kind !== "SUCCEEDED" || source.data.subject.kind !== "AUTHORITY") {
     throw new Error("Authority receipt fixture absent.");
   }
   vi.stubGlobal(

@@ -32,7 +32,6 @@ module PaymentProgress =
 /// Accepted facts retain complete typed groups; a decision is complete or absent.
 type CaseFields =
     {
-        Work: CaseWork
         CaseReference: CaseReference
         Status: CaseStatus
         Registration: Registration
@@ -85,6 +84,10 @@ module CaseState =
 
     let token state = lifecycle state |> Lifecycle.token
 
+    /// Work is actionable only on a live, open case.
+    let isActionable lifecycle status =
+        lifecycle = Lifecycle.Active && status = Some CaseStatus.Opened
+
 /// A disclosure cannot carry an erased state.
 [<RequireQualifiedAccess>]
 type LiveCase =
@@ -124,8 +127,21 @@ module CaseFields =
         match field with
         | BusinessField.CaseReference -> Some(CaseReference.format fields.CaseReference)
         | BusinessField.Status -> Some(CaseStatus.token fields.Status)
-        | BusinessField.ResponsibleActor -> fields.Work.Responsible |> Option.map ActorId.format
-        | BusinessField.FollowUpDate -> fields.Work.FollowUp |> Option.map CalendarDate.format
+        | BusinessField.ClaimantName ->
+            Registration.claimant fields.Registration
+            |> Admitted.Name
+            |> FieldValue.format
+            |> Some
+        | BusinessField.InsurerName ->
+            Registration.insurer fields.Registration
+            |> Admitted.Name
+            |> FieldValue.format
+            |> Some
+        | BusinessField.IncidentDescription ->
+            Registration.description fields.Registration
+            |> Option.map (Admitted.Description >> FieldValue.format)
+        | BusinessField.ResponsibleActor
+        | BusinessField.HandlingSummary -> None
         | _ ->
             groupValues
                 fields.Registration

@@ -37,7 +37,12 @@ it("reload recovery resolves identities without resubmitting and clears only the
   const buttons = await screen.findAllByRole("button", { name: "Check operation status" });
   expect(buttons).toHaveLength(2);
   await userEvent.click(buttons[0]!);
-  expect(resolve).toHaveBeenCalledExactlyOnceWith(first.operationId, "token", first.installationId);
+  expect(resolve).toHaveBeenCalledExactlyOnceWith(
+    first.operationId,
+    "token",
+    first.installationId,
+    expect.any(AbortSignal),
+  );
   expect(execute).not.toHaveBeenCalled();
   await waitFor(async () => {
     expect(await testJournal.list(recoveryScope)).toEqual([second]);
@@ -66,7 +71,7 @@ const reviewClose = async (view: ReturnType<typeof closeOperation>) => {
   });
 };
 it("the journal commits before a pending submission can be handed off", async () => {
-  vi.spyOn(service, "preview").mockResolvedValue(preview());
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
   const execute = vi.spyOn(service, "execute").mockImplementation(
     () =>
       new Promise(() => {
@@ -111,7 +116,7 @@ it("the journal commits before a pending submission can be handed off", async ()
   ]);
 });
 it("storage denial is NOT_SENT and a context change during persistence cannot send", async () => {
-  vi.spyOn(service, "preview").mockResolvedValue(preview());
+  vi.spyOn(service, "preview").mockImplementation((prepared) => Promise.resolve(preview(prepared)));
   const execute = vi.spyOn(service, "execute");
   const denied: RecoveryJournal = {
     ...testJournal,
@@ -169,7 +174,9 @@ it("recovery listing excludes another actor and installation", async () => {
 it.each(["switchback", "unmount"] as const)(
   "a committed journal callback after %s cannot dispatch a stale request",
   async (change) => {
-    vi.spyOn(service, "preview").mockResolvedValue(preview());
+    vi.spyOn(service, "preview").mockImplementation((prepared) =>
+      Promise.resolve(preview(prepared)),
+    );
     const execute = vi.spyOn(service, "execute");
     let commit!: () => Promise<void>;
     const journal: RecoveryJournal = {

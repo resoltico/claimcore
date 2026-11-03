@@ -18,6 +18,8 @@ type internal State =
         Entries: Map<OperationId, StoredEntry>
         Controls: Map<Sequence, RetainedControl>
         Cases: Map<CaseId, StoredCase>
+        Work: Map<CaseId, StoredWork>
+        Reminders: Map<ReminderId, StoredReminder>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>
         Fences: Map<ActorId * OperationId, DateTimeOffset>
@@ -74,3 +76,81 @@ let internal readCase (entries: Map<OperationId, StoredEntry>) (record: StoredCa
     { record with
         SnapshotBytes = Array.copy record.SnapshotBytes
     }
+
+
+let internal pendingReminders state caseId =
+    state.Reminders
+    |> Map.values
+    |> Seq.filter (fun row -> row.CaseId = caseId)
+    |> Seq.choose _.Snapshot
+    |> Seq.filter (fun reminder -> Reminder.state reminder = ReminderState.Pending)
+    |> Seq.sortWith (fun left right ->
+        let due = compare (Reminder.due left) (Reminder.due right)
+
+        if due <> 0 then
+            due
+        else
+            compareId ReminderId.format (Reminder.id left) (Reminder.id right))
+    |> Seq.toList
+
+let internal reindex state (record: StoredCase) =
+    let work = state.Work |> Map.tryFind record.CaseId |> Option.bind _.Snapshot
+    let next = pendingReminders state record.CaseId |> List.tryHead
+    let facts = CaseIndex.create record.Index.ChangedAt record.Snapshot
+
+    { record with
+        Index =
+            { facts with
+                Responsible = work |> Option.bind (fun value -> value.Work.Responsible)
+                FollowUp = next |> Option.map Reminder.due
+                SearchText = facts.SearchText
+                WorkSearchText =
+                    work
+                    |> Option.bind (fun value -> value.Work.Summary)
+                    |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+            }
+    }
+
+
+let internal assignedAccount state caseId actorId =
+    match Map.tryFind actorId state.Actors with
+    | None -> raise CorruptProjection
+    | Some actor ->
+        let grants =
+            state.Grants
+            |> Seq.choose (fun (id, role, scope) ->
+                if id = actorId && (scope.IsNone || scope = Some caseId) then
+                    Some
+                        {
+                            ActorGrant.Role = role
+                            Scope =
+                                scope
+                                |> Option.map Scope.Case
+                                |> Option.defaultValue Scope.Installation
+                        }
+                else
+                    None)
+            |> Seq.toList
+
+        let authority =
+            AuthorityView.ofActor (
+                Some
+                    {
+                        ActorAuthority.Actor = actor
+                        Grants = grants
+                    }
+            )
+
+        let _, _, subject = PrincipalKey.parts actor.Principal
+
+        {
+            AssignedAccount.Account = { ActorId = actorId; Subject = subject }
+            Available =
+                PrincipalKey.isHuman actor.Principal
+                && Authority.can actor.Principal authority Capability.ReadCase (Scope.Case caseId)
+                && Authority.can
+                    actor.Principal
+                    authority
+                    Capability.ManageCaseWork
+                    (Scope.Case caseId)
+        }

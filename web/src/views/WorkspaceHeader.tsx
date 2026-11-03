@@ -23,13 +23,14 @@ const Navigation = ({
   const p = usePresentation();
   const labels = {
     cases: "ui.cases",
+    work: "ui.reminders",
     operations: "ui.operations",
     authority: "ui.access",
   } as const;
   return (
     <nav aria-label={p.text("ui.primary")}>
-      {(["cases", "operations", "authority"] as const)
-        .filter((name) => views.includes(name.toUpperCase()))
+      {(["cases", "work", "operations", "authority"] as const)
+        .filter((name) => views.includes(name === "work" ? "CASES" : name.toUpperCase()))
         .map((name) => (
           <a
             key={name}

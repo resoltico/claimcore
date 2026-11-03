@@ -75,6 +75,7 @@ type Refusal =
     | InvalidInput of InputIssues
     | RevisionConflict of actualRevision: Revision
     | Case of CaseRefusal
+    | Reminder of ReminderRuleRefusal
     | Authority of AuthorityRefusal
     | Access of AccessRefusal
     | OperationResolved

@@ -51,7 +51,7 @@ it("does not expand non-ASCII search text into a reference identity", async () =
 it.each([
   ["open-undecided", "Open and undecided"],
   ["decided-unpaid", "Decided and unpaid"],
-  ["recent", "Recently changed"],
+  ["recent", "Recent fact changes"],
   ["closed", "Closed"],
   ["voided", "Voided"],
   ["all", "All accessible"],

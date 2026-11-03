@@ -41,10 +41,7 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
                 selection.DateBasis.BusinessDate
                 (CaseState.lifecycle record.Snapshot.State)
                 record.Index.Status
-                {
-                    Responsible = record.Index.Responsible
-                    FollowUp = record.Index.FollowUp
-                }
+                record.Index.FollowUp
                 =
                 due))
     && not forbidden
@@ -53,7 +50,12 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
         (CaseState.lifecycle record.Snapshot.State)
         record.Index.Status
         record.Index.Progress
-        record.Index.SearchText
+        (record.Index.SearchText
+         |> Option.map (fun text ->
+             match record.Index.WorkSearchText with
+             | None -> text
+             | Some summary -> text + "\u001f" + summary))
+
 
 let private total money =
     money
@@ -79,6 +81,73 @@ let private dateAfter (found: CalendarDate option) boundary referenceAfter =
     | None, None -> referenceAfter
     | Some found, Some boundary -> found > boundary || (found = boundary && referenceAfter)
 
+let private workSummary state today id =
+    state.Work
+    |> Map.tryFind id
+    |> Option.map (fun work ->
+        let pending = pendingReminders state id
+
+        {
+            CaseWorkSummary.Work = work
+            Next = List.tryHead pending
+            Pending = int64 pending.Length
+            Overdue =
+                pending
+                |> List.filter (fun reminder -> CalendarDate.value (Reminder.due reminder) < today)
+                |> List.length
+                |> int64
+        })
+
+let private authorityView state principal caseId =
+    let actor =
+        state.Actors
+        |> Map.values
+        |> Seq.tryFind (fun actor -> actor.Principal = principal)
+
+    let view =
+        actor
+        |> Option.map (fun actor ->
+            {
+                ActorAuthority.Actor = actor
+                Grants =
+                    state.Grants
+                    |> Seq.choose (fun (id, role, scope) ->
+                        if id = actor.ActorId && (scope.IsNone || scope = caseId) then
+                            Some
+                                {
+                                    ActorGrant.Role = role
+                                    Scope =
+                                        scope
+                                        |> Option.map Scope.Case
+                                        |> Option.defaultValue Scope.Installation
+                                }
+                        else
+                            None)
+                    |> Seq.toList
+            })
+        |> AuthorityView.ofActor
+
+    let assigned =
+        actor
+        |> Option.exists (fun actor ->
+            state.Grants
+            |> Seq.exists (fun (id, role, scope) ->
+                id = actor.ActorId
+                && scope.IsSome
+                && List.contains role (Authority.readRoles principal)
+                && not (
+                    state.Grants
+                    |> Seq.exists (fun (badId, badRole, badScope) ->
+                        badId = id
+                        && badScope = scope
+                        && List.contains badRole (Authority.invalidRoles principal))
+                )))
+
+    { view with
+        HasScopedCases = caseId.IsNone && assigned
+    }
+
+
 type internal Reader
     (
         get: unit -> State,
@@ -94,11 +163,25 @@ type internal Reader
         member _.Maintenance() = Task.FromResult((get ()).Maintenance)
 
         member _.Authority
-            ({
-                 AuthorityQuery.Principal = principal
-                 CaseId = caseId
-             })
+            {
+                AuthorityQuery.Principal = principal
+                CaseId = caseId
+            }
             =
+            read ()
+            Task.FromResult(authorityView (get ()) principal caseId)
+
+        member _.GlobalReadFacts principal =
+            read ()
+            let state = get ()
+
+            Task.FromResult
+                {
+                    GlobalReadFacts.Authority = authorityView state principal None
+                    Maintenance = state.Maintenance
+                }
+
+        member _.AuthorityCases(principal, caseIds) =
             read ()
             let state = get ()
 
@@ -115,7 +198,12 @@ type internal Reader
                         Grants =
                             state.Grants
                             |> Seq.choose (fun (id, role, scope) ->
-                                if id = actor.ActorId && (scope.IsNone || scope = caseId) then
+                                if
+                                    id = actor.ActorId
+                                    && (scope.IsNone
+                                        || (scope
+                                            |> Option.exists (fun id -> List.contains id caseIds)))
+                                then
                                     Some
                                         {
                                             ActorGrant.Role = role
@@ -130,26 +218,7 @@ type internal Reader
                     })
                 |> AuthorityView.ofActor
 
-            let assigned =
-                actor
-                |> Option.exists (fun actor ->
-                    state.Grants
-                    |> Seq.exists (fun (id, role, scope) ->
-                        id = actor.ActorId
-                        && scope.IsSome
-                        && List.contains role (Authority.readRoles principal)
-                        && not (
-                            state.Grants
-                            |> Seq.exists (fun (badId, badRole, badScope) ->
-                                badId = id
-                                && badScope = scope
-                                && List.contains badRole (Authority.invalidRoles principal))
-                        )))
-
-            Task.FromResult
-                { view with
-                    HasScopedCases = caseId.IsNone && assigned
-                }
+            Task.FromResult view
 
         member _.FindCase id =
             read ()
@@ -165,6 +234,192 @@ type internal Reader
                     CaseReference.identity record.Snapshot.Reference = CaseReference.key reference)
                 |> Option.map (readCase (get ()).Entries)
             )
+
+        member _.FindWork id =
+            read ()
+            Task.FromResult(Map.tryFind id (get ()).Work)
+
+        member _.FindReminder id =
+            read ()
+            Task.FromResult(Map.tryFind id (get ()).Reminders)
+
+        member _.WorkSummaries(ids, today) =
+            read ()
+            let state = get ()
+
+            let rows =
+                ids
+                |> List.choose (fun id ->
+                    workSummary state today id |> Option.map (fun work -> id, work))
+                |> Map.ofList
+
+            Task.FromResult rows
+
+        member _.AssignedAccounts pairs =
+            read ()
+            let state = get ()
+
+            Task.FromResult(
+                pairs
+                |> List.map (fun (caseId, actorId) -> caseId, assignedAccount state caseId actorId)
+                |> Map.ofList
+            )
+
+        member _.ReminderPage query =
+            read ()
+            let state = get ()
+
+            let rows =
+                state.Reminders
+                |> Map.values
+                |> Seq.choose (fun row -> row.Snapshot |> Option.map (fun value -> row, value))
+                |> Seq.filter (fun (row, value) ->
+                    let parent = state.Cases[row.CaseId]
+
+                    let actionable =
+                        CaseState.lifecycle parent.Snapshot.State = Lifecycle.Active
+                        && parent.Index.Status = Some CaseStatus.Opened
+
+                    selected state query.Selection parent
+                    && (query.TargetCaseId |> Option.forall ((=) row.CaseId))
+                    && Reminder.state value = query.State
+                    && (query.IncludeInactive || actionable)
+                    && (query.Text
+                        |> Option.forall (fun text ->
+                            (CaseSearch.normalize (ReminderAction.format (Reminder.action value)))
+                                .Contains(CaseSearchText.value text, StringComparison.Ordinal)))
+                    && (query.Due
+                        |> Option.forall (fun due ->
+                            let date = CalendarDate.value (Reminder.due value)
+
+                            match due with
+                            | ReminderDue.Overdue -> date < query.Selection.DateBasis.BusinessDate
+                            | ReminderDue.Today -> date = query.Selection.DateBasis.BusinessDate
+                            | ReminderDue.Upcoming ->
+                                date > query.Selection.DateBasis.BusinessDate))
+                    && (query.After
+                        |> Option.forall (fun after ->
+                            Reminder.due value > after.Due
+                            || (Reminder.due value = after.Due
+                                && compareId
+                                    ReminderId.format
+                                    (Reminder.id value)
+                                    after.ReminderId
+                                    >
+                                    0))))
+                |> Seq.sortWith (fun (_, left) (_, right) ->
+                    let date = compare (Reminder.due left) (Reminder.due right)
+
+                    if date <> 0 then
+                        date
+                    else
+                        compareId ReminderId.format (Reminder.id left) (Reminder.id right))
+                |> Seq.map (fun (row, _) ->
+                    let parent = state.Cases[row.CaseId]
+
+                    {
+                        ReminderRow.Stored = row
+                        Reference = parent.Snapshot.Reference
+                        Lifecycle = CaseState.lifecycle parent.Snapshot.State
+                        Status = parent.Index.Status
+                    })
+                |> Seq.toList
+
+            Task.FromResult(
+                page
+                    query.Limit
+                    (fun row ->
+                        {
+                            ReminderPosition.Due =
+                                row.Stored.Snapshot |> Option.get |> Reminder.due
+                            ReminderId = row.Stored.ReminderId
+                        })
+                    rows
+            )
+
+        member _.WorkOverview(selection, mine) =
+            read ()
+            let state = get ()
+
+            let scope =
+                { selection with
+                    Filter =
+                        { CaseListFilter.empty<CaseSearchText> with
+                            Assignment = if mine then Some CaseAssignment.Mine else None
+                        }
+                }
+
+            let rows =
+                state.Cases
+                |> Map.values
+                |> Seq.filter (selected state scope)
+                |> Seq.filter (fun parent ->
+                    CaseState.lifecycle parent.Snapshot.State = Lifecycle.Active
+                    && parent.Index.Status = Some CaseStatus.Opened)
+                |> Seq.toList
+
+            let attention =
+                rows
+                |> List.map (fun parent ->
+                    let pending = pendingReminders state parent.CaseId
+
+                    let overdue =
+                        pending
+                        |> List.filter (fun reminder ->
+                            CalendarDate.value (Reminder.due reminder) <
+                                selection.DateBasis.BusinessDate)
+                        |> List.length
+
+                    let unassigned = parent.Index.Responsible.IsNone
+
+                    let unavailable =
+                        parent.Index.Responsible
+                        |> Option.exists (fun actor ->
+                            not (assignedAccount state parent.CaseId actor).Available)
+
+                    pending.IsEmpty, overdue, unassigned, unavailable)
+
+            let count predicate =
+                attention |> List.filter predicate |> List.length |> int64
+
+            Task.FromResult
+                {
+                    WorkOverview.Basis = selection.DateBasis
+                    Mine = mine
+                    ActionableCases = int64 rows.Length
+                    MissingPlanCases = count (fun (missing, _, _, _) -> missing)
+                    OverdueCases = count (fun (_, overdue, _, _) -> overdue > 0)
+                    OverdueReminders =
+                        attention |> List.sumBy (fun (_, overdue, _, _) -> int64 overdue)
+                    UnassignedCases = count (fun (_, _, unassigned, _) -> unassigned)
+                    UnavailableAssigneeCases = count (fun (_, _, _, unavailable) -> unavailable)
+                    AttentionCases =
+                        count (fun (missing, overdue, unassigned, unavailable) ->
+                            missing || overdue > 0 || unassigned || unavailable)
+                }
+
+        member _.ActivityPage query =
+            read ()
+
+            let rows =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry ->
+                    let parent =
+                        match entry.Subject with
+                        | EntryTarget.Case(id, _, _, _) -> Some id
+                        | EntryTarget.Work work -> Some work.CaseId
+                        | EntryTarget.Reminder reminder -> Some reminder.CaseId
+                        | _ -> None
+
+                    parent = Some query.CaseId
+                    && (query.BeforeSequence
+                        |> Option.forall (fun before -> entry.Sequence < before)))
+                |> Seq.sortByDescending _.Sequence
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            Task.FromResult(page query.Limit _.Sequence rows)
 
         member _.FindEntry id =
             read ()
@@ -304,7 +559,7 @@ type internal Reader
                 |> Seq.map (readCase (get ()).Entries)
                 |> Seq.toList
 
-            Task.FromResult(
+            let selected =
                 page
                     query.Limit
                     (fun record ->
@@ -315,6 +570,22 @@ type internal Reader
                             record.Index.FollowUp
                             (CaseReference.format record.Snapshot.Reference))
                     rows
+
+            Task.FromResult(
+                {
+                    Items =
+                        selected.Items
+                        |> List.map (fun record ->
+                            {
+                                CasePageItem.Case = record
+                                WorkSummary =
+                                    workSummary
+                                        state
+                                        query.Selection.DateBasis.BusinessDate
+                                        record.CaseId
+                            })
+                    Next = selected.Next
+                }
             )
 
         member _.CaseSummary selection =
@@ -342,10 +613,7 @@ type internal Reader
                                 selection.DateBasis.BusinessDate
                                 (CaseState.lifecycle record.Snapshot.State)
                                 record.Index.Status
-                                {
-                                    Responsible = record.Index.Responsible
-                                    FollowUp = record.Index.FollowUp
-                                }
+                                record.Index.FollowUp
                         Lifecycle = CaseState.lifecycle record.Snapshot.State
                         Status = record.Index.Status
                         Progress = record.Index.Progress

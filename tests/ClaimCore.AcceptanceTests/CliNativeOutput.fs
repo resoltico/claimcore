@@ -432,6 +432,8 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
     |> ignore
 
 let qualify fixture =
+    let source, _, reference = authored fixture
+    CliNarrativeOutput.qualify fixture source reference (fun () -> head fixture)
     settlementConsent fixture
     humanActorData fixture
     mutations fixture

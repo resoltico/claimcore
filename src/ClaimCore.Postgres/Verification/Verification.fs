@@ -114,12 +114,17 @@ module internal Verification =
 
             match cases with
             | Error error -> return Error error
-            | Ok() ->
+            | Ok workIndexes ->
                 let! authority = VerificationRows.authority connection state.Actors token
 
                 match authority with
                 | Error error -> return Error error
-                | Ok() -> return! VerificationRows.fences connection state.Fences token
+                | Ok() ->
+                    let! work = WorkProjectionVerification.verify connection state workIndexes token
+
+                    match work with
+                    | Error finding -> return Error finding
+                    | Ok() -> return! VerificationRows.fences connection state.Fences token
         }
 
     let private finish

@@ -22,7 +22,9 @@ let private stages =
             "login-form-missing"
             "username-filled"
             "password-filled"
+            "login-submission-started"
             "login-submitted"
+            "callback-wait-started"
             "callback-observed"
             "wrong-state-delivered"
         ]

@@ -47,6 +47,7 @@ let internal listBounds (path: string) =
                 "CapabilityAccess.InstallationRoles", 7
                 "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
                 "CaseAdvice.History", 2
+                "ReminderReadModel.Acts", (Inventory.tokens "reminderActs").Length
                 "CorrectionChoices.Registration", 2
                 "ActorContext.Capability", 11
                 "ActorContext.View", 3
@@ -178,7 +179,10 @@ let private scalarDomainValue (kind: Type) =
 let internal domainValue kind =
     match groupValue kind with
     | Some value -> Some value
-    | None -> scalarDomainValue kind
+    | None ->
+        match WireWorkGenerators.domainValue kind with
+        | Some value -> Some value
+        | None -> scalarDomainValue kind
 
 let private positionValue response context kind =
     if kind = typeof<Revision> then
@@ -280,6 +284,19 @@ and private freshRepresentation response source context (kind: Type) (value: obj
             let! items = Gen.list (Range.singleton size) item
             return items |> List.map unbox<InputIssue> |> InputIssues.ofList |> Option.get |> box
         }
+    elif kind = typeof<PreviewReply> then
+        freshRecord response source context kind value
+        |> Gen.map (unbox<PreviewReply> >> WireWorkGenerators.coherentPreview >> box)
+    elif kind = typeof<OperationReceipt> then
+        freshRecord response source context kind value
+        |> Gen.map (unbox<OperationReceipt> >> WireWorkGenerators.coherentReceipt >> box)
+    elif FSharpType.IsTuple kind then
+        Array.zip (FSharpType.GetTupleElements kind) (FSharpValue.GetTupleFields(nonNull value))
+        |> Array.mapi (fun index (itemType, item) ->
+            fresh response source (context + ".Item" + string (index + 1)) itemType item)
+        |> Array.toList
+        |> sequence
+        |> Gen.map (fun values -> FSharpValue.MakeTuple(List.toArray values, kind))
     elif FSharpType.IsRecord kind then
         freshRecord response source context kind value
     elif FSharpType.IsUnion kind then

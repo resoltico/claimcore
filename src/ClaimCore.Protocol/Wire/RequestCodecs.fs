@@ -29,8 +29,40 @@ module RequestCodecs =
             (values >> Map.ofList)
 
     let registration =
-        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
-        |> Codec.named "Registration"
+        (record (fun incident notification country claimant insurer amount currency description ->
+            [
+                BusinessField.IncidentDate, incident
+                BusinessField.IncidentNotificationDate, notification
+                BusinessField.IncidentCountry, country
+                BusinessField.ClaimantName, claimant
+                BusinessField.InsurerName, insurer
+                BusinessField.ClaimedAmount, amount
+                BusinessField.ClaimedCurrency, currency
+                yield!
+                    description
+                    |> Option.flatten
+                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
+                    |> Option.toList
+            ]
+            |> RegistrationInput.create
+            |> Result.defaultWith invalidOp)
+        : Fields<RegistrationInput, _>)
+        |> field "incidentDate" (RegistrationInput.value BusinessField.IncidentDate) text
+        |> field
+            "incidentNotificationDate"
+            (RegistrationInput.value BusinessField.IncidentNotificationDate)
+            text
+        |> field "incidentCountry" (RegistrationInput.value BusinessField.IncidentCountry) text
+        |> field "claimantName" (RegistrationInput.value BusinessField.ClaimantName) text
+        |> field "insurerName" (RegistrationInput.value BusinessField.InsurerName) text
+        |> field "claimedAmount" (RegistrationInput.value BusinessField.ClaimedAmount) text
+        |> field "claimedCurrency" (RegistrationInput.value BusinessField.ClaimedCurrency) text
+        |> optionalField
+            "incidentDescription"
+            (RegistrationInput.description >> Option.map Some)
+            (nullable text)
+        |> build
+        |> named "Registration"
 
     let decision =
         inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
@@ -53,7 +85,7 @@ module RequestCodecs =
         |> build
 
     let registrationUpdate =
-        (record (fun incident notification country claimant insurer claimed ->
+        (record (fun incident notification country claimant insurer claimed description ->
             {
                 RegistrationUpdateInput.IncidentDate = incident
                 NotificationDate = notification
@@ -61,6 +93,11 @@ module RequestCodecs =
                 Claimant = claimant
                 Insurer = insurer
                 Claimed = claimed
+                IncidentDescription =
+                    match description with
+                    | None -> WorkValue.Keep
+                    | Some None -> WorkValue.Clear
+                    | Some(Some value) -> WorkValue.Set value
             })
         : Fields<RegistrationUpdateInput, _>)
         |> optionalField "incidentDate" _.IncidentDate text
@@ -69,6 +106,14 @@ module RequestCodecs =
         |> optionalField "claimantName" _.Claimant text
         |> optionalField "insurerName" _.Insurer text
         |> optionalField "claimed" _.Claimed moneyInput
+        |> optionalField
+            "incidentDescription"
+            (fun value ->
+                match value.IncidentDescription with
+                | WorkValue.Keep -> None
+                | WorkValue.Clear -> Some None
+                | WorkValue.Set text -> Some(Some text))
+            (nullable text)
         |> build
         |> named "RegistrationUpdate"
 
@@ -108,19 +153,118 @@ module RequestCodecs =
             | WorkValue.Keep -> None
             | choice -> Some choice
 
-        (record (fun actor date ->
+        (record (fun actor summary ->
             {
                 CaseWorkInput.Responsible = defaultArg actor WorkValue.Keep
-                FollowUp = defaultArg date WorkValue.Keep
+                Summary =
+                    match summary with
+                    | None -> WorkValue.Keep
+                    | Some None -> WorkValue.Clear
+                    | Some(Some value) -> WorkValue.Set value
             })
         : Fields<CaseWorkInput, _>)
         |> optionalField
             "responsibleActor"
             (_.Responsible >> supplied)
             (workValue "ResponsibleActorChange")
-        |> optionalField "followUpDate" (_.FollowUp >> supplied) (workValue "FollowUpChange")
+        |> optionalField
+            "handlingSummary"
+            (fun value ->
+                match value.Summary with
+                | WorkValue.Keep -> None
+                | WorkValue.Clear -> Some None
+                | WorkValue.Set text -> Some(Some text))
+            (nullable text)
         |> build
         |> named "CaseWorkUpdate"
+
+    let workAct =
+        tagged
+            WorkActKind.vocabulary
+            "WorkAct"
+            [
+                variant
+                    "UPDATE_WORK"
+                    WorkAct.UpdateWork
+                    (function
+                    | WorkAct.UpdateWork value -> Some value)
+                    (record id |> field "values" id work)
+            ]
+
+    let private planFields =
+        (record (fun action due ->
+            {
+                ReminderPlanInput.Action = action
+                Due = due
+            })
+        : Fields<ReminderPlanInput, _>)
+        |> field "action" _.Action text
+        |> field "dueDate" _.Due text
+
+    let private reminderTargetFields =
+        record (fun id revision -> id, revision)
+        |> field "reminderId" fst uuid
+        |> field "expectedRevision" snd revision
+
+    let private reminderPlanFields targetFields =
+        record (fun (id, revision) plan -> id, revision, plan)
+        |> flatten (fun (id, revision, _) -> id, revision) targetFields
+        |> flatten (fun (_, _, plan) -> plan) planFields
+
+    let reminderActWith targetFields =
+        tagged
+            ReminderActKind.vocabulary
+            "ReminderAct"
+            [
+                variant
+                    "CREATE"
+                    ReminderAct.Create
+                    (function
+                    | ReminderAct.Create value -> Some value
+                    | _ -> None)
+                    planFields
+                variant
+                    "UPDATE"
+                    (fun (id, revision, plan) -> ReminderAct.Update(id, revision, plan))
+                    (function
+                    | ReminderAct.Update(id, revision, plan) -> Some(id, revision, plan)
+                    | _ -> None)
+                    (reminderPlanFields targetFields)
+                variant
+                    "COMPLETE"
+                    (fun (id, revision) -> ReminderAct.Complete(id, revision))
+                    (function
+                    | ReminderAct.Complete(id, revision) -> Some(id, revision)
+                    | _ -> None)
+                    targetFields
+                variant
+                    "CANCEL"
+                    (fun (id, revision) -> ReminderAct.Cancel(id, revision))
+                    (function
+                    | ReminderAct.Cancel(id, revision) -> Some(id, revision)
+                    | _ -> None)
+                    targetFields
+                variant
+                    "REOPEN"
+                    (fun (id, revision, due) -> ReminderAct.Reopen(id, revision, due))
+                    (function
+                    | ReminderAct.Reopen(id, revision, due) -> Some(id, revision, due)
+                    | _ -> None)
+                    (record (fun (id, revision) due -> id, revision, due)
+                     |> flatten (fun (id, revision, _) -> id, revision) targetFields
+                     |> field "dueDate" (fun (_, _, due) -> due) text)
+                variant
+                    "COMPLETE_AND_PLAN_NEXT"
+                    (fun (id, revision, plan) ->
+                        ReminderAct.CompleteAndPlanNext(id, revision, plan))
+                    (function
+                    | ReminderAct.CompleteAndPlanNext(id, revision, plan) ->
+                        Some(id, revision, plan)
+                    | _ -> None)
+                    (reminderPlanFields targetFields)
+            ]
+
+    let reminderAct = reminderActWith reminderTargetFields
 
     let registrationGroup =
         tagged
@@ -202,7 +346,6 @@ module RequestCodecs =
                 memberCodec WireMembers.Values registration (inject, project)
             | CaseActSlot.RegistrationUpdate(inject, project) ->
                 memberCodec "values" registrationUpdate (inject, project)
-            | CaseActSlot.Work(inject, project) -> memberCodec "values" work (inject, project)
             | CaseActSlot.Decision(inject, project) ->
                 memberCodec WireMembers.Values decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
@@ -240,6 +383,32 @@ module RequestCodecs =
                     (record id |> field "caseId" id caseId)
             ]
         |> Codec.vocabulary "caseSelector"
+
+    let workRequestFields =
+        (record (fun operation target expected act ->
+            {
+                WorkOperationRequest.OperationId = operation
+                Target = target
+                ExpectedRevision = expected
+                Act = act
+            })
+        : Fields<WorkOperationRequest, _>)
+        |> field "operationId" _.OperationId uuid
+        |> field "target" _.Target caseSelector
+        |> field "expectedRevision" _.ExpectedRevision revision
+        |> field "act" _.Act workAct
+
+    let reminderRequestFields =
+        (record (fun operation target act ->
+            {
+                ReminderOperationRequest.OperationId = operation
+                Target = target
+                Act = act
+            })
+        : Fields<ReminderOperationRequest, _>)
+        |> field "operationId" _.OperationId uuid
+        |> field "target" _.Target caseSelector
+        |> field "act" _.Act reminderAct
 
     let caseRequestFields =
         (record (fun v0 v1 v2 v3 ->
@@ -359,7 +528,27 @@ module RequestCodecs =
             authorityRequestFields
 
     let operationInput =
-        tagged ActSubject.vocabulary RequestSchemas.OperationInput [ caseVariant; authorityVariant ]
+        tagged
+            ActSubject.vocabulary
+            RequestSchemas.OperationInput
+            [
+                caseVariant
+                authorityVariant
+                variant
+                    "WORK"
+                    OperationInput.Work
+                    (function
+                    | OperationInput.Work value -> Some value
+                    | _ -> None)
+                    workRequestFields
+                variant
+                    "REMINDER"
+                    OperationInput.Reminder
+                    (function
+                    | OperationInput.Reminder value -> Some value
+                    | _ -> None)
+                    reminderRequestFields
+            ]
 
     [<NoEquality; NoComparison>]
     type private ReadFields<'request, 'ctor> =
@@ -605,3 +794,71 @@ module RequestCodecs =
         |> actorFilter _.TargetActorId
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.AuthorityHistoryRequest QueryEndpoint.AuthorityHistory
+
+    let reminderListRequest =
+        (record (fun target state due assignment search cursor limit inactive ->
+            {
+                ReminderListRequest.Target = target
+                State = state
+                Due = due
+                Assignment = assignment
+                Text = search
+                AfterCursor = cursor
+                Limit = limit
+                IncludeInactive = defaultArg inactive false
+            })
+        : Fields<ReminderListRequest, _>)
+        |> optionalField "target" _.Target caseSelector
+        |> optionalField "state" _.State (VocabularyCodec.create ReminderState.vocabulary)
+        |> optionalField "due" _.Due (VocabularyCodec.create ReminderDue.vocabulary)
+        |> optionalField
+            "assignment"
+            _.Assignment
+            (VocabularyCodec.create CaseAssignment.vocabulary)
+        |> optionalField "text" _.Text text
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumCaseCursorCharacters)
+        |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+        |> optionalField
+            "includeInactive"
+            (fun value -> if value.IncludeInactive then Some true else None)
+            boolean
+        |> build
+        |> named "ReminderListRequest"
+
+    let workOverviewRequest =
+        (record (fun mine ->
+            {
+                WorkOverviewRequest.Mine = defaultArg mine false
+            })
+        : Fields<WorkOverviewRequest, _>)
+        |> optionalField "mine" (fun value -> if value.Mine then Some true else None) boolean
+        |> build
+        |> named "WorkOverviewRequest"
+
+    let caseActivityRequest =
+        (record (fun target detail cursor limit ->
+            {
+                CaseActivityRequest.Target = target
+                Detail = detail
+                AfterCursor = cursor
+                Limit = limit
+            })
+        : Fields<CaseActivityRequest, _>)
+        |> field "target" _.Target caseSelector
+        |> field "detail" _.Detail (VocabularyCodec.create HistoryDetail.vocabulary)
+        |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumCaseCursorCharacters)
+        |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+        |> build
+        |> named "CaseActivityRequest"
+
+    let reminderGetRequest =
+        (record (fun target reminder ->
+            {
+                ReminderGetRequest.Target = target
+                ReminderId = reminder
+            })
+        : Fields<ReminderGetRequest, _>)
+        |> field "target" _.Target caseSelector
+        |> field "reminderId" _.ReminderId uuid
+        |> build
+        |> named "ReminderGetRequest"

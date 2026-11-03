@@ -23,6 +23,7 @@ let private expected =
             "changed_at"
             "search_text"
             "notified_on"
+            "work_search_text"
             "responsible_actor"
             "follow_up"
             "claimed_amount"
@@ -31,16 +32,48 @@ let private expected =
             "payable_currency"
         ]
 
-let private columns (source: NpgsqlDataSource) =
+let private inventories =
+    [
+        "cases", expected
+        "case_work",
+        set
+            [
+                "case_id"
+                "revision"
+                "snapshot"
+                "responsible_actor"
+                "handling_summary"
+                "search_text"
+                "changed_at"
+                "recorded_by"
+            ]
+        "reminders",
+        set
+            [
+                "reminder_id"
+                "case_id"
+                "revision"
+                "snapshot"
+                "state"
+                "action"
+                "due"
+                "search_text"
+                "changed_at"
+                "recorded_by"
+            ]
+    ]
+
+let private columns (source: NpgsqlDataSource) table =
     task {
         use! connection = source.OpenConnectionAsync()
 
         use command =
             new NpgsqlCommand(
-                "SELECT column_name FROM information_schema.columns WHERE table_schema = 'claimcore' AND table_name = 'cases'",
+                "SELECT column_name FROM information_schema.columns WHERE table_schema = 'claimcore' AND table_name = @table_name",
                 connection
             )
 
+        command.Parameters.AddWithValue("table_name", table) |> ignore
         use! reader = command.ExecuteReaderAsync()
         let found = ResizeArray<string>()
 
@@ -55,27 +88,32 @@ let private projection () =
         let! database = PostgresFixture.create () |> Async.AwaitTask
 
         try
-            let! actual = columns database.OwnerSource |> Async.AwaitTask
+            for table, expected in inventories do
+                let! actual = columns database.OwnerSource table |> Async.AwaitTask
 
-            Expect.equal
-                actual
-                expected
-                "SQL has exactly the declared snapshot, identity and worklist columns"
+                Expect.equal
+                    actual
+                    expected
+                    "SQL has exactly the independently declared projection columns"
 
-            use! connection =
-                database.OwnerSource.OpenConnectionAsync().AsTask() |> Async.AwaitTask
+                use! connection =
+                    database.OwnerSource.OpenConnectionAsync().AsTask() |> Async.AwaitTask
 
-            do!
-                DatabaseSession.execute
-                    connection
-                    "ALTER TABLE claimcore.cases ADD COLUMN synthetic_unlisted text"
-                    [||]
-                    CancellationToken.None
-                |> Async.AwaitTask
-                |> Async.Ignore
+                do!
+                    DatabaseSession.execute
+                        connection
+                        ("ALTER TABLE claimcore." + table + " ADD COLUMN synthetic_unlisted text")
+                        [||]
+                        CancellationToken.None
+                    |> Async.AwaitTask
+                    |> Async.Ignore
 
-            let! changed = columns database.OwnerSource |> Async.AwaitTask
-            Expect.notEqual changed expected "An actual added SQL column is detected"
+                let! changed = columns database.OwnerSource table |> Async.AwaitTask
+
+                Expect.notEqual
+                    changed
+                    expected
+                    "An actual added column is detected for each affected projection"
         finally
             database.Fixture.Dispose()
     }

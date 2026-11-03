@@ -2,10 +2,17 @@
 
 ## [Unreleased]
 
-- Use a fresh database: case-work projections and request/snapshot/ledger format 3 replace the earlier baseline; Authority/Control stay at 2. Old installations are refused; no migration/readers.
+## [0.15.0] - 2026-11-03
+
+- Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.
+- Build with Node 26.13.0 and npm 12.2.1; source toolchains, dependencies and pinned CI/container inputs are refreshed.
+- Next follow-up is derived from Pending reminders; remove followUpDate writes. Work and each reminder have independent revisions, so scheduling does not invalidate financial edits.
+- Regenerate clients for WORK/REMINDER operations, entity-specific revisions, bounded pages and correlated effects. Complete-and-plan-next commits exactly two effects under one operation ID.
+- Reminder get/list replies add server-derived timing; regenerate strict clients. Both clients label active Pending due buckets and inactive work without reclassifying historical receipts.
+- New strict identity-only recovery journals refuse old formats without deletion or conversion. In-memory reviewed requests retain exact retry bytes; restart recovery never reconstructs business text.
 - Regenerate consumers for tagged reference/ID targets, stable CaseIds, resolved grant scopes, history differences, core progress and correlated operation replies.
 - Bind execute/resolve to authenticated InstallationId with ClaimCore-Installation. Stale prepared requests cannot adopt a replacement installation.
-- Discard older cursors: case lists use format 5, assignee pages format 1 and other continuations format 2, bound to installation and resource. Traversal and --all exports remain live.
+- Discard old cursors: case lists use format 5; assignee, reminder and activity pages use 1; other pages use 2. All bind installation/scope; traversal and --all exports remain live.
 - Web case links use /cases/id/CASE-ID; exact reference links use /cases/reference/REFERENCE. Replace bookmarks using the former unqualified reference path.
 - Remove ASSIGNED_TO_ME filters and rename context hasAssignedCases to hasScopedCases. MINE now requires explicit responsibility; scoped read grants provide visibility only.
 - Regenerate clients for typed partial registration/decision UPDATE payloads, complete money pairs, explicit payment REAFFIRM, and independent case-work fields.
@@ -13,22 +20,22 @@
 - Regenerate authority previews and catalog consumers for scoped capability-source explanations and separate role/capability scope and principal-kind admission.
 - Update source callers for Application.Contracts, typed business groups and complete Payment values. Historical verification checks retained request effects independently of current admission policy.
 - Web admission separates principal/read/write/passive-recovery budgets; the write queue maximum is eight. Enable pooling with at least 16 connections at defaults; limits apply per process.
+- Browser reads retain admission through bounded response draining after a view becomes obsolete, reducing busy responses during rapid navigation without resending writes.
 - Rebuild requires explicit maintenance and a trusted checkpoint. Use owner status and generation-bound enter/resume; register/control writes pause while reads and authentication continue.
 - Case-list text and CSV add responsibility, follow-up, due state and its business-date/zone basis. Update consumers of the qualified CSV header; erased work cells remain empty.
 - Publish the full web build with its verified asset inventory; restart for new bytes. Only verified public assets use immutable caching; APIs and HTML remain no-store.
 - Load views and complete language pairs on demand. Failures preserve working text, direction and authored values; explicit reload guards drafts and retains recovery identity.
 - Preserve operation drafts across equivalent session refreshes and isolate receipt feedback and delayed completions by requester and session generation.
 - Owner prune-sessions deletes a bounded expired batch with row locking and deadline rechecks; live sessions, business history, recovery fences and keys are retained.
-- CASE_HANDLER humans can set or clear responsibility and planned follow-up; targets need current case-read/work rights. Assignment grants no access; service handling rights remain intact.
-- Case views disclose assigned account identity and availability. Add MINE, UNASSIGNED, due filters and FOLLOW_UP ordering for explicit case work.
-- Work pages and summaries report their observed business date/zone; close and void retain work, while erasure removes it. Rebuild restores actors before referenced case work.
+- CASE_HANDLER humans manage responsibility, Handling summary and reminders. Targets need current case-read/work rights; assignment grants no access and service financial rights stay intact.
+- Work pages, queues and overview report scoped counts and business-date/zone observations. Closing/voiding retains inactive reminders; erasure clears related current and historical payloads.
 - Partial reviews show selected facts and exact amounts/dates; chronology issues identify the asserted field and its retained counterpart. Amount entry keeps its original display-locale meaning.
 - Catalogs add act family, affected sections, effect and wire-required input metadata; clients rank tasks explicitly and never select erasure as a default.
 - Actor-scoped operation.status is an installation-bound read for valid roleless actors too; unresolved reads create no fence and foreign actors’ operation UUIDs remain undisclosed.
 - Fence guards validate retained control-node identity/hash and projection timestamps; missing, fabricated or contradictory evidence fails integrity instead of creating a false final answer.
 - The web Recovery area separates status checks, confirmed permanent settlement and general receipt lookup; cleanup failure retains identity and shows the known result.
 - New case-scoped OWNER grants refuse as meaningless; owners can still revoke recognized obsolete grants. Disabled and overlapping meaningful grants remain allowed.
-- CLI human text escapes terminal controls, embedded line breaks and directional formatting; literal backslashes double. JSON/NDJSON remain exact and CSV keeps its export rules.
+- CLI human text renders narrative paragraphs with escaped data segments and inert terminal controls. JSON/NDJSON remain exact and CSV keeps its export rules.
 - Clients persist identity-only attempt journals before mutation dispatch. Storage failure blocks sending; restart recovery checks final outcomes without resubmitting business data.
 - Recovery checks preserve ownership across same-identity refreshes and actor/epoch changes; stale completions cannot release newer checks or clear another scope’s records.
 - Use CLI recovery list/check/settle with text or JSON output; retain exact retry frames and their installation binding until uncertainty is settled.
@@ -42,6 +49,12 @@
 - Patch transitive tooling matcher/traversal dependencies; import-boundary lint loads the configured upstream runtime rules without disabling the audit or boundary checks.
 - Use the pinned Keycloak 26.8.1-2 vendor image rebuild for local deployment and identity qualification.
 - Work in a redesigned Cases, Recovery and Access workspace with grouped queue facts, task-specific editing, before/after review, case-work cards and accessible preferences.
+- Incident description and Handling summary are optional LF plain text, each up to 600 Unicode scalars. Omission preserves, explicit clear removes; action text is single-line, up to 200 scalars.
+- Complete, cancel and explicitly reopen reminders without rewriting prior history. Completing the last Pending action is valid and exposes missing-plan attention.
+- Accessible work attention ignores case page/search filters, distinguishes case/reminder units and counts overlapping attention once. Mine inherits current case responsibility within read access.
+- GIN indexes support literal search across case facts and Handling summaries; account for their database storage and write-ahead-log overhead.
+- Growth reports retain raw latency samples and live progress; failed native runs and bounded private publication diagnostics survive cleanup.
+- Source releases reuse successful main-branch CI for the exact annotated commit; publishing a tag does not repeat the gates.
 
 ## [0.14.0] - 2026-10-30
 

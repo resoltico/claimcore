@@ -29,6 +29,11 @@
       {
         "key": "claimedCurrency",
         "kind": "CURRENCY"
+      },
+      {
+        "key": "incidentDescription",
+        "kind": "DESCRIPTION",
+        "optional": true
       }
     ],
     "decision": [
@@ -72,11 +77,6 @@
       "token": "AMEND_REGISTRATION",
       "family": "BUSINESS",
       "payload": "REGISTRATION_UPDATE"
-    },
-    {
-      "token": "UPDATE_WORK",
-      "family": "BUSINESS",
-      "payload": "WORK"
     },
     {
       "token": "CORRECT",
@@ -307,6 +307,26 @@
       "token": "case.assignees",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "reminder.list",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "work.overview",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "case.activity",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "reminder.get",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -340,7 +360,12 @@
     "ZERO_DECISION_CANNOT_BE_PAID",
     "WORK_NO_CHANGES",
     "ASSIGNEE_UNAVAILABLE",
-    "REGISTER_MAINTENANCE"
+    "REGISTER_MAINTENANCE",
+    "REMINDER_PARENT_NOT_ACTIVE",
+    "REMINDER_PARENT_NOT_OPEN",
+    "REMINDER_PENDING_REQUIRED",
+    "REMINDER_TERMINAL_REQUIRED",
+    "REMINDER_NO_CHANGES"
   ],
   "technicalInputs": [
     "operationId",
@@ -364,9 +389,17 @@
     "caseId",
     "due",
     "responsibleActorAction",
-    "followUpDateAction"
+    "reminderId",
+    "reminderAction",
+    "reminderDueDate",
+    "expectedWorkRevision",
+    "expectedReminderRevision",
+    "reminderState",
+    "reminderDue",
+    "includeInactive",
+    "mine"
   ],
-  "cliFrameCount": 39,
+  "cliFrameCount": 49,
   "readInputs": {
     "case.get": [
       "target"
@@ -425,6 +458,29 @@
       "target",
       "cursor",
       "limit"
+    ],
+    "reminder.list": [
+      "target",
+      "state",
+      "due",
+      "assignment",
+      "text",
+      "cursor",
+      "limit",
+      "includeInactive"
+    ],
+    "work.overview": [
+      "mine"
+    ],
+    "case.activity": [
+      "target",
+      "detail",
+      "cursor",
+      "limit"
+    ],
+    "reminder.get": [
+      "target",
+      "reminderId"
     ]
   },
   "caseLifecycles": [
@@ -497,7 +553,11 @@
     "due",
     "workChange",
     "actFamily",
-    "interactionEffect"
+    "interactionEffect",
+    "workAct",
+    "reminderAct",
+    "reminderState",
+    "reminderDue"
   ],
   "goldens": [
     "wire-request-examples.json",
@@ -517,7 +577,13 @@
     "text": "synthetic",
     "order": "REFERENCE",
     "responsibleActor": "00000000-0000-4000-8000-000000000042",
-    "followUpDate": "2026-11-02"
+    "handlingSummary": "Current handling context",
+    "incidentDescription": "Incident details",
+    "reminderAction": "Contact insurer",
+    "reminderDueDate": "2026-11-10",
+    "reminderId": "10000000-0000-4000-8000-000000000007",
+    "expectedWorkRevision": "0",
+    "expectedReminderRevision": "1"
   },
   "caseAssignments": [
     "MINE",
@@ -529,8 +595,40 @@
       "kind": "ACTOR_ID"
     },
     {
-      "key": "followUpDate",
-      "kind": "PLANNED_DATE"
+      "key": "handlingSummary",
+      "kind": "HANDLING_SUMMARY"
+    }
+  ],
+  "workActs": [
+    {
+      "token": "UPDATE_WORK",
+      "payload": "WORK"
+    }
+  ],
+  "reminderActs": [
+    {
+      "token": "CREATE",
+      "payload": "PLAN"
+    },
+    {
+      "token": "UPDATE",
+      "payload": "EXPECTED_PLAN"
+    },
+    {
+      "token": "COMPLETE",
+      "payload": "EXPECTED"
+    },
+    {
+      "token": "CANCEL",
+      "payload": "EXPECTED"
+    },
+    {
+      "token": "REOPEN",
+      "payload": "EXPECTED_DATE"
+    },
+    {
+      "token": "COMPLETE_AND_PLAN_NEXT",
+      "payload": "EXPECTED_PLAN"
     }
   ]
 }

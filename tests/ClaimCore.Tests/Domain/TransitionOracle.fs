@@ -13,7 +13,6 @@ let private activeEligible (fields: CaseFields) =
 
     function
     | (AuthoredCaseAct.Bare BareAct.Close) -> true
-    | AuthoredCaseAct.UpdateWork _ -> true
     | AuthoredCaseAct.AmendRegistration _ -> not decided
     | AuthoredCaseAct.Decide _ -> not paid
     | (AuthoredCaseAct.Bare BareAct.WithdrawDecision) -> decided && not paid
@@ -118,14 +117,6 @@ let private decidedProgress value =
 // fsharplint:disable-next-line CyclomaticComplexity
 let private changed (fields: CaseFields) act =
     match act with
-    | AuthoredCaseAct.UpdateWork _ ->
-        { fields with
-            Work =
-                {
-                    Responsible = None
-                    FollowUp = Some(CaseFixtures.date "2026-09-01")
-                }
-        }
     | AuthoredCaseAct.AmendRegistration value -> registration value fields
     | AuthoredCaseAct.Correct value -> correctedRegistration fields value.Registration
     | AuthoredCaseAct.Decide value ->
@@ -166,7 +157,6 @@ let private business (before: CaseSnapshot) fields stale act =
 
         let noOpCorrection =
             match act with
-            | AuthoredCaseAct.UpdateWork _
             | AuthoredCaseAct.Correct _ -> nextFields = fields
             | _ -> false
 

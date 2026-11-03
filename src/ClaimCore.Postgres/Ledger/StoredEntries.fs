@@ -26,7 +26,7 @@ module internal StoredEntries =
         + DatabaseSession.instantExpression "recorded_at"
         + ",subject_id,case_revision,"
         + DatabaseSession.dateExpression "business_date"
-        + ",payload_commitment,payload,payload_nonce,creation_reference"
+        + ",payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id"
 
     let private subjects row =
         let target = DatabaseSession.value<Guid> 9 row
@@ -76,6 +76,48 @@ module internal StoredEntries =
                     Act = kind
                     BusinessDate = date
                 }
+        | "WORK" ->
+            let id = DatabaseSession.admitted CaseId.create target
+
+            let parent =
+                DatabaseSession.value<Guid> 16 row |> DatabaseSession.admitted CaseId.create
+
+            if id <> parent || act <> "UPDATE_WORK" || not (Convert.IsDBNull row[17]) then
+                raise (RecordCorruptException "Invalid work target.")
+
+            let subject =
+                {
+                    WorkEntryMetadata.CaseId = id
+                    Revision =
+                        DatabaseSession.value<int64> 10 row
+                        |> DatabaseSession.admitted Revision.create
+                    Act = WorkActKind.UpdateWork
+                    BusinessDate = DatabaseSession.calendarDate 11 row
+                }
+
+            EntryTarget.Work subject, RecordedTarget.Work subject
+        | "REMINDER" ->
+            let kind =
+                Vocabulary.tryParse ReminderActKind.vocabulary act
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Invalid reminder act."))
+
+            let subject =
+                {
+                    ReminderEntryMetadata.CaseId =
+                        DatabaseSession.value<Guid> 16 row |> DatabaseSession.admitted CaseId.create
+                    ReminderId = DatabaseSession.admitted ReminderId.create target
+                    Revision =
+                        DatabaseSession.value<int64> 10 row
+                        |> DatabaseSession.admitted Revision.create
+                    Act = kind
+                    NextReminderId =
+                        DatabaseSession.optional<Guid> 17 row
+                        |> Option.map (DatabaseSession.admitted ReminderId.create)
+                    BusinessDate = DatabaseSession.calendarDate 11 row
+                }
+
+            EntryTarget.Reminder subject, RecordedTarget.Reminder subject
         | _ -> raise (RecordCorruptException "Invalid ledger subject.")
 
     let decode installationId row =

@@ -23,6 +23,7 @@ type BusinessField =
     | IncidentDate
     | IncidentNotificationDate
     | IncidentCountry
+    | IncidentDescription
     | ClaimantName
     | InsurerName
     | ClaimedAmount
@@ -34,7 +35,7 @@ type BusinessField =
     | PaymentDate
     | Status
     | ResponsibleActor
-    | FollowUpDate
+    | HandlingSummary
 
 [<RequireQualifiedAccess>]
 type InputTarget =
@@ -50,6 +51,11 @@ type InputTarget =
     | Limit
     | Cursor
     | Text
+    | ReminderId
+    | ReminderAction
+    | ReminderDueDate
+    | ExpectedWorkRevision
+    | ExpectedReminderRevision
 
 [<NoEquality; NoComparison>]
 type FieldDescriptor =
@@ -111,6 +117,15 @@ module BusinessField =
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
         | BusinessField.IncidentNotificationDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
+        | BusinessField.IncidentDescription ->
+            { descriptor
+                  field
+                  FieldValueKind.IncidentDescription
+                  (Some RecordGroup.Registration)
+                  true
+                  None with
+                AllowsAbsence = true
+            }
         | BusinessField.IncidentCountry ->
             descriptor field FieldValueKind.Country (Some RecordGroup.Registration) false None
         | BusinessField.ClaimantName ->
@@ -142,14 +157,14 @@ module BusinessField =
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
         | BusinessField.Status -> descriptor field FieldValueKind.Status None false None
         | BusinessField.ResponsibleActor
-        | BusinessField.FollowUpDate ->
+        | BusinessField.HandlingSummary ->
             let kind =
                 if field = BusinessField.ResponsibleActor then
                     FieldValueKind.ActorId
                 else
-                    FieldValueKind.PlannedDate
+                    FieldValueKind.HandlingSummary
 
-            { descriptor field kind None false None with
+            { descriptor field kind None (field = BusinessField.HandlingSummary) None with
                 Section = Some CaseSection.Work
                 AllowsAbsence = true
             }
@@ -234,7 +249,8 @@ module GroupValues =
             replacements
         |> Map.toList
 
-type RegistrationInput = private RegistrationInput of GroupValues<Authored>
+type RegistrationInput =
+    private | RegistrationInput of GroupValues<Authored> * description: string option
 
 type Registration =
     private
@@ -245,23 +261,49 @@ type Registration =
             Claimant: PartyName
             Insurer: PartyName
             Claimed: Money
+            IncidentDescription: IncidentDescription option
         }
 
 module RegistrationInput =
-    let value field (RegistrationInput values) = GroupValues.raw field values
+    let value field (RegistrationInput(values, description)) =
+        if field = BusinessField.IncidentDescription then
+            description
+            |> Option.defaultWith (fun () -> invalidArg (nameof field) "Description is absent.")
+        else
+            GroupValues.raw field values
 
     let create members =
-        GroupValues.createAuthored RecordGroup.Registration members
-        |> Result.map RegistrationInput
+        let description, required =
+            members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
 
-    let values (RegistrationInput values) =
-        GroupValues.items values
-        |> List.map (fun (field, value) -> field, Authored.format value)
+        match description with
+        | [] ->
+            GroupValues.createAuthored RecordGroup.Registration required
+            |> Result.map (fun values -> RegistrationInput(values, None))
+        | [ _, value ] ->
+            GroupValues.createAuthored RecordGroup.Registration required
+            |> Result.map (fun values -> RegistrationInput(values, Some value))
+        | _ -> Error "Description must be supplied at most once."
+
+    let description (RegistrationInput(_, description)) = description
+
+    let values (RegistrationInput(values, description)) =
+        (GroupValues.items values
+         |> List.map (fun (field, value) -> field, Authored.format value))
+        @ (description
+           |> Option.map (fun value -> BusinessField.IncidentDescription, value)
+           |> Option.toList)
 
     let replace members value =
         GroupValues.merge members (values value) |> create
 
-    let parsed (RegistrationInput values) = GroupValues.parse values
+    let parsed (RegistrationInput(values, description)) =
+        GroupValues.parse values
+        @ (description
+           |> Option.map (fun value ->
+               BusinessField.IncidentDescription,
+               IncidentDescription.parse value |> Result.map Admitted.Description)
+           |> Option.toList)
 
 module Registration =
     let incidentDate (record: Registration) = record.IncidentDate
@@ -270,17 +312,33 @@ module Registration =
     let claimant (record: Registration) = record.Claimant
     let insurer (record: Registration) = record.Insurer
     let claimed (record: Registration) = record.Claimed
+    let description (record: Registration) = record.IncidentDescription
+
+    let withDescription description (record: Registration) =
+        { record with
+            IncidentDescription = description
+        }
 
     /// Adapts a field collection at the transport/presentation boundary.
     let create members =
-        match List.sortBy fst members with
+        let descriptions, required =
+            members |> List.partition (fst >> (=) BusinessField.IncidentDescription)
+
+        let description =
+            match descriptions with
+            | [] -> Ok None
+            | [ _, Admitted.Description value ] -> Ok(Some value)
+            | _ -> Error "Invalid description members."
+
+        match List.sortBy fst required, description with
         | [ BusinessField.IncidentDate, Admitted.Date incident
             BusinessField.IncidentNotificationDate, Admitted.Date notification
             BusinessField.IncidentCountry, Admitted.Country country
             BusinessField.ClaimantName, Admitted.Name claimant
             BusinessField.InsurerName, Admitted.Name insurer
             BusinessField.ClaimedAmount, Admitted.Amount amount
-            BusinessField.ClaimedCurrency, Admitted.Currency currency ] ->
+            BusinessField.ClaimedCurrency, Admitted.Currency currency ],
+          Ok description ->
             if incident > notification then
                 Error "Incident must be on or before notification."
             else
@@ -292,6 +350,7 @@ module Registration =
                         Claimant = claimant
                         Insurer = insurer
                         Claimed = Money.create amount currency
+                        IncidentDescription = description
                     }
         | _ -> Error "Invalid registration members."
 
@@ -304,6 +363,11 @@ module Registration =
             BusinessField.InsurerName, Admitted.Name record.Insurer
             BusinessField.ClaimedAmount, Admitted.Amount(Money.amount record.Claimed)
             BusinessField.ClaimedCurrency, Admitted.Currency(Money.currencyValue record.Claimed)
+            yield!
+                record.IncidentDescription
+                |> Option.map (fun value ->
+                    BusinessField.IncidentDescription, Admitted.Description value)
+                |> Option.toList
         ]
 
     let replace members value =

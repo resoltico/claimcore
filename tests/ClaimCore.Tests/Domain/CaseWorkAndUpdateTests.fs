@@ -53,6 +53,7 @@ let private patch: RegistrationUpdateInput =
         Claimant = None
         Insurer = None
         Claimed = None
+        IncidentDescription = WorkValue.Keep
     }
 
 let private correction decision payment : AuthoredCorrection =
@@ -84,64 +85,50 @@ let tests =
         "typed work and partial updates"
         [
             testCase
-                "open has no assignment; tomorrow and unassigned follow-up are planned work"
+                "work summary parsing and application preserve independent optional values"
                 (fun () ->
-                    let initial = opened ()
-
-                    Expect.equal
-                        (fields initial).Work
-                        { Responsible = None; FollowUp = None }
-                        "No invented work"
-
-                    let changed =
-                        run
-                            4
-                            1L
-                            (CaseAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Keep
-                                    FollowUp = WorkValue.Set "2026-11-02"
-                                })
-                            (Some initial)
-                        |> required
-
-                    Expect.equal
-                        (fields changed).Work
+                    let input: CaseWorkInput =
                         {
-                            Responsible = None
-                            FollowUp = Some(date "2026-11-02")
+                            Responsible = WorkValue.Keep
+                            Summary = WorkValue.Set "Current\nhandling context"
                         }
-                        "Future and unassigned are independent"
+
+                    let update = CaseWorkInput.parse input |> required
+                    let changed = CaseWork.apply update CaseWork.empty
+                    Expect.equal changed.Responsible None "Summary does not assign"
 
                     Expect.equal
-                        ((Case.snapshot changed).Revision |> Revision.value)
-                        2L
-                        "One ordinary revision"
+                        (changed.Summary |> Option.map HandlingSummary.format)
+                        (Some "Current\nhandling context")
+                        "Paragraph summary"
+
+                    let clear: CaseWorkInput =
+                        {
+                            Responsible = WorkValue.Keep
+                            Summary = WorkValue.Clear
+                        }
 
                     Expect.equal
-                        (run
-                            5
-                            2L
-                            (CaseAct.UpdateWork
-                                {
-                                    Responsible = WorkValue.Keep
-                                    FollowUp = WorkValue.Set "2026-11-02"
-                                })
-                            (Some changed))
-                        (Error(Refusal.Case CaseRefusal.WorkNoChanges))
-                        "No unchanged revision"
+                        (CaseWork.apply (CaseWorkInput.parse clear |> required) changed)
+                        CaseWork.empty
+                        "Explicit clear"
 
-                    let closed = run 6 2L (CaseAct.Bare BareAct.Close) (Some changed) |> required
-                    Expect.equal (fields closed).Work (fields changed).Work "Close retains work"
+                    Expect.isError
+                        (CaseWorkInput.parse
+                            {
+                                Responsible = WorkValue.Keep
+                                Summary = WorkValue.Keep
+                            })
+                        "No empty work input"
 
                     Expect.equal
                         (CaseDue.at
                             today
                             Lifecycle.Active
                             (Some CaseStatus.Closed)
-                            (fields closed).Work)
+                            (Some(date "2026-10-01")))
                         CaseDue.Inactive
-                        "Closed work cannot be overdue")
+                        "Inactive parent classification")
             testCase
                 "one-field amendment preserves every unrelated value and refuses an empty update"
                 (fun () ->
@@ -315,13 +302,7 @@ let tests =
 
                 Expect.isFalse
                     (Authority.can principal view Capability.ManageCaseWork Scope.Installation)
-                    "No human-only capability"
+                    "No human-only capability")
 
-                Expect.isFalse
-                    (Authority.canAdvertise
-                        principal
-                        view
-                        Scope.Installation
-                        CaseActKind.UpdateWork)
-                    "No work offer")
+
         ]

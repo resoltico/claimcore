@@ -351,10 +351,31 @@ const SelectedFact = ({
               );
             }}
           />
-          {p.text("ui.changeFact", { field: label })}
+          {p.text(
+            props.entry.subject === "CASE" && props.entry.kind === "OPEN"
+              ? "ui.recordOptionalFact"
+              : "ui.changeFact",
+            { field: label },
+          )}
         </label>
       </legend>
-      {selected
+      {selected && input.allowsNull && props.entry.kind !== "OPEN" ? (
+        <label>
+          <input
+            type="checkbox"
+            disabled={props.disabled}
+            checked={props.values[bindingPath(input)] === null}
+            onChange={(event) => {
+              props.onChange(
+                bindingPath(input),
+                event.target.checked ? null : prefilledValue(props.current, input.prefill),
+              );
+            }}
+          />
+          {p.text("ui.clearValue")}
+        </label>
+      ) : null}
+      {selected && props.values[bindingPath(input)] !== null
         ? inputs.map((item) => <BindingInput key={item.identity} input={item} {...props} />)
         : null}
     </fieldset>

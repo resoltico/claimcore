@@ -16,12 +16,15 @@ const audit = vi.hoisted(() => ({
   callbacks: [] as ((receipt: CaseReceipt) => void)[],
 }));
 vi.mock("../../src/hooks/useEndpoint", () => ({
-  useEndpoint: () => ({
+  useEndpoint: (endpoint: string) => ({
     loading: false,
     message: null,
     previous: null,
     reload: vi.fn(),
-    value: audit.context === null ? null : { outcome: { kind: "SUCCEEDED", data: audit.context } },
+    value:
+      endpoint !== "context" || audit.context === null
+        ? null
+        : { outcome: { kind: "SUCCEEDED", data: audit.context } },
   }),
 }));
 vi.mock("../../src/views/RoutedContent", () => ({

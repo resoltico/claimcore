@@ -186,14 +186,20 @@ export const browserRequest = (
 export const sessionToken = async (page: Page): Promise<string> => {
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {
-    throw new Error("Invalid session response.");
+    const detail = isHostFailure(reply.payload, reply.status)
+      ? reply.payload.hostFailure.code
+      : "INVALID_WIRE";
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_${detail}`);
   }
   if (reply.payload.outcome.kind !== "SUCCEEDED") {
-    throw new Error("Session refused.");
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_${reply.payload.outcome.data.code}`);
   }
   const snapshot = reply.payload.outcome.data;
-  if (reply.status !== 200 || snapshot.antiforgeryToken === null) {
-    throw new Error("Session response did not provide an antiforgery token.");
+  if (reply.status !== 200) {
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_UNEXPECTED_STATUS`);
+  }
+  if (snapshot.antiforgeryToken === null) {
+    throw new Error(`E2E_SESSION_HTTP_${reply.status}_MISSING_ANTIFORGERY`);
   }
   return snapshot.antiforgeryToken;
 };
@@ -384,6 +390,13 @@ export const logout = async (page: Page): Promise<void> => {
   expect(reply.payload.outcome.data.authenticated).toBe(false);
 };
 
+const contextFailureCode = (status: number, payload: unknown): string => {
+  if (isHostFailure(payload, status)) {
+    return payload.hostFailure.code;
+  }
+  return isResponse("context", payload) ? payload.outcome.kind : "MALFORMED";
+};
+
 /** Raw mutation fixtures bind to the authenticated installation, just like both production clients. */
 export const installationId = async (page: Page, token: string): Promise<string> => {
   const reply = await browserRequest(page, "/api/context", {
@@ -396,7 +409,9 @@ export const installationId = async (page: Page, token: string): Promise<string>
     !isResponse("context", reply.payload) ||
     reply.payload.outcome.kind !== "SUCCEEDED"
   ) {
-    throw new Error("Synthetic installation context is unavailable.");
+    throw new Error(
+      `Synthetic installation context HTTP ${reply.status} ${contextFailureCode(reply.status, reply.payload)} (context).`,
+    );
   }
   return reply.payload.outcome.data.installationId;
 };

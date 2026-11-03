@@ -74,5 +74,6 @@ it("coalesces duplicate preview activation while retention is pending", async ()
     finish?.(closePreview());
     await first;
   });
+  expect(result.current.notice).toBeNull();
   expect(result.current.phase).toBe("REVIEWING");
 });

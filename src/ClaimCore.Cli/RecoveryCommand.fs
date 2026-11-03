@@ -73,6 +73,22 @@ module internal RecoveryCommand =
             List.contains (Frames.outcome value.Wire) [ Some "ACCEPTED"; Some "NOT_ACCEPTED" ]
         | _ -> false
 
+    let private receiptMatches record (reply: CliReply) =
+        match reply.Frame.Result with
+        | FrameResult.Reply value when value.Route.Id = Api.operationStatus.Id ->
+            match ServiceReply.value Api.operationStatus value with
+            | Some {
+                       Outcome = Outcome.Succeeded(OperationStatus.Accepted receipt)
+                   } -> RecoveryJournal.matchesReceipt record receipt
+            | _ -> true
+        | FrameResult.Reply value when value.Route.Id = Api.operationResolve.Id ->
+            match ServiceReply.value Api.operationResolve value with
+            | Some {
+                       Outcome = Outcome.Succeeded(Resolved.Accepted receipt)
+                   } -> RecoveryJournal.matchesReceipt record receipt
+            | _ -> true
+        | _ -> true
+
     let private perform
         (access: RemoteAccessSession)
         (token: AccessToken)
@@ -161,6 +177,13 @@ module internal RecoveryCommand =
                                                     if not (access.IsCurrent token) then
                                                         raise (OperationCanceledException()))
                                                 cancelled
+
+                                        let response =
+                                            if receiptMatches record response then
+                                                response
+                                            else
+                                                CliReply.local ClientFailure.InvalidResponse
+                                                |> CliReply.forAttempt frame DeliveryState.Uncertain
 
                                         if definitive response && access.IsCurrent token then
                                             match RecoveryJournal.remove directory record with

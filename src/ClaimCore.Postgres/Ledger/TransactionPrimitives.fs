@@ -62,13 +62,13 @@ module internal TransactionPages =
 
                 "(($13::date IS NULL AND c.notified_on IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13 OR c.notified_on IS NULL OR (c.notified_on=$13 AND "
+                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13::date OR c.notified_on IS NULL OR (c.notified_on=$13::date AND "
                 + key
                 + " > $12 COLLATE \"C\"))))",
                 "c.notified_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
-                    DatabaseSession.parameter (date |> Option.map CalendarDate.value)
+                    DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
                 "$14"
 
@@ -81,13 +81,13 @@ module internal TransactionPages =
 
                 "(($13::date IS NULL AND c.follow_up IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13 OR c.follow_up IS NULL OR (c.follow_up=$13 AND "
+                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13::date OR c.follow_up IS NULL OR (c.follow_up=$13::date AND "
                 + key
                 + " > $12 COLLATE \"C\"))))",
                 "c.follow_up ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
-                    DatabaseSession.parameter (date |> Option.map CalendarDate.value)
+                    DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
                 "$14"
 
@@ -109,7 +109,7 @@ module internal TransactionPages =
             let sql, parameters = caseQuery query
             let! rows = DatabaseSession.namedRows connection sql parameters token
 
-            return
+            let selected =
                 rows
                 |> List.map (Projections.caseRow installation)
                 |> page query.Limit (fun record ->
@@ -119,6 +119,25 @@ module internal TransactionPages =
                         record.Index.NotifiedOn
                         record.Index.FollowUp
                         (CaseReference.format record.Snapshot.Reference))
+            // Load only visible parents' independently owned work; the lookahead remains financial-only.
+            let! work =
+                WorkStorage.summaries
+                    connection
+                    (selected.Items |> List.map _.CaseId)
+                    query.Selection.DateBasis.BusinessDate
+                    token
+
+            return
+                {
+                    Items =
+                        selected.Items
+                        |> List.map (fun record ->
+                            {
+                                CasePageItem.Case = record
+                                WorkSummary = Map.tryFind record.CaseId work
+                            })
+                    Next = selected.Next
+                }
         }
 
     let history connection installation (query: HistoryPageQuery) token =
@@ -220,32 +239,66 @@ type private ReadTx
         member _.Maintenance() =
             RegisterMaintenanceStore.read connection token
 
+        member _.GlobalReadFacts principal =
+            Projections.globalReadFacts connection principal token
+
+
         member _.Authority
             ({
                  AuthorityQuery.Principal = principal
                  CaseId = caseId
              })
             =
-            task {
-                let! actor = Projections.actor connection principal (Option.toList caseId) token
+            match caseId with
+            | Some id -> Projections.actor connection principal [ id ] token
+            | None -> Projections.actorWithVisibility connection principal token
 
-                match caseId with
-                | Some _ -> return actor
-                | None ->
-                    return!
-                        Projections.scopedCases
-                            connection
-                            principal
-                            (Authority.readRoles principal)
-                            actor
-                            token
-            }
+        member _.AuthorityCases(principal, ids) =
+            Projections.actor connection principal (List.distinct ids) token
 
         member _.FindCase id =
             Projections.caseById connection installation id token
 
         member _.FindCaseByReference reference =
             Projections.caseByReference connection installation reference token
+
+        member _.FindWork id =
+            WorkStorage.findWork connection id token
+
+        member _.FindReminder id =
+            WorkStorage.findReminder connection id token
+
+        member _.WorkSummaries(ids, today) =
+            WorkStorage.summaries connection ids today token
+
+        member _.AssignedAccounts pairs =
+            WorkStorage.accounts connection pairs token
+
+        member _.ReminderPage query = WorkStorage.page connection query token
+
+        member _.WorkOverview(selection, mine) =
+            WorkStorage.overview connection selection mine token
+
+        member _.ActivityPage query =
+            task {
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3")
+                        [|
+                            box (CaseId.value query.CaseId)
+                            DatabaseSession.parameter (
+                                query.BeforeSequence |> Option.map Sequence.value
+                            )
+                            box (query.Limit + 1)
+                        |]
+                        token
+
+                return
+                    rows
+                    |> List.map (StoredEntries.decode installation >> _.Entry)
+                    |> TransactionPages.page query.Limit _.Sequence
+            }
 
         member _.FindEntry id =
             StoredEntries.operation connection installation id token
@@ -396,6 +449,10 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.case connection projection token
 
+        member _.ProjectWorkChange projection =
+            FailureDiagnostics.phase FailurePhase.Projection
+            Persistence.workChange connection projection token
+
         member _.ProjectAuthority projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.authority connection projection token
@@ -429,14 +486,8 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
                  CancellationToken = token
              })
             =
-            Transactions.read source token (fun connection ->
-                task {
-                    let! rows =
-                        DatabaseSession.rows connection "SELECT clock_timestamp()" [||] token
-
-                    let observedAt = DatabaseSession.instant 0 rows.Head
-                    return! work (ReadTx(connection, installationId, observedAt, token) :> IReadTx)
-                })
+            Transactions.read source token (fun connection observedAt ->
+                work (ReadTx(connection, installationId, observedAt, token) :> IReadTx))
 
         member _.Write
             ({

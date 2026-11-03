@@ -142,7 +142,7 @@ module internal AuthorityExecution =
                 Bytes = bytes
                 Existing = view.ExistingOperation
             }
-            (LedgerEntries.receipt services.Principal view.Actor None)
+            (LedgerEntries.receipt services.Principal view.Actor ReceiptCurrent.Authority)
 
     let private propose _installationId command view =
         match Authority.decide (domainFacts view) command with
@@ -178,7 +178,11 @@ module internal AuthorityExecution =
                 | Ok validated ->
                     match LedgerEntries.identityBytes validated with
                     | Some accepted when accepted = bytes ->
-                        LedgerEntries.receipt principal view.Actor None validated
+                        LedgerEntries.receipt
+                            principal
+                            view.Actor
+                            ReceiptCurrent.Authority
+                            validated
                         |> Result.map Verdict.Replay
                         |> Result.defaultWith Verdict.Fail
                     | _ -> Verdict.Refuse Refusal.IdempotencyConflict
@@ -198,7 +202,7 @@ module internal AuthorityExecution =
                 | _ -> LedgerEnvelope.actorId view.Actor
             Subject = EntryTarget.Authority(targetId, AuthorityAct.kind record.Act)
             Snapshot = Array.empty
-            Current = None
+            Current = ReceiptCurrent.Authority
             Projection = projection
         }
 

@@ -21,9 +21,9 @@ dotnet restore ClaimCore.slnx --locked-mode
 npm --prefix web ci
 ```
 
-The locked npm graph includes matcher/traversal overrides in [package.json](../web/package.json).
-The [import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured upstream
-rule exports directly. Audit and import-boundary checks are required when changing this tooling.
+[package.json](../web/package.json) and its lockfile own the frontend dependency graph, including overrides.
+The [import-boundary plugin](../web/scripts/import-boundary-lint.plugin.mjs) loads the configured rule exports.
+Run dependency audits and import-boundary checks when changing that tooling.
 
 Use the declared versions before restoring. The frontend can build without executable .NET or Python;
 ordinary .NET builds run neither npm nor generation. Framework-dependent apphost publication is qualified;
@@ -168,15 +168,21 @@ checksum-bound schema source; its SHA-256 installation identity derives from the
 Baseline edits require a rebuild and a fresh installation. The runtime refuses unsupported installation
 identities without modifying them.
 
-The case projection contains identity, revision, lifecycle, a nullable snapshot, status, progress,
-last-change time, normalized search text, notification date, responsible actor, planned follow-up and exact claimed/payable amount/currency
-pairs. Live snapshots store
+The baseline also owns the pinned `pg_trgm` extension declaration. PostgreSQL must have that module
+available for fresh initialization and full restore. Its GIN indexes support the existing literal
+`LIKE` predicates without changing search normalization, query admission or runtime DDL privileges.
+
+The case projection contains identity/revision/lifecycle, a bounded nullable fact snapshot,
+status/progress, fact last-change time, normalized fact search, notification date and exact
+claimed/payable amounts/currencies. Case work and reminder entities have independent bounded records
+and revisions. Current responsibility, summary search and minimum Pending due date have transactional
+read projections. Live snapshots store
 exact [CaseRecord.encodeSnapshot](../src/ClaimCore.RecordFormat/CaseRecord.fs) bytes; erasure stores NULL.
 Reads decode the permanent record and check identity, revision, lifecycle and indexed facts against the
 returned columns and retained OPEN identity. CaseId is stored explicitly and equals the creation operation
 UUID. Decode or agreement failures are integrity faults. Verification folds the ledger,
 compares the projection snapshot bytes exactly and checks status, progress, last-change time and search
-text, notification date, responsibility, follow-up and every amount/currency column against the folded state. Case progress and business-value invariants belong to Domain
+text, notification date and every amount/currency column against the folded facts. Cross-entity verification independently checks work roots, revisions, compound effects, reminder identities, responsibility and derived follow-up against causal history. Case progress and business-value invariants belong to Domain
 and permanent decoding; SQL retains durable token, identity, revision, erasure and byte-size checks.
 
 ## Generated contracts
@@ -196,10 +202,8 @@ producer. Custom output directories contain only contract artifacts. Core messag
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
 Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
-Failed JavaScript modulepreloads can poison the WebKit resource cache across document reloads
-([WebKit 270357](https://bugs.webkit.org/show_bug.cgi?id=270357)). The published failure/recovery journeys
-exercise missing chunks, actual document replacement and offline draft preservation; do not replace them
-with shape or build-only checks.
+Published failure/recovery journeys exercise missing chunks, document replacement and offline draft
+preservation in each supported browser engine. Build or schema checks alone do not cover these paths.
 
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
@@ -241,6 +245,13 @@ Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenari
 without a matching source module. Categories, explicit rules and overrides together define the effective
 policy; review the complete `oxlint --print-config` output when changing it.
 
+[ReadAdmission](../web/src/api/readAdmission.ts) bounds complete read responses per document. Queued
+obsolete reads never dispatch. Once handed off, [service](../web/src/api/service.ts) drains a read under
+its own 20-second response deadline while the obsolete consumer discards its outcome. The caller has a
+separate 20-second deadline that includes queue time; draining can continue after that caller deadline.
+Cancellation does not establish that the server released capacity. Writes keep their cancellation and
+uncertainty rules. This client admission state is local to one document.
+
 Keep files and functions focused by responsibility. File length, parameter counts and change-locality
 measurements are review guidance, not representation requirements. Correctness, dependency, compiler,
 formatting and actionable lint controls remain enforced. Only a total exhaustive table may suppress
@@ -280,6 +291,12 @@ npm --prefix web run test:unit:watch -- tests/unit/protocol/preparedRequest.test
 ```
 
 Build current native inputs before using `--no-build`; choose the affected test suite or frontend file.
+Published-process tests also require current Release application outputs, even when their test assembly
+is Debug. Build the affected application projects in Release before a direct focused invocation;
+`eng/verify.sh` prepares these inputs for its stages. Publication runs before owned database startup,
+so a missing Release input fails before that setup cost.
+Published Web tests also need current frontend assets from `npm --prefix web ci` followed by
+`npm --prefix web run build`; the acceptance stage prepares those assets.
 Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
@@ -322,11 +339,30 @@ projects use automatic nonempty discovery and explicit stage assignment. Focused
 skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
 PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
 
+Acceptance uses [its own run settings](../eng/expecto.acceptance.runsettings) with one worker so
+container startup and teardown cannot overlap browser authentication in another fixture. These
+fixtures share host networking. Keep these settings when running focused acceptance cases; unit and
+store tests retain their separate concurrency settings.
+
 Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
 engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
 mode explicitly reports incomplete qualification. Native report directories under
-`artifacts/verification/` retain TRX and browser summaries; preserve relevant failures before report pruning.
+`artifacts/verification/` retain TRX and browser summaries. Automatic pruning retains the ten newest
+explicitly successful completed native runs; failed, active and historical runs without a known outcome
+are preserved. Review retained failures before manually removing their exact owned directories.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
+
+Failed publication retains bounded stdout/stderr in the printed private fixture directory. Generated
+published binaries are removed separately; diagnostic files and other unique failure inputs remain.
+These directories can contain credentials and are not public report attachments. Review them privately,
+then remove only the owned fixture after its useful evidence is secured. Failure retention can grow disk
+use; it does not authorize deleting active fixtures, shared caches or unrelated containers.
+
+Fresh-initialization PostgreSQL controls must reset all objects owned by their disposable fixture.
+The baseline installs database-wide `pg_trgm` as well as `claimcore`; dropping only the schema leaves
+the extension behind. Use the existing `DatabaseScenarios.resetForInitialization` helper for owned
+fresh-initialization scenarios. Schema-only refusal and restore controls have different prerequisites;
+do not broaden their cleanup or weaken the initializer's strict duplicate-object refusal.
 
 Independent closed inventories live in [inventory.json](../tests/fixtures/inventory.json), authored by hand
 rather than generated from product declarations. Input builders belong to
@@ -379,9 +415,11 @@ It refuses source changes during capture. Both source-stable inputs build in dis
 detached worktrees with locked restore. The comparison alternates
 reference → candidate three times. Write and cardinality profiles use fresh PostgreSQL containers;
 read profiles share the fresh database for their case population. The compared set
-is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and eight read profiles
-at 100k cases: search, filtered, notification order, summary, explicit-work follow-up/summary, global
-authority history and actor-filtered authority history. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
+is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and read profiles
+at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
+authority history and actor-filtered authority history. Reminder-feature measurements comprise seven
+profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
+and global work overview. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
 exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
 are reported as not applicable.
 
@@ -398,7 +436,22 @@ fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*
 `CLAIMCORE_TEST_REPORT_DIRECTORY`). These are same-host, same-session relative measurements, not an SLA.
 Different workload fingerprints refuse comparison, naming the differing members.
 
-References without workload fingerprints require a recorded manual review of act cycles, populations,
+`comparison-progress.json` is an atomic observation of preparation and alternating child runs. It records
+source and harness identities, completed side count and the active owned checkout/report paths; it never
+reports a partial pass. `comparison.json` remains the final verdict, including cleanup failures. Current
+harnesses publish `artifacts/verification/growth/*/read-progress.json` in the checkout with seed/measurement
+phase, counts and the last completed read report. Each completed read report is published immediately;
+`run.json` bookkeeping can lag until the population fixture has been disposed. Incomplete progress is not
+qualification evidence and does not permit skipping outstanding workloads.
+
+Read reports include measured latency samples in observation order, excluding warmups, with the percentile
+index rule recorded beside them. Comparison reports add informational per-pair ratios, run spread and
+available sample evidence for latency percentiles. Missing reference samples are reported rather than
+reconstructed. These observations do not change sampling, budgets or the median comparison rule. Retain
+the source patch, harness patches, build logs and workload fingerprints together when reproducing a
+result; a source hash alone does not identify the assembly loaded by a separate diagnostic.
+
+A reference without workload fingerprints requires a recorded manual review of act cycles, populations,
 authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
 `reference` and `candidate` commit IDs, `candidatePatchSha256` when working changes are present,
 a `workloads` array of reviewed keys (for example
@@ -407,10 +460,10 @@ a `workloads` array of reviewed keys (for example
 before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
 Single-profile diagnostics also require review of `cardinality/1` and `cardinality/100`.
 
-Only the disposable test harnesses receive an ownership label; reference harnesses without comparison
-selection also receive that selection. Every adaptation is retained as a patch in the report. Product code
-stays at the recorded commit. The comparison removes its worktrees, build outputs and labelled
-containers on success or failure, while preserving reports and failure output.
+The comparison labels its disposable test containers and, when needed, adapts reference harness selection.
+Every adaptation is retained as a patch in the report. Product code stays at the recorded commit.
+The comparison removes its worktrees, build outputs and labelled containers on success or failure,
+while preserving reports and failure output.
 
 The full `bash eng/verify.sh growth` observation includes nine write-contention profiles,
 three cardinality comparisons and search/filtered, notification-order, summary and explicit-work
@@ -419,10 +472,13 @@ follow-up/summary workloads at 1k, 10k and 100k cases. At the
 grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
 their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
 After those common measurements, one open case per thousand receives explicit responsibility and a past
-follow-up based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
+Pending reminder based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
 independently named cases, account identity, dates and counts before recording their separate latency
-samples. These feature workloads have their own fingerprints; a reference without a matching workload
-yields no ratio.
+samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one
+case, independently checking queue continuations, bounded current views, unique financial totals and
+global attention. The `reminder-derived-follow-up` and `reminder-derived-work-summary` profiles use the
+independent Work/Reminder seed. Only profiles with matching workload keys and fingerprints yield ratios;
+common read/write/cardinality comparisons retain their budgets.
 [GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
 and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
 incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements
@@ -444,8 +500,20 @@ Native-language and assistive-technology review remain human work.
 
 ## Source releases
 
-[Releases](https://github.com/resoltico/claimcore/releases) distribute source archives. The owner authorizes
-release version/date/tag assignment and publication. A completed change or green gate does not grant that
-authority. See [CHANGELOG.md](../CHANGELOG.md) and the [release workflow](../.github/workflows/release.yml).
-The workflow requires main membership, the exact annotated tag/SHA, matching version and successful tag CI;
-branch evidence does not substitute for those inputs.
+[Releases](https://github.com/resoltico/claimcore/releases) distribute source archives. Version, date,
+tag assignment and publication require owner authorization. Prepare the final version, dated changelog
+section, dependencies and documentation before publishing that source commit.
+
+1. Open a pull request with the finalized release changes. After its required `Gate` passes, use the
+   authorized PR merge path to update protected `main`. Wait for the resulting main commit's complete
+   push-triggered CI run to succeed.
+2. Create an annotated `vVERSION` tag for that exact commit and push the tag. A tag push does not start
+   another CI run.
+3. Dispatch [Publish source release](../.github/workflows/release.yml) from `main`, supplying the tag and
+   its full commit SHA.
+
+The workflow verifies the annotated tag, expected SHA, membership in `main`, matching version and a
+successful main-branch push CI run for that exact SHA. It publishes the tagged commit's dated
+[CHANGELOG.md](../CHANGELOG.md) section. A branch result for another commit, a local gate or a manual CI
+run does not replace the required push result. Inspect the workflow and resulting release before
+reporting publication complete.

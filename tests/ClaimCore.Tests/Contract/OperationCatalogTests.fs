@@ -26,15 +26,15 @@ let tests =
                 (fun () ->
                     let expected =
                         [
-                            CaseActKind.UpdateWork,
+                            ActKind.Work WorkActKind.UpdateWork,
                             Some ActFamily.Business,
                             [ CaseSection.Work ],
-                            InteractionEffect.Case CaseEffect.UpdateWork
-                            CaseActKind.Correct,
+                            InteractionEffect.Work
+                            ActKind.Case CaseActKind.Correct,
                             Some ActFamily.Business,
                             [ CaseSection.Registration; CaseSection.Decision; CaseSection.Payment ],
                             InteractionEffect.Case CaseEffect.RecordFacts
-                            CaseActKind.Erase,
+                            ActKind.Case CaseActKind.Erase,
                             Some ActFamily.Stewardship,
                             [
                                 CaseSection.Registration
@@ -43,11 +43,11 @@ let tests =
                                 CaseSection.Work
                             ],
                             InteractionEffect.Case CaseEffect.ErasePayload
-                            CaseActKind.Close,
+                            ActKind.Case CaseActKind.Close,
                             Some ActFamily.Business,
                             [],
                             InteractionEffect.Case CaseEffect.ChangeStatus
-                            CaseActKind.Void,
+                            ActKind.Case CaseActKind.Void,
                             Some ActFamily.Stewardship,
                             [],
                             InteractionEffect.Case CaseEffect.ChangeLifecycle
@@ -56,8 +56,7 @@ let tests =
                     for kind, family, sections, effect in expected do
                         let entry =
                             OperationCatalog.entries
-                            |> List.find (fun entry ->
-                                entry.Kind = CatalogOperation.Act(ActKind.Case kind))
+                            |> List.find (fun entry -> entry.Kind = CatalogOperation.Act kind)
 
                         Expect.equal
                             (entry.Family, entry.AffectedSections, entry.Effect)
@@ -140,6 +139,8 @@ let tests =
 
                 let expected =
                     Inventory.tokens "caseActs"
+                    @ Inventory.tokens "workActs"
+                    @ (Inventory.tokens "reminderActs" |> List.map ((+) "REMINDER_"))
                     @ (Inventory.tokens "authorityActs" |> List.filter ((<>) "PROVISION_OWNER"))
 
                 Expect.equal
@@ -316,6 +317,8 @@ let tests =
                 let mutationCount =
                     (Inventory.tokens "caseActs").Length
                     + (Inventory.tokens "authorityActs").Length
+                    + (Inventory.tokens "workActs").Length
+                    + (Inventory.tokens "reminderActs").Length
                     - 1
 
                 let readCount =

@@ -10,7 +10,7 @@ open ClaimCore.Json
 
 let id = Guid.Parse "10000000-0000-4000-8000-000000000001"
 
-let authorityRequest =
+let authorityRequest: AuthorityRequest =
     {
         OperationId = id
         Target =
@@ -25,7 +25,6 @@ let authorityRequest =
 let snapshot =
     let fields: CaseFields =
         {
-            Work = CaseWork.empty
             CaseReference = CaseFixtures.reference "x"
             Status = CaseStatus.Opened
             Registration =

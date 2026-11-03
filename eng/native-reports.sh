@@ -1,13 +1,26 @@
 #!/usr/bin/env bash
-# Only completed directories created by this verifier participate in retention.
+# Expire only explicitly successful, completed directories created by this verifier.
+# Failed, active and historical directories with no outcome marker require owned review.
+native_report_can_expire() {
+  local directory="$1"
+  [[ -d "${directory}" && ! -L "${directory}" \
+    && ! -e "${directory}/.claimcore-native-active" \
+    && ! -L "${directory}/.claimcore-native-active" \
+    && ! -e "${directory}/.claimcore-native-failed" \
+    && ! -L "${directory}/.claimcore-native-failed" \
+    && -f "${directory}/.claimcore-native-complete" \
+    && ! -L "${directory}/.claimcore-native-complete" \
+    && -f "${directory}/.claimcore-native-passed" \
+    && ! -L "${directory}/.claimcore-native-passed" ]]
+}
+
 prune_native_reports() {
   local root directory marker count
   root="$(cd "$1" && pwd -P)"
   local completed=()
   for marker in "${root}"/native.*/.claimcore-native-complete; do
-    [[ -f "${marker}" && ! -L "${marker}" ]] || continue
     directory="${marker%/*}"
-    [[ ! -L "${directory}" && ! -e "${directory}/.claimcore-native-active" ]] || continue
+    native_report_can_expire "${directory}" || continue
     completed+=("${marker}")
   done
   [[ ${#completed[@]} -gt 10 ]] || return 0
@@ -20,7 +33,7 @@ prune_native_reports() {
     count=$((count + 1))
     [[ ${count} -gt 10 ]] || continue
     directory="${marker%/*}"
-    if [[ "${directory%/*}" == "${root}" && "${directory##*/}" == native.* && ! -L "${directory}" && ! -e "${directory}/.claimcore-native-active" && -f "${marker}" && ! -L "${marker}" ]]; then
+    if [[ "${directory%/*}" == "${root}" && "${directory##*/}" == native.* ]] && native_report_can_expire "${directory}"; then
       rm -rf -- "${directory}"
     fi
   done <<< "${ordered}"

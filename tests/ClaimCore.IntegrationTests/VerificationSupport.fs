@@ -106,6 +106,8 @@ type private RecordedSubjectColumns =
         Id: Guid
         Revision: int64 option
         BusinessDate: DateOnly option
+        Parent: CaseId option
+        Next: ReminderId option
     }
 
 let private subject =
@@ -117,6 +119,8 @@ let private subject =
             Id = OperationId.value operation
             Revision = None
             BusinessDate = None
+            Parent = None
+            Next = None
         }
     | RecordedTarget.Case value ->
         {
@@ -125,6 +129,8 @@ let private subject =
             Id = (CaseId.value (value.CaseId))
             Revision = Some(Revision.value (value.Revision))
             BusinessDate = Some value.BusinessDate
+            Parent = None
+            Next = None
         }
     | RecordedTarget.Authority value ->
         {
@@ -133,10 +139,41 @@ let private subject =
             Id = (ActorId.value (value.TargetActorId))
             Revision = None
             BusinessDate = None
+            Parent = None
+            Next = None
+        }
+    | RecordedTarget.Work value ->
+        {
+            Kind = "WORK"
+            Act = "UPDATE_WORK"
+            Id = CaseId.value value.CaseId
+            Revision = Some(Revision.value value.Revision)
+            BusinessDate = Some value.BusinessDate
+            Parent = Some value.CaseId
+            Next = None
+        }
+    | RecordedTarget.Reminder value ->
+        let act =
+            match value.Act with
+            | ReminderActKind.Create -> "CREATE"
+            | ReminderActKind.Update -> "UPDATE"
+            | ReminderActKind.Complete -> "COMPLETE"
+            | ReminderActKind.Cancel -> "CANCEL"
+            | ReminderActKind.Reopen -> "REOPEN"
+            | ReminderActKind.CompleteAndPlanNext -> "COMPLETE_AND_PLAN_NEXT"
+
+        {
+            Kind = "REMINDER"
+            Act = act
+            Id = ReminderId.value value.ReminderId
+            Revision = Some(Revision.value value.Revision)
+            BusinessDate = Some value.BusinessDate
+            Parent = Some value.CaseId
+            Next = value.NextReminderId
         }
 
 let private updateSql =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14,creation_reference=$15 WHERE sequence=$1"
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14,creation_reference=$15,parent_case_id=$16,next_reminder_id=$17 WHERE sequence=$1"
 
 let private parameters (value: LedgerRow) =
     let metadata = value.Metadata
@@ -163,6 +200,8 @@ let private parameters (value: LedgerRow) =
         DatabaseSession.parameter value.Entry.Payload
         DatabaseSession.parameter value.Entry.PayloadNonce
         DatabaseSession.parameter (metadata.CreationReference |> Option.map CaseReference.format)
+        DatabaseSession.parameter (target.Parent |> Option.map CaseId.value)
+        DatabaseSession.parameter (target.Next |> Option.map ReminderId.value)
     |]
 
 let guardedSql (database: PostgresFixture.Database) statement parameters =

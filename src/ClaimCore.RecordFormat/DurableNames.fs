@@ -20,7 +20,6 @@ module DurableNames =
         | CaseActKind.Void -> "VOID"
         | CaseActKind.Reinstate -> "REINSTATE"
         | CaseActKind.Erase -> "ERASE"
-        | CaseActKind.UpdateWork -> "UPDATE_WORK"
 
     let authorityAct =
         function
@@ -104,6 +103,7 @@ module DurableNames =
         | BusinessField.IncidentDate -> "incidentDate"
         | BusinessField.IncidentNotificationDate -> "incidentNotificationDate"
         | BusinessField.IncidentCountry -> "incidentCountry"
+        | BusinessField.IncidentDescription -> "incidentDescription"
         | BusinessField.ClaimantName -> "claimantName"
         | BusinessField.InsurerName -> "insurerName"
         | BusinessField.ClaimedAmount -> "claimedAmount"
@@ -115,7 +115,7 @@ module DurableNames =
         | BusinessField.CaseReference -> "caseReference"
         | BusinessField.Status -> "status"
         | BusinessField.ResponsibleActor -> "responsibleActor"
-        | BusinessField.FollowUpDate -> "followUpDate"
+        | BusinessField.HandlingSummary -> "handlingSummary"
 
     // A total table preserves the permanent spelling of every closed input target.
     // fsharplint:disable-next-line CyclomaticComplexity
@@ -132,6 +132,11 @@ module DurableNames =
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
+        | InputTarget.ReminderId -> "reminderId"
+        | InputTarget.ReminderAction -> "reminderAction"
+        | InputTarget.ReminderDueDate -> "reminderDueDate"
+        | InputTarget.ExpectedWorkRevision -> "expectedWorkRevision"
+        | InputTarget.ExpectedReminderRevision -> "expectedReminderRevision"
         | InputTarget.Text -> "text"
 
     let caseKinds =
@@ -148,7 +153,6 @@ module DurableNames =
             CaseActKind.Void
             CaseActKind.Reinstate
             CaseActKind.Erase
-            CaseActKind.UpdateWork
         ]
 
     let authorityKinds =

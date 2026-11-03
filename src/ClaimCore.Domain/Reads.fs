@@ -42,11 +42,11 @@ module CaseDue =
     let vocabulary = Vocabulary.ofUnion<CaseDue> "due" TokenCasing.ScreamingSnake None
     let token = Vocabulary.token vocabulary
 
-    let at (today: DateOnly) lifecycle status (work: CaseWork) =
-        if lifecycle <> Lifecycle.Active || status <> Some CaseStatus.Opened then
+    let at (today: DateOnly) lifecycle status (nextDue: CalendarDate option) =
+        if not (CaseState.isActionable lifecycle status) then
             CaseDue.Inactive
         else
-            match work.FollowUp with
+            match nextDue with
             | None -> CaseDue.Unscheduled
             | Some date when CalendarDate.value date < today -> CaseDue.Overdue
             | Some date when CalendarDate.value date = today -> CaseDue.Today
@@ -82,9 +82,10 @@ module CaseSearch =
     let normalize (value: string) =
         value.Normalize(System.Text.NormalizationForm.FormKC).ToLowerInvariant()
 
+    let private searchableFields = CaseFields.declarations |> List.filter _.Searchable
+
     let text fields =
-        CaseFields.declarations
-        |> List.filter _.Searchable
+        searchableFields
         |> List.choose (fun row -> CaseFields.value row.Field fields)
         |> List.map normalize
         |> String.concat "\u001f"

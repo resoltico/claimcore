@@ -291,12 +291,7 @@ let private lostCommit
     (connection: NpgsqlConnection)
     =
     task {
-        let! _ =
-            DatabaseSession.execute
-                connection
-                "DROP SCHEMA claimcore CASCADE"
-                [||]
-                CancellationToken.None
+        do! DatabaseScenarios.resetForInitialization connection
 
         let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
 
@@ -373,42 +368,157 @@ let private foreignRefusal binary connectionFile principalFile (connection: Npgs
 let private publishedCommands () =
     async {
         let directory = Directory.CreateTempSubdirectory("claimcore-admin-test-").FullName
-        let database = PostgresFixture.empty ()
+        let published = Path.Combine(directory, "published")
+
+        let! outcome =
+            async {
+                try
+                    // Check actual --no-build Release inputs before constructing a database fixture.
+                    let! binary = publish published |> Async.AwaitTask
+                    let database = PostgresFixture.empty ()
+
+                    let! exercised =
+                        async {
+                            try
+                                do! database.StartAsync() |> Async.AwaitTask
+                                use source = NpgsqlDataSource.Create(database.GetConnectionString())
+
+                                use! connection =
+                                    source.OpenConnectionAsync().AsTask() |> Async.AwaitTask
+
+                                let! _ =
+                                    DatabaseSession.execute
+                                        connection
+                                        "CREATE ROLE claimcore_runtime LOGIN"
+                                        [||]
+                                        CancellationToken.None
+                                    |> Async.AwaitTask
+
+                                let connectionFile =
+                                    privateText
+                                        directory
+                                        "connection"
+                                        (database.GetConnectionString())
+
+                                let principalFile =
+                                    privateText
+                                        directory
+                                        "principal.json"
+                                        (owner (Guid.NewGuid()) "synthetic-owner")
+
+                                do! discovery binary connectionFile principalFile |> Async.AwaitTask
+
+                                do!
+                                    initialize binary connectionFile principalFile
+                                    |> Async.AwaitTask
+
+                                do! provision binary connectionFile principalFile |> Async.AwaitTask
+
+                                do!
+                                    checkpoints binary connectionFile principalFile
+                                    |> Async.AwaitTask
+
+                                do!
+                                    divergence binary connectionFile principalFile connection
+                                    |> Async.AwaitTask
+
+                                do!
+                                    connectionGuards binary directory principalFile database
+                                    |> Async.AwaitTask
+
+                                do!
+                                    lostCommit binary directory principalFile database connection
+                                    |> Async.AwaitTask
+
+                                do! foreignRefusal binary connectionFile principalFile connection
+                                return Ok()
+                            with error ->
+                                return Error error
+                        }
+
+                    let dispose =
+                        [ fun () -> database.DisposeAsync().AsTask().GetAwaiter().GetResult() ]
+
+                    match exercised with
+                    | Ok() -> FixtureDisposal.finish dispose
+                    | Error error -> FixtureDisposal.afterFailure error dispose
+
+                    return Ok()
+                with error ->
+                    return Error error
+            }
+
+        let removeGenerated () =
+            if Directory.Exists published then
+                if DirectoryInfo(published).LinkTarget <> null then
+                    invalidOp "Owned publish cleanup must not follow a redirected directory."
+
+                Directory.Delete(published, true)
+
+        let retained () =
+            Console.Error.WriteLine(
+                "Synthetic owner-process evidence retained privately: " + directory
+            )
+
+        match outcome with
+        | Ok() ->
+            try
+                removeGenerated ()
+                Directory.Delete(directory, true)
+            with error ->
+                FixtureDisposal.afterFailure error [ retained ]
+        | Error error ->
+            // Run both steps even if deleting a generated copy fails; preserve every error.
+            FixtureDisposal.afterFailure error [ removeGenerated; retained ]
+    }
+
+let private failedPublish () =
+    async {
+        let directory = Directory.CreateTempSubdirectory("claimcore-publish-test-").FullName
 
         try
-            do! database.StartAsync() |> Async.AwaitTask
-            use source = NpgsqlDataSource.Create(database.GetConnectionString())
-            use! connection = source.OpenConnectionAsync().AsTask() |> Async.AwaitTask
+            let blocked = Path.Combine(directory, "blocked-output")
+            File.WriteAllText(blocked, "Synthetic regular file, not a publish directory.")
 
-            let! _ =
-                DatabaseSession.execute
-                    connection
-                    "CREATE ROLE claimcore_runtime LOGIN"
-                    [||]
-                    CancellationToken.None
+            let! failed =
+                task {
+                    try
+                        let! _ = publish blocked
+                        return false
+                    with _ ->
+                        return true
+                }
                 |> Async.AwaitTask
 
-            let connectionFile =
-                privateText directory "connection" (database.GetConnectionString())
+            Expect.isTrue
+                failed
+                "An actual invalid publish destination refuses before any database setup"
 
-            let principalFile =
-                privateText directory "principal.json" (owner (Guid.NewGuid()) "synthetic-owner")
+            let paths =
+                [
+                    Path.Combine(directory, "publish.stdout")
+                    Path.Combine(directory, "publish.stderr")
+                ]
 
-            let! binary = publish (Path.Combine(directory, "published")) |> Async.AwaitTask
-            do! discovery binary connectionFile principalFile |> Async.AwaitTask
-            do! initialize binary connectionFile principalFile |> Async.AwaitTask
-            do! provision binary connectionFile principalFile |> Async.AwaitTask
-            do! checkpoints binary connectionFile principalFile |> Async.AwaitTask
-            do! divergence binary connectionFile principalFile connection |> Async.AwaitTask
-            do! connectionGuards binary directory principalFile database |> Async.AwaitTask
-            do! lostCommit binary directory principalFile database connection |> Async.AwaitTask
+            for path in paths do
+                Expect.isTrue (File.Exists path) "Both bounded process streams are retained"
 
-            do! foreignRefusal binary connectionFile principalFile connection
+                Expect.isLessThanOrEqual
+                    (FileInfo(path).Length)
+                    1_048_576L
+                    "Publish capture retains the existing process bound"
+
+                Expect.equal
+                    (File.GetUnixFileMode path)
+                    (UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+                    "Owner publish diagnostics remain private"
+
+            Expect.isGreaterThan
+                (paths |> List.sumBy (fun path -> FileInfo(path).Length))
+                0L
+                "The actual SDK failure has retained diagnostic output"
         finally
-            try
-                database.DisposeAsync().AsTask().GetAwaiter().GetResult()
-            finally
-                Directory.Delete(directory, true)
+            Directory.Delete(directory, true)
     }
 
 type private BrokenOutput() =
@@ -467,6 +577,9 @@ let tests =
     testList
         "Published owner administration"
         [
+            testCaseAsync
+                "failed owner publication retains bounded private diagnostics"
+                (failedPublish ())
             testCase
                 "argument and delivery guards reject without weakening commit knowledge"
                 inputAndDeliveryGuards

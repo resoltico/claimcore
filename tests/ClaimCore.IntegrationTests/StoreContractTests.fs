@@ -18,14 +18,35 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "different and same reminder revisions retain financial preview isolation"
+                (withFixture factory ReminderConcurrencyContract.independentRevisions)
+            testCaseAsync
+                "close and compound races have complete valid effects"
+                (withFixture factory ReminderConcurrencyContract.closeAndCompound)
+            testCaseAsync
+                "erase and reminder races leave no readable child or payload"
+                (withFixture factory ReminderConcurrencyContract.erasureRaces)
+            testCaseAsync
+                "revocation after reminder preview is enforced in the action snapshot"
+                (withFixture factory ReminderConcurrencyContract.revocationAndCompound)
+            testCaseAsync
+                "case pages pair independent work and apply parent limits before reminder fan-out"
+                (withFixture factory CaseWorkContract.pairedPage)
+            testCaseAsync
                 "case work assignment is scoped and rechecked without granting visibility"
                 (withFixture factory CaseWorkContract.assignmentAndDisclosure)
             testCaseAsync
                 "case work due filters summaries and keysets use the snapshot business date"
                 (withFixture factory CaseWorkContract.dueFiltersAndOrder)
             testCaseAsync
+                "current reminder timing follows observation date state and parent lifecycle without writes"
+                (withFixture factory CaseWorkContract.reminderTiming)
+            testCaseAsync
                 "case work lifecycle and erasure remove every assignment relationship"
                 (withFixture factory CaseWorkContract.lifecycleAndErasure)
+            testCaseAsync
+                "Gregorian reminder endpoints and keysets preserve finite date extremes"
+                (withFixture factory CaseWorkContract.finiteDateRange)
             testCaseAsync
                 "targeted partial updates preserve facts and require authorized payment reaffirmation"
                 (withFixture factory CaseWorkContract.partialUpdatesAndReaffirmation)

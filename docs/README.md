@@ -3,7 +3,7 @@
 Start with the task you want to complete:
 
 - [Getting started](getting-started.md): create a fresh synthetic installation and record a case.
-- [Case work](case-work.md): find assigned/due work, navigate cases, edit facts and recover uncertain submissions.
+- [Case work](case-work.md): find assigned or due work, plan reminders, record narratives and facts, and recover uncertain submissions.
 - [Operating](operating.md): host the service, administer authority and databases, and manage retention.
 - [Integrating](integrating.md): use HTTPS or CLI, validate results and handle delivery recovery.
 - [Contributing](contributing.md): build, verify and change the implementation.

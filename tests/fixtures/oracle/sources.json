@@ -170,66 +170,6 @@
           }
         }
       }
-    },
-    {
-      "name": "WORK assignment and future follow-up",
-      "value": {
-        "kind": "CASE",
-        "format": 3,
-        "operationId": "60000000-0000-4000-8000-000000000006",
-        "caseReference": "Demo-0001",
-        "expectedRevision": 1,
-        "act": {
-          "kind": "UPDATE_WORK",
-          "values": {
-            "responsibleActor": {
-              "kind": "SET",
-              "value": "b0000000-0000-4000-8000-000000000002"
-            },
-            "followUpDate": {
-              "kind": "SET",
-              "value": "2027-12-31"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "WORK clear follow-up while preserving responsibility",
-      "value": {
-        "kind": "CASE",
-        "format": 3,
-        "operationId": "70000000-0000-4000-8000-000000000007",
-        "caseReference": "Demo-0001",
-        "expectedRevision": 2,
-        "act": {
-          "kind": "UPDATE_WORK",
-          "values": {
-            "followUpDate": {
-              "kind": "CLEAR"
-            }
-          }
-        }
-      }
-    },
-    {
-      "name": "WORK representable past date",
-      "value": {
-        "kind": "CASE",
-        "format": 3,
-        "operationId": "80000000-0000-4000-8000-000000000008",
-        "caseReference": "Demo-0001",
-        "expectedRevision": 1,
-        "act": {
-          "kind": "UPDATE_WORK",
-          "values": {
-            "followUpDate": {
-              "kind": "SET",
-              "value": "0001-01-01"
-            }
-          }
-        }
-      }
     }
   ],
   "snapshot": {
@@ -249,14 +189,11 @@
             "claimantName": "Rīgas Tulkojumu Birojs SIA",
             "insurerName": "شركة التأمين المثال",
             "claimedAmount": "1000",
-            "claimedCurrency": "EUR"
+            "claimedCurrency": "EUR",
+            "incidentDescription": null
           },
           "decision": null,
-          "payment": null,
-          "work": {
-            "responsibleActor": null,
-            "followUpDate": null
-          }
+          "payment": null
         }
       },
       "caseId": "10000000-0000-4000-8000-000000000001"
@@ -293,10 +230,10 @@
       "operationId": "10000000-0000-4000-8000-000000000001",
       "actorId": "a0000000-0000-4000-8000-000000000001",
       "recordedAt": "2026-08-03T09:15:27.123456+00:00",
-      "caseRevision": 1,
       "businessDate": "2026-08-03",
       "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-      "subject": "CASE"
+      "subject": "CASE",
+      "entityRevision": 1
     },
     {
       "name": "authority GRANT linked to the first",
@@ -306,11 +243,11 @@
       "operationId": "20000000-0000-4000-8000-000000000002",
       "actorId": "a0000000-0000-4000-8000-000000000001",
       "recordedAt": "2026-08-03T09:15:28.000001+00:00",
-      "caseRevision": null,
       "businessDate": null,
       "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
       "subjectId": "b0000000-0000-4000-8000-000000000002",
-      "subject": "AUTHORITY"
+      "subject": "AUTHORITY",
+      "entityRevision": null
     },
     {
       "name": "actor-scoped final nonacceptance",
@@ -320,27 +257,135 @@
       "operationId": "30000000-0000-4000-8000-000000000003",
       "actorId": "a0000000-0000-4000-8000-000000000001",
       "recordedAt": "2026-08-03T09:15:28.000001+00:00",
-      "caseRevision": null,
       "businessDate": null,
       "payloadNonce": "202122232425262728292a2b2c2d2e2f303132333435363738393a3b3c3d3e3f",
       "subjectId": "30000000-0000-4000-8000-000000000003",
-      "subject": "CONTROL"
+      "subject": "CONTROL",
+      "entityRevision": null
     },
     {
-      "name": "work act 13 with erasable assignment and planned date",
+      "name": "independent work subject and revision",
       "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
       "sequence": 4,
       "act": "UPDATE_WORK",
       "operationId": "60000000-0000-4000-8000-000000000006",
       "actorId": "a0000000-0000-4000-8000-000000000001",
       "recordedAt": "2026-08-03T09:15:27.123456+00:00",
-      "caseRevision": 2,
       "businessDate": "2026-08-03",
       "payloadNonce": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
-      "subject": "CASE",
+      "subject": "WORK",
       "subjectId": "10000000-0000-4000-8000-000000000001",
-      "requestIndex": 6,
-      "workSnapshotIndex": 0
+      "workSnapshotIndex": 0,
+      "workRequestIndex": 0,
+      "entityRevision": 1
+    },
+    {
+      "name": "reminder creation target",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 5,
+      "act": "CREATE",
+      "operationId": "90000000-0000-4000-8000-000000000009",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "businessDate": "2026-08-03",
+      "payloadNonce": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "subject": "REMINDER",
+      "subjectId": "90000000-0000-4000-8000-000000000009",
+      "parentCaseId": "10000000-0000-4000-8000-000000000001",
+      "nextReminderId": null,
+      "reminderRequestIndex": 0,
+      "reminderEffectsIndex": 0,
+      "entityRevision": 1
+    },
+    {
+      "name": "atomic reminder pair target",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 6,
+      "act": "COMPLETE_AND_PLAN_NEXT",
+      "operationId": "91000000-0000-4000-8000-000000000010",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "businessDate": "2026-08-03",
+      "payloadNonce": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "subject": "REMINDER",
+      "subjectId": "90000000-0000-4000-8000-000000000009",
+      "parentCaseId": "10000000-0000-4000-8000-000000000001",
+      "nextReminderId": "91000000-0000-4000-8000-000000000010",
+      "reminderRequestIndex": 5,
+      "reminderEffectsIndex": 2,
+      "entityRevision": 2
+    },
+    {
+      "name": "replacement cancel target",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 7,
+      "act": "CANCEL",
+      "operationId": "a3000000-0000-4000-8000-000000000013",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "businessDate": "2026-08-03",
+      "payloadNonce": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "subject": "REMINDER",
+      "subjectId": "91000000-0000-4000-8000-000000000010",
+      "parentCaseId": "10000000-0000-4000-8000-000000000001",
+      "nextReminderId": null,
+      "reminderRequestIndex": 3,
+      "reminderEffectsIndex": 3,
+      "entityRevision": 2
+    },
+    {
+      "name": "replacement reopen target",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 8,
+      "act": "REOPEN",
+      "operationId": "a4000000-0000-4000-8000-000000000014",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "businessDate": "2026-08-03",
+      "payloadNonce": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "subject": "REMINDER",
+      "subjectId": "91000000-0000-4000-8000-000000000010",
+      "parentCaseId": "10000000-0000-4000-8000-000000000001",
+      "nextReminderId": null,
+      "reminderRequestIndex": 4,
+      "reminderEffectsIndex": 4,
+      "entityRevision": 3
+    },
+    {
+      "name": "replacement update target",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 9,
+      "act": "UPDATE",
+      "operationId": "a1000000-0000-4000-8000-000000000011",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "businessDate": "2026-08-03",
+      "payloadNonce": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "subject": "REMINDER",
+      "subjectId": "91000000-0000-4000-8000-000000000010",
+      "parentCaseId": "10000000-0000-4000-8000-000000000001",
+      "nextReminderId": null,
+      "reminderRequestIndex": 1,
+      "reminderEffectsIndex": 5,
+      "entityRevision": 4
+    },
+    {
+      "name": "replacement complete target",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 10,
+      "act": "COMPLETE",
+      "operationId": "a2000000-0000-4000-8000-000000000012",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:27.123456+00:00",
+      "businessDate": "2026-08-03",
+      "payloadNonce": "404142434445464748494a4b4c4d4e4f505152535455565758595a5b5c5d5e5f",
+      "subject": "REMINDER",
+      "subjectId": "91000000-0000-4000-8000-000000000010",
+      "parentCaseId": "10000000-0000-4000-8000-000000000001",
+      "nextReminderId": null,
+      "reminderRequestIndex": 2,
+      "reminderEffectsIndex": 1,
+      "entityRevision": 5
     }
   ],
   "canonicalIdentity": [
@@ -1944,14 +1989,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -1976,14 +2018,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2008,14 +2047,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2040,14 +2076,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2072,14 +2105,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2104,14 +2134,11 @@
               "claimantName": "Rīgas Tulkojumu Birojs SIA",
               "insurerName": "شركة التأمين المثال",
               "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
+              "claimedCurrency": "EUR",
+              "incidentDescription": null
             },
             "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": null,
-              "followUpDate": null
-            }
+            "payment": null
           }
         },
         "caseId": "10000000-0000-4000-8000-000000000001"
@@ -2121,33 +2148,363 @@
   "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
   "workSnapshots": [
     {
-      "name": "Work state retains only actor ID and planned date",
+      "name": "independent work revision with summary and assignment",
       "value": {
-        "format": 3,
-        "revision": 2,
-        "state": {
-          "kind": "ACTIVE",
-          "fields": {
-            "caseReference": "Demo-0001",
-            "status": "OPENED",
-            "registration": {
-              "incidentDate": "2026-08-01",
-              "incidentNotificationDate": "2026-08-03",
-              "incidentCountry": "LV",
-              "claimantName": "Rīgas Tulkojumu Birojs SIA",
-              "insurerName": "شركة التأمين المثال",
-              "claimedAmount": "1000",
-              "claimedCurrency": "EUR"
-            },
-            "decision": null,
-            "payment": null,
-            "work": {
-              "responsibleActor": "b0000000-0000-4000-8000-000000000002",
-              "followUpDate": "2027-12-31"
-            }
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "format": 1,
+        "revision": 1,
+        "work": {
+          "responsibleActor": "b0000000-0000-4000-8000-000000000002",
+          "handlingSummary": "Awaiting supporting documents.\nReview on receipt."
+        }
+      }
+    }
+  ],
+  "workRequests": [
+    {
+      "name": "assignment and paragraph summary",
+      "value": {
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "format": 1,
+        "kind": "UPDATE_WORK",
+        "operationId": "60000000-0000-4000-8000-000000000006",
+        "values": {
+          "responsibleActor": {
+            "kind": "SET",
+            "value": "b0000000-0000-4000-8000-000000000002"
+          },
+          "handlingSummary": {
+            "kind": "SET",
+            "value": "Awaiting supporting documents.\nReview on receipt."
           }
-        },
-        "caseId": "10000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "name": "clear summary and preserve responsibility",
+      "value": {
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 1,
+        "format": 1,
+        "kind": "UPDATE_WORK",
+        "operationId": "70000000-0000-4000-8000-000000000007",
+        "values": {
+          "responsibleActor": {
+            "kind": "KEEP"
+          },
+          "handlingSummary": {
+            "kind": "CLEAR"
+          }
+        }
+      }
+    },
+    {
+      "name": "Arabic handling summary",
+      "value": {
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 2,
+        "format": 1,
+        "kind": "UPDATE_WORK",
+        "operationId": "80000000-0000-4000-8000-000000000008",
+        "values": {
+          "responsibleActor": {
+            "kind": "KEEP"
+          },
+          "handlingSummary": {
+            "kind": "SET",
+            "value": "متابعة الحادث"
+          }
+        }
+      }
+    }
+  ],
+  "reminderRequests": [
+    {
+      "name": "create",
+      "value": {
+        "format": 1,
+        "operationId": "90000000-0000-4000-8000-000000000009",
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "act": {
+          "kind": "CREATE",
+          "plan": {
+            "action": "Request photographs",
+            "due": "2026-11-01"
+          }
+        }
+      }
+    },
+    {
+      "name": "update",
+      "value": {
+        "format": 1,
+        "operationId": "a1000000-0000-4000-8000-000000000011",
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "act": {
+          "kind": "UPDATE",
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "expectedRevision": 3,
+          "plan": {
+            "action": "Review photographs",
+            "due": "2026-11-10"
+          }
+        }
+      }
+    },
+    {
+      "name": "complete",
+      "value": {
+        "format": 1,
+        "operationId": "a2000000-0000-4000-8000-000000000012",
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "act": {
+          "kind": "COMPLETE",
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "expectedRevision": 4
+        }
+      }
+    },
+    {
+      "name": "cancel",
+      "value": {
+        "format": 1,
+        "operationId": "a3000000-0000-4000-8000-000000000013",
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "act": {
+          "kind": "CANCEL",
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "expectedRevision": 1
+        }
+      }
+    },
+    {
+      "name": "reopen",
+      "value": {
+        "format": 1,
+        "operationId": "a4000000-0000-4000-8000-000000000014",
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "act": {
+          "kind": "REOPEN",
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "expectedRevision": 2,
+          "due": "2026-11-02"
+        }
+      }
+    },
+    {
+      "name": "atomic complete and plan next",
+      "value": {
+        "format": 1,
+        "operationId": "91000000-0000-4000-8000-000000000010",
+        "caseId": "10000000-0000-4000-8000-000000000001",
+        "act": {
+          "kind": "COMPLETE_AND_PLAN_NEXT",
+          "reminderId": "90000000-0000-4000-8000-000000000009",
+          "expectedRevision": 1,
+          "plan": {
+            "action": "Review photographs",
+            "due": "2026-11-10"
+          }
+        }
+      }
+    }
+  ],
+  "reminderSnapshots": [
+    {
+      "name": "created current reminder",
+      "value": {
+        "format": 1,
+        "reminder": {
+          "reminderId": "90000000-0000-4000-8000-000000000009",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "revision": 1,
+          "action": "Request photographs",
+          "due": "2026-11-01",
+          "state": "PENDING"
+        }
+      }
+    },
+    {
+      "name": "completed reminder",
+      "value": {
+        "format": 1,
+        "reminder": {
+          "reminderId": "90000000-0000-4000-8000-000000000009",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "revision": 2,
+          "action": "Request photographs",
+          "due": "2026-11-01",
+          "state": "COMPLETED"
+        }
+      }
+    },
+    {
+      "name": "cancelled replacement",
+      "value": {
+        "format": 1,
+        "reminder": {
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "revision": 2,
+          "action": "Review photographs",
+          "due": "2026-11-10",
+          "state": "CANCELLED"
+        }
+      }
+    },
+    {
+      "name": "reopened replacement",
+      "value": {
+        "format": 1,
+        "reminder": {
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "revision": 3,
+          "action": "Review photographs",
+          "due": "2026-11-02",
+          "state": "PENDING"
+        }
+      }
+    },
+    {
+      "name": "rescheduled replacement",
+      "value": {
+        "format": 1,
+        "reminder": {
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "revision": 4,
+          "action": "Review photographs",
+          "due": "2026-11-10",
+          "state": "PENDING"
+        }
+      }
+    },
+    {
+      "name": "completed replacement",
+      "value": {
+        "format": 1,
+        "reminder": {
+          "reminderId": "91000000-0000-4000-8000-000000000010",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "revision": 5,
+          "action": "Review photographs",
+          "due": "2026-11-10",
+          "state": "COMPLETED"
+        }
+      }
+    }
+  ],
+  "reminderEffects": [
+    {
+      "name": "one created reminder",
+      "value": {
+        "format": 1,
+        "effects": {
+          "kind": "CREATED",
+          "reminder": {
+            "reminderId": "90000000-0000-4000-8000-000000000009",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 1,
+            "action": "Request photographs",
+            "due": "2026-11-01",
+            "state": "PENDING"
+          }
+        }
+      }
+    },
+    {
+      "name": "one changed reminder",
+      "value": {
+        "format": 1,
+        "effects": {
+          "kind": "CHANGED",
+          "reminder": {
+            "reminderId": "91000000-0000-4000-8000-000000000010",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 5,
+            "action": "Review photographs",
+            "due": "2026-11-10",
+            "state": "COMPLETED"
+          }
+        }
+      }
+    },
+    {
+      "name": "bounded correlated completed and planned pair",
+      "value": {
+        "format": 1,
+        "effects": {
+          "kind": "COMPLETED_AND_PLANNED",
+          "completed": {
+            "reminderId": "90000000-0000-4000-8000-000000000009",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 2,
+            "action": "Request photographs",
+            "due": "2026-11-01",
+            "state": "COMPLETED"
+          },
+          "next": {
+            "reminderId": "91000000-0000-4000-8000-000000000010",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 1,
+            "action": "Review photographs",
+            "due": "2026-11-10",
+            "state": "PENDING"
+          }
+        }
+      }
+    },
+    {
+      "name": "cancelled replacement",
+      "value": {
+        "format": 1,
+        "effects": {
+          "kind": "CHANGED",
+          "reminder": {
+            "reminderId": "91000000-0000-4000-8000-000000000010",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 2,
+            "action": "Review photographs",
+            "due": "2026-11-10",
+            "state": "CANCELLED"
+          }
+        }
+      }
+    },
+    {
+      "name": "reopened replacement",
+      "value": {
+        "format": 1,
+        "effects": {
+          "kind": "CHANGED",
+          "reminder": {
+            "reminderId": "91000000-0000-4000-8000-000000000010",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 3,
+            "action": "Review photographs",
+            "due": "2026-11-02",
+            "state": "PENDING"
+          }
+        }
+      }
+    },
+    {
+      "name": "rescheduled replacement",
+      "value": {
+        "format": 1,
+        "effects": {
+          "kind": "CHANGED",
+          "reminder": {
+            "reminderId": "91000000-0000-4000-8000-000000000010",
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "revision": 4,
+            "action": "Review photographs",
+            "due": "2026-11-10",
+            "state": "PENDING"
+          }
+        }
       }
     }
   ]

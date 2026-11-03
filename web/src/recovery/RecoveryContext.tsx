@@ -30,6 +30,20 @@ type RecoveryView = {
 type RecoveryAttempt = { owner: RecoveryOwner; attempt: string };
 type RecoveryMethod = "CHECK" | "SETTLE";
 type Feedback = { owner: RecoveryOwner; notice: Notice; cleanupFailed: boolean };
+const passiveRequest = (method: RecoveryMethod, reads: Set<AbortController>) => {
+  if (method !== "CHECK") {
+    return { signal: undefined, dispose: () => undefined };
+  }
+  const controller = new AbortController();
+  reads.add(controller);
+  return {
+    signal: controller.signal,
+    dispose: () => {
+      reads.delete(controller);
+    },
+  };
+};
+
 const finalResolution = (
   result: Awaited<ReturnType<typeof service.resolve>> | Awaited<ReturnType<typeof service.status>>,
 ) =>
@@ -41,16 +55,28 @@ const recoverAttempt = async (
   journal: RecoveryJournal,
   current: () => boolean,
   method: RecoveryMethod,
+  signal?: AbortSignal,
 ): Promise<{ notice: Notice; removed: boolean; cleanupFailed: boolean } | null> => {
   const result =
     method === "CHECK"
-      ? await service.status(record.operationId, owner.credential, record.installationId)
+      ? await service.status(record.operationId, owner.credential, record.installationId, signal)
       : await service.resolve(record.operationId, owner.credential, record.installationId);
   if (!current()) {
     return null;
   }
   if (!finalResolution(result) || result.kind !== "outcome") {
     return { notice: resultNotice(result), removed: false, cleanupFailed: false };
+  }
+  if (
+    result.value.outcome.kind === "ACCEPTED" &&
+    (result.value.outcome.data.subject.kind !== record.subject ||
+      result.value.outcome.data.subject.act !== record.act)
+  ) {
+    return {
+      notice: { kind: "local", reason: "incomplete" },
+      removed: false,
+      cleanupFailed: false,
+    };
   }
   const notice: Notice =
     result.value.outcome.kind === "ACCEPTED"
@@ -101,10 +127,16 @@ const useRecoveryNotice = () => {
   const credential = useCredential();
   const { epoch } = useSessionContext().state;
   const alive = useRef(true);
+  const passiveReads = useRef(new Set<AbortController>());
   useLayoutEffect(() => {
     alive.current = true;
+    const reads = passiveReads.current;
     return () => {
       alive.current = false;
+      for (const read of reads) {
+        read.abort();
+      }
+      reads.clear();
     };
   }, []);
   const requester = useRequesterContext();
@@ -131,6 +163,10 @@ const useRecoveryNotice = () => {
   const latest = useRef(owner);
   useLayoutEffect(() => {
     latest.current = owner;
+    for (const read of passiveReads.current) {
+      read.abort();
+    }
+    passiveReads.current.clear();
   }, [owner]);
   const [view, setView] = useState<RecoveryView>({ owner: null, operations: [], failed: false });
   const [busy, setBusy] = useState<RecoveryAttempt | null>(null);
@@ -181,8 +217,9 @@ const useRecoveryNotice = () => {
     }
     const attempt: RecoveryAttempt = { owner, attempt: record.attemptId };
     setBusy(attempt);
+    const read = passiveRequest(method, passiveReads.current);
     try {
-      const settled = await recoverAttempt(record, owner, journal, current, method);
+      const settled = await recoverAttempt(record, owner, journal, current, method, read.signal);
       if (settled !== null && current()) {
         if (settled.removed) {
           setView((previous) =>
@@ -207,6 +244,7 @@ const useRecoveryNotice = () => {
         });
       }
     } finally {
+      read.dispose();
       // An obsolete completion must never release a newer attempt's lock.
       setBusy((previous) => (previous === attempt ? null : previous));
     }

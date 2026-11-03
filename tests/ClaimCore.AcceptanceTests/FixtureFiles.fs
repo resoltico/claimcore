@@ -96,6 +96,7 @@ let private portGate = obj ()
 let mutable private nextPort = 10000
 
 // Keep service listeners out of kernel/Docker dynamic allocation and never reuse a port in this process.
+// Chromium blocks Amanda port 10080, the only restricted port in our candidate range.
 let port () =
     lock portGate (fun () ->
         let mutable selected = None
@@ -105,8 +106,9 @@ let port () =
             nextPort <- nextPort + 1
 
             if
-                ephemeralRanges.Value
-                |> Array.forall (fun (first, last) -> candidate < first || candidate > last)
+                candidate <> 10080
+                && (ephemeralRanges.Value
+                    |> Array.forall (fun (first, last) -> candidate < first || candidate > last))
             then
                 try
                     use listener = new TcpListener(IPAddress.Loopback, candidate)

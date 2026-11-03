@@ -132,7 +132,7 @@ it("does not invent SUMMARY access for a readable case without history advice", 
   expect(fetch).toHaveBeenCalledTimes(1);
 });
 for (const replacement of ["session", "refresh"]) {
-  it(`aborts earlier history when ${replacement} current advice is refused`, async () => {
+  it(`discards earlier history while draining when ${replacement} current advice is refused`, async () => {
     const oldHistory = deferred();
     const nextCurrent = deferred();
     const fetch = vi
@@ -153,7 +153,7 @@ for (const replacement of ["session", "refresh"]) {
       ),
     );
     expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
-    expect(oldSignal?.aborted).toBe(true);
+    expect(oldSignal?.aborted).toBe(false);
     await act(async () => {
       nextCurrent.release(response("case.get", "REJECTED", unavailable));
       oldHistory.release(history());
@@ -169,7 +169,7 @@ for (const replacement of ["session", "refresh"]) {
     expect(fetch).toHaveBeenCalledTimes(3);
   });
 }
-it("keeps authorized history pagination and aborts a pending page on session replacement", async () => {
+it("keeps authorized history pagination and discards a draining page on session replacement", async () => {
   const nextPage = deferred();
   const fetch = vi
     .fn<typeof globalThis.fetch>()
@@ -197,7 +197,7 @@ it("keeps authorized history pagination and aborts a pending page on session rep
   expect(request.cursor).toBe("continuation");
   view.rerender(detail("replacement"));
   expect(document.querySelectorAll(".history-list li")).toHaveLength(0);
-  expect(signal?.aborted).toBe(true);
+  expect(signal?.aborted).toBe(false);
   await act(async () => {
     nextPage.release(history());
     await nextPage.promise;

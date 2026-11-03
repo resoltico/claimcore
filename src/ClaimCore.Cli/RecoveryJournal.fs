@@ -5,6 +5,7 @@ open System.IO
 open System.Security.Cryptography
 open System.Text
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.Json
 open ClaimCore.HostSecurity
 
@@ -64,7 +65,7 @@ module internal RecoveryJournal =
         |> Codec.field
             "format"
             (fun _ -> ())
-            (Codec.integer 1L 1L |> Codec.map (fun _ -> ()) (fun () -> 1L))
+            (Codec.integer 2L 2L |> Codec.map (fun _ -> ()) (fun () -> 2L))
         |> Codec.build
 
 
@@ -78,11 +79,34 @@ module internal RecoveryJournal =
         && origin.AbsolutePath = "/"
         && [ record.InstallationId; record.ActorId; record.AttemptId; record.OperationId ]
            |> List.forall ((<>) Guid.Empty)
+        && (match record.Subject with
+            | "CASE" -> Vocabulary.tryParse CaseActKind.vocabulary record.Act |> Option.isSome
+            | "WORK" -> Vocabulary.tryParse WorkActKind.vocabulary record.Act |> Option.isSome
+            | "REMINDER" ->
+                Vocabulary.tryParse ReminderActKind.vocabulary record.Act |> Option.isSome
+            | "OPERATION" -> record.Act = "RESOLVE"
+            | "AUTHORITY" ->
+                Vocabulary.tryParse AuthorityKind.vocabulary record.Act
+                |> Option.exists ((<>) AuthorityKind.ProvisionOwner)
+            | _ -> false)
         && [ record.Subject; record.Act ]
            |> List.forall (fun value ->
                value.Length > 0
                && value.Length <= 40
                && value |> Seq.forall (fun c -> c = '_' || c >= 'A' && c <= 'Z'))
+
+    /// Restart recovery knows family/action identities but never reconstructs an authored body.
+    let matchesReceipt (record: RecoveryIdentity) (receipt: OperationReceipt) =
+        OperationId.value receipt.OperationId = record.OperationId
+        && (match record.Subject, receipt.Subject with
+            | "CASE", ReceiptSubject.Case value -> CaseActKind.token value.Act = record.Act
+            | "WORK", ReceiptSubject.Work value -> WorkActKind.token value.Act = record.Act
+            | "REMINDER", ReceiptSubject.Reminder value ->
+                ReminderActKind.token value.Act = record.Act
+            | "AUTHORITY", ReceiptSubject.Authority value ->
+                AuthorityKind.token value.Act = record.Act
+            | "OPERATION", _ -> record.Act = "RESOLVE"
+            | _ -> false)
 
     let location read =
         let root =

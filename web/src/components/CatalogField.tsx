@@ -2,6 +2,7 @@ import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
 import { CountryHint } from "./CountryHint";
 import { FieldError } from "react-aria-components/FieldError";
+import { TextArea } from "react-aria-components/TextArea";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
 import { Text } from "react-aria-components/Text";
@@ -27,6 +28,48 @@ const isCode = (field: FieldCatalogEntry) =>
   field.scalar.kind === "CURRENCY" ||
   (field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined);
 
+const ScalarControl = ({ field, name }: { field: FieldCatalogEntry; name: string }) =>
+  field.scalar.kind === "PLAIN_TEXT" ? (
+    <TextArea
+      name={name}
+      data-field-name={field.name}
+      rows={field.scalar.allowsLineFeed ? 5 : 1}
+      autoCapitalize="off"
+      spellCheck
+      dir="auto"
+      autoComplete="off"
+    />
+  ) : (
+    <Input
+      name={name}
+      {...referenceAppearance(field)}
+      data-field-name={field.name}
+      type="text"
+      inputMode={field.scalar.kind === "AMOUNT" ? "decimal" : "text"}
+      autoCapitalize="off"
+      spellCheck={false}
+      dir={field.scalar.kind === "TEXT" ? "auto" : "ltr"}
+      autoComplete="off"
+    />
+  );
+const ScalarCounter = ({ field, value }: { field: FieldCatalogEntry; value: string }) => {
+  const p = usePresentation();
+  if (field.scalar.kind !== "PLAIN_TEXT") {
+    return null;
+  }
+  const count = Array.from(value).length;
+  return (
+    <small
+      className="scalar-counter"
+      data-over-limit={count > field.scalar.maximumScalars || undefined}
+    >
+      {p.text("ui.scalarCount", {
+        count: p.integer(count),
+        maximum: p.integer(field.scalar.maximumScalars),
+      })}
+    </small>
+  );
+};
 export const CatalogField = ({
   field,
   value,
@@ -54,20 +97,11 @@ export const CatalogField = ({
       onChange={onChange}
     >
       <Label>{p.fieldLabel(field.name)}</Label>
-      <Input
-        name={inputName ?? field.name}
-        {...referenceAppearance(field)}
-        data-field-name={field.name}
-        type="text"
-        inputMode={field.scalar.kind === "AMOUNT" ? "decimal" : "text"}
-        autoCapitalize="off"
-        spellCheck={false}
-        dir={field.scalar.kind === "TEXT" ? "auto" : "ltr"}
-        autoComplete="off"
-      />
+      <ScalarControl field={field} name={name} />
       <Text slot="description" className="field-description">
         <small>{p.fieldMeaning(field.name)}</small>
         <small>{p.hint(field)}</small>
+        <ScalarCounter field={field} value={value} />
         {field.name === "incidentCountry" ? <CountryHint code={value} /> : null}
       </Text>
       {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}

@@ -30,6 +30,7 @@ const acceptedSummary = (
 export const CaseFieldsView = ({ values, revision, fields, context }: CaseFieldsViewProps) => {
   const p = usePresentation();
   const headingId = useId();
+  const snapshotFields = fields.filter((field) => field.section !== "work");
   const [explain, setExplain] = useState(false);
   return (
     <section aria-labelledby={headingId} className="case-fields">
@@ -48,16 +49,16 @@ export const CaseFieldsView = ({ values, revision, fields, context }: CaseFields
         <span>{p.text("ui.revision", { revision: p.integer(revision) })}</span>
         <CopyValue
           label={p.text("ui.acceptedSummary")}
-          value={acceptedSummary(p, values, revision, fields)}
+          value={acceptedSummary(p, values, revision, snapshotFields)}
         />
       </div>
       <CaseFactRows
         values={values}
-        fields={fields.filter((field) => field.group === null)}
+        fields={snapshotFields.filter((field) => field.group === null)}
         explain={explain}
       />
       {groups.map((group) => (
-        <CaseFactGroup key={group} group={group} values={values} fields={fields} />
+        <CaseFactGroup key={group} group={group} values={values} fields={snapshotFields} />
       ))}
     </section>
   );

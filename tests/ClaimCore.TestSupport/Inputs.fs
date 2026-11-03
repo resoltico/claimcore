@@ -44,30 +44,43 @@ let workBasis: WorkDateBasis =
 
 let unscheduledWork: CaseWorkView =
     {
+        Revision = Revision.zero
+        ChangedAt = None
+        RecordedBy = None
+        Summary = None
+        NextAction = None
+        PendingReminders = 0L
+        OverdueReminders = 0L
+        NeedsNextAction = true
+        CanUpdateSummary = true
+        CanAssign = true
+        CanCreateReminder = true
         Responsible = None
         FollowUp = None
         Due = CaseDue.Unscheduled
         Basis = workBasis
     }
 
-/// Presentation fixture for an unassigned case. Tests of relation disclosure supply explicit accounts.
+/// A fact snapshot has no authored work. Relation/work tests provide their independent work fixture.
 let workView (state: CaseState<CaseFields>) : CaseWorkView =
     let fields = CaseState.fields state
-    let work = fields |> Option.map _.Work |> Option.defaultValue CaseWork.empty
+    let active = CaseState.lifecycle state = Lifecycle.Active
 
-    if work.Responsible.IsSome then
-        failtest "An assigned case needs an explicit account presentation fixture."
+    let actionable =
+        active
+        && (fields |> Option.exists (fun fields -> fields.Status = CaseStatus.Opened))
 
-    {
-        Responsible = None
-        FollowUp = work.FollowUp
+    { unscheduledWork with
         Due =
             CaseDue.at
                 workBasis.BusinessDate
                 (CaseState.lifecycle state)
                 (fields |> Option.map _.Status)
-                work
-        Basis = workBasis
+                None
+        NeedsNextAction = actionable
+        CanUpdateSummary = active
+        CanAssign = actionable
+        CanCreateReminder = actionable
     }
 
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
@@ -78,19 +91,30 @@ let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
                 "DATE", "2026-08-01"
                 "COUNTRY", "LV"
                 "NAME", "Synthetic Party"
+                "DESCRIPTION", "Synthetic incident description"
                 "AMOUNT", "1000.00"
                 "CURRENCY", "EUR"
             ]
 
     Inventory.fields group
-    |> List.map (fun field ->
+    |> List.choose (fun field ->
         let key = field.GetProperty("key").GetString() |> nonNull
         let kind = field.GetProperty("kind").GetString() |> nonNull
 
-        key,
-        ClaimCore.Json.JsonValue.String(
-            Map.tryFind key overrides |> Option.defaultValue samples[kind]
-        ))
+        let optional =
+            match field.TryGetProperty "optional" with
+            | true, value -> value.GetBoolean()
+            | _ -> false
+
+        if optional && not (Map.containsKey key overrides) then
+            None
+        else
+            Some(
+                key,
+                ClaimCore.Json.JsonValue.String(
+                    Map.tryFind key overrides |> Option.defaultValue samples[kind]
+                )
+            ))
     |> ClaimCore.Json.JsonValue.Object
     |> codec.Read "$"
     |> Result.defaultWith (fun problem -> failtestf "Input inventory does not admit: %A" problem)
@@ -170,6 +194,10 @@ let registrationUpdate (input: RegistrationInput) : RegistrationUpdateInput =
         Country = Some(value BusinessField.IncidentCountry)
         Claimant = Some(value BusinessField.ClaimantName)
         Insurer = Some(value BusinessField.InsurerName)
+        IncidentDescription =
+            RegistrationInput.description input
+            |> Option.map WorkValue.Set
+            |> Option.defaultValue WorkValue.Keep
         Claimed =
             Some
                 {
@@ -291,15 +319,6 @@ let caseActs registration decision payment reason =
                 [
                     "values",
                     RequestCodecs.registrationUpdate.Write(registrationUpdate registration)
-                ]
-            | "WORK" ->
-                [
-                    "values",
-                    RequestCodecs.work.Write
-                        {
-                            CaseWorkInput.Responsible = WorkValue.Keep
-                            FollowUp = WorkValue.Set "2026-09-01"
-                        }
                 ]
             | "DECISION" -> [ "values", RequestCodecs.decision.Write decision ]
             | "PAYMENT" -> [ "values", RequestCodecs.payment.Write payment ]

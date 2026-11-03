@@ -20,7 +20,6 @@ let private maximum = 9007199254740991L
 
 let private fields length : CaseFields =
     {
-        Work = CaseWork.empty
         CaseReference = CaseFixtures.reference reference
         Status = CaseStatus.Closed
         Registration =

@@ -21,11 +21,31 @@ type AuthorityEntryMetadata =
         Act: AuthorityKind
     }
 
+type WorkEntryMetadata =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        Act: WorkActKind
+        BusinessDate: DateOnly
+    }
+
+type ReminderEntryMetadata =
+    {
+        CaseId: CaseId
+        ReminderId: ReminderId
+        Revision: Revision
+        Act: ReminderActKind
+        NextReminderId: ReminderId option
+        BusinessDate: DateOnly
+    }
+
 [<RequireQualifiedAccess>]
 type RecordedTarget =
     | NonAcceptance of OperationId
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
+    | Work of WorkEntryMetadata
+    | Reminder of ReminderEntryMetadata
 
 type LedgerMetadata =
     {
@@ -77,7 +97,6 @@ module LedgerEntry =
         | CaseActKind.Void -> 10uy
         | CaseActKind.Reinstate -> 11uy
         | CaseActKind.Erase -> 12uy
-        | CaseActKind.UpdateWork -> 13uy
 
     let private authorityCode =
         function
@@ -144,6 +163,7 @@ module LedgerEntry =
             Identifier: byte array
             Revision: byte array
             Date: byte array
+            Related: byte array
         }
 
     let private subjectBytes =
@@ -155,6 +175,7 @@ module LedgerEntry =
                 Identifier = (OperationId.value operation).ToByteArray(bigEndian = true)
                 Revision = i64 0L
                 Date = i32 0
+                Related = Array.empty
             }
         | RecordedTarget.Authority subject ->
             {
@@ -163,6 +184,7 @@ module LedgerEntry =
                 Identifier = (ActorId.value subject.TargetActorId).ToByteArray(bigEndian = true)
                 Revision = i64 0L
                 Date = i32 0
+                Related = Array.empty
             }
         | RecordedTarget.Case subject ->
             if subject.Revision < Revision.first then
@@ -174,6 +196,48 @@ module LedgerEntry =
                 Identifier = (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
                 Revision = i64 (Revision.value subject.Revision)
                 Date = i32 subject.BusinessDate.DayNumber
+                Related = Array.empty
+            }
+
+        | RecordedTarget.Work subject ->
+            {
+                Kind = 4uy
+                Act = 80uy
+                Identifier = (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
+                Revision = i64 (Revision.value subject.Revision)
+                Date = i32 subject.BusinessDate.DayNumber
+                Related = Array.empty
+            }
+        | RecordedTarget.Reminder subject ->
+            let code =
+                match subject.Act with
+                | ReminderActKind.Create -> 81uy
+                | ReminderActKind.Update -> 82uy
+                | ReminderActKind.Complete -> 83uy
+                | ReminderActKind.Cancel -> 84uy
+                | ReminderActKind.Reopen -> 85uy
+                | ReminderActKind.CompleteAndPlanNext -> 86uy
+
+            {
+                Kind = 5uy
+                Act = code
+                Identifier = (ReminderId.value subject.ReminderId).ToByteArray(bigEndian = true)
+                Revision = i64 (Revision.value subject.Revision)
+                Date = i32 subject.BusinessDate.DayNumber
+                Related =
+                    Array.concat
+                        [
+                            (CaseId.value subject.CaseId).ToByteArray(bigEndian = true)
+                            match subject.NextReminderId with
+                            | None -> [| 0uy |]
+                            | Some id ->
+                                Array.concat
+                                    [
+                                        [| 1uy |]
+                                        (ReminderId.value id).ToByteArray(bigEndian = true)
+                                        i64 1L
+                                    ]
+                        ]
             }
 
     /// Fixed metadata plus a presence tag and length-framed retained OPEN reference.
@@ -206,6 +270,7 @@ module LedgerEntry =
                 subject.Identifier
                 subject.Revision
                 subject.Date
+                subject.Related
                 // Length framing makes retained variable-width identity unambiguous.
                 (match metadata.CreationReference with
                  | None -> [| 0uy |]

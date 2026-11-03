@@ -1,3 +1,4 @@
+import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -36,7 +37,9 @@ import {
 } from "../../operation/operationState";
 import type { Notice } from "../../protocol/notices";
 type Options = {
-  subject: "CASE" | "AUTHORITY";
+  subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER";
+  prefill?: FormValues;
+  targetIdentity?: string;
   kind: string;
   current: CurrentCase | null;
   credential: string;
@@ -54,9 +57,13 @@ type Options = {
   onDisclosureRefused?: (notice: Notice) => void;
 };
 const targetKey = (options: Options): string =>
-  `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}`;
+  `${options.subject}:${options.recoveryScope?.installationId ?? "UNBOUND"}:${options.recoveryScope?.actorId ?? "UNBOUND"}:${options.current?.caseId ?? "NEW"}:${options.current?.caseReference.toUpperCase() ?? "NEW"}:${options.targetIdentity ?? ""}`;
 const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}): OperationState => {
-  const values = { ...initialOperationValues(options.subject, kind, options.current), ...prefill };
+  const values = {
+    ...initialOperationValues(options.subject, kind, options.current),
+    ...options.prefill,
+    ...prefill,
+  };
   const context = {
     generation: 0,
     epoch: options.contextEpoch ?? 0,
@@ -94,6 +101,13 @@ const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.keys(left).length !== Object.keys(right).length ||
   Object.entries(left).some(([key, value]) => right[key] !== value);
 type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
+const incompleteSuccess = (result: Reply): boolean =>
+  result.kind === "outcome" &&
+  ["ACCEPTED", "ALREADY_ACCEPTED", "REVIEWED"].includes(result.value.outcome.kind);
+const completionNotice = (result: Reply): Notice =>
+  incompleteSuccess(result) ? { kind: "local", reason: "incomplete" } : resultNotice(result);
+const completionUncertain = (effect: { kind: string }, result: Reply): boolean =>
+  effect.kind === "EXECUTE" && (mutationUncertain(result) || incompleteSuccess(result));
 const completion = (
   effect: Extract<
     OperationEffect,
@@ -105,14 +119,20 @@ const completion = (
 ): OperationAction => {
   if (result.kind === "outcome") {
     const { outcome } = result.value;
-    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
+    if (
+      (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") &&
+      receiptCorrelates(effect.source.prepared.input, outcome.data)
+    ) {
       return {
         type: "RECORD",
         receipt: outcome.data,
         identity: effect.identity,
       };
     }
-    if (outcome.kind === "REVIEWED") {
+    if (
+      outcome.kind === "REVIEWED" &&
+      replyCorrelates("operation.preview", effect.source.prepared.input, result.value)
+    ) {
       return {
         type: "REVIEW",
         review: outcome.data.review,
@@ -123,14 +143,14 @@ const completion = (
   return {
     type: "REFUSE",
     identity: effect.identity,
-    notice: resultNotice(result),
+    notice: completionNotice(result),
     target:
       result.kind === "outcome" &&
       result.value.outcome.kind === "REJECTED" &&
       "target" in result.value.outcome.data
         ? result.value.outcome.data.target
         : null,
-    uncertain: effect.kind === "EXECUTE" && mutationUncertain(result),
+    uncertain: completionUncertain(effect, result),
     disclosure: isDisclosureRefused(result),
   };
 };
@@ -142,15 +162,20 @@ const runNetwork = async (
     }
   >,
   installationId?: string,
+  signal?: AbortSignal,
 ): Promise<OperationAction> => {
   if (effect.kind === "CHECK_STATUS") {
     const result = await service.status(
       effect.source.prepared.input.operationId,
       effect.identity.credential,
       installationId,
+      signal,
     );
     if (result.kind === "outcome") {
-      if (result.value.outcome.kind === "ACCEPTED") {
+      if (
+        result.value.outcome.kind === "ACCEPTED" &&
+        receiptCorrelates(effect.source.prepared.input, result.value.outcome.data)
+      ) {
         return {
           type: "RECORD",
           identity: effect.identity,
@@ -180,9 +205,22 @@ const runNetwork = async (
   return completion(
     effect,
     effect.kind === "PREVIEW"
-      ? await service.preview(effect.source.prepared, effect.identity.credential)
+      ? await service.preview(effect.source.prepared, effect.identity.credential, signal)
       : await service.execute(effect.source.prepared, effect.identity.credential, installationId),
   );
+};
+const ownedNetworkRead = async (
+  effect: Extract<OperationEffect, { kind: "PREVIEW" | "CHECK_STATUS" }>,
+  reads: Map<string, AbortController>,
+  installationId?: string,
+): Promise<OperationAction> => {
+  const controller = new AbortController();
+  reads.set(effect.identity.id, controller);
+  try {
+    return await runNetwork(effect, installationId, controller.signal);
+  } finally {
+    reads.delete(effect.identity.id);
+  }
 };
 const checkOwnedStatus = async (
   effect: Extract<OperationEffect, { kind: "CHECK_STATUS" }>,
@@ -190,6 +228,7 @@ const checkOwnedStatus = async (
   owned: RecoveryRecord | undefined,
   journal: RecoveryJournal,
   current: () => boolean,
+  reads: Map<string, AbortController>,
 ): Promise<OperationAction> => {
   const stillCurrent = () => current() && owned !== undefined && sameRecoveryScope(scope, owned);
   if (owned === undefined || !stillCurrent()) {
@@ -203,7 +242,7 @@ const checkOwnedStatus = async (
     };
   }
   // A passive read uses the existing attempt; it never publishes another journal write.
-  const action = await runNetwork(effect, owned.installationId);
+  const action = await ownedNetworkRead(effect, reads, owned.installationId);
   if (stillCurrent() && (action.type === "RECORD" || action.type === "NOT_ACCEPTED")) {
     await journal.remove(owned).catch(() => undefined);
   }
@@ -317,7 +356,7 @@ const useEffects = (
           const journal = options.journal!;
           const scope = options.recoveryScope;
           if (effect.kind === "PREVIEW") {
-            return runNetwork(effect, options.recoveryScope?.installationId);
+            return ownedNetworkRead(effect, reads.current, options.recoveryScope?.installationId);
           }
           if (scope === undefined) {
             return {
@@ -337,13 +376,14 @@ const useEffects = (
               attempts.current.get(operationId),
               journal,
               current,
+              reads.current,
             );
           }
           let record = attempts.current.get(operationId);
           if (record === undefined) {
             record = {
               ...scope,
-              format: 1,
+              format: 2,
               attemptId: effect.identity.id,
               operationId,
               subject: effect.source.prepared.input.kind,
@@ -476,7 +516,7 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
       if (
         !blocked &&
         state.disclosureRead === null &&
-        options.subject === "CASE" &&
+        options.subject !== "AUTHORITY" &&
         options.current !== null
       ) {
         dispatch({
@@ -598,7 +638,7 @@ export const useOperation = (supplied: Options) => {
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.caseObservation : null,
     revalidating: state.disclosureRead !== null,
-    canRevalidateCase: options.subject === "CASE" && options.current !== null,
+    canRevalidateCase: options.subject !== "AUTHORITY" && options.current !== null,
     review: disclosureCurrent ? view.review : null,
     receipt: disclosureCurrent ? view.receipt : null,
     contextChanged: state.target !== target,

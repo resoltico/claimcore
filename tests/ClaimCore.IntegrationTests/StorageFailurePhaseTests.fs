@@ -51,7 +51,7 @@ let private controls (database: PostgresFixture.Database) =
         cancelled.Cancel()
 
         let! unopened =
-            Transactions.read database.RuntimeSource cancelled.Token (fun _ -> Task.FromResult 0)
+            Transactions.read database.RuntimeSource cancelled.Token (fun _ _ -> Task.FromResult 0)
 
         Expect.equal
             unopened
@@ -59,7 +59,7 @@ let private controls (database: PostgresFixture.Database) =
             "Pre-work cancellation is definite and does not invoke work"
 
         let! read =
-            Transactions.read database.RuntimeSource token (fun connection ->
+            Transactions.read database.RuntimeSource token (fun connection _ ->
                 DatabaseSession.rows connection ("SELECT '" + sensitive + "'::integer") [||] token)
 
         Expect.equal
@@ -68,7 +68,7 @@ let private controls (database: PostgresFixture.Database) =
             "Real provider read failure is mapped before exception details reach callers"
 
         let! internalFailure =
-            Transactions.read database.RuntimeSource token (fun _ ->
+            Transactions.read database.RuntimeSource token (fun _ _ ->
                 Task.FromException<int>(InvalidOperationException sensitive))
 
         Expect.equal
@@ -183,9 +183,166 @@ let private controls (database: PostgresFixture.Database) =
             "A throwing observer cannot prevent the next real acceptance"
     }
 
+let private readSetup (database: PostgresFixture.Database) =
+    task {
+        use! beforeConnection = database.OwnerSource.OpenConnectionAsync()
+
+        let! beforeRows =
+            DatabaseSession.rows beforeConnection "SELECT clock_timestamp()" [||] token
+
+        let before = DatabaseSession.instant 0 beforeRows.Head
+
+        let! observed =
+            Transactions.read database.RuntimeSource token (fun connection observedAt ->
+                task {
+                    let! rows =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT current_setting('lock_timeout'),current_setting('statement_timeout'),current_setting('idle_in_transaction_session_timeout'),current_setting('transaction_isolation'),clock_timestamp()"
+                            [||]
+                            token
+
+                    return observedAt, rows.Head
+                })
+
+        let instant, row =
+            observed
+            |> Result.defaultWith (fun error -> failtestf "Read setup failed: %A" error)
+
+        Expect.equal
+            (DatabaseSession.value<string> 0 row)
+            "5s"
+            "The original lock timeout is applied to this read transaction"
+
+        Expect.equal
+            (DatabaseSession.value<string> 1 row)
+            "30s"
+            "The original statement timeout is applied to this read transaction"
+
+        Expect.equal
+            (DatabaseSession.value<string> 2 row)
+            "15s"
+            "The original idle timeout is applied to this read transaction"
+
+        Expect.equal
+            (DatabaseSession.value<string> 3 row)
+            "repeatable read"
+            "The existing read snapshot isolation is preserved"
+
+        let after = DatabaseSession.instant 4 row
+
+        Expect.isTrue
+            (before <= instant && instant <= after)
+            "The supplied observation is an actual server-clock sample within the read setup"
+    }
+
+let private globalFactsIntegrity (database: PostgresFixture.Database) =
+    task {
+        let! owner = caseWorker database.Fixture
+
+        let unknown =
+            PrincipalKey.human "https://issuer.example/" "unknown-read-facts"
+            |> Result.defaultWith (string >> failtest)
+
+        let services = [ owner; core database.Fixture unknown ]
+
+        let check label =
+            task {
+                for actor in services do
+                    let! context = Service.context actor () token
+
+                    Expect.equal
+                        context
+                        (Outcome.Failed CoreFault.StoreIntegrityError)
+                        (label + ": context checks the operational owner even without an actor")
+
+                    let! page =
+                        Service.list
+                            actor
+                            (Inputs.caseListPage { AfterCursor = None; Limit = 1 })
+                            token
+
+                    Expect.equal
+                        page
+                        (Outcome.Failed CoreFault.StoreIntegrityError)
+                        (label + ": list checks the operational owner before missing-actor refusal")
+            }
+
+        let! initial = Service.context owner () token
+
+        match initial with
+        | Outcome.Succeeded context ->
+            Expect.isFalse context.Maintenance.Active "Positive ordinary mode"
+        | other -> failtestf "Expected context: %A" other
+
+        do! sql database "DELETE FROM claimcore.register_maintenance" [||]
+        do! check "Missing operational row"
+
+        do!
+            sql
+                database
+                "INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES(true,false,0)"
+                [||]
+
+        // This owned fixture deliberately crosses schema checks to exercise the independent read decoder.
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.register_maintenance DROP CONSTRAINT register_maintenance_check; UPDATE claimcore.register_maintenance SET active=true,generation=0"
+                [||]
+
+        do! check "Invalid operational state"
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.register_maintenance SET active=false; ALTER TABLE claimcore.register_maintenance ADD CONSTRAINT register_maintenance_check CHECK (NOT active OR generation > 0)"
+                [||]
+
+        do!
+            sql
+                database
+                "ALTER TABLE claimcore.register_maintenance DROP CONSTRAINT register_maintenance_singleton_check; INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES(false,false,0)"
+                [||]
+
+        do! check "Multiple operational owners"
+
+        do!
+            sql
+                database
+                "DELETE FROM claimcore.register_maintenance WHERE NOT singleton; ALTER TABLE claimcore.register_maintenance ADD CONSTRAINT register_maintenance_singleton_check CHECK (singleton)"
+                [||]
+
+        let! repaired = Service.context owner () token
+
+        match repaired with
+        | Outcome.Succeeded context ->
+            Expect.isFalse
+                context.Maintenance.Active
+                "Restored constraints and single valid owner remain readable"
+        | other -> failtestf "Expected repaired context: %A" other
+
+        let! absent = Service.context (core database.Fixture unknown) () token
+
+        Expect.equal
+            absent
+            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+            "A valid operational owner does not invent an unknown actor"
+    }
+
 [<Tests>]
 let tests =
     testSequenced
-    <| testCaseAsync
-        "safe diagnostics preserve real pre-work read append projection and commit failures"
-        (run controls)
+    <| testList
+        "read setup and storage diagnostics"
+        [
+            testCaseAsync
+                "global read facts retain operational integrity with known and absent actors"
+                (run globalFactsIntegrity)
+            testCaseAsync
+                "transaction-local read settings and observation share one setup"
+                (run readSetup)
+            testCaseAsync
+                "safe diagnostics preserve real pre-work read append projection and commit failures"
+                (run controls)
+        ]

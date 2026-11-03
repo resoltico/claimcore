@@ -30,21 +30,39 @@ let private seeded database =
         let! work =
             Service.execute
                 actor
-                (Inputs.caseOperation (
-                    request
-                        100
-                        "synthetic-a"
-                        1L
-                        (AuthoredCaseAct.UpdateWork
-                            {
-                                CaseWorkInput.Responsible =
-                                    WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
-                                FollowUp = WorkValue.Set "2027-12-31"
-                            })
-                ))
+                (OperationInput.Work
+                    {
+                        OperationId = id 100
+                        Target = CaseSelector.Reference "synthetic-a"
+                        ExpectedRevision = 0L
+                        Act =
+                            WorkAct.UpdateWork
+                                {
+                                    Responsible =
+                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                    Summary = WorkValue.Set "Await the report"
+                                }
+                    })
                 token
 
         accepted work |> ignore
+
+        let reminderRequest =
+            OperationInput.Reminder
+                {
+                    OperationId = id 101
+                    Target = CaseSelector.Reference "synthetic-a"
+                    Act =
+                        AuthoredReminderAct.Create
+                            {
+                                Action = "Request the report"
+                                Due = "2027-12-31"
+                            }
+                }
+
+        let! reminder = Service.execute actor reminderRequest token
+
+        accepted reminder |> ignore
 
         let! resolved =
             ClaimCore.TestSupport.StoreFixtures.resolve actor { OperationId = id 99 } token
@@ -189,7 +207,7 @@ let private erasedIdentity database =
             Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 101 "synthetic-a" 2L (AuthoredCaseAct.Bare BareAct.Erase)
+                    request 103 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 token
 
@@ -206,13 +224,24 @@ let private erasedIdentity database =
                     "postgres"
                     "-d"
                     "postgres"
-                    "-n"
-                    "claimcore"
                     "-f"
                     "/tmp/foundation-erased.sql"
                 |]
 
         do! sql database "DROP SCHEMA claimcore CASCADE" [||]
+        do! sql database "DROP EXTENSION pg_trgm" [||]
+
+        let! absentModule =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT EXISTS(SELECT FROM pg_extension WHERE extname='pg_trgm')"
+                    [||]
+                    token)
+
+        Expect.isFalse
+            (DatabaseSession.value<bool> 0 absentModule.Head)
+            "Restore cannot reuse an installed extension"
 
         do!
             DatabaseScenarios.exec
@@ -229,6 +258,19 @@ let private erasedIdentity database =
                     "/tmp/foundation-erased.sql"
                 |]
 
+        let! restoredModule =
+            DatabaseSession.read database.OwnerSource token (fun connection ->
+                DatabaseSession.rows
+                    connection
+                    "SELECT extversion FROM pg_extension WHERE extname='pg_trgm'"
+                    [||]
+                    token)
+
+        Expect.equal
+            (restoredModule |> List.map (DatabaseSession.value<string> 0))
+            [ "1.6" ]
+            "Full dump restores the required module before its dependent indexes"
+
         let! restored = Verification.verify database.OwnerSource (Some checkpoint) token
 
         Expect.equal
@@ -237,6 +279,8 @@ let private erasedIdentity database =
             "A real full restore preserves accepted writes, erasure and controls"
 
         do! sql database "DELETE FROM claimcore.grants WHERE case_id IS NOT NULL" [||]
+        do! sql database "DELETE FROM claimcore.reminders" [||]
+        do! sql database "DELETE FROM claimcore.case_work" [||]
         do! sql database "DELETE FROM claimcore.cases" [||]
         let! result = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
         Expect.isOk result "Retained OPEN identity reconstructs erased cases"

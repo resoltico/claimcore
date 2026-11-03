@@ -67,8 +67,39 @@ let publish directory =
                     directory
                 ]
 
-        let! code, _, _ = execute config
-        Expect.equal code 0 "Publish compiled owner binary"
+        let evidenceDirectory = Path.GetDirectoryName(Path.GetFullPath directory) |> nonNull
+
+        let retain (stdout: byte array) (stderr: byte array) =
+            for name, bytes in [ "publish.stdout", stdout; "publish.stderr", stderr ] do
+                let path = Path.Combine(evidenceDirectory, name)
+                File.WriteAllBytes(path, bytes)
+                File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
+
+            Console.Error.WriteLine(
+                "Owner publish diagnostics retained privately: " + evidenceDirectory
+            )
+
+        let result =
+            try
+                ClaimCore.TestSupport.BoundedProcess.run config None 1_048_576 60_000
+            with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
+                ClaimCore.TestSupport.FixtureDisposal.afterFailure
+                    failure
+                    [ fun () -> retain failure.StandardOutput failure.StandardError ]
+
+                reraise ()
+
+        try
+            Expect.equal
+                result.ExitCode
+                0
+                ("Publish compiled owner binary; build the current Release inputs first. Private failure diagnostics: "
+                 + evidenceDirectory)
+        with failure ->
+            ClaimCore.TestSupport.FixtureDisposal.afterFailure
+                failure
+                [ fun () -> retain result.StandardOutput result.StandardError ]
+
         return Path.Combine(directory, "claimcore-database.dll")
     }
 

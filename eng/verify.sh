@@ -127,6 +127,11 @@ tests() { # <project> [configuration] [timeout] [settings]
   if [[ -n "${5:-}" ]]; then test_command+=(--filter "$5"); fi
   CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
     -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
+  if [[ ${result} -eq 0 ]]; then
+    touch "${report_directory}/.claimcore-native-passed"
+  else
+    touch "${report_directory}/.claimcore-native-failed"
+  fi
   rm "${report_directory}/.claimcore-native-active"
   touch "${report_directory}/.claimcore-native-complete"
   prune_native_reports "${report_root}"
@@ -177,6 +182,7 @@ lint() {
 unit() {
   bash eng/test-native-reports.sh
   python3 eng/test-growth-comparison.py
+  python3 eng/test-growth-progress.py
   build_native
   local project
   for project in "${unit_projects[@]}"; do
@@ -263,7 +269,7 @@ acceptance() {
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
   local project
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release 40m
+    tests "${project}" Release 40m eng/expecto.acceptance.runsettings
   done
 }
 

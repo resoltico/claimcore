@@ -34,11 +34,13 @@
     <Compile Include="Wire/PrincipalCodecs.fs" />
     <Compile Include="Wire/LedgerCodecs.fs" />
     <Compile Include="Wire/CaseStateCodecs.fs" />
+    <Compile Include="Wire/WorkCodecs.fs" />
     <Compile Include="Wire/ReadRowCodecs.fs" />
     <Compile Include="Wire/ResponseCodecs.fs" />
     <Compile Include="Wire/AuthorityHistoryCodecs.fs" />
     <Compile Include="Wire/CaseTotalsCodecs.fs" />
     <Compile Include="Wire/ReceiptCodecs.fs" />
+    <Compile Include="Wire/WorkReadCodecs.fs" />
     <Compile Include="Wire/ReplyCodecs.fs" />
     <Compile Include="Wire/ResolutionCodecs.fs" />
     <Compile Include="Catalog/Codecs.fs" />

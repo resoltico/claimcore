@@ -130,7 +130,7 @@ let private summaryHistory fixture reference =
     |> ignore
 
 
-let qualify fixture =
+let private qualify fixture =
     let source, input, reference = original fixture
     let accepted = run fixture fixture.Environment source 0 |> require "ACCEPTED"
     staleReview fixture input reference
@@ -172,8 +172,6 @@ let qualify fixture =
     |> withheld "SUCCEEDED"
 
     summaryHistory fixture reference
-    setGrant fixture target "CASE_HANDLER" true
-    setGrant fixture target "CASE_REGISTRAR" false
 
 let published () =
     task {

@@ -40,15 +40,7 @@ let private codecs () =
         members ResponseCodecs.caseFields.Definitions ResponseCodecs.caseFields.Schema
 
     let expected =
-        [
-            "caseReference"
-            "status"
-            "registration"
-            "decision"
-            "payment"
-            "work"
-            "progress"
-        ]
+        [ "caseReference"; "status"; "registration"; "decision"; "payment"; "progress" ]
 
     Expect.equal actual expected "The public view has complete groups"
 
@@ -102,9 +94,8 @@ let private diagnosticGroups () =
 
 let private actGroups () =
     let expected group =
-        CaseFields.declarations
-        |> List.filter (fun row -> row.Group = Some group)
-        |> List.map _.Field
+        Inventory.fieldKeys (RecordGroup.token group)
+        |> List.map (fun key -> Vocabulary.tryParse BusinessField.vocabulary key |> Option.get)
 
     let entry (kind: CatalogOperation) =
         Catalog.document.Entries

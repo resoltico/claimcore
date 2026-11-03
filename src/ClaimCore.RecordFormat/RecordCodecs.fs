@@ -46,8 +46,40 @@ module internal RecordCodecs =
             (values >> Map.ofList)
 
     let registration =
-        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
-        |> Codec.named "Registration"
+        (record (fun incident notification country claimant insurer amount currency description ->
+            [
+                BusinessField.IncidentDate, incident
+                BusinessField.IncidentNotificationDate, notification
+                BusinessField.IncidentCountry, country
+                BusinessField.ClaimantName, claimant
+                BusinessField.InsurerName, insurer
+                BusinessField.ClaimedAmount, amount
+                BusinessField.ClaimedCurrency, currency
+                yield!
+                    description
+                    |> Option.flatten
+                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
+                    |> Option.toList
+            ]
+            |> RegistrationInput.create
+            |> Result.defaultWith invalidOp)
+        : Fields<RegistrationInput, _>)
+        |> field "incidentDate" (RegistrationInput.value BusinessField.IncidentDate) text
+        |> field
+            "incidentNotificationDate"
+            (RegistrationInput.value BusinessField.IncidentNotificationDate)
+            text
+        |> field "incidentCountry" (RegistrationInput.value BusinessField.IncidentCountry) text
+        |> field "claimantName" (RegistrationInput.value BusinessField.ClaimantName) text
+        |> field "insurerName" (RegistrationInput.value BusinessField.InsurerName) text
+        |> field "claimedAmount" (RegistrationInput.value BusinessField.ClaimedAmount) text
+        |> field "claimedCurrency" (RegistrationInput.value BusinessField.ClaimedCurrency) text
+        |> optionalField
+            "incidentDescription"
+            (RegistrationInput.description >> Option.map Some)
+            (nullable text)
+        |> build
+        |> named "Registration"
 
     let decision =
         inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
@@ -70,7 +102,7 @@ module internal RecordCodecs =
         |> build
 
     let registrationUpdate =
-        (record (fun incident notification country claimant insurer claimed ->
+        (record (fun incident notification country claimant insurer claimed description ->
             {
                 RegistrationUpdateInput.IncidentDate = incident
                 NotificationDate = notification
@@ -78,6 +110,11 @@ module internal RecordCodecs =
                 Claimant = claimant
                 Insurer = insurer
                 Claimed = claimed
+                IncidentDescription =
+                    match description with
+                    | None -> WorkValue.Keep
+                    | Some None -> WorkValue.Clear
+                    | Some(Some value) -> WorkValue.Set value
             })
         : Fields<RegistrationUpdateInput, _>)
         |> optionalField "incidentDate" _.IncidentDate text
@@ -86,6 +123,14 @@ module internal RecordCodecs =
         |> optionalField "claimantName" _.Claimant text
         |> optionalField "insurerName" _.Insurer text
         |> optionalField "claimed" _.Claimed moneyInput
+        |> optionalField
+            "incidentDescription"
+            (fun value ->
+                match value.IncidentDescription with
+                | WorkValue.Keep -> None
+                | WorkValue.Clear -> Some None
+                | WorkValue.Set text -> Some(Some text))
+            (nullable text)
         |> build
         |> named "RegistrationUpdate"
 
@@ -100,38 +145,6 @@ module internal RecordCodecs =
         |> optionalField "payable" _.Payable moneyInput
         |> build
         |> named "DecisionUpdate"
-
-    let private workValue =
-        Codec.taggedOn
-            "kind"
-            "WorkValue"
-            [
-                unitVariant "CLEAR" WorkValue.Clear
-                variant
-                    "SET"
-                    WorkValue.Set
-                    (function
-                    | WorkValue.Set value -> Some value
-                    | _ -> None)
-                    (record id |> field "value" id text)
-            ]
-
-    let work =
-        let supplied =
-            function
-            | WorkValue.Keep -> None
-            | choice -> Some choice
-
-        (record (fun actor date ->
-            {
-                CaseWorkInput.Responsible = defaultArg actor WorkValue.Keep
-                FollowUp = defaultArg date WorkValue.Keep
-            })
-        : Fields<CaseWorkInput, _>)
-        |> optionalField "responsibleActor" (_.Responsible >> supplied) workValue
-        |> optionalField "followUpDate" (_.FollowUp >> supplied) workValue
-        |> build
-        |> named "CaseWorkUpdate"
 
     let registrationGroup =
         tagged
@@ -208,7 +221,6 @@ module internal RecordCodecs =
                 memberCodec DurableNames.Values registration (inject, project)
             | CaseActSlot.RegistrationUpdate(inject, project) ->
                 memberCodec "values" registrationUpdate (inject, project)
-            | CaseActSlot.Work(inject, project) -> memberCodec "values" work (inject, project)
             | CaseActSlot.Decision(inject, project) ->
                 memberCodec DurableNames.Values decision (inject, project)
             | CaseActSlot.Payment(inject, project) ->
@@ -346,7 +358,57 @@ module internal RecordCodecs =
             (values >> Map.ofList)
 
     let private acceptedRegistration =
-        acceptedGroup RecordGroup.Registration Registration.create Registration.values
+        (record (fun incident notification country claimant insurer amount currency description ->
+            [
+                BusinessField.IncidentDate, incident
+                BusinessField.IncidentNotificationDate, notification
+                BusinessField.IncidentCountry, country
+                BusinessField.ClaimantName, claimant
+                BusinessField.InsurerName, insurer
+                BusinessField.ClaimedAmount, amount
+                BusinessField.ClaimedCurrency, currency
+                yield!
+                    description
+                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
+                    |> Option.toList
+            ]
+            |> Registration.create)
+        : Fields<Registration, _>)
+        |> field
+            "incidentDate"
+            (Registration.incidentDate >> Admitted.Date)
+            (scalar (FieldValue.parse FieldValueKind.CalendarDate) FieldValue.format)
+        |> field
+            "incidentNotificationDate"
+            (Registration.incidentNotificationDate >> Admitted.Date)
+            (scalar (FieldValue.parse FieldValueKind.CalendarDate) FieldValue.format)
+        |> field
+            "incidentCountry"
+            (Registration.country >> Admitted.Country)
+            (scalar (FieldValue.parse FieldValueKind.Country) FieldValue.format)
+        |> field
+            "claimantName"
+            (Registration.claimant >> Admitted.Name)
+            (scalar (FieldValue.parse FieldValueKind.PartyName) FieldValue.format)
+        |> field
+            "insurerName"
+            (Registration.insurer >> Admitted.Name)
+            (scalar (FieldValue.parse FieldValueKind.PartyName) FieldValue.format)
+        |> field
+            "claimedAmount"
+            (Registration.claimed >> Money.amount >> Admitted.Amount)
+            (scalar (FieldValue.parse FieldValueKind.Amount) FieldValue.format)
+        |> field
+            "claimedCurrency"
+            (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
+            (scalar (FieldValue.parse FieldValueKind.Currency) FieldValue.format)
+        |> field
+            "incidentDescription"
+            (Registration.description >> Option.map Admitted.Description)
+            (nullable (
+                scalar (FieldValue.parse FieldValueKind.IncidentDescription) FieldValue.format
+            ))
+        |> buildResult (fun path reason -> { Path = path; Reason = reason })
         |> named "Registration"
 
     let private acceptedDecision =
@@ -357,36 +419,12 @@ module internal RecordCodecs =
         acceptedGroup RecordGroup.Payment Payment.create Payment.values
         |> named "Payment"
 
-    let private acceptedWork =
-        let actor =
-            scalar
-                (fun raw ->
-                    match Guid.TryParseExact(raw, "D") with
-                    | true, value ->
-                        ActorId.create value |> Option.map Ok |> Option.defaultValue (Error())
-                    | _ -> Error())
-                ActorId.format
-
-        (record (fun responsible followUp ->
-            {
-                CaseWork.Responsible = responsible
-                FollowUp = followUp
-            })
-        : Fields<CaseWork, _>)
-        |> field "responsibleActor" _.Responsible (nullable actor)
-        |> field
-            "followUpDate"
-            _.FollowUp
-            (nullable (scalar CalendarDate.parse CalendarDate.format))
-        |> build
-
     let caseFields =
-        (record (fun reference status registration decision payment work ->
+        (record (fun reference status registration decision payment ->
             PaymentProgress.fromGroups decision payment
             |> Result.map (fun progress ->
                 {
-                    CaseFields.Work = work
-                    CaseReference = reference
+                    CaseFields.CaseReference = reference
                     Status = status
                     Registration = registration
                     Progress = progress
@@ -397,7 +435,6 @@ module internal RecordCodecs =
         |> field DurableNames.Registration _.Registration acceptedRegistration
         |> field DurableNames.Decision _.Decision (nullable acceptedDecision)
         |> field DurableNames.Payment _.Payment (nullable acceptedPayment)
-        |> field "work" _.Work acceptedWork
         |> buildResult (fun path () ->
             {
                 Path = path + ".payment"

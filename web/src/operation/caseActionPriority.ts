@@ -16,7 +16,5 @@ export const casePrimaryAction = (current: CurrentCase): ActKind | undefined => 
   if (offered.includes(primary)) {
     return primary;
   }
-  return (["UPDATE_WORK", "AMEND_REGISTRATION", "CORRECT"] as const).find((act) =>
-    offered.includes(act),
-  );
+  return (["AMEND_REGISTRATION", "CORRECT"] as const).find((act) => offered.includes(act));
 };

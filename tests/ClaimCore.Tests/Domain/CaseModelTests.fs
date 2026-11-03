@@ -54,7 +54,6 @@ let private fields status decided paid : CaseFields =
             None
 
     {
-        Work = CaseWork.empty
         CaseReference = CaseFixtures.reference "Demo-1"
         Status = status
         Registration =

@@ -4,7 +4,7 @@ import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 
 import { expectAccessible, openAuthenticated } from "./session-helpers";
-import { selectLanguage, trackRequests, ui } from "./localization-support";
+import { selectLanguage, trackForegroundRequests, ui } from "./localization-support";
 import { endpoints } from "@contracts/client";
 
 test("associates malformed operation lookup guidance and prevents empty case lookup", async ({
@@ -12,12 +12,13 @@ test("associates malformed operation lookup guidance and prevents empty case loo
 }) => {
   await openAuthenticated(page);
   await expect(page.getByRole("button", { name: "Reload cases", exact: true })).toBeEnabled();
-  const requests = trackRequests(page);
-  await (await showExactLookup(page)).fill("");
+  const lookup = await showExactLookup(page);
+  const requests = trackForegroundRequests(page);
+  await lookup.fill("");
   await expect(
     page.getByRole("button", { name: "Open by exact reference", exact: true }),
   ).toBeDisabled();
-  await (await showExactLookup(page)).press("Enter");
+  await lookup.press("Enter");
   expect(requests).toHaveLength(0);
   await goToView(page, "operations");
   const operation = await showOperationLookup(page);

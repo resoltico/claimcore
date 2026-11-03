@@ -15,6 +15,10 @@ type QueryEndpoint =
     | CaseList
     | CaseSummary
     | CaseHistory
+    | CaseActivity
+    | ReminderList
+    | ReminderGet
+    | WorkOverview
     | Observe
     | Status
     | Resolve
@@ -43,6 +47,10 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.CaseList)
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
                 (ActorEndpoint.Query QueryEndpoint.CaseHistory)
+                (ActorEndpoint.Query QueryEndpoint.CaseActivity)
+                (ActorEndpoint.Query QueryEndpoint.ReminderList)
+                (ActorEndpoint.Query QueryEndpoint.ReminderGet)
+                (ActorEndpoint.Query QueryEndpoint.WorkOverview)
                 (ActorEndpoint.Query QueryEndpoint.Observe)
                 (ActorEndpoint.Query QueryEndpoint.Status)
                 (ActorEndpoint.Query QueryEndpoint.Resolve)
@@ -59,6 +67,10 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
              | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
+             | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> "case.activity"
+             | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> "reminder.list"
+             | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> "reminder.get"
+             | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> "work.overview"
              | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
              | (ActorEndpoint.Query QueryEndpoint.Status) -> "operation.status"
              | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"

@@ -326,6 +326,17 @@ let internal scopedWorker fixture =
 
 let internal scopedAuthority fixture =
     task {
+        let inspectGlobal principal =
+            fixture.Store.Read
+                {
+                    Work =
+                        fun tx ->
+                            task {
+                                let! facts = tx.GlobalReadFacts principal in return facts.Authority
+                            }
+                    CancellationToken = CancellationToken.None
+                }
+
         let! principal = scopedWorker fixture
 
         let! read =
@@ -363,6 +374,149 @@ let internal scopedAuthority fixture =
         let context = context |> Result.defaultWith (fun _ -> failtest "Context read")
         Expect.isEmpty context.Cases "Context never enumerates assigned grants"
         Expect.isTrue context.HasScopedCases "EXISTS reports assigned visibility"
+
+        let admin = core fixture fixture.Owner
+
+        let unknown =
+            PrincipalKey.human "https://issuer.example/" "unknown-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! missing = inspectGlobal unknown
+
+        Expect.equal
+            (storedPage missing)
+            AuthorityView.empty
+            "A missing principal remains a genuinely absent actor"
+
+        let roleless =
+            PrincipalKey.human "https://issuer.example/" "roleless-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registered =
+            Service.execute
+                admin
+                (OperationInput.Authority(authorityRequest (id 430) roleless AuthorityAct.Register))
+                CancellationToken.None
+
+        acceptedAuthority registered
+        let! noGrants = inspectGlobal roleless
+        let noGrants = storedPage noGrants
+        Expect.isSome noGrants.Actor "A zero-grant actor is retained by the left join"
+
+        Expect.equal
+            (noGrants.Installation, noGrants.Cases, noGrants.HasScopedCases)
+            ([], Map.empty, false)
+            "A zero-grant actor has no invented visibility"
+
+        for operation, act, enabled in
+            [ 420, AuthorityAct.Disable, false; 421, AuthorityAct.Enable, true ] do
+            let! changed =
+                Service.execute
+                    admin
+                    (OperationInput.Authority(authorityRequest (id operation) principal act))
+                    CancellationToken.None
+
+            acceptedAuthority changed
+            let! observed = inspectGlobal principal
+            let observed = storedPage observed
+
+            Expect.equal
+                (observed.Actor |> Option.map _.Enabled)
+                (Some enabled)
+                "Current actor availability remains independently reported"
+
+            Expect.isTrue
+                observed.HasScopedCases
+                "Scoped presence is a fact even while the actor is disabled"
+
+            Expect.isEmpty observed.Cases "Global authority does not enumerate scoped grants"
+
+        let service =
+            PrincipalKey.service "https://issuer.example/" "service-global-reader"
+            |> Result.defaultWith (string >> failtest)
+
+        let! registeredService =
+            Service.execute
+                admin
+                (OperationInput.Authority(authorityRequest (id 440) service AuthorityAct.Register))
+                CancellationToken.None
+
+        acceptedAuthority registeredService
+
+        let! grantedService =
+            grant
+                admin
+                (id 441)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                }
+                true
+
+        acceptedAuthority grantedService
+        let! serviceContext = inspectGlobal service
+        let serviceContext = storedPage serviceContext
+        Expect.isTrue serviceContext.HasScopedCases "A service's valid scoped read remains visible"
+        Expect.isEmpty serviceContext.Installation "A scoped read is not an installation grant"
+
+        Expect.isEmpty
+            serviceContext.Cases
+            "Service global context does not enumerate case identities"
+
+        for operation, role in [ 442, Role.CaseHandler; 443, Role.PaymentRecorder ] do
+            let! granted =
+                grant
+                    admin
+                    (id operation)
+                    service
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
+            acceptedAuthority granted
+
+        let! installedService = inspectGlobal service
+        let installedService = storedPage installedService
+
+        Expect.equal
+            (List.sort installedService.Installation)
+            (List.sort [ Role.CaseHandler; Role.PaymentRecorder ])
+            "Global facts retain every installation grant without enumerating scoped grants"
+
+        Expect.isEmpty installedService.Cases "Installation joins do not load case grants"
+
+        Expect.isTrue
+            installedService.HasScopedCases
+            "Scoped presence remains independent of installation grants"
+
+        let! revoked =
+            grant
+                admin
+                (id 444)
+                service
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.CaseReference "SCOPE-1"
+                }
+                false
+
+        acceptedAuthority revoked
+        let! installationOnly = inspectGlobal service
+        let installationOnly = storedPage installationOnly
+
+        Expect.equal
+            (List.sort installationOnly.Installation)
+            (List.sort installedService.Installation)
+            "Removing the last scoped grant preserves both installation grants"
+
+        Expect.isFalse
+            installationOnly.HasScopedCases
+            "Installation visibility does not invent scoped presence"
+
+        Expect.isEmpty installationOnly.Cases "A global view never enumerates case grants"
 
         let pending =
             request

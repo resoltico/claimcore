@@ -9,7 +9,7 @@ import {
   confirmReview,
   selectLanguage,
   ui,
-  trackRequests,
+  trackForegroundRequests,
 } from "./localization-support";
 import {
   chooseGroups,
@@ -75,7 +75,7 @@ const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" |
   await expectClaimantWarning(field, language);
 };
 const preserveChoice = async (page: Page, modes: Modes) => {
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
     await expect(page.getByText(ui(language, "ui.correctionHint"), { exact: true })).toBeVisible();

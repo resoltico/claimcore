@@ -11,7 +11,7 @@ import {
   pauseJsonReply,
   businessFormatRefusalText,
   expectBusinessFormatRefusal,
-  trackRequests,
+  trackForegroundRequests,
   selectLanguage,
   selectFormat,
   ui,
@@ -82,7 +82,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     await startOpen(page, `SYNTAX-${randomUUID()}`);
     await selectLanguage(page, language);
-    const requests = trackRequests(page);
+    const requests = trackForegroundRequests(page);
     for (const [name, value, diagnostic] of [
       ["claimedAmount", "00.10", "DECIMAL_FORMAT"],
       ["incidentDate", "", "CALENDAR_DATE_REQUIRED"],

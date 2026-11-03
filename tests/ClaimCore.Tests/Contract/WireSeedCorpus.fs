@@ -105,6 +105,10 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
             (context + ".CaseAdvice.History")
             typeof<HistoryDetail list>
             (box advice.History)
+    elif FSharpType.IsTuple kind then
+        Array.zip (FSharpType.GetTupleElements kind) (FSharpValue.GetTupleFields(nonNull value))
+        |> Array.iteri (fun index (itemType, item) ->
+            collect seeds (context + ".Item" + string (index + 1)) itemType item)
     elif FSharpType.IsRecord kind then
         Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
         |> Array.iter (fun (field, item) ->

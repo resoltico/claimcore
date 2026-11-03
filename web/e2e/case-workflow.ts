@@ -7,6 +7,7 @@ import { expect, type Page, type Response } from "@playwright/test";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { progress } from "./session-helpers";
+import { retainResponseBodies } from "./response-bodies";
 
 export type ReviewIdentity = Readonly<{ operationId: string }>;
 
@@ -30,9 +31,22 @@ const visibleFieldCount = (fields: CaseFields): number =>
   inventory.workFields.length -
   (fields.decision === null ? inventory.groups.decision.length : 0) -
   (fields.payment === null ? inventory.groups.payment.length : 0);
+const responseJson = async (response: Response, phase: "SUBMIT" | "PREVIEW"): Promise<unknown> => {
+  let text: string;
+  try {
+    text = await response.text();
+  } catch {
+    throw new Error(`E2E_${phase}_HTTP_${response.status()}_BODY_UNAVAILABLE`);
+  }
+  try {
+    return JSON.parse(text) as unknown;
+  } catch {
+    throw new Error(`E2E_${phase}_HTTP_${response.status()}_INVALID_JSON`);
+  }
+};
 const refuseSubmitHttp = async (response: Response): Promise<never> => {
   const status = response.status();
-  const failure: unknown = await response.json().catch(() => null);
+  const failure = await responseJson(response, "SUBMIT");
   const classification = isHostFailure(failure, status)
     ? `${failure.hostFailure.code}_${failure.hostFailure.phase ?? "NONE"}`
     : "UNCLASSIFIED_NONE";
@@ -43,6 +57,8 @@ export const recordReviewed = async (
   page: Page,
   confirmation = "I confirm these changes.",
 ): Promise<void> => {
+  // Callers can supply an authenticated page without using openApplication's setup.
+  await retainResponseBodies(page);
   const confirmed = page.getByRole("checkbox", { name: confirmation, exact: true });
   await confirmed.waitFor({ state: "visible" });
   await progress("confirm-click-start");
@@ -69,7 +85,7 @@ export const recordReviewed = async (
   if (response.status() !== 200) {
     await refuseSubmitHttp(response);
   }
-  const payload: unknown = await response.json();
+  const payload = await responseJson(response, "SUBMIT");
   if (!isResponse("operation.execute", payload)) {
     throw new Error("E2E_SUBMIT_PROTOCOL_FAILURE");
   }
@@ -90,6 +106,7 @@ export const recordReviewed = async (
 };
 
 export const startOpen = async (page: Page, caseReference: string): Promise<void> => {
+  await retainResponseBodies(page);
   await progress("start-open");
   const failures: string[] = [];
   const bodies: Promise<void>[] = [];
@@ -149,6 +166,7 @@ export const reviewDraft = async (
   page: Page,
   values: Readonly<Record<string, string>> = {},
 ): Promise<ReviewIdentity> => {
+  await retainResponseBodies(page);
   await fill(page, values);
   await progress("preview-dispatch");
   const event = page.waitForResponse((response) =>
@@ -156,7 +174,7 @@ export const reviewDraft = async (
   );
   await page.getByRole("button", { name: "Review changes" }).click();
   const response = await event;
-  const payload: unknown = await response.json();
+  const payload = await responseJson(response, "PREVIEW");
   if (response.status() !== 200 || !isResponse("operation.preview", payload)) {
     throw new Error("E2E_PREVIEW_PROTOCOL_FAILURE");
   }

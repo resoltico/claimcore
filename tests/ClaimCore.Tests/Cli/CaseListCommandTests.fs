@@ -436,7 +436,7 @@ let tests =
                 Expect.equal
                     (lines
                      |> Array.filter (fun line ->
-                         line.Contains("Last changed", StringComparison.Ordinal))
+                         line.Contains("Case facts changed", StringComparison.Ordinal))
                      |> Array.length)
                     1
                     "One header across all pages"

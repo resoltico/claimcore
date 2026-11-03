@@ -34,6 +34,19 @@ let internal sql (database: PostgresFixture.Database) text =
         return ()
     }
 
+/// Reset only a newly owned fixture before exercising a fresh installation.
+let internal resetForInitialization (connection: Npgsql.NpgsqlConnection) =
+    task {
+        let! _ =
+            DatabaseSession.execute
+                connection
+                "DROP SCHEMA claimcore CASCADE; DROP EXTENSION pg_trgm"
+                [||]
+                token
+
+        return ()
+    }
+
 let internal refused action message =
     task {
         let mutable refused = false
@@ -128,8 +141,8 @@ let internal exec (database: PostgresFixture.Database) arguments =
 
 let internal concurrentInitialization (database: PostgresFixture.Database) =
     task {
-        do! sql database "DROP SCHEMA claimcore CASCADE"
         use! blocker = database.OwnerSource.OpenConnectionAsync()
+        do! resetForInitialization blocker
         use! transaction = blocker.BeginTransactionAsync()
 
         let! _ =
@@ -179,16 +192,29 @@ let internal concurrentInitialization (database: PostgresFixture.Database) =
 
 let internal initializationRollback (database: PostgresFixture.Database) =
     task {
-        do! sql database "DROP SCHEMA claimcore CASCADE; DROP ROLE claimcore_runtime"
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        do! resetForInitialization connection
+        do! sql database "DROP ROLE claimcore_runtime"
 
         do!
             refused
                 (fun () -> Baseline.initialize database.OwnerSource "Etc/UTC" token)
                 "Missing runtime role makes the baseline fail after DDL"
 
-        use! connection = database.OwnerSource.OpenConnectionAsync()
         let! present = Baseline.exists connection token
         Expect.isFalse present "Failed installation leaves no namespace or identity"
+
+        let! moduleRows =
+            DatabaseSession.rows
+                connection
+                "SELECT EXISTS(SELECT FROM pg_extension WHERE extname='pg_trgm')"
+                [||]
+                token
+
+        Expect.isFalse
+            (DatabaseSession.value<bool> 0 moduleRows.Head)
+            "The extension created by the failed installation rolls back with its schema"
+
         do! sql database "CREATE ROLE claimcore_runtime LOGIN"
         let! _ = Baseline.initialize database.OwnerSource "Etc/UTC" token
         let! _ = Baseline.require connection token

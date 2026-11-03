@@ -9,7 +9,7 @@ open ClaimCore.Application.VerificationChecks
 [<NoEquality; NoComparison>]
 type private ProjectionScan<'value, 'state> =
     {
-        Read: Npgsql.NpgsqlDataReader -> 'value
+        Read: Npgsql.NpgsqlDataReader -> (unit -> 'value)
         Append: 'state -> 'value -> Result<'state, VerificationDivergence>
         Initial: 'state
         Finding: VerificationFinding
@@ -43,6 +43,7 @@ module internal VerificationRows =
         task {
             use statement = DatabaseSession.statement connection sql [||]
             use! reader = statement.ExecuteReaderAsync(token)
+            let read = scan.Read reader
             let mutable state = Ok scan.Initial
             let mutable reading = true
 
@@ -55,22 +56,21 @@ module internal VerificationRows =
                     state <-
                         state
                         |> Result.bind (fun state ->
-                            capture None scan.Finding (fun () -> scan.Read reader)
-                            |> Result.bind (scan.Append state))
+                            capture None scan.Finding read |> Result.bind (scan.Append state))
 
             return state
         }
 
     let cases connection installationId histories token =
         task {
-            let! seen =
+            let! checkedCases =
                 fold
                     connection
                     ($"SELECT {Projections.caseColumns} FROM claimcore.cases c ORDER BY case_id")
                     {
                         Read = DatabaseSession.namedRow
                         Append =
-                            fun seen row ->
+                            fun (seen, workIndexes) row ->
                                 result {
                                     let! status =
                                         capture
@@ -138,6 +138,15 @@ module internal VerificationRows =
                                             VerificationFinding.CaseWorkProjection
                                             (fun () -> Projections.caseFollowUp row)
 
+                                    let! workSearchText =
+                                        capture
+                                            None
+                                            VerificationFinding.CaseWorkProjection
+                                            (fun () ->
+                                                DatabaseSession.namedOptional<string>
+                                                    "work_search_text"
+                                                    row)
+
                                     let index: CaseIndex =
                                         {
                                             Responsible = responsible
@@ -146,6 +155,7 @@ module internal VerificationRows =
                                             Progress = progress
                                             ChangedAt = changedAt
                                             SearchText = searchText
+                                            WorkSearchText = workSearchText
                                             NotifiedOn = notifiedOn
                                             Claimed =
                                                 Projections.indexedMoney
@@ -161,19 +171,27 @@ module internal VerificationRows =
                                         capture None VerificationFinding.CaseProjection (fun () ->
                                             Projections.caseRowWithIndex installationId index row)
 
-                                    return!
+                                    let! seen =
                                         ProjectionVerification.caseProjection
                                             installationId
                                             histories
                                             seen
                                             record
+
+                                    return
+                                        seen,
+                                        ProjectionVerification.caseWorkIndex record :: workIndexes
                                 }
-                        Initial = Set.empty
+                        Initial = Set.empty, []
                         Finding = VerificationFinding.CaseProjection
                     }
                     token
 
-            return seen |> Result.bind (ProjectionVerification.finishCases histories)
+            return
+                checkedCases
+                |> Result.bind (fun (seen, workIndexes) ->
+                    ProjectionVerification.finishCases histories seen
+                    |> Result.map (fun () -> List.rev workIndexes))
         }
 
     let authority connection expected token =
@@ -183,7 +201,7 @@ module internal VerificationRows =
                     connection
                     "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
                     {
-                        Read = DatabaseSession.row >> Projections.actorRow
+                        Read = fun reader () -> DatabaseSession.row reader |> Projections.actorRow
                         Append = ProjectionVerification.actor
                         Initial = Map.empty
                         Finding = VerificationFinding.AuthorityProjection
@@ -198,7 +216,7 @@ module internal VerificationRows =
                         connection
                         "SELECT actor_id,role,case_id FROM claimcore.grants ORDER BY actor_id,role,case_id"
                         {
-                            Read = DatabaseSession.row >> grant
+                            Read = fun reader () -> DatabaseSession.row reader |> grant
                             Append = ProjectionVerification.grant
                             Initial = actors
                             Finding = VerificationFinding.AuthorityProjection

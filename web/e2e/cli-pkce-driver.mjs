@@ -116,7 +116,7 @@ const requestWrongState = () => {
 
 const login = async (page) => {
   progress("authorization-navigation-started");
-  await page.goto(authorization.toString());
+  await page.goto(authorization.toString(), { waitUntil: "domcontentloaded" });
   progress("authorization-opened");
   if ((await page.locator('input[name="username"]').count()) !== 1) {
     progress("login-form-missing");
@@ -130,7 +130,10 @@ const login = async (page) => {
   if ((await submit.count()) !== 1) {
     throw new Error("Synthetic submit control unavailable.");
   }
-  await submit.click();
+  progress("login-submission-started");
+  // Valid login delegates return readiness to the explicit callback wait below. The
+  // wrong-state control must finish its intercepted navigation before inspecting delivery.
+  await submit.click({ noWaitAfter: mode === "valid" });
   progress("login-submitted");
 };
 
@@ -205,7 +208,8 @@ const run = async () => {
       }
       progress("wrong-state-delivered");
     } else {
-      await page.waitForURL((url) => callbackAddress(url));
+      progress("callback-wait-started");
+      await page.waitForURL((url) => callbackAddress(url), { waitUntil: "commit" });
       progress("callback-observed");
     }
     await context.close();

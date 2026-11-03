@@ -78,11 +78,6 @@ let private actsGenerator =
             [
                 AuthoredCaseAct.Open registration
                 AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration)
-                AuthoredCaseAct.UpdateWork
-                    {
-                        Responsible = WorkValue.Keep
-                        FollowUp = WorkValue.Set "2027-01-02"
-                    }
                 AuthoredCaseAct.Decide decision
                 (AuthoredCaseAct.Bare BareAct.WithdrawDecision)
                 AuthoredCaseAct.RecordPayment(

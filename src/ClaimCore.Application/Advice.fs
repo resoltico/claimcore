@@ -36,7 +36,7 @@ module internal Advice =
             else
                 None)
 
-    let caseRecord (services: ServiceContext) actor work (record: StoredCase) =
+    let caseRecord (services: ServiceContext) actor (work: CaseWorkView) (record: StoredCase) =
         let installationId = services.InstallationId
         let principal = services.Principal
 
@@ -64,13 +64,27 @@ module internal Advice =
                 |> Result.defaultWith invalidOp
 
             {
-                Work = work
+                Work =
+                    let active = CaseState.lifecycle record.Snapshot.State = Lifecycle.Active
+
+                    let opened =
+                        CaseState.fields record.Snapshot.State
+                        |> Option.exists (fun fields -> fields.Status = CaseStatus.Opened)
+
+                    let permitted =
+                        can principal actor Capability.ReadCase resource
+                        && can principal actor Capability.ManageCaseWork resource
+
+                    { work with
+                        CanUpdateSummary = active && permitted
+                        CanAssign = active && opened && permitted
+                        CanCreateReminder = active && opened && permitted
+                    }
                 Snapshot = record.Snapshot
                 Advice = advice
                 Mine =
-                    match actor.Actor, CaseState.fields record.Snapshot.State with
-                    | Some requester, Some fields ->
-                        fields.Work.Responsible = Some requester.ActorId
+                    match actor.Actor, work.Responsible with
+                    | Some requester, Some assigned -> assigned.Account.ActorId = requester.ActorId
                     | _ -> false
             })
 

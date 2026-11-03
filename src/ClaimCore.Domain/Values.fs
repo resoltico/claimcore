@@ -53,12 +53,22 @@ type CurrencyScalarRule =
 /// Catalog supplies closed status vocabulary; Domain owns transitions.
 type CaseStatusScalarRule = { AllowedValues: CaseStatus list }
 
+/// Count is Unicode scalar values, independent of UTF-16 code units and encoded bytes.
+/// Admission preserves authored whitespace and spelling. Only LF is a paragraph separator.
+type PlainTextConstraints =
+    {
+        MaximumScalars: int
+        MaximumUtf8Bytes: int
+        AllowsLineFeed: bool
+    }
+
 /// Typed scalar rules are the Domain authority for adapter-visible field constraints.
 [<RequireQualifiedAccess>]
 type ScalarRule =
     | CalendarDate of CalendarDateScalarRule
     | PlannedDate of CalendarDateScalarRule
     | Text of ScalarTextConstraints
+    | PlainText of PlainTextConstraints
     | Amount of AmountScalarRule
     | Currency of CurrencyScalarRule
     | CaseStatus of CaseStatusScalarRule
@@ -122,6 +132,21 @@ module internal ScalarText =
                 0xFFF9, 0xFFFB
                 0xE0000, 0xE007F
             ]
+
+    let admitPlain maximum allowsLineFeed (value: string) =
+        if String.IsNullOrWhiteSpace value then
+            Error Violation.TextRequired
+        elif (value.EnumerateRunes() |> Seq.length) > maximum then
+            Error(Violation.TooLong maximum)
+        elif
+            value
+            |> Seq.exists (fun c -> Char.IsControl c && not (allowsLineFeed && c = '\n'))
+        then
+            Error Violation.ControlCharacters
+        elif value.EnumerateRunes() |> Seq.exists (fun rune -> formatting rune.Value) then
+            Error Violation.FormattingCharacter
+        else
+            Ok value
 
     let admit maximum (value: string) =
         if String.IsNullOrWhiteSpace value then

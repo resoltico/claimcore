@@ -105,11 +105,18 @@ export const expectPreferences = async (
     await page.keyboard.press("Escape");
   }
 };
-export const trackRequests = (page: Page) => {
+// Session checks and autonomous work-date observations run independently of foreground editing.
+// Keep every other endpoint, including all mutations, in exact request-count assertions.
+export const trackForegroundRequests = (page: Page) => {
   const requests: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
-    if (endpoints.some((endpoint) => endpoint.id !== "session" && endpoint.path === path)) {
+    if (
+      endpoints.some(
+        (endpoint) =>
+          endpoint.id !== "session" && endpoint.id !== "work.overview" && endpoint.path === path,
+      )
+    ) {
       requests.push(`${request.method()} ${path}`);
     }
   });

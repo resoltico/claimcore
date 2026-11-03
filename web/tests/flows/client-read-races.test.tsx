@@ -32,7 +32,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   act(() => {
     result.current.setOperationId("00000000-0000-4000-8000-000000000099");
   });
-  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
+  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
   await act(async () => {
     await result.current.observe();
   });
@@ -51,7 +51,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   });
 });
 
-it("aborts observation on unmount without delivering a late receipt", async () => {
+it("drains observation on unmount without delivering a late receipt", async () => {
   const pending = deferredResponse();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(pending.promise);
@@ -63,9 +63,12 @@ it("aborts observation on unmount without delivering a late receipt", async () =
     task = result.current.observe();
   });
   unmount();
-  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
-  pending.resolve(response("operation.observe", "SUCCEEDED", receipt));
-  await task;
+  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
+  await act(async () => {
+    pending.resolve(response("operation.observe", "SUCCEEDED", receipt));
+    await pending.promise;
+    await task;
+  });
   expect(result.current.receipt).toBeNull();
 });
 

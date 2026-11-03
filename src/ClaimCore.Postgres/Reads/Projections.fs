@@ -19,7 +19,7 @@ module internal Projections =
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
     let caseColumns =
-        "case_id,case_reference,revision,state,snapshot,status,progress,search_text,"
+        "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
         + DatabaseSession.instantExpression "changed_at"
         + " AS changed_at,"
         + DatabaseSession.dateExpression "notified_on"
@@ -86,13 +86,14 @@ module internal Projections =
             Progress = caseProgress row
             ChangedAt = caseChangedAt row
             SearchText = caseSearchText row
+            WorkSearchText = DatabaseSession.namedOptional<string> "work_search_text" row
             NotifiedOn = caseNotifiedOn row
             Claimed = indexedMoney (caseClaimedAmount row) (caseClaimedCurrency row)
             Payable = indexedMoney (casePayableAmount row) (casePayableCurrency row)
         }
 
 
-    let caseRowWithIndex _installationId index (row: Map<string, obj>) : StoredCase =
+    let caseRowWithIndex _installationId index (row: NamedRow) : StoredCase =
         let reference =
             DatabaseSession.namedValue<string> "case_reference" row
             |> CaseReference.parse
@@ -216,48 +217,102 @@ module internal Projections =
 
             AuthorityView.ofActor (Some stored)
 
+    let private actorQuery columns =
+        $"SELECT {columns} FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+
+    let private actorParameters principal (caseIds: CaseId list) =
+        let kind, issuer, subject = PrincipalKey.parts principal
+
+        [|
+            box (DurableNames.principalKind kind)
+            box issuer
+            box subject
+            box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
+        |]
+
+    let private actorColumns = "a.actor_id,a.enabled,g.role,g.case_id"
+
     let actor connection principal (caseIds: CaseId list) token =
         task {
-            let kind, issuer, subject = PrincipalKey.parts principal
-
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT a.actor_id,a.enabled,g.role,g.case_id FROM claimcore.actors a LEFT JOIN LATERAL (SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id IS NULL UNION ALL SELECT role,case_id FROM claimcore.grants WHERE actor_id=a.actor_id AND case_id=ANY($4::uuid[])) g ON true WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
-                    [|
-                        box (DurableNames.principalKind kind)
-                        box issuer
-                        box subject
-                        box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
-                    |]
+                    (actorQuery actorColumns)
+                    (actorParameters principal caseIds)
                     token
 
             return authorityRows principal rows
         }
 
-    let scopedCases connection principal readRoles (view: AuthorityView) token =
+    let private globalActorQuery principal =
+        let kind, issuer, subject = PrincipalKey.parts principal
+
+        let scoped =
+            "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($4::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($5::text[])))"
+
+        let sql =
+            $"SELECT {actorColumns},{scoped} FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+
+        let parameters =
+            [|
+                box (DurableNames.principalKind kind)
+                box issuer
+                box subject
+                box (Authority.readRoles principal |> List.map DurableNames.role |> List.toArray)
+                box (Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray)
+            |]
+
+        sql, parameters
+
+    let private globalAuthority principal rows =
+        let actorRows =
+            rows
+            |> List.filter (fun row -> DatabaseSession.optional<Guid> 0 row |> Option.isSome)
+
+        let view = authorityRows principal actorRows
+
+        match actorRows with
+        | [] -> view
+        | first :: _ ->
+            { view with
+                HasScopedCases = DatabaseSession.value<bool> 4 first
+            }
+
+    /// Global visibility and actor/grant facts belong to the same read snapshot, without a second round trip.
+    let actorWithVisibility connection principal token =
         task {
-            match view.Actor with
-            | None -> return view
-            | Some actor ->
-                let forbidden =
-                    Authority.invalidRoles principal |> List.map DurableNames.role |> List.toArray
+            let sql, parameters = globalActorQuery principal
+            let! rows = DatabaseSession.rows connection sql parameters token
+            return globalAuthority principal rows
+        }
 
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        "SELECT EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=$1 AND g.case_id IS NOT NULL AND g.role=ANY($2::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=g.actor_id AND bad.case_id=g.case_id AND bad.role=ANY($3::text[])))"
-                        [|
-                            box (ActorId.value actor.ActorId)
-                            box (readRoles |> List.map DurableNames.role |> List.toArray)
-                            box forbidden
-                        |]
-                        token
+    let globalReadFacts connection principal token =
+        task {
+            let actor, parameters = globalActorQuery principal
 
-                return
-                    { view with
-                        HasScopedCases = DatabaseSession.value<bool> 0 rows.Head
-                    }
+            let sql =
+                $"WITH current_mode AS MATERIALIZED(SELECT active,generation,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.generation,m.mode_count FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
+
+            let! rows = DatabaseSession.preparedRows connection sql parameters token
+
+            let mode =
+                match rows with
+                | first :: _ when DatabaseSession.value<int64> 7 first = 1L ->
+                    RegisterMaintenance.create
+                        (DatabaseSession.value<bool> 5 first)
+                        (DatabaseSession.value<int64> 6 first)
+                    |> Result.defaultWith (fun _ ->
+                        raise (RecordCorruptException "Invalid register maintenance state."))
+                | _ ->
+                    raise (
+                        RecordCorruptException "Register maintenance state is absent or duplicated."
+                    )
+
+            return
+                {
+                    GlobalReadFacts.Authority = globalAuthority principal rows
+                    Maintenance = mode
+                }
         }
 
     let operationCases entry =

@@ -185,6 +185,15 @@ module DiagnosticCodecs =
             | Refusal.Access value -> Some value
             | _ -> None)
 
+    let private reminderVariants =
+        familyVariants Refusal.Reminder (function
+            | Refusal.Reminder value -> Some value
+            | _ -> None)
+        |> List.map (fun variant ->
+            { variant with
+                Tag = "REMINDER_" + variant.Tag
+            })
+
     let private diagnosticVariants =
         [
             variant
@@ -207,6 +216,7 @@ module DiagnosticCodecs =
                  |> field "actualRevision" id ResponseScalars.revision)
         ]
         @ caseVariants
+        @ reminderVariants
         @ (nullaryVariants<Refusal> nullaryRefusalFields
            |> List.filter (fun variant -> variant.Tag <> "INVALID_CURSOR"))
         @ accessVariants

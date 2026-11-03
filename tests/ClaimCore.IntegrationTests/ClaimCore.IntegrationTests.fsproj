@@ -13,6 +13,7 @@
     <Compile Include="AuthorityReviewContract.fs" />
     <Compile Include="OperationRecoveryContract.fs" />
     <Compile Include="CaseWorkContract.fs" />
+    <Compile Include="ReminderConcurrencyContract.fs" />
     <Compile Include="WorkDateBasisTests.fs" />
     <Compile Include="HttpAdmissionPressureTests.fs" />
     <Compile Include="AuthorityHistoryContract.fs" />
@@ -20,6 +21,9 @@
     <Compile Include="CaseSelectorContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="NamedRowTests.fs" />
+    <Compile Include="SearchIndexTests.fs" />
+    <Compile Include="ReminderPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
@@ -70,6 +74,7 @@
     <Compile Include="DatabaseScenarios.fs" />
     <Compile Include="OwnerOperationsTests.fs" />
     <Compile Include="ProjectionRebuildTests.fs" />
+    <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
@@ -78,6 +83,7 @@
     <Compile Include="MaintenanceFailureTests.fs" />
     <Compile Include="ProjectionRebuildFailureTests.fs" />
     <Compile Include="StorageFailurePhaseTests.fs" />
+    <Compile Include="PreparedReadTests.fs" />
     <Compile Include="CommitTests.fs" />
     <Compile Include="AdministrationProcess.fs" />
     <Compile Include="LocalConfigurationTests.fs" />

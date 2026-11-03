@@ -34,7 +34,6 @@ type CaseRecord =
 module private BusinessState =
     let fields reference (claim: Claim) : CaseFields =
         {
-            Work = claim.Work
             CaseReference = reference
             Status = claim.Status
             Registration = claim.Facts
@@ -57,7 +56,6 @@ module private BusinessState =
 
             return
                 {
-                    Work = accepted.Work
                     Facts = accepted.Registration
                     Progress = progress
                     Status = accepted.Status
@@ -67,7 +65,6 @@ module private BusinessState =
     let openCase today facts =
         let claim =
             {
-                Work = CaseWork.empty
                 Facts = facts
                 Progress = PaymentProgress.Undecided
                 Status = CaseStatus.Opened

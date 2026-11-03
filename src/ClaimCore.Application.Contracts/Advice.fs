@@ -30,6 +30,17 @@ type AssignedAccount =
 
 type CaseWorkView =
     {
+        Revision: Revision
+        ChangedAt: DateTimeOffset option
+        RecordedBy: ActorId option
+        Summary: HandlingSummary option
+        NextAction: ReminderAction option
+        PendingReminders: int64
+        OverdueReminders: int64
+        NeedsNextAction: bool
+        CanUpdateSummary: bool
+        CanAssign: bool
+        CanCreateReminder: bool
         Responsible: AssignedAccount option
         FollowUp: CalendarDate option
         Due: CaseDue

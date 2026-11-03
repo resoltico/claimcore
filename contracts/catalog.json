@@ -49,6 +49,21 @@
       "pairs": null
     },
     {
+      "name": "incidentDescription",
+      "labelId": "field.incidentDescription.label",
+      "meaningId": "field.incidentDescription.meaning",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 600,
+        "maximumUtf8Bytes": 4096,
+        "allowsLineFeed": true
+      },
+      "allowsAbsence": true,
+      "group": "registration",
+      "section": "registration",
+      "pairs": null
+    },
+    {
       "name": "claimantName",
       "labelId": "field.claimantName.label",
       "meaningId": "field.claimantName.meaning",
@@ -249,14 +264,14 @@
       "pairs": null
     },
     {
-      "name": "followUpDate",
-      "labelId": "field.followUpDate.label",
-      "meaningId": "field.followUpDate.meaning",
+      "name": "handlingSummary",
+      "labelId": "field.handlingSummary.label",
+      "meaningId": "field.handlingSummary.meaning",
       "scalar": {
-        "kind": "PLANNED_DATE",
-        "exactFormat": "yyyy-MM-dd",
-        "minimum": "0001-01-01",
-        "maximum": "9999-12-31"
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 600,
+        "maximumUtf8Bytes": 4096,
+        "allowsLineFeed": true
       },
       "allowsAbsence": true,
       "group": null,
@@ -340,6 +355,46 @@
       }
     },
     {
+      "name": "reminderId",
+      "labelId": "field.reminderId.label",
+      "meaningId": "field.reminderId.meaning",
+      "scalar": null
+    },
+    {
+      "name": "reminderAction",
+      "labelId": "field.reminderAction.label",
+      "meaningId": "field.reminderAction.meaning",
+      "scalar": {
+        "kind": "PLAIN_TEXT",
+        "maximumScalars": 200,
+        "maximumUtf8Bytes": 1024,
+        "allowsLineFeed": false
+      }
+    },
+    {
+      "name": "reminderDueDate",
+      "labelId": "field.reminderDueDate.label",
+      "meaningId": "field.reminderDueDate.meaning",
+      "scalar": {
+        "kind": "PLANNED_DATE",
+        "exactFormat": "yyyy-MM-dd",
+        "minimum": "0001-01-01",
+        "maximum": "9999-12-31"
+      }
+    },
+    {
+      "name": "expectedWorkRevision",
+      "labelId": "field.expectedWorkRevision.label",
+      "meaningId": "field.expectedWorkRevision.meaning",
+      "scalar": null
+    },
+    {
+      "name": "expectedReminderRevision",
+      "labelId": "field.expectedReminderRevision.label",
+      "meaningId": "field.expectedReminderRevision.meaning",
+      "scalar": null
+    },
+    {
       "name": "scope",
       "labelId": "input.scope.label",
       "meaningId": "input.scope.meaning",
@@ -400,15 +455,33 @@
       "scalar": null
     },
     {
-      "name": "responsibleActorAction",
-      "labelId": "input.responsibleActorAction.label",
-      "meaningId": "input.responsibleActorAction.meaning",
+      "name": "reminderState",
+      "labelId": "input.reminderState.label",
+      "meaningId": "input.reminderState.meaning",
       "scalar": null
     },
     {
-      "name": "followUpDateAction",
-      "labelId": "input.followUpDateAction.label",
-      "meaningId": "input.followUpDateAction.meaning",
+      "name": "reminderDue",
+      "labelId": "input.reminderDue.label",
+      "meaningId": "input.reminderDue.meaning",
+      "scalar": null
+    },
+    {
+      "name": "includeInactive",
+      "labelId": "input.includeInactive.label",
+      "meaningId": "input.includeInactive.meaning",
+      "scalar": null
+    },
+    {
+      "name": "mine",
+      "labelId": "input.mine.label",
+      "meaningId": "input.mine.meaning",
+      "scalar": null
+    },
+    {
+      "name": "responsibleActorAction",
+      "labelId": "input.responsibleActorAction.label",
+      "meaningId": "input.responsibleActorAction.meaning",
       "scalar": null
     }
   ],
@@ -457,6 +530,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -483,6 +557,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -508,6 +583,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentDate"
@@ -533,6 +609,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentNotificationDate"
@@ -558,6 +635,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentCountry"
@@ -583,6 +661,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimantName"
@@ -608,6 +687,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "insurerName"
@@ -633,6 +713,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimedAmount"
@@ -658,9 +739,36 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentDescription",
+          "field": "incidentDescription",
+          "path": [
+            "act",
+            "values",
+            "incidentDescription"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.incidentDescription.label",
+          "meaningId": "field.incidentDescription.meaning",
+          "order": 9,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDescription"
           ],
           "source": "AUTHORED"
         }
@@ -672,7 +780,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -681,7 +790,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -689,7 +799,8 @@
           ],
           "value": 0,
           "branches": [],
-          "vocabulary": null
+          "vocabulary": null,
+          "requiresParent": false
         },
         {
           "path": [
@@ -698,7 +809,8 @@
           ],
           "value": "OPEN",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -732,6 +844,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -758,6 +871,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -781,6 +895,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -809,6 +924,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentDate"
@@ -837,6 +953,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentNotificationDate"
@@ -865,6 +982,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentCountry"
@@ -893,6 +1011,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimantName"
@@ -921,6 +1040,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "insurerName"
@@ -950,6 +1070,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimedAmount"
@@ -979,9 +1100,39 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.incidentDescription",
+          "field": "incidentDescription",
+          "path": [
+            "act",
+            "values",
+            "incidentDescription"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.incidentDescription.label",
+          "meaningId": "field.incidentDescription.meaning",
+          "order": 10,
+          "prefill": [
+            "registration",
+            "incidentDescription"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDescription"
           ],
           "source": "AUTHORED"
         }
@@ -993,7 +1144,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -1002,7 +1154,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -1011,256 +1164,8 @@
           ],
           "value": "AMEND_REGISTRATION",
           "branches": [],
-          "vocabulary": "act"
-        }
-      ]
-    },
-    {
-      "endpoint": "operation.execute",
-      "subject": "CASE",
-      "kind": "UPDATE_WORK",
-      "labelId": "act.UPDATE_WORK.label",
-      "meaningId": "act.UPDATE_WORK.meaning",
-      "confirmationId": "act.UPDATE_WORK.confirmation",
-      "family": "BUSINESS",
-      "affectedSections": [
-        "work"
-      ],
-      "effect": "UPDATE_WORK",
-      "inputs": [
-        {
-          "identity": "operationId",
-          "field": null,
-          "path": [
-            "operationId"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.operationId.label",
-          "meaningId": "field.operationId.meaning",
-          "order": 0,
-          "prefill": null,
-          "required": false,
-          "wireRequired": true,
-          "default": null,
-          "diagnosticTargets": [
-            "operationId"
-          ],
-          "source": "OPERATION_IDENTITY"
-        },
-        {
-          "identity": "target.caseReference",
-          "field": "caseReference",
-          "path": [
-            "target",
-            "caseReference"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.caseReference.label",
-          "meaningId": "field.caseReference.meaning",
-          "order": 1,
-          "prefill": [
-            "caseReference"
-          ],
-          "required": true,
-          "wireRequired": true,
-          "default": null,
-          "diagnosticTargets": [
-            "caseReference"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "expectedRevision",
-          "field": null,
-          "path": [
-            "expectedRevision"
-          ],
-          "kind": {
-            "kind": "INTEGER"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.expectedRevision.label",
-          "meaningId": "field.expectedRevision.meaning",
-          "order": 2,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "default": null,
-          "diagnosticTargets": [
-            "expectedRevision"
-          ],
-          "source": "EXPECTED_REVISION"
-        },
-        {
-          "identity": "act.values.responsibleActor.kind",
-          "field": null,
-          "path": [
-            "act",
-            "values",
-            "responsibleActor",
-            "kind"
-          ],
-          "kind": {
-            "kind": "GROUP",
-            "vocabulary": "workChange",
-            "options": [
-              "CLEAR",
-              "SET"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.responsibleActorAction.label",
-          "meaningId": "input.responsibleActorAction.meaning",
-          "order": 3,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "default": null,
-          "diagnosticTargets": [
-            "responsibleActor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.values.responsibleActor.value",
-          "field": "responsibleActor",
-          "path": [
-            "act",
-            "values",
-            "responsibleActor",
-            "value"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [
-            {
-              "path": [
-                "act",
-                "values",
-                "responsibleActor",
-                "kind"
-              ],
-              "value": "SET"
-            }
-          ],
-          "labelId": "field.responsibleActor.label",
-          "meaningId": "field.responsibleActor.meaning",
-          "order": 4,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "default": null,
-          "diagnosticTargets": [
-            "responsibleActor"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.values.followUpDate.kind",
-          "field": null,
-          "path": [
-            "act",
-            "values",
-            "followUpDate",
-            "kind"
-          ],
-          "kind": {
-            "kind": "GROUP",
-            "vocabulary": "workChange",
-            "options": [
-              "CLEAR",
-              "SET"
-            ]
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "input.followUpDateAction.label",
-          "meaningId": "input.followUpDateAction.meaning",
-          "order": 5,
-          "prefill": null,
-          "required": false,
-          "wireRequired": false,
-          "default": null,
-          "diagnosticTargets": [
-            "followUpDate"
-          ],
-          "source": "AUTHORED"
-        },
-        {
-          "identity": "act.values.followUpDate.value",
-          "field": "followUpDate",
-          "path": [
-            "act",
-            "values",
-            "followUpDate",
-            "value"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [
-            {
-              "path": [
-                "act",
-                "values",
-                "followUpDate",
-                "kind"
-              ],
-              "value": "SET"
-            }
-          ],
-          "labelId": "field.followUpDate.label",
-          "meaningId": "field.followUpDate.meaning",
-          "order": 6,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "default": null,
-          "diagnosticTargets": [
-            "followUpDate"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "constants": [
-        {
-          "path": [
-            "kind"
-          ],
-          "value": "CASE",
-          "branches": [],
-          "vocabulary": "subject"
-        },
-        {
-          "path": [
-            "target",
-            "kind"
-          ],
-          "value": "REFERENCE",
-          "branches": [],
-          "vocabulary": "caseSelector"
-        },
-        {
-          "path": [
-            "act",
-            "kind"
-          ],
-          "value": "UPDATE_WORK",
-          "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -1296,6 +1201,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -1322,6 +1228,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -1345,6 +1252,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -1376,6 +1284,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "registration"
@@ -1416,6 +1325,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentDate"
@@ -1456,6 +1366,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentNotificationDate"
@@ -1496,6 +1407,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "incidentCountry"
@@ -1536,6 +1448,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimantName"
@@ -1576,6 +1489,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "insurerName"
@@ -1617,6 +1531,7 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimedAmount"
@@ -1658,9 +1573,51 @@
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "claimedCurrency"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.groups.registration.values.incidentDescription",
+          "field": "incidentDescription",
+          "path": [
+            "act",
+            "groups",
+            "registration",
+            "values",
+            "incidentDescription"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "groups",
+                "registration",
+                "kind"
+              ],
+              "value": "UPDATE"
+            }
+          ],
+          "labelId": "field.incidentDescription.label",
+          "meaningId": "field.incidentDescription.meaning",
+          "order": 11,
+          "prefill": [
+            "registration",
+            "incidentDescription"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "incidentDescription"
           ],
           "source": "AUTHORED"
         },
@@ -1686,10 +1643,11 @@
           "branches": [],
           "labelId": "group.decision.label",
           "meaningId": "group.decision.meaning",
-          "order": 11,
+          "order": 12,
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "decision"
@@ -1723,13 +1681,14 @@
           ],
           "labelId": "field.paymentDecisionDate.label",
           "meaningId": "field.paymentDecisionDate.meaning",
-          "order": 12,
+          "order": 13,
           "prefill": [
             "decision",
             "paymentDecisionDate"
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "paymentDecisionDate"
@@ -1764,13 +1723,14 @@
           ],
           "labelId": "field.payableAmount.label",
           "meaningId": "field.payableAmount.meaning",
-          "order": 13,
+          "order": 14,
           "prefill": [
             "decision",
             "payableAmount"
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "payableAmount"
@@ -1805,13 +1765,14 @@
           ],
           "labelId": "field.payableCurrency.label",
           "meaningId": "field.payableCurrency.meaning",
-          "order": 14,
+          "order": 15,
           "prefill": [
             "decision",
             "payableCurrency"
           ],
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "payableCurrency"
@@ -1841,10 +1802,11 @@
           "branches": [],
           "labelId": "group.payment.label",
           "meaningId": "group.payment.meaning",
-          "order": 15,
+          "order": 16,
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "payment"
@@ -1878,13 +1840,14 @@
           ],
           "labelId": "field.paymentDate.label",
           "meaningId": "field.paymentDate.meaning",
-          "order": 16,
+          "order": 17,
           "prefill": [
             "payment",
             "paymentDate"
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "paymentDate"
@@ -1899,7 +1862,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -1908,7 +1872,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -1917,7 +1882,8 @@
           ],
           "value": "CORRECT",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -1951,6 +1917,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -1977,6 +1944,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2000,6 +1968,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2028,6 +1997,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "paymentDecisionDate"
@@ -2056,6 +2026,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "payableAmount"
@@ -2084,6 +2055,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "payableCurrency"
@@ -2098,7 +2070,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2107,7 +2080,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2116,7 +2090,8 @@
           ],
           "value": "DECIDE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2150,6 +2125,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2176,6 +2152,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2199,6 +2176,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2213,7 +2191,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2222,7 +2201,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2231,7 +2211,8 @@
           ],
           "value": "WITHDRAW_DECISION",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2265,6 +2246,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2291,6 +2273,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2314,6 +2297,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2339,6 +2323,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "paymentDate"
@@ -2353,7 +2338,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2362,7 +2348,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2371,7 +2358,8 @@
           ],
           "value": "RECORD_PAYMENT",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2405,6 +2393,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2431,6 +2420,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2454,6 +2444,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2468,7 +2459,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2477,7 +2469,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2486,7 +2479,8 @@
           ],
           "value": "CLEAR_PAYMENT",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2518,6 +2512,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2544,6 +2539,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2567,6 +2563,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2581,7 +2578,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2590,7 +2588,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2599,7 +2598,8 @@
           ],
           "value": "CLOSE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2631,6 +2631,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2657,6 +2658,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2680,6 +2682,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2694,7 +2697,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2703,7 +2707,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2712,7 +2717,8 @@
           ],
           "value": "REOPEN",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2744,6 +2750,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2770,6 +2777,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2793,6 +2801,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2817,6 +2826,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "reason"
@@ -2831,7 +2841,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2840,7 +2851,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2849,7 +2861,8 @@
           ],
           "value": "VOID",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -2881,6 +2894,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -2907,6 +2921,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -2930,6 +2945,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -2954,6 +2970,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "reason"
@@ -2968,7 +2985,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2977,7 +2995,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -2986,7 +3005,8 @@
           ],
           "value": "REINSTATE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -3023,6 +3043,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3049,6 +3070,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3072,6 +3094,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "expectedRevision"
@@ -3086,7 +3109,8 @@
           ],
           "value": "CASE",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3095,7 +3119,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3104,7 +3129,8 @@
           ],
           "value": "ERASE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -3136,6 +3162,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3165,6 +3192,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3189,6 +3217,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3213,6 +3242,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3227,7 +3257,8 @@
           ],
           "value": "AUTHORITY",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3236,7 +3267,8 @@
           ],
           "value": "REGISTER",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -3268,6 +3300,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3297,6 +3330,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3321,6 +3355,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3345,6 +3380,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3379,6 +3415,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "role"
@@ -3409,6 +3446,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": "INSTALLATION",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3444,6 +3482,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3458,7 +3497,8 @@
           ],
           "value": "AUTHORITY",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3467,7 +3507,8 @@
           ],
           "value": "GRANT",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3487,7 +3528,8 @@
               "value": "CASE"
             }
           ],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         }
       ]
     },
@@ -3519,6 +3561,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3548,6 +3591,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3572,6 +3616,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3596,6 +3641,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3630,6 +3676,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "role"
@@ -3660,6 +3707,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": "INSTALLATION",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -3695,6 +3743,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -3709,7 +3758,8 @@
           ],
           "value": "AUTHORITY",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3718,7 +3768,8 @@
           ],
           "value": "REVOKE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3738,7 +3789,8 @@
               "value": "CASE"
             }
           ],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         }
       ]
     },
@@ -3770,6 +3822,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3799,6 +3852,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3823,6 +3877,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3847,6 +3902,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3861,7 +3917,8 @@
           ],
           "value": "AUTHORITY",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -3870,7 +3927,8 @@
           ],
           "value": "ENABLE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
     },
@@ -3902,6 +3960,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -3931,6 +3990,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.kind"
@@ -3955,6 +4015,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.issuer"
@@ -3979,6 +4040,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "principal.subject"
@@ -3993,7 +4055,8 @@
           ],
           "value": "AUTHORITY",
           "branches": [],
-          "vocabulary": "subject"
+          "vocabulary": "subject",
+          "requiresParent": false
         },
         {
           "path": [
@@ -4002,9 +4065,1709 @@
           ],
           "value": "DISABLE",
           "branches": [],
-          "vocabulary": "act"
+          "vocabulary": "act",
+          "requiresParent": false
         }
       ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "WORK",
+      "kind": "UPDATE_WORK",
+      "labelId": "act.UPDATE_WORK.label",
+      "meaningId": "act.UPDATE_WORK.meaning",
+      "confirmationId": "act.UPDATE_WORK.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_WORK",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "expectedRevision",
+          "field": "expectedWorkRevision",
+          "path": [
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedWorkRevision.label",
+          "meaningId": "field.expectedWorkRevision.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedWorkRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.values.responsibleActor.kind",
+          "field": null,
+          "path": [
+            "act",
+            "values",
+            "responsibleActor",
+            "kind"
+          ],
+          "kind": {
+            "kind": "GROUP",
+            "vocabulary": "workChange",
+            "options": [
+              "CLEAR",
+              "SET"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.responsibleActorAction.label",
+          "meaningId": "input.responsibleActorAction.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "responsibleActor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.responsibleActor.value",
+          "field": "responsibleActor",
+          "path": [
+            "act",
+            "values",
+            "responsibleActor",
+            "value"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [
+            {
+              "path": [
+                "act",
+                "values",
+                "responsibleActor",
+                "kind"
+              ],
+              "value": "SET"
+            }
+          ],
+          "labelId": "field.responsibleActor.label",
+          "meaningId": "field.responsibleActor.meaning",
+          "order": 4,
+          "prefill": [
+            "work",
+            "responsible",
+            "account",
+            "actorId"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "responsibleActor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.values.handlingSummary",
+          "field": "handlingSummary",
+          "path": [
+            "act",
+            "values",
+            "handlingSummary"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.handlingSummary.label",
+          "meaningId": "field.handlingSummary.meaning",
+          "order": 5,
+          "prefill": [
+            "work",
+            "summary"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "handlingSummary"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "WORK",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "UPDATE_WORK",
+          "branches": [],
+          "vocabulary": "workAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "REMINDER",
+      "kind": "REMINDER_CREATE",
+      "labelId": "act.REMINDER_CREATE.label",
+      "meaningId": "act.REMINDER_CREATE.meaning",
+      "confirmationId": "act.REMINDER_CREATE.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_REMINDER",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.action",
+          "field": "reminderAction",
+          "path": [
+            "act",
+            "action"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderAction.label",
+          "meaningId": "field.reminderAction.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderAction"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.dueDate",
+          "field": "reminderDueDate",
+          "path": [
+            "act",
+            "dueDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderDueDate.label",
+          "meaningId": "field.reminderDueDate.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderDueDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "REMINDER",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "CREATE",
+          "branches": [],
+          "vocabulary": "reminderAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "REMINDER",
+      "kind": "REMINDER_UPDATE",
+      "labelId": "act.REMINDER_UPDATE.label",
+      "meaningId": "act.REMINDER_UPDATE.meaning",
+      "confirmationId": "act.REMINDER_UPDATE.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_REMINDER",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.reminderId",
+          "field": "reminderId",
+          "path": [
+            "act",
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.expectedRevision",
+          "field": "expectedReminderRevision",
+          "path": [
+            "act",
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedReminderRevision.label",
+          "meaningId": "field.expectedReminderRevision.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedReminderRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.action",
+          "field": "reminderAction",
+          "path": [
+            "act",
+            "action"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderAction.label",
+          "meaningId": "field.reminderAction.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderAction"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.dueDate",
+          "field": "reminderDueDate",
+          "path": [
+            "act",
+            "dueDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderDueDate.label",
+          "meaningId": "field.reminderDueDate.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderDueDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "REMINDER",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "UPDATE",
+          "branches": [],
+          "vocabulary": "reminderAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "REMINDER",
+      "kind": "REMINDER_COMPLETE",
+      "labelId": "act.REMINDER_COMPLETE.label",
+      "meaningId": "act.REMINDER_COMPLETE.meaning",
+      "confirmationId": "act.REMINDER_COMPLETE.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_REMINDER",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.reminderId",
+          "field": "reminderId",
+          "path": [
+            "act",
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.expectedRevision",
+          "field": "expectedReminderRevision",
+          "path": [
+            "act",
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedReminderRevision.label",
+          "meaningId": "field.expectedReminderRevision.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedReminderRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "REMINDER",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "COMPLETE",
+          "branches": [],
+          "vocabulary": "reminderAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "REMINDER",
+      "kind": "REMINDER_CANCEL",
+      "labelId": "act.REMINDER_CANCEL.label",
+      "meaningId": "act.REMINDER_CANCEL.meaning",
+      "confirmationId": "act.REMINDER_CANCEL.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_REMINDER",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.reminderId",
+          "field": "reminderId",
+          "path": [
+            "act",
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.expectedRevision",
+          "field": "expectedReminderRevision",
+          "path": [
+            "act",
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedReminderRevision.label",
+          "meaningId": "field.expectedReminderRevision.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedReminderRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "REMINDER",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "CANCEL",
+          "branches": [],
+          "vocabulary": "reminderAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "REMINDER",
+      "kind": "REMINDER_REOPEN",
+      "labelId": "act.REMINDER_REOPEN.label",
+      "meaningId": "act.REMINDER_REOPEN.meaning",
+      "confirmationId": "act.REMINDER_REOPEN.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_REMINDER",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.reminderId",
+          "field": "reminderId",
+          "path": [
+            "act",
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.expectedRevision",
+          "field": "expectedReminderRevision",
+          "path": [
+            "act",
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedReminderRevision.label",
+          "meaningId": "field.expectedReminderRevision.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedReminderRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.dueDate",
+          "field": "reminderDueDate",
+          "path": [
+            "act",
+            "dueDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderDueDate.label",
+          "meaningId": "field.reminderDueDate.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderDueDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "REMINDER",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "REOPEN",
+          "branches": [],
+          "vocabulary": "reminderAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "REMINDER",
+      "kind": "REMINDER_COMPLETE_AND_PLAN_NEXT",
+      "labelId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label",
+      "meaningId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning",
+      "confirmationId": "act.REMINDER_COMPLETE_AND_PLAN_NEXT.confirmation",
+      "family": "BUSINESS",
+      "affectedSections": [
+        "work"
+      ],
+      "effect": "CHANGE_REMINDER",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 1,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.reminderId",
+          "field": "reminderId",
+          "path": [
+            "act",
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.expectedRevision",
+          "field": "expectedReminderRevision",
+          "path": [
+            "act",
+            "expectedRevision"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.expectedReminderRevision.label",
+          "meaningId": "field.expectedReminderRevision.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "expectedReminderRevision"
+          ],
+          "source": "EXPECTED_REVISION"
+        },
+        {
+          "identity": "act.action",
+          "field": "reminderAction",
+          "path": [
+            "act",
+            "action"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderAction.label",
+          "meaningId": "field.reminderAction.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderAction"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.dueDate",
+          "field": "reminderDueDate",
+          "path": [
+            "act",
+            "dueDate"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderDueDate.label",
+          "meaningId": "field.reminderDueDate.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderDueDate"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "REMINDER",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "COMPLETE_AND_PLAN_NEXT",
+          "branches": [],
+          "vocabulary": "reminderAct",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "reminder.get",
+      "subject": "REMINDER",
+      "kind": "reminder.get",
+      "labelId": "endpoint.reminder.get.label",
+      "meaningId": "endpoint.reminder.get.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "reminderId",
+          "field": "reminderId",
+          "path": [
+            "reminderId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.reminderId.label",
+          "meaningId": "field.reminderId.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "reminderId"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "case.activity",
+      "subject": "CASE",
+      "kind": "case.activity",
+      "labelId": "endpoint.case.activity.label",
+      "meaningId": "endpoint.case.activity.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "detail",
+          "field": null,
+          "path": [
+            "detail"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "historyDetail",
+            "options": [
+              "SUMMARY",
+              "FULL"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.detail.label",
+          "meaningId": "input.detail.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": "SUMMARY",
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": 50,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "reminder.list",
+      "subject": "REMINDER",
+      "kind": "reminder.list",
+      "labelId": "endpoint.reminder.list.label",
+      "meaningId": "endpoint.reminder.list.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [
+        {
+          "identity": "target.caseReference",
+          "field": "caseReference",
+          "path": [
+            "target",
+            "caseReference"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.caseReference.label",
+          "meaningId": "field.caseReference.meaning",
+          "order": 0,
+          "prefill": [
+            "caseReference"
+          ],
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "caseReference"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "state",
+          "field": null,
+          "path": [
+            "state"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "reminderState",
+            "options": [
+              "PENDING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.reminderState.label",
+          "meaningId": "input.reminderState.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "due",
+          "field": null,
+          "path": [
+            "due"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "reminderDue",
+            "options": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.reminderDue.label",
+          "meaningId": "input.reminderDue.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "assignment",
+          "field": null,
+          "path": [
+            "assignment"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "assignment",
+            "options": [
+              "MINE",
+              "UNASSIGNED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.assignment.label",
+          "meaningId": "input.assignment.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "text",
+          "field": "text",
+          "path": [
+            "text"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.text.label",
+          "meaningId": "field.text.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "text"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "cursor",
+          "field": null,
+          "path": [
+            "cursor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.cursor.label",
+          "meaningId": "field.cursor.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "cursor"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "limit",
+          "field": null,
+          "path": [
+            "limit"
+          ],
+          "kind": {
+            "kind": "INTEGER"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.limit.label",
+          "meaningId": "field.limit.meaning",
+          "order": 6,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": 50,
+          "diagnosticTargets": [
+            "limit"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "includeInactive",
+          "field": null,
+          "path": [
+            "includeInactive"
+          ],
+          "kind": {
+            "kind": "BOOLEAN"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.includeInactive.label",
+          "meaningId": "input.includeInactive.meaning",
+          "order": 7,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "target",
+            "kind"
+          ],
+          "value": "REFERENCE",
+          "branches": [],
+          "vocabulary": "caseSelector",
+          "requiresParent": true
+        }
+      ]
+    },
+    {
+      "endpoint": "work.overview",
+      "subject": "WORK",
+      "kind": "work.overview",
+      "labelId": "endpoint.work.overview.label",
+      "meaningId": "endpoint.work.overview.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [
+        {
+          "identity": "mine",
+          "field": null,
+          "path": [
+            "mine"
+          ],
+          "kind": {
+            "kind": "BOOLEAN"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.mine.label",
+          "meaningId": "input.mine.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": []
     },
     {
       "endpoint": "case.assignees",
@@ -4037,6 +5800,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -4060,6 +5824,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4083,6 +5848,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4098,7 +5864,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         }
       ]
     },
@@ -4133,6 +5900,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -4148,7 +5916,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         }
       ]
     },
@@ -4180,6 +5949,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4203,6 +5973,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4232,6 +6003,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4258,6 +6030,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4285,6 +6058,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4306,6 +6080,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "text"
@@ -4336,6 +6111,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": "REFERENCE",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4362,6 +6138,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4391,6 +6168,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4432,6 +6210,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4458,6 +6237,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4485,6 +6265,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4506,6 +6287,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "text"
@@ -4536,6 +6318,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": "REFERENCE",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4562,6 +6345,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4591,6 +6375,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4629,6 +6414,7 @@
           ],
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "caseReference"
@@ -4657,6 +6443,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": "SUMMARY",
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4678,6 +6465,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4701,6 +6489,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4716,7 +6505,8 @@
           ],
           "value": "REFERENCE",
           "branches": [],
-          "vocabulary": "caseSelector"
+          "vocabulary": "caseSelector",
+          "requiresParent": false
         }
       ]
     },
@@ -4748,6 +6538,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -4785,6 +6576,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -4822,6 +6614,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "operationId"
@@ -4859,6 +6652,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4882,6 +6676,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -4919,6 +6714,7 @@
           "prefill": null,
           "required": true,
           "wireRequired": true,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -4940,6 +6736,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -4963,6 +6760,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -5000,6 +6798,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
@@ -5021,6 +6820,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": false,
+          "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
             "cursor"
@@ -5044,6 +6844,7 @@
           "prefill": null,
           "required": false,
           "wireRequired": true,
+          "allowsNull": false,
           "default": 50,
           "diagnosticTargets": [
             "limit"
@@ -5261,5 +7062,5 @@
       ]
     }
   ],
-  "productVersion": "0.14.0"
+  "productVersion": "0.15.0"
 }

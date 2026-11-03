@@ -16,7 +16,11 @@
 --
 -- Permanent scalar grammars and business-text byte bounds: src/ClaimCore.Domain/Values.fs.
 -- Durable payload grammar and byte bounds: src/ClaimCore.RecordFormat/LedgerPayload.fs.
--- Free business text is at most 1024 UTF-8 bytes; a framed ledger payload is at most 32768 bytes.
+-- Narrative syntax is at most 4096 UTF-8 bytes; reminder action syntax is at most 1024 bytes.
+-- Each framed request plus affected-entity snapshot payload is at most 32768 bytes.
+
+-- Server module supplied with PostgreSQL; used only by indexes for existing literal LIKE searches.
+CREATE EXTENSION pg_trgm WITH SCHEMA public VERSION '1.6';
 
 CREATE SCHEMA claimcore;
 REVOKE ALL ON SCHEMA claimcore FROM PUBLIC;
@@ -63,7 +67,7 @@ INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (
 --
 -- Every accepted case act and every accepted authority act is exactly one row. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 3). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 4). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -72,8 +76,8 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 3),
-    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'CONTROL')),
+    entry_format smallint NOT NULL CHECK (entry_format = 4),
+    subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'CONTROL', 'WORK', 'REMINDER')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
     operation_id uuid NOT NULL
@@ -85,6 +89,8 @@ CREATE TABLE claimcore.ledger (
     ),
     subject_id uuid NOT NULL CHECK (subject_id <> '00000000-0000-0000-0000-000000000000'),
     case_revision bigint CHECK (case_revision BETWEEN 1 AND 9007199254740991),
+    parent_case_id uuid CHECK (parent_case_id <> '00000000-0000-0000-0000-000000000000'),
+    next_reminder_id uuid CHECK (next_reminder_id <> '00000000-0000-0000-0000-000000000000'),
     business_date date CHECK (business_date BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
 
     -- SHA-256(payload_nonce || payload). Retained forever; reveals nothing once the nonce is gone.
@@ -103,13 +109,17 @@ CREATE TABLE claimcore.ledger (
 
     CONSTRAINT ledger_subject_shape CHECK (
         (subject_kind = 'CONTROL' AND act = 'NOT_ACCEPTED' AND subject_id = operation_id
-            AND case_revision IS NULL AND business_date IS NULL AND payload IS NOT NULL)
+            AND case_revision IS NULL AND business_date IS NULL AND parent_case_id IS NULL AND next_reminder_id IS NULL AND payload IS NOT NULL)
         OR
         (subject_kind = 'CASE'
+            AND parent_case_id IS NULL AND next_reminder_id IS NULL
             AND case_revision IS NOT NULL
             AND business_date IS NOT NULL
             AND act ~ '^[A-Z][A-Z_]{0,39}$')
+        OR (subject_kind = 'WORK' AND act = 'UPDATE_WORK' AND case_revision IS NOT NULL AND business_date IS NOT NULL AND parent_case_id = subject_id AND next_reminder_id IS NULL)
+        OR (subject_kind = 'REMINDER' AND case_revision IS NOT NULL AND business_date IS NOT NULL AND parent_case_id IS NOT NULL AND act IN ('CREATE','UPDATE','COMPLETE','CANCEL','REOPEN','COMPLETE_AND_PLAN_NEXT') AND ((act='CREATE')=(case_revision=1)) AND (act<>'CREATE' OR subject_id=operation_id) AND ((act='COMPLETE_AND_PLAN_NEXT' AND next_reminder_id=operation_id AND next_reminder_id<>subject_id) OR (act<>'COMPLETE_AND_PLAN_NEXT' AND next_reminder_id IS NULL)))
         OR (subject_kind = 'AUTHORITY'
+            AND parent_case_id IS NULL AND next_reminder_id IS NULL
             AND case_revision IS NULL
             AND business_date IS NULL
             AND payload IS NOT NULL
@@ -122,7 +132,7 @@ CREATE TABLE claimcore.ledger (
             AND octet_length(payload_nonce) = 32)
     ),
     -- Authority rows have NULL revision and therefore never collide here.
-    CONSTRAINT ledger_case_revision_unique UNIQUE (subject_id, case_revision)
+    CONSTRAINT ledger_case_revision_unique UNIQUE (subject_kind, subject_id, case_revision)
 );
 
 -- Retained authoritative references cannot be reused even if a projection is damaged.
@@ -212,16 +222,16 @@ BEGIN
         RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
     END IF;
 
-    IF OLD.subject_kind <> 'CASE'
+    IF OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
        OR NEW.payload IS NOT NULL
        OR NEW.payload_nonce IS NOT NULL
        OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
            NEW.act, NEW.operation_id, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
-           NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.payload_commitment)
+           NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.parent_case_id, NEW.next_reminder_id, NEW.payload_commitment)
           IS DISTINCT FROM
           (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.subject_kind,
            OLD.act, OLD.operation_id, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
-           OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.payload_commitment)
+           OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.parent_case_id, OLD.next_reminder_id, OLD.payload_commitment)
     THEN
         RAISE EXCEPTION 'ledger rows change only by case erasure' USING ERRCODE = 'CC003';
     END IF;
@@ -259,9 +269,11 @@ BEGIN
 
     UPDATE claimcore.ledger
        SET payload = NULL, payload_nonce = NULL
-     WHERE subject_kind = 'CASE' AND subject_id = target_case_id AND payload IS NOT NULL;
+     WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
 
     GET DIAGNOSTICS erased = ROW_COUNT;
+    UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL WHERE case_id=target_case_id;
+    UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
     RETURN erased;
 END;
 $$;
@@ -290,6 +302,7 @@ CREATE TABLE claimcore.cases (
     claimed_amount numeric(22,4) CHECK (claimed_amount >= 0),
     claimed_currency text CHECK (claimed_currency ~ '^[A-Z]{3}$'),
     payable_amount numeric(22,4) CHECK (payable_amount >= 0),
+    work_search_text text,
     responsible_actor uuid,
     follow_up date CHECK (follow_up BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
     payable_currency text CHECK (payable_currency ~ '^[A-Z]{3}$'),
@@ -304,7 +317,7 @@ CREATE TABLE claimcore.cases (
         AND ((state = 'ERASED') = (notified_on IS NULL))
         AND ((state = 'ERASED') = (claimed_amount IS NULL))
         AND ((state = 'ERASED') = (claimed_currency IS NULL))
-        AND (state <> 'ERASED' OR (payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL))
+        AND (state <> 'ERASED' OR (payable_amount IS NULL AND responsible_actor IS NULL AND follow_up IS NULL AND work_search_text IS NULL))
     ),
     CONSTRAINT payable_shape CHECK ((payable_amount IS NULL) = (payable_currency IS NULL)),
     CONSTRAINT snapshot_size CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768)
@@ -312,6 +325,9 @@ CREATE TABLE claimcore.cases (
 
 -- One case per reference regardless of ASCII letter case; also the list order and keyset.
 CREATE UNIQUE INDEX cases_reference_key ON claimcore.cases (upper(case_reference COLLATE "C"));
+
+CREATE INDEX cases_search ON claimcore.cases USING gin (search_text public.gin_trgm_ops);
+CREATE INDEX cases_work_search ON claimcore.cases USING gin (work_search_text public.gin_trgm_ops);
 
 CREATE INDEX cases_facets ON claimcore.cases (state, status, progress);
 CREATE INDEX cases_recent ON claimcore.cases (changed_at DESC, upper(case_reference COLLATE "C"));
@@ -332,6 +348,39 @@ ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
 CREATE INDEX cases_responsible ON claimcore.cases (responsible_actor, upper(case_reference COLLATE "C")) WHERE responsible_actor IS NOT NULL;
 CREATE INDEX cases_follow_up ON claimcore.cases (follow_up ASC NULLS LAST, upper(case_reference COLLATE "C"));
 CREATE INDEX cases_due ON claimcore.cases (follow_up, upper(case_reference COLLATE "C")) WHERE state='ACTIVE' AND status='OPENED' AND follow_up IS NOT NULL;
+
+-- Bounded independently revisioned work; OPEN establishes an empty revision-zero root.
+CREATE TABLE claimcore.case_work (
+    case_id uuid PRIMARY KEY REFERENCES claimcore.cases(case_id),
+    revision bigint NOT NULL CHECK (revision BETWEEN 0 AND 9007199254740991),
+    snapshot bytea CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768),
+    responsible_actor uuid REFERENCES claimcore.actors(actor_id),
+    handling_summary text CHECK (handling_summary IS NULL OR (octet_length(handling_summary) BETWEEN 1 AND 4096 AND claimcore.is_interchange_text(handling_summary))),
+    search_text text,
+    changed_at timestamptz,
+    recorded_by uuid REFERENCES claimcore.actors(actor_id),
+    CHECK ((revision=0 AND changed_at IS NULL AND recorded_by IS NULL AND responsible_actor IS NULL AND handling_summary IS NULL) OR (revision>0 AND changed_at IS NOT NULL AND recorded_by IS NOT NULL)),
+    CHECK (snapshot IS NOT NULL OR (responsible_actor IS NULL AND handling_summary IS NULL AND search_text IS NULL))
+);
+
+-- Identity and parent survive erasure; all action/date/state/search bytes are erasable.
+CREATE TABLE claimcore.reminders (
+    reminder_id uuid PRIMARY KEY CHECK (reminder_id <> '00000000-0000-0000-0000-000000000000'),
+    case_id uuid NOT NULL REFERENCES claimcore.cases(case_id),
+    revision bigint NOT NULL CHECK (revision BETWEEN 1 AND 9007199254740991),
+    snapshot bytea CHECK (snapshot IS NULL OR octet_length(snapshot) BETWEEN 1 AND 32768),
+    state text CHECK (state IN ('PENDING','COMPLETED','CANCELLED')),
+    action text CHECK (action IS NULL OR (octet_length(action) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(action))),
+    due date CHECK (due BETWEEN DATE '0001-01-01' AND DATE '9999-12-31'),
+    search_text text,
+    changed_at timestamptz NOT NULL,
+    recorded_by uuid NOT NULL REFERENCES claimcore.actors(actor_id),
+    CHECK (((snapshot IS NULL) AND state IS NULL AND action IS NULL AND due IS NULL AND search_text IS NULL) OR (snapshot IS NOT NULL AND state IS NOT NULL AND action IS NOT NULL AND due IS NOT NULL AND search_text IS NOT NULL))
+);
+CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_id);
+CREATE INDEX reminders_pending_due ON claimcore.reminders(due,reminder_id) WHERE state='PENDING';
+CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
+CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER');
 
 CREATE TABLE claimcore.grants (
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
@@ -385,7 +434,7 @@ GRANT USAGE ON SCHEMA claimcore TO claimcore_runtime;
 GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.ledger_head, claimcore.register_maintenance
     TO claimcore_runtime;
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
-GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.actors TO claimcore_runtime;
+GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;

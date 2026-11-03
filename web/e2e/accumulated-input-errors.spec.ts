@@ -4,7 +4,7 @@ import { expect, test } from "@playwright/test";
 import { startOpen } from "./case-workflow";
 import { isResponse } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
-import { trackRequests } from "./localization-support";
+import { trackForegroundRequests } from "./localization-support";
 
 test("one submit reports every invalid input in summary order and links to its field", async ({
   page,
@@ -17,7 +17,7 @@ test("one submit reports every invalid input in summary order and links to its f
   await fillBusinessField(page, "incidentDate", "");
   await amount.fill("00.10");
   await currency.fill("euros");
-  const requests = trackRequests(page);
+  const requests = trackForegroundRequests(page);
   const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   const reply = await pending;

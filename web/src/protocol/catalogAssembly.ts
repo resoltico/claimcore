@@ -44,7 +44,7 @@ const implicitChoice = (input: CatalogInput, value: unknown): boolean =>
 
 // Selected partial facts keep empty authored text for core diagnostics.
 const selectedFact = (entry: CatalogEntry, input: CatalogInput, values: FormValues): boolean =>
-  entry.subject === "CASE" &&
+  entry.subject !== "AUTHORITY" &&
   entry.endpoint === "operation.execute" &&
   input.source === "AUTHORED" &&
   input.kind.kind === "TEXT" &&
@@ -57,22 +57,40 @@ const omittedInput = (
   value: unknown,
 ): boolean =>
   !input.required &&
-  ((emptyInput(value) && !selectedFact(entry, input, values)) || implicitChoice(input, value));
+  ((emptyInput(value) &&
+    !selectedFact(entry, input, values) &&
+    !(input.allowsNull && value === null && Object.hasOwn(values, bindingPath(input)))) ||
+    implicitChoice(input, value));
 
 export const assembleCatalogInput = (
   entry: CatalogEntry,
   values: FormValues,
 ): Record<string, unknown> => {
   const root: Record<string, unknown> = {};
-  for (const constant of entry.constants.filter((item) => applies(item, values))) {
+  for (const constant of entry.constants.filter(
+    (item) => !item.requiresParent && applies(item, values),
+  )) {
     assign(root, constant.path, constant.value);
   }
   for (const input of entry.inputs.filter((item) => applies(item, values))) {
-    const value = values[bindingPath(input)] ?? input.default;
+    const value = Object.hasOwn(values, bindingPath(input))
+      ? values[bindingPath(input)]
+      : input.default;
     if (omittedInput(entry, input, values, value)) {
       continue;
     }
-    assign(root, input.path, input.kind.kind === "INTEGER" ? Number(value) : (value ?? ""));
+    assign(
+      root,
+      input.path,
+      input.kind.kind === "INTEGER" && value !== null ? Number(value) : value,
+    );
+  }
+  for (const constant of entry.constants.filter(
+    (item) => item.requiresParent && applies(item, values),
+  )) {
+    if (isObject(atPath(root, constant.path.slice(0, -1)))) {
+      assign(root, constant.path, constant.value);
+    }
   }
   return root;
 };

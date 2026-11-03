@@ -14,8 +14,7 @@ value can represent. Reading retained values uses permanent format.
 
 ## Case act
 
-A requested change from the [case-act declaration](../src/ClaimCore.Domain/CaseActs.fs), including business
-work and stewardship. Availability depends on current case state, the supplied values and the actor's rights.
+A requested change from the [case-act declaration](../src/ClaimCore.Domain/CaseActs.fs), including financial facts and stewardship. Work and reminders have separate typed operation families. Availability depends on current case state, the supplied values and the actor's rights.
 
 ## Decision
 
@@ -47,8 +46,8 @@ The hash has 32 bytes and is shown as hexadecimal at boundaries. Genesis is sequ
 
 ## Entry target
 
-A ledger entry names a case, an authority target or an actor-scoped final-nonacceptance control.
-Public acceptance receipts expose case/authority targets as `subject`; recovery controls have no business
+A ledger entry names case facts, case work, reminder effects, an authority target or an actor-scoped final-nonacceptance control.
+Public acceptance receipts expose typed business targets as `subject`; recovery controls have no business
 acceptance receipt and do not appear in case or authority history.
 
 ## Case identity and reference
@@ -75,13 +74,42 @@ An enabled valid registered actor's read of its own accepted metadata, previousl
 nonacceptance, or unresolved outcome. It appends no control and does not block acceptance. Authorship
 permits recovery metadata even without current case roles; content disclosure remains independently authorized.
 
-## Responsibility and follow-up
+## Case work and responsibility
 
-Case work holds an optional responsible ActorId and planned follow-up date. Responsibility is a factual
-assignment, independent of grants and visibility. My cases means that the requester is responsible;
-Unassigned means no account is responsible. An unavailable assignee remains recorded until explicitly
-changed. Due state uses the query snapshot's database instant and installation business zone; only active,
-open cases are actionable.
+Case work holds an optional responsible ActorId and Handling summary with its own revision, starting at
+zero. Responsibility is independent of grants and visibility and is inherited by every case reminder.
+Mine means that the requester is currently responsible inside current read access. An unavailable
+assignee remains recorded until explicitly changed.
+
+## Reminder and follow-up
+
+A reminder is an identified, independently revisioned action and planned date in Pending, Completed or
+Cancelled state. Its creation ID equals its operation UUID. Next follow-up is the minimum Pending due
+date, with stable reminder-ID ties. Pending includes overdue dates. Current Pending reminders on active
+open cases have Overdue, Today or Upcoming timing; terminal reminders and reminders on inactive parents
+have no actionable timing label. Close/void retains planned dates for reactivation.
+Complete-and-plan-next completes one reminder and creates one replacement atomically under one accepted
+operation identity.
+
+## Work attention
+
+An active open case needs a next action when it has no Pending reminders. This monitored condition does
+not block completion or require a fake action. Missing plan, overdue work, unassigned and unavailable
+assignee overlap; affected-case totals count each case in their union once. Date classification uses
+the [observation basis](#observation-basis) and does not append synthetic history.
+
+## Observation basis
+
+A work read reports the database observation instant, the business date derived from that instant and
+the installation's business time zone. The client clock does not determine whether work is overdue.
+Separate reads and loaded pages can have different bases; a loaded reminder retains its own page's
+basis until refreshed.
+
+## Incident description and Handling summary
+
+Optional 600-scalar LF plain text: what happened and current handling context, respectively. They have
+separate domain types and current admission owners. Omission preserves a partial value; explicit clear
+removes it. Neither text field replaces structured status, lifecycle, progress or reminder state.
 
 ## Targeted update and reaffirmation
 

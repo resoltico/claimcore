@@ -46,24 +46,117 @@ let internal scalarEvidence () =
             let! outcome = execute actor pending
             results.Add(refused outcome)
 
+        let! workOpening = execute actor (openRequest 490 "REACH-WORK")
+        accepted workOpening |> ignore
+
+        for request in workScalarRequests () do
+            let! outcome = Service.execute actor request ct
+            results.Add(refused outcome)
+
+        let target = CaseSelector.Reference "REACH-WORK"
+
+        let work operation responsible summary =
+            OperationInput.Work
+                {
+                    OperationId = id operation
+                    Target = target
+                    ExpectedRevision = 0L
+                    Act =
+                        WorkAct.UpdateWork
+                            {
+                                Responsible = responsible
+                                Summary = summary
+                            }
+                }
+
+        let reminder operation act =
+            OperationInput.Reminder
+                {
+                    OperationId = id operation
+                    Target = target
+                    Act = act
+                }
+
+        for request in
+            [
+                work 509 WorkValue.Keep WorkValue.Clear
+                work
+                    510
+                    (WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 999))))
+                    WorkValue.Keep
+            ] do
+            let! outcome = Service.execute actor request ct
+            results.Add(refused outcome)
+
+        let plan =
+            {
+                ReminderPlanInput.Action = "Request report"
+                Due = "2027-01-01"
+            }
+
+        let! planned =
+            Service.execute actor (reminder 520 (AuthoredReminderAct.Create plan)) ct
+
+        accepted planned |> ignore
+
+        for request in
+            [
+                reminder 521 (AuthoredReminderAct.Reopen(id 520, 1L, "2027-01-01"))
+                reminder 522 (AuthoredReminderAct.Update(id 520, 1L, plan))
+            ] do
+            let! outcome = Service.execute actor request ct
+            results.Add(refused outcome)
+
+        let! completed =
+            Service.execute actor (reminder 523 (AuthoredReminderAct.Complete(id 520, 1L))) ct
+
+        accepted completed |> ignore
+
+        let! repeated =
+            Service.execute actor (reminder 524 (AuthoredReminderAct.Complete(id 520, 2L))) ct
+
+        results.Add(refused repeated)
+
+        let! closed =
+            execute actor (request 525 "REACH-WORK" 1L (AuthoredCaseAct.Bare BareAct.Close))
+
+        accepted closed |> ignore
+
+        let! inactive =
+            Service.execute actor (reminder 526 (AuthoredReminderAct.Create plan)) ct
+
+        results.Add(refused inactive)
+
+        let! stewardship =
+            grant
+                actor
+                (id 527)
+                owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority stewardship
+
+        let! voided =
+            execute
+                actor
+                (request 528 "REACH-WORK" 2L (AuthoredCaseAct.Void "Synthetic diagnostic state"))
+
+        accepted voided |> ignore
+
+        let! blocked =
+            Service.execute actor (reminder 529 (AuthoredReminderAct.Create plan)) ct
+
+        results.Add(refused blocked)
         return List.ofSeq results
     }
 
 let internal stateScenarios () =
     [
         [], (AuthoredCaseAct.Open registration)
-        [],
-        AuthoredCaseAct.UpdateWork
-            {
-                Responsible = WorkValue.Clear
-                FollowUp = WorkValue.Clear
-            }
-        [],
-        AuthoredCaseAct.UpdateWork
-            {
-                Responsible = WorkValue.Set "80000000-0000-4000-8000-000000000999"
-                FollowUp = WorkValue.Keep
-            }
         [], (AuthoredCaseAct.Bare BareAct.Reopen)
         [ closed ], (AuthoredCaseAct.Bare BareAct.Close)
         [ closed ], decided
