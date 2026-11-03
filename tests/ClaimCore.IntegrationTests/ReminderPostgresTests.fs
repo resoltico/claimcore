@@ -137,6 +137,17 @@ let private dates database =
                 expected
                 "Each actual PostgreSQL reminder-date filter selects individual pending actions using its reported server date"
 
+            for item in result.Items do
+                Expect.equal item.Timing (Some filter) "Actual PostgreSQL rows report the independently checked server-date bucket"
+                let! single = Service.reminder actor { Target = target; ReminderId = Reminder.id item.Reminder |> ReminderId.value } token
+                let single = read single
+                let date = Reminder.due single.Item.Reminder |> CalendarDate.value
+                let expectedTiming =
+                    if date < single.Basis.BusinessDate then Some ReminderDue.Overdue
+                    elif date = single.Basis.BusinessDate then Some ReminderDue.Today
+                    else Some ReminderDue.Upcoming
+                Expect.equal single.Item.Timing expectedTiming "Single current read uses its own actual server observation date"
+
         let! nextDue = Service.get actor { Target = target } token
 
         Expect.equal

@@ -39,6 +39,9 @@ let internal tests factory =
                 "case work due filters summaries and keysets use the snapshot business date"
                 (withFixture factory CaseWorkContract.dueFiltersAndOrder)
             testCaseAsync
+                "current reminder timing follows observation date state and parent lifecycle without writes"
+                (withFixture factory CaseWorkContract.reminderTiming)
+            testCaseAsync
                 "case work lifecycle and erasure remove every assignment relationship"
                 (withFixture factory CaseWorkContract.lifecycleAndErasure)
             testCaseAsync
