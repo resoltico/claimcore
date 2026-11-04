@@ -57,6 +57,11 @@ the vocabulary name. Scalar guidance comes from core messages and Domain-owned b
 metadata publishes `unknownCode`; consumers use that value rather than choosing their own unknown sentinel.
 CLI human output uses translated labels; machine frames retain exact wire tokens.
 
+Each catalog role definition has a required `meaningId` for its core-owned grant explanation. Render
+that message directly; role names are not a client-side permission engine. The meaning identifies
+opening and human-only work restrictions, while the actual scope and principal-kind metadata still
+controls the offered selection. Execution independently checks the current facts.
+
 The catalog's `roles` declares `admittedPrincipalKinds` and `admittedScopes` from Domain admission policy.
 Its `capabilities` separately declares principal-kind and scope applicability. OWNER admits installation
 scope only; a role is meaningful at a scope when at least one of its capabilities applies there.

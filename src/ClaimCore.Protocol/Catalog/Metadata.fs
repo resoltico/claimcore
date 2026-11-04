@@ -246,6 +246,7 @@ type PresentationLimits =
 type RolePresentationDefinition =
     {
         Role: Role
+        MeaningId: string
         AdmittedPrincipalKinds: PrincipalKind list
         AdmittedScopes: ScopeKind list
     }

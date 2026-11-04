@@ -70,8 +70,13 @@ module MessageRegisters =
         || key.StartsWith("ui.recordDetails.", StringComparison.Ordinal)
         || List.contains key [ "label.revisionLabel"; "label.observedAt" ]
 
+    let private roleMeaningKey (key: string) =
+        key.StartsWith("role.", StringComparison.Ordinal)
+        && key.EndsWith(".meaning", StringComparison.Ordinal)
+
     let private roleScopeKey (key: string) =
         key = "input.scope.label"
+        || roleMeaningKey key
         || key.StartsWith("ui.grant", StringComparison.Ordinal)
         || key.StartsWith("ui.role", StringComparison.Ordinal)
 
@@ -119,6 +124,7 @@ module MessageRegisters =
                 key.StartsWith("ui.", StringComparison.Ordinal)
                 || key.EndsWith(".label", StringComparison.Ordinal)
                 || key.EndsWith(".hint", StringComparison.Ordinal)
+                || roleMeaningKey key
                 || (diagnostic
                     && (key.EndsWith(".gui", StringComparison.Ordinal)
                         || not (Map.containsKey (key + ".gui") english)))

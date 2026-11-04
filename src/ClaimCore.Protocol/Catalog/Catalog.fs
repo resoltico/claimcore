@@ -76,6 +76,7 @@ module Catalog =
                 |> List.map (fun role ->
                     {
                         Role = role
+                        MeaningId = Vocabulary.messageKey Role.vocabulary role "meaning"
                         AdmittedScopes = Authority.roleScopes role
                         AdmittedPrincipalKinds =
                             Vocabulary.all PrincipalKind.vocabulary

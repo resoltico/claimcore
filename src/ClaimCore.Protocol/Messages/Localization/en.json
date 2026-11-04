@@ -663,5 +663,12 @@
   "label.signedOut": "Signed out.",
   "input.roleFilter.label": "Role filter",
   "input.roleFilter.hint": "Find people assigned this role, including disabled accounts.",
-  "input.roleFilter.rule": "Match recognized role assignments across the installation or individual cases. This filter does not test current capabilities or whether the account is enabled."
+  "input.roleFilter.rule": "Match recognized role assignments across the installation or individual cases. This filter does not test current capabilities or whether the account is enabled.",
+  "role.OWNER.meaning": "Manages people, profiles and roles. This role alone does not grant access to case facts.",
+  "role.CASE_READER.meaning": "Reads case facts and basic change history within the assigned access.",
+  "role.CASE_REGISTRAR.meaning": "Records or corrects claim details and reads case facts and basic history. Opening new cases requires an installation-wide assignment.",
+  "role.CASE_HANDLER.meaning": "Handles case facts, decisions and closure, and reads full history. Only people can manage responsibility, summaries and reminders; opening cases requires installation-wide access.",
+  "role.PAYMENT_RECORDER.meaning": "Records or clears payment dates and reads case facts and basic history. It does not send money.",
+  "role.DATA_STEWARD.meaning": "Voids and reinstates cases or erases their contents. Reads case facts and basic history. This role is for people.",
+  "role.AUDITOR.meaning": "Reads case facts and full change history within assigned access. Reads account access only with an installation-wide assignment. This role cannot change them."
 }

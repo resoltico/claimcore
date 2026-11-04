@@ -8615,6 +8615,7 @@
   "roles": [
     {
       "role": "OWNER",
+      "meaningId": "role.OWNER.meaning",
       "admittedPrincipalKinds": [
         "HUMAN"
       ],
@@ -8624,6 +8625,7 @@
     },
     {
       "role": "CASE_READER",
+      "meaningId": "role.CASE_READER.meaning",
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
@@ -8635,6 +8637,7 @@
     },
     {
       "role": "CASE_REGISTRAR",
+      "meaningId": "role.CASE_REGISTRAR.meaning",
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
@@ -8646,6 +8649,7 @@
     },
     {
       "role": "CASE_HANDLER",
+      "meaningId": "role.CASE_HANDLER.meaning",
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
@@ -8657,6 +8661,7 @@
     },
     {
       "role": "PAYMENT_RECORDER",
+      "meaningId": "role.PAYMENT_RECORDER.meaning",
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"
@@ -8668,6 +8673,7 @@
     },
     {
       "role": "DATA_STEWARD",
+      "meaningId": "role.DATA_STEWARD.meaning",
       "admittedPrincipalKinds": [
         "HUMAN"
       ],
@@ -8678,6 +8684,7 @@
     },
     {
       "role": "AUDITOR",
+      "meaningId": "role.AUDITOR.meaning",
       "admittedPrincipalKinds": [
         "HUMAN",
         "SERVICE"

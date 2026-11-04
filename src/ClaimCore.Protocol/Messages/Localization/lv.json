@@ -663,5 +663,12 @@
   "label.signedOut": "Izrakstīšanās pabeigta.",
   "input.roleFilter.label": "Lomas filtrs",
   "input.roleFilter.hint": "Atrast personas, kurām piešķirta šī loma, arī atspējotus kontus.",
-  "input.roleFilter.rule": "Atlasīt pēc piešķirtās lomas visā instalācijā vai atsevišķās lietās; filtrs nepārbauda pašreizējās tiesības."
+  "input.roleFilter.rule": "Atlasīt pēc piešķirtās lomas visā instalācijā vai atsevišķās lietās; filtrs nepārbauda pašreizējās tiesības.",
+  "role.OWNER.meaning": "Pārvalda kontus, profilus un lomas. Šī loma pati par sevi nedod piekļuvi lietu faktiem.",
+  "role.CASE_READER.meaning": "Lasa lietu faktus un pamata izmaiņu vēsturi piešķirtās piekļuves robežās.",
+  "role.CASE_REGISTRAR.meaning": "Reģistrē vai labo prasījuma datus un lasa lietu faktus un pamata vēsturi. Jaunas lietas var atvērt tikai ar piešķīrumu visai instalācijai.",
+  "role.CASE_HANDLER.meaning": "Apstrādā lietu faktus, lēmumus un slēgšanu, kā arī lasa pilnu vēsturi. Tikai cilvēki var pārvaldīt atbildību, kopsavilkumus un atgādinājumus; lietu atvēršanai vajadzīga piekļuve visai instalācijai.",
+  "role.PAYMENT_RECORDER.meaning": "Reģistrē vai noņem maksājumu datumus un lasa lietu faktus un pamata vēsturi. Nauda netiek pārskaitīta.",
+  "role.DATA_STEWARD.meaning": "Anulē un atjauno lietas vai dzēš to saturu. Lasa lietu faktus un pamata vēsturi. Šī loma ir paredzēta cilvēkiem.",
+  "role.AUDITOR.meaning": "Lasa lietu faktus un pilnu izmaiņu vēsturi piešķirtās piekļuves robežās. Kontu piekļuvi lasa tikai ar piešķīrumu visai instalācijai. Šī loma nedod tiesības tos mainīt."
 }

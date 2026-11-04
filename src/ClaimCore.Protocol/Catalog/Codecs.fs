@@ -591,14 +591,16 @@ module CatalogCodecs =
         |> named "Presentation.CatalogEntry"
 
     let private role =
-        (record (fun role kinds scopes ->
+        (record (fun role meaning kinds scopes ->
             {
                 RolePresentationDefinition.Role = role
+                MeaningId = meaning
                 AdmittedPrincipalKinds = kinds
                 AdmittedScopes = scopes
             })
         : Fields<RolePresentationDefinition, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "meaningId" _.MeaningId text
         |> field
             "admittedPrincipalKinds"
             _.AdmittedPrincipalKinds
