@@ -31,6 +31,12 @@ module CaseListPosition =
 
 type GrantPosition = { Role: Role; CaseId: CaseId option }
 
+type TimelinePosition =
+    {
+        BeforeSequence: Sequence
+        Range: ChangeRange option
+    }
+
 /// Plain positions convey no authority. Every selection authorizes before decoding.
 module Cursors =
     [<Literal>]
@@ -458,13 +464,63 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeTimeline installation scope sequence =
+    let private changeRange =
+        function
+        | None -> JsonValue.Null
+        | Some range ->
+            let entity, reminder =
+                match range.Entity with
+                | ChangeEntity.Case -> "CASE", None
+                | ChangeEntity.Work -> "WORK", None
+                | ChangeEntity.Reminder id -> "REMINDER", Some id
+
+            JsonValue.Object
+                [
+                    "actualRevision", JsonValue.Integer(Revision.value range.ActualRevision)
+                    "entity", JsonValue.String entity
+                    "expectedRevision", JsonValue.Integer(Revision.value range.ExpectedRevision)
+                    "reminderId",
+                    reminder
+                    |> Option.map (ReminderId.format >> JsonValue.String)
+                    |> Option.defaultValue JsonValue.Null
+                ]
+
+    let private readChangeRange =
+        function
+        | JsonValue.Null -> Some None
+        | JsonValue.Object [ "actualRevision", JsonValue.Integer actual
+                             "entity", JsonValue.String entity
+                             "expectedRevision", JsonValue.Integer expected
+                             "reminderId", reminder ] ->
+            let target =
+                match entity, reminder with
+                | "CASE", JsonValue.Null -> Some ChangeEntity.Case
+                | "WORK", JsonValue.Null -> Some ChangeEntity.Work
+                | "REMINDER", JsonValue.String raw ->
+                    uuid ReminderId.create raw |> Option.map ChangeEntity.Reminder
+                | _ -> None
+
+            match target, Revision.create expected, Revision.create actual with
+            | Some entity, Some expected, Some actual ->
+                Some(
+                    Some
+                        {
+                            Entity = entity
+                            ExpectedRevision = expected
+                            ActualRevision = actual
+                        }
+                )
+            | _ -> None
+        | _ -> None
+
+    let encodeTimeline installation scope range sequence =
         encode
             installation
             [
                 "kind", JsonValue.String "CASE_TIMELINE"
                 "v", JsonValue.Integer 1L
                 "scope", JsonValue.String scope
+                "range", changeRange range
                 "before", JsonValue.Integer(Sequence.value sequence)
             ]
 
@@ -475,8 +531,16 @@ module Cursors =
             (function
             | JsonValue.Object [ "before", JsonValue.Integer before
                                  "kind", JsonValue.String "CASE_TIMELINE"
+                                 "range", range
                                  "scope", JsonValue.String expected
                                  "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
-                Sequence.create before
+                match Sequence.create before, readChangeRange range with
+                | Some before, Some range ->
+                    Some
+                        {
+                            BeforeSequence = before
+                            Range = range
+                        }
+                | _ -> None
             | _ -> None)
             token

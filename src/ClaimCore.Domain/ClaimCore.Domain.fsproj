@@ -12,6 +12,7 @@
     <Compile Include="DecimalTotal.fs" />
     <Compile Include="FieldValues.fs" />
     <Compile Include="Identifiers.fs" />
+    <Compile Include="LedgerPosition.fs" />
     <Compile Include="ActorProfiles.fs" />
     <Compile Include="CaseFields.fs" />
     <Compile Include="CaseWork.fs" />
@@ -23,12 +24,12 @@
     <Compile Include="AuthorityActs.fs" />
     <Compile Include="WorklistSemantics.fs" />
     <Compile Include="Reads.fs" />
+    <Compile Include="Changes.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
-    <Compile Include="LedgerPosition.fs" />
     <Compile Include="InputValidation.fs" />
     <Compile Include="CaseState.fs" />
     <Compile Include="StateValidation.fs" />

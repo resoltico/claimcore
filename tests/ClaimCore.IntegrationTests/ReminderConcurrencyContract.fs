@@ -190,10 +190,20 @@ let internal independentRevisions fixture =
                 | ExecuteResult.Rejected refusal -> Some refusal
                 | _ -> None)
 
-        Expect.equal
-            (Array.toList refusals)
-            [ Refusal.RevisionConflict(CaseFixtures.revision 3L) ]
-            "Loser conflicts without rebase or transport ambiguity"
+        Expect.equal refusals.Length 1 "Exactly one conflict remains"
+
+        match refusals[0] with
+        | Refusal.RevisionConflict conflict ->
+            Expect.equal
+                (Revision.value conflict.ActualRevision)
+                3L
+                "Loser observes the winning revision"
+
+            match conflict.Changes with
+            | Some(ConflictChanges.Page page) ->
+                Expect.equal page.Entries.Length 1 "The winner is explained without a rebase"
+            | other -> failtestf "Missing authorized conflict explanation: %A" other
+        | other -> failtestf "Unexpected losing outcome: %A" other
 
         let! a = find fixture 101
         let! b = find fixture 102

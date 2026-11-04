@@ -536,19 +536,6 @@ module ResponseCodecs =
             | HistoryEntry.SummaryEntry value -> value
             | _ -> invalidArg "entry" "Expected summary history.")
 
-    let lifecycleChange =
-        (record (fun before after ->
-            {
-                LifecycleChange.Before = before
-                After = after
-            })
-        : Fields<LifecycleChange, _>)
-        |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
-        |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
-        |> build
-        |> named "LifecycleChange"
-
-
     let historyDifference =
         (record (fun lifecycle fields ->
             {
@@ -556,7 +543,7 @@ module ResponseCodecs =
                 Fields = fields
             })
         : Fields<HistoryDifference, _>)
-        |> field "lifecycle" _.Lifecycle (nullable lifecycleChange)
+        |> field "lifecycle" _.Lifecycle (nullable LedgerCodecs.lifecycleChange)
         |> field "fields" _.Fields (list CaseFields.declarations.Length fieldChange)
         |> build
         |> named "HistoryDifference"
@@ -679,7 +666,7 @@ module ResponseCodecs =
             _.NextCursor
             (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "exactReference" _.ExactReference (nullable caseRef)
         |> build
         |> named "CasesPage"

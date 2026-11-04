@@ -2343,7 +2343,10 @@
           "data": {
             "code": "REVISION_CONFLICT",
             "action": "REVIEW_LATEST",
-            "actualRevision": 0
+            "actualRevision": 0,
+            "changes": {
+              "kind": "WITHHELD"
+            }
           }
         }
       }
@@ -10975,6 +10978,141 @@
                 "name": "Authored hint",
                 "preferredUsername": "hint-user",
                 "email": "hint@example.invalid"
+              }
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "revision-conflict-disclosed-page",
+      "endpoint": "operation.execute",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REVISION_CONFLICT",
+            "action": "REVIEW_LATEST",
+            "actualRevision": 3,
+            "changes": {
+              "kind": "PAGE",
+              "page": {
+                "entries": [
+                  {
+                    "kind": "CASE_FACT",
+                    "operationId": "20000000-0000-4000-8000-000000000001",
+                    "position": {
+                      "sequence": 1,
+                      "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                    },
+                    "recordedAt": "2026-01-01T12:00:00.000000Z",
+                    "recordedBy": {
+                      "actorId": "10000000-0000-4000-8000-000000000001",
+                      "displayName": {
+                        "kind": "NAMED",
+                        "value": "Synthetic author"
+                      },
+                      "principalKind": "HUMAN",
+                      "availability": "AVAILABLE"
+                    },
+                    "revision": 1,
+                    "act": "OPEN",
+                    "changes": {
+                      "kind": "DISCLOSED",
+                      "items": [
+                        {
+                          "kind": "LIFECYCLE",
+                          "change": {
+                            "before": null,
+                            "after": "ACTIVE"
+                          }
+                        },
+                        {
+                          "kind": "CASE_MONEY",
+                          "change": {
+                            "field": "claimedAmount",
+                            "change": {
+                              "before": null,
+                              "after": {
+                                "amount": "1000",
+                                "currency": "EUR"
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "kind": "CASE_FIELD",
+                          "change": {
+                            "field": "status",
+                            "before": null,
+                            "after": {
+                              "kind": "STATUS",
+                              "value": "OPENED"
+                            }
+                          }
+                        },
+                        {
+                          "kind": "CASE_FIELD",
+                          "change": {
+                            "field": "caseReference",
+                            "before": null,
+                            "after": {
+                              "kind": "REFERENCE",
+                              "value": "CASE-001"
+                            }
+                          }
+                        },
+                        {
+                          "kind": "CASE_FIELD",
+                          "change": {
+                            "field": "claimantName",
+                            "before": null,
+                            "after": {
+                              "kind": "PARTY",
+                              "value": "Synthetic claimant"
+                            }
+                          }
+                        },
+                        {
+                          "kind": "CASE_FIELD",
+                          "change": {
+                            "field": "incidentDate",
+                            "before": null,
+                            "after": {
+                              "kind": "DATE",
+                              "value": "2026-01-01"
+                            }
+                          }
+                        },
+                        {
+                          "kind": "CASE_FIELD",
+                          "change": {
+                            "field": "incidentCountry",
+                            "before": null,
+                            "after": {
+                              "kind": "COUNTRY",
+                              "value": "LV"
+                            }
+                          }
+                        },
+                        {
+                          "kind": "CASE_FIELD",
+                          "change": {
+                            "field": "incidentDescription",
+                            "before": null,
+                            "after": {
+                              "kind": "TEXT",
+                              "value": "Two paragraphs\nSecond paragraph"
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
+                ],
+                "nextCursor": null
               }
             }
           }

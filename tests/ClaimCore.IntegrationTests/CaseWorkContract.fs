@@ -372,10 +372,15 @@ let internal assignmentAndDisclosure fixture =
         let! stale =
             Service.execute owner (OperationInput.Work { update with OperationId = id 33 }) token
 
-        Expect.equal
-            stale.Outcome
-            (ExecuteResult.Rejected(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
-            "Independent work revision conflict"
+        match stale.Outcome with
+        | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
+            Expect.equal
+                (Revision.value conflict.ActualRevision)
+                1L
+                "Independent work revision conflict"
+
+            Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
+        | other -> failtestf "Expected revision conflict, got %A" other
 
         for principal in [ reader; automation ] do
             let! denied =
@@ -1256,10 +1261,11 @@ let internal partialUpdatesAndReaffirmation fixture =
                         Claimant = Some "Stale edit"
                     })
 
-        Expect.equal
-            stale.Outcome
-            (ExecuteResult.Rejected(Refusal.RevisionConflict(CaseFixtures.revision 2L)))
-            "No automatic partial rebase"
+        match stale.Outcome with
+        | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
+            Expect.equal (Revision.value conflict.ActualRevision) 2L "No automatic partial rebase"
+            Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
+        | other -> failtestf "Expected revision conflict, got %A" other
 
         let! decided = execute owner 43 "PARTIAL-FACTS" 2L (CaseAct.Decide Inputs.decision)
         accepted decided |> ignore

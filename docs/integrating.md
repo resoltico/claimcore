@@ -94,7 +94,7 @@ input may have several distinct issues. Independent checks accumulate within eac
 checks require parsed operands; current-state and business-date admission require a parsed request and
 the authoritative state. A non-input refusal reports one state or transition cause. Render every issue
 rather than retrying one field at a time. Other diagnostics/faults retain their flat code-tagged shape;
-`actualRevision` appears only for revision conflicts. Unknown role/principal-kind tokens are structural
+`actualRevision` appears only for revision conflicts. Their `changes` are either WITHHELD or a PAGE of at most 50 typed timeline entries. A returned continuation is used with `case.timeline` for the same target and no filter; it retains the observed revision range and rechecks current history disclosure. Unknown role/principal-kind tokens are structural
 protocol faults and cannot enter Domain as invalid enum values.
 
 The generated diagnostic registry maps unique codes directly to message keys and parameter contracts;

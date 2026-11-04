@@ -98,7 +98,7 @@ module TimelineCodecs =
                     (function
                     | TimelineChange.Lifecycle value -> Some value
                     | _ -> None)
-                    (record id |> field "change" id ResponseCodecs.lifecycleChange)
+                    (record id |> field "change" id LedgerCodecs.lifecycleChange)
                 variant
                     "RESPONSIBILITY"
                     TimelineChange.Responsibility
@@ -153,7 +153,7 @@ module TimelineCodecs =
     let private metadata (fields: Fields<CaseTimelineEntry, _>) =
         fields
         |> field "operationId" _.OperationId operationId
-        |> field "position" _.Position ResponseCodecs.position
+        |> field "position" _.Position LedgerCodecs.position
         |> field "recordedAt" _.RecordedAt instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "changes" _.Changes changes
@@ -264,7 +264,7 @@ module TimelineCodecs =
                 NextCursor = next
             })
         : Fields<CaseTimelinePage, _>)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
         |> field "items" _.Items (list Paging.MaximumPageSize timelineEntry)

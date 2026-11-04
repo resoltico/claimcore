@@ -6583,6 +6583,81 @@
           "recordedBy"
         ]
       },
+      "ConflictChangePage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseTimelineEntry"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 512
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "entries",
+          "nextCursor"
+        ]
+      },
+      "ConflictChanges": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/ConflictChanges.PAGE"
+          },
+          {
+            "$ref": "#/components/schemas/ConflictChanges.WITHHELD"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "PAGE": "#/components/schemas/ConflictChanges.PAGE",
+            "WITHHELD": "#/components/schemas/ConflictChanges.WITHHELD"
+          }
+        }
+      },
+      "ConflictChanges.PAGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAGE"
+          },
+          "page": {
+            "$ref": "#/components/schemas/ConflictChangePage"
+          }
+        },
+        "required": [
+          "kind",
+          "page"
+        ]
+      },
+      "ConflictChanges.WITHHELD": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WITHHELD"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
       "ContextReply": {
         "type": "object",
         "additionalProperties": false,
@@ -7152,12 +7227,16 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "changes": {
+            "$ref": "#/components/schemas/ConflictChanges"
           }
         },
         "required": [
           "code",
           "action",
-          "actualRevision"
+          "actualRevision",
+          "changes"
         ]
       },
       "Diagnostic.WORK_NO_CHANGES": {

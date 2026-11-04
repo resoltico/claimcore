@@ -9,6 +9,7 @@
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
 - Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
 - Regenerate case-list and CSV consumers: state.fields now comes from listed declarations; core work state replaces duplicate nested work and progress columns.
+- Regenerate revision-conflict consumers for typed change pages of up to 50 entries; continue via case.timeline under current history permissions.
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.

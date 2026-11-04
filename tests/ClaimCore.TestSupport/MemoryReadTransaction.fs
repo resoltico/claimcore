@@ -545,6 +545,8 @@ type internal Reader
                         | _ -> None, false
 
                     parent = Some query.CaseId
+                    && (query.Range
+                        |> Option.forall (fun range -> TimelineHistory.inRange range entry.Subject))
                     && (query.BeforeSequence
                         |> Option.forall (fun before -> entry.Sequence < before))
                     && (query.Filter

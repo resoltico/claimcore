@@ -115,6 +115,7 @@ let tests =
                                             {
                                                 TimelinePageQuery.CaseId = parent.CaseId
                                                 Filter = None
+                                                Range = None
                                                 BeforeSequence = None
                                                 Limit = 50
                                             }

@@ -206,7 +206,7 @@ let private diagnosticRevisions () =
     let schema = validator document selected
 
     let value =
-        """{"code":"REVISION_CONFLICT","action":"REVIEW_LATEST","actualRevision":0}"""
+        """{"code":"REVISION_CONFLICT","action":"REVIEW_LATEST","actualRevision":0,"changes":{"kind":"WITHHELD"}}"""
 
     for revision, expected in [ "0", true; "1", true; "-1", false ] do
         let changed =

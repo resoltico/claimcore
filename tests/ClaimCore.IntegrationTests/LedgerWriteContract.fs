@@ -128,10 +128,11 @@ let internal replayAndRefusal fixture =
                 ))
                 (CancellationToken.None))
 
-        Expect.equal
-            stale.Outcome
-            (ExecuteResult.Rejected((Refusal.RevisionConflict(CaseFixtures.revision 1L))))
-            "No stale acceptance"
+        match stale.Outcome with
+        | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
+            Expect.equal (Revision.value conflict.ActualRevision) 1L "No stale acceptance"
+            Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
+        | other -> failtestf "Expected revision conflict, got %A" other
 
         let! view =
             inspectCase fixture (fixture.Owner) (None) ("CONTRACT-001") (CancellationToken.None)

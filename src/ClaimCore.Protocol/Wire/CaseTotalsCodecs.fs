@@ -111,6 +111,6 @@ module CaseTotalsCodecs =
         |> field "counts" _.Counts counts
         |> field "claimed" _.Claimed (list 17576 currencyTotal)
         |> field "payable" _.Payable (list 17576 currencyTotal)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> build
         |> named "CaseWorklistSummary"

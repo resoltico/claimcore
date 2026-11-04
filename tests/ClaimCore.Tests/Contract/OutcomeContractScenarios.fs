@@ -292,7 +292,7 @@ let internal actionExpectations =
             Revision = None
         }
         {
-            Refusal = (Refusal.RevisionConflict(CaseFixtures.revision 7L))
+            Refusal = (Refusal.revisionConflict (CaseFixtures.revision 7L))
             Action = RecommendedAction.ReviewLatest
             Token = "REVIEW_LATEST"
             Field = None
@@ -312,7 +312,12 @@ let internal actionEnums () =
             "Input correction and current-state recovery are distinct"
 
 let internal diagnosticRevisions () =
-    let reason = Refusal.RevisionConflict(CaseFixtures.revision 0L)
+    let reason =
+        Refusal.RevisionConflict(
+            RevisionConflictInfo.at (CaseFixtures.revision 0L)
+            |> RevisionConflictInfo.explain ConflictChanges.Withheld
+        )
+
     let codec = DiagnosticCodecs.diagnostic
 
     Expect.equal
@@ -322,7 +327,7 @@ let internal diagnosticRevisions () =
 
     Expect.throws
         (fun () ->
-            Codec.encode codec (Refusal.RevisionConflict(CaseFixtures.revision (-1L)))
+            Codec.encode codec (Refusal.revisionConflict (CaseFixtures.revision (-1L)))
             |> ignore)
         "Negative actual revisions remain invalid"
 

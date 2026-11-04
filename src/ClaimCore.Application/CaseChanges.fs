@@ -10,7 +10,7 @@ module internal CaseChanges =
         | None -> Map.empty
         | Some fields -> CaseFields.values fields |> Map.ofList
 
-    let fields before after =
+    let fields before after : FieldDiff list =
         let previous, next = values before, values after
 
         CaseFields.declarations

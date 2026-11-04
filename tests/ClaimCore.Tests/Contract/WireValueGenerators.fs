@@ -305,6 +305,25 @@ and private freshRepresentation response source context (kind: Type) (value: obj
         maintenanceValue |> Gen.map box
     elif kind = typeof<CaseSummaryFacts> then
         listedFacts (unbox value) |> Gen.map box
+    elif kind = typeof<RevisionConflictInfo> then
+        let conflict = unbox<RevisionConflictInfo> value
+
+        gen {
+            let! revision =
+                integer response (context + ".RevisionConflictInfo.ActualRevision")
+                |> Gen.map CaseFixtures.revision
+
+            let! changes =
+                fresh
+                    response
+                    source
+                    (context + ".RevisionConflictInfo.Changes")
+                    typeof<ConflictChanges>
+                    (box (conflict.Changes |> Option.get))
+                |> Gen.map unbox<ConflictChanges>
+
+            return RevisionConflictInfo.at revision |> RevisionConflictInfo.explain changes |> box
+        }
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
 

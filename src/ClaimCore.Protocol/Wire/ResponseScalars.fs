@@ -117,3 +117,20 @@ module ResponseScalars =
             WriteFields = fun value -> fields.WriteFields value @ [ name, codec.Write() ]
             Properties = fields.Properties @ [ name, codec.Schema ]
         }
+
+    let workDateBasis =
+        (record (fun observed date zone ->
+            {
+                WorkDateBasis.ObservedAt = observed
+                BusinessDate = date
+                TimeZoneId = zone
+            })
+        : Fields<WorkDateBasis, _>)
+        |> field "observedAt" _.ObservedAt instant
+        |> field
+            "businessDate"
+            _.BusinessDate
+            (calendarDate |> map CalendarDate.value CalendarDate.ofDate)
+        |> field "timeZone" _.TimeZoneId nonempty
+        |> build
+        |> named "WorkDateBasis"

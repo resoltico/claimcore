@@ -146,7 +146,7 @@ let private reviewAndTime () =
 
     Expect.equal
         (decide stale (locked worker (Some current) None))
-        (Verdict.Refuse(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
+        (Verdict.Refuse(Refusal.revisionConflict (CaseFixtures.revision 1L)))
         "Execution rechecks the current revision"
 
 let private integrityAndPrivacy () =

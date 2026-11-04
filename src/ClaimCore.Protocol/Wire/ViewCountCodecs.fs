@@ -38,7 +38,7 @@ module ViewCountCodecs =
                 Items = items
             })
         : Fields<CaseViews, _>)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list CaseView.all.Length caseCount)
         |> build
         |> named "CaseViews"
@@ -50,7 +50,7 @@ module ViewCountCodecs =
                 Items = items
             })
         : Fields<ReminderViews, _>)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list ReminderView.all.Length reminderCount)
         |> build
         |> named "ReminderViews"

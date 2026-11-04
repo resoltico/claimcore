@@ -20,23 +20,6 @@ module internal ReadRowCodecs =
                     }))
             format
 
-    let dateBasis =
-        (record (fun observed date zone ->
-            {
-                WorkDateBasis.ObservedAt = observed
-                BusinessDate = date
-                TimeZoneId = zone
-            })
-        : Fields<WorkDateBasis, _>)
-        |> field "observedAt" _.ObservedAt instant
-        |> field
-            "businessDate"
-            _.BusinessDate
-            (calendarDate |> map CalendarDate.value CalendarDate.ofDate)
-        |> field "timeZone" _.TimeZoneId nonempty
-        |> build
-        |> named "WorkDateBasis"
-
     let workView =
         (record
             (fun
@@ -87,7 +70,7 @@ module internal ReadRowCodecs =
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "followUpDate" _.FollowUp (nullable calendarDate)
         |> field "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)
-        |> field "basis" _.Basis dateBasis
+        |> field "basis" _.Basis workDateBasis
         |> build
         |> named "CaseWorkView"
 

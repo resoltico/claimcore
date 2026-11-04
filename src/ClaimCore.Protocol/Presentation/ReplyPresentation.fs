@@ -41,7 +41,7 @@ module Refusals =
 
     let actualRevision =
         function
-        | Refusal.RevisionConflict revision -> Some revision
+        | Refusal.RevisionConflict conflict -> Some conflict.ActualRevision
         | _ -> None
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

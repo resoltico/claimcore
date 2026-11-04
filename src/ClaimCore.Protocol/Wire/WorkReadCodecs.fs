@@ -15,7 +15,7 @@ module WorkReadCodecs =
                 Item = item
             })
         : Fields<ReminderRead, _>)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "item" _.Item WorkCodecs.reminderRead
         |> build
         |> named "ReminderRead"
@@ -28,7 +28,7 @@ module WorkReadCodecs =
                 NextCursor = next
             })
         : Fields<ReminderPage, _>)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list Paging.MaximumPageSize WorkCodecs.reminderRead)
         |> field
             "nextCursor"
@@ -61,7 +61,7 @@ module WorkReadCodecs =
                     AttentionCases = attention
                 })
         : Fields<WorkOverview, _>)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "mine" _.Mine boolean
         |> field "actionableCases" _.ActionableCases (integer 0L SafeInteger.Maximum)
         |> field "missingPlanCases" _.MissingPlanCases (integer 0L SafeInteger.Maximum)

@@ -73,7 +73,7 @@ type AccessRefusal =
 [<RequireQualifiedAccess>]
 type Refusal =
     | InvalidInput of InputIssues
-    | RevisionConflict of actualRevision: Revision
+    | RevisionConflict of RevisionConflictInfo
     | Case of CaseRefusal
     | Reminder of ReminderRuleRefusal
     | Authority of AuthorityRefusal
@@ -84,5 +84,8 @@ type Refusal =
     | RegisterMaintenance
 
 module Refusal =
+    let revisionConflict revision =
+        Refusal.RevisionConflict(RevisionConflictInfo.at revision)
+
     let invalidInput (target, violation) =
         Refusal.InvalidInput(InputIssues.singleton target violation)

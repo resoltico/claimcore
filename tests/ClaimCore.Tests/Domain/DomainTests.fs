@@ -187,7 +187,7 @@ let private identityAndVersionTests =
 
                 Expect.isTrue
                     ((result |> Result.map Case.snapshot) =
-                        Error(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
+                        Error(Refusal.revisionConflict (CaseFixtures.revision 1L)))
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =

@@ -28,6 +28,48 @@ let private token (json: string) =
         .Replace('+', '-')
         .Replace('/', '_')
 
+[<Tests>]
+let conflictRangeCursor =
+    testCase
+        "timeline conflict continuations retain entity range and fit the fixed cursor budget"
+        (fun () ->
+            let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+            let scope = String('a', 64)
+
+            let range =
+                {
+                    Entity = ChangeEntity.Reminder(ReminderId.create actor |> Option.get)
+                    ExpectedRevision = CaseFixtures.revision Revision.Maximum
+                    ActualRevision = CaseFixtures.revision Revision.Maximum
+                }
+
+            let sequence = CaseFixtures.sequence 9007199254740991L
+            let encoded = Cursors.encodeTimeline installation scope (Some range) sequence
+
+            Expect.isLessThanOrEqual
+                encoded.Length
+                Cursors.MaximumTokenCharacters
+                "The longest entity range fits without increasing admission"
+
+            Expect.equal
+                (Cursors.decodeTimeline installation scope encoded)
+                (Ok
+                    {
+                        BeforeSequence = sequence
+                        Range = Some range
+                    })
+                "The observed upper revision is retained exactly"
+
+            Expect.equal
+                (Cursors.decodeTimeline installation (String('b', 64)) encoded)
+                (Error Refusal.InvalidCursor)
+                "The continuation conveys no actor authority"
+
+            Expect.equal
+                (Cursors.decodeTimeline (Guid.NewGuid()) scope encoded)
+                (Error Refusal.InvalidCursor)
+                "The installation binding remains strict")
+
 let private examples action =
     use fixture =
         JsonDocument.Parse(

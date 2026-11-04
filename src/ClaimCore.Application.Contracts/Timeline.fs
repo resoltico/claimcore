@@ -23,64 +23,6 @@ type CaseTimelineRequest =
         Limit: int
     }
 
-type ValueChange<'value> =
-    {
-        Before: 'value option
-        After: 'value option
-    }
-
-type ReminderDifference =
-    {
-        ReminderId: ReminderId
-        Action: ValueChange<ReminderAction> option
-        Due: ValueChange<CalendarDate> option
-        State: ValueChange<ReminderState> option
-    }
-
-type CaseFieldDifference =
-    {
-        FieldName: BusinessField
-        Before: CaseFieldValue option
-        After: CaseFieldValue option
-    }
-
-type CaseMoneyDifference =
-    {
-        FieldName: BusinessField
-        Change: ValueChange<Money>
-    }
-
-[<RequireQualifiedAccess>]
-type TimelineChange =
-    | CaseField of CaseFieldDifference
-    | CaseMoney of CaseMoneyDifference
-    | Lifecycle of LifecycleChange
-    | Responsibility of ValueChange<ActorRef>
-    | HandlingSummary of ValueChange<HandlingSummary>
-    | Reminder of ReminderDifference
-
-[<RequireQualifiedAccess>]
-type TimelineChanges =
-    | Disclosed of TimelineChange list
-    | Withheld
-    | Erased
-
-[<RequireQualifiedAccess>]
-type TimelineSubject =
-    | CaseFact of Revision * CaseActKind
-    | Work of Revision * WorkActKind
-    | Reminder of ReminderActKind * ReminderId * Revision * (ReminderId * Revision) option
-
-type CaseTimelineEntry =
-    {
-        OperationId: OperationId
-        Position: LedgerPosition
-        Subject: TimelineSubject
-        RecordedAt: DateTimeOffset
-        RecordedBy: ActorRef
-        Changes: TimelineChanges
-    }
-
 type CaseTimelinePage =
     {
         Basis: WorkDateBasis

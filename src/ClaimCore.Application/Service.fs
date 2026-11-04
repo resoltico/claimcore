@@ -136,10 +136,34 @@ module Service =
                                                     (CaseExecution.target request)
 
                                             match CaseExecution.complete services request view with
-                                            | Error refusal -> return Outcome.Rejected refusal
-                                            | Ok admitted ->
+                                            | Error refusal ->
+                                                let! refusal =
+                                                    ConflictReads.refusal
+                                                        services
+                                                        tx
+                                                        view.Actor
+                                                        view.Case
+                                                        ChangeEntity.Case
+                                                        (CaseExecution.expected request)
+                                                        refusal
+
                                                 return
-                                                    CaseExecution.review services admitted view
+                                                    refusal
+                                                    |> Result.map Outcome.Rejected
+                                                    |> Result.defaultWith Outcome.Failed
+                                            | Ok admitted ->
+                                                let! proposed =
+                                                    ConflictReads.verdict
+                                                        services
+                                                        tx
+                                                        view.Actor
+                                                        view.Case
+                                                        ChangeEntity.Case
+                                                        (Revision.value admitted.ExpectedRevision)
+                                                        (CaseExecution.review services admitted view)
+
+                                                return
+                                                    proposed
                                                     |> Verdict.outcome
                                                         (fun (before, after) ->
                                                             advisory

@@ -121,7 +121,7 @@ module Case =
                 && current.Revision <> (Revision.create request.ExpectedRevision |> Option.get)
                 && CaseState.lifecycle current.State <> Lifecycle.Erased
                 ->
-                Error(Refusal.RevisionConflict current.Revision)
+                Error(Refusal.revisionConflict current.Revision)
             | _ -> Ok()
 
         revision
@@ -188,7 +188,7 @@ module Case =
     let private create today (command: CaseCommand) =
         match command.Act with
         | CaseAct.Open _ when command.ExpectedRevision <> Revision.zero ->
-            Error(Refusal.RevisionConflict Revision.zero)
+            Error(Refusal.revisionConflict Revision.zero)
         | CaseAct.Open facts ->
             BusinessState.openCase today facts
             |> Result.map (fun claim ->
@@ -211,7 +211,7 @@ module Case =
             | CaseState.Erased, _ -> Error(Refusal.Case CaseRefusal.CaseErased)
             | _, CaseAct.Open _ -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
             | _ when record.Revision <> request.ExpectedRevision ->
-                Error(Refusal.RevisionConflict record.Revision)
+                Error(Refusal.revisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->
                 transition today act state
                 |> Result.map (fun state ->

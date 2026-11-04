@@ -12,6 +12,7 @@ module internal CaseExecution =
     let target (TargetedRequest request) = request.Target
 
     let operationId (TargetedRequest request) = OperationId.create request.OperationId
+    let expected (TargetedRequest request) = request.ExpectedRevision
 
     let validateSelector =
         function
@@ -248,7 +249,16 @@ module internal CaseExecution =
                                     (target request)
 
                             match complete services request view with
-                            | Error refusal -> return Verdict.Refuse refusal
+                            | Error refusal ->
+                                return!
+                                    ConflictReads.verdict
+                                        services
+                                        tx
+                                        view.Actor
+                                        view.Case
+                                        ChangeEntity.Case
+                                        (expected request)
+                                        (Verdict.Refuse refusal)
                             | Ok command ->
                                 let! fenced =
                                     ExecutionFacts.fenced
@@ -271,6 +281,16 @@ module internal CaseExecution =
                                                 Nonce = tx.NewPayloadNonce()
                                             }
                                             view
+
+                                let! verdict =
+                                    ConflictReads.verdict
+                                        services
+                                        tx
+                                        view.Actor
+                                        view.Case
+                                        ChangeEntity.Case
+                                        (Revision.value command.ExpectedRevision)
+                                        verdict
 
                                 return! ExecutionFacts.persist tx tx.ProjectCase verdict
                         })

@@ -132,7 +132,7 @@ let private staleRevision () =
 
     Expect.isTrue
         ((outcome |> Result.map Case.snapshot) =
-            Error(Refusal.RevisionConflict(CaseFixtures.revision 7L)))
+            Error(Refusal.revisionConflict (CaseFixtures.revision 7L)))
         "Revision check precedes admission and state"
 
 let private vocabulary () =

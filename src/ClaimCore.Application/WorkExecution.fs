@@ -267,7 +267,7 @@ module internal WorkExecution =
                     if view.Maintenance.Active then
                         return Verdict.Refuse Refusal.RegisterMaintenance
                     elif before.Revision <> expected then
-                        return Verdict.Refuse(Refusal.RevisionConflict before.Revision)
+                        return Verdict.Refuse(Refusal.revisionConflict before.Revision)
                     else
                         let next = CaseWork.apply update before.Work
                         let responsibilityChanged = next.Responsible <> before.Work.Responsible
@@ -362,7 +362,7 @@ module internal WorkExecution =
     let private reminderRefusal =
         function
         | ReminderRefusal.IdentityReserved -> Verdict.Fail CoreFault.StoreIntegrityError
-        | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.RevisionConflict actual)
+        | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.revisionConflict actual)
         | ReminderRefusal.InvalidAction violation ->
             Verdict.Refuse(Refusal.invalidInput (InputTarget.ReminderAction, violation))
         | ReminderRefusal.NotFound
@@ -534,6 +534,24 @@ module internal WorkExecution =
                             workProposal services tx view parent operation expected update
                         | Reminder(operation, _, act) ->
                             reminderProposal services tx view parent operation act
+
+                    let entity, expected =
+                        match prepared with
+                        | Work(_, _, expected, _) -> ChangeEntity.Work, Revision.value expected
+                        | Reminder(_, _, ReminderInput.Change(id, expected, _)) ->
+                            ChangeEntity.Reminder id, Revision.value expected
+                        | Reminder(operation, _, ReminderInput.Create _) ->
+                            ChangeEntity.Reminder(ReminderId.ofOperationId operation), 0L
+
+                    let! proposal =
+                        ConflictReads.verdict
+                            services
+                            tx
+                            view.Actor
+                            (Some parent)
+                            entity
+                            expected
+                            proposal
 
                     return view, proposal
             with :? OverflowException ->

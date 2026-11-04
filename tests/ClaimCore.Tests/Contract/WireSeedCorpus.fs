@@ -111,6 +111,20 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
                 (context + ".listedValue." + BusinessField.key field)
                 typeof<CaseFieldValue option>
                 (box value)
+    elif kind = typeof<RevisionConflictInfo> then
+        let conflict = unbox<RevisionConflictInfo> value
+
+        collect
+            seeds
+            (context + ".RevisionConflictInfo.ActualRevision")
+            typeof<Revision>
+            (box conflict.ActualRevision)
+
+        collect
+            seeds
+            (context + ".RevisionConflictInfo.Changes")
+            typeof<ConflictChanges option>
+            (box conflict.Changes)
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
         collect seeds (context + ".CaseAdvice.Acts") typeof<CaseActKind list> (box advice.Acts)

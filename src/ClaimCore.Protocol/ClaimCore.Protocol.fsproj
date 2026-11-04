@@ -35,10 +35,11 @@
     <Compile Include="Wire/ResponseScalars.fs" />
     <Compile Include="Wire/CaseFieldCodecs.fs" />
     <Compile Include="Wire/ListedCaseFieldCodecs.fs" />
-    <Compile Include="Wire/DiagnosticCodecs.fs" />
-    <Compile Include="Wire/PrincipalCodecs.fs" />
     <Compile Include="Wire/ActorCodecs.fs" />
     <Compile Include="Wire/LedgerCodecs.fs" />
+    <Compile Include="Wire/TimelineCodecs.fs" />
+    <Compile Include="Wire/DiagnosticCodecs.fs" />
+    <Compile Include="Wire/PrincipalCodecs.fs" />
     <Compile Include="Wire/CaseStateCodecs.fs" />
     <Compile Include="Wire/WorkCodecs.fs" />
     <Compile Include="Wire/ReadRowCodecs.fs" />
@@ -48,7 +49,6 @@
     <Compile Include="Wire/ReceiptCodecs.fs" />
     <Compile Include="Wire/WorkReadCodecs.fs" />
     <Compile Include="Wire/ViewCountCodecs.fs" />
-    <Compile Include="Wire/TimelineCodecs.fs" />
     <Compile Include="Wire/ReplyCodecs.fs" />
     <Compile Include="Wire/ResolutionCodecs.fs" />
     <Compile Include="Catalog/Codecs.fs" />

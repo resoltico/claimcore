@@ -148,7 +148,10 @@ let private harness language answer scenario =
                         Outcome =
                             if scenario = Scenario.Stale then
                                 ExecuteResult.Rejected(
-                                    Refusal.RevisionConflict(CaseFixtures.revision 8L)
+                                    Refusal.RevisionConflict(
+                                        RevisionConflictInfo.at (CaseFixtures.revision 8L)
+                                        |> RevisionConflictInfo.explain ConflictChanges.Withheld
+                                    )
                                 )
                             else
                                 ExecuteResult.Accepted receipt

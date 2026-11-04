@@ -396,6 +396,7 @@ type TimelinePageQuery =
     {
         CaseId: CaseId
         Filter: TimelineFilter option
+        Range: ChangeRange option
         BeforeSequence: Sequence option
         Limit: int
     }

@@ -205,6 +205,49 @@ module DiagnosticCodecs =
                 Tag = "REMINDER_" + variant.Tag
             })
 
+    let private conflictChanges =
+        let page =
+            (record (fun entries next ->
+                {
+                    ChangePage.Entries = entries
+                    NextCursor = next
+                })
+            : Fields<ChangePage, _>)
+            |> field
+                "entries"
+                _.Entries
+                (list RevisionConflictInfo.MaximumChanges TimelineCodecs.timelineEntry)
+            |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+            |> build
+            |> named "ConflictChangePage"
+
+        tagged
+            "ConflictChanges"
+            [
+                variant
+                    "PAGE"
+                    ConflictChanges.Page
+                    (function
+                    | ConflictChanges.Page value -> Some value
+                    | _ -> None)
+                    (record id |> field "page" id page)
+                unitVariant "WITHHELD" ConflictChanges.Withheld
+            ]
+
+    let private revisionConflict =
+        (record (fun revision changes ->
+            RevisionConflictInfo.at revision |> RevisionConflictInfo.explain changes)
+        : Fields<RevisionConflictInfo, _>)
+        |> actionField RecommendedAction.ReviewLatest
+        |> field "actualRevision" _.ActualRevision ResponseScalars.revision
+        |> field
+            "changes"
+            (fun conflict ->
+                conflict.Changes
+                |> Option.defaultWith (fun () ->
+                    invalidOp "A revision conflict requires its authorized snapshot explanation."))
+            conflictChanges
+
     let private diagnosticVariants =
         [
             variant
@@ -220,11 +263,9 @@ module DiagnosticCodecs =
                 (codeName (nameof Refusal.RevisionConflict))
                 Refusal.RevisionConflict
                 (function
-                | Refusal.RevisionConflict revision -> Some revision
+                | Refusal.RevisionConflict conflict -> Some conflict
                 | _ -> None)
-                (record id
-                 |> actionField RecommendedAction.ReviewLatest
-                 |> field "actualRevision" id ResponseScalars.revision)
+                revisionConflict
         ]
         @ caseVariants
         @ reminderVariants

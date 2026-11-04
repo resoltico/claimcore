@@ -138,13 +138,6 @@ type CaseReadModel =
         Attention: CaseAttention list
     }
 
-type FieldDiff =
-    {
-        FieldName: BusinessField
-        Before: string option
-        After: string option
-    }
-
 type AdvisoryReview =
     {
         Before: CaseSnapshot option
