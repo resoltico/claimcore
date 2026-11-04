@@ -119,6 +119,11 @@ const AccountMenu = ({ locked }: { locked: boolean }) => {
         <Icon name="person" />
         <span>
           {requester === null ? p.text("ui.account") : <ActorIdentity actor={requester.self} />}
+          {requester === null || requester.roles.length === 0 ? null : (
+            <small className="account-roles" aria-label={p.text("ui.people.roles")}>
+              {requester.roles.map(({ role }) => p.term("role", role)).join(", ")}
+            </small>
+          )}
         </span>
         <Icon name="chevron-down" />
       </summary>

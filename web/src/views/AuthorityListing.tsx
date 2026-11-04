@@ -1,8 +1,13 @@
+import type { ActorListRequest } from "@contracts/client";
+import { FieldHelp } from "../components/FieldHelp";
+import { Select } from "../ui/Select";
+import { Button } from "../ui/Button";
+import { productMetadata } from "../protocol/productMetadata";
 import { ActorRoleScopes } from "../components/ActorRoleScopes";
 import { actorName } from "../presentation/actorName";
 import { followLink } from "../routing/followLink";
 import { PageStatus } from "../components/PageStatus";
-import { useCallback } from "react";
+import { useCallback, useState } from "react";
 import type { Notice } from "../protocol/notices";
 import { type ApiResult, type ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
@@ -17,10 +22,19 @@ type ListingProps = {
   onDisclosureRefused: (notice?: Notice) => void;
   onDisclosureRestored: (source: "listing") => void;
 };
-const useAuthorityPage = ({ onDisclosureRefused, onDisclosureRestored }: ListingProps) => {
+type DirectoryFilter = { text: string; role: NonNullable<ActorListRequest["role"]> | "" };
+const useAuthorityPage = (
+  { onDisclosureRefused, onDisclosureRestored }: ListingProps,
+  filter: DirectoryFilter,
+) => {
   const input = useCallback(
-    (cursor: string | null) => ({ ...(cursor === null ? {} : { cursor }), limit: 50 }),
-    [],
+    (cursor: string | null) => ({
+      ...(cursor === null ? {} : { cursor }),
+      limit: 50,
+      ...(filter.text === "" ? {} : { text: filter.text }),
+      ...(filter.role === "" ? {} : { role: filter.role }),
+    }),
+    [filter.text, filter.role],
   );
   const restored = useCallback(
     (result: ApiResult<ServiceResponse<"authority.list">>) => {
@@ -134,14 +148,11 @@ const AuthorityTable = ({
     </table>
   );
 };
-export const AuthorityListing = (props: ListingProps) => {
+const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => {
   const p = usePresentation();
-  const page = useAuthorityPage(props);
+  const page = useAuthorityPage(props, props.filter);
   return (
     <section>
-      <h2 id="authority-actors-title" tabIndex={-1}>
-        {p.text("ui.shell.people")}
-      </h2>
       <AuthorityTable
         items={page.items}
         onSelect={props.onSelect}
@@ -168,6 +179,65 @@ export const AuthorityListing = (props: ListingProps) => {
           {p.text("ui.moreActors")}
         </button>
       )}
+    </section>
+  );
+};
+
+const directorySearch = productMetadata.catalog.inputFields.find(
+  (field) => field.name === "directorySearch",
+)!;
+export const AuthorityListing = (props: ListingProps) => {
+  const p = usePresentation();
+  const [draft, setDraft] = useState<DirectoryFilter>({ text: "", role: "" });
+  const [filter, setFilter] = useState(draft);
+  return (
+    <section>
+      <h2 id="authority-actors-title" tabIndex={-1}>
+        {p.text("ui.shell.people")}
+      </h2>
+      <form
+        className="directory-filters"
+        onSubmit={(event) => {
+          event.preventDefault();
+          setFilter(draft);
+        }}
+      >
+        <div className="text-field">
+          <div className="field-label-row">
+            <label htmlFor="people-search">{p.fieldLabel("directorySearch")}</label>
+            <FieldHelp label={p.fieldLabel("directorySearch")} ruleId={directorySearch.ruleId} />
+          </div>
+          <input
+            id="people-search"
+            name="text"
+            type="search"
+            value={draft.text}
+            aria-describedby="people-search-hint"
+            onChange={(event) => {
+              setDraft((prior) => ({ ...prior, text: event.target.value }));
+            }}
+          />
+          <small id="people-search-hint">{p.fieldHint("directorySearch")}</small>
+        </div>
+        <Select
+          id="people-role-filter"
+          label={p.fieldLabel("role")}
+          value={draft.role}
+          options={[
+            { value: "", label: p.text("ui.anyFilter") },
+            ...productMetadata.catalog.roles.map(({ role }) => ({
+              value: role,
+              label: p.term("role", role),
+            })),
+          ]}
+          onChange={(value) => {
+            const selected = productMetadata.catalog.roles.find(({ role }) => role === value);
+            setDraft((prior) => ({ ...prior, role: selected?.role ?? "" }));
+          }}
+        />
+        <Button type="submit">{p.text("ui.search")}</Button>
+      </form>
+      <DirectoryResults key={JSON.stringify(filter)} {...props} filter={filter} />
     </section>
   );
 };
