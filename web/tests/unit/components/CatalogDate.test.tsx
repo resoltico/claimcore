@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { expect, it, vi } from "vitest";
+import { IconSprite } from "../../../src/ui/icons";
 import { CatalogDate } from "../../../src/components/CatalogDate";
 import { productMetadata } from "../../../src/protocol/productMetadata";
 import { render, screen } from "../../support/presentation-test-support";
@@ -24,8 +25,16 @@ it("authors segmented locale dates as ISO wire values", () => {
       />
     );
   };
-  render(<Controlled />);
+  render(
+    <>
+      <IconSprite />
+      <Controlled />
+    </>,
+  );
   changeField("Incident date", "2025-08-17");
   expect(change).toHaveBeenLastCalledWith("2025-08-17");
-  expect(screen.getByRole("button", { name: "Open calendar: Incident date" })).toBeVisible();
+  const calendar = screen.getByRole("button", { name: "Open calendar: Incident date" });
+  expect(calendar).toBeVisible();
+  expect(calendar.querySelector("use")).toHaveAttribute("href", "#claimcore-icon-calendar");
+  expect(screen.queryByText("▦")).toBeNull();
 });

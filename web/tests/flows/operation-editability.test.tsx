@@ -23,8 +23,8 @@ const current: CurrentCase = caseViewInput({
   },
 });
 const expectAuthoringDisabled = () => {
-  const controls = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
-    ".operation-editor form input, .operation-editor form select",
+  const controls = document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
+    ".operation-editor form input, .operation-editor form button[role=combobox]",
   );
   expect(controls.length).toBeGreaterThan(1);
   for (const control of controls) {

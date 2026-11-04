@@ -1,3 +1,4 @@
+import { Select } from "../../ui/Select";
 import { useMemo, useState } from "react";
 import type { ReminderListRequest, Reminder } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
@@ -85,48 +86,35 @@ export const WorkQueue = () => {
             {p.text("ui.unassignedCases")}
           </button>
         </div>
-        <label>
-          {p.text("ui.reminderState")}
-          <select
-            value={state}
-            onChange={(event) => {
-              const { value } = event.target;
-              if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
-                setState(value);
-              }
-            }}
-          >
-            {(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => (
-              <option key={value} value={value}>
-                {p.term("reminderState", value)}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          {p.text("ui.reminderDue")}
-          <select
-            value={due}
-            onChange={(event) => {
-              const { value } = event.target;
-              if (
-                value === "" ||
-                value === "OVERDUE" ||
-                value === "TODAY" ||
-                value === "UPCOMING"
-              ) {
-                setDue(value);
-              }
-            }}
-          >
-            <option value="">{p.text("ui.anyFilter")}</option>
-            {(["OVERDUE", "TODAY", "UPCOMING"] as const).map((value) => (
-              <option key={value} value={value}>
-                {p.term("reminderDue", value)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          label={p.text("ui.reminderState")}
+          value={state}
+          options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
+            value,
+            label: p.term("reminderState", value),
+          }))}
+          onChange={(value) => {
+            if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
+              setState(value);
+            }
+          }}
+        />
+        <Select
+          label={p.text("ui.reminderDue")}
+          value={due}
+          options={[
+            { value: "", label: p.text("ui.anyFilter") },
+            ...(["OVERDUE", "TODAY", "UPCOMING"] as const).map((value) => ({
+              value,
+              label: p.term("reminderDue", value),
+            })),
+          ]}
+          onChange={(value) => {
+            if (value === "" || value === "OVERDUE" || value === "TODAY" || value === "UPCOMING") {
+              setDue(value);
+            }
+          }}
+        />
         <label>
           <input
             type="checkbox"

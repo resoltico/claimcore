@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { renderHook } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, useRef } from "react";
@@ -161,9 +162,9 @@ it("switches language and display formats without remounting children or rewriti
     </>,
   );
   const language = screen.getByRole("radio", { name: "العربية" });
-  const format = screen.getByLabelText("Date and number format", { selector: "select" });
+  const format = screen.getByRole("combobox", { name: "Date and number format" });
   const input = screen.getByRole("textbox", { name: "unchanged draft" });
-  await user.selectOptions(format, "lv-LV");
+  await chooseOption(user, format, "lv-LV");
   await user.click(language);
   expect(document.documentElement).toHaveAttribute("lang", "ar");
   expect(document.documentElement).toHaveAttribute("dir", "rtl");

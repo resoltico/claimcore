@@ -1,3 +1,4 @@
+import { Select } from "../../ui/Select";
 import { useMemo, useRef, useState, useEffect } from "react";
 import type { OperationReceipt, ReminderReadModel, CaseWorkView } from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
@@ -107,24 +108,19 @@ export const CaseReminders = ({
       {editor === null ? (
         <section className="case-reminders" aria-labelledby="case-reminders-title">
           <h2 id="case-reminders-title">{p.text("ui.reminders")}</h2>
-          <label>
-            {p.text("ui.reminderState")}
-            <select
-              value={state}
-              onChange={(event) => {
-                const { value } = event.target;
-                if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
-                  setState(value);
-                }
-              }}
-            >
-              {(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => (
-                <option key={value} value={value}>
-                  {p.term("reminderState", value)}
-                </option>
-              ))}
-            </select>
-          </label>
+          <Select
+            label={p.text("ui.reminderState")}
+            value={state}
+            options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
+              value,
+              label: p.term("reminderState", value),
+            }))}
+            onChange={(value) => {
+              if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
+                setState(value);
+              }
+            }}
+          />
           {state === "PENDING" && current.work.pendingReminders === 0 ? (
             <>
               <p>{p.text("ui.noReminders")}</p>

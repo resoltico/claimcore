@@ -4,7 +4,7 @@ import { useEffect, useRef } from "react";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { CopyValue } from "../../components/CopyValue";
-import { AccessibleModal } from "../../components/AccessibleModal";
+import { Dialog } from "../../ui/Dialog";
 import { OperationForm, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
@@ -118,7 +118,7 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
     description = "ui.leaveDraftDescription";
   }
   return (
-    <AccessibleModal
+    <Dialog
       title={p.text("ui.changeActTitle")}
       closeLabel={p.text("ui.keepEditing")}
       description={p.text(description)}
@@ -144,7 +144,7 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
       >
         {p.text(pending === "LEAVE" ? "ui.discardAndLeave" : "ui.discardAndChange")}
       </button>
-    </AccessibleModal>
+    </Dialog>
   );
 };
 const UnavailableDisclosure = ({

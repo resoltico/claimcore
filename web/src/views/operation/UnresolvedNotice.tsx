@@ -1,6 +1,6 @@
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useState } from "react";
-import { AccessibleModal } from "../../components/AccessibleModal";
+import { Dialog } from "../../ui/Dialog";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { useRecovery } from "../../recovery/RecoveryContext";
 import type { RecoveryRecord } from "../../protocol/recoveryJournal";
@@ -89,7 +89,7 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
   return (
     <section role="status" aria-busy={busy !== null}>
       <RecoveryRows showEmpty={showEmpty} requestSettlement={requestSettlement} />
-      <AccessibleModal
+      <Dialog
         title={p.text("endpoint.operation.resolve.label")}
         description={p.text("endpoint.operation.resolve.meaning")}
         closeLabel={p.text("ui.close")}
@@ -133,7 +133,7 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
         <button type="button" disabled={paused} onClick={confirmSettlement}>
           {p.text("ui.confirmSettlement")}
         </button>
-      </AccessibleModal>
+      </Dialog>
     </section>
   );
 };

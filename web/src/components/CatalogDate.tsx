@@ -1,7 +1,7 @@
 import { parseDate } from "@internationalized/date";
 import { DateField, DateInput, DateSegment } from "react-aria-components/DateField";
 import { Calendar, CalendarGrid, CalendarCell } from "react-aria-components/Calendar";
-import { Button } from "react-aria-components/Button";
+import { IconButton } from "../ui/IconButton";
 import { DialogTrigger, Dialog } from "react-aria-components/Dialog";
 import { Heading } from "react-aria-components/Heading";
 import { Popover } from "react-aria-components/ComboBox";
@@ -30,12 +30,11 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
   const p = usePresentation();
   return (
     <DialogTrigger>
-      <Button
+      <IconButton
+        icon="calendar"
         isDisabled={disabled}
-        aria-label={`${p.text("ui.calendar")}: ${p.fieldLabel(field.name)}`}
-      >
-        ▦
-      </Button>
+        label={`${p.text("ui.calendar")}: ${p.fieldLabel(field.name)}`}
+      />
       <Popover className="calendar-popover">
         <Dialog aria-label={p.fieldLabel(field.name)}>
           <Calendar
@@ -45,13 +44,9 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
             }}
           >
             <header>
-              <Button slot="previous" aria-label={p.text("ui.previousMonth")}>
-                ‹
-              </Button>
+              <IconButton slot="previous" icon="chevron-start" label={p.text("ui.previousMonth")} />
               <Heading />
-              <Button slot="next" aria-label={p.text("ui.nextMonth")}>
-                ›
-              </Button>
+              <IconButton slot="next" icon="chevron-end" label={p.text("ui.nextMonth")} />
             </header>
             <CalendarGrid>{(day) => <CalendarCell date={day} />}</CalendarGrid>
           </Calendar>

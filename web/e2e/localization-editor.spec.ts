@@ -19,44 +19,11 @@ import {
   expectBusinessFormatRefusal,
   reviewFrom,
   selectFormat,
+  requestLanguage,
   selectLanguage,
   trackForegroundRequests,
   ui,
 } from "./localization-support";
-
-const editorLanguage = async (page: Page) => {
-  for (const language of ["lv", "ar", "en"] as const) {
-    await selectLanguage(page, language);
-    await expect(
-      page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }),
-    ).toBeVisible();
-    await expect(
-      page.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
-    ).toHaveCount(0);
-  }
-};
-const reviewLanguage = async (page: Page) => {
-  const dialog = page.getByRole("dialog");
-  const confirmation = dialog.getByRole("checkbox");
-  for (const language of ["en", "ar", "lv"] as const) {
-    await selectLanguage(page, language);
-    await expect(dialog).toHaveAccessibleName(ui(language, "label.reviewTitle"));
-    await expect(confirmation).toHaveAccessibleName(ui(language, "act.OPEN.confirmation"));
-    await expect(
-      dialog.getByRole("button", { name: ui(language, "ui.submitExact"), exact: true }),
-    ).toBeVisible();
-    await expect(
-      dialog.getByRole("button", { name: ui(language, "ui.returnToEdit"), exact: true }),
-    ).toBeVisible();
-    await expect(
-      dialog.getByText(ui(language, "ui.reviewDescription"), { exact: true }),
-    ).toBeVisible();
-    await expect(
-      dialog.getByText(ui(language, "ui.unchangedUntilSubmit"), { exact: true }),
-    ).toBeVisible();
-    await expect(confirmation).toBeChecked();
-  }
-};
 
 const unacceptedCase = async (page: Page, reference: string) => {
   const reply = await browserRequest(page, "/api/case.get", {
@@ -105,9 +72,9 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
     });
   }
 };
-const invalidCalendar = async (page: Page, requests: string[]) => {
+const invalidCalendar = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
   await expectBusinessFormatRefusal(page, "incidentDate", "CALENDAR_DATE_REQUIRED", () =>
-    page.getByRole("button", { name: "Review changes" }).click(),
+    page.getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true }).click(),
   );
   await expect(page.locator("[data-error-summary]")).toBeFocused();
   await page.locator("[data-error-summary]").getByRole("link").click();
@@ -117,18 +84,15 @@ const invalidCalendar = async (page: Page, requests: string[]) => {
   await expect(
     page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
   ).toHaveAttribute("aria-invalid", "true");
-  for (const language of ["lv", "ar", "en"] as const) {
-    await selectLanguage(page, language);
-    await expectInputRefusal(
-      page,
-      page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
-      language,
-      {
-        meaning: issueMeanings[language].incidentDate,
-        issue: businessFormatRefusalText.CALENDAR_DATE_REQUIRED[language],
-      },
-    );
-  }
+  await expectInputRefusal(
+    page,
+    page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
+    language,
+    {
+      meaning: issueMeanings[language].incidentDate,
+      issue: businessFormatRefusalText.CALENDAR_DATE_REQUIRED[language],
+    },
+  );
   await expect(page.locator('[data-field-name="incidentDate"] input[type="hidden"]')).toHaveValue(
     "",
   );
@@ -139,14 +103,16 @@ const invalidCalendar = async (page: Page, requests: string[]) => {
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expectAccessible(page);
 };
-const policyRefusal = async (page: Page, requests: string[]) => {
+const policyRefusal = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
   const name = page.locator('input[data-field-name="claimantName"]');
   const authored = `A\u0308 / العربية${"x".repeat(201)}`;
   await fillBusinessField(page, "incidentDate", "2026-09-01");
   await name.fill(authored);
   const pending = await pauseJsonReply(page, "operation.preview");
   try {
-    await page.getByRole("button", { name: "Review changes" }).click();
+    await page
+      .getByRole("button", { name: ui(language, "label.reviewTitle"), exact: true })
+      .click();
     const { outcome } = (await pending.ready).reply;
     expect(outcome.kind).toBe("REJECTED");
     if (outcome.kind === "REJECTED") {
@@ -156,24 +122,21 @@ const policyRefusal = async (page: Page, requests: string[]) => {
         issues: [{ field: "claimantName", code: "TOO_LONG", maximumCharacters: 200 }],
       });
     }
-    await selectLanguage(page, "lv");
     pending.release();
     await expect(page.locator("[data-error-summary]")).toBeFocused();
     await page.locator("[data-error-summary]").getByRole("link").click();
     await expect(name).toBeFocused();
     await expect(name).toHaveAttribute("aria-invalid", "true");
-    for (const [language, text] of [
-      ["lv", "Vērtība nedrīkst pārsniegt 200 Unicode rakstzīmes."],
-      ["ar", "يجب ألا تتجاوز القيمة \u2068200\u2069 محارف Unicode."],
-      ["en", "The value must not exceed 200 Unicode characters."],
-    ] as const) {
-      await selectLanguage(page, language);
-      await expectInputRefusal(page, name, language, {
-        meaning: issueMeanings[language].claimantName,
-        issue: text,
-      });
-      await expect(name).toHaveAttribute("aria-invalid", "true");
-    }
+    const policyText = {
+      lv: "Vērtība nedrīkst pārsniegt 200 Unicode rakstzīmes.",
+      ar: "يجب ألا تتجاوز القيمة \u2068200\u2069 محارف Unicode.",
+      en: "The value must not exceed 200 Unicode characters.",
+    };
+    await expectInputRefusal(page, name, language, {
+      meaning: issueMeanings[language].claimantName,
+      issue: policyText[language],
+    });
+    await expect(name).toHaveAttribute("aria-invalid", "true");
     await expect(name).toHaveValue(authored);
     expect(requests).toEqual(["POST /api/operation.preview", "POST /api/operation.preview"]);
   } finally {
@@ -181,51 +144,56 @@ const policyRefusal = async (page: Page, requests: string[]) => {
   }
 };
 
-test("preserves authored Unicode and cleared calendar input, then localizes a real policy refusal", async ({
-  page,
-}) => {
-  const reference = `LOCALE-VALIDATE-${randomUUID()}`;
-  await openAuthenticated(page);
-  await startOpen(page, reference);
-  await malformedCalendarBoundary(page, reference);
-  const name = page.locator('input[data-field-name="claimantName"]');
-  await name.fill("A\u0308 / العربية");
-  await fillBusinessField(page, "incidentDate", "");
-  await name.evaluate((element: HTMLInputElement) => {
-    element.setSelectionRange(1, 3);
+for (const language of ["en", "lv", "ar"] as const) {
+  test(`preserves authored Unicode and cleared calendar input with real ${language} policy refusals`, async ({
+    page,
+  }) => {
+    const reference = `LOCALE-VALIDATE-${randomUUID()}`;
+    await openAuthenticated(page);
+    await selectLanguage(page, language);
+    await startOpen(page, reference, ui(language, "act.OPEN.label"));
+    await malformedCalendarBoundary(page, reference);
+    const name = page.locator('input[data-field-name="claimantName"]');
+    await name.fill("A\u0308 / العربية");
+    await fillBusinessField(page, "incidentDate", "");
+    await name.evaluate((element: HTMLInputElement) => {
+      element.setSelectionRange(1, 3);
+    });
+    const originalNode = await name.elementHandle();
+    const requests = trackForegroundRequests(page);
+    await invalidCalendar(page, requests, language);
+    expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
+    await policyRefusal(page, requests, language);
+    await expectAccessible(page);
+    await unacceptedCase(page, reference);
   });
-  const originalNode = await name.elementHandle();
-  const requests = trackForegroundRequests(page);
-  await editorLanguage(page);
-  expect(await name.evaluate((element, prior) => element === prior, originalNode)).toBe(true);
-  expect(
-    await name.evaluate((element: HTMLInputElement) => [
-      element.selectionStart,
-      element.selectionEnd,
-    ]),
-  ).toEqual([1, 3]);
-  expect(requests).toHaveLength(0);
-  await invalidCalendar(page, requests);
-  await policyRefusal(page, requests);
-  await expectAccessible(page);
-  await unacceptedCase(page, reference);
-});
+}
 
-test("switches language and independent display format during draft review without changing consent", async ({
+test("an in-flight language activation preserves an open review, consent and frozen bytes", async ({
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
-  const requests = trackForegroundRequests(page);
-  const pending = await pauseJsonReply(page, "operation.preview");
+  await selectFormat(page, "ar-EG");
+  const languageReady = Promise.withResolvers<void>();
+  const languageRelease = Promise.withResolvers<void>();
+  const languageAsset = /\/assets\/language-lv-[^/]+\.js$/u;
+  await page.route(languageAsset, async (route) => {
+    languageReady.resolve();
+    await languageRelease.promise;
+    await route.continue();
+  });
+  let releasePreview: (() => void) | null = null;
   try {
-    await page.getByRole("button", { name: "Review changes" }).click();
+    await requestLanguage(page, "lv");
+    await languageReady.promise;
+    await startOpen(page, `LOCALE-REVIEW-${randomUUID()}`);
+    const requests = trackForegroundRequests(page);
+    const pending = await pauseJsonReply(page, "operation.preview");
+    releasePreview = pending.release;
+    const review = page.getByRole("button", { name: "Review changes", exact: true });
+    await review.click();
     const captured = await pending.ready;
     const identity = reviewFrom(captured.reply, captured.bytes);
-    await selectLanguage(page, "lv");
-    await selectFormat(page, "ar-EG");
-    await selectLanguage(page, "ar");
-    expect(requests).toHaveLength(1);
     pending.release();
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
@@ -233,19 +201,19 @@ test("switches language and independent display format during draft review witho
     const confirmation = dialog.getByRole("checkbox");
     await confirmReview(page);
     await expectKeyboardContained(page, dialog);
-    await reviewLanguage(page);
-    await selectFormat(page, "lv-LV");
+    await expect(dialog.locator(".settings-panel")).toHaveCount(0);
+    languageRelease.resolve();
+    await expect(page.locator("html")).toHaveAttribute("lang", "lv");
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
     await expect(confirmation).toBeChecked();
     await expect(dialog).toContainText(identity.operationId);
-
-    expect(requests).toHaveLength(1);
+    expect(requests).toEqual(["POST /api/operation.preview"]);
     await expectAccessible(page);
-    await selectLanguage(page, "en");
-    await expect(confirmation).toBeChecked();
-    await page.getByRole("button", { name: "Return to editing" }).click();
-    await expect(page.getByRole("button", { name: "Review changes" })).toBeFocused();
+    await dialog.getByRole("button", { name: ui("lv", "ui.returnToEdit"), exact: true }).click();
+    await expect(page.locator('.operation-editor button[type="submit"]')).toBeFocused();
   } finally {
-    pending.release();
+    languageRelease.resolve();
+    releasePreview?.();
+    await page.unroute(languageAsset);
   }
 });

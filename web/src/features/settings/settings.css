@@ -4,15 +4,6 @@
   gap: var(--space-5);
   max-inline-size: 64rem;
 }
-.settings-card {
-  background: var(--bg-surface);
-  border: var(--border-width) solid var(--border-subtle);
-  border-radius: var(--radius-md);
-  padding: var(--space-5);
-}
-.settings-card h2 {
-  margin-block-start: 0;
-}
 .settings-options {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -118,4 +109,17 @@
   grid-template-rows: auto auto minmax(1rem, auto);
   align-content: start;
   align-items: start;
+}
+
+.settings-option {
+  min-inline-size: 0;
+}
+.settings-option > span {
+  min-inline-size: 0;
+  overflow-wrap: anywhere;
+}
+@container (width < 20rem) {
+  .settings-accents {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }

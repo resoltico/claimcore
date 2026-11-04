@@ -131,6 +131,18 @@ export const openAuthenticated = async (
 };
 
 export const expectAccessible = async (page: Page): Promise<void> => {
+  const preferenceSelector =
+    'input[name$="-language"], input[name$="-mode"], input[name$="-accent"], [role="combobox"][id$="-format"]';
+  const allPreferences = page.locator(preferenceSelector);
+  const count = await allPreferences.count();
+  await expect(page.locator(".settings-panel").locator(preferenceSelector)).toHaveCount(count);
+  if (count > 0) {
+    const settingsPage = new URL(page.url()).pathname === "/settings";
+    const signInDialog =
+      (await page.locator(".login-shell").count()) > 0 &&
+      (await page.getByRole("dialog").locator(".settings-panel").count()) > 0;
+    expect(settingsPage || signInDialog).toBe(true);
+  }
   const result = await new AxeBuilder({ page }).analyze();
   if (result.violations.length === 0) {
     return;

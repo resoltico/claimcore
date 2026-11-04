@@ -1,3 +1,6 @@
+import { Select } from "../../ui/Select";
+import { Card } from "../../ui/Card";
+import { Button } from "../../ui/Button";
 import { useSystemMode } from "../../theme/useSystemMode";
 import "./settings.css";
 import { useId } from "react";
@@ -62,8 +65,7 @@ export const SettingsPanel = () => {
   return (
     <section className="settings-panel" aria-label={p.text("ui.settings")}>
       <p>{p.text("ui.settingsIntroduction")}</p>
-      <section className="settings-card">
-        <h2>{p.text("ui.languageRegion")}</h2>
+      <Card className="settings-card" title={p.text("ui.languageRegion")}>
         <fieldset className="settings-options">
           <legend>{p.text("ui.language")}</legend>
           {options.map((option) => (
@@ -93,37 +95,35 @@ export const SettingsPanel = () => {
         {p.languageFailure === null ? null : (
           <div role="alert">
             <p>{p.text("ui.languageLoadFailed")}</p>
-            <button type="button" onClick={p.retryLanguage}>
+            <Button variant="secondary" onPress={p.retryLanguage}>
               {p.text("ui.retryLanguage")}
-            </button>
+            </Button>
           </div>
         )}
-        <label htmlFor={`${id}-format`}>{p.text("ui.displayLocale")}</label>
-        <select
+        <Select
           id={`${id}-format`}
+          label={p.text("ui.displayLocale")}
           value={p.displayLocale}
-          onChange={(event) => {
+          options={presentationDisplayOptions.map((option) => ({
+            value: option.value,
+            label: option.label,
+            lang: option.language,
+          }))}
+          onChange={(value) => {
             p.setPreferences({
               kind: "DISPLAY_LOCALE",
-              displayLocale: resolveDisplayLocale(event.target.value),
+              displayLocale: resolveDisplayLocale(value),
             });
           }}
-        >
-          {presentationDisplayOptions.map((option) => (
-            <option key={option.value} value={option.value} lang={option.language}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        />
         <p className="settings-preview">
           {p.text("ui.formatPreview", {
             date: p.date("2026-11-04"),
             amount: p.money("1234.50", "EUR"),
           })}
         </p>
-      </section>
-      <section className="settings-card">
-        <h2>{p.text("ui.appearance")}</h2>
+      </Card>
+      <Card className="settings-card" title={p.text("ui.appearance")}>
         <fieldset className="settings-options">
           <legend>{p.text("ui.theme")}</legend>
           {modes.map((mode) => (
@@ -174,9 +174,8 @@ export const SettingsPanel = () => {
           ))}
         </fieldset>
         <p>{p.text("ui.themeAccessibility")}</p>
-      </section>
-      <section className="settings-card">
-        <h2>{p.text("ui.about")}</h2>
+      </Card>
+      <Card className="settings-card" title={p.text("ui.about")}>
         <dl>
           <dt>{p.text("ui.version")}</dt>
           <dd>{productMetadata.productVersion}</dd>
@@ -185,7 +184,7 @@ export const SettingsPanel = () => {
             <bdi className="mono">{productMetadata.contractIdentity}</bdi>
           </dd>
         </dl>
-      </section>
+      </Card>
       <span aria-live="polite" className="presentation-status">
         {preferencesStatus(p)}
       </span>

@@ -90,23 +90,11 @@ textarea:focus-visible {
 .app-shell > :is(header, section),
 .login-card,
 .operation-editor,
-.case-fields,
-.review-modal {
+.case-fields {
   background: var(--bg-surface);
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-sm);
   box-shadow: var(--shadow-1);
-}
-
-.modal-overlay {
-  position: fixed;
-  z-index: 10;
-  inset: 0;
-  display: grid;
-  padding: var(--space-4);
-  overflow: auto;
-  background: var(--scrim);
-  place-items: center;
 }
 
 .app-shell > :is(header, section),
@@ -199,12 +187,6 @@ button:disabled {
   background: var(--bg-surface);
 }
 
-.login-shell {
-  display: grid;
-  min-block-size: 100vh;
-  place-items: center;
-}
-
 .login-card {
   inline-size: min(100%, 34rem);
 }
@@ -281,13 +263,6 @@ button:disabled {
 
 .copy-value textarea {
   min-block-size: 5rem;
-}
-
-.review-modal {
-  inline-size: min(100% - var(--space-6), 42rem);
-  max-block-size: calc(100dvh - var(--space-6));
-  overflow: auto;
-  padding: var(--space-5);
 }
 
 .review-values {
@@ -637,4 +612,8 @@ h2 {
 }
 h3 {
   font-size: var(--text-md);
+}
+
+h1[tabindex="-1"]:focus {
+  outline: none;
 }

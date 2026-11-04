@@ -1,4 +1,4 @@
-import { chooseChoice } from "./workspace-navigation";
+import { chooseChoice, chooseOption } from "./workspace-navigation";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { casePath } from "../src/routing/routes";
@@ -112,7 +112,11 @@ test("supports multiple independently revised reminders, terminal records, reope
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
   await expect(page.locator(".case-work .work-attention")).toBeVisible();
-  await page.locator('[aria-labelledby="case-reminders-title"] select').selectOption("COMPLETED");
+  await chooseOption(
+    page,
+    page.locator('[aria-labelledby="case-reminders-title"] [role="combobox"]'),
+    "COMPLETED",
+  );
   await expect(page.locator(".reminder-list li")).toHaveCount(1);
   await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
   await page
@@ -122,7 +126,11 @@ test("supports multiple independently revised reminders, terminal records, reope
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
-  await page.locator('[aria-labelledby="case-reminders-title"] select').selectOption("PENDING");
+  await chooseOption(
+    page,
+    page.locator('[aria-labelledby="case-reminders-title"] [role="combobox"]'),
+    "PENDING",
+  );
   await expect(page.locator(".reminder-list li")).toHaveCount(1);
   const current = await workRequest(page, "case.get", {
     target: { kind: "REFERENCE", caseReference: reference },
@@ -288,12 +296,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       await page.locator('input[data-selects-fields~="handlingSummary"]').check();
       await fillBusinessField(page, "handlingSummary", text);
       await page.locator('.work-operation form button[type="submit"]').click();
-      await expect(page.locator(".review-modal .observed-case-facts")).toBeVisible();
-      await page.locator('.review-modal input[type="checkbox"]').check();
+      await expect(page.locator(".ui-dialog .observed-case-facts")).toBeVisible();
+      await page.locator('.ui-dialog input[type="checkbox"]').check();
       const acceptedWork = page.waitForResponse(
         (value) => new URL(value.url()).pathname === "/api/operation.execute",
       );
-      await page.locator(".review-modal button.primary").click();
+      await page.locator(".ui-dialog button.primary").click();
       const workPayload: unknown = await (await acceptedWork).json();
       expect(isResponse("operation.execute", workPayload)).toBe(true);
       await expect(page.locator(".work-operation")).toHaveCount(0);
@@ -304,11 +312,11 @@ for (const language of ["en", "lv", "ar"] as const) {
       await fillBusinessField(page, "reminderAction", "😀".repeat(200));
       await fillBusinessField(page, "reminderDueDate", "9999-12-31");
       await page.locator('.work-operation form button[type="submit"]').click();
-      await page.locator('.review-modal input[type="checkbox"]').check();
+      await page.locator('.ui-dialog input[type="checkbox"]').check();
       const acceptedReminder = page.waitForResponse(
         (value) => new URL(value.url()).pathname === "/api/operation.execute",
       );
-      await page.locator(".review-modal button.primary").click();
+      await page.locator(".ui-dialog button.primary").click();
       await acceptedReminder;
       await expect(page.locator(".work-operation")).toHaveCount(0);
       await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");

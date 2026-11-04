@@ -1,3 +1,4 @@
+import { Select } from "../../ui/Select";
 import { useCallback, useState } from "react";
 import type {
   CaseSelector,
@@ -52,24 +53,16 @@ const CaseActivity = ({
     <section aria-labelledby="case-activity-title" aria-busy={result.loading}>
       <h2 id="case-activity-title">{p.text("ui.caseActivity")}</h2>
       {modes.includes("FULL") ? (
-        <label>
-          {p.text("ui.caseActivity")}
-          <select
-            value={detail}
-            onChange={(event) => {
-              const { value } = event.target;
-              if (value === "SUMMARY" || value === "FULL") {
-                setSelectedDetail(value);
-              }
-            }}
-          >
-            {modes.map((mode) => (
-              <option key={mode} value={mode}>
-                {p.term("historyDetail", mode)}
-              </option>
-            ))}
-          </select>
-        </label>
+        <Select
+          label={p.text("ui.caseActivity")}
+          value={detail}
+          options={modes.map((mode) => ({ value: mode, label: p.term("historyDetail", mode) }))}
+          onChange={(value) => {
+            if (value === "SUMMARY" || value === "FULL") {
+              setSelectedDetail(value);
+            }
+          }}
+        />
       ) : null}
       {result.message === null ? null : (
         <p role="alert">

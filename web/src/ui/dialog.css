@@ -1,0 +1,45 @@
+.ui-dialog-overlay {
+  position: fixed;
+  z-index: var(--layer-dialog);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  overflow: auto;
+  background: var(--scrim);
+}
+.ui-dialog {
+  inline-size: min(100%, 42rem);
+  max-block-size: calc(100dvh - var(--space-6));
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-2);
+}
+.ui-dialog-title {
+  margin-block-start: 0;
+  font-size: var(--text-xl);
+}
+.ui-dialog-actions {
+  display: flex;
+  justify-content: end;
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+.ui-dialog-overlay--bottom {
+  place-items: end center;
+  padding: 0;
+}
+.ui-dialog-overlay--bottom .ui-dialog {
+  inline-size: min(100%, var(--sheet-max-inline-size));
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.ui-dialog [role="dialog"][tabindex="-1"]:focus {
+  outline: none;
+}

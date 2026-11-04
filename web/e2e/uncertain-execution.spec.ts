@@ -1,3 +1,4 @@
+import { settingsNavigation } from "./localization-support";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
@@ -98,28 +99,16 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   expect(isResponse("operation.execute", accepted)).toBe(true);
   const first = (accepted as ServiceResponse<"operation.execute">).outcome;
   expect(first.kind).toBe("ACCEPTED");
-  // A failed language update offers an explicit reload but cannot discard an uncertain
-  // request without consent, replay it, or replace its exact in-memory bytes.
-  const failedLanguage = /\/assets\/language-lv-[^/]+\.js$/u;
-  await page.route(failedLanguage, (route) => route.abort("failed"));
-  await page.locator("[data-settings-button]").click();
-  await page.getByRole("combobox", { name: "Interface language" }).selectOption("lv");
-  await expect(
-    page.getByRole("alert").filter({ hasText: "The language could not be loaded" }),
-  ).toBeVisible();
-  await page.getByRole("button", { name: "Reload interface", exact: true }).click();
-  await page
-    .getByRole("dialog", { name: "Discard these draft changes?" })
-    .getByRole("button", { name: "Keep editing" })
-    .click();
-  await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
-  await page
-    .getByRole("dialog", { name: "Settings", exact: true })
-    .getByRole("button", { name: "Close", exact: true })
-    .click();
-  await expect(page.getByRole("dialog", { name: "Settings", exact: true })).toHaveCount(0);
+  // Settings is a genuine route now; the uncertainty guard must retain the exact attempt.
+  const originalUrl = page.url();
+  await (await settingsNavigation(page)).click();
+  const consent = page.getByRole("dialog", { name: "Discard these draft changes?" });
+  await expect(consent).toBeVisible();
+  await consent.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(consent).toHaveCount(0);
+  await expect(page).toHaveURL(originalUrl);
+  await expect(page.locator(".settings-panel")).toHaveCount(0);
   expect(requests).toEqual([original]);
-  await page.unroute(failedLanguage);
   await refuseRetryBeforeDispatch(page, requests);
   const replayed = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.execute"),

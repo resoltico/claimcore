@@ -1,12 +1,12 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
-import { settledWorkspaceHeader } from "./workspace-navigation";
+import { chooseOption, settledWorkspaceHeader } from "./workspace-navigation";
 import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
 import { preferenceKey } from "../src/presentation/preferences";
-import type { Language, DisplayLocale } from "../src/presentation/preferences";
+import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
 import enCore from "../../src/ClaimCore.Protocol/Messages/Localization/en.json" with { type: "json" };
 import lvCore from "../../src/ClaimCore.Protocol/Messages/Localization/lv.json" with { type: "json" };
 import arCore from "../../src/ClaimCore.Protocol/Messages/Localization/ar.json" with { type: "json" };
@@ -45,36 +45,62 @@ export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =
   ({ en, lv, ar })[language][key];
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
   ({ en, lv, ar })[language]["act.OPEN.label"];
-const openPreferences = async (page: Page): Promise<boolean> => {
-  const controls = page.locator('select[id$="-language"]:visible');
-  await controls
-    .or(page.locator(".workspace-header:visible"))
-    .first()
-    .waitFor({ state: "visible" });
-  if (await controls.count()) {
-    return false;
-  }
+type PreferenceVisit =
+  { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
+/** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
+export const settingsNavigation = async (page: Page): Promise<Locator> => {
   await settledWorkspaceHeader(page);
-  const settings = page.locator("[data-settings-button]");
-  if (!(await settings.isVisible())) {
-    await page.locator(".workspace-header button[aria-expanded]").click();
+  const link = page.locator('a[href="/settings"]');
+  if (!(await link.isVisible())) {
+    const compactMenu = page.locator(".workspace-header button[aria-expanded]");
+    if (await compactMenu.isVisible()) {
+      await compactMenu.click();
+    }
+    const account = page.locator(".account-menu > summary");
+    if (!(await link.isVisible())) {
+      await account.click();
+    }
   }
-  await settings.click();
-  return true;
+  return link;
 };
-// Role lookup includes inert background controls; require the active native control.
-export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
-  const opened = await openPreferences(page);
-  const control = page
-    .getByRole("combobox")
-    .and(page.locator("select:not([inert], [inert] *)"))
-    .and(page.locator('select[id$="-language"]'));
-  await expect(control).toHaveCount(1);
-  await control.selectOption(language);
-  await expect(control).toHaveValue(language);
-  if (opened) {
+const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
+  const panel = page.locator(".settings-panel");
+  if (await panel.isVisible()) {
+    return { kind: "CURRENT" };
+  }
+  const footer = page.locator(".login-footer button");
+  if (await footer.isVisible()) {
+    await footer.click();
+    await expect(panel).toBeVisible();
+    return { kind: "DIALOG" };
+  }
+  const returnUrl = page.url();
+  await (await settingsNavigation(page)).click();
+  await expect(page).toHaveURL((url) => url.pathname === "/settings");
+  await expect(panel).toBeVisible();
+  return { kind: "PAGE", returnUrl };
+};
+const closePreferences = async (page: Page, visit: PreferenceVisit): Promise<void> => {
+  if (visit.kind === "DIALOG") {
     await page.keyboard.press("Escape");
   }
+  if (visit.kind === "PAGE") {
+    await page.goBack();
+    await expect(page).toHaveURL(visit.returnUrl);
+  }
+};
+/** Request through Settings; callers may hold a language asset before awaiting activation. */
+export const requestLanguage = async (page: Page, language: Language): Promise<void> => {
+  const visit = await openPreferences(page);
+  const control = page.locator(
+    `.settings-panel input[type="radio"][name$="-language"][value="${language}"]`,
+  );
+  await control.check();
+  await expect(control).toBeChecked();
+  await closePreferences(page, visit);
+};
+export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
+  await requestLanguage(page, language);
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
     language === "en-XA" ? "en" : language,
@@ -82,39 +108,39 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
 };
 export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<void> => {
-  const opened = await openPreferences(page);
-  const control = page
-    .getByRole("combobox")
-    .and(page.locator("select:not([inert], [inert] *)"))
-    .and(page.locator('select[id$="-format"]'));
-  await expect(control).toHaveCount(1);
-  await control.selectOption(locale);
+  const visit = await openPreferences(page);
+  const control = page.locator('.settings-panel [role="combobox"][id$="-format"]');
+  await chooseOption(page, control, locale);
   await expect(control).toHaveValue(locale);
-  if (opened) {
-    await page.keyboard.press("Escape");
-  }
+  await closePreferences(page, visit);
+};
+export const selectMode = async (page: Page, mode: Preferences["mode"]): Promise<void> => {
+  const visit = await openPreferences(page);
+  const control = page.locator(
+    `.settings-panel input[type="radio"][name$="-mode"][value="${mode}"]`,
+  );
+  await control.check();
+  await expect(control).toBeChecked();
+  await closePreferences(page, visit);
 };
 export const expectPreferences = async (
   page: Page,
   expected: { language?: Language; displayLocale?: DisplayLocale },
 ) => {
-  const opened = await openPreferences(page);
+  const visit = await openPreferences(page);
   if (expected.language !== undefined) {
     await expect(
-      page.locator(`input[type="radio"][name$="-language"][value="${expected.language}"]`),
+      page.locator(
+        `.settings-panel input[type="radio"][name$="-language"][value="${expected.language}"]`,
+      ),
     ).toBeChecked();
   }
   if (expected.displayLocale !== undefined) {
-    await expect(page.locator('select[id$="-format"]')).toHaveValue(expected.displayLocale);
+    await expect(page.locator('.settings-panel [role="combobox"][id$="-format"]')).toHaveValue(
+      expected.displayLocale,
+    );
   }
-  if (expected.language !== undefined && expected.language !== "en-XA") {
-    await expect(
-      page.getByText(ui(expected.language, "ui.settingsIntroduction"), { exact: true }),
-    ).toBeVisible();
-  }
-  if (opened) {
-    await page.keyboard.press("Escape");
-  }
+  await closePreferences(page, visit);
 };
 // Session checks and autonomous work-date observations run independently of foreground editing.
 // Keep every other endpoint, including all mutations, in exact request-count assertions.

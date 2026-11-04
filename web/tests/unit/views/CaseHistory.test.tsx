@@ -1,3 +1,4 @@
+import { chooseOption } from "../../support/choice-entry";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -48,11 +49,11 @@ it("defaults to actual SUMMARY entries and deliberately resets between SUMMARY a
   expect(view.container.querySelector(".history-list .history-exact")).toBeNull();
   expect(view.container.querySelector(".case-fields")).toBeNull();
   expect(screen.getByRole("combobox", { name: "History detail" })).toBeVisible();
-  await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
+  await chooseOption(user, screen.getByLabelText("History detail"), "FULL");
   await waitFor(() => {
     expect(view.container.querySelector(".history-list .history-exact")).not.toBeNull();
   });
-  await user.selectOptions(screen.getByLabelText("History detail"), "SUMMARY");
+  await chooseOption(user, screen.getByLabelText("History detail"), "SUMMARY");
   await waitFor(() => {
     expect(view.container.querySelector(".history-list .history-exact")).toBeNull();
   });

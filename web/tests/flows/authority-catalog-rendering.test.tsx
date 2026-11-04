@@ -1,13 +1,8 @@
+import { chooseOption, optionValues } from "../support/choice-entry";
 import { actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import {
-  getButton,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "../support/presentation-test-support";
+import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest } from "../../src/protocol/client";
@@ -125,25 +120,13 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
     );
   });
 const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
+  const user = userEvent.setup();
+  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  await user.click(control);
   await waitFor(() => {
-    expect(
-      screen
-        .getByLabelText("Authority action", {
-          exact: true,
-        })
-        .querySelectorAll("option"),
-    ).toHaveLength(5);
+    expect(optionValues(control)).toHaveLength(5);
   });
-  fireEvent.change(
-    screen.getByLabelText("Authority action", {
-      exact: true,
-    }),
-    {
-      target: {
-        value: kind,
-      },
-    },
-  );
+  await chooseOption(user, control, kind);
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
   input("target.kind", "HUMAN");
@@ -206,12 +189,12 @@ it("requires an explicit role and disables service-incompatible roles from catal
   vi.stubGlobal("fetch", authorityTransport(calls));
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   const user = userEvent.setup();
+  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  await user.click(control);
   await waitFor(() => {
-    expect(
-      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-    ).toHaveLength(5);
+    expect(optionValues(control)).toHaveLength(5);
   });
-  await user.selectOptions(screen.getByLabelText("Authority action", { exact: true }), "GRANT");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "GRANT");
   const group = screen.getByRole("radiogroup", { name: "Role" });
   expect(group.querySelector("input:checked")).toBeNull();
   const owner = screen.getByRole("radio", { name: "Owner" });
@@ -240,7 +223,7 @@ it("disallows new case-scoped Owner grants and preserves revocation choices", as
     /No capability applies at this scope/u,
   );
   expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
-  await user.selectOptions(screen.getByLabelText("Authority action", { exact: true }), "REVOKE");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "REVOKE");
   await user.click(screen.getByRole("button", { name: "Discard and change action" }));
   expect(screen.getByRole("radio", { name: "Owner" })).not.toBeDisabled();
   expect(calls).toHaveLength(0);

@@ -1,3 +1,5 @@
+import userEvent from "@testing-library/user-event";
+import { chooseOption, optionValues } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
@@ -69,15 +71,15 @@ const finish = async <T,>(read: ReturnType<typeof pending<T>>, value: T) => {
   });
 };
 const selectEnabled = async () => {
+  const user = userEvent.setup();
+  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  await user.click(control);
   await waitFor(() => {
-    expect(
-      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-    ).toHaveLength(3);
+    expect(optionValues(control)).toHaveLength(3);
   });
-  fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-    target: { value: "DISABLE" },
-  });
+  await chooseOption(user, control, "DISABLE");
 };
+
 it.each(["context", "listing"] as const)(
   "accepted enablement preserves the next authored request across %s-first disclosure refresh",
   async (first) => {
@@ -105,19 +107,21 @@ it.each(["context", "listing"] as const)(
     expect(screen.queryByRole("button", { name: "Record changes" })).toBeNull();
     if (first === "listing") {
       await finish(listingRead, listing());
-      expect(screen.queryByLabelText("Authority action", { exact: true })).toBeNull();
+      expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     }
     await finish(contextRead, context());
     fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
-    fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-      target: { value: "GRANT" },
-    });
+    await chooseOption(
+      userEvent.setup(),
+      screen.getByRole("combobox", { name: "Authority action" }),
+      "GRANT",
+    );
     await author("synthetic-next");
     if (first === "context") {
       await finish(listingRead, listing());
     }
     expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByLabelText("Authority action", { exact: true })).toHaveValue("GRANT");
+    expect(screen.getByRole("combobox", { name: "Authority action" })).toHaveValue("GRANT");
     expect(document.querySelector('[name="target.subject"]')).toHaveValue("synthetic-next");
     chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -168,15 +172,17 @@ it.each(["transport", "host", "core"] as const)(
     fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
     fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
     expect(await screen.findByRole("alert")).toBeVisible();
-    expect(screen.queryByLabelText("Authority action", { exact: true })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     expect(reads).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: /^Try again$/u }));
     fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
+    const control = await screen.findByRole("combobox", { name: "Authority action" });
+    const user = userEvent.setup();
+    await user.click(control);
     await waitFor(() => {
-      expect(
-        screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-      ).toHaveLength(3);
+      expect(optionValues(control)).toHaveLength(3);
     });
+    await user.keyboard("{Escape}");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(reads).toHaveBeenCalledTimes(3);
   },

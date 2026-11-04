@@ -1,3 +1,4 @@
+import { Button } from "../../ui/Button";
 import { SettingsPanel } from "./SettingsPanel";
 import { usePresentation } from "../../presentation/context";
 import { useSessionContext } from "../../session/SessionContext";
@@ -9,16 +10,16 @@ export const SettingsPage = () => {
     <section>
       <h1 tabIndex={-1}>{p.text("ui.settings")}</h1>
       <SettingsPanel />
-      <button
-        type="button"
-        onClick={() => {
+      <Button
+        variant="secondary"
+        onPress={() => {
           guardedDeparture(() => {
             void logout();
           });
         }}
       >
         {p.text("ui.signOut")}
-      </button>
+      </Button>
     </section>
   );
 };

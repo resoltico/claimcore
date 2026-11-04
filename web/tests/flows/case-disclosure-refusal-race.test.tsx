@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { caseViewInput } from "../support/inputs";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -90,11 +91,11 @@ it("invalidates the pending current read synchronously on a second history refus
   const picker = await screen.findByRole("combobox", {
     name: "History detail",
   });
-  await user.selectOptions(picker, "FULL");
+  await chooseOption(user, picker, "FULL");
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(2);
   });
-  await user.selectOptions(picker, "SUMMARY");
+  await chooseOption(user, picker, "SUMMARY");
   await act(async () => {
     history.release(refused);
     await Promise.resolve();

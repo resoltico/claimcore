@@ -12,7 +12,7 @@ import { noHorizontalOverflow } from "./layout-support";
 import { casePath, referencePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
-import { pauseJsonReply } from "./localization-support";
+import { pauseJsonReply, selectMode } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
 const recoverAcceptedClose = async (page: Page, operationId: string) => {
@@ -167,9 +167,7 @@ test("canonical case links reload and browser back and forward preserve the case
 for (const theme of ["light", "dark"] as const) {
   test(`theme ${theme} passes axe and reflows at 320px`, async ({ page }) => {
     await openAuthenticated(page);
-    await page.locator("[data-settings-button]").click();
-    await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption(theme);
-    await page.keyboard.press("Escape");
+    await selectMode(page, theme);
     await expect(page.locator("html")).toHaveAttribute("data-mode", theme.toLowerCase());
     await expectAccessible(page);
     await page.setViewportSize({ width: 320, height: 900 });

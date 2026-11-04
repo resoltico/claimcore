@@ -1,8 +1,9 @@
+import { chooseOption } from "../support/choice-entry";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "../support/presentation-test-support";
+import { render, screen, waitFor } from "../support/presentation-test-support";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
@@ -143,13 +144,10 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
   assertSafe(view.container.querySelector(".section-heading")!, value, points);
   if (!missing) {
     await waitFor(() => {
-      expect(view.container.querySelector("select")).not.toBeNull();
+      expect(view.container.querySelector('.case-history [role="combobox"]')).not.toBeNull();
     });
-    fireEvent.change(view.container.querySelector("select")!, {
-      target: {
-        value: "FULL",
-      },
-    });
+    const picker = view.container.querySelector<HTMLElement>('.case-history [role="combobox"]')!;
+    await chooseOption(userEvent.setup(), picker, "FULL");
   }
   await waitFor(() => {
     expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);

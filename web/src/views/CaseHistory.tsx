@@ -1,3 +1,4 @@
+import { Select } from "../ui/Select";
 import type { CaseSelector } from "@contracts/client";
 import { ActorIdentity, OperationIdentity } from "../components/ActorIdentity";
 import { useRequesterContext } from "../hooks/useRequesterContext";
@@ -145,22 +146,17 @@ const HistoryModePicker = ({
 }) => {
   const p = usePresentation();
   return (
-    <label>
-      {p.text("ui.historyDetail")}
-      <select
-        aria-label={p.text("ui.historyDetail")}
-        value={detail}
-        onChange={(event) => {
-          onChange(event.target.value === "FULL" ? "FULL" : "SUMMARY");
-        }}
-      >
-        {modes.map((mode) => (
-          <option key={mode} value={mode}>
-            {p.text(mode === "FULL" ? "historyDetail.FULL.label" : "historyDetail.SUMMARY.label")}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Select
+      label={p.text("ui.historyDetail")}
+      value={detail}
+      options={modes.map((mode) => ({
+        value: mode,
+        label: p.text(mode === "FULL" ? "historyDetail.FULL.label" : "historyDetail.SUMMARY.label"),
+      }))}
+      onChange={(value) => {
+        onChange(value === "FULL" ? "FULL" : "SUMMARY");
+      }}
+    />
   );
 };
 const HistoryPageStatus = ({

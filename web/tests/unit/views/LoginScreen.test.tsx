@@ -8,7 +8,7 @@ it("keeps preferences in the sign-in footer dialog and returns focus on close", 
   render(<LoginScreen message={null} />);
   expect(screen.queryByRole("radio")).toBeNull();
   expect(screen.queryByRole("combobox")).toBeNull();
-  const trigger = screen.getByRole("button", { name: "Language & appearance" });
+  const trigger = screen.getByRole("button", { name: "Language & appearance · English" });
   await user.click(trigger);
   const dialog = screen.getByRole("dialog", { name: "Settings" });
   expect(within(dialog).getAllByRole("radio")).toHaveLength(8);

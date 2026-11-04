@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -93,9 +94,11 @@ it.each([
       .setup()
       .click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
     changeField("Amount claimed", raw);
-    await userEvent
-      .setup()
-      .selectOptions(screen.getByRole("combobox", { name: "Date and number format" }), display);
+    await chooseOption(
+      userEvent.setup(),
+      screen.getByRole("combobox", { name: "Date and number format" }),
+      display,
+    );
     expect(screen.getByRole("textbox", { name: "Amount claimed" })).toHaveValue(raw);
     const frame = await prepared(spy);
     expect(frame.input.act).toEqual({
@@ -103,9 +106,11 @@ it.each([
       values: { claimed: { amount: expected, currency: "EUR" } },
     });
     const { bytes } = frame;
-    await userEvent
-      .setup()
-      .selectOptions(screen.getByRole("combobox", { name: "Date and number format" }), entered);
+    await chooseOption(
+      userEvent.setup(),
+      screen.getByRole("combobox", { name: "Date and number format" }),
+      entered,
+    );
     await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
     await waitFor(() => {
       expect(spy).toHaveBeenCalledTimes(2);

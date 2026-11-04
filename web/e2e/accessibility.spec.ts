@@ -1,3 +1,4 @@
+import { chooseOption } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -48,7 +49,11 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await progress("a11y-receipt");
   await expectAccessible(page);
   await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
-  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
+  await chooseOption(
+    page,
+    page.getByRole("combobox", { name: "History detail", exact: true }),
+    "FULL",
+  );
   await page.locator(".history-list summary").first().click();
   await progress("a11y-history");
   await expectAccessible(page);

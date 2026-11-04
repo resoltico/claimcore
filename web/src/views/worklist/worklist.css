@@ -285,6 +285,3 @@ details.summary-band {
   border-radius: var(--radius-md);
   padding: var(--space-4);
 }
-.sheet-overlay {
-  align-items: end;
-}

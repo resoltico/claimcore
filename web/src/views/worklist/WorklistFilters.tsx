@@ -1,6 +1,5 @@
-import { Modal, ModalOverlay } from "react-aria-components/Modal";
-import { Dialog } from "react-aria-components/Dialog";
-import { Heading } from "react-aria-components/Heading";
+import { Select } from "../../ui/Select";
+import { Dialog } from "../../ui/Dialog";
 import { useState } from "react";
 import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
@@ -91,33 +90,31 @@ const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)
   }
   const selected = input.identity === "assignment" ? query.assignment : query.due;
   return (
-    <label>
-      {renderCatalogKey(p, input.labelId)}
-      <select
-        value={selected ?? ""}
-        onChange={(event) => {
-          const { value } = event.target;
-          if (input.identity === "assignment") {
-            const { view: _view, assignment: _assignment, ...rest } = query;
-            onChange(isTerm("assignment", value) ? { ...rest, assignment: value } : rest);
-          } else {
-            const { view: _view, due: _due, ...rest } = query;
-            onChange(isTerm("due", value) ? { ...rest, due: value } : rest);
-          }
-        }}
-      >
-        <option value="">{p.text("ui.anyFilter")}</option>
-        {input.kind.options.map((option) => (
-          <option key={option} value={option}>
-            {input.kind.kind === "CHOICE" &&
+    <Select
+      label={renderCatalogKey(p, input.labelId)}
+      value={selected ?? ""}
+      options={[
+        { value: "", label: p.text("ui.anyFilter") },
+        ...input.kind.options.map((option) => ({
+          value: option,
+          label:
+            input.kind.kind === "CHOICE" &&
             isVocabulary(input.kind.vocabulary) &&
             isTerm(input.kind.vocabulary, option)
               ? p.term(input.kind.vocabulary, option)
-              : option}
-          </option>
-        ))}
-      </select>
-    </label>
+              : option,
+        })),
+      ]}
+      onChange={(value) => {
+        if (input.identity === "assignment") {
+          const { view: _view, assignment: _assignment, ...rest } = query;
+          onChange(isTerm("assignment", value) ? { ...rest, assignment: value } : rest);
+        } else {
+          const { view: _view, due: _due, ...rest } = query;
+          onChange(isTerm("due", value) ? { ...rest, due: value } : rest);
+        }
+      }}
+    />
   );
 };
 const OrderControl = ({ query, onChange }: Props) => {
@@ -126,27 +123,17 @@ const OrderControl = ({ query, onChange }: Props) => {
     input.kind.kind === "CHOICE" && input.identity === "order" ? input.kind.options : [],
   );
   return (
-    <label>
-      {p.text("input.order.label")}
-      <select
-        value={query.order ?? "REFERENCE"}
-        onChange={(event) => {
-          const { view: _view, ...manual } = query;
-          onChange({
-            ...manual,
-            order: isTerm("caseOrder", event.target.value) ? event.target.value : "REFERENCE",
-          });
-        }}
-      >
-        {options.map((order) =>
-          isTerm("caseOrder", order) ? (
-            <option key={order} value={order}>
-              {p.term("caseOrder", order)}
-            </option>
-          ) : null,
-        )}
-      </select>
-    </label>
+    <Select
+      label={p.text("input.order.label")}
+      value={query.order ?? "REFERENCE"}
+      options={options
+        .filter((order) => isTerm("caseOrder", order))
+        .map((order) => ({ value: order, label: p.term("caseOrder", order) }))}
+      onChange={(value) => {
+        const { view: _view, ...manual } = query;
+        onChange({ ...manual, order: isTerm("caseOrder", value) ? value : "REFERENCE" });
+      }}
+    />
   );
 };
 const FilterControls = (props: Props) => (
@@ -179,27 +166,17 @@ export const WorklistFilters = (props: Props) => {
       >
         {p.text("ui.filters")}
       </button>
-      <ModalOverlay
-        className="modal-overlay sheet-overlay"
+      <Dialog
+        title={p.text("ui.filters")}
+        closeLabel={p.text("ui.close")}
+        className="filter-sheet"
+        placement="bottom"
         isOpen={open}
         isDismissable
         onOpenChange={setOpen}
       >
-        <Modal className="filter-sheet">
-          <Dialog aria-label={p.text("ui.filters")}>
-            <Heading slot="title">{p.text("ui.filters")}</Heading>
-            <FilterControls {...props} />
-            <button
-              type="button"
-              onClick={() => {
-                setOpen(false);
-              }}
-            >
-              {p.text("ui.close")}
-            </button>
-          </Dialog>
-        </Modal>
-      </ModalOverlay>
+        <FilterControls {...props} />
+      </Dialog>
     </>
   );
 };

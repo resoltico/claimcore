@@ -1,3 +1,5 @@
+import userEvent from "@testing-library/user-event";
+import { chooseOption } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { expect, it, vi } from "vitest";
 import { act, fireEvent } from "@testing-library/react";
@@ -143,9 +145,11 @@ it("changing acts retains the bound actor identity after discard consent", async
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("checkbox", { name: "I confirm this exact request." });
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "Authority action" }), {
-    target: { value: "DISABLE" },
-  });
+  await chooseOption(
+    userEvent.setup(),
+    screen.getByRole("combobox", { name: "Authority action" }),
+    "DISABLE",
+  );
   fireEvent.click(await screen.findByRole("button", { name: "Discard and change action" }));
   await expectBoundActor();
   chooseRoleForReview();

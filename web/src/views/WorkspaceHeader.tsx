@@ -1,7 +1,5 @@
 import { useState } from "react";
-import { Modal, ModalOverlay } from "react-aria-components/Modal";
-import { Dialog } from "react-aria-components/Dialog";
-import { Heading } from "react-aria-components/Heading";
+import { Dialog } from "../ui/Dialog";
 import { usePresentation } from "../presentation/context";
 import { useSessionContext } from "../session/SessionContext";
 import { useCompact } from "../hooks/useCompact";
@@ -132,23 +130,18 @@ export const WorkspaceHeader = ({
           >
             {p.text("ui.menu")}
           </button>
-          <ModalOverlay
-            className="modal-overlay sheet-overlay"
+          <Dialog
+            title={p.text("ui.menu")}
+            closeLabel={p.text("ui.close")}
+            className="navigation-sheet"
+            placement="bottom"
             isOpen={open}
             isDismissable
             onOpenChange={setOpen}
           >
-            <Modal className="navigation-sheet">
-              <Dialog aria-label={p.text("ui.menu")}>
-                <Heading slot="title">{p.text("ui.menu")}</Heading>
-                <Navigation active={active} views={views} locked={locked} close={close} />
-                <AccountMenu locked={locked} compact close={close} />
-                <button type="button" onClick={close}>
-                  {p.text("ui.close")}
-                </button>
-              </Dialog>
-            </Modal>
-          </ModalOverlay>
+            <Navigation active={active} views={views} locked={locked} close={close} />
+            <AccountMenu locked={locked} compact close={close} />
+          </Dialog>
         </>
       ) : (
         <>

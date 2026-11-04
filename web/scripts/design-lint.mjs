@@ -6,6 +6,17 @@ const namedColors = new Set(
     " ",
   ),
 );
+/** @param {string} text */
+const hasNamedColor = (text) =>
+  [
+    ...text.matchAll(
+      /\b(?:color|background(?:-color)?|border(?:-[\w-]+)?|fill|stroke)\s*:\s*([^;{}\n]+)/gu,
+    ),
+  ].some(
+    ([, value]) =>
+      value !== undefined &&
+      [...value.matchAll(/\b[a-z]+\b/giu)].some(([word]) => namedColors.has(word.toLowerCase())),
+  );
 /** @param {string} root */
 export const designFindings = (root) => {
   const source = resolve(root, "src");
@@ -27,19 +38,14 @@ export const designFindings = (root) => {
     const text = readFileSync(resolve(source, path), "utf8");
     const add = (/** @type {string} */ reason) =>
       findings.push(`${relative(root, resolve(source, path))}: ${reason}`);
+    if (/<select(?:\s|>)/u.test(text) || /["']react-aria-components\/Select["']/u.test(text)) {
+      add("native select and HiddenSelect violate qualified WebKit CSP; use ui/Select");
+    }
     if (/(?:#[\da-f]{3,8}\b|\b(?:rgb|rgba|hsl|hsla|oklch|oklab|lab|lch|color)\s*\()/iu.test(text)) {
       add("colour literals belong in theme/tokens.json");
     }
-    for (const match of text.matchAll(
-      /\b(?:color|background(?:-color)?|border(?:-[\w-]+)?|fill|stroke)\s*:\s*([^;{}\n]+)/gu,
-    )) {
-      const [, value] = match;
-      if (
-        value !== undefined &&
-        [...value.matchAll(/\b[a-z]+\b/giu)].some(([word]) => namedColors.has(word.toLowerCase()))
-      ) {
-        add("named colour literal");
-      }
+    if (hasNamedColor(text)) {
+      add("named colour literal");
     }
     if (
       !path.startsWith("theme/") &&

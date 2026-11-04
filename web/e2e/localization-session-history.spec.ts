@@ -1,3 +1,4 @@
+import { chooseOption } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -18,7 +19,11 @@ test("updates visible detail and expanded history immediately with independent f
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
-  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
+  await chooseOption(
+    page,
+    page.getByRole("combobox", { name: "History detail", exact: true }),
+    "FULL",
+  );
   const history = page
     .locator(".history-list > li > details")
     .filter({ hasText: opening.operationId });

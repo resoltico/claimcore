@@ -1,3 +1,4 @@
+import { Select } from "../../ui/Select";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { OperationErrors } from "./OperationErrors";
 import { useRef, useEffect } from "react";
@@ -19,23 +20,14 @@ export type OperationFormProps = {
 const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
   return model.entry.subject === "CASE" || offered.length < 2 ? null : (
-    <label>
-      {p.text("ui.authorityAction")}
-      <select
-        id="act-picker"
-        value={model.entry.kind}
-        disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
-        onChange={(event) => {
-          onAct(event.target.value);
-        }}
-      >
-        {offered.map((kind) => (
-          <option key={kind} value={kind}>
-            {p.authorityLabel(kind)}
-          </option>
-        ))}
-      </select>
-    </label>
+    <Select
+      id="act-picker"
+      label={p.text("ui.authorityAction")}
+      value={model.entry.kind}
+      disabled={model.busy || model.phase === "REVIEWING" || model.priorUncertain}
+      options={offered.map((kind) => ({ value: kind, label: p.authorityLabel(kind) }))}
+      onChange={onAct}
+    />
   );
 };
 const OperationInputs = ({ model, current, offered, fixedTarget }: OperationFormProps) => {

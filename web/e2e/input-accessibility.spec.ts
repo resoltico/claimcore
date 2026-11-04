@@ -1,4 +1,4 @@
-import { goToView, chooseChoice } from "./workspace-navigation";
+import { goToView, chooseChoice, chooseOption } from "./workspace-navigation";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { openAuthenticated } from "./session-helpers";
 import { syntheticPrincipals } from "./authority-setup";
@@ -76,9 +76,11 @@ for (const language of ["en", "lv", "ar"] as const) {
     const source = await syntheticPrincipals();
     const reference = page.locator('[name="act.scope.target.caseReference"]');
     for (const kind of ["GRANT", "REVOKE"]) {
-      await page
-        .getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true })
-        .selectOption(kind);
+      await chooseOption(
+        page,
+        page.getByRole("combobox", { name: ui(language, "ui.authorityAction"), exact: true }),
+        kind,
+      );
       if (kind === "REVOKE") {
         const dialog = page.getByRole("dialog", { name: ui(language, "ui.changeActTitle") });
         await dialog

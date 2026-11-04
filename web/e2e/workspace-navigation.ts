@@ -1,4 +1,4 @@
-import type { Locator, Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 /** Resize completion precedes React's media-query subscription update. */
 export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
   await page.locator(".workspace-header").waitFor({ state: "visible" });
@@ -45,4 +45,24 @@ export const showOperationLookup = async (page: Page): Promise<Locator> => {
       .click();
   }
   return input;
+};
+
+/** Select a visible closed value through the shared CSP-safe listbox. */
+export const chooseOption = async (page: Page, control: Locator, value: string): Promise<void> => {
+  await expect(control).toBeEnabled();
+  if ((await control.getAttribute("aria-expanded")) !== "true") {
+    await control.click();
+  }
+  const listbox = page.getByRole("listbox");
+  await expect(listbox).toBeVisible();
+  const options = await listbox.getByRole("option").all();
+  for (const option of options) {
+    if ((await option.getAttribute("data-key")) === value) {
+      await expect(option).toBeEnabled();
+      await option.click();
+      await expect(listbox).toHaveCount(0);
+      return;
+    }
+  }
+  throw new Error("E2E_SELECT_VALUE_NOT_OFFERED");
 };

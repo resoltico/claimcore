@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
@@ -36,9 +37,11 @@ it("activates language and direction together after loading while preserving new
   await userEvent.setup().click(screen.getByRole("radio", { name: "العربية" }));
   expect(screen.getByLabelText("Active language")).toHaveTextContent("en");
   expect(document.documentElement.dir).toBe("ltr");
-  await userEvent
-    .setup()
-    .selectOptions(screen.getByRole("combobox", { name: "Date and number format" }), "lv-LV");
+  await chooseOption(
+    userEvent.setup(),
+    screen.getByRole("combobox", { name: "Date and number format" }),
+    "lv-LV",
+  );
   await act(async () => {
     pending.resolve();
     await pending.promise;

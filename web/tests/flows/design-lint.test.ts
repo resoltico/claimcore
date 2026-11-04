@@ -24,6 +24,7 @@ const inspect = (text: string): string => {
   }
 };
 it.each([
+  ['<select aria-label="Choice"></select>', "native select"],
   [".control {color: rgb(1 2 3)}", "colour literals"],
   [".control {color: rebeccapurple}", "named colour literal"],
   [".control {color: var(--green-700)}", "semantic colours"],

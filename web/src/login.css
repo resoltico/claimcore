@@ -26,3 +26,15 @@
   color: var(--accent-text);
   border-color: transparent;
 }
+
+.login-shell {
+  display: grid;
+  min-block-size: 100dvh;
+  align-content: center;
+  justify-items: center;
+  gap: var(--space-4);
+}
+.login-footer {
+  inline-size: min(100%, 34rem);
+  margin-block-start: 0;
+}

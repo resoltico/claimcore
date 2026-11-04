@@ -1,4 +1,4 @@
-import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
+import { goToView, showExactLookup, chooseChoice, chooseOption } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
@@ -107,11 +107,7 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
 };
 const selectAuthorityAct = async (page: Page, act: "GRANT" | "DISABLE") => {
   const picker = page.getByRole("combobox", { name: "Authority action", exact: true });
-  const option = picker.locator(`option[value="${act}"]`);
-  await expect(picker).toBeEnabled();
-  await expect(option).toHaveCount(1);
-  await expect(option).toBeEnabled();
-  await picker.selectOption(act);
+  await chooseOption(page, picker, act);
 };
 const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: string) => {
   const response = await browserRequest(page, "/api/operation.preview", {

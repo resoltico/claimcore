@@ -17,7 +17,9 @@ const expectAuthorityControlsContained = async (page: Page) => {
     let count = 0;
     let left = panelBounds.right;
     let right = panelBounds.left;
-    for (const control of element.querySelectorAll('input:not([type="checkbox"]), select')) {
+    for (const control of element.querySelectorAll(
+      'input:not([type="checkbox"]), button[role="combobox"]',
+    )) {
       const bounds = control.getBoundingClientRect();
       if (
         control.getClientRects().length === 0 ||

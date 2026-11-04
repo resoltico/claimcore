@@ -1,3 +1,4 @@
+import { chooseOption } from "../../../support/choice-entry";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
@@ -66,7 +67,7 @@ it("hides prior activity payload synchronously when full-history advice is remov
   );
   const user = userEvent.setup();
   await user.click(screen.getByText("Case activity", { selector: "summary" }));
-  await user.selectOptions(await screen.findByRole("combobox", { name: "Case activity" }), "FULL");
+  await chooseOption(user, await screen.findByRole("combobox", { name: "Case activity" }), "FULL");
   await screen.findByText(/HISTORY_PAYLOAD_CANARY/u);
   view.rerender(
     <CaseActivityDisclosure target={target} modes={["SUMMARY"]} onDisclosureRefused={refused} />,

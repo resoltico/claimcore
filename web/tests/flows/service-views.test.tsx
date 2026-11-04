@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -149,7 +150,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(current, "CLOSE");
-  await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
+  await chooseOption(user, screen.getByLabelText("History detail"), "FULL");
   const entrySummary = (await screen.findAllByText(/Open a case · revision/u))[0]!;
   await user.click(entrySummary);
   const entry = entrySummary.closest("details");

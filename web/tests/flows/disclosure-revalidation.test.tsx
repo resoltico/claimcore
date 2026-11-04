@@ -1,3 +1,4 @@
+import { chooseOption } from "../support/choice-entry";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -91,7 +92,8 @@ for (const retainCurrent of [false, true]) {
         />,
       );
       await screen.findAllByText(fields.registration.claimantName);
-      await user.selectOptions(
+      await chooseOption(
+        user,
         screen.getByRole("combobox", {
           name: "History detail",
         }),

@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { Modal, ModalOverlay } from "react-aria-components/Modal";
-import { Dialog } from "react-aria-components/Dialog";
-import { Heading } from "react-aria-components/Heading";
+import { Dialog } from "../ui/Dialog";
+import { Button } from "../ui/Button";
+import { presentationLanguageOptions, presentationPseudolanguage } from "@contracts/client";
 import { SettingsPanel } from "../features/settings/SettingsPanel";
 import { rememberLoginReturn } from "../routing/loginReturn";
 import { NoticeView } from "../presentation/Message";
@@ -10,6 +10,11 @@ import { productMetadata } from "../protocol/productMetadata";
 import type { Notice } from "../protocol/notices";
 export const LoginScreen = ({ message }: { message: Notice | null }) => {
   const p = usePresentation();
+  const currentLanguage =
+    p.language === presentationPseudolanguage
+      ? p.text("ui.pseudo")
+      : (presentationLanguageOptions.find((option) => option.value === p.language)?.label ??
+        p.language);
   const [settings, setSettings] = useState(false);
   return (
     <main className="login-shell">
@@ -33,36 +38,24 @@ export const LoginScreen = ({ message }: { message: Notice | null }) => {
       </section>
       <footer className="login-footer">
         <span>{productMetadata.productVersion}</span>
-        <button
-          type="button"
-          onClick={() => {
+        <Button
+          variant="secondary"
+          onPress={() => {
             setSettings(true);
           }}
         >
-          {p.text("ui.languageAppearance")}
-        </button>
+          {p.text("ui.languageAppearance")} · <bdi lang={p.language}>{currentLanguage}</bdi>
+        </Button>
       </footer>
-      <ModalOverlay
-        className="modal-overlay"
+      <Dialog
+        title={p.text("ui.settings")}
+        closeLabel={p.text("ui.close")}
         isOpen={settings}
         isDismissable
         onOpenChange={setSettings}
       >
-        <Modal className="review-modal">
-          <Dialog aria-label={p.text("ui.settings")}>
-            <Heading slot="title">{p.text("ui.settings")}</Heading>
-            <SettingsPanel />
-            <button
-              type="button"
-              onClick={() => {
-                setSettings(false);
-              }}
-            >
-              {p.text("ui.close")}
-            </button>
-          </Dialog>
-        </Modal>
-      </ModalOverlay>
+        <SettingsPanel />
+      </Dialog>
     </main>
   );
 };

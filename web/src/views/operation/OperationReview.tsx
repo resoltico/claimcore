@@ -4,7 +4,7 @@ import type { OperationInput } from "@contracts/client";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { lifecycleMessageIds } from "../LifecycleStatus";
-import { AccessibleModal } from "../../components/AccessibleModal";
+import { Dialog } from "../../ui/Dialog";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
 import { BusinessValue, CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
@@ -340,7 +340,7 @@ export const OperationReview = ({
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
   const act = operationEntryForInput(input);
   return (
-    <AccessibleModal
+    <Dialog
       title={p.text("label.reviewTitle")}
       closeLabel={p.text("ui.returnToEdit")}
       description={p.text("ui.reviewDescription")}
@@ -363,6 +363,6 @@ export const OperationReview = ({
         <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
         <ReviewConfirmation model={model} confirmationId={act.confirmationId!} paused={stopped} />
       </>
-    </AccessibleModal>
+    </Dialog>
   );
 };

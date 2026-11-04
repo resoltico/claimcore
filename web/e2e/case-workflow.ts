@@ -1,6 +1,7 @@
+import { registration } from "../tests/support/inputs";
 import type { CaseFields } from "../src/api/service";
 import { showExactLookup } from "./workspace-navigation";
-import { fillNamedField } from "./typed-entry";
+import { fillBusinessField, fillNamedField } from "./typed-entry";
 import { businessFieldCount, inventory } from "../tests/support/inventory";
 import { expect, type Page, type Response } from "@playwright/test";
 
@@ -107,7 +108,11 @@ export const recordReviewed = async (
   await progress("accepted-receipt");
 };
 
-export const startOpen = async (page: Page, caseReference: string): Promise<void> => {
+export const startOpen = async (
+  page: Page,
+  caseReference: string,
+  title = "Open a case",
+): Promise<void> => {
   await retainResponseBodies(page);
   await progress("start-open");
   const failures: string[] = [];
@@ -129,10 +134,10 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
     }
   };
   page.on("response", failedAsset);
-  await page.getByRole("button", { name: "Open a case" }).click();
+  await page.getByRole("button", { name: title }).click();
   await progress("open-editor");
   await page
-    .getByRole("heading", { name: "Open a case", exact: true })
+    .getByRole("heading", { name: title, exact: true })
     .or(page.getByRole("button", { name: "Retry loading", exact: true }))
     .first()
     .waitFor({ state: "visible" });
@@ -141,16 +146,21 @@ export const startOpen = async (page: Page, caseReference: string): Promise<void
   if (await page.getByRole("button", { name: "Retry loading", exact: true }).isVisible()) {
     throw new Error(`E2E_EDITOR_LOAD_FAILURE ${failures.join("; ")}`);
   }
-  await fill(page, {
-    "Incident date": "2026-09-01",
-    "Incident notification date (FNOL)": "2026-09-02",
-    "Country of incident (ISO alpha-2 code)": "LV",
-    "Claimant name": "Synthetic claimant",
-    "Responsible insurer": "Synthetic insurer",
-    "Amount claimed": "1200.50",
-    "Currency of claimed amount": "EUR",
-    "Handler's case reference": caseReference,
+  const authored = registration({
+    incidentDate: "2026-09-01",
+    claimantName: "Synthetic claimant",
+    claimedAmount: "1200.50",
   });
+  for (const [name, value] of Object.entries(authored)) {
+    if (value !== null) {
+      await fillBusinessField(page, name, value);
+    }
+  }
+  const reference = inventory.specialFields.find((field) => field.kind === "REFERENCE");
+  if (reference === undefined) {
+    throw new Error("E2E_REFERENCE_INVENTORY_MISSING");
+  }
+  await fillBusinessField(page, reference.key, caseReference);
   await progress("open-filled");
 };
 
