@@ -136,7 +136,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
   expect(listing.mock.calls[1]![1]).toEqual({ limit: 50, cursor: "opaque-next" });
   const literal = "Ａ名+س@example.invalid";
   await user.type(screen.getByRole("searchbox", { name: "Search people" }), literal);
-  await chooseOption(user, screen.getByRole("combobox", { name: "Role" }), "CASE_READER");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Role filter" }), "CASE_READER");
   await user.click(screen.getByRole("button", { name: "Search" }));
   await screen.findByText("Server selected result");
   expect(listing.mock.calls[2]![1]).toEqual({ limit: 50, text: literal, role: "CASE_READER" });

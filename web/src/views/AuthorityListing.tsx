@@ -1,3 +1,4 @@
+import { renderCatalogKey } from "../presentation/messages";
 import type { ActorListRequest } from "@contracts/client";
 import { FieldHelp } from "../components/FieldHelp";
 import { Select } from "../ui/Select";
@@ -17,6 +18,7 @@ const authorityPage = (response: ServiceResponse<"authority.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
 type ListingProps = {
+  titleId?: string;
   mayReadGrants: boolean;
   onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
@@ -125,13 +127,15 @@ const ActorRow = (props: {
 
 const AuthorityTable = ({
   items,
+  titleId,
   ...props
 }: Pick<ListingProps, "mayReadGrants" | "onSelect"> & {
+  titleId: string;
   items: Actor[];
 }) => {
   const p = usePresentation();
   return (
-    <table className="authority-table" aria-labelledby="authority-actors-title">
+    <table className="authority-table" aria-labelledby={titleId}>
       <thead className="authority-columns">
         <tr>
           <th scope="col">{p.text("ui.people.person")}</th>
@@ -154,6 +158,7 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
   return (
     <section>
       <AuthorityTable
+        titleId={props.titleId ?? "authority-actors-title"}
         items={page.items}
         onSelect={props.onSelect}
         mayReadGrants={props.mayReadGrants}
@@ -186,15 +191,20 @@ const DirectoryResults = (props: ListingProps & { filter: DirectoryFilter }) => 
 const directorySearch = productMetadata.catalog.inputFields.find(
   (field) => field.name === "directorySearch",
 )!;
+const roleFilter = productMetadata.catalog.entries
+  .find((entry) => entry.endpoint === "authority.list")!
+  .inputs.find((input) => input.identity === "role")!;
 export const AuthorityListing = (props: ListingProps) => {
   const p = usePresentation();
   const [draft, setDraft] = useState<DirectoryFilter>({ text: "", role: "" });
   const [filter, setFilter] = useState(draft);
   return (
     <section>
-      <h2 id="authority-actors-title" tabIndex={-1}>
-        {p.text("ui.shell.people")}
-      </h2>
+      {props.titleId === undefined ? (
+        <h2 id="authority-actors-title" tabIndex={-1}>
+          {p.text("ui.shell.people")}
+        </h2>
+      ) : null}
       <form
         className="directory-filters"
         onSubmit={(event) => {
@@ -221,7 +231,13 @@ export const AuthorityListing = (props: ListingProps) => {
         </div>
         <Select
           id="people-role-filter"
-          label={p.fieldLabel("role")}
+          label={renderCatalogKey(p, roleFilter.labelId)}
+          help={
+            <FieldHelp label={renderCatalogKey(p, roleFilter.labelId)} ruleId={roleFilter.ruleId} />
+          }
+          {...(roleFilter.hintId === null
+            ? {}
+            : { description: renderCatalogKey(p, roleFilter.hintId) })}
           value={draft.role}
           options={[
             { value: "", label: p.text("ui.anyFilter") },

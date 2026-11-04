@@ -1,6 +1,6 @@
 import "./select.css";
 import "./button.css";
-import { useId, useRef, useState } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Popover } from "react-aria-components/ComboBox";
 import { Icon } from "./icons";
@@ -10,16 +10,28 @@ type Props = {
   id?: string;
   label: string;
   value: string;
+  help?: ReactNode;
+  description?: string;
   options: ReadonlyArray<SelectOption>;
   disabled?: boolean;
   onChange: (value: string) => void;
 };
 
 /** A select-only picker without native select/HiddenSelect, which violates CSP in qualified WebKit. */
-export const Select = ({ id, label, value, options, disabled = false, onChange }: Props) => {
+export const Select = ({
+  id,
+  label,
+  value,
+  options,
+  disabled = false,
+  onChange,
+  help,
+  description,
+}: Props) => {
   const generated = useId();
   const controlId = id ?? generated;
   const labelId = `${controlId}-label`;
+  const descriptionId = `${controlId}-hint`;
   const listId = `${controlId}-options`;
   const valueId = `${controlId}-value`;
   const trigger = useRef<HTMLButtonElement>(null);
@@ -44,9 +56,18 @@ export const Select = ({ id, label, value, options, disabled = false, onChange }
   };
   return (
     <div className="ui-select-field">
-      <label id={labelId} htmlFor={controlId}>
-        {label}
-      </label>
+      {help === undefined ? (
+        <label id={labelId} htmlFor={controlId}>
+          {label}
+        </label>
+      ) : (
+        <div className="ui-select-label">
+          <label id={labelId} htmlFor={controlId}>
+            {label}
+          </label>
+          {help}
+        </div>
+      )}
       <button
         type="button"
         id={controlId}
@@ -55,7 +76,7 @@ export const Select = ({ id, label, value, options, disabled = false, onChange }
         role="combobox"
         value={value}
         aria-labelledby={labelId}
-        aria-describedby={valueId}
+        aria-describedby={description === undefined ? valueId : `${valueId} ${descriptionId}`}
         aria-haspopup="listbox"
         aria-expanded={open}
         aria-controls={listId}
@@ -102,6 +123,7 @@ export const Select = ({ id, label, value, options, disabled = false, onChange }
         </span>
         <Icon name="chevron-down" />
       </button>
+      {description === undefined ? null : <small id={descriptionId}>{description}</small>}
       <Popover
         className="ui-select-popover"
         triggerRef={trigger}
