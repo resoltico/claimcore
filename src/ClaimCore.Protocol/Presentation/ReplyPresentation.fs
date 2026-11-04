@@ -20,7 +20,6 @@ module Refusals =
         | CaseRefusal.CorrectionNoChanges
         | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
         | CaseRefusal.CorrectionRequiresExistingValue
-        | CaseRefusal.DecisionRequired
         | CaseRefusal.ZeroDecisionCannotBePaid -> RecommendedAction.CorrectInput
         | CaseRefusal.AssigneeUnavailable
         | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest

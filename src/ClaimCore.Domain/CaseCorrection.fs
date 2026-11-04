@@ -108,9 +108,10 @@ module internal CaseCorrections =
                     (proposedGroups facts progress correction)
                     (paidAcknowledgement progress correction)
 
-            let! nextProgress =
+            let nextProgress =
                 PaymentProgress.fromGroups nextDecision nextPayment
-                |> Result.mapError (fun () -> Refusal.Case CaseRefusal.DecisionRequired)
+                |> Result.defaultWith (fun () ->
+                    invalidOp "A validated correction cannot retain payment without a decision.")
 
             if nextFacts = facts && nextProgress = progress then
                 return! Error(Refusal.Case CaseRefusal.CorrectionNoChanges)

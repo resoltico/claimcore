@@ -102,7 +102,6 @@
   "diagnostic.COUNTRY_FORMAT": "Use two uppercase ASCII letters for the country code.",
   "diagnostic.CURRENCY_FORMAT": "Use three uppercase ASCII letters (A–Z) for the currency identifier.",
   "diagnostic.DECIMAL_FORMAT": "Use non-negative decimal text: up to {maximumIntegerDigits} integer digits and {maximumFractionalDigits} fractional digits; no sign, exponent or redundant leading zeros: 0.10 is valid; 00.10 is invalid.",
-  "diagnostic.DECISION_REQUIRED": "Record a payment decision first.",
   "diagnostic.EXPECTED_REVISION_RANGE": "Use an integer revision from 0 through 9007199254740991.",
   "diagnostic.FORMATTING_CHARACTER": "Formatting characters are not accepted in a new assertion.",
   "diagnostic.FUTURE_DATE": "A future date cannot record an event that has already occurred.",

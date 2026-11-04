@@ -2599,9 +2599,9 @@
       }
     },
     {
-      "name": "refusal-11",
+      "name": "retired-decision-required-is-rejected",
       "endpoint": "context",
-      "valid": true,
+      "valid": false,
       "value": {
         "outcome": {
           "kind": "REJECTED",

@@ -102,7 +102,6 @@
   "diagnostic.COUNTRY_FORMAT": "Valsts kodam izmantojiet divus lielos ASCII burtus.",
   "diagnostic.CURRENCY_FORMAT": "Izmantojiet trīs lielos ASCII burtus (A–Z) valūtas apzīmējumam.",
   "diagnostic.DECIMAL_FORMAT": "Izmantojiet nenegatīvu decimālskaitli: līdz {maximumIntegerDigits} veseliem cipariem un {maximumFractionalDigits} daļas cipariem; bez zīmes vai eksponenta. Bez liekām sākuma nullēm: 0.10 ir derīgs; 00.10 nav derīgs.",
-  "diagnostic.DECISION_REQUIRED": "Vispirms reģistrējiet izmaksas lēmumu.",
   "diagnostic.EXPECTED_REVISION_RANGE": "Izmantojiet veselu redakcijas numuru no 0 līdz 9007199254740991.",
   "diagnostic.FORMATTING_CHARACTER": "Jaunā apgalvojumā formatēšanas rakstzīmes nav atļautas.",
   "diagnostic.FUTURE_DATE": "Nākotnes datums nevar apzīmēt jau notikušu notikumu.",

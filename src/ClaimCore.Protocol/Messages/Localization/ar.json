@@ -102,7 +102,6 @@
   "diagnostic.COUNTRY_FORMAT": "استخدم حرفي ASCII كبيرين لرمز البلد.",
   "diagnostic.CURRENCY_FORMAT": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
   "diagnostic.DECIMAL_FORMAT": "استخدم نصًا عشريًا غير سالب: حتى {maximumIntegerDigits} رقمًا صحيحًا و{maximumFractionalDigits} أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
-  "diagnostic.DECISION_REQUIRED": "سجّل قرار الدفع أولًا.",
   "diagnostic.EXPECTED_REVISION_RANGE": "استخدم رقم مراجعة صحيحًا من 0 إلى 9007199254740991.",
   "diagnostic.FORMATTING_CHARACTER": "لا تُقبل محارف التنسيق في البيانات الجديدة.",
   "diagnostic.FUTURE_DATE": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل.",

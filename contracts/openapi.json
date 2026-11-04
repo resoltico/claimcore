@@ -8866,7 +8866,6 @@
             "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
             "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
-            "DECISION_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
             "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE",
@@ -8925,7 +8924,6 @@
           "code": {
             "enum": [
               "CORRECTION_REQUIRES_EXISTING_VALUE",
-              "DECISION_REQUIRED",
               "ZERO_DECISION_CANNOT_BE_PAID",
               "HUMAN_PRINCIPAL_REQUIRED",
               "ROLE_SCOPE_NOT_APPLICABLE"

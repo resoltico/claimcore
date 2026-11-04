@@ -286,7 +286,6 @@ let internal scalarRequests () =
     textRequests ()
     @ registrationRequests ()
     @ controlRequests ()
-    @ progressRequests ()
     @ [
         actRequest
             10

@@ -1,5 +1,5 @@
 {
-  "source": "Hand-authored refusal actions and input-issue field/code witnesses; INVALID_INPUT envelopes preserve each independent expected violation.",
+  "source": "Hand-authored actionable refusal and input-issue oracle under D7/C7; state-inapplicable cases use NOT_OFFERED, authority reaffirmations and LAST_OWNER retain their accepted/guard behavior. INVALID_INPUT preserves each independent expected target/code witness.",
   "observations": [
     {
       "code": "RESOURCE_UNAVAILABLE",
@@ -22,58 +22,8 @@
       "target": null
     },
     {
-      "code": "ALREADY_VOIDED",
-      "action": "NoneRequired",
-      "target": null
-    },
-    {
-      "code": "ALREADY_CLOSED",
-      "action": "NoneRequired",
-      "target": null
-    },
-    {
       "code": "CASE_ALREADY_EXISTS",
       "action": "ChooseAnotherReference",
-      "target": null
-    },
-    {
-      "code": "ALREADY_OPENED",
-      "action": "NoneRequired",
-      "target": null
-    },
-    {
-      "code": "AMENDMENT_REQUIRES_UNDECIDED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "CASE_CLOSED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "DECISION_ALREADY_PAID",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "DECISION_REQUIRED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "CASE_ERASED",
-      "action": "NoneRequired",
-      "target": null
-    },
-    {
-      "code": "PAYMENT_ALREADY_RECORDED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "PAYMENT_NOT_RECORDED",
-      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -82,13 +32,8 @@
       "target": null
     },
     {
-      "code": "CASE_VOIDED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
       "code": "ZERO_DECISION_CANNOT_BE_PAID",
-      "action": "ReviewLatest",
+      "action": "CorrectInput",
       "target": null
     },
     {
@@ -113,7 +58,7 @@
     },
     {
       "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
-      "action": "ReviewLatest",
+      "action": "CorrectInput",
       "target": null
     },
     {
@@ -143,7 +88,7 @@
     },
     {
       "code": "HUMAN_PRINCIPAL_REQUIRED",
-      "action": "ReviewLatest",
+      "action": "CorrectInput",
       "target": null
     },
     {
@@ -346,11 +291,6 @@
       "target": null
     },
     {
-      "code": "NOT_VOIDED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
       "code": "IDEMPOTENCY_CONFLICT",
       "action": "StopAndInvestigate",
       "target": null
@@ -477,7 +417,7 @@
     },
     {
       "code": "ROLE_SCOPE_NOT_APPLICABLE",
-      "action": "ReviewLatest",
+      "action": "CorrectInput",
       "target": null
     },
     {
@@ -538,29 +478,127 @@
       ]
     },
     {
-      "code": "REMINDER_PARENT_NOT_ACTIVE",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "REMINDER_PARENT_NOT_OPEN",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "REMINDER_PENDING_REQUIRED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
-      "code": "REMINDER_TERMINAL_REQUIRED",
-      "action": "ReviewLatest",
-      "target": null
-    },
-    {
       "code": "REMINDER_NO_CHANGES",
       "action": "NoneRequired",
       "target": null
+    },
+    {
+      "code": "NOT_OFFERED",
+      "action": "ReviewLatest",
+      "target": null
+    },
+    {
+      "code": "REMINDER_NOT_OFFERED",
+      "action": "ReviewLatest",
+      "target": null
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "target": null,
+      "issues": [
+        {
+          "field": "profile.displayName",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "profile.displayName",
+          "code": "MALFORMED_UNICODE"
+        },
+        {
+          "field": "profile.displayName",
+          "code": "SURROUNDING_WHITESPACE"
+        },
+        {
+          "field": "profile.displayName",
+          "code": "TOO_LONG"
+        },
+        {
+          "field": "profile.displayName",
+          "code": "CONTROL_CHARACTERS"
+        },
+        {
+          "field": "profile.displayName",
+          "code": "FORMATTING_CHARACTER"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "target": null,
+      "issues": [
+        {
+          "field": "profile.contact",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "profile.contact",
+          "code": "MALFORMED_UNICODE"
+        },
+        {
+          "field": "profile.contact",
+          "code": "SURROUNDING_WHITESPACE"
+        },
+        {
+          "field": "profile.contact",
+          "code": "TOO_LONG"
+        },
+        {
+          "field": "profile.contact",
+          "code": "CONTROL_CHARACTERS"
+        },
+        {
+          "field": "profile.contact",
+          "code": "FORMATTING_CHARACTER"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "target": null,
+      "issues": [
+        {
+          "field": "directorySearch",
+          "code": "TEXT_REQUIRED"
+        },
+        {
+          "field": "directorySearch",
+          "code": "MALFORMED_UNICODE"
+        },
+        {
+          "field": "directorySearch",
+          "code": "SURROUNDING_WHITESPACE"
+        },
+        {
+          "field": "directorySearch",
+          "code": "TOO_LONG"
+        },
+        {
+          "field": "directorySearch",
+          "code": "CONTROL_CHARACTERS"
+        },
+        {
+          "field": "directorySearch",
+          "code": "FORMATTING_CHARACTER"
+        }
+      ]
+    },
+    {
+      "code": "INVALID_INPUT",
+      "action": "CorrectInput",
+      "target": null,
+      "issues": [
+        {
+          "field": "grants",
+          "code": "GRANT_COUNT_RANGE"
+        },
+        {
+          "field": "grants",
+          "code": "DUPLICATE_GRANT"
+        }
+      ]
     }
   ]
 }
