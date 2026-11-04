@@ -97,7 +97,12 @@ module Money =
 
     /// The ISO minimum never removes meaningful digits from the canonical accepted amount.
     /// Authored trailing zeros are not a separate retained precision contract.
-    let displayScaleFor currency (canonical: string) =
+    let minimumDisplayScale currency =
+        Map.tryFind (Currency.format currency) CurrencyMinorUnits.all
+        |> Option.defaultValue 0
+
+    let displayScale money =
+        let canonical = format money
         let separator = canonical.IndexOf('.')
 
         let fractional =
@@ -106,14 +111,7 @@ module Money =
             else
                 canonical.Length - separator - 1
 
-        let minimum =
-            Map.tryFind (Currency.format currency) CurrencyMinorUnits.all
-            |> Option.defaultValue 0
-
-        max minimum fractional
-
-    let displayScale money =
-        displayScaleFor (currencyValue money) (format money)
+        max (minimumDisplayScale (currencyValue money)) fractional
 
     let descriptor =
         {

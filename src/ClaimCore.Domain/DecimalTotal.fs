@@ -45,6 +45,20 @@ module DecimalTotal =
                 .ToString("D" + string MaximumFractionalDigits, CultureInfo.InvariantCulture)
                 .TrimEnd('0')
 
+    /// Precision comes from exact retained units, independently of localized or canonical rendering.
+    let displayScale currency (DecimalTotal units) =
+        let rec meaningful digits (fraction: BigInteger) =
+            if fraction.IsZero then
+                0
+            elif fraction % 10I = 0I then
+                meaningful (digits - 1) (fraction / 10I)
+            else
+                digits
+
+        max
+            (Money.minimumDisplayScale currency)
+            (meaningful MaximumFractionalDigits (units % scale))
+
     let parse raw =
         ScalarText.parse None 0 raw
         |> Result.bind (fun value ->

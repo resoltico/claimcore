@@ -37,7 +37,7 @@ module internal TextReplyFormat =
 
     let moneyTotal (language: string) currency total =
         let canonical = DecimalTotal.format total
-        let scale = Money.displayScaleFor currency canonical
+        let scale = DecimalTotal.displayScale currency total
         let parts = canonical.Split '.'
         let culture = CultureInfo.GetCultureInfo language
 
