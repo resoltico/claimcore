@@ -619,13 +619,69 @@
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
                 },
-                "changes": [],
                 "context": {
                   "productVersion": "x",
                   "businessDate": "2026-01-01",
                   "timeZone": "x",
                   "observedAt": "2026-01-01T12:00:00.000000Z"
                 }
+              },
+              "presentation": {
+                "changes": [],
+                "unchanged": [
+                  {
+                    "key": "incidentDate",
+                    "labelId": "field.incidentDate.label"
+                  },
+                  {
+                    "key": "incidentNotificationDate",
+                    "labelId": "field.incidentNotificationDate.label"
+                  },
+                  {
+                    "key": "incidentCountry",
+                    "labelId": "field.incidentCountry.label"
+                  },
+                  {
+                    "key": "incidentDescription",
+                    "labelId": "field.incidentDescription.label"
+                  },
+                  {
+                    "key": "claimantName",
+                    "labelId": "field.claimantName.label"
+                  },
+                  {
+                    "key": "insurerName",
+                    "labelId": "field.insurerName.label"
+                  },
+                  {
+                    "key": "claimedAmount",
+                    "labelId": "field.claimedAmount.label"
+                  },
+                  {
+                    "key": "caseReference",
+                    "labelId": "field.caseReference.label"
+                  },
+                  {
+                    "key": "paymentDecisionDate",
+                    "labelId": "field.paymentDecisionDate.label"
+                  },
+                  {
+                    "key": "payableAmount",
+                    "labelId": "field.payableAmount.label"
+                  },
+                  {
+                    "key": "paymentDate",
+                    "labelId": "field.paymentDate.label"
+                  },
+                  {
+                    "key": "status",
+                    "labelId": "field.status.label"
+                  },
+                  {
+                    "key": "lifecycle",
+                    "labelId": "input.lifecycle.label"
+                  }
+                ]
               }
             }
           }
@@ -1347,6 +1403,34 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "FALSE"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "TRUE"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label"
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label"
+                  }
+                ]
               }
             }
           }
@@ -1914,118 +1998,185 @@
                         "payableAmount": "0",
                         "payableCurrency": "EUR"
                       },
-                      "payment": {
-                        "paymentDate": "2026-01-01"
-                      },
-                      "progress": "PAID"
+                      "payment": null,
+                      "progress": "DECIDED"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
                 },
                 "after": {
                   "caseReference": "x",
-                  "revision": 1,
+                  "revision": 2,
                   "state": {
                     "kind": "ACTIVE",
                     "fields": {
                       "caseReference": "x",
                       "status": "OPENED",
                       "registration": {
-                        "incidentDate": "2026-01-01",
-                        "incidentNotificationDate": "2026-01-01",
-                        "incidentCountry": "LV",
-                        "claimantName": "x",
-                        "insurerName": "x",
-                        "claimedAmount": "0",
+                        "incidentDate": "2025-12-28",
+                        "incidentNotificationDate": "2025-12-29",
+                        "incidentCountry": "JP",
+                        "claimantName": "After claimant",
+                        "insurerName": "After insurer",
+                        "claimedAmount": "1234.5678",
                         "claimedCurrency": "EUR",
-                        "incidentDescription": null
+                        "incidentDescription": "Changed narrative"
                       },
                       "decision": {
-                        "paymentDecisionDate": "2026-01-01",
-                        "payableAmount": "0",
-                        "payableCurrency": "EUR"
+                        "paymentDecisionDate": "2025-12-30",
+                        "payableAmount": "1",
+                        "payableCurrency": "BHD"
                       },
-                      "payment": {
-                        "paymentDate": "2026-01-01"
-                      },
-                      "progress": "PAID"
+                      "payment": null,
+                      "progress": "DECIDED"
                     }
                   },
                   "caseId": "10000000-0000-4000-8000-000000000001"
                 },
-                "changes": [
-                  {
-                    "field": "incidentDate",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "incidentNotificationDate",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "incidentCountry",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "claimantName",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "insurerName",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "claimedAmount",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "claimedCurrency",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "caseReference",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "paymentDecisionDate",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "payableAmount",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "payableCurrency",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "paymentDate",
-                    "before": "before",
-                    "after": "after"
-                  },
-                  {
-                    "field": "status",
-                    "before": "before",
-                    "after": "after"
-                  }
-                ],
                 "context": {
                   "productVersion": "x",
                   "businessDate": "2026-01-01",
                   "timeZone": "x",
                   "observedAt": "2026-01-01T12:00:00.000000Z"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "incidentDate",
+                    "labelId": "field.incidentDate.label",
+                    "before": {
+                      "kind": "DATE",
+                      "value": "2026-01-01"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2025-12-28"
+                    }
+                  },
+                  {
+                    "key": "incidentNotificationDate",
+                    "labelId": "field.incidentNotificationDate.label",
+                    "before": {
+                      "kind": "DATE",
+                      "value": "2026-01-01"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2025-12-29"
+                    }
+                  },
+                  {
+                    "key": "incidentCountry",
+                    "labelId": "field.incidentCountry.label",
+                    "before": {
+                      "kind": "COUNTRY",
+                      "value": "LV"
+                    },
+                    "after": {
+                      "kind": "COUNTRY",
+                      "value": "JP"
+                    }
+                  },
+                  {
+                    "key": "incidentDescription",
+                    "labelId": "field.incidentDescription.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "Changed narrative"
+                    }
+                  },
+                  {
+                    "key": "claimantName",
+                    "labelId": "field.claimantName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "x"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "After claimant"
+                    }
+                  },
+                  {
+                    "key": "insurerName",
+                    "labelId": "field.insurerName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "x"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "After insurer"
+                    }
+                  },
+                  {
+                    "key": "claimedAmount",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "MONEY",
+                      "amount": "0",
+                      "currency": "EUR",
+                      "displayScale": 2
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1234.5678",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    }
+                  },
+                  {
+                    "key": "paymentDecisionDate",
+                    "labelId": "field.paymentDecisionDate.label",
+                    "before": {
+                      "kind": "DATE",
+                      "value": "2026-01-01"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2025-12-30"
+                    }
+                  },
+                  {
+                    "key": "payableAmount",
+                    "labelId": "field.payableAmount.label",
+                    "before": {
+                      "kind": "MONEY",
+                      "amount": "0",
+                      "currency": "EUR",
+                      "displayScale": 2
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "BHD",
+                      "displayScale": 3
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "caseReference",
+                    "labelId": "field.caseReference.label"
+                  },
+                  {
+                    "key": "paymentDate",
+                    "labelId": "field.paymentDate.label"
+                  },
+                  {
+                    "key": "status",
+                    "labelId": "field.status.label"
+                  },
+                  {
+                    "key": "lifecycle",
+                    "labelId": "input.lifecycle.label"
+                  }
+                ]
               }
             }
           }
@@ -4785,6 +4936,122 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "CASE_READER.20000000-0000-4000-8000-000000000001.role",
+                    "labelId": "field.role.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "CASE_READER"
+                    }
+                  },
+                  {
+                    "key": "CASE_READER.20000000-0000-4000-8000-000000000001.scope",
+                    "labelId": "input.scope.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "scope",
+                      "token": "CASE"
+                    }
+                  },
+                  {
+                    "key": "CASE_READER.20000000-0000-4000-8000-000000000001.reference",
+                    "labelId": "field.caseReference.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "REFERENCE",
+                      "value": "OVERLAPPING"
+                    }
+                  },
+                  {
+                    "key": "READ_CASE.direct",
+                    "labelId": "label.directRoles",
+                    "before": {
+                      "kind": "CODES",
+                      "vocabulary": "role",
+                      "tokens": []
+                    },
+                    "after": {
+                      "kind": "CODES",
+                      "vocabulary": "role",
+                      "tokens": [
+                        "CASE_READER"
+                      ]
+                    }
+                  },
+                  {
+                    "key": "READ_HISTORY.direct",
+                    "labelId": "label.directRoles",
+                    "before": {
+                      "kind": "CODES",
+                      "vocabulary": "role",
+                      "tokens": []
+                    },
+                    "after": {
+                      "kind": "CODES",
+                      "vocabulary": "role",
+                      "tokens": [
+                        "CASE_READER"
+                      ]
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled"
+                  },
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label"
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label"
+                  },
+                  {
+                    "key": "READ_CASE.effective",
+                    "labelId": "capability.READ_CASE.label"
+                  },
+                  {
+                    "key": "READ_CASE.inherited",
+                    "labelId": "label.inheritedRoles"
+                  },
+                  {
+                    "key": "READ_HISTORY.effective",
+                    "labelId": "capability.READ_HISTORY.label"
+                  },
+                  {
+                    "key": "READ_HISTORY.inherited",
+                    "labelId": "label.inheritedRoles"
+                  },
+                  {
+                    "key": "REGISTER.effective",
+                    "labelId": "capability.REGISTER.label"
+                  },
+                  {
+                    "key": "REGISTER.direct",
+                    "labelId": "label.directRoles"
+                  },
+                  {
+                    "key": "REGISTER.inherited",
+                    "labelId": "label.inheritedRoles"
+                  }
+                ]
               }
             }
           }
@@ -5851,6 +6118,42 @@
                     }
                   }
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "responsible",
+                    "labelId": "field.responsibleActor.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "40000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "ERASED"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  },
+                  {
+                    "key": "handlingSummary",
+                    "labelId": "field.handlingSummary.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "First paragraph\nSecond paragraph"
+                    }
+                  }
+                ],
+                "unchanged": []
               }
             }
           }
@@ -6367,6 +6670,60 @@
                     }
                   }
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.id",
+                    "labelId": "field.reminderId.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-4000-8000-000000000001"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.action",
+                    "labelId": "field.reminderAction.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "Contact insurer"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.due",
+                    "labelId": "field.reminderDueDate.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2026-11-10"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.state",
+                    "labelId": "input.reminderState.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    }
+                  }
+                ],
+                "unchanged": []
               }
             }
           }
@@ -6443,6 +6800,38 @@
                     }
                   }
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.state",
+                    "labelId": "input.reminderState.label",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "COMPLETED"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.id",
+                    "labelId": "field.reminderId.label"
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.action",
+                    "labelId": "field.reminderAction.label"
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.due",
+                    "labelId": "field.reminderDueDate.label"
+                  }
+                ]
               }
             }
           }
@@ -6527,6 +6916,87 @@
                     }
                   }
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.state",
+                    "labelId": "input.reminderState.label",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "COMPLETED"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.id",
+                    "labelId": "field.reminderId.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-4000-8000-000000000001"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.action",
+                    "labelId": "field.reminderAction.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "Review response"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.due",
+                    "labelId": "field.reminderDueDate.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2026-11-11"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.state",
+                    "labelId": "input.reminderState.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.id",
+                    "labelId": "field.reminderId.label"
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.action",
+                    "labelId": "field.reminderAction.label"
+                  },
+                  {
+                    "key": "30000000-0000-4000-8000-000000000001.due",
+                    "labelId": "field.reminderDueDate.label"
+                  }
+                ]
               }
             }
           }
@@ -13361,6 +13831,113 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "FALSE"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "TRUE"
+                    }
+                  },
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "Authored admission name"
+                    }
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "authored@example.invalid"
+                    }
+                  },
+                  {
+                    "key": "CASE_READER.installation.role",
+                    "labelId": "field.role.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "CASE_READER"
+                    }
+                  },
+                  {
+                    "key": "CASE_READER.installation.scope",
+                    "labelId": "input.scope.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "scope",
+                      "token": "INSTALLATION"
+                    }
+                  },
+                  {
+                    "key": "AUDITOR.20000000-0000-4000-8000-000000000001.role",
+                    "labelId": "field.role.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "AUDITOR"
+                    }
+                  },
+                  {
+                    "key": "AUDITOR.20000000-0000-4000-8000-000000000001.scope",
+                    "labelId": "input.scope.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "scope",
+                      "token": "CASE"
+                    }
+                  },
+                  {
+                    "key": "AUDITOR.20000000-0000-4000-8000-000000000001.reference",
+                    "labelId": "field.caseReference.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "REFERENCE",
+                      "value": "10000000-0000-4000-8000-000000000777"
+                    }
+                  }
+                ],
+                "unchanged": []
               }
             }
           }
@@ -13427,6 +14004,75 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "FALSE"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "TRUE"
+                    }
+                  },
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "Authored admission name"
+                    }
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "authored@example.invalid"
+                    }
+                  },
+                  {
+                    "key": "OWNER.installation.role",
+                    "labelId": "field.role.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "OWNER"
+                    }
+                  },
+                  {
+                    "key": "OWNER.installation.scope",
+                    "labelId": "input.scope.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "scope",
+                      "token": "INSTALLATION"
+                    }
+                  }
+                ],
+                "unchanged": []
               }
             }
           }
@@ -13492,6 +14138,40 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "Authored admission name"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label",
+                    "before": {
+                      "kind": "TEXT",
+                      "value": "authored@example.invalid"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled"
+                  }
+                ]
               }
             }
           }
@@ -13573,6 +14253,50 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "CASE_READER.installation.role",
+                    "labelId": "field.role.label",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "CASE_READER"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  },
+                  {
+                    "key": "CASE_READER.installation.scope",
+                    "labelId": "input.scope.label",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "scope",
+                      "token": "INSTALLATION"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled"
+                  },
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label"
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label"
+                  }
+                ]
               }
             }
           }
@@ -13641,6 +14365,34 @@
                   "businessDate": "2026-01-01",
                   "timeZone": "x"
                 }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "TRUE"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "FALSE"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label"
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label"
+                  }
+                ]
               }
             }
           }
@@ -15360,6 +16112,34 @@
                     "kind": "ENABLE"
                   }
                 ]
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "FALSE"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "TRUE"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label"
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label"
+                  }
+                ]
               }
             }
           }
@@ -15385,6 +16165,3262 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "history-structural-all-field-differences",
+      "endpoint": "case.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "kind": "FULL",
+                "receipt": {
+                  "operationId": "10000000-0000-4000-8000-000000000001",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  },
+                  "recordedAt": "2026-01-01T00:00:00.000000Z",
+                  "recordedBy": {
+                    "actorId": "10000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "subject": {
+                    "kind": "CASE",
+                    "caseReference": "x",
+                    "revision": 1,
+                    "act": "OPEN",
+                    "snapshot": {
+                      "kind": "DISCLOSED",
+                      "view": {
+                        "kind": "ACTIVE",
+                        "fields": {
+                          "caseReference": "x",
+                          "status": "OPENED",
+                          "registration": {
+                            "incidentDate": "2026-01-01",
+                            "incidentNotificationDate": "2026-01-01",
+                            "incidentCountry": "LV",
+                            "claimantName": "x",
+                            "insurerName": "x",
+                            "claimedAmount": "0",
+                            "claimedCurrency": "EUR",
+                            "incidentDescription": null
+                          },
+                          "decision": {
+                            "paymentDecisionDate": "2026-01-01",
+                            "payableAmount": "0",
+                            "payableCurrency": "EUR"
+                          },
+                          "payment": {
+                            "paymentDate": "2026-01-01"
+                          },
+                          "progress": "PAID"
+                        }
+                      }
+                    },
+                    "caseId": "10000000-0000-4000-8000-000000000001"
+                  },
+                  "basis": {
+                    "observedAt": "2026-01-01T00:00:00.000000Z",
+                    "businessDate": "2026-01-01",
+                    "timeZone": "Etc/UTC"
+                  }
+                },
+                "difference": {
+                  "lifecycle": null,
+                  "fields": [
+                    {
+                      "field": "incidentDate",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "incidentNotificationDate",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "incidentCountry",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "claimantName",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "insurerName",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "claimedAmount",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "claimedCurrency",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "caseReference",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "paymentDecisionDate",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "payableAmount",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "payableCurrency",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "paymentDate",
+                      "before": "before",
+                      "after": "after"
+                    },
+                    {
+                      "field": "status",
+                      "before": "before",
+                      "after": "after"
+                    }
+                  ]
+                }
+              }
+            ],
+            "nextCursor": null,
+            "caseId": "10000000-0000-4000-8000-000000000001",
+            "caseReference": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "review-case-erase-payload-fields",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "CASE",
+                "before": {
+                  "caseReference": "x",
+                  "revision": 2,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2025-12-28",
+                        "incidentNotificationDate": "2025-12-29",
+                        "incidentCountry": "JP",
+                        "claimantName": "After claimant",
+                        "insurerName": "After insurer",
+                        "claimedAmount": "1234.5678",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Changed narrative"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2025-12-30",
+                        "payableAmount": "1",
+                        "payableCurrency": "BHD"
+                      },
+                      "payment": null,
+                      "progress": "DECIDED"
+                    }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
+                },
+                "after": {
+                  "caseReference": "x",
+                  "revision": 3,
+                  "state": {
+                    "kind": "ERASED"
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
+                },
+                "context": {
+                  "productVersion": "x",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x",
+                  "observedAt": "2026-01-01T12:00:00.000000Z"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "lifecycle",
+                    "labelId": "input.lifecycle.label",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "lifecycle",
+                      "token": "ACTIVE"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "lifecycle",
+                      "token": "ERASED"
+                    }
+                  },
+                  {
+                    "key": "incidentDate",
+                    "labelId": "field.incidentDate.label",
+                    "before": {
+                      "kind": "DATE",
+                      "value": "2025-12-28"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "incidentNotificationDate",
+                    "labelId": "field.incidentNotificationDate.label",
+                    "before": {
+                      "kind": "DATE",
+                      "value": "2025-12-29"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "incidentCountry",
+                    "labelId": "field.incidentCountry.label",
+                    "before": {
+                      "kind": "COUNTRY",
+                      "value": "JP"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "incidentDescription",
+                    "labelId": "field.incidentDescription.label",
+                    "before": {
+                      "kind": "NARRATIVE",
+                      "value": "Changed narrative"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "claimantName",
+                    "labelId": "field.claimantName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "After claimant"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "insurerName",
+                    "labelId": "field.insurerName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "After insurer"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "claimedAmount",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "MONEY",
+                      "amount": "1234.5678",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "paymentDecisionDate",
+                    "labelId": "field.paymentDecisionDate.label",
+                    "before": {
+                      "kind": "DATE",
+                      "value": "2025-12-30"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "payableAmount",
+                    "labelId": "field.payableAmount.label",
+                    "before": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "BHD",
+                      "displayScale": 3
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  },
+                  {
+                    "key": "status",
+                    "labelId": "field.status.label",
+                    "before": {
+                      "kind": "CODE",
+                      "vocabulary": "status",
+                      "token": "OPENED"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "lifecycle.ERASED.label"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "authority-set-profile-saved-facts",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Authored admission name"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  },
+                  "contact": "authored@example.invalid",
+                  "state": "NO_ROLES",
+                  "roles": []
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Updated saved name",
+                    "contact": null
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "SET_PROFILE",
+                    "profile": {
+                      "displayName": "Updated saved name",
+                      "contact": null
+                    }
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "Authored admission name"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "Updated saved name"
+                    }
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label",
+                    "before": {
+                      "kind": "TEXT",
+                      "value": "authored@example.invalid"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "supplied-review-all-semantic-value-tags",
+      "endpoint": "operation.preview",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "CASE",
+                "before": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      },
+                      "progress": "PAID"
+                    }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
+                },
+                "after": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      },
+                      "progress": "PAID"
+                    }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
+                },
+                "context": {
+                  "productVersion": "x",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x",
+                  "observedAt": "2026-01-01T12:00:00.000000Z"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.0",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    }
+                  },
+                  {
+                    "key": "provided.1",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY_TOTAL",
+                      "amount": "1234567890123456789012345678901234567890.1234",
+                      "currency": "CLF",
+                      "displayScale": 4
+                    }
+                  },
+                  {
+                    "key": "provided.2",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2026-01-01"
+                    }
+                  },
+                  {
+                    "key": "provided.3",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "INSTANT",
+                      "value": "2026-01-01T12:00:00.000000Z"
+                    }
+                  },
+                  {
+                    "key": "provided.4",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "Supplied party"
+                    }
+                  },
+                  {
+                    "key": "provided.5",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "Supplied text"
+                    }
+                  },
+                  {
+                    "key": "provided.6",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "Paragraph one\nParagraph two"
+                    }
+                  },
+                  {
+                    "key": "provided.7",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MESSAGE",
+                      "messageId": "label.notRecorded"
+                    }
+                  },
+                  {
+                    "key": "provided.8",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "lifecycle",
+                      "token": "ACTIVE"
+                    }
+                  },
+                  {
+                    "key": "provided.9",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "status",
+                      "token": "OPENED"
+                    }
+                  },
+                  {
+                    "key": "provided.10",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "CASE_READER"
+                    }
+                  },
+                  {
+                    "key": "provided.11",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "scope",
+                      "token": "CASE"
+                    }
+                  },
+                  {
+                    "key": "provided.12",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "capability",
+                      "token": "READ_CASE"
+                    }
+                  },
+                  {
+                    "key": "provided.13",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    }
+                  },
+                  {
+                    "key": "provided.14",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "boolean",
+                      "token": "TRUE"
+                    }
+                  },
+                  {
+                    "key": "provided.15",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODES",
+                      "vocabulary": "role",
+                      "tokens": [
+                        "CASE_HANDLER",
+                        "CASE_READER"
+                      ]
+                    }
+                  },
+                  {
+                    "key": "provided.16",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Saved name"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  },
+                  {
+                    "key": "provided.17",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "STATE",
+                      "vocabulary": "headline",
+                      "token": "DECIDED"
+                    }
+                  },
+                  {
+                    "key": "provided.18",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "COUNT",
+                      "value": 9007199254740991
+                    }
+                  },
+                  {
+                    "key": "provided.19",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "REFERENCE",
+                      "value": "RAW-REFERENCE"
+                    }
+                  },
+                  {
+                    "key": "provided.20",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "IDENTIFIER",
+                      "value": "technical-id"
+                    }
+                  },
+                  {
+                    "key": "provided.21",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  },
+                  {
+                    "key": "provided.22",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "COUNTRY",
+                      "value": "ZZ"
+                    }
+                  },
+                  {
+                    "key": "provided.23",
+                    "labelId": "label.details",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CURRENCY",
+                      "value": "ZZZ"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "supplied-review-structural-money-facet",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-required",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-changes-required",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-unchanged-required",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-unknown-value-tag",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "UNSUPPORTED",
+                      "value": "x"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-invalid-message-key-grammar",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "bad key",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-obsolete-case-changes-rejected",
+      "endpoint": "operation.preview",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "CASE",
+                "before": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      },
+                      "progress": "PAID"
+                    }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
+                },
+                "after": {
+                  "caseReference": "x",
+                  "revision": 1,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "x",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-01",
+                        "incidentCountry": "LV",
+                        "claimantName": "x",
+                        "insurerName": "x",
+                        "claimedAmount": "0",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": null
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-01",
+                        "payableAmount": "0",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-01"
+                      },
+                      "progress": "PAID"
+                    }
+                  },
+                  "caseId": "10000000-0000-4000-8000-000000000001"
+                },
+                "context": {
+                  "productVersion": "x",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x",
+                  "observedAt": "2026-01-01T12:00:00.000000Z"
+                },
+                "changes": []
+              },
+              "presentation": {
+                "changes": [],
+                "unchanged": [
+                  {
+                    "key": "incidentDate",
+                    "labelId": "field.incidentDate.label"
+                  },
+                  {
+                    "key": "incidentNotificationDate",
+                    "labelId": "field.incidentNotificationDate.label"
+                  },
+                  {
+                    "key": "incidentCountry",
+                    "labelId": "field.incidentCountry.label"
+                  },
+                  {
+                    "key": "incidentDescription",
+                    "labelId": "field.incidentDescription.label"
+                  },
+                  {
+                    "key": "claimantName",
+                    "labelId": "field.claimantName.label"
+                  },
+                  {
+                    "key": "insurerName",
+                    "labelId": "field.insurerName.label"
+                  },
+                  {
+                    "key": "claimedAmount",
+                    "labelId": "field.claimedAmount.label"
+                  },
+                  {
+                    "key": "caseReference",
+                    "labelId": "field.caseReference.label"
+                  },
+                  {
+                    "key": "paymentDecisionDate",
+                    "labelId": "field.paymentDecisionDate.label"
+                  },
+                  {
+                    "key": "payableAmount",
+                    "labelId": "field.payableAmount.label"
+                  },
+                  {
+                    "key": "paymentDate",
+                    "labelId": "field.paymentDate.label"
+                  },
+                  {
+                    "key": "status",
+                    "labelId": "field.status.label"
+                  },
+                  {
+                    "key": "lifecycle",
+                    "labelId": "input.lifecycle.label"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "review-money-scale-negative",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": -1
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-money-scale-excess",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": 5
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-money-scale-wrong-type",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": "4"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-money-scale-null",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": null
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-money-scale-required",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-code-token-vocabulary-mismatch",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "role",
+                      "token": "ACTIVE"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-code-vocabulary-unknown",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "arbitrary",
+                      "token": "ACTIVE"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-entry-limit",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [],
+                "unchanged": [
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  },
+                  {
+                    "key": "bounded",
+                    "labelId": "label.details"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-key-limit",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "kkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkkk",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "MONEY",
+                      "amount": "1",
+                      "currency": "EUR",
+                      "displayScale": 4
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "review-presentation-value-text-limit",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

@@ -181,16 +181,17 @@ let private previewWarnings () =
             (reviewFields "after" root)["claimantName"] <- JsonValue.Create "Snapshot after"
 
             let changes =
-                (memberPath [ "outcome"; "data"; "review"; "subject"; "changes" ] root).AsArray()
+                (memberPath [ "outcome"; "data"; "review"; "presentation"; "changes" ] root)
+                    .AsArray()
 
             let change =
                 changes
                 |> Seq.map nonNull
                 |> Seq.find (fun value ->
-                    (value["field"] |> nonNull).GetValue<string>() = "claimantName")
+                    (value["key"] |> nonNull).GetValue<string>() = "claimantName")
 
-            change["before"] <- JsonValue.Create before
-            change["after"] <- JsonValue.Create after)
+            (change["before"] |> nonNull)["value"] <- JsonValue.Create before
+            (change["after"] |> nonNull)["value"] <- JsonValue.Create after)
         (fun language text ->
             let expected =
                 annotated language before [ "U+180E" ]
@@ -283,16 +284,17 @@ let private retainedTerminalControls () =
         "review-all-fields"
         (fun root ->
             let changes =
-                (memberPath [ "outcome"; "data"; "review"; "subject"; "changes" ] root).AsArray()
+                (memberPath [ "outcome"; "data"; "review"; "presentation"; "changes" ] root)
+                    .AsArray()
 
             let change =
                 changes
                 |> Seq.map nonNull
                 |> Seq.find (fun row ->
-                    (row["field"] |> nonNull).GetValue<string>() = "claimantName")
+                    (row["key"] |> nonNull).GetValue<string>() = "claimantName")
 
-            change["before"] <- JsonValue.Create value
-            change["after"] <- JsonValue.Create "safe")
+            (change["before"] |> nonNull)["value"] <- JsonValue.Create value
+            (change["after"] |> nonNull)["value"] <- JsonValue.Create "safe")
         verify
 
 let private terminalEscapeProfile () =
