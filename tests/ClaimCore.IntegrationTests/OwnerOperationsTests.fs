@@ -190,10 +190,35 @@ let private actionState (database: PostgresFixture.Database) =
         Expect.isEmpty context.Offers "Context offers are read-only during maintenance"
         let! replay = Service.execute actor pending token
 
+        let replayed =
+            match replay.Outcome with
+            | ExecuteResult.AlreadyAccepted receipt -> receipt
+            | other -> failtestf "Expected retained acceptance during maintenance: %A" other
+
+        let original = accepted opening
+
         Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted(accepted opening))
-            "Retained acceptance remains readable without another append"
+            (replayed.OperationId,
+             replayed.Position,
+             replayed.Subject,
+             replayed.RecordedAt,
+             replayed.RecordedBy.ActorId)
+            (original.OperationId,
+             original.Position,
+             original.Subject,
+             original.RecordedAt,
+             original.RecordedBy.ActorId)
+            "Retained acceptance preserves its identity, facts and original recording metadata"
+
+        Expect.isGreaterThanOrEqual
+            replayed.Basis.ObservedAt
+            context.Runtime.Basis.ObservedAt
+            "Replay reports its current authorized observation, after the preceding context read"
+
+        Expect.equal
+            (replayed.Basis.BusinessDate, replayed.Basis.TimeZoneId)
+            (context.Runtime.Basis.BusinessDate, "Etc/UTC")
+            "Replay observation uses the installation business calendar"
 
         let sessions = SessionStore(database.RuntimeSource) :> ISessionStore
 
