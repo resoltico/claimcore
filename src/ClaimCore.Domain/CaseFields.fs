@@ -227,6 +227,11 @@ module GroupValues =
         |> List.map (fun (field, value) ->
             field, FieldValue.parse (BusinessField.describe field).Kind (Authored.format value))
 
+    /// Admit independently parsed values before attempting to construct a complete group.
+    let check admit parsed =
+        parsed
+        |> List.map (fun (field, value) -> field, value |> Result.bind (admit field))
+
     let errors parsed =
         parsed
         |> List.choose (fun (field, result) ->
@@ -392,14 +397,17 @@ module Registration =
             [ BusinessField.IncidentNotificationDate, Violation.ChronologicalOrder ]
         | _ -> []
 
-    let parse input =
+    let internal parseWith admit input =
         let parsed = RegistrationInput.parsed input
-        let errors = GroupValues.errors parsed @ order parsed
+        let admitted = GroupValues.check admit parsed
+        let errors = GroupValues.errors admitted @ order parsed
 
         if List.isEmpty errors then
-            GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
+            GroupValues.admitted admitted |> create |> Result.defaultWith invalidOp |> Ok
         else
             Error(List.sortBy fst errors)
+
+    let parse input = parseWith (fun _ -> Ok) input
 
 type DecisionInput = private DecisionInput of GroupValues<Authored>
 
@@ -458,14 +466,16 @@ module Decision =
         |> DecisionInput.create
         |> Result.defaultWith invalidOp
 
-    let parse input =
-        let parsed = DecisionInput.parsed input
+    let internal parseWith admit input =
+        let parsed = DecisionInput.parsed input |> GroupValues.check admit
         let errors = GroupValues.errors parsed
 
         if List.isEmpty errors then
             GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
         else
             Error(List.sortBy fst errors)
+
+    let parse input = parseWith (fun _ -> Ok) input
 
 type PaymentInput = private PaymentInput of GroupValues<Authored>
 
@@ -507,14 +517,16 @@ module Payment =
         |> PaymentInput.create
         |> Result.defaultWith invalidOp
 
-    let parse input =
-        let parsed = PaymentInput.parsed input
+    let internal parseWith admit input =
+        let parsed = PaymentInput.parsed input |> GroupValues.check admit
         let errors = GroupValues.errors parsed
 
         if List.isEmpty errors then
             GroupValues.admitted parsed |> create |> Result.defaultWith invalidOp |> Ok
         else
             Error(List.sortBy fst errors)
+
+    let parse input = parseWith (fun _ -> Ok) input
 
     let onDate date =
         create [ BusinessField.PaymentDate, Admitted.Date date ]

@@ -51,6 +51,7 @@ let private propertyNames =
             "case act slots"
             "authority act traversal"
             "input issue subsets"
+            "mixed admission subsets"
         ]
 
 let private fixedBaseSeed = 0x434C41494D434F52UL

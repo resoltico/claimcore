@@ -3,6 +3,7 @@ namespace ClaimCore.Cli
 open System
 open System.IO
 open System.Threading
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Protocol
 
@@ -71,23 +72,85 @@ module internal VerbRunner =
             return reply.ExitCode
         }
 
+    let private syntax invocation =
+        [
+            Frames.value Api.operationExecute invocation
+            Frames.value Api.operationPreview invocation
+        ]
+        |> List.tryPick id
+        |> Option.bind ClaimCore.Application.Contracts.OperationInput.syntax
+
+    let private syntaxReply invocation issues =
+        let refusal = Refusal.InvalidInput issues
+
+        let output (endpoint: Endpoint<'input, 'output>) (reply: 'output) =
+            {
+                ServiceReply.Route = Frames.endpoint invocation
+                Wire = endpoint.Output.Write reply
+                Typed = EndpointValues.output endpoint reply
+            }
+
+        let value =
+            match Frames.value Api.operationExecute invocation with
+            | Some input ->
+                output
+                    Api.operationExecute
+                    {
+                        ClaimCore.Application.Contracts.ExecuteReply.OperationId =
+                            ClaimCore.Application.Contracts.OperationInput.operationId input
+                        Outcome = ClaimCore.Application.Contracts.ExecuteResult.Rejected refusal
+                    }
+            | None ->
+                let input = Frames.value Api.operationPreview invocation |> Option.get
+
+                output
+                    Api.operationPreview
+                    {
+                        ClaimCore.Application.Contracts.PreviewReply.OperationId =
+                            ClaimCore.Application.Contracts.OperationInput.operationId input
+                        Outcome = ClaimCore.Application.Contracts.Outcome.Rejected refusal
+                    }
+
+        let frame =
+            {
+                FrameReply.Endpoint = Some value.Endpoint
+                OperationId = Frames.operationId invocation
+                Delivery = DeliveryState.NotSent
+                Result = FrameResult.Reply value
+            }
+
+        {
+            CliReply.Frame = frame
+            Bytes = Frames.encode frame
+            ExitCode = Frames.exitCode frame
+        }
+
     let private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
         task {
-            match Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments with
+            match
+                Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments
+                |> Result.map (fun prepared -> prepared, syntax prepared.Invocation)
+            with
             | Error issues ->
                 CliDiscovery.writeText
                     io.Errors
                     (UsageText.render (CliInvocations.usageLanguage arguments) arguments issues)
 
                 return ExitCode.value ExitCode.Usage
-            | Ok prepared when prepared.DryRun ->
+            | Ok(prepared, Some issues) ->
+                let reply = syntaxReply prepared.Invocation issues
+                processor.Deliver(render prepared prepared.Invocation, reply)
+                return reply.ExitCode
+            | Ok(prepared, None) when prepared.DryRun ->
                 CliDiscovery.writeBytes io.Output prepared.Bytes
                 return ExitCode.value ExitCode.Success
-            | Ok prepared when prepared.All || prepared.Format = VerbFormat.Csv ->
+            | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! pages io processor prepared token
-            | Ok prepared when (Frames.endpoint prepared.Invocation).Id = Api.operationResolve.Id ->
+            | Ok(prepared, None) when
+                (Frames.endpoint prepared.Invocation).Id = Api.operationResolve.Id
+                ->
                 return! settlement io processor prepared token
-            | Ok prepared ->
+            | Ok(prepared, None) ->
                 let frame = prepared.Invocation
 
                 let! reply = processor.Exchange(frame, token)

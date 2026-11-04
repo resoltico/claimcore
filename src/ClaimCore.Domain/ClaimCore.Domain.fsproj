@@ -26,7 +26,7 @@
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
     <Compile Include="LedgerPosition.fs" />
-    <Compile Include="Validation.fs" />
+    <Compile Include="InputValidation.fs" />
     <Compile Include="CaseState.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
@@ -35,5 +35,6 @@
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
     <Compile Include="Authority.fs" />
+    <Compile Include="Validation.fs" />
   </ItemGroup>
 </Project>

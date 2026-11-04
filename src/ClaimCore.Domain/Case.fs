@@ -84,6 +84,58 @@ module Case =
                 ParsedAct = act
             })
 
+    /// Current admission accumulates independently of complete group construction.
+    let admit today (current: CaseSnapshot option) request =
+        let before =
+            current
+            |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
+            |> Option.map (fun fields ->
+                {
+                    Facts = fields.Registration
+                    Progress = fields.Progress
+                    Status = fields.Status
+                })
+
+        let parse =
+            RequestValidation.parseWith
+                (StateValidation.fieldAdmission today before)
+                (Reason.admit
+                 >> Result.mapError (fun violation ->
+                     Refusal.invalidInput (InputTarget.Reason, violation)))
+                request
+
+        let contextRules =
+            Admission.collect
+                [
+                    StateValidation.authoredChronology before request.Act
+                    match before, request.Act with
+                    | Some claim, CaseAct.Correct correction ->
+                        CaseCorrections.paidAcknowledgement claim.Progress correction
+                    | _ -> Ok()
+                ]
+        // Retain the existing priority of revision conflicts over current admission.
+        let revision =
+            match current, RequestValidation.parse request with
+            | Some current, Ok _ when
+                CaseAct.kind request.Act <> CaseActKind.Open
+                && current.Revision <> (Revision.create request.ExpectedRevision |> Option.get)
+                && CaseState.lifecycle current.State <> Lifecycle.Erased
+                ->
+                Error(Refusal.RevisionConflict current.Revision)
+            | _ -> Ok()
+
+        revision
+        |> Result.bind (fun () -> Admission.map2 (fun parsed () -> parsed) parse contextRules)
+        |> InputValidation.ordered
+        |> Result.map (fun (reference, identity, revision, act) ->
+            {
+                Source = request
+                ParsedOperationId = identity
+                ParsedExpectedRevision = revision
+                ParsedReference = reference
+                ParsedAct = act
+            })
+
     let canonical (command: CaseCommand) =
         { command with
             Source =

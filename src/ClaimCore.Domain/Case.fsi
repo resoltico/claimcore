@@ -17,6 +17,10 @@ type CaseRecord
 module Case =
     val canonical: CaseCommand -> CaseCommand
     val parse: UnvalidatedCaseRequest -> Result<CaseCommand, Refusal>
+
+    val admit:
+        DateOnly -> CaseSnapshot option -> UnvalidatedCaseRequest -> Result<CaseCommand, Refusal>
+
     val ofAccepted: CaseSnapshot -> Result<CaseRecord, RecordViolation>
     val snapshot: CaseRecord -> CaseSnapshot
 

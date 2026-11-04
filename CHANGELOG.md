@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+- Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
+- CLI --dry-run rejects malformed writes locally with exit 2 and ordered input issues; structured refusals retain the existing frame shape with NOT_SENT delivery.
+
 ## [0.15.0] - 2026-11-03
 
 - Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.

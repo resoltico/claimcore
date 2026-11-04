@@ -33,14 +33,14 @@ module internal CaseCorrections =
             else
                 [ CorrectionGroupAction.Keep ]
 
-    let private paidAcknowledgement progress (correction: ValidCorrection) =
+    let paidAcknowledgement progress (correction: Correction<'r, 'd, 'p>) =
         match progress, correction.Decision, correction.Payment with
         | PaymentProgress.Paid _, Change.Clear, payment when payment <> PaymentChange.Clear ->
-            Validation.invalid
+            InputValidation.invalid
                 (InputTarget.Group RecordGroup.Payment)
                 Violation.PaymentClearRequired
         | PaymentProgress.Paid _, Change.Update _, PaymentChange.Keep ->
-            Validation.invalid
+            InputValidation.invalid
                 (InputTarget.Group RecordGroup.Payment)
                 Violation.PaymentAcknowledgementRequired
         | _ -> Ok()
@@ -93,7 +93,7 @@ module internal CaseCorrections =
             match correction.Registration with
             | Amendment.Keep -> Ok facts
             | Amendment.Update update ->
-                RegistrationUpdate.apply update facts |> Validation.registrationMerge
+                RegistrationUpdate.apply update facts |> InputValidation.registrationMerge
 
         Admission.map2
             (fun facts (decision, payment) -> facts, decision, payment)

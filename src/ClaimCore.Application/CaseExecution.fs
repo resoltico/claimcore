@@ -6,21 +6,12 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
 module internal CaseExecution =
-    [<RequireQualifiedAccess; NoComparison>]
-    type TargetedRequest =
-        | ByReference of CaseCommand
-        | ById of CaseOperationRequest
+    [<NoComparison>]
+    type TargetedRequest = private TargetedRequest of CaseOperationRequest
 
-    let target =
-        function
-        | TargetedRequest.ByReference command ->
-            CaseSelector.Reference(CaseReference.format command.Reference)
-        | TargetedRequest.ById request -> request.Target
+    let target (TargetedRequest request) = request.Target
 
-    let operationId =
-        function
-        | TargetedRequest.ByReference command -> Some command.OperationId
-        | TargetedRequest.ById request -> OperationId.create request.OperationId
+    let operationId (TargetedRequest request) = OperationId.create request.OperationId
 
     let validateSelector =
         function
@@ -31,7 +22,7 @@ module internal CaseExecution =
             |> Result.mapError (fun violation ->
                 Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
 
-    let private fromInput (request: CaseOperationRequest) (record: StoredCase option) =
+    let private fromInput today (request: CaseOperationRequest) (record: StoredCase option) =
         let reference =
             match request.Target with
             | CaseSelector.Reference value -> Ok value
@@ -45,24 +36,23 @@ module internal CaseExecution =
 
         reference
         |> Result.bind (fun reference ->
-            Case.parse
+            let input =
                 {
                     OperationId = request.OperationId
                     CaseReference = reference
                     ExpectedRevision = request.ExpectedRevision
                     Act = request.Act
-                })
+                }
 
-    let prepare (request: CaseOperationRequest) =
-        match request.Target with
-        | CaseSelector.Reference _ ->
-            fromInput request None |> Result.map TargetedRequest.ByReference
-        | CaseSelector.Id _ -> Ok(TargetedRequest.ById request)
+            match Case.parse input with
+            | Ok command -> Ok command
+            | Error _ ->
+                // Complete commands still reach exact replay and revision checks before admission.
+                // Incomplete groups need per-field admission to reveal all sibling issues.
+                Case.admit today (record |> Option.map _.Snapshot) input)
 
-    let complete request record =
-        match request with
-        | TargetedRequest.ByReference command -> Ok command
-        | TargetedRequest.ById request -> fromInput request record
+    // Current admission needs the same business-date/state snapshot as the action.
+    let prepare (request: CaseOperationRequest) = Ok(TargetedRequest request)
 
     let authorize principal actor capability (record: StoredCase option) =
         record
@@ -89,22 +79,29 @@ module internal CaseExecution =
             else
                 Error CoreFault.StoreIntegrityError)
 
-    let permission principal actor (request: CaseCommand) (record: StoredCase option) =
-        if CaseAct.kind request.Act = CaseActKind.Open then
-            if Authority.canAct principal actor Scope.Installation request.Act then
+    let private permissionFor principal actor act (record: StoredCase option) =
+        if CaseAct.kind act = CaseActKind.Open then
+            if Authority.canAct principal actor Scope.Installation act then
                 Ok()
             else
                 Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             match record with
             | None -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-            | Some value when Authority.canAct principal actor (Scope.Case value.CaseId) request.Act ->
-                Ok()
+            | Some value when Authority.canAct principal actor (Scope.Case value.CaseId) act -> Ok()
             | Some value when
                 Authority.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
                 ->
                 Error(Refusal.Access AccessRefusal.ActNotPermitted)
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+
+    let permission principal actor (request: CaseCommand) record =
+        permissionFor principal actor request.Act record
+
+    let complete (services: ServiceContext) (TargetedRequest request) (view: CaseFacts) =
+        permissionFor services.Principal view.Actor request.Act view.Case
+        |> Result.bind (fun () ->
+            fromInput (services.Calendar.DateAt view.ObservedAt) request view.Case)
 
     let private authorizeIdentity (services: ServiceContext) request bytes (view: CaseFacts) =
         let principal = services.Principal
@@ -240,7 +237,7 @@ module internal CaseExecution =
                                     (operationId request)
                                     (target request)
 
-                            match complete request view.Case with
+                            match complete services request view with
                             | Error refusal -> return Verdict.Refuse refusal
                             | Ok command ->
                                 let! fenced =

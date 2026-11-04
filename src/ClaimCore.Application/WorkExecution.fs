@@ -58,7 +58,10 @@ module internal WorkExecution =
                     ReminderPlan.Action = action
                     Due = due
                 })
-            (input InputTarget.ReminderAction ReminderAction.parse raw.Action)
+            (input
+                InputTarget.ReminderAction
+                (ReminderAction.parse >> Result.bind ReminderAction.admit)
+                raw.Action)
             (input InputTarget.ReminderDueDate CalendarDate.parse raw.Due)
 
     let private reminderAct =
@@ -93,7 +96,7 @@ module internal WorkExecution =
         let (WorkAct.UpdateWork raw) = request.Act
 
         let update =
-            CaseWorkInput.parse raw
+            CaseWorkInput.admit raw
             |> Result.mapError (fun issues ->
                 issues
                 |> List.map (fun (field, violation) ->
@@ -113,16 +116,38 @@ module internal WorkExecution =
                 (operation request.OperationId)
                 (revision InputTarget.ExpectedWorkRevision request.ExpectedRevision))
             update
-        |> Result.bind (fun result ->
-            CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
+        |> fun prepared ->
+            Admission.map2
+                (fun result () -> result)
+                prepared
+                (CaseExecution.validateSelector request.Target)
+        |> Result.mapError (function
+            | Refusal.InvalidInput issues ->
+                InputIssues.toList issues
+                |> List.sortBy (fun issue -> InputTarget.order issue.Target)
+                |> InputIssues.ofList
+                |> Option.get
+                |> Refusal.InvalidInput
+            | refusal -> refusal)
 
     let prepareReminder (request: ReminderOperationRequest) =
         Admission.map2
             (fun operation act -> Reminder(operation, request.Target, act))
             (operation request.OperationId)
             (reminderAct request.Act)
-        |> Result.bind (fun result ->
-            CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
+        |> fun prepared ->
+            Admission.map2
+                (fun result () -> result)
+                prepared
+                (CaseExecution.validateSelector request.Target)
+        |> Result.mapError (function
+            | Refusal.InvalidInput issues ->
+                InputIssues.toList issues
+                |> List.sortBy (fun issue -> InputTarget.order issue.Target)
+                |> InputIssues.ofList
+                |> Option.get
+                |> Refusal.InvalidInput
+            | refusal -> refusal)
 
     let private target =
         function

@@ -44,9 +44,16 @@ module private UpdateParsing =
         |> Result.defaultWith (fun _ -> invalidOp "Update parsing must succeed first.")
 
 module MoneyInput =
-    let parse amountField currencyField (input: MoneyInput) =
-        let amount = Amount.parse input.Amount
-        let currency = Currency.parse input.Currency
+    let internal parseWith admit amountField currencyField (input: MoneyInput) =
+        let amount =
+            Amount.parse input.Amount
+            |> Result.bind (Admitted.Amount >> admit amountField >> Result.map FieldValue.amount)
+
+        let currency =
+            Currency.parse input.Currency
+            |> Result.bind (
+                Admitted.Currency >> admit currencyField >> Result.map FieldValue.currency
+            )
 
         let issues =
             UpdateParsing.errors amountField amount
@@ -56,6 +63,9 @@ module MoneyInput =
             Ok(Money.create (UpdateParsing.value amount) (UpdateParsing.value currency))
         else
             Error issues
+
+    let parse amountField currencyField input =
+        parseWith (fun _ -> Ok) amountField currencyField input
 
     let ofMoney money =
         {
@@ -150,19 +160,52 @@ module RegistrationUpdate =
                 invalidOp "A typed registration merge with valid chronology must succeed.")
 
 module RegistrationUpdateInput =
-    let parse (input: RegistrationUpdateInput) =
-        let incident = UpdateParsing.optional CalendarDate.parse input.IncidentDate
-        let notification = UpdateParsing.optional CalendarDate.parse input.NotificationDate
-        let country = UpdateParsing.optional CountryCode.parse input.Country
-        let claimant = UpdateParsing.optional PartyName.parse input.Claimant
-        let insurer = UpdateParsing.optional PartyName.parse input.Insurer
+    let internal parseWith admit (input: RegistrationUpdateInput) =
+        let parse field kind project raw =
+            FieldValue.parse kind raw |> Result.bind (admit field) |> Result.map project
+
+        let incident =
+            UpdateParsing.optional
+                (parse BusinessField.IncidentDate FieldValueKind.CalendarDate FieldValue.date)
+                input.IncidentDate
+
+        let notification =
+            UpdateParsing.optional
+                (parse
+                    BusinessField.IncidentNotificationDate
+                    FieldValueKind.CalendarDate
+                    FieldValue.date)
+                input.NotificationDate
+
+        let country =
+            UpdateParsing.optional
+                (parse BusinessField.IncidentCountry FieldValueKind.Country FieldValue.country)
+                input.Country
+
+        let claimant =
+            UpdateParsing.optional
+                (parse BusinessField.ClaimantName FieldValueKind.PartyName FieldValue.name)
+                input.Claimant
+
+        let insurer =
+            UpdateParsing.optional
+                (parse BusinessField.InsurerName FieldValueKind.PartyName FieldValue.name)
+                input.Insurer
 
         let description =
-            WorkValue.traverse IncidentDescription.parse input.IncidentDescription
+            WorkValue.traverse
+                (parse
+                    BusinessField.IncidentDescription
+                    FieldValueKind.IncidentDescription
+                    FieldValue.description)
+                input.IncidentDescription
 
         let money =
             UpdateParsing.optional
-                (MoneyInput.parse BusinessField.ClaimedAmount BusinessField.ClaimedCurrency)
+                (MoneyInput.parseWith
+                    admit
+                    BusinessField.ClaimedAmount
+                    BusinessField.ClaimedCurrency)
                 input.Claimed
 
         let issues =
@@ -200,6 +243,8 @@ module RegistrationUpdateInput =
                     IncidentDescription = UpdateParsing.value description
                 }
 
+    let parse input = parseWith (fun _ -> Ok) input
+
 module DecisionUpdate =
     let map date money (input: DecisionUpdate<_, _>) =
         {
@@ -228,12 +273,24 @@ module DecisionUpdate =
         |> Result.defaultWith (fun _ -> invalidOp "A typed decision merge must succeed.")
 
 module DecisionUpdateInput =
-    let parse (input: DecisionUpdateInput) =
-        let date = UpdateParsing.optional CalendarDate.parse input.Date
+    let internal parseWith admit (input: DecisionUpdateInput) =
+        let date =
+            UpdateParsing.optional
+                (fun raw ->
+                    CalendarDate.parse raw
+                    |> Result.bind (
+                        Admitted.Date
+                        >> admit BusinessField.PaymentDecisionDate
+                        >> Result.map FieldValue.date
+                    ))
+                input.Date
 
         let payable =
             UpdateParsing.optional
-                (MoneyInput.parse BusinessField.PayableAmount BusinessField.PayableCurrency)
+                (MoneyInput.parseWith
+                    admit
+                    BusinessField.PayableAmount
+                    BusinessField.PayableCurrency)
                 input.Payable
 
         let issues =
@@ -252,3 +309,5 @@ module DecisionUpdateInput =
                     ValidDecisionUpdate.Date = UpdateParsing.value date
                     Payable = UpdateParsing.value payable
                 }
+
+    let parse input = parseWith (fun _ -> Ok) input

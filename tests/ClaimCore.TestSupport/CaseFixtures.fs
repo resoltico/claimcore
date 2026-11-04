@@ -21,7 +21,9 @@ let command input = Case.parse input |> accepted
 let validate input = Case.parse input |> Result.map ignore
 
 let decide today input current =
-    Case.parse input
+    let snapshot = current |> Option.map Case.snapshot
+
+    Case.admit today snapshot input
     |> Result.bind (fun command -> Case.decide today command current)
 
 let encode input = command input |> RequestRecord.encode

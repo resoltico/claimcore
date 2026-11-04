@@ -54,19 +54,32 @@ let private malformed () =
             let! preview =
                 (Service.preview core (input) (CancellationToken.None)) |> Async.AwaitTask
 
-            Expect.isTrue
-                (match execute.Outcome with
-                 | ExecuteResult.Rejected _ -> true
-                 | _ -> false)
-                "Invalid execution refused"
+            match input with
+            | OperationInput.Case _ ->
+                Expect.equal
+                    execute.Outcome
+                    (ExecuteResult.Failed CoreFault.StoreUnavailable)
+                    "Case admission needs the snapshot's business date"
 
-            Expect.isTrue
-                (match preview.Outcome with
-                 | Outcome.Rejected _ -> true
-                 | _ -> false)
-                "Invalid preview refused"
+                Expect.equal
+                    preview.Outcome
+                    (Outcome.Failed CoreFault.StoreUnavailable)
+                    "Preview uses the same admission snapshot"
+            | _ ->
+                Expect.isTrue
+                    (match execute.Outcome with
+                     | ExecuteResult.Rejected _ -> true
+                     | _ -> false)
+                    "Authority syntax is rejected without a business-date read"
 
-        Expect.equal probe.Calls 0 "Admission performs no port work"
+                Expect.isTrue
+                    (match preview.Outcome with
+                     | Outcome.Rejected _ -> true
+                     | _ -> false)
+                    "Authority preview syntax is rejected without a business-date read"
+
+        Expect.equal probe.Calls 4 "Each case execution and preview needs one snapshot"
+
     }
 
 let private failures () =
@@ -239,7 +252,7 @@ let tests =
         "Core port boundaries"
         [
             testCaseAsync
-                "malformed business stewardship and authority input perform no port work"
+                "case admission needs a snapshot; authority syntax needs no port work"
                 (malformed ())
             testCaseAsync "write failures preserve identity and dispatch uncertainty" (failures ())
             testCaseAsync
@@ -249,3 +262,47 @@ let tests =
                 "completed acceptance survives cancellation before delivery"
                 (committed ())
         ]
+
+[<Tests>]
+let oneRound =
+    testCase "case snapshot admission enriches syntax failures in the application path" (fun () ->
+        let request: CaseOperationRequest =
+            {
+                OperationId = id 479
+                Target = CaseSelector.Reference "BAD REF"
+                ExpectedRevision = 0L
+                Act =
+                    CaseAct.Open(
+                        ClaimCore.TestSupport.Inputs.registrationFrom
+                            [
+                                BusinessField.IncidentDate, "2026-09-08"
+                                BusinessField.IncidentNotificationDate, "2026-09-06"
+                                BusinessField.IncidentCountry, "latvia"
+                                BusinessField.ClaimantName, " Padded "
+                                BusinessField.ClaimedCurrency, "eur"
+                            ]
+                    )
+            }
+
+        let prepared =
+            CaseExecution.prepare request |> Result.defaultWith (string >> failtest)
+
+        let snapshot = (locked worker None None).Read
+
+        let actual =
+            CaseExecution.complete (services installation calendar owner) prepared snapshot
+
+        match actual with
+        | Error(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues |> List.map _.Violation)
+                [
+                    Violation.ReferenceFormat
+                    Violation.FutureDate
+                    Violation.ChronologicalOrder
+                    Violation.CountryFormat
+                    Violation.SurroundingWhitespace
+                    Violation.CurrencyFormat
+                ]
+                "The service clock and partially parsed values participate in the first refusal"
+        | result -> failtestf "Expected one refusal with every issue, got %A" result)

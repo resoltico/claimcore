@@ -272,7 +272,7 @@ module Authority =
         OperationId.create operationId
         |> Option.map Ok
         |> Option.defaultWith (fun () ->
-            Validation.invalid InputTarget.OperationId Violation.OperationIdRequired)
+            InputValidation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
     let private scopeReference =
         function

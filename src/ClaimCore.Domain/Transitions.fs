@@ -130,7 +130,7 @@ module internal Transitions =
         match evidence with
         | Applicable.Amending(claim, update) ->
             RegistrationUpdate.apply update claim.Facts
-            |> Validation.registrationMerge
+            |> InputValidation.registrationMerge
             |> Result.map (fun facts -> { claim with Facts = facts })
             |> businessChange claim
         | Applicable.Correcting(claim, correction) ->

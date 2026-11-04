@@ -132,7 +132,7 @@ module Service =
                                                     (CaseExecution.operationId request)
                                                     (CaseExecution.target request)
 
-                                            match CaseExecution.complete request view.Case with
+                                            match CaseExecution.complete services request view with
                                             | Error refusal -> return Outcome.Rejected refusal
                                             | Ok admitted ->
                                                 return

@@ -84,6 +84,11 @@ module FieldValue =
         | Admitted.Country value -> value
         | _ -> invalidOp "The complete group requires a country value."
 
+    let description =
+        function
+        | Admitted.Description value -> value
+        | _ -> invalidOp "The description field requires a description value."
+
     let name =
         function
         | Admitted.Name value -> value

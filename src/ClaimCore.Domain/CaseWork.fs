@@ -66,9 +66,11 @@ module CaseWorkInput =
             |> Option.defaultValue (Error Violation.ActorIdRequired)
         | _ -> Error Violation.ActorIdRequired
 
-    let parse (input: CaseWorkInput) =
+    let internal parseWith admit (input: CaseWorkInput) =
         let responsible = WorkValue.traverse actor input.Responsible
-        let summary = WorkValue.traverse HandlingSummary.parse input.Summary
+
+        let summary =
+            WorkValue.traverse (HandlingSummary.parse >> Result.bind admit) input.Summary
 
         match responsible, summary with
         | Ok WorkValue.Keep, Ok WorkValue.Keep ->
@@ -90,6 +92,8 @@ module CaseWorkInput =
                 | Error issue -> Some(field, issue))
             |> Error
 
+    let parse input = parseWith Ok input
+    let admit input = parseWith HandlingSummary.admit input
 
 type CaseWorkSnapshot =
     {

@@ -219,3 +219,122 @@ let phase2 =
                 ranks
                 (List.sort ranks)
                 "Core declaration order agrees with codec-derived catalog order")
+
+let private opening reference replacements =
+    {
+        OperationId = Guid.Parse "70000000-0000-4000-8000-000000000002"
+        CaseReference = reference
+        ExpectedRevision = 0L
+        Act = CaseAct.Open(Inputs.registrationFrom replacements)
+    }
+
+let private issues =
+    function
+    | Error(Refusal.InvalidInput input) -> InputIssues.toList input
+    | result -> failtestf "Expected accumulated input issues, got %A" result
+
+[<Tests>]
+let oneRound =
+    testList
+        "one-round authored admission"
+        [
+            testCase "M12 reports all six failures in the first refusal" (fun () ->
+                let input =
+                    opening
+                        "WEB 0001"
+                        [
+                            BusinessField.IncidentDate, "2026-11-05"
+                            BusinessField.IncidentNotificationDate, "2026-11-03"
+                            BusinessField.IncidentCountry, "latvia"
+                            BusinessField.ClaimantName, "  Padded Name  "
+                            BusinessField.ClaimedCurrency, "eur"
+                        ]
+
+                let actual = Case.admit (DateOnly(2026, 11, 4)) None input |> issues
+
+                Expect.equal
+                    (actual |> List.map (fun issue -> issue.Target, issue.Violation))
+                    [
+                        InputTarget.Field BusinessField.CaseReference, Violation.ReferenceFormat
+                        InputTarget.Field BusinessField.IncidentDate, Violation.FutureDate
+                        InputTarget.Field BusinessField.IncidentNotificationDate,
+                        Violation.ChronologicalOrder
+                        InputTarget.Field BusinessField.IncidentCountry, Violation.CountryFormat
+                        InputTarget.Field BusinessField.ClaimantName,
+                        Violation.SurroundingWhitespace
+                        InputTarget.Field BusinessField.ClaimedCurrency, Violation.CurrencyFormat
+                    ]
+                    "Syntax failures cannot hide admission or chronology failures"
+
+                Expect.isSome actual[2].RelatedDate "Chronology identifies its counterpart"
+                let staged = Case.parse input |> issues
+
+                Expect.isFalse
+                    (staged = actual)
+                    "Permanent parsing is the rejecting control for staged admission")
+            testCase "random mixed syntax and admission violations accumulate" (fun () ->
+                run
+                    "mixed admission subsets"
+                    (property {
+                        let! mask = Gen.int32 (Range.constant 0 63)
+                        let invalid bit = mask &&& (1 <<< bit) <> 0
+                        let pick bit bad good = if invalid bit then bad else good
+
+                        let input =
+                            opening
+                                (pick 0 "BAD REF" "VALID-REF")
+                                [
+                                    BusinessField.IncidentDate, "2026-11-03"
+                                    BusinessField.IncidentNotificationDate,
+                                    pick 1 "2026-11-05" "2026-11-04"
+                                    BusinessField.IncidentCountry, pick 2 "latvia" "LV"
+                                    BusinessField.ClaimantName, pick 3 " Padded " "Claimant"
+                                    BusinessField.ClaimedAmount, pick 4 "1,234" "1234"
+                                    BusinessField.ClaimedCurrency, pick 5 "eur" "EUR"
+                                ]
+
+                        let actual = Case.admit (DateOnly(2026, 11, 4)) None input |> targets
+
+                        let expected =
+                            [
+                                InputTarget.Field BusinessField.CaseReference
+                                InputTarget.Field BusinessField.IncidentNotificationDate
+                                InputTarget.Field BusinessField.IncidentCountry
+                                InputTarget.Field BusinessField.ClaimantName
+                                InputTarget.Field BusinessField.ClaimedAmount
+                                InputTarget.Field BusinessField.ClaimedCurrency
+                            ]
+                            |> List.indexed
+                            |> List.choose (fun (bit, target) ->
+                                if invalid bit then Some target else None)
+
+                        return actual = expected
+                    }))
+            testCase "offline syntax admits future dates but checks text and format" (fun () ->
+                let input =
+                    opening
+                        "VALID-REF"
+                        [
+                            BusinessField.IncidentDate, "2026-11-03"
+                            BusinessField.IncidentNotificationDate, "9999-12-31"
+                            BusinessField.IncidentCountry, "latvia"
+                            BusinessField.ClaimantName, " Padded "
+                        ]
+
+                let actual =
+                    Validation.syntax (
+                        AuthoredInput.Case(
+                            input.OperationId,
+                            Some input.CaseReference,
+                            input.ExpectedRevision,
+                            input.Act
+                        )
+                    )
+                    |> Option.get
+                    |> InputIssues.toList
+
+                Expect.equal
+                    (actual |> List.map _.Violation)
+                    [ Violation.CountryFormat; Violation.SurroundingWhitespace ]
+                    "Offline syntax has no business-date admission")
+        ]
