@@ -259,5 +259,10 @@
   "ui.accessState.check": "Pārbaudīt piekļuvi",
   "ui.stage.recorded": "Reģistrēts",
   "ui.stage.noDate": "Datums nav pieejams",
-  "ui.stage.reinstated": "Lieta atjaunota. Pārskatiet pašreizējos faktus un nākamās darbības."
+  "ui.stage.reinstated": "Lieta atjaunota. Pārskatiet pašreizējos faktus un nākamās darbības.",
+  "ui.conflict.title": "Lieta ir mainījusies",
+  "ui.conflict.kept": "Jūsu melnraksts ir saglabāts. Pārskatiet izmaiņas, pirms to sagatavojat pret jaunāko versiju.",
+  "ui.conflict.loading": "Ielādē jaunāko versiju…",
+  "ui.conflict.reviewLatest": "Pārskatīt pret jaunāko versiju",
+  "ui.choiceNotAvailable": "Nav pieejams ar pašreizējiem faktiem."
 }

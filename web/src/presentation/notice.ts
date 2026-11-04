@@ -40,6 +40,23 @@ const requiredRoleNames = (preferences: Preferences, capability: string): string
     renderKey(preferences, "notice.alternativeRoles", { first, second }),
   );
 };
+const diagnosticEnum = (
+  preferences: Preferences,
+  code: string,
+  key: string,
+  value: string,
+): string => {
+  if (code === "NOT_AUTHORIZED" && key === "required") {
+    return requiredRoleNames(preferences, value);
+  }
+  if (code === "NOT_OFFERED" && key === "state" && isTerm("headline", value)) {
+    return termLabel(preferences, "headline", value);
+  }
+  if (code === "REMINDER_NOT_OFFERED" && key === "state" && isTerm("reminderState", value)) {
+    return termLabel(preferences, "reminderState", value);
+  }
+  return value;
+};
 const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
@@ -82,10 +99,7 @@ const diagnosticText = (
       if (typeof value !== "string") {
         return [key, exactInteger(String(value), preferences.displayLocale)];
       }
-      const displayed =
-        diagnostic.code === "NOT_AUTHORIZED" && key === "required"
-          ? requiredRoleNames(preferences, value)
-          : value;
+      const displayed = diagnosticEnum(preferences, diagnostic.code, key, value);
       return [key, displayed];
     }),
   );

@@ -31,8 +31,10 @@ const Scalar = ({ value }: { value: CaseFieldValue | null }) => {
     case "TEXT":
       return (
         <>
-          <bdi>{value.value}</bdi>
-          <CharacterWarning value={value.value} />
+          <bdi className={value.kind === "TEXT" ? "plain-text-value" : undefined}>
+            {value.value}
+          </bdi>
+          <CharacterWarning value={value.value} allowLineFeed={value.kind === "TEXT"} />
         </>
       );
   }
@@ -74,7 +76,11 @@ const PersonValue = ({ value }: { value: ActorRef | null }) => {
 };
 const TextValue = ({ value }: { value: string | null }) => {
   const p = usePresentation();
-  return value === null ? <>{p.text("ui.notRecorded")}</> : <bdi>{value}</bdi>;
+  return value === null ? (
+    <>{p.text("ui.notRecorded")}</>
+  ) : (
+    <bdi className="plain-text-value">{value}</bdi>
+  );
 };
 const ReminderChanges = ({ change }: { change: ReminderDifference }) => {
   const p = usePresentation();

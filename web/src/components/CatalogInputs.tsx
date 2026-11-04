@@ -37,7 +37,10 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
     input.adviceGroup === null ? undefined : props.current?.advice.correction?.[input.adviceGroup];
   return group === undefined
     ? input.kind.options
-    : input.kind.options.filter((mode) => group.some((value) => value === mode));
+    : input.kind.options.filter(
+        (mode) =>
+          group.some((value) => value === mode) || props.values[bindingPath(input)] === mode,
+      );
 };
 const inputError = (input: CatalogInput, props: Props) =>
   props.fieldErrors[bindingPath(input)] ?? null;
@@ -88,6 +91,20 @@ const roleOptionUnavailable = (input: CatalogInput, props: Props, value: string)
     props.values["target.kind"],
     typeof props.values["act.scope.kind"] === "string" ? props.values["act.scope.kind"] : undefined,
   );
+const groupOptionUnavailable = (input: CatalogInput, props: Props, value: string): boolean => {
+  const modes =
+    input.adviceGroup === null ? undefined : props.current?.advice.correction?.[input.adviceGroup];
+  return value !== "" && modes !== undefined && !modes.some((mode) => mode === value);
+};
+const choiceUnavailableReason = (input: CatalogInput, props: Props, value: string) => {
+  if (groupOptionUnavailable(input, props, value)) {
+    return "ui.choiceNotAvailable";
+  }
+  return typeof props.values["target.kind"] === "string" &&
+    !roleAdmitted(value, props.values["target.kind"])
+    ? "ui.roleNotAvailableForService"
+    : "ui.roleNotAvailableAtScope";
+};
 const ChoiceOption = ({
   input,
   value,
@@ -96,7 +113,8 @@ const ChoiceOption = ({
   const p = usePresentation();
   const path = bindingPath(input);
   const error = inputError(input, props);
-  const blocked = roleOptionUnavailable(input, props, value);
+  const blocked =
+    roleOptionUnavailable(input, props, value) || groupOptionUnavailable(input, props, value);
   const reason = `${input.identity}-${value}-unavailable`;
   return (
     <label className={props.values[path] === value ? "selected" : ""}>
@@ -117,12 +135,7 @@ const ChoiceOption = ({
       {choiceLabel(p, input, value)}
       {blocked ? (
         <small id={reason} aria-hidden="true">
-          {p.text(
-            typeof props.values["target.kind"] === "string" &&
-              !roleAdmitted(value, props.values["target.kind"])
-              ? "ui.roleNotAvailableForService"
-              : "ui.roleNotAvailableAtScope",
-          )}
+          {p.text(choiceUnavailableReason(input, props, value))}
         </small>
       ) : null}
     </label>
@@ -410,7 +423,14 @@ const CorrectionGroup = ({
   </section>
 );
 export const CatalogInputs = (props: Props) => {
-  const visible = visibleOperationInputs(props.entry, props.values, props.current);
+  const visible = visibleOperationInputs(props.entry, props.values, props.current).filter(
+    (input) =>
+      !(
+        props.fixedTarget === true &&
+        props.entry.subject === "REMINDER" &&
+        input.field === "reminderId"
+      ),
+  );
   const groups = visible.filter((input) => input.kind.kind === "GROUP");
   const prefix = (input: CatalogInput) => `${input.path.slice(0, -1).join(".")}.`;
   const children = (group: CatalogInput) =>

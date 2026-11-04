@@ -23,6 +23,7 @@ export const initial = (): OperationState => {
     disclosureContext: context,
     caseObservation: current,
     disclosureRead: null,
+    conflict: null,
     disclosureRefused: false,
     values: valuesFor(),
     baseline: valuesFor(),

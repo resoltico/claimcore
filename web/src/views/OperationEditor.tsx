@@ -58,6 +58,7 @@ const CurrentFacts = ({
   const compact = useCompact();
   if (
     !disclosureAvailable ||
+    (model.conflict !== null && model.conflict.latest === null) ||
     current === null ||
     !model.disclosureCurrent ||
     model.disclosureRefused ||

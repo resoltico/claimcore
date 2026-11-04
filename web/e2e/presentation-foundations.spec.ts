@@ -8,7 +8,11 @@ import {
 } from "../tests/support/service-foundation.fixtures";
 import { caseViewsFixture, reminderViewsFixture } from "../tests/support/view-counts.fixtures";
 import { expect, test, type Page } from "@playwright/test";
-import { consumerContractIdentity, type RequesterState } from "@contracts/client";
+import {
+  consumerContractIdentity,
+  type RequestByEndpoint,
+  type RequesterState,
+} from "@contracts/client";
 import {
   actorContextInput,
   caseSummaryInput,
@@ -959,6 +963,170 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.getByRole("button", { name: "Send again", exact: true }).click();
   await expect.poll(() => bytes.length).toBe(2);
   expect(bytes[1]).toBe(bytes[0]);
+  await expectAccessible(page);
+  await clean();
+});
+
+test("conflict review keeps the authored draft and requires explicit re-preparation against a fresh case under CSP", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  const caseId = "20000000-0000-4000-8000-000000000001";
+  const basis = {
+    observedAt: "2026-11-04T12:00:00.000000Z",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+  };
+  const view = (revision: number, name: string) => {
+    const value = caseViewInput({
+      caseId,
+      caseReference: "CASE-1",
+      revision,
+      state: {
+        kind: "ACTIVE",
+        fields: { ...caseFields, registration: { ...caseFields.registration, claimantName: name } },
+      },
+      advice: { acts: ["AMEND_REGISTRATION"], history: ["SUMMARY", "FULL"] },
+    });
+    return { ...value, work: { ...value.work, basis } };
+  };
+  let reads = 0;
+  await page.route("**/api/case.get", (route) => {
+    reads += 1;
+    return route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: reads === 1 ? view(1, "Original name") : view(3, "Latest stored name"),
+        },
+      },
+    });
+  });
+  const drafts: RequestByEndpoint["operation.preview"][] = [];
+  await page.route("**/api/operation.preview", (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (!isRequest("operation.preview", input) || input.kind !== "CASE") {
+      throw new Error("Expected the browser case preview frame.");
+    }
+    drafts.push(input);
+    if (drafts.length === 1) {
+      return route.fulfill({
+        json: {
+          operationId: input.operationId,
+          outcome: {
+            kind: "REJECTED",
+            data: {
+              code: "REVISION_CONFLICT",
+              action: "REVIEW_LATEST",
+              actualRevision: 2,
+              changes: {
+                kind: "PAGE",
+                page: {
+                  entries: [
+                    timelineEntry({
+                      act: "AMEND_REGISTRATION",
+                      revision: 2,
+                      recordedBy: actorRefInput({
+                        displayName: { kind: "NAMED", value: "Laila Haddad" },
+                      }),
+                      changes: {
+                        kind: "DISCLOSED",
+                        items: [
+                          {
+                            kind: "CASE_FIELD",
+                            change: {
+                              field: "claimantName",
+                              before: { kind: "PARTY", value: "Original name" },
+                              after: { kind: "PARTY", value: "Another stored name" },
+                            },
+                          },
+                        ],
+                      },
+                    }),
+                  ],
+                  nextCursor: null,
+                },
+              },
+            },
+          },
+        },
+      });
+    }
+    const latest = view(3, "Latest stored name");
+    return route.fulfill({
+      json: {
+        operationId: input.operationId,
+        outcome: {
+          kind: "REVIEWED",
+          data: {
+            review: {
+              subject: {
+                kind: "CASE",
+                before: { caseId, caseReference: "CASE-1", revision: 3, state: latest.state },
+                after: {
+                  caseId,
+                  caseReference: "CASE-1",
+                  revision: 4,
+                  state: {
+                    kind: "ACTIVE",
+                    fields: {
+                      ...latest.state.fields,
+                      registration: {
+                        ...latest.state.fields.registration,
+                        claimantName: "My retained draft",
+                      },
+                    },
+                  },
+                },
+                changes: [
+                  {
+                    field: "claimantName",
+                    before: "Latest stored name",
+                    after: "My retained draft",
+                  },
+                ],
+                context: {
+                  productVersion: "synthetic-presentation",
+                  businessDate: basis.businessDate,
+                  timeZone: basis.timeZone,
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/operation.execute")) {
+      writes.push(request.url());
+    }
+  });
+  await page.goto(`${casePath(caseId)}/acts/AMEND_REGISTRATION`, { waitUntil: "commit" });
+  await page.locator('input[data-selects-fields~="claimantName"]').check();
+  const field = page.locator('[name="act.values.claimantName"]');
+  await field.fill("My retained draft");
+  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  await expect(
+    page.getByRole("heading", { name: "This case has changed", exact: true }),
+  ).toBeVisible();
+  await expect(page.getByText("Laila Haddad", { exact: true })).toBeVisible();
+  await expect(page.locator(".editor-current")).toContainText("Latest stored name");
+  await expect(field).toHaveValue("My retained draft");
+  expect(drafts).toHaveLength(1);
+  expect(writes).toEqual([]);
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "Review against latest", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  expect(drafts).toHaveLength(2);
+  expect(drafts[1]).toMatchObject({
+    expectedRevision: 3,
+    act: { kind: "AMEND_REGISTRATION", values: { claimantName: "My retained draft" } },
+  });
+  expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
+  expect(writes).toEqual([]);
   await expectAccessible(page);
   await clean();
 });

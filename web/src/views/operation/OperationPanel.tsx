@@ -1,3 +1,4 @@
+import { ConflictChanges } from "./ConflictChanges";
 import { resourceUnavailableDiagnostic } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { useEffect, useRef } from "react";
@@ -254,7 +255,14 @@ export const OperationPanel = (props: Props) => {
   ) {
     return <UnavailableDisclosure model={model} available={disclosureAvailable} />;
   }
-  return <EditableOperation {...props} />;
+  return (
+    <>
+      {model.conflict === null ? null : (
+        <ConflictChanges key={model.conflict.identity.id} model={model} snapshot={model.conflict} />
+      )}
+      <EditableOperation {...props} />
+    </>
+  );
 };
 /** Mutation consent stays mounted when independently authorized read panes are replaced. */
 export const OperationDiscard = (props: DiscardProps) => {

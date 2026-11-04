@@ -6,7 +6,7 @@ import type {
   ResponseByEndpoint,
 } from "@contracts/client";
 import { Button } from "../../ui/Button";
-import { ActorIdentity } from "../../components/ActorIdentity";
+import { ActorIdentity, RecordedTime } from "../../components/ActorIdentity";
 import { CopyValue } from "../../components/CopyValue";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { NoticeView } from "../../presentation/Message";
@@ -18,7 +18,15 @@ import { TimelineChanges } from "./TimelineChanges";
 import "./timeline.css";
 const select = (reply: ResponseByEndpoint["case.timeline"]): CaseTimelinePage | null =>
   reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
-const TimelineEntry = ({ entry, observedAt }: { entry: CaseTimelineEntry; observedAt: string }) => {
+const TimelineEntry = ({
+  entry,
+  observedAt,
+  detail,
+}: {
+  entry: CaseTimelineEntry;
+  observedAt: string | null;
+  detail: "CURRENT" | "SUMMARY" | "ERASED";
+}) => {
   const p = usePresentation();
   const subject = entry.kind === "CASE_FACT" ? "CASE" : entry.kind;
   const definition = productMetadata.catalog.entries.find(
@@ -37,9 +45,17 @@ const TimelineEntry = ({ entry, observedAt }: { entry: CaseTimelineEntry; observ
       </p>
       <p className="timeline-attribution">
         <ActorIdentity actor={entry.recordedBy} /> ·{" "}
-        <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
+        {observedAt === null ? (
+          <RecordedTime value={entry.recordedAt} />
+        ) : (
+          <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
+        )}
       </p>
-      <TimelineChanges changes={entry.changes} />
+      {detail === "CURRENT" ? (
+        <TimelineChanges changes={entry.changes} />
+      ) : (
+        <p>{p.text(detail === "ERASED" ? "lifecycle.ERASED.meaning" : "ui.timeline.withheld")}</p>
+      )}
       <details>
         <summary>{p.text("ui.timeline.details")}</summary>
         <dl>
@@ -89,6 +105,26 @@ const TimelineEntry = ({ entry, observedAt }: { entry: CaseTimelineEntry; observ
     </li>
   );
 };
+export const TimelineEntries = ({
+  items,
+  observedAt,
+  detail,
+}: {
+  items: ReadonlyArray<CaseTimelineEntry>;
+  observedAt: string | null;
+  detail: "CURRENT" | "SUMMARY" | "ERASED";
+}) => (
+  <ol className="case-timeline">
+    {items.map((entry) => (
+      <TimelineEntry
+        key={`${entry.position.sequence}:${entry.position.entryHash}`}
+        entry={entry}
+        observedAt={observedAt}
+        detail={detail}
+      />
+    ))}
+  </ol>
+);
 type Filter = "ALL" | "FACTS" | "WORK";
 const filterLabels = {
   ALL: "ui.timeline.all",
@@ -149,17 +185,9 @@ export const CaseTimeline = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      <ol className="case-timeline">
-        {observedAt === undefined
-          ? null
-          : result.items.map((entry) => (
-              <TimelineEntry
-                key={`${entry.position.sequence}:${entry.position.entryHash}`}
-                entry={entry}
-                observedAt={observedAt}
-              />
-            ))}
-      </ol>
+      {observedAt === undefined ? null : (
+        <TimelineEntries items={result.items} observedAt={observedAt} detail="CURRENT" />
+      )}
       {result.page !== null && result.items.length === 0 && !result.loading ? (
         <p>{p.text("ui.timeline.empty")}</p>
       ) : null}

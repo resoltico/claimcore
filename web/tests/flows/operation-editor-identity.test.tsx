@@ -126,7 +126,8 @@ it("retries the frozen request after delivery loss despite a changed current rev
   });
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
-    .mockResolvedValueOnce(rejectedResponse(staleRefusal));
+    .mockResolvedValueOnce(rejectedResponse(staleRefusal))
+    .mockResolvedValueOnce(response("case.get", "SUCCEEDED", { ...current, revision: 2 }));
   const view = render(editor(current, "CLOSE"));
   await user.click(getButton("Review changes"));
   await screen.findByText(/could not be reached/u);
@@ -141,13 +142,11 @@ it("retries the frozen request after delivery loss despite a changed current rev
   );
   await user.click(getButton("Review changes"));
   await waitFor(() => {
-    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(3);
   });
   expect(sentDraft(1)).toEqual(sentDraft(0));
   expect(sentDraft(1).expectedRevision).toBe(1);
-  expect(
-    await screen.findByText("Read the current case before making a changed request."),
-  ).toBeVisible();
+  expect(await screen.findByText("This case has changed")).toBeVisible();
 });
 const paidCase: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",

@@ -259,5 +259,10 @@
   "ui.accessState.check": "التحقق من الوصول",
   "ui.stage.recorded": "مسجّل",
   "ui.stage.noDate": "التاريخ غير متاح",
-  "ui.stage.reinstated": "أُعيد الملف. راجع الحقائق الحالية والإجراءات التالية."
+  "ui.stage.reinstated": "أُعيد الملف. راجع الحقائق الحالية والإجراءات التالية.",
+  "ui.conflict.title": "تغيّر هذا الملف",
+  "ui.conflict.kept": "احتُفظ بمسودتك. راجع التغييرات قبل إعدادها وفق أحدث نسخة.",
+  "ui.conflict.loading": "جارٍ تحميل أحدث نسخة…",
+  "ui.conflict.reviewLatest": "المراجعة وفق أحدث نسخة",
+  "ui.choiceNotAvailable": "غير متاح مع الحقائق الحالية."
 }

@@ -57,7 +57,7 @@ const OperationInputs = ({ model, current, offered, fixedTarget }: OperationForm
           current={current}
           values={model.values}
           {...(fixedTarget === undefined ? {} : { fixedTarget })}
-          disabled={model.busy || model.phase === "REVIEWING" || !allowed}
+          disabled={model.busy || model.revalidating || model.phase === "REVIEWING" || !allowed}
           fieldErrors={model.fieldErrors}
           onChange={model.edit}
           onFieldsChange={model.editFields}
@@ -104,7 +104,7 @@ export const OperationForm = (props: OperationFormProps) => {
       ref={form}
       onSubmit={(event) => {
         event.preventDefault();
-        if (allowed) {
+        if (allowed && model.conflict === null && !model.revalidating) {
           void model.preview();
         }
       }}
@@ -113,13 +113,15 @@ export const OperationForm = (props: OperationFormProps) => {
       <ActPicker {...props} />
       <OperationInputs {...props} />
       <div className="actions">
-        <button
-          ref={preview}
-          type="submit"
-          disabled={model.busy || model.phase === "REVIEWING" || !allowed}
-        >
-          {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "label.reviewTitle")}
-        </button>
+        {model.conflict === null ? (
+          <button
+            ref={preview}
+            type="submit"
+            disabled={model.busy || model.revalidating || model.phase === "REVIEWING" || !allowed}
+          >
+            {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "label.reviewTitle")}
+          </button>
+        ) : null}
         {onClose === undefined ? null : (
           <button type="button" disabled={model.busy} onClick={onClose}>
             {p.text(current === null ? "ui.backToCases" : "ui.backToCase")}

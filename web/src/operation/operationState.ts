@@ -1,3 +1,5 @@
+import { isCurrentCase } from "../protocol/types";
+import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
 import { receiptCorrelates } from "../protocol/replyCorrelation";
 import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
@@ -150,8 +152,10 @@ const preview = (
 ): OperationState => {
   if (
     !canEdit(state) ||
+    state.conflict !== null ||
     !current(state, action.identity) ||
-    state.generation !== action.generation
+    state.generation !== action.generation ||
+    state.disclosureRead !== null
   ) {
     return state;
   }
@@ -217,6 +221,97 @@ const execute = (state: OperationState, identity: EffectIdentity): OperationStat
     },
   );
 };
+const readConflict = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "READ_CONFLICT" }>,
+) => {
+  const snapshot = state.conflict;
+  if (
+    snapshot === null ||
+    snapshot.identity.id !== action.conflictId ||
+    !current(state, action.identity) ||
+    operationBusy(state) ||
+    uncertain(state.operation) ||
+    state.disclosureRead !== null
+  ) {
+    return state;
+  }
+  return append(
+    {
+      ...state,
+      conflict: { ...snapshot, latest: null },
+      disclosureRead: action.identity,
+      notice: null,
+    },
+    { kind: "READ_CONFLICT", identity: action.identity, snapshot },
+  );
+};
+const conflictObservation = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "CONFLICT_OBSERVED" | "CONFLICT_READ_FAILED" }>,
+): OperationState => {
+  const snapshot = state.conflict;
+  if (
+    snapshot === null ||
+    snapshot.identity.id !== action.conflictId ||
+    state.disclosureRead?.id !== action.identity.id ||
+    !current(state, action.identity)
+  ) {
+    return state;
+  }
+  if (action.type === "CONFLICT_READ_FAILED") {
+    return {
+      ...state,
+      disclosureRead: null,
+      notice: action.notice,
+      disclosureRefused: action.refused,
+    };
+  }
+  return {
+    ...state,
+    conflict: { ...snapshot, latest: action.value },
+    caseObservation: isCurrentCase(action.value.current) ? action.value.current : null,
+    disclosureRead: null,
+    disclosureContext: state.context,
+    disclosureRefused: false,
+    notice: null,
+  };
+};
+const reviewLatest = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "REVIEW_LATEST" }>,
+): OperationState => {
+  const snapshot = state.conflict;
+  if (
+    snapshot === null ||
+    snapshot.identity.id !== action.conflictId ||
+    snapshot.latest === null ||
+    snapshot.latest.revision === null ||
+    !canEdit(state) ||
+    !current(state, action.identity) ||
+    state.generation !== action.generation ||
+    state.disclosureRead !== null ||
+    state.disclosureRefused
+  ) {
+    return state;
+  }
+  if (!sameConflictTarget(snapshot.source.prepared.input, action.prepared.input)) {
+    return state;
+  }
+  const source = { prepared: action.prepared };
+  return append(
+    {
+      ...state,
+      values: action.values,
+      generation: state.generation + 1,
+      conflict: null,
+      notice: null,
+      fieldErrors: {},
+      operation: { kind: "PREVIEWING", source, effect: action.identity },
+    },
+    { kind: "PREVIEW", source, identity: action.identity },
+  );
+};
 const refuse = (
   state: OperationState,
   action: Extract<
@@ -254,7 +349,16 @@ const refuse = (
       state.values,
     ),
     disclosureRefused: action.disclosure,
+    conflict:
+      conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict,
   };
+  if (next.conflict !== null && next.conflict !== state.conflict) {
+    return readConflict(next, {
+      type: "READ_CONFLICT",
+      identity: next.conflict.identity,
+      conflictId: next.conflict.identity.id,
+    });
+  }
   return action.disclosure && action.identity !== undefined
     ? append(next, {
         kind: "DISCLOSURE_REFUSED",
@@ -338,6 +442,7 @@ const contextChanged = (
     ? state
     : {
         ...invalidate(state, false),
+        conflict: null,
         context: {
           generation: state.context.generation + 1,
           epoch: action.epoch,
@@ -474,6 +579,10 @@ type NavigationAction = Exclude<
       | "READ_CURRENT"
       | "DISCLOSED"
       | "DISCLOSURE_READ_FAILED"
+      | "READ_CONFLICT"
+      | "CONFLICT_OBSERVED"
+      | "CONFLICT_READ_FAILED"
+      | "REVIEW_LATEST"
       | "PREVIEW"
       | "EXECUTE"
       | "REFUSE"
@@ -532,11 +641,33 @@ const isDisclosureAction = (action: OperationAction): action is DisclosureAction
   action.type === "DISCLOSURE_READ_FAILED";
 const disclosureTransition = (state: OperationState, action: DisclosureAction): OperationState =>
   action.type === "READ_CURRENT" ? readCurrent(state, action) : disclosed(state, action);
+type ConflictAction = Extract<
+  OperationAction,
+  { type: "READ_CONFLICT" | "CONFLICT_OBSERVED" | "CONFLICT_READ_FAILED" | "REVIEW_LATEST" }
+>;
+const isConflictAction = (action: OperationAction): action is ConflictAction =>
+  ["READ_CONFLICT", "CONFLICT_OBSERVED", "CONFLICT_READ_FAILED", "REVIEW_LATEST"].includes(
+    action.type,
+  );
+const conflictTransition = (state: OperationState, action: ConflictAction): OperationState => {
+  switch (action.type) {
+    case "READ_CONFLICT":
+      return readConflict(state, action);
+    case "CONFLICT_OBSERVED":
+    case "CONFLICT_READ_FAILED":
+      return conflictObservation(state, action);
+    case "REVIEW_LATEST":
+      return reviewLatest(state, action);
+  }
+};
 /** Effects are issued only by explicit events; completions are fenced by epoch, target and effect ID. */
 export const operationReducer = (
   state: OperationState,
   action: OperationAction,
 ): OperationState => {
+  if (isConflictAction(action)) {
+    return conflictTransition(state, action);
+  }
   if (isDisclosureAction(action)) {
     return disclosureTransition(state, action);
   }

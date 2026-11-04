@@ -1,3 +1,5 @@
+import { readConflict } from "./readConflict";
+import { latestOperationValues } from "../../operation/operationConflict";
 import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
@@ -77,6 +79,7 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     disclosureContext: context,
     caseObservation: options.current,
     disclosureRead: null,
+    conflict: null,
     disclosureRefused: false,
     values,
     baseline: values,
@@ -287,6 +290,11 @@ const readCaseDisclosure = async (
     reads.delete(effect.identity.id);
   }
 };
+type DisclosureEffect = Extract<OperationEffect, { kind: "READ_CURRENT" | "READ_CONFLICT" }>;
+const isDisclosureEffect = (effect: OperationEffect): effect is DisclosureEffect =>
+  effect.kind === "READ_CURRENT" || effect.kind === "READ_CONFLICT";
+const readDisclosure = (effect: DisclosureEffect, reads: Map<string, AbortController>) =>
+  effect.kind === "READ_CONFLICT" ? readConflict(effect, reads) : readCaseDisclosure(effect, reads);
 const useEffects = (
   state: OperationState,
   dispatch: React.Dispatch<OperationAction>,
@@ -350,8 +358,8 @@ const useEffects = (
           effect.identity.credential === latest.current.options.credential &&
           effect.identity.target === targetKey(latest.current.options);
         const run = async (): Promise<OperationAction> => {
-          if (effect.kind === "READ_CURRENT") {
-            return readCaseDisclosure(effect, reads.current);
+          if (isDisclosureEffect(effect)) {
+            return readDisclosure(effect, reads.current);
           }
           const journal = options.journal!;
           const scope = options.recoveryScope;
@@ -435,6 +443,59 @@ const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) =
   }, [locked, onLockChange]);
 };
 type Dispatch = React.Dispatch<OperationAction>;
+const prepareValues = (state: OperationState, options: Options, values: FormValues) =>
+  prepareRequest(
+    "operation.execute",
+    buildRequest(
+      "operation.execute",
+      assembleOperation(
+        operationEntry(state.entry),
+        options.normalizeValues?.(values, operationEntry(state.entry)) ?? values,
+      ),
+    ),
+  );
+const reviewLatestDraft = (
+  state: OperationState,
+  dispatch: Dispatch,
+  options: Options,
+): Promise<void> => {
+  const { conflict } = state;
+  if (
+    conflict === null ||
+    conflict.latest === null ||
+    conflict.latest.revision === null ||
+    state.disclosureRead !== null ||
+    state.disclosureRefused
+  ) {
+    return Promise.resolve();
+  }
+  try {
+    const values = latestOperationValues(
+      operationEntry(state.entry),
+      state.values,
+      conflict.latest.revision,
+      crypto.randomUUID(),
+    );
+    const prepared = prepareValues(state, options, values);
+    dispatch({
+      type: "REVIEW_LATEST",
+      conflictId: conflict.identity.id,
+      generation: state.generation,
+      identity: identity(options, state.context.generation),
+      values,
+      prepared,
+    });
+  } catch (error) {
+    dispatch({
+      type: "REFUSE",
+      notice: { kind: "local", reason: "invalidInput" },
+      target: error instanceof ProtocolInputError ? error.path.join(".") : null,
+      uncertain: false,
+      disclosure: false,
+    });
+  }
+  return Promise.resolve();
+};
 const previewDraft = (
   state: OperationState,
   dispatch: Dispatch,
@@ -442,18 +503,7 @@ const previewDraft = (
 ): Promise<void> => {
   try {
     const view = operationView(state);
-    const prepared =
-      view.prepared ??
-      prepareRequest(
-        "operation.execute",
-        buildRequest(
-          "operation.execute",
-          assembleOperation(
-            operationEntry(state.entry),
-            options.normalizeValues?.(state.values, operationEntry(state.entry)) ?? state.values,
-          ),
-        ),
-      );
+    const prepared = view.prepared ?? prepareValues(state, options, state.values);
     dispatch({
       type: "PREVIEW",
       prepared,
@@ -512,7 +562,16 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         });
       }
     },
+    reviewLatest: () => (blocked ? Promise.resolve() : reviewLatestDraft(state, dispatch, options)),
     revalidateDisclosure: () => {
+      if (!blocked && state.conflict !== null && state.disclosureRead === null) {
+        dispatch({
+          type: "READ_CONFLICT",
+          identity: identity(options, state.context.generation),
+          conflictId: state.conflict.identity.id,
+        });
+        return;
+      }
       if (
         !blocked &&
         state.disclosureRead === null &&

@@ -1,4 +1,10 @@
-import type { OperationReceipt, OperationReview } from "@contracts/client";
+import type {
+  OperationReceipt,
+  OperationReview,
+  OperationInput,
+  Diagnostic_REVISION_CONFLICT,
+  CaseView,
+} from "@contracts/client";
 import type { CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
@@ -13,6 +19,18 @@ export type EffectIdentity = {
 };
 export type LocalSource = {
   prepared: PreparedRequest<"operation.execute">;
+};
+export type ConflictSource = LocalSource & {
+  prepared: PreparedRequest<"operation.execute"> & {
+    input: Exclude<OperationInput, { kind: "AUTHORITY" }>;
+  };
+};
+export type ConflictObservation = { readonly current: CaseView; readonly revision: number | null };
+export type RevisionConflictSnapshot = {
+  readonly identity: EffectIdentity;
+  readonly source: ConflictSource;
+  readonly diagnostic: Diagnostic_REVISION_CONFLICT;
+  readonly latest: ConflictObservation | null;
 };
 export type OperationPhase =
   | {
@@ -47,6 +65,7 @@ export type OperationPhase =
       receipt: OperationReceipt | null;
     };
 export type OperationEffect =
+  | { kind: "READ_CONFLICT"; identity: EffectIdentity; snapshot: RevisionConflictSnapshot }
   | { kind: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
   | {
       kind: "PREVIEW";
@@ -86,6 +105,7 @@ export type OperationState = {
   disclosureContext: OperationContext;
   caseObservation: CurrentCase | null;
   disclosureRead: EffectIdentity | null;
+  conflict: RevisionConflictSnapshot | null;
   disclosureRefused: boolean;
   values: FormValues;
   baseline: FormValues;
@@ -97,6 +117,28 @@ export type OperationState = {
   pendingDiscard: string | null;
 };
 export type OperationAction =
+  | { type: "READ_CONFLICT"; identity: EffectIdentity; conflictId: string }
+  | {
+      type: "CONFLICT_OBSERVED";
+      identity: EffectIdentity;
+      conflictId: string;
+      value: ConflictObservation;
+    }
+  | {
+      type: "CONFLICT_READ_FAILED";
+      identity: EffectIdentity;
+      conflictId: string;
+      notice: Notice;
+      refused: boolean;
+    }
+  | {
+      type: "REVIEW_LATEST";
+      identity: EffectIdentity;
+      conflictId: string;
+      generation: number;
+      values: FormValues;
+      prepared: PreparedRequest<"operation.execute">;
+    }
   | { type: "READ_CURRENT"; identity: EffectIdentity; caseId: string; reference: string }
   | { type: "DISCLOSED"; identity: EffectIdentity; value: CurrentCase }
   | { type: "DISCLOSURE_READ_FAILED"; identity: EffectIdentity; notice: Notice; refused: boolean }

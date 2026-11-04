@@ -259,5 +259,10 @@
   "ui.accessState.check": "Check access",
   "ui.stage.recorded": "Recorded",
   "ui.stage.noDate": "Date not available",
-  "ui.stage.reinstated": "Case reinstated. Review the current facts and next actions."
+  "ui.stage.reinstated": "Case reinstated. Review the current facts and next actions.",
+  "ui.conflict.title": "This case has changed",
+  "ui.conflict.kept": "Your draft is kept. Review the changes before preparing it against the latest version.",
+  "ui.conflict.loading": "Loading the latest version…",
+  "ui.conflict.reviewLatest": "Review against latest",
+  "ui.choiceNotAvailable": "Not available with the current facts."
 }
