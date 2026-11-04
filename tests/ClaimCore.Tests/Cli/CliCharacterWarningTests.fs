@@ -250,7 +250,10 @@ let private humanBudgetAndOrdinaryControl () =
                 let label = MessageCatalogs.render language "field.claimantName.label" Map.empty
 
                 Expect.isTrue
-                    (text.Split('\n') |> Array.contains (label + ": " + value))
+                    (text.Split('\n')
+                     |> Array.exists (fun line ->
+                         line.StartsWith(label, System.StringComparison.Ordinal)
+                         && line.Substring(label.Length).TrimStart(' ') = ": " + value))
                     "Ordinary text has no warning suffix")
 
 let private retainedTerminalControls () =

@@ -9,6 +9,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Json
 open ClaimCore.Cli
 open ClaimCore.TestSupport
@@ -184,6 +185,51 @@ let tests =
                         (requests |> List.map _.AfterCursor)
                         [ None; Some "csv-next" ]
                         "Only the continuation changes")
+            testCase "each timeline entity keeps its authoritative act vocabulary" (fun () ->
+                let revision = CaseFixtures.revision 1L
+
+                let reminderId =
+                    ReminderId.ofOperationId (CaseFixtures.operationId CliReplyFixtures.id)
+
+                let subjects =
+                    [
+                        TimelineSubject.CaseFact(revision, CaseActKind.Close), "act", "CLOSE"
+                        TimelineSubject.Work(revision, WorkActKind.UpdateWork),
+                        "workAct",
+                        "UPDATE_WORK"
+                        TimelineSubject.Reminder(
+                            ReminderActKind.Create,
+                            reminderId,
+                            revision,
+                            None
+                        ),
+                        "reminderAct",
+                        "CREATE"
+                    ]
+
+                for subject, vocabulary, token in subjects do
+                    let item = { entry 1L with Subject = subject }
+
+                    let act =
+                        Descriptor.timelineEntry item
+                        |> List.head
+                        |> _.Entries
+                        |> List.find (fun entry -> entry.Key = "act")
+
+                    Expect.equal
+                        act.Value
+                        (PresentedValue.Code(vocabulary, token))
+                        "Work and reminder metadata cannot be relabelled as financial acts"
+
+                    for language in LocalizationPolicy.languages do
+                        let text =
+                            TextTimelineReply.page language { page 1L None with Items = [ item ] }
+                            |> String.concat "\n"
+
+                        Expect.stringContains
+                            text
+                            (TextReplyFormat.label language (vocabulary + "." + token + ".label"))
+                            "Actual per-entity labels render in all supported languages")
             testCase
                 "retired human verbs refuse while explicit API frames remain available"
                 (fun () ->

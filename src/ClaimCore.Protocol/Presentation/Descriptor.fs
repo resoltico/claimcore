@@ -559,8 +559,14 @@ module Descriptor =
     let timelineEntry (entry: CaseTimelineEntry) =
         let act, revision, identifiers =
             match entry.Subject with
-            | TimelineSubject.CaseFact(revision, act) -> CaseActKind.token act, revision, []
-            | TimelineSubject.Work(revision, act) -> WorkActKind.token act, revision, []
+            | TimelineSubject.CaseFact(revision, act) ->
+                PresentedValue.Code(Vocabulary.name CaseActKind.vocabulary, CaseActKind.token act),
+                revision,
+                []
+            | TimelineSubject.Work(revision, act) ->
+                PresentedValue.Code(Vocabulary.name WorkActKind.vocabulary, WorkActKind.token act),
+                revision,
+                []
             | TimelineSubject.Reminder(act, id, revision, next) ->
                 let identifiers =
                     [
@@ -588,7 +594,12 @@ module Descriptor =
                         | None -> ()
                     ]
 
-                ReminderActKind.token act, revision, identifiers
+                PresentedValue.Code(
+                    Vocabulary.name ReminderActKind.vocabulary,
+                    ReminderActKind.token act
+                ),
+                revision,
+                identifiers
 
         [
             yield
@@ -608,12 +619,7 @@ module Descriptor =
                                     "label.recordedBy"
                                     Prominence.Primary
                                     (PresentedValue.Actor entry.RecordedBy)
-                            yield
-                                value
-                                    "act"
-                                    "label.action"
-                                    Prominence.Primary
-                                    (PresentedValue.Code("act", act))
+                            yield value "act" "label.action" Prominence.Primary act
                             yield
                                 value
                                     "revision"
