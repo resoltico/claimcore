@@ -521,5 +521,7 @@
   "label.before": "Before",
   "label.after": "After",
   "label.changes": "Changes",
-  "label.unchanged": "Unchanged"
+  "label.unchanged": "Unchanged",
+  "label.changesWithheld": "Changes are not disclosed.",
+  "label.changesErased": "Changes erased."
 }

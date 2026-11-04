@@ -521,5 +521,7 @@
   "label.before": "قبل",
   "label.after": "بعد",
   "label.changes": "التغييرات",
-  "label.unchanged": "دون تغيير"
+  "label.unchanged": "دون تغيير",
+  "label.changesWithheld": "التغييرات غير معروضة.",
+  "label.changesErased": "مُحيت التغييرات."
 }

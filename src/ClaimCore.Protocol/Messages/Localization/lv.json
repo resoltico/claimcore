@@ -521,5 +521,7 @@
   "label.before": "Pirms",
   "label.after": "Pēc",
   "label.changes": "Izmaiņas",
-  "label.unchanged": "Bez izmaiņām"
+  "label.unchanged": "Bez izmaiņām",
+  "label.changesWithheld": "Izmaiņas netiek izpaustas.",
+  "label.changesErased": "Izmaiņas ir dzēstas."
 }
