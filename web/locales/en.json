@@ -77,7 +77,7 @@
   "ui.exactUtc": "Exact UTC instant",
   "ui.explainFields": "Explain fields",
   "ui.filters": "Filters",
-  "ui.financialEffectObservation": "Financial details stay unchanged.",
+  "ui.financialEffectObservation": "Updating work leaves these financial details unchanged. Others can update them while you review.",
   "ui.findCase": "Open by exact reference",
   "ui.formatPreview": "Preview: {date} · {amount}",
   "ui.generalOperationLookup": "General operation lookup",

@@ -77,7 +77,7 @@
   "ui.exactUtc": "Precīzs UTC laiks",
   "ui.explainFields": "Izskaidrot laukus",
   "ui.filters": "Filtri",
-  "ui.financialEffectObservation": "Finanšu dati nemainās.",
+  "ui.financialEffectObservation": "Darba atjaunināšana nemaina šos finanšu datus. Citi tos var atjaunināt, kamēr jūs pārskatāt izmaiņas.",
   "ui.findCase": "Atvērt pēc precīzas atsauces",
   "ui.formatPreview": "Priekšskatījums: {date} · {amount}",
   "ui.generalOperationLookup": "Vispārīga darbības meklēšana",

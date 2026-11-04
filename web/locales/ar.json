@@ -77,7 +77,7 @@
   "ui.exactUtc": "الوقت الدقيق بتوقيت UTC",
   "ui.explainFields": "شرح الحقول",
   "ui.filters": "عوامل التصفية",
-  "ui.financialEffectObservation": "تبقى البيانات المالية دون تغيير.",
+  "ui.financialEffectObservation": "يبقي تحديث العمل هذه البيانات المالية دون تغيير. ويمكن للآخرين تحديثها أثناء المراجعة.",
   "ui.findCase": "فتح بالمرجع الدقيق",
   "ui.formatPreview": "معاينة: {date} · {amount}",
   "ui.generalOperationLookup": "البحث العام عن العمليات",
