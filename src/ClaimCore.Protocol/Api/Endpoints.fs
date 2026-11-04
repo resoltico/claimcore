@@ -619,6 +619,26 @@ module ReplyCorrelation =
                 | Some "REMINDER" -> guid "caseId" subject = guid "caseId" parent
                 | _ -> false))
 
+    let private createdReceiptIdentity receipt =
+        let operation = guid "operationId" receipt
+
+        memberValue "subject" receipt
+        |> Option.exists (fun subject ->
+            match stringMember "kind" subject, stringMember "act" subject with
+            | Some "CASE", Some "OPEN" -> guid "caseId" subject = operation
+            | Some "AUTHORITY", Some("REGISTER" | "ADMIT" | "PROVISION_OWNER") ->
+                memberValue "targetActor" subject
+                |> Option.exists (fun target ->
+                    let actor =
+                        match stringMember "kind" target with
+                        | Some "DISCLOSED" ->
+                            memberValue "actor" target |> Option.bind (guid "actorId")
+                        | Some "WITHHELD" -> guid "actorId" target
+                        | _ -> None
+
+                    actor.IsSome && actor = operation)
+            | _ -> true)
+
     let private caseReview input subject =
         let expected = integerMember "expectedRevision" input
         let after = memberValue "after" subject
@@ -717,7 +737,9 @@ module ReplyCorrelation =
             | _ -> None
 
         let receiptIdentity =
-            receipt |> Option.forall (fun value -> guid "operationId" value = operation)
+            receipt
+            |> Option.forall (fun value ->
+                guid "operationId" value = operation && createdReceiptIdentity value)
 
         let receiptTarget =
             receipt
@@ -728,8 +750,12 @@ module ReplyCorrelation =
                     && caseTarget input subject
                     && stringMember "act" subject =
                         (memberValue "act" input |> Option.bind (stringMember "kind"))
+                | Some "AUTHORITY", Some subject ->
+                    stringMember "kind" subject = Some "AUTHORITY"
+                    && stringMember "act" subject =
+                        (memberValue "act" input |> Option.bind (stringMember "kind"))
                 | Some("WORK" | "REMINDER"), Some subject -> newFamilyReceipt input subject
-                | Some("CASE" | "WORK" | "REMINDER"), None -> false
+                | Some("CASE" | "WORK" | "REMINDER" | "AUTHORITY"), None -> false
                 | _ -> true)
 
         let readTarget =

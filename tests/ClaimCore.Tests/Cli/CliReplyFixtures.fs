@@ -62,10 +62,7 @@ let receipt: OperationReceipt =
         Subject =
             ReceiptSubject.Case
                 {
-                    CaseId =
-                        CaseFixtures.caseId (
-                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
-                        )
+                    CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
                     Reference = CaseFixtures.reference "x"
                     Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open

@@ -268,11 +268,118 @@ let private reviewedAuthorityIdentity () =
     subject["effects"] <- (JsonNode.Parse """[{"kind":"ENABLE"}]""" |> nonNull)
     assertMatches false "A different action cannot masquerade as registration"
 
+let private createdReceipts () =
+    let operation = CliReplyFixtures.id
+
+    let foreign =
+        CaseFixtures.actorId (Guid.Parse "90000000-0000-4000-8000-000000000099")
+
+    let assertResponse invocation value expected =
+        Expect.isOk
+            ((Frames.endpoint invocation).NormalizeOutput value)
+            "Counterexample remains structurally admitted"
+
+        let actual = exchange invocation value
+
+        Expect.equal
+            (actual.ExitCode = 0)
+            expected
+            "Actual HTTP receipt admission binds deterministic created identity"
+
+        if not expected then
+            Expect.equal
+                actual.Frame.Delivery
+                DeliveryState.Uncertain
+                "Foreign receipt cannot settle the frozen operation"
+
+    for endpoint in [ "operation.execute"; "operation.preview"; "operation.observe" ] do
+        let invocation = frame endpoint
+        let matching = body invocation
+        assertResponse invocation matching true
+
+        let root =
+            WireWriter.bytes matching
+            |> System.Text.Encoding.UTF8.GetString
+            |> JsonNode.Parse
+            |> nonNull
+
+        let data = ((root["outcome"] |> nonNull)["data"] |> nonNull)
+
+        (data["subject"] |> nonNull)["caseId"] <-
+            System.Text.Json.Nodes.JsonValue.Create(ActorId.format foreign)
+
+        assertResponse invocation (jsonValue root) false
+
+    for act in
+        [
+            AuthorityAct.Register Inputs.actorProfile
+            AuthorityAct.Admit
+                {
+                    Profile = Inputs.actorProfile
+                    Grants =
+                        [
+                            {
+                                Role = Role.CaseReader
+                                Scope = GrantTarget.Installation
+                            }
+                        ]
+                }
+        ] do
+        let request =
+            { CliReplyFixtures.authorityRequest with
+                Act = act
+            }
+
+        let invocation =
+            Frames.create Api.operationExecute (OperationInput.Authority request)
+            |> Result.defaultWith (fun _ -> failtest "Authored admission input")
+
+        let target = ActorId.ofOperationId (CaseFixtures.operationId operation)
+
+        for disclose in [ false; true ] do
+            let accepted id =
+                { CliReplyFixtures.receipt with
+                    OperationId = CaseFixtures.operationId operation
+                    Subject =
+                        ReceiptSubject.Authority
+                            {
+                                Act = AuthorityAct.kind act
+                                TargetActor =
+                                    if disclose then
+                                        AuthorityTargetDisclosure.Disclosed
+                                            { CliReplyFixtures.receipt.RecordedBy with
+                                                ActorId = id
+                                            }
+                                    else
+                                        AuthorityTargetDisclosure.Withheld id
+                                Effects =
+                                    [
+                                        {
+                                            Act = AuthorityKind.Register
+                                            Position = CliReplyFixtures.receipt.Position
+                                        }
+                                    ]
+                            }
+                }
+
+            let reply id =
+                Api.operationExecute.Output.Write
+                    {
+                        OperationId = operation
+                        Outcome = ExecuteResult.Accepted(accepted id)
+                    }
+
+            assertResponse invocation (reply target) true
+            assertResponse invocation (reply foreign) false
+
 [<Tests>]
 let tests =
     testList
         "client reply correlation"
         [
+            testCase
+                "created case and account receipts retain deterministic operation identity"
+                createdReceipts
             testCase
                 "case preview binds both snapshots to the authored identity and revision"
                 reviewedIdentity

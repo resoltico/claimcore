@@ -135,7 +135,21 @@ let private harness language answer scenario =
                     (if scenario = Scenario.ReadRefused then
                          Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                      else
-                         Outcome.Succeeded caseReply)
+                         Outcome.Succeeded(
+                             acceptedOpen
+                             |> Option.map (fun request ->
+                                 { caseReply with
+                                     Snapshot =
+                                         { caseReply.Snapshot with
+                                             CaseId =
+                                                 CaseId.ofOperationId (
+                                                     CaseFixtures.operationId request.OperationId
+                                                 )
+                                             Revision = Revision.first
+                                         }
+                                 })
+                             |> Option.defaultValue caseReply
+                         ))
             | "operation.preview" ->
                 response
                     frame
@@ -174,6 +188,13 @@ let private harness language answer scenario =
                                     Outcome.Succeeded(Previewed.Reviewed supplied)
                         })
             | "operation.execute" ->
+                let act =
+                    match Frames.value Api.operationExecute frame with
+                    | Some(OperationInput.Case input) -> CaseAct.kind input.Act
+                    | _ -> failtest "Expected reviewed case operation"
+
+                let opening = act = CaseActKind.Open
+
                 let receipt =
                     { CliReplyFixtures.receipt with
                         OperationId = CaseFixtures.operationId (operationId ())
@@ -182,14 +203,20 @@ let private harness language answer scenario =
                             | ReceiptSubject.Case subject ->
                                 ReceiptSubject.Case
                                     { subject with
-                                        CaseId = current.CaseId
+                                        CaseId =
+                                            if opening then
+                                                CaseId.ofOperationId (
+                                                    CaseFixtures.operationId (operationId ())
+                                                )
+                                            else
+                                                current.CaseId
                                         Reference = current.Reference
-                                        Revision = CaseFixtures.revision 8L
-                                        Act =
-                                            match Frames.value Api.operationExecute frame with
-                                            | Some(OperationInput.Case input) ->
-                                                CaseAct.kind input.Act
-                                            | _ -> failtest "Expected reviewed case operation"
+                                        Revision =
+                                            if opening then
+                                                Revision.first
+                                            else
+                                                CaseFixtures.revision 8L
+                                        Act = act
                                     }
                             | _ -> failtest "The case receipt fixture must identify its actual case"
                     }

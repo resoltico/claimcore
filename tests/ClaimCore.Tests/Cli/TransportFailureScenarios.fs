@@ -43,28 +43,40 @@ let internal resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
-            // Raw review examples prove structural admission, not correlation with an arbitrary
-            // request. Authored matching and mismatched reviews are exercised over HTTP in
-            // ReplyCorrelationTests; impossible but shape-valid examples still render separately.
-            if tag <> "REVIEWED" then
-                let invocation = frameForReply (Api.id endpoint) body
-                let body = correlatedBody invocation body
+            // This contract is the admitted outcome-to-exit mapping. Raw examples intentionally
+            // include structurally valid bodies without a corresponding executable request.
+            // Independent HTTP controls test request identity and correlation separately.
+            let value =
+                StrictJson.read Limits.MaximumResponseBytes body
+                |> Result.defaultWith (fun _ -> failtest "Independent response example")
 
-                use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
-                let reply = send handler invocation
+            let typed =
+                ServiceReply.read endpoint value
+                |> Result.defaultWith (fun _ -> failtest "Independent response codec")
 
-                Expect.equal
-                    reply.ExitCode
-                    (Map.tryFind tag expected |> Option.defaultValue 0)
-                    ("Outcome selects exit for "
-                     + (Api.id endpoint)
-                     + " "
-                     + tag
-                     + " sample "
-                     + string index)
+            let admitted =
+                {
+                    FrameReply.Endpoint = Some endpoint.Id
+                    OperationId = None
+                    Delivery =
+                        if tag = "OUTCOME_UNKNOWN" then
+                            DeliveryState.Uncertain
+                        else
+                            DeliveryState.Delivered
+                    Result = FrameResult.Reply typed
+                }
 
-                Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
-                seen <- Set.add tag seen
+            Expect.equal
+                (Frames.exitCode admitted)
+                (Map.tryFind tag expected |> Option.defaultValue 0)
+                ("Outcome selects exit for "
+                 + Api.id endpoint
+                 + " "
+                 + tag
+                 + " sample "
+                 + string index)
+
+            seen <- Set.add tag seen
 
     for tag in Map.keys expected do
         Expect.isTrue (Set.contains tag seen) "Each specified outcome exit has a fixture"
