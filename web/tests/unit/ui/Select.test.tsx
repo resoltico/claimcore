@@ -111,3 +111,21 @@ it("commits an explicit empty-value choice as a value rather than losing the sel
   expect(changed).toHaveBeenCalledWith("");
   expect(screen.queryByRole("listbox")).toBeNull();
 });
+
+it("opens at the requested boundary and cancels without committing the focused candidate", async () => {
+  const user = userEvent.setup();
+  const changed = vi.fn();
+  render(<Example changed={changed} />);
+  const trigger = screen.getByRole("combobox", { name: "Format" });
+  await user.tab();
+  await user.keyboard("{End}");
+  await waitFor(() => expect(screen.getByRole("option", { name: "Deutsch" })).toHaveFocus());
+  await user.keyboard("{Escape}");
+  await waitFor(() => expect(trigger).toHaveFocus());
+  expect(trigger).toHaveValue("en-GB");
+  expect(changed).not.toHaveBeenCalled();
+  await user.keyboard("{Home}");
+  await waitFor(() => expect(screen.getByRole("option", { name: "English" })).toHaveFocus());
+  await user.keyboard("{ArrowDown}{Enter}");
+  expect(changed).toHaveBeenCalledExactlyOnceWith("lv-LV");
+});

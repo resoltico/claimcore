@@ -181,8 +181,18 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await signInSettings(page);
   const picker = page.getByRole("combobox", { name: "Date and number format" });
   await picker.focus();
+  await page.keyboard.press("End");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(page.getByRole("option").last()).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("listbox")).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(picker).toBeFocused();
+  await page.keyboard.press("Home");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(page.getByRole("option").first()).toBeFocused();
   await page.keyboard.type("Deutsch");
   await expect(page.getByRole("option", { name: "Deutsch — Deutschland" })).toBeFocused();
   await page.keyboard.press("Enter");
