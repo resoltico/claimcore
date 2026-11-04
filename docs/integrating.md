@@ -396,6 +396,20 @@ case-work eligibility. Optional `responsibleCases` carries a count plus an execu
 selection; its absence is not zero. Related authority details may include principal/contact information
 under their existing authority-read policy; a reusable ActorRef does not.
 
+`operation.preview` now carries required `review.presentation` beside its typed `subject`. Its
+`changes` entries supply key, label identity and typed before/after values; `unchanged` supplies the
+remaining field identities for one summary. CASE subjects retain before/after/context and remove the
+old raw-string `changes` member. Work, reminder and authority subjects retain their typed effects.
+The server builds presentation once from core meaning; clients render the supplied values rather than
+compare snapshots, infer unchanged groups or reconstruct profile names.
+
+Presented money and totals retain exact values plus `displayScale`. Readers preserve the supplied
+scale; formatters may pad to it but must never truncate meaningful fractional digits. Producers derive
+the correct currency minimum and meaningful scale from Domain. Native, generated JavaScript and JSON
+Schema validate the same structural contract; structural admission does not certify arbitrary server
+business assertions or recompute them in clients. Typed case changes have one Application owner, which
+also derives the canonical history differences; the protocol does not run a competing case comparison.
+
 Current `CaseWorkView` separates aggregate `changedAt`/`recordedBy` from required nullable
 `summaryChangedAt`/`summaryRecordedBy`. Summary metadata follows the last actual summary text change,
 not a responsibility-only update or an unchanged text reaffirmation. Clearing the summary or erasing the

@@ -12,6 +12,7 @@
 - Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
 - Regenerate case-list and CSV consumers: state.fields now comes from listed declarations; core work state replaces duplicate nested work and progress columns.
 - Regenerate revision-conflict consumers for typed change pages of up to 50 entries; continue via case.timeline under current history permissions.
+- Regenerate preview consumers for required review.presentation and retained money displayScale; CASE subjects replace raw string changes with typed core presentation.
 - Regenerate catalog consumers for hintId/ruleId, GUI diagnostic keys and consequenceId/doneId; field meaning and checkbox confirmation identities are removed.
 - Receipt basis and runtime observedAt describe the current server snapshot; recordedAt remains the accepted event time, including on replay and later checks.
 - Replace CLI case history and case activity with case timeline; typed changes, actor names and canonical CSV support bounded or complete live traversal.
