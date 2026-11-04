@@ -4976,38 +4976,6 @@
                       "kind": "REFERENCE",
                       "value": "OVERLAPPING"
                     }
-                  },
-                  {
-                    "key": "READ_CASE.direct",
-                    "labelId": "label.directRoles",
-                    "before": {
-                      "kind": "CODES",
-                      "vocabulary": "role",
-                      "tokens": []
-                    },
-                    "after": {
-                      "kind": "CODES",
-                      "vocabulary": "role",
-                      "tokens": [
-                        "CASE_READER"
-                      ]
-                    }
-                  },
-                  {
-                    "key": "READ_HISTORY.direct",
-                    "labelId": "label.directRoles",
-                    "before": {
-                      "kind": "CODES",
-                      "vocabulary": "role",
-                      "tokens": []
-                    },
-                    "after": {
-                      "kind": "CODES",
-                      "vocabulary": "role",
-                      "tokens": [
-                        "CASE_READER"
-                      ]
-                    }
                   }
                 ],
                 "unchanged": [
@@ -5022,34 +4990,6 @@
                   {
                     "key": "profileContact",
                     "labelId": "field.profile.contact.label"
-                  },
-                  {
-                    "key": "READ_CASE.effective",
-                    "labelId": "capability.READ_CASE.label"
-                  },
-                  {
-                    "key": "READ_CASE.inherited",
-                    "labelId": "label.inheritedRoles"
-                  },
-                  {
-                    "key": "READ_HISTORY.effective",
-                    "labelId": "capability.READ_HISTORY.label"
-                  },
-                  {
-                    "key": "READ_HISTORY.inherited",
-                    "labelId": "label.inheritedRoles"
-                  },
-                  {
-                    "key": "REGISTER.effective",
-                    "labelId": "capability.REGISTER.label"
-                  },
-                  {
-                    "key": "REGISTER.direct",
-                    "labelId": "label.directRoles"
-                  },
-                  {
-                    "key": "REGISTER.inherited",
-                    "labelId": "label.inheritedRoles"
                   }
                 ]
               }
