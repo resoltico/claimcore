@@ -308,6 +308,8 @@ let coherentPreview (reply: PresentedPreviewReply) =
                     let operation = OperationId.create reply.OperationId |> Option.get
                     PresentedReviewSubject.Reminder(reminderReview operation value)
                 | subject -> subject
+
             Outcome.Succeeded(PresentedPreviewed.Reviewed { review with Subject = subject })
         | outcome -> outcome
+
     { reply with Outcome = outcome }

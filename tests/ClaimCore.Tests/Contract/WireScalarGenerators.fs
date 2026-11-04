@@ -165,7 +165,12 @@ let internal generatedString response (source: Seeds) context =
         scalarText
     elif response && (field = "LabelId" || field = "messageId" || field = "reasonId") then
         Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
-    elif response && field = "Key" && (context.Contains("PresentedChange.", StringComparison.Ordinal) || context.Contains("PresentedField.", StringComparison.Ordinal)) then
+    elif
+        response
+        && field = "Key"
+        && (context.Contains("PresentedChange.", StringComparison.Ordinal)
+            || context.Contains("PresentedField.", StringComparison.Ordinal))
+    then
         Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
     elif response && context.EndsWith("ActorContext.Issuer", StringComparison.Ordinal) then
         guid
