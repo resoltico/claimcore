@@ -91,7 +91,7 @@ claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE 
 
 ## case amend-registration
 
-Amend registration
+Update claim details
 
 Update selected registration facts. Omitted facts and the case reference stay unchanged.
 
@@ -128,7 +128,7 @@ claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
-| `--registration` | Registration — Keep registration facts or update selected facts. Omitted facts stay unchanged; amount and currency are asserted together. | keep, update |  |
+| `--registration` | Claim — Keep registration facts or update selected facts. Omitted facts stay unchanged; amount and currency are asserted together. | keep, update |  |
 | `--incident-date` | Incident date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 | `--incident-notification-date` | Notified date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 | `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
@@ -141,7 +141,7 @@ claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision
 | `--payment-decision-date` | Payment decision date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 | `--payable-amount` | Amount to be paid — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
 | `--payable-currency` | Currency of amount to be paid — 3 uppercase ASCII letters (A–Z). |  |  |
-| `--payment` | Payment record — Keep, replace, reaffirm or clear the recorded payment date. Reaffirmation retains the date; clearing it does not refund money. | keep, replace, reaffirm, clear |  |
+| `--payment` | Payment — Keep, replace, reaffirm or clear the recorded payment date. Reaffirmation retains the date; clearing it does not refund money. | keep, replace, reaffirm, clear |  |
 | `--payment-date` | Payment date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 
 ## case decide
@@ -280,7 +280,7 @@ claimcore case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revisi
 
 ## case erase
 
-Erase case payload
+Erase case
 
 Remove this case and its details from ClaimCore. Copies held elsewhere remain.
 
@@ -296,7 +296,7 @@ claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N
 
 ## authority register
 
-Register actor
+Register account
 
 Add a registered account with a name and optional contact details. Roles can be assigned separately.
 
@@ -353,7 +353,7 @@ claimcore authority revoke [--operation-id VALUE] --principal-kind human|service
 
 ## authority enable
 
-Enable actor
+Enable account
 
 Enable this account with its existing roles.
 
@@ -370,7 +370,7 @@ claimcore authority enable [--operation-id VALUE] --principal-kind human|service
 
 ## authority disable
 
-Disable actor
+Disable account
 
 Disable this account. Its recorded changes remain.
 
