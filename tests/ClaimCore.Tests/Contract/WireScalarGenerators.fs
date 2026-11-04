@@ -163,6 +163,10 @@ let internal generatedString response (source: Seeds) context =
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
     elif field = "Cursor" || field = "AfterCursor" then
         scalarText
+    elif response && (field = "LabelId" || field = "messageId" || field = "reasonId") then
+        Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
+    elif response && field = "Key" && (context.Contains("PresentedChange.", StringComparison.Ordinal) || context.Contains("PresentedField.", StringComparison.Ordinal)) then
+        Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
     elif response && context.EndsWith("ActorContext.Issuer", StringComparison.Ordinal) then
         guid
         |> Gen.map (fun value -> "https://issuer-" + value.ToString("N") + ".example/")
@@ -179,6 +183,8 @@ let internal integer response context =
     let low, high =
         if context.Contains("InstallationOffer.Open", StringComparison.Ordinal) then
             0L, 0L
+        elif field = "DisplayScale" then
+            0L, 4L
         elif field = "Limit" then
             1L, 50L
         elif

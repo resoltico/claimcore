@@ -2,6 +2,7 @@ module ClaimCore.Tests.WireWorkGenerators
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Application.Contracts
 open Hedgehog
 open Hedgehog.FSharp
@@ -296,17 +297,17 @@ let private reminderReview operation (review: ReminderReview) =
             Effects = ReminderEffects.CompletedAndPlanned(completed, created next)
         }
 
-let coherentPreview (reply: PreviewReply) =
+let coherentPreview (reply: PresentedPreviewReply) =
     let outcome =
         match reply.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Work review)) ->
-            Outcome.Succeeded(Previewed.Reviewed(OperationReview.Work(workReview review)))
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Reminder review)) ->
-            let operation = OperationId.create reply.OperationId |> Option.get
-
-            Outcome.Succeeded(
-                Previewed.Reviewed(OperationReview.Reminder(reminderReview operation review))
-            )
+        | Outcome.Succeeded(PresentedPreviewed.Reviewed review) ->
+            let subject =
+                match review.Subject with
+                | PresentedReviewSubject.Work value -> PresentedReviewSubject.Work(workReview value)
+                | PresentedReviewSubject.Reminder value ->
+                    let operation = OperationId.create reply.OperationId |> Option.get
+                    PresentedReviewSubject.Reminder(reminderReview operation value)
+                | subject -> subject
+            Outcome.Succeeded(PresentedPreviewed.Reviewed { review with Subject = subject })
         | outcome -> outcome
-
     { reply with Outcome = outcome }

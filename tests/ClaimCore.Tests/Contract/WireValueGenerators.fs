@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireValueGenerators
 
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -66,7 +67,9 @@ let internal listBounds (path: string) =
                 "Tracker.steps", 4
                 "CaseReadModel.Attention", 6
                 "CaseSummary.Attention", 6
-                "AdvisoryReview.Changes", Inventory.fieldCount
+                "CaseReviewChanges.Fields", Inventory.fieldCount
+                "ReviewPresentation.Changes", 324
+                "ReviewPresentation.Unchanged", 324
                 "HistoryDifference.Fields", Inventory.fieldCount
                 "Disclosed.Item", Inventory.fieldCount + 1
             ]
@@ -406,9 +409,9 @@ and private freshRepresentation response source context (kind: Type) (value: obj
             let! items = Gen.list (Range.singleton size) item
             return items |> List.map unbox<InputIssue> |> InputIssues.ofList |> Option.get |> box
         }
-    elif kind = typeof<PreviewReply> then
+    elif kind = typeof<PresentedPreviewReply> then
         freshRecord response source context kind value
-        |> Gen.map (unbox<PreviewReply> >> WireWorkGenerators.coherentPreview >> box)
+        |> Gen.map (unbox<PresentedPreviewReply> >> WireWorkGenerators.coherentPreview >> box)
     elif kind = typeof<OperationReceipt> then
         freshRecord response source context kind value
         |> Gen.map (unbox<OperationReceipt> >> WireWorkGenerators.coherentReceipt >> box)
@@ -453,17 +456,34 @@ and private freshRecord response source context kind value =
     |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
 
 and private freshUnion response source context kind value =
-    let case, fields = FSharpValue.GetUnionFields(value, kind)
+    if kind = typeof<PresentedValue> then
+        match unbox<PresentedValue> value with
+        | PresentedValue.Code(vocabulary, _) ->
+            presentationToken vocabulary |> Gen.map (fun token -> box(PresentedValue.Code(vocabulary, token)))
+        | PresentedValue.Codes(vocabulary, _) ->
+            Gen.list (Range.constant 0 11) (presentationToken vocabulary)
+            |> Gen.map (fun tokens -> box(PresentedValue.Codes(vocabulary, tokens)))
+        | _ -> freshUnionFields response source context kind value
+    else freshUnionFields response source context kind value
 
+and private presentationToken vocabulary =
+    if vocabulary = "country" then uppercase 2
+    elif vocabulary = "currency" then uppercase 3
+    else
+        [ Vocabulary.name Lifecycle.vocabulary, Vocabulary.tokens Lifecycle.vocabulary
+          Vocabulary.name CaseStatus.vocabulary, Vocabulary.tokens CaseStatus.vocabulary
+          Vocabulary.name Role.vocabulary, Vocabulary.tokens Role.vocabulary
+          Vocabulary.name ScopeKind.vocabulary, Vocabulary.tokens ScopeKind.vocabulary
+          Vocabulary.name Capability.vocabulary, Vocabulary.tokens Capability.vocabulary
+          Vocabulary.name ReminderState.vocabulary, Vocabulary.tokens ReminderState.vocabulary
+          Vocabulary.name PresentedBoolean.vocabulary, Vocabulary.tokens PresentedBoolean.vocabulary ]
+        |> Map.ofList |> Map.find vocabulary |> Gen.item
+
+and private freshUnionFields response source context kind value =
+    let case, fields = FSharpValue.GetUnionFields(value, kind)
     Array.zip (case.GetFields()) fields
     |> Array.map (fun (field, item) ->
-        let key =
-            if isOption kind then
-                context
-            else
-                context + "." + unionContext kind case field
-
+        let key = if isOption kind then context else context + "." + unionContext kind case field
         fresh response source key field.PropertyType item)
-    |> Array.toList
-    |> sequence
+    |> Array.toList |> sequence
     |> Gen.map (fun values -> FSharpValue.MakeUnion(case, List.toArray values))
