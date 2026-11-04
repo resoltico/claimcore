@@ -18,7 +18,12 @@ module internal TextDiagnosticReply =
         let render code parameters =
             let arguments =
                 parameters
-                |> List.map (fun (name, value) -> name, number (int64 value))
+                |> List.map (fun (name, value) ->
+                    name,
+                    match value with
+                    | JsonValue.Integer value -> number value
+                    | JsonValue.String value -> value
+                    | _ -> invalidOp "Diagnostic arguments are declared scalars.")
                 |> Map.ofList
 
             MessageCatalogs.render language (DiagnosticCode.key code) arguments
@@ -41,6 +46,23 @@ module internal TextDiagnosticReply =
                            + ": "
                            + CalendarDate.format related.Value
                            + ")"))
+            | Refusal.Access(AccessRefusal.NotAuthorized required) ->
+                let roles = Authority.rolesFor required |> List.map (term language Role.vocabulary)
+
+                let names =
+                    roles
+                    |> List.reduce (fun first second ->
+                        MessageCatalogs.render
+                            language
+                            "notice.alternativeRoles"
+                            (Map.ofList [ "first", first; "second", second ]))
+
+                [
+                    MessageCatalogs.render
+                        language
+                        (DiagnosticCode.key "NOT_AUTHORIZED")
+                        (Map.ofList [ "required", names ])
+                ]
             | refusal ->
                 let code, parameters = DiagnosticCodecs.describe refusal
                 let message = render code parameters

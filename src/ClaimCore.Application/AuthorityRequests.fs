@@ -60,7 +60,7 @@ module AuthorityRequests =
     /// Owner provisioning has a dedicated host boundary, never an ordinary wire request.
     let input operationId target act : Result<AuthorityRequest, Refusal> =
         match act with
-        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ActNotPermitted)
+        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | act ->
             Ok
                 {

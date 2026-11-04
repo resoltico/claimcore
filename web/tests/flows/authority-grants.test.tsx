@@ -208,7 +208,7 @@ const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =
             kind: "REJECTED",
             data: {
               code: "RESOURCE_UNAVAILABLE",
-              action: "NONE_REQUIRED",
+              action: "ASK_FOR_ACCESS",
             },
           },
         },

@@ -68,7 +68,7 @@ type AuthorityRefusal =
 [<RequireQualifiedAccess>]
 type AccessRefusal =
     | ResourceUnavailable
-    | ActNotPermitted
+    | NotAuthorized of required: Capability
 
 [<RequireQualifiedAccess>]
 type Refusal =

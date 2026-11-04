@@ -115,7 +115,9 @@ let private harness language answer scenario =
                         OperationId = operationId ()
                         Outcome =
                             if scenario = Scenario.PreviewRefused then
-                                Outcome.Rejected(Refusal.Access AccessRefusal.ActNotPermitted)
+                                Outcome.Rejected(
+                                    Refusal.Access(AccessRefusal.NotAuthorized Capability.Close)
+                                )
                             else
                                 Outcome.Succeeded(Previewed.Reviewed review)
                     }

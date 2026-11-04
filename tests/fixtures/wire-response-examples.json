@@ -44,7 +44,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED",
+            "action": "ASK_FOR_ACCESS",
             "actualRevision": 0
           }
         }
@@ -59,7 +59,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED",
+            "action": "ASK_FOR_ACCESS",
             "kind": "RESOURCE_UNAVAILABLE"
           }
         }
@@ -2004,7 +2004,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -2018,7 +2018,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ACTOR_ALREADY_REGISTERED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2032,7 +2032,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ACTOR_UNKNOWN",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2045,8 +2045,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ACT_NOT_PERMITTED",
-            "action": "NONE_REQUIRED"
+            "code": "NOT_AUTHORIZED",
+            "action": "ASK_FOR_ACCESS",
+            "required": "STEWARD"
           }
         }
       }
@@ -2088,7 +2089,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_ALREADY_EXISTS",
-            "action": "NONE_REQUIRED"
+            "action": "CHOOSE_ANOTHER_REFERENCE"
           }
         }
       }
@@ -2116,7 +2117,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "AMENDMENT_REQUIRES_UNDECIDED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2130,7 +2131,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_CLOSED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2144,7 +2145,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "DECISION_ALREADY_PAID",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2158,7 +2159,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "DECISION_REQUIRED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2186,7 +2187,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "PAYMENT_ALREADY_RECORDED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2200,7 +2201,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "PAYMENT_NOT_RECORDED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2214,7 +2215,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "REVISION_CONFLICT",
-            "action": "READ_CURRENT",
+            "action": "REVIEW_LATEST",
             "actualRevision": 0
           }
         }
@@ -2229,7 +2230,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CASE_VOIDED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2243,7 +2244,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ZERO_DECISION_CANNOT_BE_PAID",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2297,7 +2298,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2365,7 +2366,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "HUMAN_PRINCIPAL_REQUIRED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2764,7 +2765,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "LAST_OWNER",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2778,7 +2779,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "NOT_VOIDED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -2922,7 +2923,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -2950,7 +2951,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -3861,7 +3862,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ROLE_SCOPE_NOT_APPLICABLE",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -4061,7 +4062,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -4109,7 +4110,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -4151,7 +4152,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ASSIGNEE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -5461,7 +5462,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "REMINDER_PARENT_NOT_ACTIVE",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -5475,7 +5476,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "REMINDER_PARENT_NOT_OPEN",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -5489,7 +5490,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "REMINDER_PENDING_REQUIRED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -5503,7 +5504,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "REMINDER_TERMINAL_REQUIRED",
-            "action": "NONE_REQUIRED"
+            "action": "REVIEW_LATEST"
           }
         }
       }
@@ -5595,7 +5596,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -5623,7 +5624,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -5651,7 +5652,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }
@@ -5788,7 +5789,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "RESOURCE_UNAVAILABLE",
-            "action": "NONE_REQUIRED"
+            "action": "ASK_FOR_ACCESS"
           }
         }
       }

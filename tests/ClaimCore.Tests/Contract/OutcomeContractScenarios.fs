@@ -121,7 +121,10 @@ let internal executeOutcomes () =
             [
                 ExecuteResult.Accepted receiptValue, 0
                 ExecuteResult.AlreadyAccepted receiptValue, 0
-                ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted), 2
+                ExecuteResult.Rejected(
+                    Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
+                ),
+                2
                 ExecuteResult.Failed CoreFault.StoreUnavailable, 3
                 ExecuteResult.OutcomeUnknown, 4
             ] do
@@ -217,7 +220,9 @@ let internal previewCodecs () =
         [
             (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-            Outcome.Rejected(ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted)
+            Outcome.Rejected(
+                ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
+            )
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
         admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
@@ -231,7 +236,8 @@ let internal diagnostics () =
         [
             ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
             (ClaimCore.Domain.Refusal.Authority AuthorityRefusal.LastOwner), "LAST_OWNER"
-            (ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted), "ACT_NOT_PERMITTED"
+            (ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)),
+            "NOT_AUTHORIZED"
             (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),
             "RESOURCE_UNAVAILABLE"
         ] do
@@ -267,8 +273,8 @@ let internal actionExpectations =
         }
         {
             Refusal = (Refusal.RevisionConflict(CaseFixtures.revision 7L))
-            Action = RecommendedAction.ReadCurrent
-            Token = "READ_CURRENT"
+            Action = RecommendedAction.ReviewLatest
+            Token = "REVIEW_LATEST"
             Field = None
             Revision = Some 7L
         }

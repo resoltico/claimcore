@@ -35,5 +35,5 @@ export const context = actorContextInput({
 
 export const unavailable = {
   code: "RESOURCE_UNAVAILABLE",
-  action: "NONE_REQUIRED",
+  action: "ASK_FOR_ACCESS",
 } as const;

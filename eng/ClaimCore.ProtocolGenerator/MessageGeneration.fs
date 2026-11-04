@@ -22,11 +22,19 @@ module MessageGeneration =
                 entry.Parameters
                 |> List.map (fun parameter ->
                     parameter.Name,
-                    JsonValue.Object
-                        [
-                            "minimum", JsonValue.Integer(int64 parameter.Minimum)
-                            "maximum", JsonValue.Integer(int64 parameter.Maximum)
-                        ])
+                    JsonValue.Object(
+                        match parameter.Rule with
+                        | DiagnosticParameterRule.IntegerRange(minimum, maximum) ->
+                            [
+                                "minimum", JsonValue.Integer(int64 minimum)
+                                "maximum", JsonValue.Integer(int64 maximum)
+                            ]
+                        | DiagnosticParameterRule.Vocabulary(name, values) ->
+                            [
+                                "enum", JsonValue.Array(List.map JsonValue.String values)
+                                "vocabulary", JsonValue.String name
+                            ]
+                    ))
             ))
         |> Map.ofList
         |> Map.toList

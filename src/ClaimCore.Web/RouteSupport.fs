@@ -17,6 +17,10 @@ module internal RouteSupport =
 
     let hostFailure context reason =
         HttpHeaders.noStore context
+
+        if reason = HostFailureReason.RateLimited then
+            context.Response.Headers.RetryAfter <- "1"
+
         RequestLog.hostFailure context
         WebWire.hostFailure reason
 

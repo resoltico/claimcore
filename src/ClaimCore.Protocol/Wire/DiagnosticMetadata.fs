@@ -1,11 +1,15 @@
 namespace ClaimCore.Protocol
 
 
+[<RequireQualifiedAccess>]
+type DiagnosticParameterRule =
+    | IntegerRange of minimum: int * maximum: int
+    | Vocabulary of name: string * values: string list
+
 type DiagnosticParameterDefinition =
     {
         Name: string
-        Minimum: int
-        Maximum: int
+        Rule: DiagnosticParameterRule
     }
 
 type DiagnosticDefinition =

@@ -490,7 +490,7 @@ let internal revocationAndCompound fixture =
                 (Reminder.state (snapshot next))
                 ReminderState.Pending
                 "Both effects accepted"
-        | ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted) ->
+        | ExecuteResult.Rejected(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)) ->
             Expect.equal
                 (Reminder.state (snapshot old))
                 ReminderState.Pending
@@ -507,6 +507,8 @@ let internal revocationAndCompound fixture =
 
         Expect.equal
             after.Outcome
-            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
+            (ExecuteResult.Rejected(
+                Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)
+            ))
             "Late preview cannot restore capability"
     }

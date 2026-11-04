@@ -181,9 +181,20 @@ module DiagnosticCodecs =
             | _ -> None)
 
     let private accessVariants =
-        familyVariants Refusal.Access (function
+        (familyVariants Refusal.Access (function
             | Refusal.Access value -> Some value
-            | _ -> None)
+            | _ -> None))
+        @ [
+            variant
+                "NOT_AUTHORIZED"
+                (AccessRefusal.NotAuthorized >> Refusal.Access)
+                (function
+                | Refusal.Access(AccessRefusal.NotAuthorized required) -> Some required
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.AskForAccess
+                 |> field "required" id (VocabularyCodec.create Capability.vocabulary))
+        ]
 
     let private reminderVariants =
         familyVariants Refusal.Reminder (function
@@ -212,7 +223,7 @@ module DiagnosticCodecs =
                 | Refusal.RevisionConflict revision -> Some revision
                 | _ -> None)
                 (record id
-                 |> actionField RecommendedAction.ReadCurrent
+                 |> actionField RecommendedAction.ReviewLatest
                  |> field "actualRevision" id ResponseScalars.revision)
         ]
         @ caseVariants
@@ -238,16 +249,25 @@ module DiagnosticCodecs =
                             Some
                                 {
                                     Name = "issueCount"
-                                    Minimum = minimum
-                                    Maximum = maximum
+                                    Rule = DiagnosticParameterRule.IntegerRange(minimum, maximum)
                                 }
                         | name, Schema.Integer(minimum, maximum) when name <> "actualRevision" ->
                             Some
                                 {
                                     Name = name
-                                    Minimum = int minimum
-                                    Maximum = int maximum
+                                    Rule =
+                                        DiagnosticParameterRule.IntegerRange(
+                                            int minimum,
+                                            int maximum
+                                        )
                                 }
+                        | name, Schema.Vocabulary(vocabulary, Schema.OneOf(values, _)) ->
+                            Schema.tryLiteralSet values
+                            |> Option.map (fun values ->
+                                {
+                                    Name = name
+                                    Rule = DiagnosticParameterRule.Vocabulary(vocabulary, values)
+                                })
                         | _ -> None)
                 | _ -> invalidOp "Diagnostic alternatives require object fields."
 
@@ -264,14 +284,12 @@ module DiagnosticCodecs =
     let private described =
         function
         | JsonValue.Object(("code", JsonValue.String code) :: fields) ->
-            let parameters =
-                fields
-                |> List.choose (function
-                    | name, JsonValue.Integer value when name <> "actualRevision" ->
-                        Some(name, int value)
-                    | _ -> None)
+            let definition =
+                definitions @ violationDefinitions
+                |> List.find (fun definition -> definition.Id = code)
 
-            code, parameters
+            let names = definition.Parameters |> List.map _.Name |> Set.ofList
+            code, fields |> List.filter (fun (name, _) -> Set.contains name names)
         | _ -> invalidOp "A diagnostic codec must write its code and typed fields."
 
     let describeIssue issue = inputIssue.Write issue |> described
@@ -279,7 +297,10 @@ module DiagnosticCodecs =
     let describe refusal =
         match refusal with
         | Refusal.InvalidInput issues ->
-            "INVALID_INPUT", [ "issueCount", InputIssues.toList issues |> List.length ]
+            "INVALID_INPUT",
+            [
+                "issueCount", JsonValue.Integer(int64 (InputIssues.toList issues |> List.length))
+            ]
         | refusal -> diagnostic.Write refusal |> described
 
     let code refusal = describe refusal |> fst

@@ -209,7 +209,7 @@ it("waits for fresh actor disclosure after availability loss and never restores 
       value: {
         outcome: {
           kind: "REJECTED",
-          data: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
+          data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
         },
       },
     });

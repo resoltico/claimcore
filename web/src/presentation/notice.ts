@@ -1,3 +1,5 @@
+import { capabilityRoleRequirements } from "@contracts/client";
+import { isTerm, termLabel } from "./terms";
 import type { Notice } from "../protocol/notices";
 import { diagnosticParameters as requirements, diagnosticMessageKeys } from "@contracts/messages";
 import { calendarDate, exactInteger } from "./format";
@@ -23,6 +25,21 @@ const contextFields = new Set([
   "issues",
   "relatedDate",
 ]);
+const requiredRoleNames = (preferences: Preferences, capability: string): string => {
+  const rolePolicies: Readonly<Record<string, ReadonlyArray<string>>> = capabilityRoleRequirements;
+  const roles = rolePolicies[capability];
+  if (roles === undefined || roles.length === 0) {
+    return translate(preferences, "notice.unknownDiagnostic");
+  }
+  const labels = roles.map((role) =>
+    isTerm("role", role)
+      ? termLabel(preferences, "role", role)
+      : translate(preferences, "notice.unknownDiagnostic"),
+  );
+  return labels.reduce((first, second) =>
+    renderKey(preferences, "notice.alternativeRoles", { first, second }),
+  );
+};
 const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
@@ -55,10 +72,16 @@ const diagnosticText = (
     return translate(preferences, "notice.unknownDiagnostic");
   }
   const parameters = Object.fromEntries(
-    Object.entries(supplied).map(([k, v]) => [
-      k,
-      typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
-    ]),
+    Object.entries(supplied).map(([key, value]) => {
+      if (typeof value !== "string") {
+        return [key, exactInteger(String(value), preferences.displayLocale)];
+      }
+      const displayed =
+        diagnostic.code === "NOT_AUTHORIZED" && key === "required"
+          ? requiredRoleNames(preferences, value)
+          : value;
+      return [key, displayed];
+    }),
   );
   const message = renderKey(preferences, messageKey, parameters);
   if ("relatedDate" in diagnostic && diagnostic.relatedDate !== undefined) {

@@ -2,9 +2,12 @@
 
 ## [Unreleased]
 
+- Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
+
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
 - Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
+- Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
 
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
 - CLI --dry-run rejects malformed writes locally with exit 2 and ordered input issues; structured refusals retain the existing frame shape with NOT_SENT delivery.

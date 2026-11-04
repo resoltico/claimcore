@@ -1278,7 +1278,9 @@ let internal partialUpdatesAndReaffirmation fixture =
 
         Expect.equal
             denied.Outcome
-            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
+            (ExecuteResult.Rejected(
+                Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment)
+            ))
             "Reaffirmation requires the payment capability"
 
         let! granted =

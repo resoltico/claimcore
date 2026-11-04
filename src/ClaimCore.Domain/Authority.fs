@@ -253,6 +253,16 @@ module Authority =
             correctionCapabilities
             |> List.exists (fun capability -> can principal actor capability resource)
 
+    /// An empty correction still needs an offered fact capability; concrete groups keep their own requirements.
+    let missingCapabilities principal actor resource act =
+        let required =
+            match requiredCapabilities act with
+            | [] when CaseAct.kind act = CaseActKind.Correct -> correctionCapabilities
+            | values -> values
+
+        required
+        |> List.filter (fun capability -> not (can principal actor capability resource))
+
     let canAct principal actor resource act =
         canAdvertise principal actor resource (CaseAct.kind act)
         && (requiredCapabilities act
@@ -304,7 +314,7 @@ module Authority =
 
     let parse (request: AuthorityRequest) =
         match request.Act with
-        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ActNotPermitted)
+        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | act ->
             Admission.map2
                 (fun (identity, target) () ->

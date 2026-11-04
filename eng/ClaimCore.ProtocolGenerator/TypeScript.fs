@@ -111,6 +111,20 @@ module TypeScript =
             "export const presentationDisplayLocales = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.displayLocales)
             + " as const;"
+            "export const resourceUnavailableDiagnostic = "
+            + (DiagnosticCodecs.diagnostic.Write(Refusal.Access AccessRefusal.ResourceUnavailable)
+               |> ClaimCore.Json.WireWriter.bytes
+               |> System.Text.Encoding.UTF8.GetString)
+            + " as const;"
+            "export const capabilityRoleRequirements = "
+            + JsonSerializer.Serialize(
+                Capability.all
+                |> List.map (fun capability ->
+                    Capability.token capability,
+                    Authority.rolesFor capability |> List.map Role.token)
+                |> dict
+            )
+            + " as const;"
             "export const presentationAccents = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.accents)
             + " as const;"

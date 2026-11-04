@@ -51,7 +51,7 @@ const unavailable: ApiResult<ListResponse> = {
       kind: "REJECTED",
       data: {
         code: "RESOURCE_UNAVAILABLE",
-        action: "NONE_REQUIRED",
+        action: "ASK_FOR_ACCESS",
       },
     },
   },
@@ -123,7 +123,7 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
         kind: "diagnostic",
         diagnostic: {
           code: "RESOURCE_UNAVAILABLE",
-          action: "NONE_REQUIRED",
+          action: "ASK_FOR_ACCESS",
         },
       },
     }),

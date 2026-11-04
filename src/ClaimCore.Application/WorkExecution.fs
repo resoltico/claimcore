@@ -184,7 +184,7 @@ module internal WorkExecution =
             then
                 Ok parent
             else
-                Error(Refusal.Access AccessRefusal.ActNotPermitted)
+                Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork))
         | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let private eligibleAssignee (tx: IReadTx) caseId =

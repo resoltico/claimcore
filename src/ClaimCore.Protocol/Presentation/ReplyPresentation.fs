@@ -8,21 +8,36 @@ type RecommendedAction =
     | ReadCurrent
     | RetrySafe
     | StopAndInvestigate
+    | ChooseAnotherReference
+    | AskForAccess
+    | ReviewLatest
     | NoneRequired
 
 module Refusals =
+    let private caseAction =
+        function
+        | CaseRefusal.CaseAlreadyExists -> RecommendedAction.ChooseAnotherReference
+        | CaseRefusal.AlreadyVoided
+        | CaseRefusal.AlreadyClosed
+        | CaseRefusal.AlreadyOpened
+        | CaseRefusal.CorrectionNoChanges
+        | CaseRefusal.WorkNoChanges
+        | CaseRefusal.CaseErased -> RecommendedAction.NoneRequired
+        | _ -> RecommendedAction.ReviewLatest
+
     let action =
         function
         | Refusal.InvalidInput _ -> RecommendedAction.CorrectInput
-        | Refusal.RevisionConflict _
+        | Refusal.Access _ -> RecommendedAction.AskForAccess
+        | Refusal.Case value -> caseAction value
         | Refusal.OperationResolved
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
+        | Refusal.Reminder ReminderRuleRefusal.NoChanges -> RecommendedAction.NoneRequired
+        | Refusal.RevisionConflict _
         | Refusal.Reminder _
-        | Refusal.Case _
-        | Refusal.Authority _
-        | Refusal.Access _ -> RecommendedAction.NoneRequired
+        | Refusal.Authority _ -> RecommendedAction.ReviewLatest
 
     let actualRevision =
         function

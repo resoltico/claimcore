@@ -79,7 +79,7 @@ export const rejected = (conflict: boolean): ApiResult<ServiceResponse<"operatio
           }
         : {
             code: "RESOURCE_UNAVAILABLE",
-            action: "NONE_REQUIRED",
+            action: "ASK_FOR_ACCESS",
           },
     },
   },

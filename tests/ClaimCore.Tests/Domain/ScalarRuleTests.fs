@@ -155,7 +155,7 @@ let permanentBoundaries =
 
                 Expect.equal
                     (Authority.parse request)
-                    (Error(Refusal.Access AccessRefusal.ActNotPermitted))
+                    (Error(Refusal.Access(AccessRefusal.ResourceUnavailable)))
                     "Provisioning is admitted exclusively through its dedicated boundary")
 
         ]

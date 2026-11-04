@@ -92,7 +92,13 @@ module internal CaseExecution =
             | Some value when
                 Authority.can principal actor Capability.ReadCase (Scope.Case value.CaseId)
                 ->
-                Error(Refusal.Access AccessRefusal.ActNotPermitted)
+                let required =
+                    Authority.missingCapabilities principal actor (Scope.Case value.CaseId) act
+                    |> List.tryHead
+                    |> Option.defaultWith (fun () ->
+                        invalidOp "A readable denied act has a missing capability.")
+
+                Error(Refusal.Access(AccessRefusal.NotAuthorized required))
             | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let permission principal actor (request: CaseCommand) record =

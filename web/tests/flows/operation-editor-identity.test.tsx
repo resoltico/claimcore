@@ -68,7 +68,7 @@ const validationRefusal: Diagnostic = {
 };
 const staleRefusal: Diagnostic = {
   code: "REVISION_CONFLICT",
-  action: "READ_CURRENT",
+  action: "REVIEW_LATEST",
   actualRevision: 2,
 };
 const rejectedResponse = (rejection: Diagnostic) =>

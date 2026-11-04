@@ -169,7 +169,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
 
         Expect.equal
             refused.Outcome
-            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
+            (ExecuteResult.Rejected(Refusal.Access(AccessRefusal.NotAuthorized Capability.Register)))
             "Revocation is decided again under lock"
 
         let! current =

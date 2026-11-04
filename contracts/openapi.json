@@ -5699,6 +5699,12 @@
             "$ref": "#/components/schemas/Diagnostic.WORK_NO_CHANGES"
           },
           {
+            "$ref": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS"
+          },
+          {
             "$ref": "#/components/schemas/Diagnostic.OPERATION_RESOLVED"
           },
           {
@@ -5706,6 +5712,12 @@
           },
           {
             "$ref": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE"
+          },
+          {
+            "$ref": "#/components/schemas/Diagnostic.RESOURCE_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/Diagnostic.NOT_AUTHORIZED"
           },
           {
             "$ref": "#/components/schemas/Diagnostic.INVALID_CURSOR"
@@ -5717,41 +5729,94 @@
             "INVALID_INPUT": "#/components/schemas/Diagnostic.INVALID_INPUT",
             "REVISION_CONFLICT": "#/components/schemas/Diagnostic.REVISION_CONFLICT",
             "WORK_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "CASE_ERASED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "CASE_VOIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "ALREADY_VOIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "NOT_VOIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "CASE_CLOSED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "ALREADY_CLOSED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "ALREADY_OPENED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "AMENDMENT_REQUIRES_UNDECIDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "CORRECTION_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "DECISION_REQUIRED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "PAYMENT_NOT_RECORDED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "DECISION_ALREADY_PAID": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "REMINDER_PARENT_NOT_ACTIVE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "REMINDER_PARENT_NOT_OPEN": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "REMINDER_PENDING_REQUIRED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "REMINDER_TERMINAL_REQUIRED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
             "REMINDER_NO_CHANGES": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ACT_NOT_PERMITTED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "LAST_OWNER": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
-            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.WORK_NO_CHANGES",
+            "ASSIGNEE_UNAVAILABLE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "CASE_VOIDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "NOT_VOIDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "CASE_CLOSED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "AMENDMENT_REQUIRES_UNDECIDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "CORRECTION_REQUIRES_EXISTING_VALUE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "DECISION_REQUIRED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "PAYMENT_ALREADY_RECORDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "PAYMENT_NOT_RECORDED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "DECISION_ALREADY_PAID": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "ZERO_DECISION_CANNOT_BE_PAID": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "REMINDER_PARENT_NOT_ACTIVE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "REMINDER_PARENT_NOT_OPEN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "REMINDER_PENDING_REQUIRED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "REMINDER_TERMINAL_REQUIRED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "LAST_OWNER": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "ACTOR_ALREADY_REGISTERED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "ACTOR_UNKNOWN": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "HUMAN_PRINCIPAL_REQUIRED": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "ROLE_SCOPE_NOT_APPLICABLE": "#/components/schemas/Diagnostic.ASSIGNEE_UNAVAILABLE",
+            "CASE_ALREADY_EXISTS": "#/components/schemas/Diagnostic.CASE_ALREADY_EXISTS",
             "OPERATION_RESOLVED": "#/components/schemas/Diagnostic.OPERATION_RESOLVED",
             "IDEMPOTENCY_CONFLICT": "#/components/schemas/Diagnostic.IDEMPOTENCY_CONFLICT",
             "REGISTER_MAINTENANCE": "#/components/schemas/Diagnostic.REGISTER_MAINTENANCE",
+            "RESOURCE_UNAVAILABLE": "#/components/schemas/Diagnostic.RESOURCE_UNAVAILABLE",
+            "NOT_AUTHORIZED": "#/components/schemas/Diagnostic.NOT_AUTHORIZED",
             "INVALID_CURSOR": "#/components/schemas/Diagnostic.INVALID_CURSOR"
           }
         }
+      },
+      "Diagnostic.ASSIGNEE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "enum": [
+              "ASSIGNEE_UNAVAILABLE",
+              "CASE_VOIDED",
+              "NOT_VOIDED",
+              "CASE_CLOSED",
+              "AMENDMENT_REQUIRES_UNDECIDED",
+              "CORRECTION_REQUIRES_EXISTING_VALUE",
+              "DECISION_REQUIRED",
+              "PAYMENT_ALREADY_RECORDED",
+              "PAYMENT_NOT_RECORDED",
+              "DECISION_ALREADY_PAID",
+              "ZERO_DECISION_CANNOT_BE_PAID",
+              "REMINDER_PARENT_NOT_ACTIVE",
+              "REMINDER_PARENT_NOT_OPEN",
+              "REMINDER_PENDING_REQUIRED",
+              "REMINDER_TERMINAL_REQUIRED",
+              "LAST_OWNER",
+              "ACTOR_ALREADY_REGISTERED",
+              "ACTOR_UNKNOWN",
+              "HUMAN_PRINCIPAL_REQUIRED",
+              "ROLE_SCOPE_NOT_APPLICABLE"
+            ]
+          },
+          "action": {
+            "const": "REVIEW_LATEST"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "Diagnostic.CASE_ALREADY_EXISTS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CASE_ALREADY_EXISTS"
+          },
+          "action": {
+            "const": "CHOOSE_ANOTHER_REFERENCE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
       },
       "Diagnostic.IDEMPOTENCY_CONFLICT": {
         "type": "object",
@@ -5814,6 +5879,38 @@
           "issues"
         ]
       },
+      "Diagnostic.NOT_AUTHORIZED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "NOT_AUTHORIZED"
+          },
+          "action": {
+            "const": "ASK_FOR_ACCESS"
+          },
+          "required": {
+            "enum": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "MANAGE_CASE_WORK",
+              "REGISTER",
+              "DECIDE",
+              "RECORD_PAYMENT",
+              "CLOSE",
+              "STEWARD",
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "required"
+        ]
+      },
       "Diagnostic.OPERATION_RESOLVED": {
         "type": "object",
         "additionalProperties": false,
@@ -5850,6 +5947,22 @@
           "action"
         ]
       },
+      "Diagnostic.RESOURCE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "RESOURCE_UNAVAILABLE"
+          },
+          "action": {
+            "const": "ASK_FOR_ACCESS"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
       "Diagnostic.REVISION_CONFLICT": {
         "type": "object",
         "additionalProperties": false,
@@ -5858,7 +5971,7 @@
             "const": "REVISION_CONFLICT"
           },
           "action": {
-            "const": "READ_CURRENT"
+            "const": "REVIEW_LATEST"
           },
           "actualRevision": {
             "type": "integer",
@@ -5879,35 +5992,12 @@
           "code": {
             "enum": [
               "WORK_NO_CHANGES",
-              "ASSIGNEE_UNAVAILABLE",
-              "CASE_ALREADY_EXISTS",
               "CASE_ERASED",
-              "CASE_VOIDED",
               "ALREADY_VOIDED",
-              "NOT_VOIDED",
-              "CASE_CLOSED",
               "ALREADY_CLOSED",
               "ALREADY_OPENED",
-              "AMENDMENT_REQUIRES_UNDECIDED",
               "CORRECTION_NO_CHANGES",
-              "CORRECTION_REQUIRES_EXISTING_VALUE",
-              "DECISION_REQUIRED",
-              "PAYMENT_ALREADY_RECORDED",
-              "PAYMENT_NOT_RECORDED",
-              "DECISION_ALREADY_PAID",
-              "ZERO_DECISION_CANNOT_BE_PAID",
-              "REMINDER_PARENT_NOT_ACTIVE",
-              "REMINDER_PARENT_NOT_OPEN",
-              "REMINDER_PENDING_REQUIRED",
-              "REMINDER_TERMINAL_REQUIRED",
-              "REMINDER_NO_CHANGES",
-              "RESOURCE_UNAVAILABLE",
-              "ACT_NOT_PERMITTED",
-              "LAST_OWNER",
-              "ACTOR_ALREADY_REGISTERED",
-              "ACTOR_UNKNOWN",
-              "HUMAN_PRINCIPAL_REQUIRED",
-              "ROLE_SCOPE_NOT_APPLICABLE"
+              "REMINDER_NO_CHANGES"
             ]
           },
           "action": {

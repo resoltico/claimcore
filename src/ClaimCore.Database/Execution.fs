@@ -72,7 +72,7 @@ module Execution =
                     return
                         match AdministrationFailures.classify error with
                         | AdministrationFailure.Refused ->
-                            Replies.rejected (Refusal.Access AccessRefusal.ActNotPermitted)
+                            Replies.rejected (Refusal.Access AccessRefusal.ResourceUnavailable)
                         | AdministrationFailure.OutcomeUnknown -> Replies.unknown None
                         | AdministrationFailure.Failed -> Replies.failed CoreFault.StoreUnavailable
         }

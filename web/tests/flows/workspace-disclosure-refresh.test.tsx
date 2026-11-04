@@ -16,7 +16,7 @@ import { service, type ApiResult, type ServiceResponse } from "../../src/api/ser
 const outcome = <const T,>(value: T) => ({ kind: "outcome" as const, status: 200, value });
 const unavailable = {
   kind: "REJECTED",
-  data: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
+  data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
 } as const;
 const contextFor = (
   views: ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">,

@@ -108,6 +108,14 @@ let private independentAdmission () =
         Expect.isTrue (first.IsAcquired && second.IsAcquired) "The cookie budget is fully held"
         let! busy, _ = host.Bootstrap()
         Expect.equal busy 429 "Private session work still respects authentication admission"
+        use! busyResponse = host.Client.GetAsync "/api/session"
+        Expect.equal (int busyResponse.StatusCode) 429 "The host returns the rate-limit response"
+
+        Expect.equal
+            (busyResponse.Headers.RetryAfter |> nonNull).Delta
+            (Nullable(TimeSpan.FromSeconds 1.))
+            "Every host rate-limit response states the retry delay"
+
         use! asset = host.Client.GetAsync "/assets/public-23456789.js"
 
         Expect.equal

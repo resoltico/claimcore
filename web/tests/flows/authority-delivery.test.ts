@@ -108,7 +108,7 @@ type RetryKind = "refusal" | "conflict" | "failed" | "not-started" | "replay";
 const refusalData = {
   refusal: {
     code: "RESOURCE_UNAVAILABLE",
-    action: "NONE_REQUIRED",
+    action: "ASK_FOR_ACCESS",
   },
   conflict: {
     code: "IDEMPOTENCY_CONFLICT",

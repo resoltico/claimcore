@@ -3,22 +3,22 @@
   "observations": [
     {
       "code": "RESOURCE_UNAVAILABLE",
-      "action": "NoneRequired",
+      "action": "AskForAccess",
       "target": null
     },
     {
       "code": "ACTOR_ALREADY_REGISTERED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "ACTOR_UNKNOWN",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
-      "code": "ACT_NOT_PERMITTED",
-      "action": "NoneRequired",
+      "code": "NOT_AUTHORIZED",
+      "action": "AskForAccess",
       "target": null
     },
     {
@@ -33,7 +33,7 @@
     },
     {
       "code": "CASE_ALREADY_EXISTS",
-      "action": "NoneRequired",
+      "action": "ChooseAnotherReference",
       "target": null
     },
     {
@@ -43,22 +43,22 @@
     },
     {
       "code": "AMENDMENT_REQUIRES_UNDECIDED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "CASE_CLOSED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "DECISION_ALREADY_PAID",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "DECISION_REQUIRED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -68,27 +68,27 @@
     },
     {
       "code": "PAYMENT_ALREADY_RECORDED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "PAYMENT_NOT_RECORDED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "REVISION_CONFLICT",
-      "action": "ReadCurrent",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "CASE_VOIDED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "ZERO_DECISION_CANNOT_BE_PAID",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -113,7 +113,7 @@
     },
     {
       "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -143,7 +143,7 @@
     },
     {
       "code": "HUMAN_PRINCIPAL_REQUIRED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -342,12 +342,12 @@
     },
     {
       "code": "LAST_OWNER",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "NOT_VOIDED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -462,7 +462,7 @@
     },
     {
       "code": "ASSIGNEE_UNAVAILABLE",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -477,7 +477,7 @@
     },
     {
       "code": "ROLE_SCOPE_NOT_APPLICABLE",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
@@ -539,22 +539,22 @@
     },
     {
       "code": "REMINDER_PARENT_NOT_ACTIVE",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "REMINDER_PARENT_NOT_OPEN",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "REMINDER_PENDING_REQUIRED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {
       "code": "REMINDER_TERMINAL_REQUIRED",
-      "action": "NoneRequired",
+      "action": "ReviewLatest",
       "target": null
     },
     {

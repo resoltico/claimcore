@@ -1,3 +1,4 @@
+import { resourceUnavailableDiagnostic } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
 import { useEffect, useRef } from "react";
 import { usePresentation } from "../../presentation/context";
@@ -184,7 +185,7 @@ const UnavailableDisclosure = ({
             ? (model.notice ?? { kind: "local", reason: "incomplete" })
             : {
                 kind: "diagnostic",
-                diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
+                diagnostic: resourceUnavailableDiagnostic,
               }
         }
       />
