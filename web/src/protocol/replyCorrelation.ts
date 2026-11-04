@@ -198,7 +198,7 @@ const readTargetMatches = (
     return true;
   }
   const data = object(outcome["data"]);
-  if (endpoint === "case.get" || endpoint === "case.history" || endpoint === "case.activity") {
+  if (["case.get", "case.history", "case.activity", "case.timeline"].includes(endpoint)) {
     return caseTargetMatches(request, data);
   }
   if (endpoint === "work.overview") {
@@ -217,7 +217,7 @@ const readTargetMatches = (
   }
   return (
     endpoint !== "authority.grants" ||
-    sameIdentity(request["actorId"], object(data["actor"])["actorId"])
+    sameIdentity(request["actorId"], object(object(data["actor"])["actor"])["actorId"])
   );
 };
 const previewParentMatches = (
