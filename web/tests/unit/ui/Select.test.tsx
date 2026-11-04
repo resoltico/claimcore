@@ -119,13 +119,19 @@ it("opens at the requested boundary and cancels without committing the focused c
   const trigger = screen.getByRole("combobox", { name: "Format" });
   await user.tab();
   await user.keyboard("{End}");
-  await waitFor(() => expect(screen.getByRole("option", { name: "Deutsch" })).toHaveFocus());
+  await waitFor(() => {
+    expect(screen.getByRole("option", { name: "Deutsch" })).toHaveFocus();
+  });
   await user.keyboard("{Escape}");
-  await waitFor(() => expect(trigger).toHaveFocus());
+  await waitFor(() => {
+    expect(trigger).toHaveFocus();
+  });
   expect(trigger).toHaveValue("en-GB");
   expect(changed).not.toHaveBeenCalled();
   await user.keyboard("{Home}");
-  await waitFor(() => expect(screen.getByRole("option", { name: "English" })).toHaveFocus());
+  await waitFor(() => {
+    expect(screen.getByRole("option", { name: "English" })).toHaveFocus();
+  });
   await user.keyboard("{ArrowDown}{Enter}");
   expect(changed).toHaveBeenCalledExactlyOnceWith("lv-LV");
 });

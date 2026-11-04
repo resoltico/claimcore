@@ -32,9 +32,13 @@ export const Select = ({ id, label, value, options, disabled = false, onChange }
     if (disabled || options.length === 0) {
       return;
     }
-    const boundary =
-      strategy === "first" ? options[0] : strategy === "last" ? options.at(-1) : null;
-    setDraft(boundary?.value ?? pending);
+    if (strategy === "first") {
+      pending = options[0]?.value ?? pending;
+    }
+    if (strategy === "last") {
+      pending = options.at(-1)?.value ?? pending;
+    }
+    setDraft(pending);
     setFocus(strategy);
     setOpen(true);
   };
