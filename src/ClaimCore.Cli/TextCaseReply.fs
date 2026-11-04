@@ -54,15 +54,11 @@ module internal TextCaseReply =
            else
                [])
         @ [
-            instant value.Work.Basis.ObservedAt
-            + "  "
-            + CalendarDate.format (CalendarDate.ofDate value.Work.Basis.BusinessDate)
-            + "  "
-            + TerminalText.data value.Work.Basis.TimeZoneId
             line
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
                 (value.Advice.Acts |> List.map (offerAct language) |> String.concat ", ")
+            TextObservation.line language value.Work.Basis
         ]
 
     let historyLines language (page: HistoryResultPage) =

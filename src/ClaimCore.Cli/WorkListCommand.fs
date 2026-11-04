@@ -138,6 +138,9 @@ module internal WorkListCommand =
         else
             let request = Frames.value Api.caseTimeline initial |> Option.get
 
+            if prepared.Format = VerbFormat.Csv then
+                io.Output TimelineRows.csvHeader
+
             runPages
                 io
                 prepared
@@ -145,6 +148,6 @@ module internal WorkListCommand =
                 (fun (request: CaseTimelineRequest) -> request.AfterCursor)
                 (fun cursor request -> { request with AfterCursor = cursor })
                 (fun (page: CaseTimelinePage) -> page.NextCursor)
-                (fun _ -> invalidOp "Only text and JSON timeline pages are admitted.")
+                TimelineRows.csvRows
                 request
                 token

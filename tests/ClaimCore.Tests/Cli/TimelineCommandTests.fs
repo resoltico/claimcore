@@ -108,6 +108,83 @@ let tests =
         "canonical timeline CLI"
         [
             testCase
+                "CSV projects canonical typed money and retains disclosure through pagination"
+                (fun () ->
+                    let moneyChange =
+                        TimelineChange.CaseMoney
+                            {
+                                FieldName = BusinessField.ClaimedAmount
+                                Change =
+                                    {
+                                        Before = Some(Inputs.money "1234.5678" "EUR")
+                                        After = Some(Inputs.money "100.0000" "EUR")
+                                    }
+                            }
+
+                    let first =
+                        { page 2L (Some "csv-next") with
+                            Items =
+                                [
+                                    { entry 2L with
+                                        Changes = TimelineChanges.Disclosed [ moneyChange ]
+                                    }
+                                ]
+                        }
+
+                    let last =
+                        { page 1L None with
+                            Items =
+                                [
+                                    { entry 1L with
+                                        Changes = TimelineChanges.Erased
+                                    }
+                                ]
+                        }
+
+                    let code, text, errors, calls =
+                        run
+                            [ "--format"; "csv"; "--language"; "lv"; "--filter"; "facts"; "--all" ]
+                            [ Outcome.Succeeded first; Outcome.Succeeded last ]
+
+                    Expect.equal code 0 "CSV traversal succeeds"
+                    Expect.equal errors "" "No false error or continuation remains at the end"
+                    let records = text.Split("\r\n", StringSplitOptions.RemoveEmptyEntries)
+
+                    Expect.equal
+                        records.Length
+                        3
+                        "One header and one row per supplied change/disclosure"
+
+                    Expect.equal
+                        (records
+                         |> Array.filter (fun row -> row.StartsWith "caseReference,operationId")
+                         |> Array.length)
+                        1
+                        "Header occurs once across all pages"
+
+                    Expect.stringContains
+                        text
+                        "DISCLOSED,claimedAmount,1234.5678 EUR,100 EUR"
+                        "Canonical exact precision survives without localized separators or imposed display zeros"
+
+                    Expect.stringContains
+                        text
+                        "ERASED,,,"
+                        "Erasure is explicit and carries no invented values"
+
+                    Expect.equal calls.Length 2 "Continuation is followed"
+                    let requests = calls |> List.map (Frames.value Api.caseTimeline >> Option.get)
+
+                    Expect.equal
+                        (requests |> List.map _.Filter)
+                        [ Some TimelineFilter.Facts; Some TimelineFilter.Facts ]
+                        "Filter never changes during CSV traversal"
+
+                    Expect.equal
+                        (requests |> List.map _.AfterCursor)
+                        [ None; Some "csv-next" ]
+                        "Only the continuation changes")
+            testCase
                 "retired human verbs refuse while explicit API frames remain available"
                 (fun () ->
                     for verb in [ "history"; "activity" ] do
@@ -277,8 +354,8 @@ let tests =
                                 "Timeline author"
                                 TextReplyFormat.money language (Inputs.money "123456789.12" "EUR")
                                 TextReplyFormat.money language (Inputs.money "0" "USD")
-                                "2026-11-03"
-                                "2026-11-04"
+                                TextReplyFormat.date language (Inputs.date "2026-11-03")
+                                TextReplyFormat.date language (Inputs.date "2026-11-04")
                                 "First\\u{000A}second"
                             ] do
                             Expect.stringContains
@@ -288,12 +365,12 @@ let tests =
 
                         Expect.stringContains
                             text
-                            (MessageCatalogs.renderCli language CliMessage.TimelineWithheld)
+                            (TextReplyFormat.label language "label.changesWithheld")
                             "Withheld changes have an explicit localized state"
 
                         Expect.stringContains
                             text
-                            (MessageCatalogs.renderCli language CliMessage.TimelineErased)
+                            (TextReplyFormat.label language "label.changesErased")
                             "Erased changes are distinguished"
 
                         Expect.isFalse

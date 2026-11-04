@@ -53,12 +53,15 @@
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="TextReplyFormat.fs" />
     <Compile Include="TextDescriptorValue.fs" />
+    <Compile Include="TextObservation.fs" />
+    <Compile Include="TextTable.fs" />
     <Compile Include="TextDiagnosticReply.fs" />
     <Compile Include="CsvCell.fs" />
     <Compile Include="CaseListRows.fs" />
     <Compile Include="AuthorityHistoryRows.fs" />
     <Compile Include="TextWorkReply.fs" />
     <Compile Include="TextTimelineReply.fs" />
+    <Compile Include="TimelineRows.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
     <Compile Include="TextOperationReply.fs" />

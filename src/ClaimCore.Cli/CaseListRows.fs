@@ -90,15 +90,14 @@ module internal CaseListRows =
             |> csv)
         |> Array.concat
 
+    let textHeaderWith options language =
+        TextTable.header language options Descriptor.caseSummaryColumns
+
+    let textRowsWith options language rows =
+        TextTable.rows language options Descriptor.caseSummaryColumns rows
+
     let textHeader language =
-        Descriptor.caseSummaryColumns
-        |> List.map (fun column -> TextReplyFormat.label language column.LabelId)
-        |> String.concat "  "
+        textHeaderWith (TextTable.environment ()) language
 
     let textRows language rows =
-        rows
-        |> List.map (fun row ->
-            Descriptor.caseSummary row
-            |> List.collect _.Entries
-            |> List.map (fun entry -> TextDescriptorValue.render language entry.Value)
-            |> String.concat "  ")
+        textRowsWith (TextTable.environment ()) language rows

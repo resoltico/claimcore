@@ -22,8 +22,10 @@ type CliMessage =
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
-    | [<MessageKey("cli.text.timelineWithheld")>] TimelineWithheld
-    | [<MessageKey("cli.text.timelineErased")>] TimelineErased
+    | [<MessageKey("cli.text.observed")>] Observed of
+        observed: string *
+        businessDate: string *
+        timeZone: string
 
     | [<MessageKey("cli.help.liveTraversal")>] LiveTraversalHelp
     | [<MessageKey("cli.usage.unknownCommand")>] UnknownCommand of command: string

@@ -38,6 +38,7 @@ type EntryDefinition<'reply> =
         Key: string
         LabelId: string
         Prominence: Prominence
+        IsMoney: bool
         Read: 'reply -> PresentedValue
     }
 
@@ -57,7 +58,8 @@ module Descriptor =
     let private scalar =
         function
         | CaseFieldValue.Reference value -> PresentedValue.Reference value
-        | CaseFieldValue.Status value -> PresentedValue.Code("status", CaseStatus.token value)
+        | CaseFieldValue.Status value ->
+            PresentedValue.Code(Vocabulary.name CaseStatus.vocabulary, CaseStatus.token value)
         | CaseFieldValue.Business(Admitted.Date value) -> PresentedValue.Date value
         | CaseFieldValue.Business(Admitted.Country value) ->
             PresentedValue.Code("country", CountryCode.format value)
@@ -78,6 +80,7 @@ module Descriptor =
                 EntryDefinition.Key = field.Key
                 LabelId = FieldPresentation.labelId field.Field
                 Prominence = field.Prominence
+                IsMoney = field.Pairs.IsSome
                 Read =
                     fun reply ->
                         let values = getFields reply
@@ -224,7 +227,10 @@ module Descriptor =
                                     token
                                     "label.attention"
                                     Prominence.Primary
-                                    (PresentedValue.Code("attention", token)))
+                                    (PresentedValue.Code(
+                                        Vocabulary.name CaseAttention.vocabulary,
+                                        token
+                                    )))
                     }
 
                 match reply.Advice.Recommended with
@@ -295,7 +301,7 @@ module Descriptor =
                                 "input.reminderState.label"
                                 Prominence.Primary
                                 (PresentedValue.Code(
-                                    "reminderState",
+                                    Vocabulary.name ReminderState.vocabulary,
                                     ReminderState.token (Reminder.state current)
                                 ))
                         match reply.Timing with
@@ -306,7 +312,7 @@ module Descriptor =
                                     "input.reminderDue.label"
                                     Prominence.Secondary
                                     (PresentedValue.Code(
-                                        "reminderDue",
+                                        Vocabulary.name ReminderDue.vocabulary,
                                         Vocabulary.token ReminderDue.vocabulary timing
                                     ))
                         | None -> ()
@@ -317,7 +323,7 @@ module Descriptor =
                                     "field.status.label"
                                     Prominence.Secondary
                                     (PresentedValue.Code(
-                                        "caseDue",
+                                        Vocabulary.name CaseDue.vocabulary,
                                         Vocabulary.token CaseDue.vocabulary CaseDue.Inactive
                                     ))
                         yield
@@ -342,12 +348,14 @@ module Descriptor =
                 Key = "caseReference"
                 LabelId = FieldPresentation.labelId BusinessField.CaseReference
                 Prominence = Prominence.Primary
+                IsMoney = false
                 Read = fun (row: CaseSummary) -> PresentedValue.Reference row.Reference
             }
             {
                 Key = "headline"
                 LabelId = FieldPresentation.labelId BusinessField.Status
                 Prominence = Prominence.Primary
+                IsMoney = false
                 Read = fun row -> PresentedValue.State row.Headline
             }
             yield!
@@ -367,6 +375,7 @@ module Descriptor =
                 Key = "responsible"
                 LabelId = FieldPresentation.labelId BusinessField.ResponsibleActor
                 Prominence = Prominence.Secondary
+                IsMoney = false
                 Read =
                     fun (row: CaseSummary) ->
                         row.Responsible
@@ -377,6 +386,7 @@ module Descriptor =
                 Key = "nextAction"
                 LabelId = "field.reminderAction.label"
                 Prominence = Prominence.Secondary
+                IsMoney = false
                 Read =
                     fun row ->
                         row.NextAction
@@ -388,6 +398,7 @@ module Descriptor =
                 Key = "changedAt"
                 LabelId = "label.changedAt"
                 Prominence = Prominence.Detail
+                IsMoney = false
                 Read = fun row -> PresentedValue.Instant row.ChangedAt
             }
         ]
@@ -433,4 +444,217 @@ module Descriptor =
                 "label.unavailableAssigneeCases"
                 reply.UnavailableAssigneeCases
             count "attentionCases" "label.attentionCases" reply.AttentionCases
+        ]
+
+    let private difference key label format (change: ValueChange<'value>) =
+        {
+            TitleId = label
+            Entries =
+                [
+                    value
+                        (key + ".before")
+                        "label.before"
+                        Prominence.Secondary
+                        (optional format change.Before)
+                    value
+                        (key + ".after")
+                        "label.after"
+                        Prominence.Primary
+                        (optional format change.After)
+                ]
+        }
+
+    let private reminderDifference (change: ReminderDifference) =
+        let prefix = "reminder." + ReminderId.format change.ReminderId + "."
+
+        [
+            match change.Action with
+            | Some change ->
+                yield
+                    difference
+                        (prefix + "action")
+                        "field.reminderAction.label"
+                        (ReminderAction.format >> PresentedValue.Text)
+                        change
+            | None -> ()
+            match change.Due with
+            | Some change ->
+                yield
+                    difference
+                        (prefix + "dueDate")
+                        "field.reminderDueDate.label"
+                        PresentedValue.Date
+                        change
+            | None -> ()
+            match change.State with
+            | Some change ->
+                yield
+                    difference
+                        (prefix + "state")
+                        "input.reminderState.label"
+                        (fun state ->
+                            PresentedValue.Code(
+                                Vocabulary.name ReminderState.vocabulary,
+                                ReminderState.token state
+                            ))
+                        change
+            | None -> ()
+        ]
+
+    /// Differences are supplied by the authorized core snapshot, never reconstructed by a renderer.
+    let timelineChange =
+        function
+        | TimelineChange.CaseField change ->
+            [
+                difference
+                    (BusinessField.key change.FieldName)
+                    (FieldPresentation.labelId change.FieldName)
+                    scalar
+                    {
+                        Before = change.Before
+                        After = change.After
+                    }
+            ]
+        | TimelineChange.CaseMoney change ->
+            [
+                difference
+                    (BusinessField.key change.FieldName)
+                    (FieldPresentation.labelId change.FieldName)
+                    PresentedValue.Money
+                    change.Change
+            ]
+        | TimelineChange.Lifecycle change ->
+            [
+                difference
+                    "lifecycle"
+                    "input.lifecycle.label"
+                    (fun lifecycle ->
+                        PresentedValue.Code(
+                            Vocabulary.name Lifecycle.vocabulary,
+                            Lifecycle.token lifecycle
+                        ))
+                    {
+                        Before = change.Before
+                        After = Some change.After
+                    }
+            ]
+        | TimelineChange.Responsibility change ->
+            [
+                difference
+                    "responsibleActor"
+                    "field.responsibleActor.label"
+                    PresentedValue.Actor
+                    change
+            ]
+        | TimelineChange.HandlingSummary change ->
+            [
+                difference
+                    "handlingSummary"
+                    "field.handlingSummary.label"
+                    (HandlingSummary.format >> PresentedValue.Text)
+                    change
+            ]
+        | TimelineChange.Reminder change -> reminderDifference change
+
+    let timelineEntry (entry: CaseTimelineEntry) =
+        let act, revision, identifiers =
+            match entry.Subject with
+            | TimelineSubject.CaseFact(revision, act) -> CaseActKind.token act, revision, []
+            | TimelineSubject.Work(revision, act) -> WorkActKind.token act, revision, []
+            | TimelineSubject.Reminder(act, id, revision, next) ->
+                let identifiers =
+                    [
+                        yield
+                            value
+                                "reminderId"
+                                "field.reminderId.label"
+                                Prominence.Detail
+                                (PresentedValue.Identifier(ReminderId.format id))
+                        match next with
+                        | Some(id, revision) ->
+                            yield
+                                value
+                                    "nextReminderId"
+                                    "field.reminderId.label"
+                                    Prominence.Detail
+                                    (PresentedValue.Identifier(ReminderId.format id))
+
+                            yield
+                                value
+                                    "nextReminderRevision"
+                                    "label.reminderRevision"
+                                    Prominence.Detail
+                                    (PresentedValue.Identifier(Revision.format revision))
+                        | None -> ()
+                    ]
+
+                ReminderActKind.token act, revision, identifiers
+
+        [
+            yield
+                {
+                    TitleId = "label.changes"
+                    Entries =
+                        [
+                            yield
+                                value
+                                    "recordedAt"
+                                    "label.recordedAt"
+                                    Prominence.Primary
+                                    (PresentedValue.Instant entry.RecordedAt)
+                            yield
+                                value
+                                    "recordedBy"
+                                    "label.recordedBy"
+                                    Prominence.Primary
+                                    (PresentedValue.Actor entry.RecordedBy)
+                            yield
+                                value
+                                    "act"
+                                    "label.action"
+                                    Prominence.Primary
+                                    (PresentedValue.Code("act", act))
+                            yield
+                                value
+                                    "revision"
+                                    "label.revisionLabel"
+                                    Prominence.Detail
+                                    (PresentedValue.Identifier(Revision.format revision))
+                            yield
+                                value
+                                    "operationId"
+                                    "field.operationId.label"
+                                    Prominence.Detail
+                                    (PresentedValue.Identifier(OperationId.format entry.OperationId))
+                            yield! identifiers
+                        ]
+                }
+            match entry.Changes with
+            | TimelineChanges.Disclosed changes -> yield! changes |> List.collect timelineChange
+            | TimelineChanges.Withheld ->
+                yield
+                    {
+                        TitleId = "label.changes"
+                        Entries =
+                            [
+                                value
+                                    "changes"
+                                    "label.changes"
+                                    Prominence.Primary
+                                    (PresentedValue.Absent "label.changesWithheld")
+                            ]
+                    }
+            | TimelineChanges.Erased ->
+                yield
+                    {
+                        TitleId = "label.changes"
+                        Entries =
+                            [
+                                value
+                                    "changes"
+                                    "label.changes"
+                                    Prominence.Primary
+                                    (PresentedValue.Absent "label.changesErased")
+                            ]
+                    }
         ]

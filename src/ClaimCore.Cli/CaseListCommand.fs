@@ -26,13 +26,15 @@ module internal CaseListCommand =
         | FrameResult.Reply _ -> invalidOp "A case page must retain its requested endpoint."
         | _ -> None
 
-    let private header (io: ReadPageIO) (prepared: PreparedVerb) =
+    let private header options (io: ReadPageIO) (prepared: PreparedVerb) =
         match prepared.Format with
         | VerbFormat.Csv -> io.Output CaseListRows.csvHeader
-        | VerbFormat.Text -> io.Output(text [ CaseListRows.textHeader prepared.Language ])
+        | VerbFormat.Text ->
+            io.Output(text [ CaseListRows.textHeaderWith options prepared.Language ])
         | VerbFormat.Json -> ()
 
     let private rows
+        options
         (io: ReadPageIO)
         (prepared: PreparedVerb)
         frame
@@ -41,7 +43,8 @@ module internal CaseListCommand =
         =
         match prepared.Format with
         | VerbFormat.Csv -> io.Output(CaseListRows.csvRows page.Basis page.Items)
-        | VerbFormat.Text -> io.Output(text (CaseListRows.textRows prepared.Language page.Items))
+        | VerbFormat.Text ->
+            io.Output(text (CaseListRows.textRowsWith options prepared.Language page.Items))
         | VerbFormat.Json -> io.Deliver frame response
 
     let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =
@@ -55,7 +58,7 @@ module internal CaseListCommand =
         MessageCatalogs.renderCli prepared.Language (CliMessage.CursorReached reached)
         |> fun value -> io.Errors(text [ value ])
 
-    let run (io: ReadPageIO) (prepared: PreparedVerb) (token: CancellationToken) =
+    let runWith options (io: ReadPageIO) (prepared: PreparedVerb) (token: CancellationToken) =
         task {
             let initial = prepared.Invocation
 
@@ -67,7 +70,7 @@ module internal CaseListCommand =
             let mutable cursor = request.Page.AfterCursor
             let mutable running = true
             let mutable code = ExitCode.value ExitCode.Success
-            header io prepared
+            header options io prepared
 
             while running && not token.IsCancellationRequested do
                 let current =
@@ -83,7 +86,7 @@ module internal CaseListCommand =
 
                 match page response with
                 | Some(Outcome.Succeeded result) ->
-                    rows io prepared frame response result
+                    rows options io prepared frame response result
 
                     if prepared.All && result.NextCursor.IsSome then
                         if result.NextCursor = cursor then
@@ -108,3 +111,6 @@ module internal CaseListCommand =
                 else
                     code
         }
+
+    let run io prepared token =
+        runWith (TextTable.environment ()) io prepared token

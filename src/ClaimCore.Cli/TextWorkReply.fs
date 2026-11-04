@@ -43,14 +43,7 @@ module internal TextWorkReply =
         | ReminderEffects.CompletedAndPlanned(completed, next) ->
             reminder language completed @ reminder language next
 
-    let private basis _language (value: WorkDateBasis) =
-        [
-            instant value.ObservedAt
-            + "  "
-            + CalendarDate.format (CalendarDate.ofDate value.BusinessDate)
-            + "  "
-            + TerminalText.data value.TimeZoneId
-        ]
+    let private basis language value = [ TextObservation.line language value ]
 
     let private currentReminder language (value: ReminderReadModel) =
         TextDescriptorValue.sections language (Descriptor.reminder value)
@@ -61,25 +54,25 @@ module internal TextWorkReply =
         ]
 
     let single language (value: ReminderRead) =
-        basis language value.Basis @ currentReminder language value.Item
+        currentReminder language value.Item @ basis language value.Basis
 
     let page language (page: ReminderPage) =
-        basis language page.Basis
-        @ (page.Items |> List.collect (currentReminder language))
+        (page.Items |> List.collect (currentReminder language))
         @ nextLines language page.NextCursor
+        @ basis language page.Basis
 
     let caseViews language (value: CaseViews) =
-        basis language value.Basis
-        @ TextDescriptorValue.entries language (Descriptor.caseViews value)
+        TextDescriptorValue.entries language (Descriptor.caseViews value)
+        @ basis language value.Basis
 
     let reminderViews language (value: ReminderViews) =
-        basis language value.Basis
-        @ TextDescriptorValue.entries language (Descriptor.reminderViews value)
+        TextDescriptorValue.entries language (Descriptor.reminderViews value)
+        @ basis language value.Basis
 
     let overview language (value: WorkOverview) =
-        basis language value.Basis
-        @ [ line language "input.mine.label" (boolean value.Mine) ]
+        [ line language "input.mine.label" (boolean value.Mine) ]
         @ TextDescriptorValue.entries language (Descriptor.workOverview value)
+        @ basis language value.Basis
 
     let activity language (page: CaseActivityPage) =
         (page.Items

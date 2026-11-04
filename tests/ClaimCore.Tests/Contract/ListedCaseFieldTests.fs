@@ -116,6 +116,6 @@ let tests =
 
                     Expect.equal
                         (TextDescriptorValue.render "en" (date.Read()))
-                        (CalendarDate.format expectedDate)
+                        (TextReplyFormat.date "en" expectedDate)
                         "The real generic CLI formatter needs no field-specific branch")
         ]

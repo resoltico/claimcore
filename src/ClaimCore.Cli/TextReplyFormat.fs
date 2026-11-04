@@ -34,6 +34,16 @@ module internal TextReplyFormat =
         + " "
         + Money.currency value
 
+    let date (language: string) value =
+        (CalendarDate.value value).ToString("d MMM yyyy", CultureInfo.GetCultureInfo language)
+
+    let country (language: string) code =
+        try
+            let name = RegionInfo(language + "-" + code).NativeName
+            if name = code then code else name + " (" + code + ")"
+        with :? ArgumentException ->
+            code
+
     let boolean value = if value then "true" else "false"
 
     let instant (value: DateTimeOffset) =

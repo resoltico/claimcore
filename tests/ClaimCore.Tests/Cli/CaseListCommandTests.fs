@@ -121,7 +121,11 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
         }
 
     let code =
-        CaseListCommand.run io pending CancellationToken.None
+        CaseListCommand.runWith
+            { Width = 4096; BoldHeader = false }
+            io
+            pending
+            CancellationToken.None
         |> fun task -> task.GetAwaiter().GetResult()
 
     code, output.ToArray(), errors.ToArray(), List.ofSeq calls
@@ -230,6 +234,13 @@ let tests =
                             Responsible = Some actor
                         }
 
+                    Expect.stringContains
+                        (TextDescriptorValue.render
+                            "en"
+                            (ClaimCore.Protocol.Presentation.PresentedValue.Actor actor))
+                        "Agent\\u{001B}[31m\\u{202E}B\\\\u{202E}"
+                        "The actual typed formatter distinguishes controls from literal escapes before layout"
+
                     for options in [ []; [ "--all" ] ] do
                         let code, bytes, _, _ =
                             run options [ Outcome.Succeeded(page [ value ] None) ]
@@ -239,7 +250,7 @@ let tests =
 
                         Expect.stringContains
                             rendered
-                            "Agent\\u{001B}[31m\\u{202E}B\\\\u{202E}"
+                            "Agent\\u{001B}[31m…"
                             "Control escapes and literal backslashes stay distinguishable"
 
                         Expect.isFalse
@@ -566,7 +577,7 @@ let tests =
                 let rendered = Encoding.UTF8.GetString bytes
                 Expect.stringContains rendered "FIRST" "First page is retained"
                 Expect.stringContains rendered "SECOND" "Second page is retained")
-            testCase "CSV and all options apply only to case lists" (fun () ->
+            testCase "only declared paged readers accept CSV and all options" (fun () ->
                 for args in
                     [
                         [ "case"; "get"; "x"; "--all" ]

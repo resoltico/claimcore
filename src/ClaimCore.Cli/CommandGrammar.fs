@@ -161,6 +161,7 @@ module CommandGrammar =
                     ActorEndpoint.Query QueryEndpoint.CaseList
                     ActorEndpoint.Query QueryEndpoint.ReminderList
                     ActorEndpoint.Query QueryEndpoint.AuthorityHistory
+                    ActorEndpoint.Query QueryEndpoint.CaseTimeline
                 ]
         then
             [ "text"; "json"; "csv" ]

@@ -60,19 +60,32 @@ let tests =
     testList
         "current reminder human replies"
         [
-            for language, inactive, labels in
+            for language, inactive, labels, dates, dueDate in
                 [
-                    "en", "Inactive work", [ "Overdue"; "Today"; "Upcoming" ]
-                    "lv", "Neaktīvs darbs", [ "Nokavēts"; "Šodien"; "Gaidāms" ]
-                    "ar", "عمل غير نشط", [ "متأخر"; "اليوم"; "قادم" ]
+                    "en",
+                    "Inactive work",
+                    [ "Overdue"; "Today"; "Upcoming" ],
+                    [ "3 Nov 2026"; "1 Nov 2026"; "31 Oct 2026" ],
+                    "1 Nov 2026"
+                    "lv",
+                    "Neaktīvs darbs",
+                    [ "Nokavēts"; "Šodien"; "Gaidāms" ],
+                    [ "3 nov. 2026"; "1 nov. 2026"; "31 okt. 2026" ],
+                    "1 nov. 2026"
+                    "ar",
+                    "عمل غير نشط",
+                    [ "متأخر"; "اليوم"; "قادم" ],
+                    [ "3 نوفمبر 2026"; "1 نوفمبر 2026"; "31 أكتوبر 2026" ],
+                    "1 نوفمبر 2026"
                 ] do
                 testCase
                     (language + " single and page preserve server timing and inactive work")
                     (fun () ->
-                        for timing, expected in
-                            List.zip
+                        for timing, expected, expectedDate in
+                            List.zip3
                                 [ ReminderDue.Overdue; ReminderDue.Today; ReminderDue.Upcoming ]
-                                labels do
+                                labels
+                                dates do
                             // Coherent server observations remain authoritative even when their date is old.
                             let businessDate =
                                 match timing with
@@ -99,13 +112,13 @@ let tests =
 
                                 Expect.stringContains
                                     text
-                                    (businessDate.ToString("yyyy-MM-dd") + "  Europe/Riga")
+                                    (expectedDate + " (Europe/Riga)")
                                     "Installation business-date basis"
 
                                 Expect.stringContains
                                     text
-                                    "2026-11-01"
-                                    "Stored due date is preserved"
+                                    dueDate
+                                    "Stored due date is localized without changing its value"
 
                                 Expect.isFalse
                                     (text.Contains inactive)

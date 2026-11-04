@@ -20,6 +20,39 @@ let tests =
     testList
         "typed work descriptors"
         [
+            testCase "calendar dates and country names use the explicit display language" (fun () ->
+                let date = Inputs.date "2026-11-04"
+
+                Expect.equal
+                    (TextDescriptorValue.render "en" (PresentedValue.Date date))
+                    "4 Nov 2026"
+                    "Human dates are localized rather than wire literals"
+
+                for language, expected in
+                    [ "en", "Latvia (LV)"; "lv", "Latvija (LV)"; "ar", "لاتفيا (LV)" ] do
+                    Expect.equal
+                        (TextDescriptorValue.render language (PresentedValue.Code("country", "LV")))
+                        expected
+                        "Country names retain their identifying code without ambient culture mutation")
+            testCase
+                "observation uses the snapshot installation zone and localized business date"
+                (fun () ->
+                    Expect.equal
+                        (TextObservation.line "en" basis)
+                        "Observed 2026-11-04 14:00 · business date 4 Nov 2026 (Europe/Riga)"
+                        "The actual basis timestamp is converted using the installation zone, with no client clock"
+
+                    for language in [ "en"; "lv"; "ar" ] do
+                        let output = TextObservation.line language basis
+
+                        Expect.stringContains
+                            output
+                            "2026-11-04 14:00"
+                            "The same observation instant is used in every language"
+
+                        Expect.isFalse
+                            (output.Contains "cli.text." || output.Contains "{observed}")
+                            "No missing message key or interpolation survives")
             testCase "overview preserves independent counts and a known zero" (fun () ->
                 let reply =
                     {
@@ -51,7 +84,7 @@ let tests =
 
                 Expect.contains
                     (TextWorkReply.overview "en" reply)
-                    "Cases without next action: 0"
+                    "Cases without next action       : 0"
                     "The actual human renderer retains zero rather than an absent marker")
             testCase "view counts retain their typed identities and producer order" (fun () ->
                 let cases: CaseViews =
