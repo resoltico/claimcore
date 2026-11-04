@@ -7621,6 +7621,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "cursor",
@@ -7683,6 +7684,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "kind",

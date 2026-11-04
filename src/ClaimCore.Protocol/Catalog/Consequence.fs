@@ -67,4 +67,6 @@ module Consequence =
         | QueryEndpoint.AuthorityList
         | QueryEndpoint.AuthorityGrants
         | QueryEndpoint.AuthorityHistory
+        | QueryEndpoint.AuthorityRequests
+        | QueryEndpoint.AuthorityRequestsDismiss
         | QueryEndpoint.Context -> Consequence.Routine

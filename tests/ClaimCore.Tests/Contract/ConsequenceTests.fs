@@ -56,6 +56,8 @@ let private queries =
         QueryEndpoint.AuthorityList, Consequence.Routine
         QueryEndpoint.AuthorityGrants, Consequence.Routine
         QueryEndpoint.AuthorityHistory, Consequence.Routine
+        QueryEndpoint.AuthorityRequests, Consequence.Routine
+        QueryEndpoint.AuthorityRequestsDismiss, Consequence.Routine
         QueryEndpoint.Context, Consequence.Routine
     ]
 
