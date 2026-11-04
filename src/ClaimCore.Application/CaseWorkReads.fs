@@ -13,7 +13,8 @@ module internal CaseWorkReads =
                     fields.Status, CaseProgress.ofPayment fields.Progress)
             Responsible =
                 work.Responsible
-                |> Option.map (fun assigned -> assigned.ActorId, assigned.Availability = ActorAvailability.Available)
+                |> Option.map (fun assigned ->
+                    assigned.ActorId, assigned.Availability = ActorAvailability.Available)
             NextPendingDue = work.FollowUp
         }
 
