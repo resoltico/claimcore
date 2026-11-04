@@ -9463,6 +9463,17 @@
               "CANCELLED"
             ]
           },
+          "view": {
+            "enum": [
+              "PENDING",
+              "MINE",
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
           "due": {
             "enum": [
               "OVERDUE",

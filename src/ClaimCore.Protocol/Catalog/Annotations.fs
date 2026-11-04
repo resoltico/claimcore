@@ -262,6 +262,8 @@ module CatalogAnnotations =
             yield
                 ("ReminderListRequest", "assignment"),
                 constant (annotation InteractionInput.Assignment)
+            yield
+                ("ReminderListRequest", "view"), constant (annotation InteractionInput.ReminderView)
             yield ("ReminderListRequest", "text"), constant (target InputTarget.Text)
             yield
                 ("ReminderListRequest", "includeInactive"),

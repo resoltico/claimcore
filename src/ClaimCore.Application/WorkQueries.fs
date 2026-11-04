@@ -262,7 +262,14 @@ module internal WorkQueries =
                                                     }
 
                                                 let state =
-                                                    defaultArg request.State ReminderState.Pending
+                                                    match request.State, request.View with
+                                                    | None, None -> Some ReminderState.Pending
+                                                    | value, _ -> value
+
+                                                let includeInactive =
+                                                    defaultArg
+                                                        request.IncludeInactive
+                                                        request.View.IsSome
 
                                                 let parentId = parent |> Option.map _.CaseId
 
@@ -276,7 +283,12 @@ module internal WorkQueries =
                                                             parentId
                                                             |> Option.map CaseId.format
                                                             |> Option.defaultValue ""
-                                                            ReminderState.token state
+                                                            state
+                                                            |> Option.map DurableNames.reminderState
+                                                            |> Option.defaultValue ""
+                                                            request.View
+                                                            |> Option.map DurableNames.reminderView
+                                                            |> Option.defaultValue ""
                                                             request.Due
                                                             |> Option.map ReminderDue.token
                                                             |> Option.defaultValue ""
@@ -286,7 +298,7 @@ module internal WorkQueries =
                                                             text
                                                             |> Option.map CaseSearchText.value
                                                             |> Option.defaultValue ""
-                                                            string request.IncludeInactive
+                                                            string includeInactive
                                                         ]
 
                                                 match
@@ -306,10 +318,10 @@ module internal WorkQueries =
                                                                 Selection = selection
                                                                 TargetCaseId = parentId
                                                                 State = state
+                                                                View = request.View
                                                                 Due = request.Due
                                                                 Text = text
-                                                                IncludeInactive =
-                                                                    request.IncludeInactive
+                                                                IncludeInactive = includeInactive
                                                                 After =
                                                                     after
                                                                     |> Option.map (fun (due, id) ->

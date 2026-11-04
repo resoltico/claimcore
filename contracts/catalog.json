@@ -443,6 +443,12 @@
       "scalar": null
     },
     {
+      "name": "reminderView",
+      "labelId": "input.reminderView.label",
+      "meaningId": "input.reminderView.meaning",
+      "scalar": null
+    },
+    {
       "name": "order",
       "labelId": "input.order.label",
       "meaningId": "input.order.meaning",
@@ -5577,6 +5583,38 @@
           "source": "AUTHORED"
         },
         {
+          "identity": "view",
+          "field": null,
+          "path": [
+            "view"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "reminderView",
+            "options": [
+              "PENDING",
+              "MINE",
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "COMPLETED",
+              "CANCELLED"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.reminderView.label",
+          "meaningId": "input.reminderView.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
           "identity": "due",
           "field": null,
           "path": [
@@ -5595,7 +5633,7 @@
           "branches": [],
           "labelId": "input.reminderDue.label",
           "meaningId": "input.reminderDue.meaning",
-          "order": 2,
+          "order": 3,
           "prefill": null,
           "required": false,
           "wireRequired": false,
@@ -5622,7 +5660,7 @@
           "branches": [],
           "labelId": "input.assignment.label",
           "meaningId": "input.assignment.meaning",
-          "order": 3,
+          "order": 4,
           "prefill": null,
           "required": false,
           "wireRequired": false,
@@ -5644,7 +5682,7 @@
           "branches": [],
           "labelId": "field.text.label",
           "meaningId": "field.text.meaning",
-          "order": 4,
+          "order": 5,
           "prefill": null,
           "required": false,
           "wireRequired": false,
@@ -5668,7 +5706,7 @@
           "branches": [],
           "labelId": "field.cursor.label",
           "meaningId": "field.cursor.meaning",
-          "order": 5,
+          "order": 6,
           "prefill": null,
           "required": false,
           "wireRequired": false,
@@ -5692,7 +5730,7 @@
           "branches": [],
           "labelId": "field.limit.label",
           "meaningId": "field.limit.meaning",
-          "order": 6,
+          "order": 7,
           "prefill": null,
           "required": false,
           "wireRequired": true,
@@ -5716,7 +5754,7 @@
           "branches": [],
           "labelId": "input.includeInactive.label",
           "meaningId": "input.includeInactive.meaning",
-          "order": 7,
+          "order": 8,
           "prefill": null,
           "required": false,
           "wireRequired": false,

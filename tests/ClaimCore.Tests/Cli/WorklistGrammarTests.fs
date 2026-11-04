@@ -16,6 +16,65 @@ let tests =
     testList
         "catalog worklist flags"
         [
+            testCase
+                "view flags have one public spelling and preserve omitted reminder filters"
+                (fun () ->
+                    let frame = prepared [ "case"; "list"; "--view"; "needs-attention" ]
+
+                    let case =
+                        Api.caseList.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+
+                    Expect.equal case.Filter.View (Some CaseView.NeedsAttention) "CASE uses --view"
+
+                    for arguments in
+                        [
+                            [ "case"; "list"; "--view"; "pending" ]
+                            [ "reminder"; "list"; "--view"; "voided" ]
+                        ] do
+                        Expect.isError
+                            (Grammar.prepare
+                                (fun () -> "10000000-0000-4000-8000-000000000001")
+                                arguments)
+                            "Case and reminder views have separate closed vocabularies"
+
+                    let frame = prepared [ "reminder"; "list"; "--view"; "completed" ]
+
+                    let reminder =
+                        Api.reminders.Input.Read "$" (Frames.input frame) |> Fixtures.accepted
+
+                    Expect.equal
+                        reminder.View
+                        (Some ReminderView.Completed)
+                        "Reminder views retain their distinct vocabulary"
+
+                    Expect.isNone
+                        reminder.State
+                        "Omitted state does not become an explicit pending filter"
+
+                    Expect.isNone
+                        reminder.IncludeInactive
+                        "Omitted parent filter remains distinguishable from false"
+
+                    let raw =
+                        System.Text.Encoding.UTF8.GetBytes
+                            "{\"view\":\"COMPLETED\",\"includeInactive\":false,\"limit\":5}"
+
+                    let explicit =
+                        Codec.decode Limits.MaximumRequestBytes Api.reminders.Input raw
+                        |> Fixtures.accepted
+
+                    Expect.equal
+                        explicit.IncludeInactive
+                        (Some false)
+                        "Explicit false survives the boundary codec"
+
+                    Expect.equal
+                        (Codec.decode
+                            Limits.MaximumRequestBytes
+                            Api.reminders.Input
+                            (Codec.encode Api.reminders.Input explicit))
+                        (Ok explicit)
+                        "Encoding preserves explicit false")
             testCase "catalog array bindings require a finite declared vocabulary" (fun () ->
                 let schema item =
                     Schema.Object([ "facet", Schema.Array(item, 0, 2) ], [ "facet" ])

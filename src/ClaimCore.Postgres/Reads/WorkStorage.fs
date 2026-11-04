@@ -290,15 +290,22 @@ module internal WorkStorage =
         task {
             let due = query.Due |> Option.map duePredicate |> Option.defaultValue "TRUE"
 
+            let view =
+                query.View
+                |> Option.map ViewCountStorage.reminderPredicate
+                |> Option.defaultValue "TRUE"
+
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($12::uuid IS NULL OR r.case_id=$12) AND r.state=$13 AND ($14 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($15::text IS NULL OR r.search_text LIKE '%%'||$15||'%%' ESCAPE chr(92)) AND ($16::date IS NULL OR (r.due,r.reminder_id)>($16::date,$17::uuid)) ORDER BY r.due,r.reminder_id LIMIT $18"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($12::uuid IS NULL OR r.case_id=$12) AND ($13::text IS NULL OR r.state=$13) AND ({view}) AND ($14 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($15::text IS NULL OR r.search_text LIKE '%%'||$15||'%%' ESCAPE chr(92)) AND ($16::date IS NULL OR (r.due,r.reminder_id)>($16::date,$17::uuid)) ORDER BY r.due,r.reminder_id LIMIT $18"
 
             let parameters =
                 Array.append
                     (CaseSelectionSql.parameters query.Selection)
                     [|
                         DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
-                        box (ReminderState.token query.State)
+                        DatabaseSession.parameter (
+                            query.State |> Option.map DurableNames.reminderState
+                        )
                         box query.IncludeInactive
                         DatabaseSession.parameter (literalSearch query.Text)
                         DatabaseSession.parameter (

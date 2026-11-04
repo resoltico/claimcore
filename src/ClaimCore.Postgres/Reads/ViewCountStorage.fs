@@ -35,7 +35,7 @@ module internal ViewCountStorage =
                     })
         }
 
-    let private reminderPredicate =
+    let reminderPredicate =
         let actionable = "r.state='PENDING' AND c.state='ACTIVE' AND c.status='OPENED'"
 
         function
@@ -44,8 +44,8 @@ module internal ViewCountStorage =
         | ReminderView.Overdue -> $"{actionable} AND r.due<$11::date"
         | ReminderView.Today -> $"{actionable} AND r.due=$11::date"
         | ReminderView.Upcoming -> $"{actionable} AND r.due>$11::date"
-        | ReminderView.Completed -> "r.state='COMPLETED'"
-        | ReminderView.Cancelled -> "r.state='CANCELLED'"
+        | ReminderView.Completed -> "c.state<>'ERASED' AND r.state='COMPLETED'"
+        | ReminderView.Cancelled -> "c.state<>'ERASED' AND r.state='CANCELLED'"
 
     let reminders connection (selection: CaseSelection) token =
         task {

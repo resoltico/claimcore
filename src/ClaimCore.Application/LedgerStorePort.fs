@@ -366,7 +366,8 @@ type ReminderPageQuery =
     {
         Selection: CaseSelection
         TargetCaseId: CaseId option
-        State: ReminderState
+        State: ReminderState option
+        View: ReminderView option
         Due: ReminderDue option
         Text: CaseSearchText option
         IncludeInactive: bool

@@ -72,6 +72,22 @@ module DurableNames =
         | CaseView.Voided -> "VOIDED"
         | CaseView.All -> "ALL"
 
+    let reminderState =
+        function
+        | ReminderState.Pending -> "PENDING"
+        | ReminderState.Completed -> "COMPLETED"
+        | ReminderState.Cancelled -> "CANCELLED"
+
+    let reminderView =
+        function
+        | ReminderView.Pending -> "PENDING"
+        | ReminderView.Mine -> "MINE"
+        | ReminderView.Overdue -> "OVERDUE"
+        | ReminderView.Today -> "TODAY"
+        | ReminderView.Upcoming -> "UPCOMING"
+        | ReminderView.Completed -> "COMPLETED"
+        | ReminderView.Cancelled -> "CANCELLED"
+
     let status =
         function
         | CaseStatus.Opened -> "OPENED"

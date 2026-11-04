@@ -89,6 +89,7 @@ type ReminderOperationRequest =
 
 type ReminderListRequest =
     {
+        View: ReminderView option
         Target: CaseSelector option
         State: ReminderState option
         Due: ReminderDue option
@@ -96,7 +97,7 @@ type ReminderListRequest =
         Text: string option
         AfterCursor: string option
         Limit: int
-        IncludeInactive: bool
+        IncludeInactive: bool option
     }
 
 type WorkOverviewRequest = { Mine: bool }

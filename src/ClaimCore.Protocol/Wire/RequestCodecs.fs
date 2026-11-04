@@ -798,20 +798,22 @@ module RequestCodecs =
         |> finishRead RequestSchemas.AuthorityHistoryRequest QueryEndpoint.AuthorityHistory
 
     let reminderListRequest =
-        (record (fun target state due assignment search cursor limit inactive ->
+        (record (fun target state view due assignment search cursor limit inactive ->
             {
                 ReminderListRequest.Target = target
+                View = view
                 State = state
                 Due = due
                 Assignment = assignment
                 Text = search
                 AfterCursor = cursor
                 Limit = limit
-                IncludeInactive = defaultArg inactive false
+                IncludeInactive = inactive
             })
         : Fields<ReminderListRequest, _>)
         |> optionalField "target" _.Target caseSelector
         |> optionalField "state" _.State (VocabularyCodec.create ReminderState.vocabulary)
+        |> optionalField "view" _.View (VocabularyCodec.create ReminderView.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create ReminderDue.vocabulary)
         |> optionalField
             "assignment"
@@ -820,10 +822,7 @@ module RequestCodecs =
         |> optionalField "text" _.Text text
         |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumCaseCursorCharacters)
         |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
-        |> optionalField
-            "includeInactive"
-            (fun value -> if value.IncludeInactive then Some true else None)
-            boolean
+        |> optionalField "includeInactive" _.IncludeInactive boolean
         |> build
         |> named "ReminderListRequest"
 

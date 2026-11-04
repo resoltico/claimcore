@@ -542,7 +542,8 @@ let private reminderProfiles progressed publish actor cases =
                 Text = Some "High fanout action"
                 AfterCursor = cursor
                 Limit = 50
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let assertPage state expected =

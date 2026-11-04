@@ -408,9 +408,10 @@
     "reminderDue",
     "includeInactive",
     "mine",
-    "caseView"
+    "caseView",
+    "reminderView"
   ],
-  "cliFrameCount": 51,
+  "cliFrameCount": 53,
   "readInputs": {
     "case.get": [
       "target"
@@ -475,6 +476,7 @@
     "reminder.list": [
       "target",
       "state",
+      "view",
       "due",
       "assignment",
       "text",

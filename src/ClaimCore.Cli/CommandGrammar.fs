@@ -37,6 +37,8 @@ module CommandGrammar =
         | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
         | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
         | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
+        | InteractionInput.CaseView
+        | InteractionInput.ReminderView -> "view"
         | InteractionInput.ReminderDue -> "due"
         | InteractionInput.ReminderState -> "state"
         | InteractionInput.Target InputTarget.ReminderAction -> "action"

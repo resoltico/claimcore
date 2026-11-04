@@ -15,6 +15,7 @@ type InteractionInput =
     | Status
     | Progress
     | CaseView
+    | ReminderView
     | Order
     | Assignment
     | Due
@@ -45,6 +46,7 @@ module InteractionInput =
         | InteractionInput.Status -> "status"
         | InteractionInput.Progress -> "progress"
         | InteractionInput.CaseView -> "caseView"
+        | InteractionInput.ReminderView -> "reminderView"
         | InteractionInput.Order -> "order"
         | InteractionInput.Due -> "due"
         | InteractionInput.WorkChoice field -> BusinessField.key field + "Action"
@@ -72,6 +74,7 @@ module InteractionInput =
         | InteractionInput.Status
         | InteractionInput.Progress
         | InteractionInput.CaseView
+        | InteractionInput.ReminderView
         | InteractionInput.Order
         | InteractionInput.Due
         | InteractionInput.Assignment -> vocabularyName + "." + key input + "." + part

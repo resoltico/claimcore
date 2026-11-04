@@ -40,6 +40,7 @@
     <Compile Include="WorklistFixtures.fs" />
     <Compile Include="WorklistQueryTests.fs" />
     <Compile Include="ViewCountQueryTests.fs" />
+    <Compile Include="ReminderViewQueryTests.fs" />
     <Compile Include="WorklistCursorPrecisionTests.fs" />
     <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="TimelineStorageTests.fs" />

@@ -2167,6 +2167,88 @@
       "value": {
         "view": "MINE"
       }
+    },
+    {
+      "id": "reminder-view-PENDING",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "PENDING",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-MINE",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "MINE",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-OVERDUE",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "OVERDUE",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-TODAY",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "TODAY",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-UPCOMING",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "UPCOMING",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-COMPLETED",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "COMPLETED",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-CANCELLED",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "CANCELLED",
+        "limit": 5
+      }
+    },
+    {
+      "id": "reminder-view-explicit-false",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "view": "COMPLETED",
+        "includeInactive": false,
+        "state": "PENDING",
+        "limit": 5
+      }
     }
   ]
 }

@@ -222,7 +222,8 @@ let internal assignmentAndDisclosure fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 50
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         for target in [ Some(CaseSelector.Id caseId); None ] do
@@ -528,7 +529,8 @@ let internal dueFiltersAndOrder fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 1
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let! first = Service.reminders owner request token
@@ -717,7 +719,8 @@ let internal reminderTiming fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 50
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let single operation =
@@ -866,20 +869,26 @@ let internal reminderTiming fixture =
         let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
         let! hidden = checkPage request []
         Expect.isNone hidden.NextCursor "Inactive work does not leak through pagination"
-        let! _ = checkPage { request with IncludeInactive = true } inactive
 
         let! _ =
             checkPage
                 { request with
-                    Target = None
-                    IncludeInactive = true
+                    IncludeInactive = Some true
                 }
                 inactive
 
         let! _ =
             checkPage
                 { request with
-                    IncludeInactive = true
+                    Target = None
+                    IncludeInactive = Some true
+                }
+                inactive
+
+        let! _ =
+            checkPage
+                { request with
+                    IncludeInactive = Some true
                     State = Some ReminderState.Completed
                     Due = Some ReminderDue.Overdue
                 }
@@ -906,7 +915,14 @@ let internal reminderTiming fixture =
 
         let! voided = execute owner 710 reference 3L (CaseAct.Void "Timing lifecycle check")
         accepted voided |> ignore
-        let! _ = checkPage { request with IncludeInactive = true } inactive
+
+        let! _ =
+            checkPage
+                { request with
+                    IncludeInactive = Some true
+                }
+                inactive
+
         let! voidedItem = single 702
         Expect.isFalse voidedItem.Active "Voided single read marks retained work inactive"
         Expect.isNone voidedItem.Timing "Voided pending work has no actionable timing"
@@ -1402,7 +1418,8 @@ let internal finiteDateRange fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 1
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let mutable cursor = None

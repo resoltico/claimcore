@@ -42,7 +42,8 @@ let private queue actor cursor =
             Text = None
             AfterCursor = cursor
             Limit = 1
-            IncludeInactive = false
+            View = None
+            IncludeInactive = None
         }
         token
 
@@ -116,7 +117,8 @@ let private dates database =
                         Text = None
                         AfterCursor = None
                         Limit = 50
-                        IncludeInactive = false
+                        View = None
+                        IncludeInactive = None
                     }
                     token
 

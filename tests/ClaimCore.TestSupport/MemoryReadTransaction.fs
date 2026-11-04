@@ -315,7 +315,15 @@ type internal Reader
 
                     selected state query.Selection parent
                     && (query.TargetCaseId |> Option.forall ((=) row.CaseId))
-                    && Reminder.state value = query.State
+                    && (query.State |> Option.forall ((=) (Reminder.state value)))
+                    && (query.View
+                        |> Option.forall (fun view ->
+                            ReminderView.matches
+                                query.Selection.DateBasis.BusinessDate
+                                query.Selection.ActorId
+                                view
+                                (viewFacts state parent)
+                                value))
                     && (query.IncludeInactive || actionable)
                     && (query.Text
                         |> Option.forall (fun text ->
