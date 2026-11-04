@@ -173,4 +173,60 @@ let tests =
                     (TextCaseReply.caseLines "en" reply
                      |> List.exists (fun line -> line.Contains "SECRET"))
                     "Actual human output cannot disclose stale work")
+            testCase "reminder descriptor preserves actor and due date as typed values" (fun () ->
+                let actorId =
+                    CaseFixtures.actorId (Guid.Parse "80000000-0000-4000-8000-000000000003")
+
+                let actor = Inputs.namedActorReference actorId "Aija"
+                let due = Inputs.date "2026-11-05"
+
+                let reminder =
+                    Reminder.ofAccepted
+                        (ReminderId.ofOperationId (
+                            CaseFixtures.operationId (
+                                Guid.Parse "80000000-0000-4000-8000-000000000004"
+                            )
+                        ))
+                        (CaseFixtures.caseId (Guid.Parse "80000000-0000-4000-8000-000000000005"))
+                        (CaseFixtures.revision 1L)
+                        (ReminderAction.parse "Telephone claimant"
+                         |> Result.defaultWith (fun error -> failtestf "%A" error))
+                        due
+                        ReminderState.Pending
+                    |> Result.defaultWith failtest
+
+                let reply: ReminderReadModel =
+                    {
+                        Reminder = reminder
+                        Reference = Inputs.reference "REM-1"
+                        RecordedAt = basis.ObservedAt
+                        RecordedBy = actor
+                        Acts = [ ReminderActKind.Complete ]
+                        Active = true
+                        Timing = Some ReminderDue.Upcoming
+                    }
+
+                let entries = Descriptor.reminder reply |> List.collect _.Entries
+
+                let field key =
+                    entries |> List.find (fun entry -> entry.Key = key) |> _.Value
+
+                Expect.equal
+                    (field "dueDate")
+                    (PresentedValue.Date due)
+                    "The CLI need not parse a date from arbitrary text"
+
+                Expect.equal
+                    (field "recordedBy")
+                    (PresentedValue.Actor actor)
+                    "Names retain the core ActorRef"
+
+                Expect.equal
+                    (field "timing")
+                    (PresentedValue.Code("reminderDue", "UPCOMING"))
+                    "Timing is core-owned"
+
+                Expect.isFalse
+                    (entries |> List.exists (fun entry -> entry.Key = "parentState"))
+                    "An active parent has no invented inactivity row")
         ]

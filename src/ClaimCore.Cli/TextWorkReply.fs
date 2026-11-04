@@ -53,23 +53,8 @@ module internal TextWorkReply =
         ]
 
     let private currentReminder language (value: ReminderReadModel) =
-        [ TerminalText.data (CaseReference.format value.Reference) ]
-        @ reminder language value.Reminder
-        @ (value.Timing
-           |> Option.map (fun timing ->
-               [
-                   line
-                       language
-                       "input.reminderDue.label"
-                       (term language ReminderDue.vocabulary timing)
-               ])
-           |> Option.defaultValue [])
-        @ (if value.Active then
-               []
-           else
-               [ term language CaseDue.vocabulary CaseDue.Inactive ])
+        TextDescriptorValue.sections language (Descriptor.reminder value)
         @ [
-            instant value.RecordedAt + "  " + actorName language value.RecordedBy
             value.Acts
             |> List.map (fun act -> term language ReminderActKind.vocabulary act)
             |> String.concat ", "

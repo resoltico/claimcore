@@ -211,9 +211,129 @@ module Descriptor =
                                 (PresentedValue.Identifier(Revision.format reply.Snapshot.Revision))
                         ]
                 }
+            if CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased then
+                yield
+                    {
+                        TitleId = "label.attention"
+                        Entries =
+                            reply.Attention
+                            |> List.map (fun attention ->
+                                let token = Vocabulary.token CaseAttention.vocabulary attention
+
+                                value
+                                    token
+                                    "label.attention"
+                                    Prominence.Primary
+                                    (PresentedValue.Code("attention", token)))
+                    }
+
+                match reply.Advice.Recommended with
+                | Some act ->
+                    yield
+                        {
+                            TitleId = "label.recommendedNext"
+                            Entries =
+                                [
+                                    value
+                                        "recommended"
+                                        "label.recommendedNext"
+                                        Prominence.Primary
+                                        (PresentedValue.Code("act", CaseActKind.token act))
+                                ]
+                        }
+                | None -> ()
             yield! caseFacts reply.Snapshot
             if CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased then
                 yield caseWork reply.Work
+        ]
+
+    let reminder (reply: ReminderReadModel) =
+        let current = reply.Reminder
+
+        [
+            {
+                TitleId = "label.reminder"
+                Entries =
+                    [
+                        yield
+                            value
+                                "caseReference"
+                                "field.caseReference.label"
+                                Prominence.Primary
+                                (PresentedValue.Reference reply.Reference)
+                        yield
+                            value
+                                "reminderId"
+                                "field.reminderId.label"
+                                Prominence.Detail
+                                (PresentedValue.Identifier(ReminderId.format (Reminder.id current)))
+                        yield
+                            value
+                                "revision"
+                                "label.reminderRevision"
+                                Prominence.Detail
+                                (PresentedValue.Identifier(
+                                    Revision.format (Reminder.revision current)
+                                ))
+                        yield
+                            value
+                                "action"
+                                "field.reminderAction.label"
+                                Prominence.Primary
+                                (PresentedValue.Text(
+                                    ReminderAction.format (Reminder.action current)
+                                ))
+                        yield
+                            value
+                                "dueDate"
+                                "field.reminderDueDate.label"
+                                Prominence.Primary
+                                (PresentedValue.Date(Reminder.due current))
+                        yield
+                            value
+                                "state"
+                                "input.reminderState.label"
+                                Prominence.Primary
+                                (PresentedValue.Code(
+                                    "reminderState",
+                                    ReminderState.token (Reminder.state current)
+                                ))
+                        match reply.Timing with
+                        | Some timing ->
+                            yield
+                                value
+                                    "timing"
+                                    "input.reminderDue.label"
+                                    Prominence.Secondary
+                                    (PresentedValue.Code(
+                                        "reminderDue",
+                                        Vocabulary.token ReminderDue.vocabulary timing
+                                    ))
+                        | None -> ()
+                        if not reply.Active then
+                            yield
+                                value
+                                    "parentState"
+                                    "field.status.label"
+                                    Prominence.Secondary
+                                    (PresentedValue.Code(
+                                        "caseDue",
+                                        Vocabulary.token CaseDue.vocabulary CaseDue.Inactive
+                                    ))
+                        yield
+                            value
+                                "recordedAt"
+                                "label.recordedAt"
+                                Prominence.Detail
+                                (PresentedValue.Instant reply.RecordedAt)
+                        yield
+                            value
+                                "recordedBy"
+                                "label.recordedBy"
+                                Prominence.Secondary
+                                (PresentedValue.Actor reply.RecordedBy)
+                    ]
+            }
         ]
 
     let caseSummaryColumns =
