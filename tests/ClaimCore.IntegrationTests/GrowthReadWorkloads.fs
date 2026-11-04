@@ -758,7 +758,131 @@ let private reminderProfiles progressed publish actor cases =
                 (Nullable())
                 overview
 
-        return [| pending; completed; currentReport; financialReport; overviewReport |]
+        let caseViews () =
+            task {
+                let! result = Service.caseViews actor () token
+
+                match result with
+                | Outcome.Succeeded views ->
+                    Expect.equal
+                        (views.Items |> List.find (fun item -> item.View = CaseView.All) |> _.Count)
+                        (int64 cases)
+                        "All-case count includes the seeded population"
+
+                    Expect.equal
+                        (views.Items
+                         |> List.find (fun item -> item.View = CaseView.NeedsAttention)
+                         |> _.Count)
+                        (int64 (cases / 2))
+                        "Core attention matches the independent active-open population"
+
+                    return views.Items.Length
+                | other -> return failtestf "Core case view growth query failed: %A" other
+            }
+
+        let! caseViewsReport =
+            measure
+                progressed
+                publish
+                cases
+                ("core-case-views", "ALL_VIEWS", 11, fingerprint "case-views")
+                (Nullable())
+                caseViews
+
+        let reminderViews () =
+            task {
+                let! result = Service.reminderViews actor () token
+
+                match result with
+                | Outcome.Succeeded views ->
+                    Expect.equal
+                        (views.Items
+                         |> List.find (fun item -> item.View = ReminderView.Pending)
+                         |> _.Count)
+                        (int64 (cases / 1000 + population))
+                        "Pending count includes seeded plans and the high-fanout case"
+
+                    Expect.equal
+                        (views.Items
+                         |> List.find (fun item -> item.View = ReminderView.Completed)
+                         |> _.Count)
+                        (int64 population)
+                        "Completed count includes the separate terminal population"
+
+                    return views.Items.Length
+                | other -> return failtestf "Core reminder view growth query failed: %A" other
+            }
+
+        let! reminderViewsReport =
+            measure
+                progressed
+                publish
+                cases
+                ("core-reminder-views", "ALL_VIEWS", 7, fingerprint "reminder-views")
+                (Nullable())
+                reminderViews
+
+        let timeline () =
+            task {
+                let! result =
+                    Service.timeline
+                        actor
+                        {
+                            Target = target
+                            Filter = None
+                            AfterCursor = None
+                            Limit = 50
+                        }
+                        token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    Expect.equal
+                        page.Items.Length
+                        50
+                        "Shared ledger timeline is bounded despite child fanout"
+
+                    Expect.isSome page.NextCursor "A high-fanout case retains continuation"
+
+                    Expect.isTrue
+                        (page.Items
+                         |> List.pairwise
+                         |> List.forall (fun (left, right) ->
+                             left.Position.Sequence > right.Position.Sequence))
+                        "The replacement timeline has one descending ledger sequence"
+
+                    Expect.isTrue
+                        (page.Items
+                         |> List.forall (fun (entry: CaseTimelineEntry) ->
+                             match entry.Changes with
+                             | TimelineChanges.Disclosed _ -> true
+                             | _ -> false))
+                        "Full-history growth exercises typed change decoding and actor lookup"
+
+                    return page.Items.Length
+                | other -> return failtestf "Core timeline growth query failed: %A" other
+            }
+
+        let! timelineReport =
+            measure
+                progressed
+                publish
+                cases
+                ("core-case-timeline", "LEDGER_SEQUENCE", 50, fingerprint "timeline")
+                (Nullable 50)
+                timeline
+
+        return
+            [|
+                pending
+                completed
+                currentReport
+                financialReport
+                overviewReport
+                caseViewsReport
+                reminderViewsReport
+                timelineReport
+            |]
     }
 
 let profileWithProgress cases progressed completed =

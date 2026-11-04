@@ -423,7 +423,10 @@ is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality compari
 at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
 authority history and actor-filtered authority history. Reminder-feature measurements comprise seven
 profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
-and global work overview. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
+and global work overview. Plain-sight read profiles also measure `case.views`, `reminder.views` and the
+bounded typed `case.timeline`, including high-child-fanout change decoding and actor enrichment. New
+keys without a reference equivalent remain not applicable for relative ratios; their actual candidate
+measurements are still retained. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
 exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
 are reported as not applicable.
 
