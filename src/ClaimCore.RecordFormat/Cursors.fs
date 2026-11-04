@@ -395,7 +395,7 @@ module Cursors =
                 "query", actorQueryFingerprint text
                 "role",
                 (role
-                 |> Option.map (Role.token >> JsonValue.String)
+                 |> Option.map (DurableNames.role >> JsonValue.String)
                  |> Option.defaultValue JsonValue.Null)
                 "v", JsonValue.Integer 4L
             ]
@@ -405,7 +405,7 @@ module Cursors =
 
         let expectedRole =
             role
-            |> Option.map (Role.token >> JsonValue.String)
+            |> Option.map (DurableNames.role >> JsonValue.String)
             |> Option.defaultValue JsonValue.Null
 
         decode

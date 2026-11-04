@@ -428,7 +428,8 @@
     "profile.displayName",
     "profile.contact",
     "responsibleActorFilter",
-    "grants"
+    "grants",
+    "directorySearch"
   ],
   "cliFrameCount": 63,
   "readInputs": {
@@ -463,7 +464,8 @@
     "authority.list": [
       "limit",
       "cursor",
-      "text"
+      "text",
+      "role"
     ],
     "authority.grants": [
       "actorId",
@@ -623,7 +625,9 @@
     "actorAvailability",
     "caseStage",
     "requesterState",
-    "accountState"
+    "accountState",
+    "boolean",
+    "view"
   ],
   "goldens": [
     "wire-request-examples.json",

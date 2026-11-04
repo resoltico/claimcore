@@ -111,10 +111,32 @@ let private replay () =
                 |> Result.defaultWith (string >> failtest)
             ))
 
-    Expect.equal
-        (executeAuthority installation owner request existing)
-        (Verdict.Replay receipt)
-        "Executor target and position survive replay"
+    let currentReceipt =
+        match receipt.Subject with
+        | ReceiptSubject.Authority subject ->
+            { receipt with
+                Subject =
+                    ReceiptSubject.Authority
+                        { subject with
+                            TargetActor =
+                                AuthorityTargetDisclosure.Disclosed
+                                    {
+                                        ActorId = ActorId.ofOperationId request.OperationId
+                                        DisplayName = DisplayName.Erased
+                                        PrincipalKind = PrincipalKind.Human
+                                        Availability = ActorAvailability.Available
+                                    }
+                        }
+            }
+        | _ -> failtest "Expected authority acceptance"
+
+    match executeAuthority installation owner request existing with
+    | Verdict.Replay actual ->
+        expectReceipt
+            actual
+            currentReceipt
+            "Executor and position survive; target name follows the current empty profile"
+    | other -> failtestf "Expected authority replay: %A" other
 
     let changed =
         AuthorityRequests.input
@@ -206,10 +228,41 @@ let private provision () =
                 |> Result.defaultWith (string >> failtest)
             ))
 
-    Expect.equal
-        (provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner view)
-        (Verdict.Replay receipt)
-        "Bootstrap exact replay is idempotent"
+    let currentReceipt =
+        match receipt.Subject with
+        | ReceiptSubject.Authority subject ->
+            Expect.equal
+                subject.TargetActor
+                (AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId (id 104)))
+                "Initial bootstrap has no pre-existing authority read grant"
+
+            { receipt with
+                Subject =
+                    ReceiptSubject.Authority
+                        { subject with
+                            TargetActor =
+                                AuthorityTargetDisclosure.Disclosed
+                                    {
+                                        ActorId = CaseFixtures.actorId (id 104)
+                                        DisplayName =
+                                            DisplayName.Named(
+                                                PartyName.parse Inputs.ownerProfile.DisplayName
+                                                |> Result.defaultWith (string >> failtest)
+                                            )
+                                        PrincipalKind = PrincipalKind.Human
+                                        Availability = ActorAvailability.Available
+                                    }
+                        }
+            }
+        | _ -> failtest "Expected owner provisioning acceptance"
+
+    match provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner view with
+    | Verdict.Replay actual ->
+        expectReceipt
+            actual
+            currentReceipt
+            "Bootstrap replay preserves acceptance and uses current authority-read rights"
+    | other -> failtestf "Expected bootstrap replay: %A" other
 
 let private reviewAndFences () =
     let request =
