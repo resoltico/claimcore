@@ -16,6 +16,14 @@ type CaseSummaryFacts =
         IncidentNotificationDate: CalendarDate
     }
 
+type CaseNextAction =
+    {
+        ReminderId: ReminderId
+        Action: ReminderAction
+        Due: CalendarDate
+        DueState: CaseDue
+    }
+
 type CaseSummary =
     {
         CaseId: CaseId
@@ -25,6 +33,9 @@ type CaseSummary =
         State: CaseState<CaseSummaryFacts>
         Headline: CaseHeadline
         Attention: CaseAttention list
+        NextAction: CaseNextAction option
+        Responsible: ActorRef option
+        PendingReminders: int64
     }
 
 type CaseRef =

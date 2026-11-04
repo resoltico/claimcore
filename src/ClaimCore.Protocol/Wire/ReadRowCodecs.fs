@@ -134,17 +134,37 @@ module internal ReadRowCodecs =
             (parsed CalendarDate.parse CalendarDate.format date)
         |> field "work" _.Work workView
 
-    let caseSummary =
-        (record (fun id reference revision changedAt state headline attention ->
+    let private caseNextAction =
+        (record (fun id action due dueState ->
             {
-                CaseSummary.CaseId = id
-                Reference = reference
-                Revision = revision
-                ChangedAt = changedAt
-                State = state
-                Headline = headline
-                Attention = attention
+                CaseNextAction.ReminderId = id
+                Action = action
+                Due = due
+                DueState = dueState
             })
+        : Fields<CaseNextAction, _>)
+        |> field "reminderId" _.ReminderId reminderId
+        |> field "action" _.Action reminderAction
+        |> field "due" _.Due calendarDate
+        |> field "dueState" _.DueState (VocabularyCodec.create CaseDue.vocabulary)
+        |> build
+        |> named "CaseNextAction"
+
+    let caseSummary =
+        (record
+            (fun id reference revision changedAt state headline attention next responsible pending ->
+                {
+                    CaseSummary.CaseId = id
+                    Reference = reference
+                    Revision = revision
+                    ChangedAt = changedAt
+                    State = state
+                    Headline = headline
+                    Attention = attention
+                    NextAction = next
+                    Responsible = responsible
+                    PendingReminders = pending
+                })
         : Fields<CaseSummary, _>)
         |> field "caseId" _.CaseId caseId
         |> field "caseReference" _.Reference caseReference
@@ -156,5 +176,8 @@ module internal ReadRowCodecs =
             "attention"
             _.Attention
             (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
+        |> field "nextAction" _.NextAction (nullable caseNextAction)
+        |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
+        |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> build
         |> named "CaseSummary"

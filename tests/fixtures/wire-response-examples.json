@@ -977,7 +977,8 @@
                 "issuer": "https://issuer.example/",
                 "subject": "x"
               },
-              "enabled": false
+              "enabled": false,
+              "profile": null
             },
             "items": [],
             "nextCursor": "x"
@@ -1336,7 +1337,10 @@
                 "attention": [
                   "NO_NEXT_ACTION",
                   "UNASSIGNED"
-                ]
+                ],
+                "nextAction": null,
+                "responsible": null,
+                "pendingReminders": 0
               },
               {
                 "caseReference": "CASE-002",
@@ -1378,7 +1382,10 @@
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "caseId": "20000000-0000-4000-8000-000000000001",
                 "headline": "VOIDED",
-                "attention": []
+                "attention": [],
+                "nextAction": null,
+                "responsible": null,
+                "pendingReminders": 0
               },
               {
                 "caseReference": "CASE-003",
@@ -1389,7 +1396,10 @@
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "caseId": "20000000-0000-4000-8000-000000000001",
                 "headline": "ERASED",
-                "attention": []
+                "attention": [],
+                "nextAction": null,
+                "responsible": null,
+                "pendingReminders": 0
               }
             ],
             "nextCursor": "x",
@@ -1446,7 +1456,8 @@
                 "issuer": "https://issuer.example/",
                 "subject": "x"
               },
-              "enabled": false
+              "enabled": false,
+              "profile": null
             },
             "items": [
               {
@@ -1521,7 +1532,11 @@
                   "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
-                "enabled": false
+                "enabled": false,
+                "profile": {
+                  "displayName": "Synthetic person",
+                  "contact": "Synthetic contact"
+                }
               },
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
@@ -1530,7 +1545,8 @@
                   "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
-                "enabled": false
+                "enabled": false,
+                "profile": null
               }
             ],
             "nextCursor": "x"
@@ -3446,7 +3462,8 @@
                 "issuer": "x",
                 "subject": "x"
               },
-              "enabled": false
+              "enabled": false,
+              "profile": null
             },
             "items": [],
             "nextCursor": "x"
@@ -3529,7 +3546,10 @@
                 "attention": [
                   "NO_NEXT_ACTION",
                   "UNASSIGNED"
-                ]
+                ],
+                "nextAction": null,
+                "responsible": null,
+                "pendingReminders": 0
               },
               {
                 "caseReference": "WORK-PAID",
@@ -3574,7 +3594,10 @@
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001",
                 "headline": "CLOSED",
-                "attention": []
+                "attention": [],
+                "nextAction": null,
+                "responsible": null,
+                "pendingReminders": 0
               }
             ],
             "nextCursor": null,
@@ -3976,7 +3999,8 @@
                     "issuer": "https://issuer.example/",
                     "subject": "dormant-target"
                   },
-                  "enabled": false
+                  "enabled": false,
+                  "profile": null
                 },
                 "accessScope": {
                   "kind": "CASE",
@@ -4173,7 +4197,7 @@
       }
     },
     {
-      "name": "case-assignees-minimal-identity",
+      "name": "case-assignees-named-identity",
       "endpoint": "case.assignees",
       "valid": true,
       "value": {
@@ -4183,7 +4207,12 @@
             "items": [
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
-                "subject": "حساب متاح"
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": "حساب متاح"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
               }
             ],
             "nextCursor": null
@@ -4504,7 +4533,7 @@
       "valid": true
     },
     {
-      "name": "assignee-subject-cannot-be-empty",
+      "name": "assignee-display-name-cannot-be-empty",
       "endpoint": "case.assignees",
       "valid": false,
       "value": {
@@ -4514,7 +4543,12 @@
             "items": [
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
-                "subject": ""
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": ""
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
               }
             ],
             "nextCursor": null
@@ -6225,11 +6259,12 @@
             "caseId": "20000000-0000-4000-8000-000000000001",
             "work": {
               "responsible": {
-                "account": {
-                  "actorId": "20000000-0000-4000-8000-000000000002",
-                  "subject": "Synthetic unavailable person"
+                "actorId": "20000000-0000-4000-8000-000000000002",
+                "displayName": {
+                  "kind": "ERASED"
                 },
-                "available": false
+                "principalKind": "HUMAN",
+                "availability": "NOT_ELIGIBLE"
               },
               "followUpDate": "2025-12-31",
               "due": "OVERDUE",
@@ -6240,7 +6275,15 @@
               },
               "revision": 1,
               "changedAt": "2026-01-01T12:00:00.000000Z",
-              "recordedBy": "20000000-0000-4000-8000-000000000002",
+              "recordedBy": {
+                "actorId": "20000000-0000-4000-8000-000000000002",
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": "Synthetic work author"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "summary": null,
               "nextAction": "Review evidence",
               "pendingReminders": 1,
@@ -6313,7 +6356,15 @@
               },
               "revision": 1,
               "changedAt": "2026-01-01T12:00:00.000000Z",
-              "recordedBy": "20000000-0000-4000-8000-000000000002",
+              "recordedBy": {
+                "actorId": "20000000-0000-4000-8000-000000000002",
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": "Synthetic work author"
+                },
+                "principalKind": "HUMAN",
+                "availability": "DISABLED"
+              },
               "summary": null,
               "nextAction": "Review evidence",
               "pendingReminders": 1,
@@ -6332,6 +6383,126 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "case-list-next-action-identity",
+      "endpoint": "case.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "caseReference": "CASE-001",
+                "revision": 1,
+                "state": {
+                  "kind": "ACTIVE",
+                  "status": "OPENED",
+                  "claimantName": "Synthetic claimant",
+                  "insurerName": "Synthetic insurer",
+                  "claimed": {
+                    "amount": "1000",
+                    "currency": "EUR"
+                  },
+                  "payable": null,
+                  "progress": "UNDECIDED",
+                  "incidentNotificationDate": "2026-01-01",
+                  "work": {
+                    "responsible": {
+                      "actorId": "20000000-0000-4000-8000-000000000002",
+                      "displayName": {
+                        "kind": "NAMED",
+                        "value": "Synthetic responsible person"
+                      },
+                      "principalKind": "HUMAN",
+                      "availability": "AVAILABLE"
+                    },
+                    "followUpDate": "2026-01-02",
+                    "due": "UPCOMING",
+                    "basis": {
+                      "observedAt": "2026-01-01T12:00:00.000000Z",
+                      "businessDate": "2026-01-01",
+                      "timeZone": "Etc/UTC"
+                    },
+                    "revision": 1,
+                    "changedAt": "2026-01-01T12:00:00.000000Z",
+                    "recordedBy": {
+                      "actorId": "20000000-0000-4000-8000-000000000002",
+                      "displayName": {
+                        "kind": "NAMED",
+                        "value": "Synthetic responsible person"
+                      },
+                      "principalKind": "HUMAN",
+                      "availability": "AVAILABLE"
+                    },
+                    "summary": null,
+                    "nextAction": "Review evidence",
+                    "pendingReminders": 1,
+                    "overdueReminders": 0,
+                    "needsNextAction": false,
+                    "canUpdateSummary": false,
+                    "canAssign": false,
+                    "canCreateReminder": false
+                  }
+                },
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "UNDECIDED",
+                "attention": [],
+                "nextAction": {
+                  "reminderId": "20000000-0000-4000-8000-000000000003",
+                  "action": "Review evidence",
+                  "due": "2026-01-02",
+                  "dueState": "UPCOMING"
+                },
+                "responsible": {
+                  "actorId": "20000000-0000-4000-8000-000000000002",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic responsible person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "pendingReminders": 1
+              }
+            ],
+            "nextCursor": "x",
+            "offers": [
+              {
+                "kind": "OPEN"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REGISTER"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "ENABLE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "GRANT"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REVOKE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "DISABLE"
+              }
+            ],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "exactReference": null
+          }
+        }
+      }
     }
   ]
 }

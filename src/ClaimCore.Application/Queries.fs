@@ -256,7 +256,7 @@ module internal Queries =
                         })))
 
 
-    let private summary installation work record =
+    let private summary installation work next record =
         CaseExecution.current installation record
         |> Result.map (fun _ ->
             {
@@ -267,6 +267,17 @@ module internal Queries =
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
                 Attention =
                     CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)
+                NextAction =
+                    next
+                    |> Option.map (fun reminder ->
+                        {
+                            CaseNextAction.ReminderId = Reminder.id reminder
+                            Action = Reminder.action reminder
+                            Due = Reminder.due reminder
+                            DueState = work.Due
+                        })
+                Responsible = work.Responsible
+                PendingReminders = work.PendingReminders
                 State =
                     CaseState.map
                         (fun (fields: CaseFields) ->
@@ -312,6 +323,7 @@ module internal Queries =
                                 summary
                                     services.InstallationId
                                     (Map.find record.CaseId work)
+                                    (supplied |> Map.tryFind record.CaseId |> Option.bind _.Next)
                                     record
                                 |> Result.map (fun value -> value :: values)))
                         (Ok [])

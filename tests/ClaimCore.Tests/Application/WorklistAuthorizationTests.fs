@@ -104,6 +104,9 @@ let tests =
                 "An installation read must exclude the refused scope and retain unrelated cases"
 
             let row = List.exactlyOne page.Items
+            Expect.isNone row.NextAction "A case without reminders has no next-action identity"
+            Expect.isNone row.Responsible "An unassigned case has no responsible actor reference"
+            Expect.equal row.PendingReminders 0L "The list exposes the core pending count"
 
             Expect.equal
                 row.Headline
@@ -166,4 +169,66 @@ let tests =
                     model.Attention
                     [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
                     "Detail and listing agree"
-            | result -> failtestf "Expected readable detail, got %A" result)
+            | result -> failtestf "Expected readable detail, got %A" result
+
+        let reminderId = Guid.Parse "b0000000-0000-4000-8000-000000000020"
+
+        let created =
+            Service.execute
+                (core adminPrincipal)
+                (OperationInput.Reminder
+                    {
+                        OperationId = reminderId
+                        Target = CaseSelector.Reference "VISIBLE-2"
+                        Act =
+                            AuthoredReminderAct.Create
+                                {
+                                    Action = "Review evidence"
+                                    Due = "2026-09-08"
+                                }
+                    })
+                CancellationToken.None
+            |> fun task -> task.GetAwaiter().GetResult()
+
+        match created.Outcome with
+        | ExecuteResult.Accepted _ -> ()
+        | result -> failtestf "Expected accepted reminder, got %A" result
+
+        match
+            Service.list
+                service
+                (Inputs.caseListPage { AfterCursor = None; Limit = 50 })
+                CancellationToken.None
+            |> fun task -> task.GetAwaiter().GetResult()
+        with
+        | Outcome.Succeeded page ->
+            let row = List.exactlyOne page.Items
+
+            Expect.equal
+                row.PendingReminders
+                1L
+                "The current snapshot includes the created reminder"
+
+            match row.NextAction with
+            | Some next ->
+                Expect.equal
+                    (ReminderId.value next.ReminderId)
+                    reminderId
+                    "The renderer can open the exact next reminder"
+
+                Expect.equal
+                    (ReminderAction.format next.Action)
+                    "Review evidence"
+                    "The action is core supplied"
+
+                Expect.equal
+                    (CalendarDate.format next.Due)
+                    "2026-09-08"
+                    "The due date belongs to that reminder"
+
+                Expect.equal
+                    next.DueState
+                    CaseDue.Upcoming
+                    "Due state uses the snapshot business date"
+            | None -> failtest "A pending reminder must have a next action"
+        | result -> failtestf "Expected readable scheduled case, got %A" result)

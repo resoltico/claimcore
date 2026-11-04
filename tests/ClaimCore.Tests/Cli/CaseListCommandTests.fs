@@ -35,6 +35,9 @@ let private row reference =
         State = CaseState.Active facts
         Headline = CaseHeadline.Undecided
         Attention = []
+        NextAction = None
+        Responsible = None
+        PendingReminders = 0L
     }
 
 let private page items next =
