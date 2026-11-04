@@ -1,3 +1,4 @@
+import { AuthorityEffects } from "../../components/AuthorityEffects";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
 import { WorkReviewValues, ReminderReviewValues } from "../work/WorkReviewValues";
 import type { OperationInput } from "@contracts/client";
@@ -146,6 +147,7 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
           </>
         ) : null}
       </p>
+      <AuthorityEffects effects={review.effects} />
       {states.map(([label, state]) => (
         <section key={label}>
           <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>

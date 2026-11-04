@@ -45,6 +45,7 @@ const contextReply = (): Response =>
           views: ["AUTHORITY", "OPERATIONS"],
           offers: installationOffers([
             "REGISTER",
+            "ADMIT",
             "GRANT",
             "REVOKE",
             "ENABLE",
@@ -65,6 +66,23 @@ const authorityPreview = (parsed: AuthorityInput) =>
         review: {
           subject: {
             kind: "AUTHORITY",
+            effects:
+              parsed.act.kind === "ADMIT"
+                ? [
+                    { kind: "REGISTER", principal: parsed.target },
+                    {
+                      kind: "SET_PROFILE",
+                      profile: {
+                        displayName: parsed.act.profile.displayName,
+                        contact: parsed.act.profile.contact ?? null,
+                      },
+                    },
+                    ...parsed.act.grants.map((grant) => ({
+                      kind: "GRANT" as const,
+                      grant: { role: grant.role, scope: { kind: "INSTALLATION" as const } },
+                    })),
+                  ]
+                : [],
             target: null,
             accessScope: { kind: "INSTALLATION" },
             before: {
@@ -136,14 +154,17 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   const control = await screen.findByRole("combobox", { name: "Authority action" });
   await user.click(control);
   await waitFor(() => {
-    expect(optionValues(control)).toHaveLength(7);
+    expect(optionValues(control)).toHaveLength(8);
   });
   await chooseOption(user, control, kind);
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
   input("target.kind", "HUMAN");
-  if (kind === "REGISTER" || kind === "SET_PROFILE") {
+  if (kind === "REGISTER" || kind === "SET_PROFILE" || kind === "ADMIT") {
     input("act.profile.displayName", "Synthetic profile name");
+  }
+  if (kind === "ADMIT") {
+    await user.click(screen.getByRole("radio", { name: "Case reader" }));
   }
   if (kind === "GRANT" || kind === "REVOKE") {
     input("act.role", "CASE_READER");
@@ -152,7 +173,7 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
 it.each(authorityActs)(
   "renders, reviews and submits real authority act $kind through production transport",
   async (act) => {
-    expect(authorityActs).toHaveLength(7);
+    expect(authorityActs).toHaveLength(8);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
     render(<AuthorityPanel onLockChange={vi.fn()} />);
@@ -203,7 +224,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
   const control = await screen.findByRole("combobox", { name: "Authority action" });
   await user.click(control);
   await waitFor(() => {
-    expect(optionValues(control)).toHaveLength(7);
+    expect(optionValues(control)).toHaveLength(8);
   });
   await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "GRANT");
   const group = screen.getByRole("radiogroup", { name: "Role" });

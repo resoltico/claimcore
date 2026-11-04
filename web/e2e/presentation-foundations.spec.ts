@@ -1,4 +1,4 @@
-import { isRequest } from "../src/protocol/client";
+import { isRequest, isResponse } from "../src/protocol/client";
 import { writeFile } from "node:fs/promises";
 import { casePath } from "../src/routing/routes";
 import { timelineEntry, timelinePage } from "../tests/support/timeline.fixtures";
@@ -904,6 +904,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
             review: {
               subject: {
                 kind: "AUTHORITY",
+                effects: [],
                 target: null,
                 accessScope: { kind: "INSTALLATION" },
                 before: { enabled: false, profile: null, grants: [], access: [] },
@@ -1127,6 +1128,128 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   });
   expect(drafts[1]!.operationId).not.toBe(drafts[0]!.operationId);
   expect(writes).toEqual([]);
+  await expectAccessible(page);
+  await clean();
+});
+
+test("atomic admission edits independent grant rows and reviews every core effect under CSP", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  await page.route("**/api/context", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            requester: actorContextInput({
+              productVersion: "synthetic-presentation",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+              views: ["AUTHORITY", "OPERATIONS"],
+              offers: [
+                { kind: "AUTHORITY_ACT", act: "REGISTER" },
+                { kind: "AUTHORITY_ACT", act: "ADMIT" },
+              ],
+            }),
+          },
+        },
+      },
+    }),
+  );
+  await page.route("**/api/authority.list", (route) =>
+    route.fulfill({
+      json: { outcome: { kind: "SUCCEEDED", data: { items: [], nextCursor: null } } },
+    }),
+  );
+  let previews = 0;
+  let writes = 0;
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/operation.execute")) {
+      writes += 1;
+    }
+  });
+  await page.route("**/api/operation.preview", (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (
+      !isRequest("operation.preview", input) ||
+      input.kind !== "AUTHORITY" ||
+      input.act.kind !== "ADMIT"
+    ) {
+      throw new Error("Expected actual atomic admission.");
+    }
+    previews += 1;
+    expect(input.act.grants).toEqual([
+      { role: "OWNER", scope: { kind: "INSTALLATION" } },
+      {
+        role: "CASE_READER",
+        scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "SYNTHETIC-1" } },
+      },
+    ]);
+    const reply = {
+      operationId: input.operationId,
+      outcome: {
+        kind: "REVIEWED",
+        data: {
+          review: {
+            subject: {
+              kind: "AUTHORITY",
+              target: null,
+              accessScope: { kind: "INSTALLATION" },
+              before: { enabled: false, profile: null, grants: [], access: [] },
+              after: {
+                enabled: true,
+                profile: { displayName: "Admission person", contact: null },
+                grants: [],
+                access: [],
+              },
+              effects: [
+                { kind: "REGISTER", principal: input.target },
+                {
+                  kind: "SET_PROFILE",
+                  profile: { displayName: "Admission person", contact: null },
+                },
+                { kind: "GRANT", grant: { role: "OWNER", scope: { kind: "INSTALLATION" } } },
+                {
+                  kind: "GRANT",
+                  grant: {
+                    role: "CASE_READER",
+                    scope: {
+                      kind: "CASE",
+                      caseId: "20000000-0000-4000-8000-000000000001",
+                      caseReference: "SYNTHETIC-1",
+                    },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+    };
+    expect(isResponse("operation.preview", reply)).toBe(true);
+    return route.fulfill({ json: reply });
+  });
+  await page.goto("/people", { waitUntil: "commit" });
+  await chooseOption(page, page.getByRole("combobox", { name: "Authority action" }), "ADMIT");
+  await page.locator('[name="target.issuer"]').fill("https://identity.invalid/");
+  await page.locator('[name="target.subject"]').fill("admission-person");
+  await page.locator('[name="act.profile.displayName"]').fill("Admission person");
+  await page.getByRole("radio", { name: "Owner", exact: true }).check();
+  await page.getByRole("button", { name: "Add role", exact: true }).click();
+  const second = page.getByRole("group", { name: "Role 2", exact: true });
+  await second.getByRole("radio", { name: "Case reader", exact: true }).check();
+  await second.getByRole("radio", { name: "One case", exact: true }).check();
+  await second.getByRole("textbox", { name: /case reference/u }).fill("SYNTHETIC-1");
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  const review = page.getByRole("dialog");
+  await expect(review.locator(".authority-effects > li")).toHaveCount(4);
+  await expect(review.getByText("SYNTHETIC-1", { exact: true })).toBeVisible();
+  expect(previews).toBe(1);
+  expect(writes).toBe(0);
   await expectAccessible(page);
   await clean();
 });
