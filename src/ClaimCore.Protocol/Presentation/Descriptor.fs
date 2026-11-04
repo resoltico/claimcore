@@ -1352,27 +1352,6 @@ module Descriptor =
                    { entry with
                        Key = identity + "." + entry.Key
                    })))
-        @ (state.Access
-           |> List.collect (fun access ->
-               let identity = Capability.token access.Capability
-
-               [
-                   value
-                       (identity + ".effective")
-                       (Vocabulary.messageKey Capability.vocabulary access.Capability "label")
-                       Prominence.Secondary
-                       (boolean access.Effective)
-                   value
-                       (identity + ".direct")
-                       "label.directRoles"
-                       Prominence.Detail
-                       (codes Role.vocabulary access.DirectRoles)
-                   value
-                       (identity + ".inherited")
-                       "label.inheritedRoles"
-                       Prominence.Detail
-                       (codes Role.vocabulary access.InstallationRoles)
-               ]))
 
     let private authorityEffects (effects: AuthorityReviewEffect list) =
         effects

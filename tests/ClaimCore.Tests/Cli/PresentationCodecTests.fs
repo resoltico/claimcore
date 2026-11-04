@@ -311,3 +311,95 @@ let producerBudgets =
                     (name + " decodes through the actual endpoint codec")
 
             Expect.equal Limits.MaximumResponseBytes 4194304 "No response gate was raised")
+
+
+[<Tests>]
+let primaryAuthorityChanges =
+    testCase
+        "overlapping and disabled authority reviews keep authored changes without ambiguous access rows"
+        (fun () ->
+            let reference = CaseFixtures.reference "OVERLAP"
+
+            let scoped =
+                {
+                    ScopedGrant.Role = Role.CaseReader
+                    Scope = GrantScope.Case(CliReplyFixtures.snapshot.CaseId, reference)
+                }
+
+            let installation =
+                {
+                    ScopedGrant.Role = Role.CaseReader
+                    Scope = GrantScope.Installation
+                }
+
+            let access enabled roles =
+                [
+                    for capability in [ Capability.ReadCase; Capability.ReadHistory ] ->
+                        {
+                            CapabilityAccess.Capability = capability
+                            Effective = enabled
+                            DirectRoles = roles
+                            InstallationRoles = [ Role.Owner ]
+                        }
+                ]
+
+            for enabled in [ true; false ] do
+                let before =
+                    {
+                        AuthorityState.Profile = None
+                        Enabled = enabled
+                        Grants = [ scoped ]
+                        Access = access enabled []
+                    }
+
+                let after =
+                    { before with
+                        Grants = [ scoped; installation ]
+                        Access = access enabled [ Role.CaseReader ]
+                    }
+
+                let value =
+                    {
+                        AuthorityReview.Basis = Inputs.workBasis
+                        Target = None
+                        AccessScope = GrantScope.Installation
+                        Before = before
+                        After = after
+                        Effects = [ AuthorityReviewEffect.Grant installation ]
+                    }
+
+                let result = PresentedReview.ofCore (OperationReview.Authority value)
+
+                let keys =
+                    (result.Presentation.Changes |> List.map _.Key)
+                    @ (result.Presentation.Unchanged |> List.map _.Key)
+
+                Expect.isFalse
+                    (keys
+                     |> List.exists (fun key ->
+                         key.StartsWith("READ_CASE.", StringComparison.Ordinal)
+                         || key.StartsWith("READ_HISTORY.", StringComparison.Ordinal)))
+                    "Primary presentation never loses capability identity in repeated access-source rows"
+
+                Expect.equal
+                    (result.Presentation.Changes |> List.map _.Key)
+                    [ "CASE_READER.installation.role"; "CASE_READER.installation.scope" ]
+                    "Authored role and scope remain explicit"
+
+                match result.Subject with
+                | PresentedReviewSubject.Authority provided ->
+                    Expect.equal
+                        provided.Before.Access
+                        before.Access
+                        "The full correctly grouped before-access contract remains available"
+
+                    Expect.equal
+                        provided.After.Access
+                        after.Access
+                        "The full correctly grouped after-access contract remains available"
+
+                    Expect.equal
+                        provided.Effects
+                        [ AuthorityReviewEffect.Grant installation ]
+                        "No authored effect is removed"
+                | _ -> failtest "Expected authority")
