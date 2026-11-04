@@ -58,7 +58,9 @@ to review all their grants, following **Load more** when offered. A row summary 
 to see that selection. A visible zero means no matching cases; an omitted count means your roles do not
 provide that case visibility. Responsibility never grants access.
 
-Use names to find people. In the CLI, `authority list --text NAME` searches current saved display names.
+Use names or contact details to find people, optionally selecting a role. In the CLI,
+`authority list --text TEXT --role case-handler` combines current saved name/contact search with the
+selected role.
 Use the returned actor ID with `authority grants ACTOR-ID`; do not guess IDs or use a sign-in subject as
 an actor ID.
 

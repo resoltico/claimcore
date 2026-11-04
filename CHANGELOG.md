@@ -6,15 +6,27 @@
 - Supply an authored owner display name during provisioning and a profile when registering people; identity-provider claims do not supply profile names.
 - Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
 - Regenerate clients for named ActorRefs in work and assignee reads; reusable refs omit contacts and reflect current profile erasure.
+- Update work review/receipt readers for responsible ActorRefs; authority receipt targets now use Disclosed/Withheld projection under current authority-read rights.
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
+- Case and reminder state refusals use NOT_OFFERED and REMINDER_NOT_OFFERED; DECISION_REQUIRED is retired. Invalid corrections keep targeted input diagnostics.
 - Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
 - Regenerate case-list and CSV consumers: state.fields now comes from listed declarations; core work state replaces duplicate nested work and progress columns.
 - Regenerate revision-conflict consumers for typed change pages of up to 50 entries; continue via case.timeline under current history permissions.
+- Regenerate catalog consumers for hintId/ruleId, GUI diagnostic keys and consequenceId/doneId; field meaning and checkbox confirmation identities are removed.
+- Receipt basis and runtime observedAt describe the current server snapshot; recordedAt remains the accepted event time, including on replay and later checks.
+- Replace CLI case history and case activity with case timeline; typed changes, actor names and canonical CSV support bounded or complete live traversal.
+- Actor-directory search matches current names or contacts plus typed role filters; discard old actor cursors. Profile erasure clears both private search indexes.
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
+- Irreversible human CLI commands require an exact typed target or matching --confirm; dry-run and structured protocol calls retain their wire contracts.
+- Regenerate work readers and custom stores for summaryChangedAt/summaryRecordedBy; responsibility-only edits preserve the summary's actual author and time.
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
 - Set or erase actor profiles separately from identity and grants; historical names use current profiles, while erasure preserves acceptance but can prevent exact replay.
 - Case and reminder view counts share a snapshot; case timelines combine fact, work and reminder changes under current history permissions.
+- ADMIT records an authored profile and up to 48 role assignments atomically; access requests distinguish human and service identities and clear on admission.
+- People show bounded role summaries and explicit assignment state; optional responsibility counts and links use the viewer's case-read access and preserve known zero.
+- Unavailable case actions carry current core reasons; case trackers use recorded dates and keep absent financial stages unrecorded after closure.
+- Case, work, reminder and timeline text use typed core descriptors; case tables adapt to width without truncating money, and retained actor names are safely escaped.
 - Work overview attention includes due-today and ready-to-close cases, matching core case views.
 - Case lists identify exact visible reference matches using installation case-folding and expose the next reminder identity; unavailable cases remain undisclosed.
 - CLI adds family/verb help and --version, rejects irrelevant clear flags, names escaped usage tokens and reports declined reviews.

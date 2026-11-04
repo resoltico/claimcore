@@ -327,7 +327,7 @@ use current admission. Empty partial updates, null required facts, half money an
 refuse. A correction cannot add missing groups or create a no-op revision. Revision conflicts require
 fresh intent. Chronology diagnostics identify the asserted field and carry typed counterpart context.
 
-Case-list continuations use format 6; actor-directory continuations use format 3; assignee, reminder
+Case-list continuations use format 6; actor-directory continuations use format 4; assignee, reminder
 and activity continuations use format 1; other continuations use format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
 positions bind admitted filters and ordering. Unsupported formats are refused.
 
@@ -378,6 +378,11 @@ after can name different people on the same case without overwriting a relation.
 with the already-known ActorId. Losing authority does not remove previously permitted own-receipt
 metadata or reveal another account's current name. No client directory scan supplies missing names.
 
+`authority.list` accepts optional `text` matching current saved name or contact and optional typed
+`role` matching recognized raw assignments. Text is a literal NFKC/invariant-lower search; both predicates
+compose with paging. ACTORS v4 cursors bind normalized text and role under the unchanged 512-character
+cursor bound. Profile erasure clears both private normalized search columns.
+
 Actor-directory rows carry explicit assignment `state` and at most seven role summaries with an
 installation flag and case-grant count. This assignment state is separate from authorization and
 case-work eligibility. Optional `responsibleCases` carries a count plus an executable ALL/responsibleActor
@@ -395,6 +400,11 @@ Domain-owned bounds for precise rules. GUI diagnostics use `diagnosticGuiMessage
 validated arguments as canonical diagnostics. Catalog entries retain their act/query `meaningId`,
 provide `consequence` and `consequenceId`, and use `doneId` for past-tense outcomes. No old meaning or
 checkbox-confirmation aliases are published for fields/inputs.
+
+ACTIVE context adds bounded own `roles` from the same raw-assignment summary owner as People;
+capability labels must not be inverted to invent role assignments. Limited requester states remain limited.
+`AuthorityReview.basis` and authority-list/grant/history/access-request page bases come from their own
+authorized transaction, including when no rows are returned.
 
 `RuntimeContext` retains flat business date/zone fields and adds the authoritative `observedAt`.
 Receipt `basis` describes the current authorized observation; its `recordedAt` remains the historical
