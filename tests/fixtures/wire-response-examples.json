@@ -1040,7 +1040,6 @@
             },
             "subject": {
               "kind": "AUTHORITY",
-              "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "REGISTER",
               "effects": [
                 {
@@ -1057,7 +1056,11 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   }
                 }
-              ]
+              ],
+              "targetActor": {
+                "kind": "WITHHELD",
+                "actorId": "10000000-0000-4000-8000-000000000001"
+              }
             },
             "basis": {
               "observedAt": "2026-01-01T00:00:00.000000Z",
@@ -1093,7 +1096,6 @@
             },
             "subject": {
               "kind": "AUTHORITY",
-              "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "REGISTER",
               "effects": [
                 {
@@ -1110,7 +1112,11 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   }
                 }
-              ]
+              ],
+              "targetActor": {
+                "kind": "WITHHELD",
+                "actorId": "10000000-0000-4000-8000-000000000001"
+              }
             },
             "basis": {
               "observedAt": "2026-01-01T00:00:00.000000Z",
@@ -5587,10 +5593,15 @@
                 "view": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
                   "revision": 1,
-                  "work": {
-                    "responsibleActor": "40000000-0000-4000-8000-000000000001",
-                    "handlingSummary": "First paragraph\nSecond paragraph"
-                  }
+                  "responsible": {
+                    "actorId": "40000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "handlingSummary": "First paragraph\nSecond paragraph"
                 }
               }
             },
@@ -5703,18 +5714,21 @@
                 "before": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
                   "revision": 0,
-                  "work": {
-                    "responsibleActor": null,
-                    "handlingSummary": null
-                  }
+                  "responsible": null,
+                  "handlingSummary": null
                 },
                 "proposed": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
                   "revision": 1,
-                  "work": {
-                    "responsibleActor": "40000000-0000-4000-8000-000000000001",
-                    "handlingSummary": "First paragraph\nSecond paragraph"
-                  }
+                  "responsible": {
+                    "actorId": "40000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "handlingSummary": "First paragraph\nSecond paragraph"
                 },
                 "context": {
                   "productVersion": "synthetic",
@@ -7230,7 +7244,6 @@
             },
             "subject": {
               "kind": "AUTHORITY",
-              "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "PROVISION_OWNER",
               "effects": [
                 {
@@ -7247,7 +7260,11 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   }
                 }
-              ]
+              ],
+              "targetActor": {
+                "kind": "WITHHELD",
+                "actorId": "10000000-0000-4000-8000-000000000001"
+              }
             },
             "basis": {
               "observedAt": "2026-01-01T00:00:00.000000Z",
@@ -13534,7 +13551,6 @@
             },
             "subject": {
               "kind": "AUTHORITY",
-              "targetActorId": "10000000-0000-4000-8000-000000000001",
               "act": "ADMIT",
               "effects": [
                 {
@@ -13558,7 +13574,11 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   }
                 }
-              ]
+              ],
+              "targetActor": {
+                "kind": "WITHHELD",
+                "actorId": "10000000-0000-4000-8000-000000000001"
+              }
             },
             "basis": {
               "observedAt": "2026-01-01T00:00:00.000000Z",
@@ -14499,6 +14519,69 @@
           }
         }
       }
+    },
+    {
+      "name": "authority-target-disclosed-current-name",
+      "endpoint": "operation.execute",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 2,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
+            "subject": {
+              "kind": "AUTHORITY",
+              "act": "REGISTER",
+              "effects": [
+                {
+                  "act": "REGISTER",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                  }
+                },
+                {
+                  "act": "SET_PROFILE",
+                  "position": {
+                    "sequence": 2,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                }
+              ],
+              "targetActor": {
+                "kind": "DISCLOSED",
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                }
+              }
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            }
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }
