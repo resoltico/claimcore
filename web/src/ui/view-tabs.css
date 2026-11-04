@@ -1,0 +1,33 @@
+.view-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  border-block-end: var(--border-width) solid var(--border-control);
+  margin-block: var(--space-4);
+}
+.view-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-block-size: var(--target-primary);
+  padding: var(--space-3);
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-block-end: var(--focus-width) solid transparent;
+}
+.view-tab[data-selected] {
+  color: var(--accent-text);
+  border-block-end-color: var(--accent-text);
+  font-weight: 650;
+}
+.view-tab[data-focus-visible] {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+.view-count {
+  padding: var(--space-1) var(--space-2);
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+  border-radius: var(--radius-sm);
+  font-variant-numeric: tabular-nums;
+}

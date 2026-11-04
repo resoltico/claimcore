@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { expect, it } from "vitest";
 import { render, screen, waitFor } from "../../support/presentation-test-support";
@@ -5,7 +6,11 @@ import { mockEndpoint } from "../../support/endpoint-mocks";
 import { context } from "../../support/service-ui.fixtures";
 import { caseViewsFixture, reminderViewsFixture } from "../../support/view-counts.fixtures";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
-import { WorkspaceViewsProvider, useWorkspaceViews } from "../../../src/views/WorkspaceViews";
+import {
+  WorkspaceViewsProvider,
+  useWorkspaceViews,
+  WorkspaceViewsStatus,
+} from "../../../src/views/WorkspaceViews";
 import type { CaseViews, ActorContext } from "@contracts/client";
 const result = (data: CaseViews) => ({
   kind: "outcome" as const,
@@ -73,4 +78,34 @@ it("does not request or publish case counts without the case view", () => {
   expect(screen.getByRole("status")).toHaveTextContent("unverified");
   expect(cases).not.toHaveBeenCalled();
   expect(reminders).not.toHaveBeenCalled();
+});
+
+it("exposes a failed snapshot as recoverable metadata rather than zero counts", async () => {
+  const cases = mockEndpoint("case.views")
+    .mockResolvedValueOnce({
+      kind: "deliveryFailure",
+      notice: { kind: "local", reason: "unreachable" },
+    })
+    .mockResolvedValue(result(caseViewsFixture));
+  mockEndpoint("reminder.views").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { outcome: { kind: "SUCCEEDED", data: reminderViewsFixture } },
+  });
+  render(
+    <WorkspaceViewsProvider>
+      <WorkspaceViewsStatus area="cases" />
+      <Probe />
+    </WorkspaceViewsProvider>,
+  );
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "The local service could not be reached.",
+  );
+  expect(screen.getByRole("status")).toHaveTextContent("unverified");
+  await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
+  await waitFor(() => {
+    expect(screen.queryByRole("alert")).toBeNull();
+  });
+  expect(screen.getByRole("status")).toHaveTextContent("NEEDS_ATTENTION:0");
+  expect(cases).toHaveBeenCalledTimes(2);
 });

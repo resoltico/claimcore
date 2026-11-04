@@ -3,11 +3,10 @@ import { useEffect, useState } from "react";
 import { usePresentation } from "../../presentation/context";
 import { type WorklistQuery } from "../../routing/worklistQuery";
 import { WorklistFilters } from "./WorklistFilters";
-import type { CaseViewCount } from "@contracts/client";
 type Props = {
   query: WorklistQuery;
-  views: ReadonlyArray<CaseViewCount>;
-  viewsLoading: boolean;
+  search: string;
+  onSearch: (value: string) => void;
   onChange: (query: WorklistQuery) => void;
   onSelect: (reference: string) => void;
   loading: boolean;
@@ -27,14 +26,14 @@ const useSearchCommit = (text: string, query: WorklistQuery, onChange: Props["on
     };
   }, [text, query, onChange]);
 };
-const WorklistSearch = ({ query, onChange }: Pick<Props, "query" | "onChange">) => {
+const WorklistSearch = ({
+  query,
+  onChange,
+  search,
+  onSearch,
+}: Pick<Props, "query" | "onChange" | "search" | "onSearch">) => {
   const p = usePresentation();
-  const source = query.text ?? "";
-  const [draft, setDraft] = useState({ source, value: source });
-  if (draft.source !== source) {
-    setDraft({ source, value: source });
-  }
-  const text = draft.source === source ? draft.value : source;
+  const text = search;
   const commit = (value: string) => {
     const { text: _text, ...manual } = query;
     onChange({ ...manual, ...(value === "" ? {} : { text: value }) });
@@ -58,7 +57,7 @@ const WorklistSearch = ({ query, onChange }: Pick<Props, "query" | "onChange">) 
         type="search"
         value={text}
         onChange={(event) => {
-          setDraft({ source, value: event.target.value });
+          onSearch(event.target.value);
         }}
         placeholder={p.text("ui.worklistSearch")}
         autoComplete="off"
@@ -115,32 +114,17 @@ export const WorklistToolbar = (props: Props) => {
   return (
     <>
       <div className="worklist-toolbar">
-        <WorklistSearch query={props.query} onChange={props.onChange} />
+        <WorklistSearch
+          query={props.query}
+          onChange={props.onChange}
+          search={props.search}
+          onSearch={props.onSearch}
+        />
         <WorklistFilters query={props.query} onChange={props.onChange} />
         <button type="button" disabled={props.loading} onClick={props.onReload}>
           {props.loading ? p.text("ui.loading") : p.text("ui.reloadCases")}
         </button>
       </div>
-      <nav
-        className="case-views"
-        aria-label={p.text("input.caseView.label")}
-        aria-busy={props.viewsLoading}
-      >
-        {props.views.map(({ view, count }) => (
-          <button
-            key={view}
-            type="button"
-            aria-pressed={props.query.view === view}
-            data-view={view}
-            onClick={() => {
-              props.onChange({ ...props.query, view });
-            }}
-          >
-            {p.term("caseView", view)}{" "}
-            <span className="view-count">{props.viewsLoading ? "…" : p.integer(count)}</span>
-          </button>
-        ))}
-      </nav>
       <ExactLookup onSelect={props.onSelect} />
     </>
   );

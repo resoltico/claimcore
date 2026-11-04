@@ -92,10 +92,7 @@ it.each([
   navigate(`/cases?view=${view}`, true);
   render(<CaseList onSelect={vi.fn()} />);
   await screen.findByText("No matching items.");
-  expect(screen.getByRole("button", { name: `${label} 0` })).toHaveAttribute(
-    "aria-pressed",
-    "true",
-  );
+  expect(screen.getByRole("tab", { name: `${label} 0` })).toHaveAttribute("aria-selected", "true");
   expect(screen.queryByText("No accessible cases returned.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
 });

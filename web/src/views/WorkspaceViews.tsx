@@ -1,3 +1,6 @@
+import { useEndpointCache } from "../hooks/EndpointProvider";
+import { usePresentation } from "../presentation/context";
+import { NoticeView } from "../presentation/Message";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
 import type { CaseViews, ReminderViews } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
@@ -55,4 +58,31 @@ export const useWorkspaceViews = () => {
     throw new Error("View counts require the authenticated workspace owner.");
   }
   return value;
+};
+
+/** Missing view metadata is an error to recover from, never an empty result or a zero count. */
+export const WorkspaceViewsStatus = ({ area }: { area: keyof WorkspaceViews }) => {
+  const value = useWorkspaceViews()[area];
+  const p = usePresentation();
+  const cache = useEndpointCache();
+  const missing = value.data === null || value.data.items.length === 0;
+  if (value.loading) {
+    return missing ? <p role="status">{p.text("ui.loading")}</p> : null;
+  }
+  if (value.message === null && !missing) {
+    return null;
+  }
+  return (
+    <div role="alert">
+      <NoticeView value={value.message ?? { kind: "local", reason: "incomplete" }} />
+      <button
+        type="button"
+        onClick={() => {
+          cache?.invalidate();
+        }}
+      >
+        {p.text("ui.tryAgain")}
+      </button>
+    </div>
+  );
 };

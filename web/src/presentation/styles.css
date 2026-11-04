@@ -129,8 +129,7 @@
   color: var(--danger-text);
 }
 
-.work-overview,
-.work-queue,
+.reminder-queue,
 .reminder-list,
 .work-operation {
   margin-block: 1rem;

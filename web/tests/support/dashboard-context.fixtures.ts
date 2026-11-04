@@ -15,12 +15,6 @@ export const stubViewCounts = () => {
 };
 export const stubDashboardContext = () => {
   stubViewCounts();
-  // Most dashboard scenarios control another pane. Keep the separate overview explicitly unknown.
-  mockEndpoint("work.overview").mockResolvedValue({
-    kind: "deliveryFailure",
-    notice: { kind: "local", reason: "unreachable" },
-    dispatched: false,
-  });
   return mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,

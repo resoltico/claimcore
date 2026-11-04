@@ -46,27 +46,6 @@
   gap: var(--space-2);
   align-items: center;
 }
-.case-views {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: var(--space-2);
-  overflow-x: auto;
-  padding-block: var(--space-3);
-  margin-block: var(--space-3);
-  scroll-snap-type: inline proximity;
-}
-.case-views > button {
-  flex: 0 0 auto;
-  scroll-snap-align: start;
-  font-size: var(--text-sm);
-}
-.case-views button[aria-pressed="true"],
-.case-views button[aria-pressed="true"]:hover {
-  font-weight: 700;
-  color: var(--accent-text);
-  background: var(--accent-soft-bg);
-  border-color: var(--accent-text);
-}
 .exact-lookup {
   margin-block: var(--space-3);
 }

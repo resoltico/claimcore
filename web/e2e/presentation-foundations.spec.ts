@@ -454,9 +454,9 @@ test("renders core view ordering, counts and row semantics without reconstructin
   );
   await page.goto("/cases", { waitUntil: "commit" });
   await expect(page).toHaveURL(/\/cases\?view=OVERDUE$/u);
-  const views = page.locator(".case-views button");
+  const views = page.getByRole("tablist", { name: "Case view" }).getByRole("tab");
   await expect(views).toHaveText(["Overdue 7", "Needs attention 2"]);
-  await expect(views.first()).toHaveAttribute("aria-pressed", "true");
+  await expect(views.first()).toHaveAttribute("aria-selected", "true");
   await expect(page.locator(".case-headline")).toHaveText("Paid");
   await expect(page.locator(".worklist-next-action")).toContainText("Core next action");
   await expect(page.locator(".worklist-next-action")).toContainText("+2 more");
@@ -537,6 +537,63 @@ test("shell case creation returns to the captured core view and focus without se
   await expect(page).toHaveURL(/\/cases\?view=ALL&q=remember&order=RECENT$/u);
   await expect(origin).toBeFocused();
   expect(writes).toEqual([]);
+  await clean();
+});
+
+test("reminder views keep URL state and leave implicit state predicates to the core", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  const requests: unknown[] = [];
+  const forbidden: string[] = [];
+  page.on("request", (request) => {
+    if (new URL(request.url()).pathname === "/api/work.overview") {
+      forbidden.push(request.url());
+    }
+  });
+  await page.route("**/api/reminder.list", (route) => {
+    requests.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis: {
+              observedAt: "2026-11-04T00:00:00.000000Z",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+            },
+            items: [],
+            nextCursor: null,
+          },
+        },
+      },
+    });
+  });
+  await page.goto("/reminders?view=COMPLETED&q=literal", { waitUntil: "commit" });
+  const completed = page.getByRole("tab", { name: "Completed 0", exact: true });
+  await expect(completed).toHaveAttribute("aria-selected", "true");
+  await expect.poll(() => requests.length).toBe(1);
+  const filter = page
+    .getByRole("search", { name: "Reminders", exact: true })
+    .getByRole("searchbox");
+  await filter.fill("unsubmitted filter");
+  await completed.focus();
+  await page.keyboard.press("ArrowRight");
+  await expect(page.getByRole("tab", { name: "Cancelled 0", exact: true })).toBeFocused();
+  expect(requests).toHaveLength(1);
+  await page.keyboard.press("Home");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(/\/reminders\?view=PENDING&q=literal$/u);
+  await expect.poll(() => requests.length).toBe(2);
+  expect(requests).toEqual([
+    { view: "COMPLETED", text: "literal", limit: 50 },
+    { view: "PENDING", text: "literal", limit: 50 },
+  ]);
+  await expect(filter).toHaveValue("unsubmitted filter");
+  expect(forbidden).toEqual([]);
+  await expectAccessible(page);
   await clean();
 });
 

@@ -1,10 +1,12 @@
+import { ViewTabs } from "../ui/ViewTabs";
+import { isTerm } from "../presentation/terms";
 import "./worklist/worklist.css";
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { ActorContext, CaseSelector, CaseRef } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
-import { Message, NoticeView } from "../presentation/Message";
+import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { CaseSummary, ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
@@ -18,7 +20,7 @@ import {
 } from "../routing/worklistQuery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
 import { CaseRow } from "./worklist/CaseRow";
-import { useWorkspaceViews } from "./WorkspaceViews";
+import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = { onSelect: (target: CaseSelector) => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
@@ -192,6 +194,11 @@ const ReadyCaseList = ({ onSelect, context }: Props & { context: ActorContext })
   const p = usePresentation();
   const page = useWorklist();
   const views = useWorkspaceViews().cases;
+  const source = page.query.text ?? "";
+  const [search, setSearch] = useState({ source, value: source });
+  if (search.source !== source) {
+    setSearch({ source, value: source });
+  }
   return (
     <section aria-labelledby="case-list-title" className="worklist" aria-busy={page.loading}>
       <div className="section-heading">
@@ -201,27 +208,50 @@ const ReadyCaseList = ({ onSelect, context }: Props & { context: ActorContext })
           <p className="page-description">{p.text("ui.queueDescription")}</p>
         </div>
       </div>
-      <WorklistToolbar
-        query={page.query}
-        views={views.data?.items ?? []}
-        viewsLoading={views.loading}
-        onChange={page.change}
-        onSelect={(caseReference) => {
-          onSelect({ kind: "REFERENCE", caseReference });
+      <WorkspaceViewsStatus area="cases" />
+      <ViewTabs
+        items={
+          views.data?.items.map(({ view, count }) => ({
+            id: view,
+            label: p.term("caseView", view),
+            count: p.integer(count),
+          })) ?? []
+        }
+        selected={page.query.view ?? ""}
+        label={p.text("input.caseView.label")}
+        loading={views.loading}
+        onSelect={(view) => {
+          if (isTerm("caseView", view)) {
+            page.change({ ...page.query, view });
+          }
         }}
-        loading={page.loading}
-        onReload={() => {
-          void page.load(null);
-        }}
-      />
-      <SummaryBand filter={page.query} />
-      <WorklistLoading page={page} />
-      <WorklistResults
-        page={page}
-        onSelect={onSelect}
-        businessDate={page.page?.basis.businessDate ?? context.businessDate}
-      />
-      <WorklistFeedback page={page} />
+        controls={
+          <WorklistToolbar
+            query={page.query}
+            search={search.value}
+            onSearch={(value) => {
+              setSearch({ source, value });
+            }}
+            onChange={page.change}
+            onSelect={(caseReference) => {
+              onSelect({ kind: "REFERENCE", caseReference });
+            }}
+            loading={page.loading}
+            onReload={() => {
+              void page.load(null);
+            }}
+          />
+        }
+      >
+        <SummaryBand filter={page.query} />
+        <WorklistLoading page={page} />
+        <WorklistResults
+          page={page}
+          onSelect={onSelect}
+          businessDate={page.page?.basis.businessDate ?? context.businessDate}
+        />
+        <WorklistFeedback page={page} />
+      </ViewTabs>
     </section>
   );
 };
@@ -255,15 +285,7 @@ export const CaseList = (props: Props) => {
     if (first !== undefined) {
       return <DefaultCaseView query={query} view={first.view} />;
     }
-    return views.message === null ? (
-      <p role="status">
-        <Message id="ui.loadingCases" />
-      </p>
-    ) : (
-      <p role="alert">
-        <NoticeView value={views.message} />
-      </p>
-    );
+    return <WorkspaceViewsStatus area="cases" />;
   }
   return <ReadyCaseList {...props} context={context} />;
 };
