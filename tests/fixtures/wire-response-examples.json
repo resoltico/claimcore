@@ -15365,6 +15365,26 @@
           }
         }
       }
+    },
+    {
+      "name": "directory-search-required-text-diagnostic",
+      "endpoint": "authority.list",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "directorySearch",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }
