@@ -39,6 +39,8 @@ module internal TextDescriptorValue =
         | PresentedValue.Instant value -> TextReplyFormat.instant value |> text language
         | PresentedValue.Party value -> PartyName.format value |> text language
         | PresentedValue.Text value -> text language value
+        | PresentedValue.Narrative value -> TextReplyFormat.narrative language (Some value)
+        | PresentedValue.Message key -> TextReplyFormat.label language key
         | PresentedValue.Code(vocabulary, token) -> code language vocabulary token
         | PresentedValue.Codes(vocabulary, tokens) -> codes language vocabulary tokens
         | PresentedValue.Actor value -> TextReplyFormat.actorName language value |> text language

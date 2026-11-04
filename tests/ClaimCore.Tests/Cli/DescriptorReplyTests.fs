@@ -104,9 +104,15 @@ let tests =
 
                     let text = String.concat "\n" lines
 
+                    let previous, next =
+                        match language with
+                        | "lv" -> "Nē", "Jā"
+                        | "ar" -> "لا", "نعم"
+                        | _ -> "No", "Yes"
+
                     Expect.stringContains
                         text
-                        "false → true"
+                        (previous + " → " + next)
                         "The actual state change remains visible"
 
                     Expect.isFalse
@@ -201,3 +207,58 @@ let tests =
                                     (output.Contains(forbidden, StringComparison.Ordinal))
                                     ("No JSON or untranslated key: " + forbidden))
         ]
+
+
+[<Tests>]
+let hostReplyPresentation =
+    testCase
+        "typed host replies render their diagnostics without printing session secrets"
+        (fun () ->
+            for language in [ "en"; "lv"; "ar" ] do
+                let session =
+                    {
+                        Session.Authenticated = true
+                        ContractIdentity = String.replicate 64 "0"
+                        AntiforgeryToken = Some "SECRET-ANTIFORGERY-VALUE"
+                    }
+
+                let rendered =
+                    TextReply.resultLines
+                        language
+                        None
+                        (FrameResult.Reply(
+                            CliReplies.ofValue Api.session (Outcome.Succeeded session)
+                        ))
+                    |> String.concat "\n"
+
+                Expect.isFalse
+                    (rendered.Contains "SECRET-ANTIFORGERY-VALUE" || rendered.Contains "{\"")
+                    "Session data has an explicit human projection"
+
+                let rejected =
+                    TextReply.resultLines
+                        language
+                        None
+                        (FrameResult.Reply(
+                            CliReplies.ofValue
+                                Api.session
+                                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+                        ))
+                    |> String.concat "\n"
+
+                Expect.stringContains
+                    rejected
+                    (MessageCatalogs.render language "diagnostic.RESOURCE_UNAVAILABLE" Map.empty)
+                    "Real host read refusals use typed diagnostics"
+
+                let logout =
+                    TextReply.resultLines
+                        language
+                        None
+                        (FrameResult.Reply(CliReplies.ofValue Api.logout (Outcome.Succeeded())))
+                    |> String.concat "\n"
+
+                Expect.stringContains
+                    logout
+                    (MessageCatalogs.render language "label.signedOut" Map.empty)
+                    "Logout success has a human descriptor")

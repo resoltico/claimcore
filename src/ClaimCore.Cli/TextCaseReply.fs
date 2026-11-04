@@ -48,7 +48,28 @@ module internal TextCaseReply =
         term language CaseActKind.vocabulary act
 
     let caseLines language (value: CaseReadModel) =
-        TextDescriptorValue.sections language (Descriptor.caseView value)
+        let sections =
+            Descriptor.caseView value
+            |> List.filter (fun section -> section.TitleId <> "label.recommendedNext")
+
+        TextDescriptorValue.sections language sections
+        @ (value.Advice.Recommended
+           |> Option.toList
+           |> List.map (fun act ->
+               let operation = CatalogOperation.Act(ActKind.Case act)
+
+               let command =
+                   CommandGrammar.commandText operation
+                   + " "
+                   + CommandGrammar.quoteArgument (CaseReference.format value.Snapshot.Reference)
+                   + " --expected-revision "
+                   + Revision.format value.Snapshot.Revision
+                   + " …"
+
+               line
+                   language
+                   "label.recommendedNext"
+                   (offerAct language act + " (" + TerminalText.data command + ")")))
         @ (if value.Advice.Maintenance.Active then
                [ label language "diagnostic.REGISTER_MAINTENANCE" ]
            else
@@ -58,8 +79,19 @@ module internal TextCaseReply =
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
                 (value.Advice.Acts |> List.map (offerAct language) |> String.concat ", ")
-            TextObservation.line language value.Work.Basis
         ]
+        @ (if value.Advice.Blocked.IsEmpty then
+               []
+           else
+               label language "label.unavailableActions"
+               :: (value.Advice.Blocked
+                   |> List.collect (fun blocked ->
+                       (offerAct language blocked.Act + ":")
+                       :: TextDiagnosticReply.refusalLinesFor
+                           language
+                           (Some(CaseReference.format value.Snapshot.Reference))
+                           blocked.Reason)))
+        @ [ TextObservation.line language value.Work.Basis ]
 
     let historyLines language (page: HistoryResultPage) =
         (page.Entries

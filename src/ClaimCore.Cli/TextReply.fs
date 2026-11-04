@@ -63,7 +63,7 @@ module internal TextReply =
             presenter Api.operationObserve (fun language _ reply ->
                 TextDiagnosticReply.readLines
                     language
-                    (TextOperationReply.receiptLines language "ACCEPTED")
+                    (TextOperationReply.receiptLines language false)
                     reply.Outcome)
             |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
@@ -91,8 +91,16 @@ module internal TextReply =
             presenter Api.operationResolve (fun language _ reply ->
                 TextOperationReply.resolveLines language reply.Outcome)
             |> snd
-        | EndpointId.Host(HostEndpoint.Session | HostEndpoint.Logout) ->
-            fun _ _ _ -> invalidOp "Host authentication replies have no human command surface."
+        | EndpointId.Host HostEndpoint.Session ->
+            readPresenter Api.session (fun language session ->
+                TextDescriptorValue.sections
+                    language
+                    (ClaimCore.Protocol.Presentation.Descriptor.session session))
+        | EndpointId.Host HostEndpoint.Logout ->
+            readPresenter Api.logout (fun language () ->
+                TextDescriptorValue.sections
+                    language
+                    (ClaimCore.Protocol.Presentation.Descriptor.logout ()))
 
     let private replyLines language request (reply: ServiceReply) =
         presenterFor reply.Route.Id language request reply

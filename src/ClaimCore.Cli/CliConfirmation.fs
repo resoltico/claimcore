@@ -32,7 +32,9 @@ module internal CliConfirmation =
         if not console.IsInteractive then
             false
         else
-            MessageCatalogs.renderCli language (CliMessage.TypeConfirmationTarget target)
+            MessageCatalogs.renderCli
+                language
+                (CliMessage.TypeConfirmationTarget(TerminalText.data target))
             |> Encoding.UTF8.GetBytes
             |> console.Write
 

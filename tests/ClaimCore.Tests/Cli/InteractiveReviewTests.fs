@@ -362,24 +362,36 @@ let tests =
                     "JSON omission remains usage-invalid"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
-            testCase "omitted correction groups mean KEEP and every action is shown" (fun () ->
-                let h = harness "en" (Some "n") Scenario.Accepted
-                run [ "case"; "correct"; "x" ] h |> ignore
+            testCase
+                "omitted correction groups mean KEEP and one unchanged summary replaces repeated KEEP lines"
+                (fun () ->
+                    let h = harness "en" (Some "n") Scenario.Accepted
+                    run [ "case"; "correct"; "x" ] h |> ignore
 
-                match (caseInput h.Calls[2]).Act with
-                | CaseAct.Correct correction ->
-                    Expect.equal correction.Registration Amendment.Keep "Registration is retained"
-                    Expect.equal correction.Decision Change.Keep "Decision is retained"
-                    Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
-                | _ -> failtest "Expected a correction review"
+                    match (caseInput h.Calls[2]).Act with
+                    | CaseAct.Correct correction ->
+                        Expect.equal
+                            correction.Registration
+                            Amendment.Keep
+                            "Registration is retained"
 
-                let rendered = String.concat "\n" h.Text
+                        Expect.equal correction.Decision Change.Keep "Decision is retained"
+                        Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
+                    | _ -> failtest "Expected a correction review"
 
-                for group in [ "Registration"; "Payment decision"; "Payment record" ] do
-                    Expect.stringContains
-                        rendered
-                        (group + ": Keep current details")
-                        "The review makes unchanged groups explicit")
+                    let rendered = String.concat "\n" h.Text
+
+                    Expect.equal
+                        (rendered.Split('\n')
+                         |> Array.filter (fun line ->
+                             line.StartsWith("Unchanged:", StringComparison.Ordinal))
+                         |> Array.length)
+                        1
+                        "One summary covers unchanged values"
+
+                    Expect.isFalse
+                        (rendered.Contains "Keep current details")
+                        "Unchanged group actions do not obscure the supplied changes")
             testCase "localized prompts accept affirmative Latvian and Arabic replies" (fun () ->
                 for language, answer, prompt in
                     [

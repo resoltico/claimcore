@@ -19,6 +19,7 @@ module internal TimelineRows =
         | PresentedValue.Instant value -> TextReplyFormat.instant value
         | PresentedValue.Party value -> PartyName.format value
         | PresentedValue.Text value
+        | PresentedValue.Narrative value
         | PresentedValue.Identifier value -> value
         | PresentedValue.Code(_, token) -> token
         | PresentedValue.Codes(_, tokens) -> String.concat ";" tokens
@@ -27,6 +28,7 @@ module internal TimelineRows =
         | PresentedValue.Count count -> count.ToString(CultureInfo.InvariantCulture)
         | PresentedValue.Reference reference -> CaseReference.format reference
         | PresentedValue.Absent _ -> ""
+        | PresentedValue.Message _ -> invalidOp "Localized guidance is not a timeline change value."
 
     let private csv cells =
         (cells |> List.map CsvCell.format |> String.concat ",") + "\r\n"

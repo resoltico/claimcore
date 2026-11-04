@@ -9,59 +9,23 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module internal TextOperationReply =
+    open ClaimCore.Protocol.Presentation
+
     open TextReplyFormat
     open TextDiagnosticReply
     open TextAuthorityReply
 
-    let receiptLines language outcome (receipt: OperationReceipt) =
-        let act, target, revision =
-            match receipt.Subject with
-            | ReceiptSubject.Case value ->
-                term language CaseActKind.vocabulary value.Act,
-                TerminalText.data (CaseReference.format value.Reference),
-                [
-                    label language (CliMessages.key CliMessage.RevisionLabel)
-                    Revision.format value.Revision
-                ]
-            | ReceiptSubject.Work value ->
-                term language WorkActKind.vocabulary value.Act,
-                TerminalText.data (CaseReference.format value.Reference),
-                [ label language "label.workRevision"; Revision.format value.Revision ]
-            | ReceiptSubject.Reminder value ->
-                let version (item: ReminderVersion) =
-                    ReminderId.format item.ReminderId + " " + Revision.format item.Revision
-
-                let versions =
-                    match value.Effects with
-                    | ReminderReceiptEffects.Single item -> [ version item ]
-                    | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
-                        [ version completed; version next ]
-
-                term language ReminderActKind.vocabulary value.Act,
-                TerminalText.data (CaseReference.format value.Reference),
-                versions
-            | ReceiptSubject.Authority value ->
-                term language AuthorityKind.vocabulary value.Act,
-                (match value.TargetActor with
-                 | AuthorityTargetDisclosure.Disclosed actor ->
-                     displayed language (Some(actorName language actor))
-                 | AuthorityTargetDisclosure.Withheld identity -> ActorId.format identity),
-                []
-
+    let receiptLines language alreadyRecorded (receipt: OperationReceipt) =
         [
-            String.concat
-                " "
-                ([ outcome; act; target ]
-                 @ revision
-                 @ [
-                     label
-                         language
-                         (ContractDiscovery.inputLabel (
-                             InteractionInput.Target InputTarget.OperationId
-                         ))
-                     OperationId.format receipt.OperationId
-                 ])
+            label
+                language
+                (if alreadyRecorded then
+                     "label.alreadyRecorded"
+                 else
+                     "label.recorded")
         ]
+        @ TextDescriptorValue.sections language (Descriptor.receipt receipt)
+        @ [ TextObservation.line language receipt.Basis ]
 
     let requestInput request =
         request
@@ -111,111 +75,37 @@ module internal TextOperationReply =
 
         act + " " + target
 
-    let private changeAction =
-        function
-        | Change.Keep -> CorrectionGroupAction.Keep
-        | Change.Update _ -> CorrectionGroupAction.Update
-        | Change.Clear -> CorrectionGroupAction.Clear
+    let reviewLines language request review =
+        let description = Descriptor.operationReview (requestInput request) review
 
-    let private correctionActions language input =
-        match input with
-        | Some(OperationInput.Case { Act = CaseAct.Correct correction }) ->
-            let registration =
-                match correction.Registration with
-                | Amendment.Keep -> CorrectionGroupAction.Keep
-                | Amendment.Update _ -> CorrectionGroupAction.Update
-
-            [
-                RecordGroup.Registration, registration
-                RecordGroup.Decision, changeAction correction.Decision
-                RecordGroup.Payment,
-                (match correction.Payment with
-                 | PaymentChange.Keep -> CorrectionGroupAction.Keep
-                 | PaymentChange.Clear -> CorrectionGroupAction.Clear
-                 | PaymentChange.Reaffirm -> CorrectionGroupAction.Reaffirm
-                 | PaymentChange.Replace _ -> CorrectionGroupAction.Replace)
-            ]
-            |> List.map (fun (group, action) ->
-                line
-                    language
-                    (Vocabulary.messageKey RecordGroup.vocabulary group "label")
-                    (term language CorrectionGroupAction.vocabulary action))
-        | _ -> []
-
-    let private observedFacts language (parent: CaseSnapshot) =
         [
-            label language "label.observedCaseFacts"
             line
                 language
-                (CliMessages.key CliMessage.RevisionLabel)
-                (Revision.format parent.Revision)
+                (CliMessages.key CliMessage.ReviewTitle)
+                (reviewIdentity language (requestInput request) review)
         ]
-        @ (CaseState.fields parent.State
-           |> Option.map (TextCaseReply.fieldLines language)
-           |> Option.defaultValue [])
-
-    let reviewLines language request review =
-        let input = requestInput request
-
-        let changes =
-            match review with
-            | OperationReview.Work value ->
-                observedFacts language value.Parent
-                @ TextWorkReply.work language value.Before
-                @ [ "→" ]
-                @ TextWorkReply.work language value.Proposed
-                @ [ label language "label.financialFactsPreserved" ]
-            | OperationReview.Reminder value ->
-                observedFacts language value.Parent
-                @ (value.Before
-                   |> Option.map (TextWorkReply.reminder language)
-                   |> Option.defaultValue [])
-                @ [ "→" ]
-                @ TextWorkReply.effects language value.Effects
-                @ [ label language "label.financialFactsPreserved" ]
-            | OperationReview.Authority value ->
-                authorityStates language value.Before value.After @ accessStates language value
-            | OperationReview.Case value ->
-                let lifecycle =
-                    let before =
-                        value.Before
-                        |> Option.map (fun snapshot ->
-                            term language Lifecycle.vocabulary (CaseState.lifecycle snapshot.State))
-
-                    let after =
-                        term
-                            language
-                            Lifecycle.vocabulary
-                            (CaseState.lifecycle value.Proposed.State)
-
-                    line
-                        language
-                        "input.lifecycle.label"
-                        (displayed language before + " → " + after)
-
-                (if
-                     value.Before
-                     |> Option.exists (fun snapshot ->
-                         CaseState.lifecycle snapshot.State =
-                             CaseState.lifecycle value.Proposed.State)
-                 then
-                     []
+        @ (description.Changes
+           |> List.map (fun change ->
+               line
+                   language
+                   change.LabelId
+                   (TextDescriptorValue.render language change.Before
+                    + " → "
+                    + TextDescriptorValue.render language change.After)))
+        @ [
+            line
+                language
+                "label.unchanged"
+                (if description.Unchanged.IsEmpty then
+                     "—"
                  else
-                     [ lifecycle ])
-                @ (value.Changes
-                   |> List.map (fun change ->
-                       line
-                           language
-                           (FieldPresentation.labelId change.FieldName)
-                           (fieldValue language change.FieldName change.Before
-                            + " → "
-                            + fieldValue language change.FieldName change.After)))
-
-        line
-            language
-            (CliMessages.key CliMessage.ReviewTitle)
-            (reviewIdentity language input review)
-        :: (correctionActions language input @ changes)
+                     description.Unchanged
+                     |> List.map (fun entry -> label language entry.LabelId)
+                     |> List.distinct
+                     |> String.concat ", ")
+        ]
+        @ TextDescriptorValue.sections language description.Effects
+        @ [ TextObservation.line language description.Basis ]
 
     let previewLines language request (reply: PreviewReply) =
         readLinesFor
@@ -223,7 +113,7 @@ module internal TextOperationReply =
             (TextDiagnosticReply.reference request)
             (function
             | Previewed.Reviewed review -> reviewLines language request review
-            | Previewed.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt)
+            | Previewed.AlreadyAccepted receipt -> receiptLines language true receipt)
             reply.Outcome
 
     let executeLinesFor language request (reply: ExecuteReply) =
@@ -231,8 +121,8 @@ module internal TextOperationReply =
             readLinesFor language (TextDiagnosticReply.reference request) (fun () -> []) outcome
 
         match reply.Outcome with
-        | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
-        | ExecuteResult.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt
+        | ExecuteResult.Accepted receipt -> receiptLines language false receipt
+        | ExecuteResult.AlreadyAccepted receipt -> receiptLines language true receipt
         | ExecuteResult.Rejected refusal -> failed (Outcome.Rejected refusal)
         | ExecuteResult.Failed fault -> failed (Outcome.Failed fault)
         | ExecuteResult.OutcomeUnknown ->
@@ -244,7 +134,7 @@ module internal TextOperationReply =
         readLines
             language
             (function
-            | Resolved.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+            | Resolved.Accepted receipt -> receiptLines language false receipt
             | Resolved.NotAccepted -> [ label language "notice.notAccepted" ])
             reply
 
@@ -252,7 +142,7 @@ module internal TextOperationReply =
         readLines
             language
             (function
-            | OperationStatus.Accepted receipt -> receiptLines language "ACCEPTED" receipt
+            | OperationStatus.Accepted receipt -> receiptLines language false receipt
             | OperationStatus.NotAccepted -> [ label language "notice.notAccepted" ]
             | OperationStatus.Unresolved ->
                 [ MessageCatalogs.renderCli language CliMessage.StatusUnresolved ])

@@ -13,6 +13,8 @@ type PresentedValue =
     | Instant of DateTimeOffset
     | Party of PartyName
     | Text of string
+    | Narrative of string
+    | Message of messageId: string
     | Code of vocabulary: string * token: string
     | Codes of vocabulary: string * tokens: string list
     | Actor of ActorRef
@@ -44,12 +46,40 @@ type EntryDefinition<'reply> =
         Read: 'reply -> PresentedValue
     }
 
+type PresentedChange =
+    {
+        Key: string
+        LabelId: string
+        Before: PresentedValue
+        After: PresentedValue
+    }
+
+type ReviewDescription =
+    {
+        Changes: PresentedChange list
+        Unchanged: Entry list
+        Effects: Section list
+        Basis: WorkDateBasis
+    }
+
+[<RequireQualifiedAccess>]
+type PresentedBoolean =
+    | False
+    | True
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module PresentedBoolean =
     let vocabulary =
-        Vocabulary.define "boolean" [ false; true ] (fun value -> if value then "TRUE" else "FALSE")
+        Vocabulary.ofUnion<PresentedBoolean> "boolean" TokenCasing.ScreamingSnake None
+
+    let ofBool value =
+        if value then
+            PresentedBoolean.True
+        else
+            PresentedBoolean.False
 
 module Descriptor =
-    let entries definitions value =
+    let entries (definitions: EntryDefinition<'reply> list) value =
         definitions
         |> List.map (fun definition ->
             {
@@ -71,7 +101,7 @@ module Descriptor =
             PresentedValue.Code("country", CountryCode.format value)
         | CaseFieldValue.Business(Admitted.Name value) -> PresentedValue.Party value
         | CaseFieldValue.Business(Admitted.Description value) ->
-            PresentedValue.Text(IncidentDescription.format value)
+            PresentedValue.Narrative(IncidentDescription.format value)
         | CaseFieldValue.Business(Admitted.Amount value) -> PresentedValue.Text(Amount.format value)
         | CaseFieldValue.Business(Admitted.Currency value) ->
             PresentedValue.Code("currency", Currency.format value)
@@ -157,7 +187,7 @@ module Descriptor =
                         "handlingSummary"
                         "field.handlingSummary.label"
                         Prominence.Secondary
-                        (optional (HandlingSummary.format >> PresentedValue.Text) work.Summary)
+                        (optional (HandlingSummary.format >> PresentedValue.Narrative) work.Summary)
                     value
                         "nextAction"
                         "field.reminderAction.label"
@@ -179,6 +209,16 @@ module Descriptor =
                         Prominence.Secondary
                         (PresentedValue.Count work.OverdueReminders)
                     value
+                        "summaryChangedAt"
+                        "label.summaryChangedAt"
+                        Prominence.Secondary
+                        (optional PresentedValue.Instant work.SummaryChangedAt)
+                    value
+                        "summaryRecordedBy"
+                        "label.summaryRecordedBy"
+                        Prominence.Secondary
+                        (optional PresentedValue.Actor work.SummaryRecordedBy)
+                    value
                         "workRevision"
                         "label.workRevision"
                         Prominence.Detail
@@ -195,6 +235,95 @@ module Descriptor =
                         (optional PresentedValue.Actor work.RecordedBy)
                 ]
         }
+
+    let caseStages =
+        function
+        | CaseStageDisplay.Tracker(current, steps) ->
+            {
+                Section.TitleId = "label.stages"
+                Entries =
+                    [
+                        value
+                            "current"
+                            "label.currentStage"
+                            Prominence.Primary
+                            (PresentedValue.Code(
+                                Vocabulary.name CaseStageKind.vocabulary,
+                                Vocabulary.token CaseStageKind.vocabulary current
+                            ))
+                    ]
+            }
+            :: (steps
+                |> List.map (fun step ->
+                    {
+                        Section.TitleId =
+                            Vocabulary.messageKey CaseStageKind.vocabulary step.Stage "label"
+                        Entries =
+                            [
+                                value
+                                    "completed"
+                                    "label.stageCompleted"
+                                    Prominence.Primary
+                                    (PresentedValue.Code(
+                                        Vocabulary.name PresentedBoolean.vocabulary,
+                                        Vocabulary.token
+                                            PresentedBoolean.vocabulary
+                                            (PresentedBoolean.ofBool step.Completed)
+                                    ))
+                                value
+                                    "date"
+                                    "label.stageDate"
+                                    Prominence.Primary
+                                    (optional PresentedValue.Date step.Date)
+                                value
+                                    "amount"
+                                    "label.stageAmount"
+                                    Prominence.Primary
+                                    (optional PresentedValue.Money step.Amount)
+                            ]
+                    }))
+        | CaseStageDisplay.Voided ->
+            [
+                {
+                    Section.TitleId = "label.stages"
+                    Entries =
+                        [
+                            value
+                                "state"
+                                "field.status.label"
+                                Prominence.Primary
+                                (PresentedValue.State CaseHeadline.Voided)
+                        ]
+                }
+            ]
+        | CaseStageDisplay.Erased ->
+            [
+                {
+                    Section.TitleId = "label.stages"
+                    Entries =
+                        [
+                            value
+                                "state"
+                                "field.status.label"
+                                Prominence.Primary
+                                (PresentedValue.State CaseHeadline.Erased)
+                        ]
+                }
+            ]
+        | CaseStageDisplay.Reinstated ->
+            [
+                {
+                    Section.TitleId = "label.stages"
+                    Entries =
+                        [
+                            value
+                                "state"
+                                "field.status.label"
+                                Prominence.Primary
+                                (PresentedValue.Message "label.stageReinstated")
+                        ]
+                }
+            ]
 
     let caseView (reply: CaseReadModel) =
         [
@@ -255,6 +384,8 @@ module Descriptor =
                         }
                 | None -> ()
             yield! caseFacts reply.Snapshot
+            if CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased then
+                yield! caseStages reply.Stages
             if CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased then
                 yield caseWork reply.Work
         ]
@@ -557,7 +688,7 @@ module Descriptor =
                 difference
                     "handlingSummary"
                     "field.handlingSummary.label"
-                    (HandlingSummary.format >> PresentedValue.Text)
+                    (HandlingSummary.format >> PresentedValue.Narrative)
                     change
             ]
         | TimelineChange.Reminder change -> reminderDifference change
@@ -681,7 +812,8 @@ module Descriptor =
             items |> List.map (Vocabulary.token vocabulary)
         )
 
-    let private boolean item = code PresentedBoolean.vocabulary item
+    let private boolean item =
+        code PresentedBoolean.vocabulary (PresentedBoolean.ofBool item)
 
     let private column key label prominence isMoney read =
         {
@@ -716,9 +848,10 @@ module Descriptor =
                 Prominence.Secondary
                 false
                 (fun item ->
-                    optional
-                        (fun (count: ActorResponsibleCases) -> PresentedValue.Count count.Count)
-                        item.ResponsibleCases)
+                    item.ResponsibleCases
+                    |> Option.map (fun (count: ActorResponsibleCases) ->
+                        PresentedValue.Count count.Count)
+                    |> Option.defaultValue (PresentedValue.Absent "label.detailsWithheld"))
             column "contact" "field.profile.contact.label" Prominence.Detail false (fun item ->
                 optional (ContactText.format >> PresentedValue.Text) item.Contact)
             column "actorId" "input.actorId.label" Prominence.Detail false (fun item ->
@@ -734,29 +867,31 @@ module Descriptor =
                 PresentedValue.Identifier subject)
         ]
 
+    let private roleSections (roles: ActorRoleSummary list) =
+        roles
+        |> List.map (fun role ->
+            section
+                "field.role.label"
+                [
+                    value
+                        "role"
+                        "field.role.label"
+                        Prominence.Primary
+                        (code Role.vocabulary role.Role)
+                    value
+                        "installation"
+                        "label.installationRoleAssigned"
+                        Prominence.Secondary
+                        (boolean role.Installation)
+                    value
+                        "cases"
+                        "label.caseRoleAssignments"
+                        Prominence.Secondary
+                        (PresentedValue.Count role.CaseCount)
+                ])
+
     let actor item =
-        section "label.account" (entries actorColumns item)
-        :: (item.Roles
-            |> List.map (fun role ->
-                section
-                    "field.role.label"
-                    [
-                        value
-                            "role"
-                            "field.role.label"
-                            Prominence.Primary
-                            (code Role.vocabulary role.Role)
-                        value
-                            "installation"
-                            "label.installationAccess"
-                            Prominence.Secondary
-                            (boolean role.Installation)
-                        value
-                            "cases"
-                            "label.caseAccessCount"
-                            Prominence.Secondary
-                            (PresentedValue.Count role.CaseCount)
-                    ]))
+        section "label.account" (entries actorColumns item) :: roleSections item.Roles
 
     let grantColumns =
         [
@@ -1020,12 +1155,17 @@ module Descriptor =
                         "guidance"
                         "label.account"
                         Prominence.Primary
-                        (PresentedValue.Absent(
+                        (PresentedValue.Message(
                             Vocabulary.messageKey RequesterKind.vocabulary state "meaning"
                         ))
                  ]
                  @ details)
         ]
+        @ (match reply.Requester with
+           | RequesterState.Active item -> roleSections item.Roles
+           | RequesterState.NoRoles _
+           | RequesterState.Disabled _
+           | RequesterState.NotRegistered _ -> [])
 
     let caseTotals (reply: CaseWorklistSummary) =
         let group title vocabulary (items: ValueCount<'value> list) =
@@ -1067,4 +1207,579 @@ module Descriptor =
             group "input.progress.label" CaseProgress.vocabulary reply.Counts.Progress
             totals "label.claimedTotals" reply.Claimed
             totals "label.payableTotals" reply.Payable
+        ]
+
+
+    let private flatten sections =
+        sections |> List.collect (fun (section: Section) -> section.Entries)
+
+    let private snapshotEntries (snapshot: CaseSnapshot) =
+        [
+            value
+                "lifecycle"
+                "input.lifecycle.label"
+                Prominence.Primary
+                (code Lifecycle.vocabulary (CaseState.lifecycle snapshot.State))
+            value
+                "status"
+                "field.status.label"
+                Prominence.Primary
+                (CaseState.fields snapshot.State
+                 |> optional (fun fields -> code CaseStatus.vocabulary fields.Status))
+        ]
+        @ (caseFacts snapshot |> flatten)
+
+    let private workEntries (snapshot: CaseWorkReadModel) =
+        [
+            value
+                "responsible"
+                "field.responsibleActor.label"
+                Prominence.Primary
+                (optional PresentedValue.Actor snapshot.Responsible)
+            value
+                "handlingSummary"
+                "field.handlingSummary.label"
+                Prominence.Primary
+                (optional (HandlingSummary.format >> PresentedValue.Narrative) snapshot.Summary)
+        ]
+
+    let private reminderEntries (reminder: Reminder) =
+        let id = ReminderId.format (Reminder.id reminder)
+
+        [
+            value
+                (id + ".id")
+                "field.reminderId.label"
+                Prominence.Detail
+                (PresentedValue.Identifier id)
+            value
+                (id + ".action")
+                "field.reminderAction.label"
+                Prominence.Primary
+                (PresentedValue.Text(ReminderAction.format (Reminder.action reminder)))
+            value
+                (id + ".due")
+                "field.reminderDueDate.label"
+                Prominence.Primary
+                (PresentedValue.Date(Reminder.due reminder))
+            value
+                (id + ".state")
+                "input.reminderState.label"
+                Prominence.Primary
+                (code ReminderState.vocabulary (Reminder.state reminder))
+        ]
+
+    let private profileEntries (profile: ActorProfile option) =
+        [
+            value
+                "profileName"
+                "field.profile.displayName.label"
+                Prominence.Primary
+                (optional
+                    (fun (profile: ActorProfile) -> PresentedValue.Party profile.DisplayName)
+                    profile)
+            value
+                "profileContact"
+                "field.profile.contact.label"
+                Prominence.Primary
+                (profile
+                 |> Option.bind _.Contact
+                 |> optional (ContactText.format >> PresentedValue.Text))
+        ]
+
+    let private authorityStateEntries (state: AuthorityState) =
+        [ value "enabled" "label.enabled" Prominence.Primary (boolean state.Enabled) ]
+        @ profileEntries state.Profile
+        @ (state.Grants
+           |> List.collect (fun item ->
+               let identity =
+                   Role.token item.Role
+                   + "."
+                   + (match item.Scope with
+                      | GrantScope.Installation -> "installation"
+                      | GrantScope.Case(id, _) -> CaseId.format id)
+
+               grant item
+               |> List.map (fun entry ->
+                   { entry with
+                       Key = identity + "." + entry.Key
+                   })))
+        @ (state.Access
+           |> List.collect (fun access ->
+               let identity = Capability.token access.Capability
+
+               [
+                   value
+                       (identity + ".effective")
+                       (Vocabulary.messageKey Capability.vocabulary access.Capability "label")
+                       Prominence.Secondary
+                       (boolean access.Effective)
+                   value
+                       (identity + ".direct")
+                       "label.directRoles"
+                       Prominence.Detail
+                       (codes Role.vocabulary access.DirectRoles)
+                   value
+                       (identity + ".inherited")
+                       "label.inheritedRoles"
+                       Prominence.Detail
+                       (codes Role.vocabulary access.InstallationRoles)
+               ]))
+
+    let private authorityEffects (effects: AuthorityReviewEffect list) =
+        effects
+        |> List.map (fun effect ->
+            let kind, details =
+                match effect with
+                | AuthorityReviewEffect.Register principal
+                | AuthorityReviewEffect.ProvisionOwner principal ->
+                    let kind, issuer, subject = PrincipalKey.parts principal
+
+                    (match effect with
+                     | AuthorityReviewEffect.Register _ -> AuthorityKind.Register
+                     | _ -> AuthorityKind.ProvisionOwner),
+                    [
+                        value
+                            "principalKind"
+                            "field.principal.kind.label"
+                            Prominence.Detail
+                            (code PrincipalKind.vocabulary kind)
+                        value
+                            "issuer"
+                            "field.principal.issuer.label"
+                            Prominence.Detail
+                            (PresentedValue.Identifier issuer)
+                        value
+                            "subject"
+                            "field.principal.subject.label"
+                            Prominence.Detail
+                            (PresentedValue.Identifier subject)
+                    ]
+                | AuthorityReviewEffect.SetProfile _ -> AuthorityKind.SetProfile, []
+                | AuthorityReviewEffect.EraseProfile -> AuthorityKind.EraseProfile, []
+                | AuthorityReviewEffect.Grant item -> AuthorityKind.Grant, grant item
+                | AuthorityReviewEffect.Revoke item -> AuthorityKind.Revoke, grant item
+                | AuthorityReviewEffect.Enable -> AuthorityKind.Enable, []
+                | AuthorityReviewEffect.Disable -> AuthorityKind.Disable, []
+
+            section
+                "label.effect"
+                (value "act" "label.action" Prominence.Primary (code AuthorityKind.vocabulary kind)
+                 :: details))
+
+    let private sameValue before after =
+        match before, after with
+        | PresentedValue.Actor before, PresentedValue.Actor after -> before.ActorId = after.ActorId
+        | _ -> before = after
+
+    let private changes afterMissing before after =
+        let previous =
+            before |> List.map (fun (entry: Entry) -> entry.Key, entry) |> Map.ofList
+
+        let proposed =
+            after |> List.map (fun (entry: Entry) -> entry.Key, entry) |> Map.ofList
+
+        let keys = (after @ before) |> List.map _.Key |> List.distinct
+
+        keys
+        |> List.fold
+            (fun (changed, unchanged) key ->
+                let old = Map.tryFind key previous
+                let next = Map.tryFind key proposed
+                let definition = next |> Option.orElse old |> Option.get
+                let oldValue = old |> Option.map _.Value |> Option.defaultValue absent
+                let newValue = next |> Option.map _.Value |> Option.defaultValue afterMissing
+
+                if sameValue oldValue newValue then
+                    changed,
+                    (if old.IsSome && next.IsSome then
+                         definition :: unchanged
+                     else
+                         unchanged)
+                else
+                    {
+                        PresentedChange.Key = key
+                        LabelId = definition.LabelId
+                        Before = oldValue
+                        After = newValue
+                    }
+                    :: changed,
+                    unchanged)
+            ([], [])
+        |> fun (changed, unchanged) -> List.rev changed, List.rev unchanged
+
+    let private reviewValues =
+        function
+        | OperationReview.Case review ->
+            let missing =
+                if CaseState.lifecycle review.Proposed.State = Lifecycle.Erased then
+                    PresentedValue.Absent "lifecycle.ERASED.label"
+                else
+                    absent
+
+            let changed, unchanged =
+                changes
+                    missing
+                    (review.Before |> Option.map snapshotEntries |> Option.defaultValue [])
+                    (snapshotEntries review.Proposed)
+
+            {
+                Changes = changed
+                Unchanged = unchanged
+                Effects = []
+                Basis = review.Context.Basis
+            }
+        | OperationReview.Work review ->
+            let changed, unchanged =
+                changes absent (workEntries review.Before) (workEntries review.Proposed)
+
+            {
+                Changes = changed
+                Unchanged = unchanged
+                Effects = []
+                Basis = review.Context.Basis
+            }
+        | OperationReview.Reminder review ->
+            let after =
+                match review.Effects with
+                | ReminderEffects.Created item
+                | ReminderEffects.Changed item -> reminderEntries item
+                | ReminderEffects.CompletedAndPlanned(completed, next) ->
+                    reminderEntries completed @ reminderEntries next
+
+            let changed, unchanged =
+                changes
+                    absent
+                    (review.Before |> Option.map reminderEntries |> Option.defaultValue [])
+                    after
+
+            {
+                Changes = changed
+                Unchanged = unchanged
+                Effects = []
+                Basis = review.Context.Basis
+            }
+        | OperationReview.Authority review ->
+            let changed, unchanged =
+                changes
+                    absent
+                    (authorityStateEntries review.Before)
+                    (authorityStateEntries review.After)
+
+            {
+                Changes = changed
+                Unchanged = unchanged
+                Effects = authorityEffects review.Effects
+                Basis = review.Basis
+            }
+
+    let operationReview input review =
+        let described = reviewValues review
+
+        let details =
+            match input with
+            | Some input ->
+                let kind =
+                    match input with
+                    | OperationInput.Case item -> ActKind.Case(CaseAct.kind item.Act)
+                    | OperationInput.Authority item -> ActKind.Authority(AuthorityAct.kind item.Act)
+                    | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
+                    | OperationInput.Reminder item ->
+                        ActKind.Reminder(AuthoredReminderAct.kind item.Act)
+
+                let consequence =
+                    match Consequence.ofAct kind with
+                    | Consequence.Routine -> []
+                    | Consequence.Stewardship
+                    | Consequence.Irreversible ->
+                        OperationCatalog.consequenceId (CatalogOperation.Act kind)
+                        |> Option.toList
+                        |> List.map (fun key ->
+                            section
+                                "label.effect"
+                                [
+                                    value
+                                        "consequence"
+                                        "label.effect"
+                                        Prominence.Primary
+                                        (PresentedValue.Message key)
+                                ])
+
+                let intent =
+                    match input with
+                    | OperationInput.Case {
+                                              Act = CaseAct.Void reason | CaseAct.Reinstate reason
+                                          } ->
+                        [
+                            section
+                                "label.details"
+                                [
+                                    value
+                                        "reason"
+                                        "field.reason.label"
+                                        Prominence.Primary
+                                        (PresentedValue.Text reason)
+                                ]
+                        ]
+                    | OperationInput.Case {
+                                              Act = CaseAct.Correct {
+                                                                        Payment = PaymentChange.Reaffirm
+                                                                    }
+                                          } ->
+                        [
+                            section
+                                (Vocabulary.messageKey
+                                    RecordGroup.vocabulary
+                                    RecordGroup.Payment
+                                    "label")
+                                [
+                                    value
+                                        "intent"
+                                        "label.action"
+                                        Prominence.Primary
+                                        (code
+                                            CorrectionGroupAction.vocabulary
+                                            CorrectionGroupAction.Reaffirm)
+                                ]
+                        ]
+                    | _ -> []
+
+                consequence @ intent
+            | None -> []
+
+        { described with
+            Effects = details @ described.Effects
+        }
+
+    let private receiptHeader reference act =
+        section
+            "label.recordedChange"
+            ([ value "act" "label.action" Prominence.Primary act ]
+             @ (reference
+                |> Option.toList
+                |> List.map (fun reference ->
+                    value
+                        "reference"
+                        "field.caseReference.label"
+                        Prominence.Primary
+                        (PresentedValue.Reference reference))))
+
+    let private receiptDisclosure key =
+        [
+            section
+                "label.recordedFacts"
+                [
+                    value
+                        "disclosure"
+                        "label.details"
+                        Prominence.Primary
+                        (PresentedValue.Absent key)
+                ]
+        ]
+
+    let private receiptReminderVersion (version: ReminderVersion) =
+        section
+            "label.reminder"
+            ([
+                value
+                    "id"
+                    "field.reminderId.label"
+                    Prominence.Primary
+                    (PresentedValue.Identifier(ReminderId.format version.ReminderId))
+                value
+                    "revision"
+                    "label.reminderRevision"
+                    Prominence.Detail
+                    (PresentedValue.Identifier(Revision.format version.Revision))
+             ]
+             @ (match version.Snapshot with
+                | ReminderDisclosure.Disclosed item ->
+                    reminderEntries item
+                    |> List.filter (fun entry ->
+                        not (entry.Key.EndsWith(".id", StringComparison.Ordinal)))
+                | ReminderDisclosure.Withheld ->
+                    [
+                        value
+                            "disclosure"
+                            "label.details"
+                            Prominence.Primary
+                            (PresentedValue.Absent "label.detailsWithheld")
+                    ]
+                | ReminderDisclosure.Erased ->
+                    [
+                        value
+                            "disclosure"
+                            "label.details"
+                            Prominence.Primary
+                            (PresentedValue.Absent "lifecycle.ERASED.label")
+                    ]))
+
+    let private caseReceipt (item: CaseReceipt) =
+        [
+            receiptHeader (Some item.Reference) (code CaseActKind.vocabulary item.Act)
+            section
+                "label.recordedFacts"
+                [
+                    value
+                        "revision"
+                        "label.revisionLabel"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Revision.format item.Revision))
+                ]
+        ]
+        @ (match item.Snapshot with
+           | SnapshotDisclosure.Disclosed live ->
+               caseFacts
+                   {
+                       CaseId = item.CaseId
+                       Reference = item.Reference
+                       Revision = item.Revision
+                       State = LiveCase.toState live
+                   }
+           | SnapshotDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
+           | SnapshotDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
+        []
+
+    let private workReceipt (item: WorkReceipt) =
+        [
+            receiptHeader (Some item.Reference) (code WorkActKind.vocabulary item.Act)
+            section
+                "section.work.label"
+                [
+                    value
+                        "revision"
+                        "label.workRevision"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Revision.format item.Revision))
+                ]
+        ]
+        @ (match item.Snapshot with
+           | WorkDisclosure.Disclosed work -> [ section "section.work.label" (workEntries work) ]
+           | WorkDisclosure.Withheld -> receiptDisclosure "label.detailsWithheld"
+           | WorkDisclosure.Erased -> receiptDisclosure "lifecycle.ERASED.label"),
+        []
+
+    let private reminderReceipt (item: ReminderReceipt) =
+        [
+            receiptHeader (Some item.Reference) (code ReminderActKind.vocabulary item.Act)
+        ]
+        @ (match item.Effects with
+           | ReminderReceiptEffects.Single version -> [ receiptReminderVersion version ]
+           | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
+               [ receiptReminderVersion completed; receiptReminderVersion next ]),
+        []
+
+    let private authorityReceipt (item: AuthorityReceipt) =
+        [
+            receiptHeader None (code AuthorityKind.vocabulary item.Act)
+            section
+                "label.account"
+                [
+                    value
+                        "target"
+                        "label.targetAccount"
+                        Prominence.Primary
+                        (match item.TargetActor with
+                         | AuthorityTargetDisclosure.Disclosed actor -> PresentedValue.Actor actor
+                         | AuthorityTargetDisclosure.Withheld _ ->
+                             PresentedValue.Absent "label.detailsWithheld")
+                ]
+        ]
+        @ (item.Effects
+           |> List.map (fun effect ->
+               section
+                   "label.effect"
+                   [
+                       value
+                           "act"
+                           "label.action"
+                           Prominence.Primary
+                           (code AuthorityKind.vocabulary effect.Act)
+                       value
+                           "sequence"
+                           "label.sequence"
+                           Prominence.Detail
+                           (PresentedValue.Identifier(Sequence.format effect.Position.Sequence))
+                   ])),
+        [
+            value
+                "targetId"
+                "input.actorId.label"
+                Prominence.Detail
+                (PresentedValue.Identifier(
+                    ActorId.format (AuthorityTargetDisclosure.actorId item.TargetActor)
+                ))
+        ]
+
+    let receipt (receipt: OperationReceipt) =
+        let body, knownTarget =
+            match receipt.Subject with
+            | ReceiptSubject.Case item -> caseReceipt item
+            | ReceiptSubject.Work item -> workReceipt item
+            | ReceiptSubject.Reminder item -> reminderReceipt item
+            | ReceiptSubject.Authority item -> authorityReceipt item
+
+        body
+        @ [
+            section
+                "label.recordDetails"
+                ([
+                    value
+                        "operationId"
+                        "field.operationId.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(OperationId.format receipt.OperationId))
+                    value
+                        "sequence"
+                        "label.sequence"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Sequence.format receipt.Position.Sequence))
+                    value
+                        "recordedAt"
+                        "label.recordedAt"
+                        Prominence.Primary
+                        (PresentedValue.Instant receipt.RecordedAt)
+                    value
+                        "recordedBy"
+                        "label.recordedBy"
+                        Prominence.Primary
+                        (PresentedValue.Actor receipt.RecordedBy)
+                 ]
+                 @ knownTarget)
+        ]
+
+    /// Host session presentation contains no antiforgery-token value.
+    let session (session: Session) =
+        [
+            section
+                "label.account"
+                [
+                    value
+                        "authenticated"
+                        "label.authenticated"
+                        Prominence.Primary
+                        (boolean session.Authenticated)
+                ]
+            section
+                "label.recordDetails"
+                [
+                    value
+                        "contractIdentity"
+                        "label.contractIdentity"
+                        Prominence.Detail
+                        (PresentedValue.Identifier session.ContractIdentity)
+                ]
+        ]
+
+    let logout () =
+        [
+            section
+                "label.account"
+                [
+                    value
+                        "result"
+                        "label.accountState"
+                        Prominence.Primary
+                        (PresentedValue.Message "label.signedOut")
+                ]
         ]

@@ -464,24 +464,35 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             "Authority preview identifies the exact act and principal using core labels"
 
         if enabledBefore <> enabledAfter then
+            let yes, no =
+                match language with
+                | "lv" -> "Jā", "Nē"
+                | "ar" -> "نعم", "لا"
+                | _ -> "Yes", "No"
+
             let expected =
-                (if enabledBefore then "true" else "false")
-                + " → "
-                + (if enabledAfter then "true" else "false")
+                (if enabledBefore then yes else no) + " → " + (if enabledAfter then yes else no)
 
             Expect.stringContains rendered expected "The enabled transition is displayed"
 
         if grantBefore <> grantAfter then
-            let expected =
+            let absent = MessageCatalogs.render language "label.notRecorded" Map.empty
+
+            let expected role =
                 if grantBefore then
-                    reader + "  " + installation + "  — → —"
+                    role + " → " + absent
                 else
-                    "— → " + reader + "  " + installation + "  —"
+                    absent + " → " + role
 
             Expect.stringContains
                 rendered
-                expected
-                "The role and installation scope are displayed in the correct direction"
+                (expected reader)
+                "The role is displayed in the correct direction"
+
+            Expect.stringContains
+                rendered
+                (expected installation)
+                "The scope is displayed in the correct direction"
 
 [<Tests>]
 let authorityTextTests =
