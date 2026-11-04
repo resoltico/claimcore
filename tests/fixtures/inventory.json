@@ -428,7 +428,8 @@
     "profile.contact",
     "responsibleActorFilter",
     "grants",
-    "directorySearch"
+    "directorySearch",
+    "roleFilter"
   ],
   "cliFrameCount": 63,
   "readInputs": {

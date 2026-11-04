@@ -16,6 +16,7 @@ type InteractionInput =
     | Progress
     | CaseView
     | ResponsibleActorFilter
+    | RoleFilter
     | ReminderView
     | TimelineFilter
     | Order
@@ -49,6 +50,7 @@ module InteractionInput =
         | InteractionInput.Progress -> "progress"
         | InteractionInput.CaseView -> "caseView"
         | InteractionInput.ResponsibleActorFilter -> "responsibleActorFilter"
+        | InteractionInput.RoleFilter -> "roleFilter"
         | InteractionInput.ReminderView -> "reminderView"
         | InteractionInput.TimelineFilter -> "timelineFilter"
         | InteractionInput.Order -> "order"
@@ -79,6 +81,7 @@ module InteractionInput =
         | InteractionInput.Progress
         | InteractionInput.CaseView
         | InteractionInput.ResponsibleActorFilter
+        | InteractionInput.RoleFilter
         | InteractionInput.ReminderView
         | InteractionInput.TimelineFilter
         | InteractionInput.Order

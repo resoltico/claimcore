@@ -660,5 +660,8 @@
   "label.unavailableActions": "Unavailable actions",
   "label.authenticated": "Authenticated",
   "label.contractIdentity": "Contract identity",
-  "label.signedOut": "Signed out."
+  "label.signedOut": "Signed out.",
+  "input.roleFilter.label": "Role filter",
+  "input.roleFilter.hint": "Find people assigned this role, including disabled accounts.",
+  "input.roleFilter.rule": "Match recognized role assignments across the installation or individual cases. This filter does not test current capabilities or whether the account is enabled."
 }

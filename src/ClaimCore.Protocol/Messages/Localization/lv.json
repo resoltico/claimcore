@@ -660,5 +660,8 @@
   "label.unavailableActions": "Nepieejamās darbības",
   "label.authenticated": "Autentificēts",
   "label.contractIdentity": "Līguma identitāte",
-  "label.signedOut": "Izrakstīšanās pabeigta."
+  "label.signedOut": "Izrakstīšanās pabeigta.",
+  "input.roleFilter.label": "Lomas filtrs",
+  "input.roleFilter.hint": "Atrast personas, kurām piešķirta šī loma, arī atspējotus kontus.",
+  "input.roleFilter.rule": "Atlasīt pēc piešķirtās lomas visā instalācijā vai atsevišķās lietās; filtrs nepārbauda pašreizējās tiesības."
 }

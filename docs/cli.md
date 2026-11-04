@@ -792,7 +792,7 @@ claimcore authority list [--text VALUE] [--role owner|case-reader|case-registrar
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--text` | Search people — Use up to 200 characters. Capitalization does not matter. |  |  |
-| `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
+| `--role` | Role filter — Match recognized role assignments across the installation or individual cases. This filter does not test current capabilities or whether the account is enabled. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 

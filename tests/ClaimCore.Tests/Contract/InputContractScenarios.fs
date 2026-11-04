@@ -298,6 +298,7 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Progress
             | InteractionInput.CaseView
             | InteractionInput.ResponsibleActorFilter
+            | InteractionInput.RoleFilter
             | InteractionInput.ReminderView
             | InteractionInput.TimelineFilter
             | InteractionInput.Order
@@ -313,6 +314,42 @@ let internal authorityFieldPresentation () =
         Expect.isFalse
             (field.TryGetProperty "label" |> fst)
             "CatalogDocument carry keys, not authored prose."
+
+    let entries = root.GetProperty("entries").EnumerateArray() |> Seq.toList
+
+    let roleInput (entry: JsonElement) =
+        entry.GetProperty("inputs").EnumerateArray()
+        |> Seq.find (fun input ->
+            let path = input.GetProperty("path").EnumerateArray() |> Seq.toList
+            path |> List.last |> _.GetString() = "role")
+
+    let listRole =
+        entries
+        |> List.find (fun entry -> entry.GetProperty("endpoint").GetString() = "authority.list")
+        |> roleInput
+
+    let grantRole =
+        entries
+        |> List.find (fun entry ->
+            entry.GetProperty("subject").GetString() = "AUTHORITY"
+            && entry.GetProperty("kind").GetString() = "GRANT")
+        |> roleInput
+
+    for part in [ "label"; "hint"; "rule" ] do
+        Expect.equal
+            (listRole.GetProperty(part + "Id").GetString())
+            ("input.roleFilter." + part)
+            "Directory filtering owns its purpose-specific guidance"
+
+        Expect.equal
+            (grantRole.GetProperty(part + "Id").GetString())
+            ("field.role." + part)
+            "Grant authoring keeps its distinct guidance"
+
+    Expect.equal
+        (listRole.GetProperty("diagnosticTargets").GetArrayLength())
+        0
+        "A closed role filter creates no fictitious Application input target"
 
 let internal decoderProperty =
     let seed =

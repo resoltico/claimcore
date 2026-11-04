@@ -570,6 +570,13 @@
       "scalar": null
     },
     {
+      "name": "roleFilter",
+      "labelId": "input.roleFilter.label",
+      "hintId": "input.roleFilter.hint",
+      "ruleId": "input.roleFilter.rule",
+      "scalar": null
+    },
+    {
       "name": "reminderView",
       "labelId": "input.reminderView.label",
       "hintId": "input.reminderView.hint",
@@ -8159,7 +8166,7 @@
         },
         {
           "identity": "role",
-          "field": "role",
+          "field": null,
           "path": [
             "role"
           ],
@@ -8178,18 +8185,16 @@
           },
           "adviceGroup": null,
           "branches": [],
-          "labelId": "field.role.label",
-          "hintId": "field.role.hint",
-          "ruleId": "field.role.rule",
+          "labelId": "input.roleFilter.label",
+          "hintId": "input.roleFilter.hint",
+          "ruleId": "input.roleFilter.rule",
           "order": 1,
           "prefill": null,
           "required": false,
           "wireRequired": false,
           "allowsNull": false,
           "default": null,
-          "diagnosticTargets": [
-            "role"
-          ],
+          "diagnosticTargets": [],
           "source": "AUTHORED"
         },
         {

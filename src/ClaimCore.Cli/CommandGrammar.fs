@@ -58,6 +58,7 @@ module CommandGrammar =
         | InteractionInput.CaseView
         | InteractionInput.ReminderView -> "view"
         | InteractionInput.ResponsibleActorFilter -> "responsibleActor"
+        | InteractionInput.RoleFilter -> "role"
         | InteractionInput.ReminderDue -> "due"
         | InteractionInput.ReminderState -> "state"
         | InteractionInput.Target InputTarget.ReminderAction -> "action"

@@ -660,5 +660,8 @@
   "label.unavailableActions": "الإجراءات غير المتاحة",
   "label.authenticated": "تمت المصادقة",
   "label.contractIdentity": "معرّف العقد",
-  "label.signedOut": "تم تسجيل الخروج."
+  "label.signedOut": "تم تسجيل الخروج.",
+  "input.roleFilter.label": "تصفية حسب الدور",
+  "input.roleFilter.hint": "ابحث عن الأشخاص المسند إليهم هذا الدور، بما في ذلك الحسابات المعطلة.",
+  "input.roleFilter.rule": "طابق الأدوار المسندة للتثبيت أو للملفات المحددة. لا يختبر عامل التصفية الصلاحيات الحالية."
 }

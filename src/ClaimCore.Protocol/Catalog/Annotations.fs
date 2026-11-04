@@ -275,7 +275,9 @@ module CatalogAnnotations =
             yield
                 (RequestSchemas.ActorListRequest, "text"),
                 constant (target InputTarget.DirectorySearch)
-            yield (RequestSchemas.ActorListRequest, "role"), constant (target InputTarget.Role)
+            yield
+                (RequestSchemas.ActorListRequest, "role"),
+                constant (annotation InteractionInput.RoleFilter)
             yield ("WorkOverviewRequest", "mine"), constant (annotation InteractionInput.Mine)
             yield ("ReminderGetRequest", "reminderId"), constant (target InputTarget.ReminderId)
             for owner in
