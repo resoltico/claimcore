@@ -18,6 +18,12 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "input refusal ordering retains readable private and absent target policy"
+                (withFixture factory RequesterAdmissionContract.targetPrivacy)
+            testCaseAsync
+                "unavailable callers cannot receive early business input refusals"
+                (withFixture factory RequesterAdmissionContract.lifecycle)
+            testCaseAsync
                 "summary attribution follows text edits rather than assignment updates"
                 (withFixture factory (fun fixture ->
                     task { let! _ = SummaryAttributionContract.lifecycle fixture in return () }))

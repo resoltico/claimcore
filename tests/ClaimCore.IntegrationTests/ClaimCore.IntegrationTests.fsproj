@@ -24,9 +24,11 @@
     <Compile Include="AdmitContract.fs" />
     <Compile Include="PeopleDirectoryContract.fs" />
     <Compile Include="ActorNameSearchContract.fs" />
+    <Compile Include="RequesterAdmissionContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="SummaryAttributionPostgresTests.fs" />
+    <Compile Include="RequesterAdmissionPostgresTests.fs" />
     <Compile Include="NamedRowTests.fs" />
     <Compile Include="SearchIndexTests.fs" />
     <Compile Include="ReminderPostgresTests.fs" />

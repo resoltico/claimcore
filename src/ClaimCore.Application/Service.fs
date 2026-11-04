@@ -53,6 +53,7 @@ module Service =
     let private admitAuthority = Authority.parse
 
     let private write
+        (services: ServiceContext)
         (ct: CancellationToken)
         admit
         (persist: 'request -> Task<Result<Verdict<OperationReceipt>, StoreFailure>>)
@@ -62,7 +63,9 @@ module Service =
                 return ExecuteResult.Failed CoreFault.StoreUnavailable
             else
                 match admit () with
-                | Error refusal -> return ExecuteResult.Rejected refusal
+                | Error refusal ->
+                    let! result = RequestRefusals.write services ct refusal
+                    return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
                 | Ok request ->
                     let! result = persist request
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
@@ -80,6 +83,7 @@ module Service =
         }
 
     let private review
+        (services: ServiceContext)
         (ct: CancellationToken)
         admit
         (read: 'request -> Task<Result<'view, StoreFailure>>)
@@ -91,7 +95,7 @@ module Service =
                 return Outcome.Failed CoreFault.StoreUnavailable
             else
                 match admit () with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services ct refusal
                 | Ok request ->
                     let! result = read request
 
@@ -113,7 +117,7 @@ module Service =
                 return Outcome.Failed CoreFault.StoreUnavailable
             else
                 match admitCase request with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services ct refusal
                 | Ok request ->
                     let! result =
                         services.Store.Read
@@ -177,6 +181,7 @@ module Service =
 
     let private previewAuthority (services: ServiceContext) request ct =
         review
+            services
             ct
             (fun () -> admitAuthority request)
             (fun (admitted: AuthorityCommand) ->
@@ -205,13 +210,11 @@ module Service =
                 | OperationInput.Authority request -> previewAuthority services request ct
                 | OperationInput.Work request ->
                     match WorkExecution.prepareWork request with
-                    | Error refusal ->
-                        System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal)
+                    | Error refusal -> RequestRefusals.read services ct refusal
                     | Ok prepared -> WorkExecution.preview services prepared ct
                 | OperationInput.Reminder request ->
                     match WorkExecution.prepareReminder request with
-                    | Error refusal ->
-                        System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal)
+                    | Error refusal -> RequestRefusals.read services ct refusal
                     | Ok prepared -> WorkExecution.preview services prepared ct
 
             return
@@ -226,16 +229,19 @@ module Service =
             let! outcome =
                 match input with
                 | OperationInput.Case request ->
-                    write ct (fun () -> admitCase request) (fun command ->
+                    write services ct (fun () -> admitCase request) (fun command ->
                         CaseExecution.run services command ct)
                 | OperationInput.Work request ->
-                    write ct (fun () -> WorkExecution.prepareWork request) (fun prepared ->
+                    write services ct (fun () -> WorkExecution.prepareWork request) (fun prepared ->
                         WorkExecution.run services prepared ct)
                 | OperationInput.Reminder request ->
-                    write ct (fun () -> WorkExecution.prepareReminder request) (fun prepared ->
-                        WorkExecution.run services prepared ct)
+                    write
+                        services
+                        ct
+                        (fun () -> WorkExecution.prepareReminder request)
+                        (fun prepared -> WorkExecution.run services prepared ct)
                 | OperationInput.Authority request ->
-                    write ct (fun () -> admitAuthority request) (fun command ->
+                    write services ct (fun () -> admitAuthority request) (fun command ->
                         AuthorityExecution.run services command ct)
 
             return

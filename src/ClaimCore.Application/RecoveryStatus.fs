@@ -22,13 +22,14 @@ module internal RecoveryStatus =
         task {
             match OperationId.create request.OperationId with
             | None ->
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (
+                return!
+                    RequestRefusals.read
+                        services
+                        token
+                        (Refusal.invalidInput (
                             InputTarget.OperationId,
                             Violation.OperationIdRequired
-                        )
-                    )
+                        ))
             | Some operation ->
                 let! result =
                     services.Store.Read

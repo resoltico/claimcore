@@ -103,7 +103,7 @@ module internal AuthorityQueries =
     let actors (services: ServiceContext) (request: ActorListRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let! result =
                     services.Store.Read
@@ -187,7 +187,7 @@ module internal AuthorityQueries =
     let grants (services: ServiceContext) (request: GrantsRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 match ActorId.create request.ActorId with
                 | None -> return unavailable
@@ -328,7 +328,7 @@ module internal AuthorityQueries =
     let history (services: ServiceContext) (request: AuthorityHistoryRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let target = request.TargetActorId |> Option.bind ActorId.create
 

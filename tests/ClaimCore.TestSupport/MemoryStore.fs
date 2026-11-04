@@ -224,6 +224,7 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                                     Head = state.Head
                                     Read = (fun () -> events.Add "read")
                                     FactRead = factRead
+                                    Trace = events.Add
                                 }
                             )
                             :> IWriteTx

@@ -22,6 +22,7 @@ type internal WriteInputs =
         Head: LedgerPosition
         Read: unit -> unit
         FactRead: AuthorityFact -> unit
+        Trace: string -> unit
     }
 
 type internal Writer(inputs: WriteInputs) =
@@ -40,9 +41,13 @@ type internal Writer(inputs: WriteInputs) =
 
     interface IWriteTx with
         member _.Head = head
-        member _.NewPayloadNonce() = RandomNumberGenerator.GetBytes 32
+
+        member _.NewPayloadNonce() =
+            inputs.Trace "nonce"
+            RandomNumberGenerator.GetBytes 32
 
         member _.Append draft =
+            inputs.Trace "append"
             let state = get ()
 
             let control =

@@ -94,12 +94,13 @@ module internal WorkQueries =
             match
                 CaseExecution.validateSelector request.Target, ReminderId.create request.ReminderId
             with
-            | Error refusal, _ -> return Outcome.Rejected refusal
+            | Error refusal, _ -> return! RequestRefusals.read services token refusal
             | _, None ->
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired)
-                    )
+                return!
+                    RequestRefusals.read
+                        services
+                        token
+                        (Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired))
             | Ok(), Some id ->
                 let! result =
                     services.Store.Read(
@@ -194,7 +195,7 @@ module internal WorkQueries =
     let reminders (services: ServiceContext) (request: ReminderListRequest) token =
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return QueryResults.invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let text =
                     match request.Text with
@@ -211,7 +212,7 @@ module internal WorkQueries =
                     |> Option.defaultValue (Ok())
 
                 match Admission.map2 (fun () text -> text) selector text with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok text ->
                     let! result =
                         services.Store.Read(
@@ -433,7 +434,7 @@ module internal WorkQueries =
     let activity (services: ServiceContext) (request: CaseActivityRequest) token =
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return QueryResults.invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let! result =
                     services.Store.Read(

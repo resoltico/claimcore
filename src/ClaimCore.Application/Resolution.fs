@@ -48,13 +48,22 @@ module internal Resolution =
 
         task {
             if operationId.IsNone then
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (
+                let! result =
+                    RequestRefusals.write
+                        services
+                        token
+                        (Refusal.invalidInput (
                             InputTarget.OperationId,
                             Violation.OperationIdRequired
-                        )
-                    )
+                        ))
+
+                return
+                    match result with
+                    | Ok verdict ->
+                        Verdict.outcome (fun () -> Resolved.NotAccepted) Resolved.Accepted verdict
+                    | Error(StoreFailure.Cancelled | StoreFailure.CommitOutcomeUnknown) ->
+                        Outcome.Failed CoreFault.StoreUnavailable
+                    | Error failure -> Queries.failure failure
             else
                 let operationId = operationId.Value
 

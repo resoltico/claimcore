@@ -64,31 +64,20 @@ let private malformed () =
             let! preview =
                 (Service.preview core (input) (CancellationToken.None)) |> Async.AwaitTask
 
-            match input with
-            | OperationInput.Case _ ->
-                Expect.equal
-                    execute.Outcome
-                    (ExecuteResult.Failed CoreFault.StoreUnavailable)
-                    "Case admission needs the snapshot's business date"
+            Expect.equal
+                execute.Outcome
+                (ExecuteResult.Failed CoreFault.StoreUnavailable)
+                "D2 requires current caller state before any Application business refusal"
 
-                Expect.equal
-                    preview.Outcome
-                    (Outcome.Failed CoreFault.StoreUnavailable)
-                    "Preview uses the same admission snapshot"
-            | _ ->
-                Expect.isTrue
-                    (match execute.Outcome with
-                     | ExecuteResult.Rejected _ -> true
-                     | _ -> false)
-                    "Authority syntax is rejected without a business-date read"
+            Expect.equal
+                preview.Outcome
+                (Outcome.Failed CoreFault.StoreUnavailable)
+                "Preview cannot reveal business validation without its requester snapshot"
 
-                Expect.isTrue
-                    (match preview.Outcome with
-                     | Outcome.Rejected _ -> true
-                     | _ -> false)
-                    "Authority preview syntax is rejected without a business-date read"
-
-        Expect.equal probe.Calls 4 "Each case execution and preview needs one snapshot"
+        Expect.equal
+            probe.Calls
+            6
+            "Every malformed execute and preview consults exactly one snapshot"
 
     }
 
@@ -264,7 +253,7 @@ let tests =
         "Core port boundaries"
         [
             testCaseAsync
-                "case admission needs a snapshot; authority syntax needs no port work"
+                "business input refusals require current requester snapshots"
                 (malformed ())
             testCaseAsync "write failures preserve identity and dispatch uncertainty" (failures ())
             testCaseAsync

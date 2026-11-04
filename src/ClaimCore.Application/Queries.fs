@@ -67,7 +67,7 @@ module internal Queries =
 
         task {
             match CaseExecution.validateSelector selector with
-            | Error refusal -> return Outcome.Rejected refusal
+            | Error refusal -> return! RequestRefusals.read services token refusal
             | Ok _ ->
                 let! result =
                     store.Read(
@@ -111,10 +111,10 @@ module internal Queries =
     let assignees (services: ServiceContext) (request: AssigneeRequest) token =
         task {
             if not (validLimit request.Limit) then
-                return invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 match CaseExecution.validateSelector request.Target with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
                         services.Store.Read
@@ -423,7 +423,7 @@ module internal Queries =
 
         task {
             if not (validLimit request.Page.Limit) then
-                return invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let! result =
                     store.Read(
@@ -603,8 +603,9 @@ module internal Queries =
 
         task {
             match CaseExecution.validateSelector request.Target with
-            | Error refusal -> return Outcome.Rejected refusal
-            | Ok _ when not (validLimit request.Limit) -> return invalidLimit ()
+            | Error refusal -> return! RequestRefusals.read services token refusal
+            | Ok _ when not (validLimit request.Limit) ->
+                return! RequestRefusals.invalidLimit services token
             | Ok _ ->
                 let! result =
                     store.Read(
@@ -699,13 +700,14 @@ module internal Queries =
 
         task {
             if operationId.IsNone then
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (
+                return!
+                    RequestRefusals.read
+                        services
+                        token
+                        (Refusal.invalidInput (
                             InputTarget.OperationId,
                             Violation.OperationIdRequired
-                        )
-                    )
+                        ))
             else
                 let operation = operationId.Value
 

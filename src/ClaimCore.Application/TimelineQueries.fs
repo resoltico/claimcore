@@ -11,10 +11,10 @@ module internal TimelineQueries =
     let read (services: ServiceContext) (request: CaseTimelineRequest) token =
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return QueryResults.invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 match CaseExecution.validateSelector request.Target with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok() ->
                     let! result =
                         services.Store.Read

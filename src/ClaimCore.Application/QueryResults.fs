@@ -25,13 +25,10 @@ module internal QueryResults =
     let validLimit limit =
         limit >= 1 && limit <= Paging.MaximumPageSize
 
-    let invalidLimit () =
-        Outcome.Rejected(
-            Refusal.invalidInput (
-                InputTarget.Limit,
-                Violation.PageLimitRange Paging.MaximumPageSize
-            )
-        )
+    let invalidLimitRefusal =
+        Refusal.invalidInput (InputTarget.Limit, Violation.PageLimitRange Paging.MaximumPageSize)
+
+    let invalidLimit () = Outcome.Rejected invalidLimitRefusal
 
     let parseReference value =
         CaseReference.parse value

@@ -9,6 +9,7 @@
     <Compile Include="ServiceContext.fs" />
     <Compile Include="CaseWorkReadModels.fs" />
     <Compile Include="QueryResults.fs" />
+    <Compile Include="RequestRefusals.fs" />
     <Compile Include="LedgerEntries.fs" />
     <Compile Include="ReceiptReads.fs" />
     <Compile Include="NonAcceptance.fs" />
