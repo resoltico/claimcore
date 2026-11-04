@@ -34,6 +34,17 @@ let discovery output errors =
     | CliInvocation.Help(topic, language) ->
         writeText output (ContractDiscovery.helpTopic language topic)
         ExitCode.value ExitCode.Success
+    | CliInvocation.CommandHelp(words, language) ->
+        match Discovery.commandHelp language words with
+        | Some text ->
+            writeText output text
+            ExitCode.value ExitCode.Success
+        | None ->
+            unsupported
+                errors
+                language
+                words
+                (UsageError.UnknownCommand(String.concat " " words, []))
     | CliInvocation.Version false ->
         writeText output (BuildIdentity.current.Version + Environment.NewLine)
         ExitCode.value ExitCode.Success

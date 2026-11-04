@@ -283,3 +283,90 @@ let tests =
             testCase "show attributes sources without reading secret content" sourceAttribution
             testCase "reads and refused secret options create no configuration" noImplicitWrites
         ]
+
+[<Tests>]
+let languageTests =
+    testList
+        "CLI presentation language"
+        [
+            testCase "environment overrides profile, which overrides POSIX locale" (fun () ->
+                let read entries name = Map.tryFind name (Map.ofList entries)
+                let profile = Map.ofList [ CliSetting.Language, "ar" ]
+
+                Expect.equal
+                    (CliLanguage.choose
+                        (read [ "CLAIMCORE_LANGUAGE", "lv"; "LC_ALL", "en_US.UTF-8" ])
+                        profile)
+                    ("lv", "environment")
+                    "Explicit environment selection wins"
+
+                Expect.equal
+                    (CliLanguage.choose (read [ "LC_ALL", "lv_LV.UTF-8" ]) profile)
+                    ("ar", "profile")
+                    "The profile wins over process locale"
+
+                for entries, expected in
+                    [
+                        [ "LC_ALL", "ar_EG.UTF-8"; "LC_MESSAGES", "lv_LV"; "LANG", "en_US" ],
+                        ("ar", "LC_ALL")
+                        [ "LC_ALL", ""; "LC_MESSAGES", "lv_LV.UTF-8"; "LANG", "ar_EG" ],
+                        ("lv", "LC_MESSAGES")
+                        [ "LANG", "en_US.UTF-8" ], ("en", "LANG")
+                        [ "LC_ALL", "C.UTF-8"; "LANG", "lv_LV" ], ("en", "default")
+                        [], ("en", "default")
+                    ] do
+                    Expect.equal
+                        (CliLanguage.choose (read entries) Map.empty)
+                        expected
+                        "POSIX precedence is stable"
+
+                Expect.equal
+                    (CliInvocations.usageLanguage [ "case"; "list"; "--language"; "lv" ])
+                    "lv"
+                    "A per-call language remains first in precedence")
+            testCase
+                "profile language is optional, validated and reported with its source"
+                (fun () ->
+                    withDirectory (fun root ->
+                        let read = environment root []
+                        let path = CliProfile.location read |> accepted
+                        let selected = Map.add CliSetting.Language "lv" values
+                        CliProfile.write path selected |> accepted
+
+                        Expect.equal
+                            (CliLanguage.resolveWith read)
+                            ("lv", "profile")
+                            "The stored language is used"
+
+                        let shown = CliConfigure.showWith read |> accepted
+                        use document = JsonDocument.Parse(shown: byte array)
+                        let language = document.RootElement.GetProperty("effectiveLanguage")
+
+                        Expect.equal
+                            (language.GetProperty("value").GetString())
+                            "lv"
+                            "Show reports the effective language"
+
+                        Expect.equal
+                            (language.GetProperty("source").GetString())
+                            "profile"
+                            "Show names its source"
+
+                        CliProfile.write path (Map.add CliSetting.Language "unsupported" values)
+                        |> refused
+
+                        Expect.isOk
+                            (RemoteConfiguration.validatePublic (
+                                Map.ofList [ CliSetting.Language, "ar" ]
+                            ))
+                            "Presentation preferences can be configured before connection details"
+
+                        Expect.isError
+                            (RemoteConfiguration.validatePublic (
+                                Map.add CliSetting.Language "unsupported" values
+                            ))
+                            "Unsupported profile languages are refused"
+
+                        write path "{\"language\":\"unsupported\"}" privateMode
+                        CliProfile.read path |> refused))
+        ]

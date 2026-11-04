@@ -105,6 +105,46 @@ module Discovery =
             |> String.concat "\n\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n"))
 
+    let commandHelp language (words: string list) =
+        let matches =
+            OperationCatalog.all
+            |> List.filter (fun operation ->
+                List.truncate words.Length (CommandGrammar.words operation) = words)
+
+        match
+            matches
+            |> List.tryFind (fun operation -> CommandGrammar.words operation = words)
+        with
+        | Some operation ->
+            describeText language (CliDescription.Operation words)
+            |> Option.map (fun bytes ->
+                let globals =
+                    CommandGrammar.globalOptions operation
+                    |> List.map (fun (flag, value) ->
+                        flag + (if value = "" then "" else " " + value))
+                    |> fun options ->
+                        options
+                        @ (if operation.SelectedAct.IsSome then
+                               [ "--operation-id UUID" ]
+                           else
+                               [])
+
+                Encoding.UTF8.GetString bytes
+                + "\n"
+                + MessageCatalogs.renderCli language CliMessage.GlobalOptions
+                + "\n  "
+                + String.concat "\n  " globals
+                + "\n")
+        | None when matches.IsEmpty -> None
+        | None ->
+            matches
+            |> List.map (fun operation ->
+                String.concat " " (CommandGrammar.words operation)
+                + " — "
+                + MessageCatalogs.render language (OperationCatalog.labelId operation) Map.empty)
+            |> String.concat "\n"
+            |> fun text -> Some(text + "\n")
+
     let schema =
         function
         | CliSchema.Named name -> ContractDiscovery.schema name

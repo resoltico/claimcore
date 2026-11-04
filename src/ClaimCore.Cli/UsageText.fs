@@ -8,10 +8,6 @@ module UsageText =
     let private message language value =
         MessageCatalogs.renderCli language value
 
-    // Unrelated arbitrary input is not echoed as a command.
-    let private suggestedCommandText command suggestions =
-        if List.isEmpty suggestions then "" else command
-
     let private choice language flag value allowed =
         if List.isEmpty allowed then
             message language (CliMessage.InvalidValue(flag, value))
@@ -20,8 +16,8 @@ module UsageText =
 
     let private line language =
         function
-        | UsageError.UnknownCommand(command, suggestions) ->
-            message language (CliMessage.UnknownCommand(suggestedCommandText command suggestions))
+        | UsageError.UnknownCommand(command, _) ->
+            message language (CliMessage.UnknownCommand command)
         | UsageError.UnknownOption(flag, suggestion) ->
             message language (CliMessage.UnknownOption flag)
             + (suggestion
@@ -44,11 +40,7 @@ module UsageText =
         | UsageError.UnknownTopic _ -> message language CliMessage.UnknownHelpTopic
 
     let render language arguments errors =
-        let matched =
-            OperationCatalog.all
-            |> List.tryFind (fun entry ->
-                let words = CommandGrammar.words entry in
-                List.truncate words.Length arguments = words)
+        let matched = CommandGrammar.tryOperation arguments
 
         let hints =
             match matched with
@@ -61,20 +53,40 @@ module UsageText =
                         ))
                 ]
             | None ->
-                errors
-                |> List.collect (function
-                    | UsageError.UnknownCommand(_, suggestions) -> suggestions
-                    | _ -> [])
-                |> List.distinct
-                |> List.map (fun suggestion ->
-                    message
-                        language
-                        (CliMessage.Suggestion(CliIdentity.programName + " " + suggestion)))
+                let suggestions =
+                    errors
+                    |> List.collect (function
+                        | UsageError.UnknownCommand(_, suggestions) -> suggestions
+                        | _ -> [])
+                    |> List.distinct
 
-        String.concat "\n" ((errors |> List.map (line language >> TerminalText.data)) @ hints)
+                if List.isEmpty suggestions then
+                    [ MessageCatalogs.help language (CliTopic.Help HelpTopic.Overview) ]
+                else
+                    suggestions
+                    |> List.map (fun suggestion ->
+                        message
+                            language
+                            (CliMessage.Suggestion(CliIdentity.programName + " " + suggestion)))
+
+        let problem issue =
+            match matched, issue with
+            | Some entry, UsageError.UnknownOption(flag, suggestion) ->
+                message
+                    language
+                    (CliMessage.UnknownOptionFor(
+                        flag,
+                        String.concat " " (CommandGrammar.words entry)
+                    ))
+                + (suggestion
+                   |> Option.map (fun value -> " " + message language (CliMessage.Suggestion value))
+                   |> Option.defaultValue "")
+            | _ -> line language issue
+
+        String.concat "\n" ((errors |> List.map (problem >> TerminalText.data)) @ hints)
         + "\n"
 
-    let renderHost language arguments issue =
+    let private host language arguments issue =
         let commandText = List.tryHead arguments |> Option.defaultValue "help"
         let command = CliCommand.parse commandText
 
@@ -99,3 +111,11 @@ module UsageText =
 
         String.concat "\n" (TerminalText.data (message language problem) :: hints)
         + "\n"
+
+    let renderHost language arguments issue =
+        match issue with
+        | UsageError.UnknownCommand _
+        | UsageError.UnknownOption _ -> render language arguments [ issue ]
+        | UsageError.UnknownTopic topic ->
+            render language arguments [ UsageError.UnknownCommand(topic, []) ]
+        | _ -> host language arguments issue

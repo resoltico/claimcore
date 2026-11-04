@@ -54,6 +54,14 @@ module CommandGrammar =
             [ "operation"; "settle" ]
         | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
 
+    /// Prefer the complete command when one command is also a prefix of another.
+    let tryOperation arguments =
+        OperationCatalog.all
+        |> List.sortByDescending (words >> List.length)
+        |> List.tryFind (fun operation ->
+            let path = words operation
+            List.truncate path.Length arguments = path)
+
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
@@ -98,6 +106,57 @@ module CommandGrammar =
 
         inputs |> List.map grammar, constants
 
+    let families =
+        OperationCatalog.all |> List.map (words >> List.head) |> List.distinct
+
+    let supportsAll (operation: CatalogOperation) =
+        List.contains
+            operation.Endpoint
+            [
+                ActorEndpoint.Query QueryEndpoint.CaseList
+                ActorEndpoint.Query QueryEndpoint.ReminderList
+                ActorEndpoint.Query QueryEndpoint.CaseActivity
+                ActorEndpoint.Query QueryEndpoint.CaseHistory
+            ]
+
+    let formats (operation: CatalogOperation) =
+        if
+            List.contains
+                operation.Endpoint
+                [
+                    ActorEndpoint.Query QueryEndpoint.CaseList
+                    ActorEndpoint.Query QueryEndpoint.ReminderList
+                    ActorEndpoint.Query QueryEndpoint.AuthorityHistory
+                ]
+        then
+            [ "text"; "json"; "csv" ]
+        else
+            [ "text"; "json" ]
+
+    let globalOptions operation =
+        [
+            "--format", String.concat "|" (formats operation)
+            "--language", String.concat "|" LocalizationPolicy.languages
+            "--dry-run", ""
+            if operation.SelectedAct.IsSome then
+                "--preview", ""
+            if supportsAll operation then
+                "--all", ""
+        ]
+
+    let globalFlags =
+        OperationCatalog.all
+        |> List.collect (globalOptions >> List.map fst)
+        |> List.distinct
+
+    let globalSwitches =
+        OperationCatalog.all
+        |> List.collect (
+            globalOptions
+            >> List.choose (fun (flag, value) -> if value = "" then Some flag else None)
+        )
+        |> List.distinct
+
     let plainTextInputs operation =
         let scalar name =
             match name with
@@ -114,6 +173,16 @@ module CommandGrammar =
             match scalar input.Name with
             | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
             | _ -> None)
+
+    /// Clears describe replacement intent, never optional values on a creation.
+    let canClear (operation: CatalogOperation) (input: CatalogDerivedInput) =
+        input.Binding.AllowsNull
+        && match operation.SelectedAct with
+           | Some(ActKind.Case kind) when (CaseActKind.describe kind).Revision = RevisionInput.New ->
+               false
+           | Some(ActKind.Authority AuthorityKind.Register)
+           | Some(ActKind.Reminder ReminderActKind.Create) -> false
+           | _ -> true
 
     let synopsis (operation: CatalogOperation) =
         let placeholder =
@@ -164,9 +233,14 @@ module CommandGrammar =
         let clears =
             inputs
             |> List.choose (fun input ->
-                if input.Binding.AllowsNull then
+                if canClear operation input then
                     Some("[--clear-" + kebab (inputName input.Name) + "]")
                 else
                     None)
 
-        String.concat " " (words operation @ arguments @ textSources @ clears)
+        let globals =
+            globalOptions operation
+            |> List.map (fun (flag, value) ->
+                "[" + flag + (if value = "" then "" else " " + value) + "]")
+
+        String.concat " " (words operation @ arguments @ textSources @ clears @ globals)

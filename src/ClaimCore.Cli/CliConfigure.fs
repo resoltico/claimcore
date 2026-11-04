@@ -31,7 +31,7 @@ module internal CliConfigure =
 
         loop Map.empty arguments
 
-    let private shown path (values: Map<CliSetting, string option * string>) =
+    let private shown effective path (values: Map<CliSetting, string option * string>) =
         let fields =
             InputDiagnostics.settings
             |> List.map (fun (setting, name) ->
@@ -47,12 +47,32 @@ module internal CliConfigure =
                 name, JsonValue.Object [ settingValue; "source", JsonValue.String source ])
 
         JsonValue.Object
-            [ "profileFile", JsonValue.String path; "settings", JsonValue.Object fields ]
+            [
+                "profileFile", JsonValue.String path
+                "effectiveLanguage",
+                JsonValue.Object
+                    [
+                        "value", JsonValue.String(fst effective)
+                        "source", JsonValue.String(snd effective)
+                    ]
+                "settings", JsonValue.Object fields
+            ]
         |> WireWriter.indentedBytes
 
     let showWith environment =
         RemoteConfiguration.sources environment
-        |> Result.map (fun (path, values) -> shown path values)
+        |> Result.map (fun (path, values) ->
+            let profile =
+                values
+                |> Map.toList
+                |> List.choose (fun (setting, (value, source)) ->
+                    if source = "profile" then
+                        value |> Option.map (fun value -> setting, value)
+                    else
+                        None)
+                |> Map.ofList
+
+            shown (CliLanguage.choose environment profile) path values)
 
     let show () =
         showWith RemoteConfiguration.environment

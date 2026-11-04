@@ -267,18 +267,23 @@ module Grammar =
 
     let private prepareWith incomplete admit finish newId arguments =
         let found =
-            (Catalog.document.Entries |> List.map OperationCatalog.operation)
-            |> List.tryPick (fun entry ->
-                let words = CommandGrammar.words entry
-
-                if List.truncate words.Length arguments = words then
-                    Some(entry, List.skip words.Length arguments)
-                else
-                    None)
+            CommandGrammar.tryOperation arguments
+            |> Option.map (fun entry ->
+                entry, List.skip (CommandGrammar.words entry).Length arguments)
 
         match found with
         | None ->
-            let value = String.concat " " (List.truncate 2 arguments)
+            let count =
+                if
+                    arguments
+                    |> List.tryHead
+                    |> Option.exists (fun word -> List.contains word CommandGrammar.families)
+                then
+                    2
+                else
+                    1
+
+            let value = String.concat " " (List.truncate count arguments)
 
             Error
                 [
@@ -300,7 +305,7 @@ module Grammar =
             let clearFlags =
                 named
                 |> List.choose (fun input ->
-                    if input.Binding.AllowsNull then
+                    if CommandGrammar.canClear entry input then
                         Some(
                             "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
                         )
@@ -326,8 +331,9 @@ module Grammar =
 
             let options, operands =
                 tokenize
-                    ("--dry-run" :: "--preview" :: "--all" :: "--format" :: "--language" :: flags)
-                    ("--dry-run" :: "--preview" :: "--all" :: switches)
+                    (CommandGrammar.globalFlags @ flags)
+                    ((CommandGrammar.globalOptions entry |> List.map fst) @ flags)
+                    (CommandGrammar.globalSwitches @ switches)
                     repeated
                     arguments
                     problems
@@ -354,34 +360,12 @@ module Grammar =
                 | _ -> fallback
 
             let format = option "--format" "text"
+
             let language = option "--language" "en"
 
-            let listing =
-                List.contains
-                    entry.Endpoint
-                    [
-                        ActorEndpoint.Query QueryEndpoint.CaseList
-                        ActorEndpoint.Query QueryEndpoint.ReminderList
-                        ActorEndpoint.Query QueryEndpoint.CaseActivity
-                        ActorEndpoint.Query QueryEndpoint.CaseHistory
-                    ]
+            let listing = CommandGrammar.supportsAll entry
 
-            let csvListing =
-                List.contains
-                    entry.Endpoint
-                    [
-                        ActorEndpoint.Query QueryEndpoint.CaseList
-                        ActorEndpoint.Query QueryEndpoint.ReminderList
-                    ]
-
-            let formats =
-                if
-                    csvListing
-                    || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
-                then
-                    [ "text"; "json"; "csv" ]
-                else
-                    [ "text"; "json" ]
+            let formats = CommandGrammar.formats entry
 
             if not (List.contains format formats) then
                 problems.Add(UsageError.InvalidChoice("--format", format, formats))

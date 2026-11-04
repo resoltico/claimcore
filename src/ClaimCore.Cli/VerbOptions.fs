@@ -41,7 +41,7 @@ module internal VerbOptions =
         else
             None
 
-    let tokenize known switches repeated arguments (problems: ResizeArray<UsageError>) =
+    let tokenize known available switches repeated arguments (problems: ResizeArray<UsageError>) =
         let options = Dictionary<string, string option list>()
         let operands = ResizeArray<string>()
 
@@ -65,7 +65,7 @@ module internal VerbOptions =
 
                 if not (List.contains name known) then
                     problems.Add(
-                        UsageError.UnknownOption(name, suggestions name known |> List.tryHead)
+                        UsageError.UnknownOption(name, suggestions name available |> List.tryHead)
                     )
 
                 match explicit with

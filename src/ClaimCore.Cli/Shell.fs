@@ -87,14 +87,14 @@ type internal ShellSession
         task {
             token.ThrowIfCancellationRequested()
 
-            match CliInvocations.admit words with
+            match CliInvocations.admitConfigured words with
             | Ok(CliInvocation.Verb arguments) ->
                 return! VerbRunner.run verbConsole processor arguments token
             | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
                 return
                     CliDiscovery.unsupported
                         console.Errors
-                        "en"
+                        (CliInvocations.usageLanguage words)
                         words
                         (UsageError.NotApplicable("command", "shell"))
             | Ok invocation ->
@@ -157,12 +157,14 @@ type internal ShellSession
                 status (CliInvocations.usageLanguage words) code
                 return None
             | Error _ ->
+                let language = CliLanguage.effective ()
+
                 CliDiscovery.writeText
                     console.Errors
-                    (MessageCatalogs.renderCli "en" CliMessage.InvalidShellLine
+                    (MessageCatalogs.renderCli language CliMessage.InvalidShellLine
                      + Environment.NewLine)
 
-                status "en" (ExitCode.value ExitCode.Usage)
+                status language (ExitCode.value ExitCode.Usage)
                 lastActivity <- clock.GetTimestamp()
                 return None
         }

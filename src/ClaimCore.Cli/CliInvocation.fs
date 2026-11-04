@@ -35,6 +35,7 @@ type RecoveryInvocation =
 [<RequireQualifiedAccess>]
 type CliInvocation =
     | Help of topic: CliTopic * language: string
+    | CommandHelp of words: string list * language: string
     | Version of json: bool
     | Describe of selector: CliDescription * text: bool * language: string
     | Schema of selection: CliSchema
@@ -59,10 +60,20 @@ module CliInvocations =
                 ->
                 collect operands format (Some value) tail
             | value :: _ when value.StartsWith("-", System.StringComparison.Ordinal) ->
-                Error(UsageError.NotApplicable("options", "command"))
+                Error(UsageError.UnknownOption(value, None))
             | value :: tail -> collect (value :: operands) format language tail
 
-        collect [] None None arguments
+        let normalized =
+            arguments
+            |> List.collect (fun (argument: string) ->
+                if argument.StartsWith("--language=", System.StringComparison.Ordinal) then
+                    [ "--language"; argument.Substring(11) ]
+                elif argument.StartsWith("--format=", System.StringComparison.Ordinal) then
+                    [ "--format"; argument.Substring(9) ]
+                else
+                    [ argument ])
+
+        collect [] None None normalized
 
     let private help topic language =
         CliTopic.parse topic
@@ -70,12 +81,26 @@ module CliInvocations =
         |> Option.map Ok
         |> Option.defaultValue (Error(UsageError.UnknownTopic topic))
 
+    let private commandHelp (words: string list) language =
+        let matches =
+            OperationCatalog.all
+            |> List.filter (fun entry ->
+                List.truncate words.Length (CommandGrammar.words entry) = words)
+
+        if List.isEmpty words || List.isEmpty matches then
+            Error(UsageError.UnknownCommand(String.concat " " words, []))
+        else
+            Ok(CliInvocation.CommandHelp(words, language))
+
     let private admitHelp tail =
         options tail
         |> Result.bind (fun (operands, format, language) ->
+            let language = Option.defaultValue "en" language
+
             match operands, format with
-            | [], None -> help "overview" (defaultArg language "en")
-            | [ topic ], None -> help topic (defaultArg language "en")
+            | [], None -> help "overview" language
+            | [ topic ], None when CliTopic.parse topic |> Option.isSome -> help topic language
+            | words, None -> commandHelp words language
             | _ -> Error(UsageError.NotApplicable("options", "command")))
 
     let private describeSelector operands =
@@ -109,7 +134,7 @@ module CliInvocations =
                     CliInvocation.Describe(
                         selector,
                         (format <> Some "json"),
-                        defaultArg language "en"
+                        Option.defaultValue "en" language
                     )))
 
     let private admitVersion =
@@ -143,7 +168,7 @@ module CliInvocations =
                         {
                             Action = action
                             Text = format <> Some "json"
-                            Language = defaultArg language "en"
+                            Language = Option.defaultValue "en" language
                         }
                 )
 
@@ -178,15 +203,78 @@ module CliInvocations =
             | CliCommand.Shell -> noArguments CliInvocation.Shell tail
             | CliCommand.Session -> noArguments CliInvocation.Session tail
 
-    let admit arguments =
+    let private wantsCommandHelp (arguments: string list) =
+        let helpRequested =
+            arguments
+            |> List.exists (fun argument -> List.contains argument CliCommands.aliases)
+
+        let commandPath =
+            arguments
+            |> List.takeWhile (fun word ->
+                not (word.StartsWith("-", System.StringComparison.Ordinal)))
+
+        let family =
+            OperationCatalog.all
+            |> List.exists (fun entry ->
+                let words = CommandGrammar.words entry
+                not commandPath.IsEmpty && List.truncate commandPath.Length words = commandPath)
+
+        let complete =
+            OperationCatalog.all
+            |> List.exists (fun operation -> CommandGrammar.words operation = commandPath)
+
+        family && (helpRequested || commandPath.Length = 1 && not complete)
+
+    let admit (arguments: string list) =
         match arguments with
         | [] -> Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
         | [ flag ] when List.contains flag CliCommands.aliases ->
             Ok(CliInvocation.Help(CliTopic.Help HelpTopic.Overview, "en"))
+        | flag :: tail when List.contains flag CliCommands.aliases -> admitHelp tail
         | head :: tail ->
             match CliCommand.parse head with
             | Some command -> admitCommand command tail
+            | None when wantsCommandHelp arguments ->
+                options (
+                    arguments
+                    |> List.filter (fun argument ->
+                        not (List.contains argument CliCommands.aliases))
+                )
+                |> Result.bind (fun (words, format, language) ->
+                    if format.IsSome then
+                        Error(UsageError.NotApplicable("--format", "help"))
+                    else
+                        commandHelp words (Option.defaultValue "en" language))
             | None -> Ok(CliInvocation.Verb arguments)
+
+    /// Resolve profile/environment defaults only at the executable and shell boundaries.
+    let admitConfigured arguments =
+        let explicit =
+            arguments
+            |> List.exists (fun (argument: string) ->
+                argument = "--language"
+                || argument.StartsWith("--language=", System.StringComparison.Ordinal))
+
+        admit arguments
+        |> Result.map (fun invocation ->
+            if explicit then
+                invocation
+            else
+                match invocation with
+                | CliInvocation.Help(topic, _) ->
+                    CliInvocation.Help(topic, CliLanguage.effective ())
+                | CliInvocation.CommandHelp(words, _) ->
+                    CliInvocation.CommandHelp(words, CliLanguage.effective ())
+                | CliInvocation.Describe(selector, true, _) ->
+                    CliInvocation.Describe(selector, true, CliLanguage.effective ())
+                | CliInvocation.Recovery selected ->
+                    CliInvocation.Recovery
+                        { selected with
+                            Language = CliLanguage.effective ()
+                        }
+                | CliInvocation.Verb words when CommandGrammar.tryOperation words |> Option.isSome ->
+                    CliInvocation.Verb(words @ [ "--language"; CliLanguage.effective () ])
+                | _ -> invocation)
 
     let usageLanguage arguments =
         let separate =
@@ -213,4 +301,4 @@ module CliInvocations =
 
         match separate @ assigned with
         | [ language ] -> language
-        | _ -> "en"
+        | _ -> CliLanguage.effective ()

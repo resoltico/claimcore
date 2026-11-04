@@ -150,17 +150,43 @@ module RemoteConfiguration =
                         else
                             Ok(service, issuer, clientId))))
 
+    let private language read =
+        match read CliSetting.Language with
+        | Some value when not (List.contains value LocalizationPolicy.languages) ->
+            invalid CliSetting.Language
+        | _ -> Ok()
+
     let internal fromSettings read =
-        connection read
+        language read
+        |> Result.bind (fun () -> connection read)
         |> Result.bind (fun (service, issuer, clientId) ->
             configureMode read service issuer clientId |> Result.bind (trust read))
 
     let internal validatePublic values =
         let read setting = Map.tryFind setting values
 
-        connection read
-        |> Result.bind (fun _ ->
-            required read CliSetting.AuthMode
+        let connectionPresent =
+            [
+                CliSetting.ServiceUrl
+                CliSetting.Issuer
+                CliSetting.ClientId
+                CliSetting.AuthMode
+            ]
+            |> List.exists (fun setting -> Map.containsKey setting values)
+
+        let admittedConnection =
+            if not connectionPresent && Map.containsKey CliSetting.Language values then
+                Ok()
+            else
+                connection read |> Result.map ignore
+
+        language read
+        |> Result.bind (fun () -> admittedConnection)
+        |> Result.bind (fun () ->
+            (if connectionPresent then
+                 required read CliSetting.AuthMode
+             else
+                 Ok "interactive")
             |> Result.bind (fun mode ->
                 if mode = "interactive" || mode = "automation" then
                     Ok()

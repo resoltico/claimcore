@@ -1,0 +1,232 @@
+module ClaimCore.Tests.CliDiscoveryTests
+
+open System
+open System.IO
+open System.Text
+open Expecto
+open ClaimCore.Cli
+open ClaimCore.Protocol
+open ClaimCore.Domain
+
+let private identity () = "11111111-2222-4333-8444-555555555555"
+
+let private inspect arguments =
+    match CliInvocations.admit arguments with
+    | Error issue -> 64, UsageText.renderHost "en" arguments issue
+    | Ok(CliInvocation.Verb arguments) ->
+        match Grammar.prepare identity arguments with
+        | Error issues -> 64, UsageText.render "en" arguments issues
+        | Ok _ -> 0, "prepared"
+    | Ok invocation ->
+        use output = new MemoryStream()
+        use errors = new MemoryStream()
+        let code = CliDiscovery.discovery output errors invocation
+
+        code,
+        Encoding.UTF8.GetString(output.ToArray())
+        + Encoding.UTF8.GetString(errors.ToArray())
+
+[<Tests>]
+let tests =
+    testList
+        "CLI discovery usage matrix"
+        [
+            testCase "families list their actual verbs instead of empty unknown commands" (fun () ->
+                for family in [ "case"; "work"; "reminder"; "authority"; "operation" ] do
+                    for arguments in
+                        [ [ family ]; [ "help"; family ]; [ family; "--help" ]; [ family; "-h" ] ] do
+                        let code, text = inspect arguments
+                        Expect.equal code 0 "A known family is offline discovery"
+
+                        Expect.stringContains
+                            text
+                            (family + " ")
+                            "The family's commands are listed"
+
+                        Expect.isFalse
+                            (text.Contains "Unknown command")
+                            "A valid family is not unknown")
+            testCase
+                "every verb has help, contextual unknown options and visible extra tokens"
+                (fun () ->
+                    for operation in OperationCatalog.all do
+                        let words = CommandGrammar.words operation
+
+                        for arguments in
+                            [ words @ [ "--help" ]; words @ [ "-h" ]; [ "help" ] @ words ] do
+                            let code, text = inspect arguments
+                            Expect.equal code 0 "Every grammar node supports help"
+
+                            Expect.stringContains
+                                text
+                                (String.concat " " words)
+                                "Help identifies its command"
+
+                            for flag in [ "--format"; "--language"; "--dry-run" ] do
+                                Expect.stringContains text flag "Global options are discoverable"
+
+                        let bareCode, bare = inspect words
+
+                        Expect.contains
+                            [ 0; 64 ]
+                            bareCode
+                            "Bare verbs prepare or report missing inputs"
+
+                        Expect.isFalse
+                            (bare.Contains "Unknown command")
+                            "A known verb is not unknown"
+
+                        let code, text = inspect (words @ [ "--unknown-option-witness" ])
+                        Expect.equal code 64 "An unknown flag is a usage error"
+
+                        Expect.stringContains
+                            text
+                            "--unknown-option-witness"
+                            "The bad flag remains visible"
+
+                        Expect.stringContains
+                            text
+                            (String.concat " " words)
+                            "The bad flag names its command"
+
+                        let inputs, _ = CommandGrammar.derive operation
+
+                        let operands =
+                            inputs
+                            |> List.filter (fun input -> input.Argument = CatalogArgument.Operand)
+                            |> List.length
+
+                        let extras =
+                            List.init (operands + 1) (fun index -> "extra-token-" + string index)
+
+                        let code, text = inspect (words @ extras)
+                        Expect.equal code 64 "Excess operands are rejected"
+
+                        Expect.stringContains
+                            text
+                            (List.last extras)
+                            "The excess token remains visible")
+            testCase "version aliases and unknown tokens are unambiguous and escaped" (fun () ->
+                Expect.equal
+                    (inspect [ "--version" ])
+                    (inspect [ "version" ])
+                    "The universal version alias is exact"
+
+                Expect.isNone
+                    (Discovery.commandHelp "en" [ "frobnicate" ])
+                    "Invalid discovery nodes never return empty successful help"
+
+                for suffix in [ [ "--help" ]; [ "--json" ] ] do
+                    Expect.equal
+                        (inspect ("--version" :: suffix))
+                        (inspect ("version" :: suffix))
+                        "Version aliases retain their supported options"
+
+                for token in [ "frobnicate"; "-x"; "--"; "bell\u0007" ] do
+                    let code, text = inspect [ token ]
+                    Expect.equal code 64 "Unknown input is a usage error"
+
+                    Expect.stringContains
+                        text
+                        (TerminalText.data token)
+                        "Unknown data is terminal-escaped"
+
+                    Expect.isFalse
+                        (text.Contains "Unknown command: .")
+                        "No empty interpolation remains")
+            testCase
+                "creation cannot clear absent facts and update can still clear optional text"
+                (fun () ->
+                    let operation kind =
+                        OperationCatalog.all
+                        |> List.find (fun operation ->
+                            operation.SelectedAct = Some(ActKind.Case kind))
+
+                    Expect.isFalse
+                        ((CommandGrammar.synopsis (operation CaseActKind.Open)).Contains "--clear-")
+                        "OPEN offers no clears"
+
+                    Expect.stringContains
+                        (CommandGrammar.synopsis (operation CaseActKind.AmendRegistration))
+                        "--clear-incident-description"
+                        "Updates retain explicit clearing"
+
+                    let code, text =
+                        inspect
+                            [
+                                "case"
+                                "open"
+                                "WITNESS"
+                                "--clear-incident-description"
+                                "--dry-run"
+                            ]
+
+                    Expect.equal code 64 "Inapplicable clear refuses before preparation"
+
+                    Expect.stringContains
+                        text
+                        "--clear-incident-description"
+                        "The rejected option is named"
+
+                    let _, getHelp = inspect [ "case"; "get"; "--help" ]
+
+                    Expect.isFalse
+                        (getHelp.Contains "--all")
+                        "Non-page reads do not advertise page traversal")
+        ]
+
+[<Tests>]
+let suggestionScope =
+    testCase "CLI option suggestions use the selected command's advertised options" (fun () ->
+        let errors arguments =
+            match Grammar.prepare identity arguments with
+            | Error issues -> issues
+            | Ok _ -> failtest "A mistyped option must be refused"
+
+        let page = errors [ "case"; "list"; "--al" ]
+
+        Expect.contains
+            page
+            (UsageError.UnknownOption("--al", Some "--all"))
+            "Page traversal is suggested on page commands"
+
+        let single = errors [ "case"; "get"; "REFERENCE"; "--al" ]
+
+        Expect.isFalse
+            (single
+             |> List.exists (function
+                 | UsageError.UnknownOption(_, Some "--all") -> true
+                 | _ -> false))
+            "A single read never suggests unavailable page traversal")
+
+[<Tests>]
+let historyTraversal =
+    testCase
+        "CLI history help does not advertise traversal the authority CSV path cannot perform"
+        (fun () ->
+            let code, help = inspect [ "authority"; "history"; "--help" ]
+            Expect.equal code 0 "Authority history has grammar-derived help"
+
+            Expect.isFalse
+                (help.Contains "--all")
+                "The current authority exporter returns one page with a cursor")
+
+[<Tests>]
+let assignedLanguage =
+    testCase "CLI command help accepts the ordinary assigned language form" (fun () ->
+        Expect.equal
+            (inspect [ "case"; "list"; "--help"; "--language=lv" ])
+            (inspect [ "help"; "case"; "list"; "--language"; "lv" ])
+            "The language flag has one meaning across discovery forms")
+
+[<Tests>]
+let unknownDefaults =
+    testCase "CLI language defaults do not invent tokens in unknown-command diagnostics" (fun () ->
+        for arguments in [ [ "frobnicate" ]; [ "case"; "frobnicate" ]; [ "-x" ] ] do
+            Expect.equal
+                (CliInvocations.admitConfigured arguments)
+                (Ok(CliInvocation.Verb arguments))
+                "Unknown command input stays authored until the usage error is rendered"
+
+        let _, text = inspect [ "frobnicate"; "--language"; "lv" ]
+        Expect.stringContains text "\"frobnicate\"" "Only the unknown root token is named")

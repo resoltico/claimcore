@@ -5,9 +5,10 @@ open System.IO
 open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.Json
+open ClaimCore.Protocol
 open ClaimCore.HostSecurity
 
-/// Only public connection settings are members of the profile format.
+/// Only public connection settings and presentation language belong to the profile format.
 module internal CliProfile =
     let maximumBytes = 32768
 
@@ -17,6 +18,7 @@ module internal CliProfile =
             CliSetting.Issuer, "issuer"
             CliSetting.ClientId, "clientId"
             CliSetting.AuthMode, "authMode"
+            CliSetting.Language, "language"
             CliSetting.ServiceTrustRoot, "serviceTrustRootFile"
             CliSetting.OidcTrustRoot, "oidcTrustRootFile"
         ]
@@ -37,9 +39,14 @@ module internal CliProfile =
         else
             Ok(Path.Combine(root, "claimcore", "profile.json"))
 
+    let private admitted setting (value: string) =
+        value.Length <= 8192
+        && (setting <> CliSetting.Language
+            || List.contains value LocalizationPolicy.languages)
+
     let private field (name, value) =
         match fields |> List.tryFind (fun (_, memberName) -> memberName = name), value with
-        | Some(setting, _), JsonValue.String value when value.Length <= 8192 -> Ok(setting, value)
+        | Some(setting, _), JsonValue.String value when admitted setting value -> Ok(setting, value)
         | _ -> invalid ()
 
     let private decode bytes =
@@ -115,7 +122,7 @@ module internal CliProfile =
                 let valid =
                     values
                     |> Map.forall (fun key value ->
-                        Set.contains key allowed && value.Length <= 8192 && JsonValue.isText value)
+                        Set.contains key allowed && admitted key value && JsonValue.isText value)
 
                 let bytes = encoded values
 

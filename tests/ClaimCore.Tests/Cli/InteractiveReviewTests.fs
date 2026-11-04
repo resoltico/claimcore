@@ -258,7 +258,16 @@ let tests =
                 Expect.equal
                     (endpoints h)
                     [ "context"; "case.get"; "operation.preview" ]
-                    "No mutation follows decline")
+                    "No mutation follows decline"
+
+                Expect.equal
+                    (h.Prompts |> Seq.last)
+                    "Not recorded.\n"
+                    "Decline gives explicit closure"
+
+                Expect.isFalse
+                    (h.Text |> Seq.exists (fun value -> value.Contains "Active → Active"))
+                    "Unchanged lifecycle values do not obscure the actual changes")
             testCase "empty or closed confirmation input defaults to no" (fun () ->
                 for answer in [ None; Some ""; Some "unexpected" ] do
                     let h = harness "en" answer Scenario.Accepted

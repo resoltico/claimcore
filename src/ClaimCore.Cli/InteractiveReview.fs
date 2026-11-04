@@ -186,6 +186,10 @@ module internal InteractiveReview =
                     do! WorkRefresh.run transport.Exchange transport.Deliver accepted token
                     return accepted.ExitCode
                 else
+                    MessageCatalogs.renderCli draft.Language CliMessage.NotRecorded
+                    |> fun text -> Encoding.UTF8.GetBytes(text + "\n")
+                    |> console.Write
+
                     return ExitCode.value ExitCode.Success
             | _ -> return response.ExitCode
         }

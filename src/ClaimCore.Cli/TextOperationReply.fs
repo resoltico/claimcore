@@ -190,15 +190,23 @@ module internal TextOperationReply =
                         "input.lifecycle.label"
                         (displayed language before + " → " + after)
 
-                lifecycle
-                :: (value.Changes
-                    |> List.map (fun change ->
-                        line
-                            language
-                            (FieldPresentation.labelId change.FieldName)
-                            (fieldValue language change.FieldName change.Before
-                             + " → "
-                             + fieldValue language change.FieldName change.After)))
+                (if
+                     value.Before
+                     |> Option.exists (fun snapshot ->
+                         CaseState.lifecycle snapshot.State =
+                             CaseState.lifecycle value.Proposed.State)
+                 then
+                     []
+                 else
+                     [ lifecycle ])
+                @ (value.Changes
+                   |> List.map (fun change ->
+                       line
+                           language
+                           (FieldPresentation.labelId change.FieldName)
+                           (fieldValue language change.FieldName change.Before
+                            + " → "
+                            + fieldValue language change.FieldName change.After)))
 
         line
             language

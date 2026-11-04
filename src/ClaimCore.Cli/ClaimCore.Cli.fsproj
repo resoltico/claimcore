@@ -13,6 +13,7 @@
     <Compile Include="CliCommands.fs" />
     <Compile Include="CommandGrammar.fs" />
     <Compile Include="CliProfile.fs" />
+    <Compile Include="CliLanguage.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="CliConfigure.fs" />
     <Compile Include="ServiceReply.fs" />
