@@ -2562,16 +2562,6 @@
       }
     },
     {
-      "id": "authority-list-name-search-overlong",
-      "endpoint": "authority.list",
-      "direction": "request",
-      "valid": false,
-      "value": {
-        "limit": 50,
-        "text": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
-      }
-    },
-    {
       "id": "authority-list-raw201-text-awaits-core-admission",
       "endpoint": "authority.list",
       "direction": "request",
