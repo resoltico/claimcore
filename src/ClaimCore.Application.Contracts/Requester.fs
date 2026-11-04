@@ -78,6 +78,7 @@ type AccessRequest =
 
 type AccessRequestPage =
     {
+        Basis: WorkDateBasis
         Items: AccessRequest list
         NextCursor: string option
     }

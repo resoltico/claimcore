@@ -509,12 +509,14 @@ module ResponseCodecs =
         |> named "AccessRequest"
 
     let accessRequestsPage =
-        (record (fun items cursor ->
+        (record (fun basis items cursor ->
             {
+                Basis = basis
                 AccessRequestPage.Items = items
                 NextCursor = cursor
             })
         : Fields<AccessRequestPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list Paging.MaximumPageSize accessRequest)
         |> field
             "nextCursor"
@@ -608,13 +610,15 @@ module ResponseCodecs =
     let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 
     let grantsPage =
-        (record (fun v0 v1 v2 ->
+        (record (fun basis v0 v1 v2 ->
             {
+                Basis = basis
                 AuthorityGrantPage.Actor = v0
                 Items = v1
                 NextCursor = v2
             })
         : Fields<AuthorityGrantPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "actor" _.Actor actorSummary
         |> field "items" _.Items (list 50 authorityGrant)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
@@ -622,12 +626,14 @@ module ResponseCodecs =
         |> named "GrantsPage"
 
     let actorsPage =
-        (record (fun v0 v1 ->
+        (record (fun basis v0 v1 ->
             {
+                Basis = basis
                 ActorReviewPage.Items = v0
                 NextCursor = v1
             })
         : Fields<ActorReviewPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list 50 actorSummary)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

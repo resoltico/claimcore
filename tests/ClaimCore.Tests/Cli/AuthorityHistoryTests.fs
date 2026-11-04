@@ -72,7 +72,8 @@ let private csvSubjects () =
 
     let page =
         {
-            AuthorityHistoryPage.Entries = [ entry ]
+            AuthorityHistoryPage.Basis = Inputs.workBasis
+            Entries = [ entry ]
             NextCursor = None
         }
 

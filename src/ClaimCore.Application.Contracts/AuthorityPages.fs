@@ -38,12 +38,14 @@ module ActorReviewItem =
 
 type ActorReviewPage =
     {
+        Basis: WorkDateBasis
         Items: ActorReviewItem list
         NextCursor: string option
     }
 
 type AuthorityGrantPage =
     {
+        Basis: WorkDateBasis
         Actor: ActorReviewItem
         Items: ScopedGrant list
         NextCursor: string option
@@ -83,6 +85,7 @@ type AuthorityHistoryEntry =
 
 type AuthorityHistoryPage =
     {
+        Basis: WorkDateBasis
         Entries: AuthorityHistoryEntry list
         NextCursor: string option
     }

@@ -145,7 +145,11 @@ module internal AuthorityQueries =
                                                     |> Result.map (fun items ->
                                                         Outcome.Succeeded
                                                             {
-                                                                ActorReviewPage.Items = items
+                                                                ActorReviewPage.Basis =
+                                                                    ServiceContext.basis
+                                                                        services
+                                                                        tx.ObservedAt
+                                                                Items = items
                                                                 NextCursor =
                                                                     page.Next
                                                                     |> Option.map (
@@ -242,7 +246,11 @@ module internal AuthorityQueries =
                                                             |> Result.map (fun targets ->
                                                                 Outcome.Succeeded
                                                                     {
-                                                                        AuthorityGrantPage.Actor =
+                                                                        AuthorityGrantPage.Basis =
+                                                                            ServiceContext.basis
+                                                                                services
+                                                                                tx.ObservedAt
+                                                                        Actor =
                                                                             List.exactlyOne targets
                                                                         Items = page.Items
                                                                         NextCursor =
@@ -372,7 +380,11 @@ module internal AuthorityQueries =
                                                     page
                                                 |> Result.map (fun entries ->
                                                     {
-                                                        AuthorityHistoryPage.Entries = entries
+                                                        AuthorityHistoryPage.Basis =
+                                                            ServiceContext.basis
+                                                                services
+                                                                tx.ObservedAt
+                                                        Entries = entries
                                                         NextCursor =
                                                             page.Next
                                                             |> Option.map (

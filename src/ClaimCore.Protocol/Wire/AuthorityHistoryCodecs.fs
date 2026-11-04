@@ -77,12 +77,14 @@ module AuthorityHistoryCodecs =
         |> named "AuthorityHistoryEntry"
 
     let page =
-        (record (fun entries next ->
+        (record (fun basis entries next ->
             {
-                AuthorityHistoryPage.Entries = entries
+                AuthorityHistoryPage.Basis = basis
+                Entries = entries
                 NextCursor = next
             })
         : Fields<AuthorityHistoryPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "entries" _.Entries (list Paging.MaximumPageSize entry)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

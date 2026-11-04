@@ -139,3 +139,114 @@ let tests =
                     (JsonValue.tryMember "productVersion" wire)
                     None
                     "Active runtime details stay within the active state")
+
+
+[<Tests>]
+let authorityPageBasis =
+    testCase
+        "authority pages carry the authorized transaction basis without a client clock"
+        (fun () ->
+            let first = DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)
+            use store = new MemoryStore.Store(id 10, first)
+
+            let calendar =
+                { new IBusinessCalendar with
+                    member _.TimeZoneId = "Etc/UTC"
+
+                    member _.DateAt instant =
+                        DateOnly.FromDateTime instant.UtcDateTime
+                }
+
+            let principal =
+                PrincipalKey.human "https://observation.example/" "owner" |> accepted
+
+            let owner =
+                {
+                    Actor.ActorId = CaseFixtures.actorId (id 11)
+                    Principal = principal
+                    Enabled = true
+                    Profile = None
+                }
+
+            store.SeedActor owner [ Role.Owner, None ]
+            let services = Service.create "fixture" (id 10) (store :> IStore) calendar principal
+
+            let succeeded =
+                function
+                | Outcome.Succeeded value -> value
+                | other -> failtestf "%A" other
+
+            for observed in [ first; first.AddDays 1. ] do
+                store.ObservedAt <- observed
+
+                let expected =
+                    {
+                        WorkDateBasis.ObservedAt = observed
+                        BusinessDate = DateOnly.FromDateTime observed.UtcDateTime
+                        TimeZoneId = "Etc/UTC"
+                    }
+
+                let actors =
+                    Service.actors
+                        services
+                        {
+                            Text = None
+                            AfterCursor = None
+                            Limit = 50
+                        }
+                        CancellationToken.None
+                    |> get
+                    |> succeeded
+
+                let grants =
+                    Service.grants
+                        services
+                        {
+                            ActorId = id 11
+                            AfterCursor = None
+                            Limit = 50
+                        }
+                        CancellationToken.None
+                    |> get
+                    |> succeeded
+
+                let history =
+                    Service.authorityHistory
+                        services
+                        {
+                            TargetActorId = None
+                            AfterCursor = None
+                            Limit = 50
+                        }
+                        CancellationToken.None
+                    |> get
+                    |> succeeded
+
+                let requests =
+                    Service.accessRequests
+                        services
+                        { AfterCursor = None; Limit = 50 }
+                        CancellationToken.None
+                    |> get
+                    |> succeeded
+
+                for actual in [ actors.Basis; grants.Basis; history.Basis; requests.Basis ] do
+                    Expect.equal
+                        actual
+                        expected
+                        "Every reply basis comes from its own read snapshot"
+
+                let wire =
+                    ResponseCodecs.actorsPage.Write actors
+                    |> JsonValue.tryMember "basis"
+                    |> Option.get
+
+                Expect.equal
+                    (JsonValue.tryMember "observedAt" wire)
+                    (Some(JsonValue.String(observed.ToString("yyyy-MM-dd'T'HH:mm:ss.ffffff'Z'"))))
+                    "The supplied instant survives encoding"
+
+                Expect.equal
+                    (JsonValue.tryMember "timeZone" wire)
+                    (Some(JsonValue.String "Etc/UTC"))
+                    "Wire basis includes installation zone")

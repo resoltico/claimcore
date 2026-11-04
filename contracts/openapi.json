@@ -2990,6 +2990,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -3012,6 +3015,7 @@
           }
         },
         "required": [
+          "basis",
           "items",
           "nextCursor"
         ]
@@ -3460,6 +3464,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -3482,6 +3489,7 @@
           }
         },
         "required": [
+          "basis",
           "items",
           "nextCursor"
         ]
@@ -4186,6 +4194,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "entries": {
             "type": "array",
             "items": {
@@ -4208,6 +4219,7 @@
           }
         },
         "required": [
+          "basis",
           "entries",
           "nextCursor"
         ]
@@ -9529,6 +9541,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "actor": {
             "$ref": "#/components/schemas/ActorReviewItem"
           },
@@ -9554,6 +9569,7 @@
           }
         },
         "required": [
+          "basis",
           "actor",
           "items",
           "nextCursor"

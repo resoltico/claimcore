@@ -60,7 +60,11 @@ module internal AccessRequestQueries =
                                                 return
                                                     Outcome.Succeeded
                                                         {
-                                                            AccessRequestPage.Items = result.Items
+                                                            AccessRequestPage.Basis =
+                                                                ServiceContext.basis
+                                                                    services
+                                                                    tx.ObservedAt
+                                                            Items = result.Items
                                                             NextCursor =
                                                                 result.Next
                                                                 |> Option.map (

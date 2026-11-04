@@ -6,7 +6,7 @@ export type AccessRequestDismissReply_Outcome_FAILED = { readonly "kind": "FAILE
 export type AccessRequestDismissReply_Outcome_REJECTED = { readonly "kind": "REJECTED"; readonly "data": Diagnostic; };
 export type AccessRequestDismissReply_Outcome_SUCCEEDED = { readonly "kind": "SUCCEEDED"; readonly "data": null; };
 export type AccessRequestDismissRequest = { readonly "kind": "HUMAN" | "SERVICE"; readonly "issuer": string; readonly "subject": string; };
-export type AccessRequestPage = { readonly "items": ReadonlyArray<AccessRequest>; readonly "nextCursor": string | null; };
+export type AccessRequestPage = { readonly "basis": WorkDateBasis; readonly "items": ReadonlyArray<AccessRequest>; readonly "nextCursor": string | null; };
 export type AccessRequestsReply = { readonly "outcome": AccessRequestsReply_Outcome; };
 export type AccessRequestsReply_Outcome = AccessRequestsReply_Outcome_SUCCEEDED | AccessRequestsReply_Outcome_REJECTED | AccessRequestsReply_Outcome_FAILED;
 export type AccessRequestsReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
@@ -24,7 +24,7 @@ export type ActorRef = { readonly "actorId": Uuid; readonly "displayName": Displ
 export type ActorResponsibleCases = { readonly "count": number; readonly "responsibleActor": Uuid; readonly "view": "ALL"; };
 export type ActorReviewItem = { readonly "actor": ActorRef; readonly "principal": Principal; readonly "contact": string | null; readonly "responsibleCases"?: ActorResponsibleCases; readonly "state": "ACTIVE" | "NO_ROLES" | "DISABLED"; readonly "roles": ReadonlyArray<ActorRoleSummary>; };
 export type ActorRoleSummary = { readonly "role": "OWNER" | "CASE_READER" | "CASE_REGISTRAR" | "CASE_HANDLER" | "PAYMENT_RECORDER" | "DATA_STEWARD" | "AUDITOR"; readonly "installation": boolean; readonly "caseCount": number; };
-export type ActorsPage = { readonly "items": ReadonlyArray<ActorReviewItem>; readonly "nextCursor": string | null; };
+export type ActorsPage = { readonly "basis": WorkDateBasis; readonly "items": ReadonlyArray<ActorReviewItem>; readonly "nextCursor": string | null; };
 export type ActorsReply = { readonly "outcome": ActorsReply_Outcome; };
 export type ActorsReply_Outcome = ActorsReply_Outcome_SUCCEEDED | ActorsReply_Outcome_REJECTED | ActorsReply_Outcome_FAILED;
 export type ActorsReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
@@ -59,7 +59,7 @@ export type AuthorityHistoryFacts_PROVISION_OWNER = { readonly "kind": "PROVISIO
 export type AuthorityHistoryFacts_REGISTER = { readonly "kind": "REGISTER"; readonly "principal": Principal; };
 export type AuthorityHistoryFacts_REVOKE = { readonly "kind": "REVOKE"; readonly "role": "OWNER" | "CASE_READER" | "CASE_REGISTRAR" | "CASE_HANDLER" | "PAYMENT_RECORDER" | "DATA_STEWARD" | "AUDITOR"; readonly "scope": GrantScope; };
 export type AuthorityHistoryFacts_SET_PROFILE = { readonly "kind": "SET_PROFILE"; readonly "profile": ActorProfile | null; };
-export type AuthorityHistoryPage = { readonly "entries": ReadonlyArray<AuthorityHistoryEntry>; readonly "nextCursor": string | null; };
+export type AuthorityHistoryPage = { readonly "basis": WorkDateBasis; readonly "entries": ReadonlyArray<AuthorityHistoryEntry>; readonly "nextCursor": string | null; };
 export type AuthorityHistoryReply = { readonly "outcome": AuthorityHistoryReply_Outcome; };
 export type AuthorityHistoryReply_Outcome = AuthorityHistoryReply_Outcome_SUCCEEDED | AuthorityHistoryReply_Outcome_REJECTED | AuthorityHistoryReply_Outcome_FAILED;
 export type AuthorityHistoryReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
@@ -244,7 +244,7 @@ export type FieldChange = { readonly "field": "incidentDate" | "incidentNotifica
 export type GrantScope = GrantScope_INSTALLATION | GrantScope_CASE;
 export type GrantScope_CASE = { readonly "kind": "CASE"; readonly "caseId": Uuid; readonly "caseReference": string; };
 export type GrantScope_INSTALLATION = { readonly "kind": "INSTALLATION"; };
-export type GrantsPage = { readonly "actor": ActorReviewItem; readonly "items": ReadonlyArray<AuthorityGrant>; readonly "nextCursor": string | null; };
+export type GrantsPage = { readonly "basis": WorkDateBasis; readonly "actor": ActorReviewItem; readonly "items": ReadonlyArray<AuthorityGrant>; readonly "nextCursor": string | null; };
 export type GrantsReply = { readonly "outcome": GrantsReply_Outcome; };
 export type GrantsReply_Outcome = GrantsReply_Outcome_SUCCEEDED | GrantsReply_Outcome_REJECTED | GrantsReply_Outcome_FAILED;
 export type GrantsReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
@@ -558,7 +558,7 @@ function check_AccessRequestDismissReply_Outcome_FAILED(value:unknown,draft:bool
 function check_AccessRequestDismissReply_Outcome_REJECTED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REJECTED")],["data",false,check_Diagnostic]]))(value,draft,path); }
 function check_AccessRequestDismissReply_Outcome_SUCCEEDED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("SUCCEEDED")],["data",false,wireNull]]))(value,draft,path); }
 function check_AccessRequestDismissRequest(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireUnion([wireConstant("HUMAN"),wireConstant("SERVICE")],null,{})],["issuer",false,wireString(null,null,null,null)],["subject",false,wireString(null,null,null,null)]]))(value,draft,path); }
-function check_AccessRequestPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["items",false,wireArray(check_AccessRequest,0,50)],["nextCursor",false,wireUnion([wireString(1,32768,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_AccessRequestPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["basis",false,check_WorkDateBasis],["items",false,wireArray(check_AccessRequest,0,50)],["nextCursor",false,wireUnion([wireString(1,32768,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_AccessRequestsReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_AccessRequestsReply_Outcome]]))(value,draft,path); }
 function check_AccessRequestsReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_AccessRequestsReply_Outcome_SUCCEEDED,check_AccessRequestsReply_Outcome_REJECTED,check_AccessRequestsReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_AccessRequestsReply_Outcome_SUCCEEDED,"REJECTED":check_AccessRequestsReply_Outcome_REJECTED,"FAILED":check_AccessRequestsReply_Outcome_FAILED}))(value,draft,path); }
 function check_AccessRequestsReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
@@ -576,7 +576,7 @@ function check_ActorRef(value:unknown,draft:boolean,path:WireIssue):WireIssue|nu
 function check_ActorResponsibleCases(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["count",false,wireInteger(0,9007199254740991)],["responsibleActor",false,check_Uuid],["view",false,wireUnion([wireConstant("ALL")],null,{})]]))(value,draft,path); }
 function check_ActorReviewItem(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["actor",false,check_ActorRef],["principal",false,check_Principal],["contact",false,wireUnion([wireString(1,2147483647,null,null),wireNull],null,{})],["responsibleCases",true,check_ActorResponsibleCases],["state",false,wireUnion([wireConstant("ACTIVE"),wireConstant("NO_ROLES"),wireConstant("DISABLED")],null,{})],["roles",false,wireArray(check_ActorRoleSummary,0,7)]]))(value,draft,path); }
 function check_ActorRoleSummary(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["role",false,wireUnion([wireConstant("OWNER"),wireConstant("CASE_READER"),wireConstant("CASE_REGISTRAR"),wireConstant("CASE_HANDLER"),wireConstant("PAYMENT_RECORDER"),wireConstant("DATA_STEWARD"),wireConstant("AUDITOR")],null,{})],["installation",false,wireBoolean],["caseCount",false,wireInteger(0,9007199254740991)]]))(value,draft,path); }
-function check_ActorsPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["items",false,wireArray(check_ActorReviewItem,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_ActorsPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["basis",false,check_WorkDateBasis],["items",false,wireArray(check_ActorReviewItem,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_ActorsReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_ActorsReply_Outcome]]))(value,draft,path); }
 function check_ActorsReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_ActorsReply_Outcome_SUCCEEDED,check_ActorsReply_Outcome_REJECTED,check_ActorsReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_ActorsReply_Outcome_SUCCEEDED,"REJECTED":check_ActorsReply_Outcome_REJECTED,"FAILED":check_ActorsReply_Outcome_FAILED}))(value,draft,path); }
 function check_ActorsReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
@@ -611,7 +611,7 @@ function check_AuthorityHistoryFacts_PROVISION_OWNER(value:unknown,draft:boolean
 function check_AuthorityHistoryFacts_REGISTER(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REGISTER")],["principal",false,check_Principal]]))(value,draft,path); }
 function check_AuthorityHistoryFacts_REVOKE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REVOKE")],["role",false,wireUnion([wireConstant("OWNER"),wireConstant("CASE_READER"),wireConstant("CASE_REGISTRAR"),wireConstant("CASE_HANDLER"),wireConstant("PAYMENT_RECORDER"),wireConstant("DATA_STEWARD"),wireConstant("AUDITOR")],null,{})],["scope",false,check_GrantScope]]))(value,draft,path); }
 function check_AuthorityHistoryFacts_SET_PROFILE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("SET_PROFILE")],["profile",false,wireUnion([check_ActorProfile,wireNull],null,{})]]))(value,draft,path); }
-function check_AuthorityHistoryPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["entries",false,wireArray(check_AuthorityHistoryEntry,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_AuthorityHistoryPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["basis",false,check_WorkDateBasis],["entries",false,wireArray(check_AuthorityHistoryEntry,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_AuthorityHistoryReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_AuthorityHistoryReply_Outcome]]))(value,draft,path); }
 function check_AuthorityHistoryReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_AuthorityHistoryReply_Outcome_SUCCEEDED,check_AuthorityHistoryReply_Outcome_REJECTED,check_AuthorityHistoryReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_AuthorityHistoryReply_Outcome_SUCCEEDED,"REJECTED":check_AuthorityHistoryReply_Outcome_REJECTED,"FAILED":check_AuthorityHistoryReply_Outcome_FAILED}))(value,draft,path); }
 function check_AuthorityHistoryReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
@@ -796,7 +796,7 @@ function check_FieldChange(value:unknown,draft:boolean,path:WireIssue):WireIssue
 function check_GrantScope(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_GrantScope_INSTALLATION,check_GrantScope_CASE],"kind",{"INSTALLATION":check_GrantScope_INSTALLATION,"CASE":check_GrantScope_CASE}))(value,draft,path); }
 function check_GrantScope_CASE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CASE")],["caseId",false,check_Uuid],["caseReference",false,wireString(1,80,/^(?:[!-~]{1,80})(?![\s\S])/u,null)]]))(value,draft,path); }
 function check_GrantScope_INSTALLATION(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("INSTALLATION")]]))(value,draft,path); }
-function check_GrantsPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["actor",false,check_ActorReviewItem],["items",false,wireArray(check_AuthorityGrant,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_GrantsPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["basis",false,check_WorkDateBasis],["actor",false,check_ActorReviewItem],["items",false,wireArray(check_AuthorityGrant,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_GrantsReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_GrantsReply_Outcome]]))(value,draft,path); }
 function check_GrantsReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_GrantsReply_Outcome_SUCCEEDED,check_GrantsReply_Outcome_REJECTED,check_GrantsReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_GrantsReply_Outcome_SUCCEEDED,"REJECTED":check_GrantsReply_Outcome_REJECTED,"FAILED":check_GrantsReply_Outcome_FAILED}))(value,draft,path); }
 function check_GrantsReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
@@ -1105,6 +1105,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "c7c6eba83dcb6a390e1ecf930624691c879c2a77f1faabb703a1501793ee59f3";
+export const consumerContractIdentity = "81ccae82f25fe0ef944ffe74a2c8e61f1fcb2408cd03c6f2c63ae4d60cea58f5";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

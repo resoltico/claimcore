@@ -140,7 +140,14 @@ let internal queryCodecs () =
 
     |> ignore
 
-    admitted Api.authorityList.Output (Outcome.Succeeded { Items = []; NextCursor = None })
+    admitted
+        Api.authorityList.Output
+        (Outcome.Succeeded
+            {
+                Basis = Inputs.workBasis
+                Items = []
+                NextCursor = None
+            })
 
     |> ignore
 

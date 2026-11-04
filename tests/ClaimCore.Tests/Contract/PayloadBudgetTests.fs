@@ -191,6 +191,7 @@ let private boundedAuthority () =
             Api.authorityList.Output
             (Outcome.Succeeded
                 {
+                    Basis = Inputs.workBasis
                     Items = List.replicate count (ActorReviewItem.ofActor [] actor)
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 })
@@ -200,6 +201,7 @@ let private boundedAuthority () =
             Api.authorityGrants.Output
             (Outcome.Succeeded
                 {
+                    Basis = Inputs.workBasis
                     Actor = ActorReviewItem.ofActor [] actor
                     Items = List.replicate count grant
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
