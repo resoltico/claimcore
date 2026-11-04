@@ -2570,6 +2570,59 @@
         "limit": 50,
         "text": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
       }
+    },
+    {
+      "id": "authority-list-raw201-text-awaits-core-admission",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 50,
+        "text": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+      }
+    },
+    {
+      "id": "authority-list-name-contact-and-role",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "value": {
+        "limit": 50,
+        "text": "ĀDAMS عادل@example.invalid%_\\",
+        "role": "CASE_READER"
+      },
+      "valid": true
+    },
+    {
+      "id": "authority-list-typed-role-only",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "value": {
+        "limit": 50,
+        "role": "AUDITOR"
+      },
+      "valid": true
+    },
+    {
+      "id": "authority-list-unknown-role",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "value": {
+        "limit": 50,
+        "role": "CASE_SUPERVISOR"
+      },
+      "valid": false
+    },
+    {
+      "id": "authority-list-nonscalar-role",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "value": {
+        "limit": 50,
+        "role": [
+          "AUDITOR"
+        ]
+      },
+      "valid": false
     }
   ]
 }
