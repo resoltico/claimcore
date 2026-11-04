@@ -325,7 +325,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
 
         let actorId =
             match (accepted registered).Subject with
-            | ReceiptSubject.Authority value -> value.TargetActorId
+            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
             | _ -> failtest "Expected authority receipt"
 
         for number, scope in

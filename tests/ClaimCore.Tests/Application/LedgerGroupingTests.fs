@@ -349,7 +349,7 @@ let private foldCompletion () =
             principal
             view
             (Some(Actor.currentReference authority.Actor))
-            ReceiptCurrent.Authority
+            (ReceiptCurrent.Authority(Some(Actor.currentReference authority.Actor)))
             validated
         |> accepted
 

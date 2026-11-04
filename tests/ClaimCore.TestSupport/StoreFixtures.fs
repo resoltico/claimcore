@@ -101,9 +101,9 @@ let internal inspectOperation fixture principal operation token =
                                 Case =
                                     match current with
                                     | ReceiptCurrent.Case value
-                                    | ReceiptCurrent.Work(value, _)
+                                    | ReceiptCurrent.Work(value, _, _)
                                     | ReceiptCurrent.Reminder(value, _) -> value
-                                    | ReceiptCurrent.Authority -> None
+                                    | ReceiptCurrent.Authority _ -> None
                             }
                     })
             CancellationToken = token

@@ -42,10 +42,14 @@ module internal RecoveryStatus =
                                         let! fenced =
                                             ExecutionFacts.fenced services tx actor operation entry
 
+                                        let! named =
+                                            ReceiptReads.existing services tx actor current entry
+
                                         return
-                                            match fenced with
-                                            | Error fault -> Outcome.Failed fault
-                                            | Ok fenced ->
+                                            match fenced, named with
+                                            | Error fault, _
+                                            | _, Error fault -> Outcome.Failed fault
+                                            | Ok fenced, Ok current ->
                                                 outcome
                                                     services
                                                     tx.ObservedAt

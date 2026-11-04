@@ -32,6 +32,7 @@
     <Compile Include="ActorProfilesPostgresTests.fs" />
     <Compile Include="AdmitPostgresTests.fs" />
     <Compile Include="PeopleDirectoryPostgresTests.fs" />
+    <Compile Include="ActorReceiptReadPostgresTests.fs" />
     <Compile Include="AdmitNonceGuardTests.fs" />
     <Compile Include="RequesterContextTests.fs" />
     <Compile Include="LedgerGroupingTests.fs" />

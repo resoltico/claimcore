@@ -75,9 +75,13 @@ module internal Resolution =
                                                 operationId
                                                 entry
 
-                                        match fenced with
-                                        | Error fault -> return Verdict.Fail fault
-                                        | Ok fenced ->
+                                        let! named =
+                                            ReceiptReads.existing services tx actor current entry
+
+                                        match fenced, named with
+                                        | Error fault, _
+                                        | _, Error fault -> return Verdict.Fail fault
+                                        | Ok fenced, Ok current ->
                                             match
                                                 resolve
                                                     services

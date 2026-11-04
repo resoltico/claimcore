@@ -37,8 +37,8 @@ type WorkReview =
     {
         Parent: CaseSnapshot
         Reference: CaseReference
-        Before: CaseWorkSnapshot
-        Proposed: CaseWorkSnapshot
+        Before: CaseWorkReadModel
+        Proposed: CaseWorkReadModel
         Context: RuntimeContext
     }
 

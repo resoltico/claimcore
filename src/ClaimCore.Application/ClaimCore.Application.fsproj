@@ -7,8 +7,10 @@
     <Compile Include="AuthorityRequests.fs" />
     <Compile Include="LedgerStorePort.fs" />
     <Compile Include="ServiceContext.fs" />
+    <Compile Include="CaseWorkReadModels.fs" />
     <Compile Include="QueryResults.fs" />
     <Compile Include="LedgerEntries.fs" />
+    <Compile Include="ReceiptReads.fs" />
     <Compile Include="NonAcceptance.fs" />
     <Compile Include="CaseChanges.fs" />
     <Compile Include="TimelineDifferences.fs" />

@@ -190,21 +190,22 @@ let private workReview (review: WorkReview) =
                 revision (min (SafeInteger.Maximum - 1L) (Revision.value review.Before.Revision))
         }
 
-    let work =
-        if review.Proposed.Work <> before.Work then
-            review.Proposed.Work
+    let summary =
+        if
+            (review.Proposed.Responsible |> Option.map _.ActorId)
+            <> (before.Responsible |> Option.map _.ActorId)
+            || review.Proposed.Summary <> before.Summary
+        then
+            review.Proposed.Summary
         else
             let first = HandlingSummary.parse "Wire handling change" |> accepted
 
-            let summary =
-                if before.Work.Summary = Some first then
+            Some(
+                if before.Summary = Some first then
                     HandlingSummary.parse "Another wire handling change" |> accepted
                 else
                     first
-
-            { review.Proposed.Work with
-                Summary = Some summary
-            }
+            )
 
     { review with
         Parent = parent
@@ -213,7 +214,7 @@ let private workReview (review: WorkReview) =
             { review.Proposed with
                 CaseId = parent.CaseId
                 Revision = nextVersion before.Revision
-                Work = work
+                Summary = summary
             }
     }
 

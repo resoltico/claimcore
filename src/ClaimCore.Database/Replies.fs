@@ -425,7 +425,10 @@ module Replies =
         | ReceiptSubject.Authority target ->
             {
                 OperationId = receipt.OperationId
-                TargetActorId = target.TargetActorId
+                TargetActorId =
+                    match target.TargetActor with
+                    | AuthorityTargetDisclosure.Disclosed actor -> actor.ActorId
+                    | AuthorityTargetDisclosure.Withheld actor -> actor
                 Position = receipt.Position
             }
             |> make

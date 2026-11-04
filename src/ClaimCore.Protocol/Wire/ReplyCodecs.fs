@@ -201,8 +201,8 @@ module ReplyCodecs =
         : Fields<WorkReview, _>)
         |> field "parent" _.Parent ResponseCodecs.caseSnapshot
         |> field "caseReference" _.Reference ResponseScalars.caseReference
-        |> field "before" _.Before WorkCodecs.workSnapshot
-        |> field "proposed" _.Proposed WorkCodecs.workSnapshot
+        |> field "before" _.Before WorkCodecs.workReadModel
+        |> field "proposed" _.Proposed WorkCodecs.workReadModel
         |> field "context" _.Context ResponseCodecs.runtimeContext
 
     let private reminderReviewFields =

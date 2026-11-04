@@ -148,7 +148,7 @@ module internal AuthorityExecution =
                 services.Principal
                 view.Actor
                 (view.Actor.Actor |> Option.map Actor.currentReference)
-                ReceiptCurrent.Authority)
+                (ReceiptCurrent.Authority(view.Target.Actor |> Option.map Actor.currentReference)))
 
     let private propose (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
         match Authority.decide (domainFacts view) command, targetId command view with
@@ -193,7 +193,9 @@ module internal AuthorityExecution =
                             services.Principal
                             view.Actor
                             (view.Actor.Actor |> Option.map Actor.currentReference)
-                            ReceiptCurrent.Authority
+                            (ReceiptCurrent.Authority(
+                                view.Target.Actor |> Option.map Actor.currentReference
+                            ))
                             validated
                         |> Result.map Verdict.Replay
                         |> Result.defaultWith Verdict.Fail
@@ -236,30 +238,45 @@ module internal AuthorityExecution =
                 else
                     propose command view))
 
+    let private afterActor act (actor: Actor) =
+        match act with
+        | AuthorityAct.SetProfile profile -> { actor with Profile = Some profile }
+        | AuthorityAct.EraseProfile -> { actor with Profile = None }
+        | AuthorityAct.Disable -> { actor with Enabled = false }
+        | AuthorityAct.Enable -> { actor with Enabled = true }
+        | _ -> actor
+
+    let private targetActor (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        let created profile =
+            let kind, _, _ = PrincipalKey.parts command.Target
+
+            Some(
+                ActorRef.create
+                    (ActorId.ofOperationId command.OperationId)
+                    kind
+                    ActorAvailability.Available
+                    (Some profile)
+            )
+
+        match command.Act with
+        | AuthorityAct.Register profile
+        | AuthorityAct.ProvisionOwner profile -> created profile
+        | AuthorityAct.Admit admission -> created admission.Profile
+        | _ ->
+            view.Target.Actor
+            |> Option.map (afterActor command.Act >> Actor.currentReference)
+
     let private receiptActor (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
         match command.Act with
-        | AuthorityAct.ProvisionOwner profile ->
-            let id = ActorId.ofOperationId command.OperationId
-
-            ActorRef.create id PrincipalKind.Human ActorAvailability.Available (Some profile)
-            |> Some
+        | AuthorityAct.ProvisionOwner _ -> targetActor command view
         | _ ->
             view.Actor.Actor
             |> Option.map (fun actor ->
-                let own = actor.Principal = command.Target
-
-                let actor =
-                    if not own then
-                        actor
-                    else
-                        match command.Act with
-                        | AuthorityAct.SetProfile profile -> { actor with Profile = Some profile }
-                        | AuthorityAct.EraseProfile -> { actor with Profile = None }
-                        | AuthorityAct.Disable -> { actor with Enabled = false }
-                        | AuthorityAct.Enable -> { actor with Enabled = true }
-                        | _ -> actor
-
-                Actor.currentReference actor)
+                (if actor.Principal = command.Target then
+                     afterActor command.Act actor
+                 else
+                     actor)
+                |> Actor.currentReference)
 
     let private executeRecord
         (services: ServiceContext)
@@ -313,7 +330,7 @@ module internal AuthorityExecution =
                             services.Principal
                             view.Actor
                             (receiptActor command view)
-                            ReceiptCurrent.Authority
+                            (ReceiptCurrent.Authority(targetActor command view))
                     )
                     |> Result.map (fun receipt ->
                         entries, List.map2 (projection command) entries records, receipt))

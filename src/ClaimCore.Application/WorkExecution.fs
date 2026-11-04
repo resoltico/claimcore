@@ -231,23 +231,29 @@ module internal WorkExecution =
                 }
 
             let bytes = WorkRecord.encodeRequest request
-            let state = ReceiptCurrent.Work(Some parent, current)
+            let state = ReceiptCurrent.Work(Some parent, current, Map.empty)
+
+            let! named =
+                ReceiptReads.existing services tx view.Actor state view.ExistingOperation
 
             let replay =
-                OperationIdentity.decide
-                    services
-                    view.Actor
-                    {
-                        OperationId = operation
-                        Bytes = bytes
-                        Existing = view.ExistingOperation
-                    }
-                    (LedgerEntries.receiptOperation
-                        (ServiceContext.basis services view.ObservedAt)
-                        services.Principal
+                match named with
+                | Error fault -> Verdict.Fail fault
+                | Ok state ->
+                    OperationIdentity.decide
+                        services
                         view.Actor
-                        (view.Actor.Actor |> Option.map Actor.currentReference)
-                        state)
+                        {
+                            OperationId = operation
+                            Bytes = bytes
+                            Existing = view.ExistingOperation
+                        }
+                        (LedgerEntries.receiptOperation
+                            (ServiceContext.basis services view.ObservedAt)
+                            services.Principal
+                            view.Actor
+                            (view.Actor.Actor |> Option.map Actor.currentReference)
+                            state)
 
             match replay with
             | Verdict.Proceed() ->
@@ -317,41 +323,63 @@ module internal WorkExecution =
                                         RecordedBy = Some recordedBy
                                     }
 
-                                return
-                                    Verdict.Proceed
-                                        {
-                                            Subject =
-                                                EntryTarget.Work
-                                                    {
-                                                        CaseId = parent.CaseId
-                                                        Revision = after.Revision
-                                                        Act = WorkActKind.UpdateWork
-                                                        BusinessDate =
-                                                            services.Calendar.DateAt view.ObservedAt
-                                                    }
-                                            RequestBytes = bytes
-                                            SnapshotBytes = stored.SnapshotBytes
-                                            Current = ReceiptCurrent.Work(Some parent, Some stored)
-                                            Projection =
-                                                WorkChangeProjection.Work
-                                                    {
-                                                        Snapshot = after
-                                                        ChangedAt = view.ObservedAt
-                                                        RecordedBy = recordedBy
-                                                    }
-                                            Review =
-                                                OperationReview.Work
-                                                    {
-                                                        Reference = parent.Snapshot.Reference
-                                                        Parent = parent.Snapshot
-                                                        Before = before
-                                                        Proposed = after
-                                                        Context =
-                                                            ServiceContext.runtime
-                                                                services
-                                                                view.ObservedAt
-                                                    }
-                                        }
+                                let relations =
+                                    [ before; after ]
+                                    |> List.choose (fun snapshot ->
+                                        snapshot.Work.Responsible
+                                        |> Option.map (fun actor -> parent.CaseId, actor))
+                                    |> List.distinct
+
+                                let! accounts = tx.AssignedAccounts relations
+
+                                match
+                                    CaseWorkReadModels.snapshot accounts before,
+                                    CaseWorkReadModels.snapshot accounts after
+                                with
+                                | Error fault, _
+                                | _, Error fault -> return Verdict.Fail fault
+                                | Ok beforeRead, Ok afterRead ->
+                                    return
+                                        Verdict.Proceed
+                                            {
+                                                Subject =
+                                                    EntryTarget.Work
+                                                        {
+                                                            CaseId = parent.CaseId
+                                                            Revision = after.Revision
+                                                            Act = WorkActKind.UpdateWork
+                                                            BusinessDate =
+                                                                services.Calendar.DateAt
+                                                                    view.ObservedAt
+                                                        }
+                                                RequestBytes = bytes
+                                                SnapshotBytes = stored.SnapshotBytes
+                                                Current =
+                                                    ReceiptCurrent.Work(
+                                                        Some parent,
+                                                        Some stored,
+                                                        accounts
+                                                    )
+                                                Projection =
+                                                    WorkChangeProjection.Work
+                                                        {
+                                                            Snapshot = after
+                                                            ChangedAt = view.ObservedAt
+                                                            RecordedBy = recordedBy
+                                                        }
+                                                Review =
+                                                    OperationReview.Work
+                                                        {
+                                                            Reference = parent.Snapshot.Reference
+                                                            Parent = parent.Snapshot
+                                                            Before = beforeRead
+                                                            Proposed = afterRead
+                                                            Context =
+                                                                ServiceContext.runtime
+                                                                    services
+                                                                    view.ObservedAt
+                                                        }
+                                            }
                 | _ -> return Verdict.Fail CoreFault.StoreIntegrityError
             | other ->
                 return

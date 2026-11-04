@@ -51,7 +51,7 @@ let internal factsAndPaging fixture =
 
         let targetId =
             match registered.Subject with
-            | ReceiptSubject.Authority value -> value.TargetActorId
+            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
             | _ -> failtest "Expected authority subject"
 
         let! opened =

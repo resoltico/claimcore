@@ -615,11 +615,37 @@ module LedgerEntries =
         || (currentRevision = Some revision
             && Authority.can principal actor Capability.ReadCase (Scope.Case parentId))
 
+    /// Only names belonging to versions disclosed by this same snapshot may be requested.
+    let internal workRelations
+        principal
+        actor
+        (parent: StoredCase option)
+        (current: StoredWork option)
+        entries
+        =
+        match parent with
+        | Some parent when CaseState.lifecycle parent.Snapshot.State <> Lifecycle.Erased ->
+            let revision = current |> Option.map _.Revision
+
+            entries
+            |> List.choose (fun (entry: ValidatedEntry) ->
+                match entry.Entry.Subject, entry.Content with
+                | EntryTarget.Work metadata, EntryContent.Work(_, snapshot) when
+                    metadata.CaseId = parent.CaseId
+                    && canReadVersion principal actor parent.CaseId revision metadata.Revision
+                    ->
+                    snapshot.Work.Responsible
+                    |> Option.map (fun identity -> parent.CaseId, identity)
+                | _ -> None)
+            |> List.distinct
+        | _ -> []
+
     let private workReceipt
         principal
         actor
         (parent: StoredCase option)
         (current: StoredWork option)
+        accounts
         (subject: WorkEntryMetadata)
         content
         =
@@ -631,14 +657,11 @@ module LedgerEntries =
                 | (CaseState.Active _ | CaseState.Voided _), EntryContent.Work(_, snapshot) ->
                     let revision = current |> Option.map (fun (value: StoredWork) -> value.Revision)
 
-                    Ok(
-                        if
-                            canReadVersion principal actor parent.CaseId revision subject.Revision
-                        then
-                            WorkDisclosure.Disclosed snapshot
-                        else
-                            WorkDisclosure.Withheld
-                    )
+                    if canReadVersion principal actor parent.CaseId revision subject.Revision then
+                        CaseWorkReadModels.snapshot accounts snapshot
+                        |> Result.map WorkDisclosure.Disclosed
+                    else
+                        Ok WorkDisclosure.Withheld
                 | _ -> Error CoreFault.StoreIntegrityError
 
             shown
@@ -737,17 +760,29 @@ module LedgerEntries =
             match entry.Subject, validated.Content, current with
             | EntryTarget.Case _, _, ReceiptCurrent.Case record ->
                 caseReceipt principal actor record validated
-            | EntryTarget.Work subject, content, ReceiptCurrent.Work(parent, work) ->
-                workReceipt principal actor parent work subject content
+            | EntryTarget.Work subject, content, ReceiptCurrent.Work(parent, work, accounts) ->
+                workReceipt principal actor parent work accounts subject content
             | EntryTarget.Reminder subject, content, ReceiptCurrent.Reminder(parent, reminders) ->
                 reminderReceipt principal actor parent reminders subject content
             | EntryTarget.Authority(target, act),
               (EntryContent.Authority _ | EntryContent.ErasedProfile),
-              _ ->
-                Ok(
+              ReceiptCurrent.Authority actorRef ->
+                let shown =
+                    if
+                        Authority.can principal actor Capability.ReadAuthority Scope.Installation
+                    then
+                        match actorRef with
+                        | Some reference when reference.ActorId = target ->
+                            Ok(AuthorityTargetDisclosure.Disclosed reference)
+                        | _ -> Error CoreFault.StoreIntegrityError
+                    else
+                        Ok(AuthorityTargetDisclosure.Withheld target)
+
+                shown
+                |> Result.map (fun shown ->
                     ReceiptSubject.Authority
                         {
-                            TargetActorId = target
+                            TargetActor = shown
                             Act = act
                             Effects =
                                 [
@@ -756,8 +791,7 @@ module LedgerEntries =
                                         Position = position entry.Sequence entry.EntryHash
                                     }
                                 ]
-                        }
-                )
+                        })
             | _ -> Error CoreFault.StoreIntegrityError
 
         subject

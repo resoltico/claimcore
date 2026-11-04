@@ -80,7 +80,7 @@ let internal authority =
         Subject =
             ReceiptSubject.Authority
                 {
-                    TargetActorId = CaseFixtures.actorId id
+                    TargetActor = AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId id)
                     Act = AuthorityKind.Register
                     Effects = effects
                 }

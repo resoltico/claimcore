@@ -27,10 +27,21 @@ type AuthorityReceiptEffect =
         Position: LedgerPosition
     }
 
+[<RequireQualifiedAccess>]
+type AuthorityTargetDisclosure =
+    | Disclosed of ActorRef
+    | Withheld of ActorId
+
+module AuthorityTargetDisclosure =
+    let actorId =
+        function
+        | AuthorityTargetDisclosure.Disclosed actor -> actor.ActorId
+        | AuthorityTargetDisclosure.Withheld actor -> actor
+
 type AuthorityReceipt =
     {
         Effects: AuthorityReceiptEffect list
-        TargetActorId: ActorId
+        TargetActor: AuthorityTargetDisclosure
         Act: AuthorityKind
     }
 
@@ -41,7 +52,7 @@ module AuthorityReceipt =
 
 [<RequireQualifiedAccess>]
 type WorkDisclosure =
-    | Disclosed of CaseWorkSnapshot
+    | Disclosed of CaseWorkReadModel
     | Withheld
     | Erased
 

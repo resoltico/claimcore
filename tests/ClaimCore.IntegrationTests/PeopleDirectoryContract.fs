@@ -76,7 +76,8 @@ let internal summaries fixture =
         let personId =
             (accepted created).Subject
             |> function
-                | ReceiptSubject.Authority value -> value.TargetActorId
+                | ReceiptSubject.Authority value ->
+                    AuthorityTargetDisclosure.actorId value.TargetActor
                 | _ -> failtest "Expected actor"
 
         let! noRoles = directory owner person
@@ -218,7 +219,8 @@ let internal corruptAssignment fixture =
         let actorId =
             (accepted registered).Subject
             |> function
-                | ReceiptSubject.Authority value -> value.TargetActorId
+                | ReceiptSubject.Authority value ->
+                    AuthorityTargetDisclosure.actorId value.TargetActor
                 | _ -> failtest "Expected actor"
 
         let core = core fixture service

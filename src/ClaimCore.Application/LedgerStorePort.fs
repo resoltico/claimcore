@@ -222,9 +222,12 @@ type WorkChangeProjection =
 [<RequireQualifiedAccess>]
 type ReceiptCurrent =
     | Case of StoredCase option
-    | Work of parent: StoredCase option * current: StoredWork option
+    | Work of
+        parent: StoredCase option *
+        current: StoredWork option *
+        accounts: Map<CaseId * ActorId, ActorRef>
     | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
-    | Authority
+    | Authority of target: ActorRef option
 
 [<RequireQualifiedAccess>]
 type CaseProjection =

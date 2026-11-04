@@ -9,31 +9,21 @@ module WorkCodecs =
     open Codec
     open ResponseScalars
 
-    let work =
-        (record (fun responsible summary ->
+    let workReadModel =
+        (record (fun parent revision responsible summary ->
             {
-                CaseWork.Responsible = responsible
+                CaseWorkReadModel.CaseId = parent
+                Revision = revision
+                Responsible = responsible
                 Summary = summary
             })
-        : Fields<CaseWork, _>)
-        |> field "responsibleActor" _.Responsible (nullable actorId)
-        |> field "handlingSummary" _.Summary (nullable handlingSummary)
-        |> build
-        |> named "CaseWork"
-
-    let workSnapshot =
-        (record (fun parent revision work ->
-            {
-                CaseWorkSnapshot.CaseId = parent
-                Revision = revision
-                Work = work
-            })
-        : Fields<CaseWorkSnapshot, _>)
+        : Fields<CaseWorkReadModel, _>)
         |> field "caseId" _.CaseId caseId
         |> field "revision" _.Revision revision
-        |> field "work" _.Work work
+        |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
+        |> field "handlingSummary" _.Summary (nullable handlingSummary)
         |> build
-        |> named "CaseWorkSnapshot"
+        |> named "CaseWorkReadModel"
 
     let reminder =
         (record (fun id parent revision action due state ->

@@ -19,6 +19,15 @@ type RuntimeContext =
         Basis: WorkDateBasis
     }
 
+/// A disclosed work version uses current account labels without changing its retained facts.
+type CaseWorkReadModel =
+    {
+        CaseId: CaseId
+        Revision: Revision
+        Responsible: ActorRef option
+        Summary: HandlingSummary option
+    }
+
 type CaseWorkView =
     {
         Revision: Revision

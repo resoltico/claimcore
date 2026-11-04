@@ -159,7 +159,7 @@ module internal ExecutionFacts =
                     match entry |> Option.map _.Subject with
                     | Some(EntryTarget.Work subject) ->
                         let! work = tx.FindWork subject.CaseId
-                        return ReceiptCurrent.Work(record, work)
+                        return ReceiptCurrent.Work(record, work, Map.empty)
                     | Some(EntryTarget.Reminder subject) ->
                         let ids = subject.ReminderId :: (subject.NextReminderId |> Option.toList)
                         let mutable values = Map.empty
@@ -173,7 +173,7 @@ module internal ExecutionFacts =
 
                         return ReceiptCurrent.Reminder(record, values)
                     | Some(EntryTarget.Case _) -> return ReceiptCurrent.Case record
-                    | _ -> return ReceiptCurrent.Authority
+                    | _ -> return ReceiptCurrent.Authority None
                 }
 
             return actor, entry, current

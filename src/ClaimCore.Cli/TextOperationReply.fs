@@ -42,7 +42,10 @@ module internal TextOperationReply =
                 versions
             | ReceiptSubject.Authority value ->
                 term language AuthorityKind.vocabulary value.Act,
-                ActorId.format value.TargetActorId,
+                (match value.TargetActor with
+                 | AuthorityTargetDisclosure.Disclosed actor ->
+                     displayed language (Some(actorName language actor))
+                 | AuthorityTargetDisclosure.Withheld identity -> ActorId.format identity),
                 []
 
         [

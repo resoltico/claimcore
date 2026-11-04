@@ -4517,6 +4517,55 @@
           "access"
         ]
       },
+      "AuthorityTargetDisclosure": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthorityTargetDisclosure.DISCLOSED"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityTargetDisclosure.WITHHELD"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "DISCLOSED": "#/components/schemas/AuthorityTargetDisclosure.DISCLOSED",
+            "WITHHELD": "#/components/schemas/AuthorityTargetDisclosure.WITHHELD"
+          }
+        }
+      },
+      "AuthorityTargetDisclosure.DISCLOSED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISCLOSED"
+          },
+          "actor": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "kind",
+          "actor"
+        ]
+      },
+      "AuthorityTargetDisclosure.WITHHELD": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WITHHELD"
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          }
+        },
+        "required": [
+          "kind",
+          "actorId"
+        ]
+      },
       "CapabilityAccess": {
         "type": "object",
         "additionalProperties": false,
@@ -7939,14 +7988,22 @@
           "data"
         ]
       },
-      "CaseWork": {
+      "CaseWorkReadModel": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "responsibleActor": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "revision": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "responsible": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/Uuid"
+                "$ref": "#/components/schemas/ActorRef"
               },
               {
                 "type": "null"
@@ -7967,30 +8024,10 @@
           }
         },
         "required": [
-          "responsibleActor",
-          "handlingSummary"
-        ]
-      },
-      "CaseWorkSnapshot": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "caseId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "revision": {
-            "type": "integer",
-            "minimum": 0,
-            "maximum": 9007199254740991
-          },
-          "work": {
-            "$ref": "#/components/schemas/CaseWork"
-          }
-        },
-        "required": [
           "caseId",
           "revision",
-          "work"
+          "responsible",
+          "handlingSummary"
         ]
       },
       "CaseWorkUpdate": {
@@ -11389,8 +11426,8 @@
           "kind": {
             "const": "AUTHORITY"
           },
-          "targetActorId": {
-            "$ref": "#/components/schemas/Uuid"
+          "targetActor": {
+            "$ref": "#/components/schemas/AuthorityTargetDisclosure"
           },
           "act": {
             "enum": [
@@ -11416,7 +11453,7 @@
         },
         "required": [
           "kind",
-          "targetActorId",
+          "targetActor",
           "act",
           "effects"
         ]
@@ -13421,10 +13458,10 @@
             "maxLength": 80
           },
           "before": {
-            "$ref": "#/components/schemas/CaseWorkSnapshot"
+            "$ref": "#/components/schemas/CaseWorkReadModel"
           },
           "proposed": {
-            "$ref": "#/components/schemas/CaseWorkSnapshot"
+            "$ref": "#/components/schemas/CaseWorkReadModel"
           },
           "context": {
             "$ref": "#/components/schemas/RuntimeContext"
@@ -14160,7 +14197,7 @@
             "const": "DISCLOSED"
           },
           "view": {
-            "$ref": "#/components/schemas/CaseWorkSnapshot"
+            "$ref": "#/components/schemas/CaseWorkReadModel"
           }
         },
         "required": [

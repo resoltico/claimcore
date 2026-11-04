@@ -489,7 +489,44 @@ module internal WorkQueries =
                                                         |> List.distinct
                                                     )
 
-                                                let mutable items = Ok []
+                                                let validated =
+                                                    page.Items
+                                                    |> List.fold
+                                                        (fun result entry ->
+                                                            result
+                                                            |> Result.bind (fun entries ->
+                                                                LedgerEntries.validate
+                                                                    services.InstallationId
+                                                                    entry
+                                                                |> Result.map (fun entry ->
+                                                                    entry :: entries)))
+                                                        (Ok [])
+
+                                                let! accounts =
+                                                    task {
+                                                        match validated with
+                                                        | Ok entries when
+                                                            request.Detail = HistoryDetail.Full
+                                                            && CaseState.lifecycle
+                                                                parent.Snapshot.State
+                                                               <> Lifecycle.Erased
+                                                            ->
+                                                            let! work = tx.FindWork parent.CaseId
+
+                                                            let relations =
+                                                                LedgerEntries.workRelations
+                                                                    services.Principal
+                                                                    view.Actor
+                                                                    (Some parent)
+                                                                    work
+                                                                    entries
+
+                                                            return! tx.AssignedAccounts relations
+                                                        | _ -> return Map.empty
+                                                    }
+
+                                                let mutable items =
+                                                    validated |> Result.map (fun _ -> [])
 
                                                 for entry in page.Items do
                                                     let subject =
@@ -527,6 +564,16 @@ module internal WorkQueries =
                                                             tx
                                                             services.Principal
                                                             entry.OperationId
+
+                                                    let current =
+                                                        match current with
+                                                        | ReceiptCurrent.Work(parent, work, _) ->
+                                                            ReceiptCurrent.Work(
+                                                                parent,
+                                                                work,
+                                                                accounts
+                                                            )
+                                                        | _ -> current
 
                                                     let detail =
                                                         LedgerEntries.validate

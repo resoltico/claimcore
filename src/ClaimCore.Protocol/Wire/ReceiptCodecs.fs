@@ -55,15 +55,35 @@ module ReceiptCodecs =
         |> build
         |> named "AuthorityReceiptEffect"
 
+    let private authorityTarget =
+        tagged
+            "AuthorityTargetDisclosure"
+            [
+                variant
+                    "DISCLOSED"
+                    AuthorityTargetDisclosure.Disclosed
+                    (function
+                    | AuthorityTargetDisclosure.Disclosed actor -> Some actor
+                    | _ -> None)
+                    (record id |> field "actor" id ActorCodecs.actorRef)
+                variant
+                    "WITHHELD"
+                    AuthorityTargetDisclosure.Withheld
+                    (function
+                    | AuthorityTargetDisclosure.Withheld actor -> Some actor
+                    | _ -> None)
+                    (record id |> field "actorId" id actorId)
+            ]
+
     let private authorityFields =
         (record (fun target act effects ->
             {
-                TargetActorId = target
+                AuthorityReceipt.TargetActor = target
                 Act = act
                 Effects = effects
             })
         : Fields<AuthorityReceipt, _>)
-        |> field "targetActorId" _.TargetActorId actorId
+        |> field "targetActor" _.TargetActor authorityTarget
         |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
 
         |> field "effects" _.Effects (list AuthorityReceipt.MaximumEffects authorityEffect)
@@ -87,7 +107,7 @@ module ReceiptCodecs =
                     (function
                     | WorkDisclosure.Disclosed value -> Some value
                     | _ -> None)
-                    (record id |> field "view" id WorkCodecs.workSnapshot)
+                    (record id |> field "view" id WorkCodecs.workReadModel)
                 unitVariant "WITHHELD" WorkDisclosure.Withheld
                 unitVariant "ERASED" WorkDisclosure.Erased
             ]

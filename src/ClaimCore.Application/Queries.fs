@@ -724,20 +724,30 @@ module internal Queries =
                                             else
                                                 let! authors = tx.ActorRefs [ entry.ActorId ]
 
+                                                let! named =
+                                                    ReceiptReads.existing
+                                                        services
+                                                        tx
+                                                        actor
+                                                        current
+                                                        (Some entry)
+
                                                 return
-                                                    LedgerEntries.validateOperation
-                                                        installation
-                                                        entry
-                                                    |> Result.bind (
-                                                        LedgerEntries.receiptOperation
-                                                            (ServiceContext.basis
-                                                                services
-                                                                tx.ObservedAt)
-                                                            principal
-                                                            actor
-                                                            (Map.tryFind entry.ActorId authors)
-                                                            current
-                                                    )
+                                                    named
+                                                    |> Result.bind (fun current ->
+                                                        LedgerEntries.validateOperation
+                                                            installation
+                                                            entry
+                                                        |> Result.bind (
+                                                            LedgerEntries.receiptOperation
+                                                                (ServiceContext.basis
+                                                                    services
+                                                                    tx.ObservedAt)
+                                                                principal
+                                                                actor
+                                                                (Map.tryFind entry.ActorId authors)
+                                                                current
+                                                        ))
                                                     |> succeeded
                                         | _ -> return unavailable
                                     })

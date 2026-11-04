@@ -111,7 +111,8 @@ let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
         Subject =
             ReceiptSubject.Authority
                 {
-                    TargetActorId = CaseFixtures.actorId operationId
+                    TargetActor =
+                        AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
                     Act = kind
                     Effects = effects
                 }

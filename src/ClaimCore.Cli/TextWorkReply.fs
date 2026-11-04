@@ -8,17 +8,17 @@ open ClaimCore.Protocol.Presentation
 module internal TextWorkReply =
     open TextReplyFormat
 
-    let work language (snapshot: CaseWorkSnapshot) =
+    let work language (snapshot: CaseWorkReadModel) =
         [
             line language "label.workRevision" (Revision.format snapshot.Revision)
             line
                 language
                 (FieldPresentation.labelId BusinessField.ResponsibleActor)
-                (snapshot.Work.Responsible |> Option.map ActorId.format |> displayed language)
+                (snapshot.Responsible |> Option.map (actorName language) |> displayed language)
             line
                 language
                 (FieldPresentation.labelId BusinessField.HandlingSummary)
-                (snapshot.Work.Summary |> Option.map HandlingSummary.format |> narrative language)
+                (snapshot.Summary |> Option.map HandlingSummary.format |> narrative language)
         ]
 
     let reminder language value =
