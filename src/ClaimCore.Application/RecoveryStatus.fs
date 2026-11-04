@@ -5,8 +5,8 @@ open ClaimCore.Application.Contracts
 
 /// Actor-scoped recovery reads retained evidence in a read-only snapshot without taking the head lock.
 module internal RecoveryStatus =
-    let private outcome services operation actor entry current fenced =
-        match Resolution.resolve services operation actor entry current with
+    let private outcome services observedAt operation actor entry current fenced =
+        match Resolution.resolve services observedAt operation actor entry current with
         | Verdict.Replay receipt -> Outcome.Succeeded(OperationStatus.Accepted receipt)
         | Verdict.Proceed _ ->
             Outcome.Succeeded(
@@ -48,6 +48,7 @@ module internal RecoveryStatus =
                                             | Ok fenced ->
                                                 outcome
                                                     services
+                                                    tx.ObservedAt
                                                     operation
                                                     actor
                                                     entry

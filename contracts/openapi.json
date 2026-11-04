@@ -6644,6 +6644,9 @@
           },
           "subject": {
             "$ref": "#/components/schemas/CaseReceiptSubject"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
           }
         },
         "required": [
@@ -6651,7 +6654,8 @@
           "position",
           "recordedAt",
           "recordedBy",
-          "subject"
+          "subject",
+          "basis"
         ]
       },
       "CaseReceiptSubject": {
@@ -10972,6 +10976,9 @@
           },
           "subject": {
             "$ref": "#/components/schemas/ReceiptSubject"
+          },
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
           }
         },
         "required": [
@@ -10979,7 +10986,8 @@
           "position",
           "recordedAt",
           "recordedBy",
-          "subject"
+          "subject",
+          "basis"
         ]
       },
       "OperationReview": {

@@ -94,6 +94,7 @@ type OperationReceipt =
         Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
         RecordedBy: ActorRef
+        Basis: WorkDateBasis
     }
 
 type ChangeSummary =

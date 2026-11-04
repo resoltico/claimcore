@@ -546,6 +546,7 @@ module internal Queries =
 
     let private historyEntries
         (services: ServiceContext)
+        observedAt
         actor
         current
         detail
@@ -564,6 +565,7 @@ module internal Queries =
                 LedgerEntries.validate services.InstallationId entry
                 |> Result.bind (
                     LedgerEntries.receipt
+                        (ServiceContext.basis services observedAt)
                         services.Principal
                         actor
                         (Map.tryFind entry.ActorId authors)
@@ -653,6 +655,7 @@ module internal Queries =
                                                     |> Result.bind (fun _ ->
                                                         historyEntries
                                                             services
+                                                            tx.ObservedAt
                                                             actor
                                                             current
                                                             request.Detail
@@ -724,6 +727,9 @@ module internal Queries =
                                                         entry
                                                     |> Result.bind (
                                                         LedgerEntries.receiptOperation
+                                                            (ServiceContext.basis
+                                                                services
+                                                                tx.ObservedAt)
                                                             principal
                                                             actor
                                                             (Map.tryFind entry.ActorId authors)

@@ -125,6 +125,7 @@ module internal CaseExecution =
                     Existing = view.ExistingOperation
                 }
                 (LedgerEntries.receiptOperation
+                    (ServiceContext.basis services view.ObservedAt)
                     principal
                     view.Actor
                     (view.Actor.Actor |> Option.map Actor.currentReference)

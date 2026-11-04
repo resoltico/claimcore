@@ -724,6 +724,7 @@ module LedgerEntries =
         | _ -> Error CoreFault.StoreIntegrityError
 
     let internal receipt
+        (basis: WorkDateBasis)
         principal
         actor
         (recordedBy: ActorRef option)
@@ -770,17 +771,19 @@ module LedgerEntries =
                         Subject = subject
                         RecordedAt = entry.RecordedAt
                         RecordedBy = author
+                        Basis = basis
                     }
             | _ -> Error CoreFault.StoreIntegrityError)
 
     let internal receiptOperation
+        basis
         principal
         actor
         recordedBy
         current
         (operation: ValidatedOperation)
         =
-        receipt principal actor recordedBy current (List.head operation.ValidatedEntries)
+        receipt basis principal actor recordedBy current (List.head operation.ValidatedEntries)
         |> Result.map (fun receipt ->
             let subject =
                 match

@@ -144,6 +144,7 @@ module internal AuthorityExecution =
                 Existing = view.ExistingOperation
             }
             (LedgerEntries.receiptOperation
+                (ServiceContext.basis services view.ObservedAt)
                 services.Principal
                 view.Actor
                 (view.Actor.Actor |> Option.map Actor.currentReference)
@@ -188,6 +189,7 @@ module internal AuthorityExecution =
                         Verdict.Refuse Refusal.IdempotencyConflict
                     | Some accepted when accepted = bytes () ->
                         LedgerEntries.receiptOperation
+                            (ServiceContext.basis services view.ObservedAt)
                             services.Principal
                             view.Actor
                             (view.Actor.Actor |> Option.map Actor.currentReference)
@@ -307,6 +309,7 @@ module internal AuthorityExecution =
                     |> Result.bind (LedgerEntries.validateOperation services.InstallationId)
                     |> Result.bind (
                         LedgerEntries.receiptOperation
+                            (ServiceContext.basis services view.ObservedAt)
                             services.Principal
                             view.Actor
                             (receiptActor command view)

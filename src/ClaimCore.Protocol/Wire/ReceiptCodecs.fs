@@ -204,13 +204,14 @@ module ReceiptCodecs =
             ]
 
     let private header subjectCodec =
-        (record (fun id position at by subject ->
+        (record (fun id position at by subject basis ->
             {
                 OperationId = id
                 Position = position
                 RecordedAt = at
                 RecordedBy = by
                 Subject = subject
+                Basis = basis
             })
         : Fields<OperationReceipt, _>)
         |> field "operationId" _.OperationId operationId
@@ -218,6 +219,7 @@ module ReceiptCodecs =
         |> field "recordedAt" _.RecordedAt Codec.instant
         |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "subject" _.Subject subjectCodec
+        |> field "basis" _.Basis workDateBasis
         |> build
 
     let private valid (receipt: OperationReceipt) =

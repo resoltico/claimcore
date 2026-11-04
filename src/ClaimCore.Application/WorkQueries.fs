@@ -537,6 +537,9 @@ module internal WorkQueries =
                                                                 request.Detail = HistoryDetail.Full
                                                             then
                                                                 LedgerEntries.receipt
+                                                                    (ServiceContext.basis
+                                                                        services
+                                                                        tx.ObservedAt)
                                                                     services.Principal
                                                                     view.Actor
                                                                     (Map.tryFind

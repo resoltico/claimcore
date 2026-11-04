@@ -345,6 +345,7 @@ let private foldCompletion () =
 
     let receipt =
         LedgerEntries.receiptOperation
+            (Inputs.workBasis)
             principal
             view
             (Some(Actor.currentReference authority.Actor))

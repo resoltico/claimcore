@@ -9,6 +9,7 @@ open ClaimCore.Application.Contracts
 module internal Resolution =
     let resolve
         (services: ServiceContext)
+        observedAt
         operation
         (actor: AuthorityView)
         (entry: StoredOperation option)
@@ -28,6 +29,7 @@ module internal Resolution =
                 LedgerEntries.validateOperation installation entry
                 |> Result.bind (
                     LedgerEntries.receiptOperation
+                        (ServiceContext.basis services observedAt)
                         principal
                         actor
                         (Some(Actor.currentReference owner))
@@ -77,7 +79,13 @@ module internal Resolution =
                                         | Error fault -> return Verdict.Fail fault
                                         | Ok fenced ->
                                             match
-                                                resolve services operationId actor entry current
+                                                resolve
+                                                    services
+                                                    tx.ObservedAt
+                                                    operationId
+                                                    actor
+                                                    entry
+                                                    current
                                             with
                                             | Verdict.Proceed actor ->
                                                 if fenced then

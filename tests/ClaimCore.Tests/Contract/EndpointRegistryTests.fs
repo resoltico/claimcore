@@ -84,7 +84,7 @@ let private readReplies () =
             (Codec.decode 10000 codec (bytes input))
             "Unadvertised outcomes and prose cannot enter an envelope."
 
-let private receipt =
+let private receipt: OperationReceipt =
     {
         OperationId = (CaseFixtures.operationId (id))
         Position =
@@ -97,6 +97,12 @@ let private receipt =
                      |> Option.get)
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 10, 22)
+                TimeZoneId = "Etc/UTC"
+            }
         RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.Authority

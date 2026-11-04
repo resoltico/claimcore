@@ -38,6 +38,12 @@ let private receipt revision disclosure : OperationReceipt =
                     Snapshot = disclosure
                 }
         RecordedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 9, 7)
+                TimeZoneId = "Etc/UTC"
+            }
         RecordedBy = ClaimCore.TestSupport.Inputs.actorReference (CaseFixtures.actorId identity)
     }
 

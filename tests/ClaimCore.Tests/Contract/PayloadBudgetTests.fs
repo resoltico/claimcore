@@ -56,6 +56,12 @@ let private receipt disclosure : OperationReceipt =
                      |> Option.get)
             }
         RecordedAt = instant
+        Basis =
+            {
+                ObservedAt = instant
+                BusinessDate = DateOnly.FromDateTime instant.UtcDateTime
+                TimeZoneId = "Etc/UTC"
+            }
         RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.Case

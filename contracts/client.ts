@@ -131,7 +131,7 @@ export type CaseReadReply_Outcome = CaseReadReply_Outcome_SUCCEEDED | CaseReadRe
 export type CaseReadReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
 export type CaseReadReply_Outcome_REJECTED = { readonly "kind": "REJECTED"; readonly "data": Diagnostic; };
 export type CaseReadReply_Outcome_SUCCEEDED = { readonly "kind": "SUCCEEDED"; readonly "data": CaseView; };
-export type CaseReceipt = { readonly "operationId": Uuid; readonly "position": Position; readonly "recordedAt": string; readonly "recordedBy": ActorRef; readonly "subject": CaseReceiptSubject; };
+export type CaseReceipt = { readonly "operationId": Uuid; readonly "position": Position; readonly "recordedAt": string; readonly "recordedBy": ActorRef; readonly "subject": CaseReceiptSubject; readonly "basis": WorkDateBasis; };
 export type CaseReceiptSubject = CaseReceiptSubject_CASE;
 export type CaseReceiptSubject_CASE = { readonly "kind": "CASE"; readonly "caseId": Uuid; readonly "caseReference": string; readonly "revision": number; readonly "act": "OPEN" | "AMEND_REGISTRATION" | "CORRECT" | "DECIDE" | "WITHDRAW_DECISION" | "RECORD_PAYMENT" | "CLEAR_PAYMENT" | "CLOSE" | "REOPEN" | "VOID" | "REINSTATE" | "ERASE"; readonly "snapshot": SnapshotDisclosure; };
 export type CaseRef = { readonly "caseId": Uuid; readonly "caseReference": string; };
@@ -293,7 +293,7 @@ export type OperationInput_AUTHORITY = { readonly "kind": "AUTHORITY"; readonly 
 export type OperationInput_CASE = { readonly "kind": "CASE"; readonly "operationId": Uuid; readonly "target": CaseSelector; readonly "expectedRevision": number; readonly "act": CaseAct; };
 export type OperationInput_REMINDER = { readonly "kind": "REMINDER"; readonly "operationId": Uuid; readonly "target": CaseSelector; readonly "act": ReminderAct; };
 export type OperationInput_WORK = { readonly "kind": "WORK"; readonly "operationId": Uuid; readonly "target": CaseSelector; readonly "expectedRevision": number; readonly "act": WorkAct; };
-export type OperationReceipt = { readonly "operationId": Uuid; readonly "position": Position; readonly "recordedAt": string; readonly "recordedBy": ActorRef; readonly "subject": ReceiptSubject; };
+export type OperationReceipt = { readonly "operationId": Uuid; readonly "position": Position; readonly "recordedAt": string; readonly "recordedBy": ActorRef; readonly "subject": ReceiptSubject; readonly "basis": WorkDateBasis; };
 export type OperationReview = { readonly "subject": ReviewSubject; };
 export type PageRequest = { readonly "cursor"?: string; readonly "limit": number; };
 export type Payment = { readonly "paymentDate": string; };
@@ -681,7 +681,7 @@ function check_CaseReadReply_Outcome(value:unknown,draft:boolean,path:WireIssue)
 function check_CaseReadReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
 function check_CaseReadReply_Outcome_REJECTED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REJECTED")],["data",false,check_Diagnostic]]))(value,draft,path); }
 function check_CaseReadReply_Outcome_SUCCEEDED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("SUCCEEDED")],["data",false,check_CaseView]]))(value,draft,path); }
-function check_CaseReceipt(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["operationId",false,check_Uuid],["position",false,check_Position],["recordedAt",false,wireString(27,27,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z$/u,"date-time")],["recordedBy",false,check_ActorRef],["subject",false,check_CaseReceiptSubject]]))(value,draft,path); }
+function check_CaseReceipt(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["operationId",false,check_Uuid],["position",false,check_Position],["recordedAt",false,wireString(27,27,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z$/u,"date-time")],["recordedBy",false,check_ActorRef],["subject",false,check_CaseReceiptSubject],["basis",false,check_WorkDateBasis]]))(value,draft,path); }
 function check_CaseReceiptSubject(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_CaseReceiptSubject_CASE],"kind",{"CASE":check_CaseReceiptSubject_CASE}))(value,draft,path); }
 function check_CaseReceiptSubject_CASE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CASE")],["caseId",false,check_Uuid],["caseReference",false,wireString(1,80,/^(?:[!-~]{1,80})(?![\s\S])/u,null)],["revision",false,wireInteger(1,9007199254740991)],["act",false,wireUnion([wireConstant("OPEN"),wireConstant("AMEND_REGISTRATION"),wireConstant("CORRECT"),wireConstant("DECIDE"),wireConstant("WITHDRAW_DECISION"),wireConstant("RECORD_PAYMENT"),wireConstant("CLEAR_PAYMENT"),wireConstant("CLOSE"),wireConstant("REOPEN"),wireConstant("VOID"),wireConstant("REINSTATE"),wireConstant("ERASE")],null,{})],["snapshot",false,check_SnapshotDisclosure]]))(value,draft,path); }
 function check_CaseRef(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["caseId",false,check_Uuid],["caseReference",false,wireString(1,80,/^(?:[!-~]{1,80})(?![\s\S])/u,null)]]))(value,draft,path); }
@@ -842,7 +842,7 @@ function check_OperationInput_AUTHORITY(value:unknown,draft:boolean,path:WireIss
 function check_OperationInput_CASE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CASE")],["operationId",false,check_Uuid],["target",false,check_CaseSelector],["expectedRevision",false,wireInteger(0,9007199254740991)],["act",false,check_CaseAct]]))(value,draft,path); }
 function check_OperationInput_REMINDER(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REMINDER")],["operationId",false,check_Uuid],["target",false,check_CaseSelector],["act",false,check_ReminderAct]]))(value,draft,path); }
 function check_OperationInput_WORK(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("WORK")],["operationId",false,check_Uuid],["target",false,check_CaseSelector],["expectedRevision",false,wireInteger(0,9007199254740991)],["act",false,check_WorkAct]]))(value,draft,path); }
-function check_OperationReceipt(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["operationId",false,check_Uuid],["position",false,check_Position],["recordedAt",false,wireString(27,27,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z$/u,"date-time")],["recordedBy",false,check_ActorRef],["subject",false,check_ReceiptSubject]]))(value,draft,path); }
+function check_OperationReceipt(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["operationId",false,check_Uuid],["position",false,check_Position],["recordedAt",false,wireString(27,27,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z$/u,"date-time")],["recordedBy",false,check_ActorRef],["subject",false,check_ReceiptSubject],["basis",false,check_WorkDateBasis]]))(value,draft,path); }
 function check_OperationReview(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["subject",false,check_ReviewSubject]]))(value,draft,path); }
 function check_PageRequest(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["cursor",true,wireString(1,512,null,null)],["limit",false,wireInteger(1,50)]]))(value,draft,path); }
 function check_Payment(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["paymentDate",false,wireString(null,null,null,null)]]))(value,draft,path); }
@@ -1101,6 +1101,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "1848006c04972bfbe3337bf8392c897ddf24bb9e4d0078add14988b7e7dcd408";
+export const consumerContractIdentity = "6dc4762dbb744654c67e4c2f7a7ce71f38375903a31810a0ca051cf87ced467b";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

@@ -243,6 +243,7 @@ module internal WorkExecution =
                         Existing = view.ExistingOperation
                     }
                     (LedgerEntries.receiptOperation
+                        (ServiceContext.basis services view.ObservedAt)
                         services.Principal
                         view.Actor
                         (view.Actor.Actor |> Option.map Actor.currentReference)
@@ -441,6 +442,7 @@ module internal WorkExecution =
                         Existing = view.ExistingOperation
                     }
                     (LedgerEntries.receiptOperation
+                        (ServiceContext.basis services view.ObservedAt)
                         services.Principal
                         view.Actor
                         (view.Actor.Actor |> Option.map Actor.currentReference)

@@ -54,7 +54,7 @@ let view reference =
     |> Result.map Case.snapshot
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
-let receipt id (reference: string) =
+let receipt id (reference: string) : OperationReceipt =
     {
         OperationId = CaseFixtures.operationId id
         Position = position
@@ -72,6 +72,12 @@ let receipt id (reference: string) =
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
         RecordedBy = Inputs.actorReference (CaseFixtures.actorId operationId)
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 10, 13)
+                TimeZoneId = "Etc/UTC"
+            }
     }
 
 let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =

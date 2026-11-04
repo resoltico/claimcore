@@ -116,6 +116,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
             |> Result.bind (
                 LedgerEntries.receipt
+                    (Inputs.workBasis)
                     fixture.Owner
                     view.Actor
                     (view.Actor.Actor |> Option.map Actor.currentReference)

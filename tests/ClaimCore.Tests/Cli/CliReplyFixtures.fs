@@ -47,7 +47,7 @@ let snapshot =
         State = CaseState.Active(fields)
     }
 
-let receipt =
+let receipt: OperationReceipt =
     {
         OperationId = (CaseFixtures.operationId (id))
         Position =
@@ -72,5 +72,11 @@ let receipt =
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 1, 1)
+                TimeZoneId = "Etc/UTC"
+            }
         RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
     }

@@ -63,6 +63,7 @@ module internal LedgerEnvelope =
             LedgerEntries.validate installationId (LedgerEntries.stored entry)
             |> Result.bind (
                 LedgerEntries.receipt
+                    (ServiceContext.basis services plan.ObservedAt)
                     principal
                     actor
                     (actor.Actor |> Option.map Actor.currentReference)
