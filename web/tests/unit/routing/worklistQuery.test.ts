@@ -52,3 +52,11 @@ it("retains responsibility filters independently of the selected view", () => {
     "/cases?view=MINE&q=SIA&assignment=UNASSIGNED",
   );
 });
+it("round trips the core's explicit responsible-person filter into the shared worklist query", () => {
+  const actor = "10000000-0000-4000-8000-000000000001";
+  const path = worklistPath({ view: "ALL", responsibleActor: actor });
+  expect(path).toBe(`/cases?view=ALL&responsibleActor=${actor}`);
+  const query = parseWorklistQuery(new URL(path, "https://claimcore.example").search);
+  expect(query).toEqual({ view: "ALL", responsibleActor: actor });
+  expect(listRequest(query, null)).toEqual({ limit: 50, view: "ALL", responsibleActor: actor });
+});

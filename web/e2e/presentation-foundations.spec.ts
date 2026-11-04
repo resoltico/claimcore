@@ -1344,3 +1344,117 @@ test("case panels follow compact reading order while a work draft survives respo
   await expectAccessible(page);
   await clean();
 });
+
+test("People uses core roles and state without row reads and forwards known-zero responsibility", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  const actorId = "10000000-0000-4000-8000-000000000001";
+  const items = [
+    {
+      actor: actorRefInput({
+        actorId,
+        displayName: { kind: "NAMED", value: "Authority owner" },
+        availability: "NOT_ELIGIBLE",
+      }),
+      principal: {
+        kind: "HUMAN",
+        issuer: "https://issuer.example/",
+        subject: "do-not-use-subject",
+      },
+      contact: "owner@example.invalid",
+      state: "ACTIVE",
+      roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
+      responsibleCases: { count: 0, view: "ALL", responsibleActor: actorId },
+    },
+    {
+      actor: actorRefInput({
+        actorId: "10000000-0000-4000-8000-000000000002",
+        displayName: { kind: "NAMED", value: "Disabled person" },
+        availability: "DISABLED",
+      }),
+      principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "disabled-subject" },
+      contact: null,
+      state: "DISABLED",
+      roles: [],
+    },
+  ];
+  let listing = 0;
+  let grants = 0;
+  await page.route("**/api/authority.list", (route) => {
+    listing += 1;
+    return route.fulfill({
+      json: { outcome: { kind: "SUCCEEDED", data: { items, nextCursor: null } } },
+    });
+  });
+  await page.route("**/api/authority.grants", (route) => {
+    grants += 1;
+    return route.fulfill({
+      json: {
+        outcome: { kind: "SUCCEEDED", data: { actor: items[0], items: [], nextCursor: null } },
+      },
+    });
+  });
+  const listInputs: unknown[] = [];
+  const summaryInputs: unknown[] = [];
+  const basis = {
+    observedAt: "2026-11-04T12:00:00.000000Z",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+  };
+  await page.route("**/api/case.list", (route) => {
+    listInputs.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { items: [], nextCursor: null, offers: [], exactReference: null, basis },
+        },
+      },
+    });
+  });
+  await page.route("**/api/case.summary", (route) => {
+    summaryInputs.push(route.request().postDataJSON());
+    return route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis,
+            counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+            claimed: [],
+            payable: [],
+          },
+        },
+      },
+    });
+  });
+  await page.goto("/people", { waitUntil: "commit" });
+  const table = page.getByRole("table", { name: "People & access" });
+  const row = table.getByRole("row").filter({ hasText: "Authority owner" });
+  await expect(row).toContainText("Enabled with roles");
+  await expect(row).toContainText("Owner");
+  await expect(row).toContainText("Case-specific grants: 0");
+  await expect(table).not.toContainText("do-not-use-subject");
+  await expect(table.getByRole("row").filter({ hasText: "Disabled person" })).toContainText(
+    "Disabled",
+  );
+  expect(listing).toBe(1);
+  expect(grants).toBe(0);
+  await expectAccessible(page);
+  await row.getByRole("link").click();
+  const profile = page.locator(".actor-summary");
+  await expect(
+    profile.getByRole("link", { name: "Matching cases: 0", exact: true }),
+  ).toHaveAttribute("href", `/cases?view=ALL&responsibleActor=${actorId}`);
+  expect(grants).toBe(1);
+  await expectAccessible(page);
+  await profile.getByRole("link", { name: "Matching cases: 0", exact: true }).click();
+  await expect.poll(() => listInputs.length).toBe(1);
+  await expect.poll(() => summaryInputs.length).toBe(1);
+  expect(listInputs).toEqual([{ limit: 50, view: "ALL", responsibleActor: actorId }]);
+  expect(summaryInputs).toEqual([{ view: "ALL", responsibleActor: actorId }]);
+  await expectAccessible(page);
+  await clean();
+});

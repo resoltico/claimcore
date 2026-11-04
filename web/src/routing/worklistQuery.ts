@@ -2,8 +2,13 @@ import type { CaseListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
 export type WorklistQuery = Omit<CaseListRequest, "cursor" | "limit">;
 const unique = <T>(values: ReadonlyArray<T>): T[] => [...new Set(values)];
-const responsibilityQuery = (assignment: string | null): Pick<WorklistQuery, "assignment"> =>
-  assignment === "MINE" || assignment === "UNASSIGNED" ? { assignment } : {};
+const responsibilityQuery = (
+  assignment: string | null,
+  actor: string | null,
+): Pick<WorklistQuery, "assignment" | "responsibleActor"> => ({
+  ...(assignment === "MINE" || assignment === "UNASSIGNED" ? { assignment } : {}),
+  ...(actor === null || actor === "" ? {} : { responsibleActor: actor }),
+});
 const dueQuery = (due: string | null): Pick<WorklistQuery, "due"> =>
   due !== null && isTerm("due", due) ? { due } : {};
 export const parseWorklistQuery = (query: string): WorklistQuery => {
@@ -28,7 +33,7 @@ export const parseWorklistQuery = (query: string): WorklistQuery => {
     ...(progress.length ? { progress } : {}),
     ...(text === "" ? {} : { text }),
     ...(order === undefined ? {} : { order }),
-    ...responsibilityQuery(assignment),
+    ...responsibilityQuery(assignment, params.get("responsibleActor")),
     ...dueQuery(rawDue),
   };
 };
@@ -50,6 +55,9 @@ export const worklistPath = (query: WorklistQuery): string => {
   }
   if (query.assignment !== undefined) {
     params.set("assignment", query.assignment);
+  }
+  if (query.responsibleActor !== undefined) {
+    params.set("responsibleActor", query.responsibleActor);
   }
   if (query.due !== undefined) {
     params.set("due", query.due);

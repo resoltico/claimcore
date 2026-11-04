@@ -16,7 +16,6 @@
   "ui.actor": "الجهة",
   "ui.actorGrants": "صلاحيات الفاعل",
   "ui.actorRequestRetained": "للطلب الحالي هدف مختلف. تابع الطلب أو تجاهله قبل بدء إجراء لهذه الجهة.",
-  "ui.actors": "الجهات والصلاحيات",
   "ui.addGrant": "إضافة دور",
   "ui.after": "بعد: {value}",
   "ui.amountEntryHint": "يمكنك استخدام تنسيق الأرقام المختار. استخدم حتى {maximumFractionDigits} منازل عشرية، دون علامات موجب أو سالب أو أصفار زائدة في البداية.",
@@ -82,7 +81,6 @@
   "ui.findCase": "فتح بالمرجع الدقيق",
   "ui.formatPreview": "معاينة: {date} · {amount}",
   "ui.generalOperationLookup": "البحث العام عن العمليات",
-  "ui.grantCount": "عدد الأدوار الممنوحة",
   "ui.grantNumber": "الدور {number}",
   "ui.grantsEnd": "تُعرض جميع الصلاحيات التي أُعيدت لهذه المراجعة.",
   "ui.grantsPartial": "يُعرض جزء فقط من صلاحيات هذا الفاعل.",
@@ -92,7 +90,6 @@
   "ui.inheritedRoles": "الأدوار الموروثة من التثبيت",
   "ui.keepChecking": "متابعة التحقق من الحالة",
   "ui.keepEditing": "متابعة التحرير",
-  "ui.knownGrantCount": "الأدوار الممنوحة: {count}",
   "ui.language": "لغة الواجهة",
   "ui.languageAppearance": "اللغة والمظهر",
   "ui.languageLoadFailed": "تعذر تحميل اللغة. بقيت اللغة الحالية كما هي.",
@@ -266,5 +263,11 @@
   "ui.conflict.kept": "احتُفظ بمسودتك. راجع التغييرات قبل إعدادها وفق أحدث نسخة.",
   "ui.conflict.loading": "جارٍ تحميل أحدث نسخة…",
   "ui.conflict.reviewLatest": "المراجعة وفق أحدث نسخة",
-  "ui.choiceNotAvailable": "غير متاح مع الحقائق الحالية."
+  "ui.choiceNotAvailable": "غير متاح مع الحقائق الحالية.",
+  "ui.people.person": "الشخص",
+  "ui.people.roles": "الأدوار",
+  "ui.people.scope": "الوصول إلى",
+  "ui.people.status": "الحالة",
+  "ui.people.responsibleFor": "مسؤول عن",
+  "ui.people.caseGrants": "صلاحيات لملفات محددة: {count}"
 }

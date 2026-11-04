@@ -164,7 +164,7 @@ it("keeps only the same actor's page on a transient error and follows server con
   expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
 });
 
-it("counts only complete loaded grants and clears the count while reloading without extra reads", async () => {
+it("loads and clears the selected grant page without request-per-row reads", async () => {
   reads();
   const reload = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
   const request = mockEndpoint("authority.grants")
@@ -176,24 +176,27 @@ it("counts only complete loaded grants and clears the count while reloading with
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(actors[0]!);
   await screen.findByText("Only part of this actor’s grants is shown.");
-  expect(screen.queryByText(/^Grants:/u)).toBeNull();
+  expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(1);
   expect(request).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
-  await screen.findByText("Grants: 2");
+  await screen.findByText("SECOND");
+  expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(2);
   expect(request).toHaveBeenCalledTimes(2);
   fireEvent.click(screen.getByRole("button", { name: "Reload grants" }));
   await waitFor(() => {
-    expect(screen.queryByText("Grants: 2")).toBeNull();
+    expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(0);
   });
   await act(() =>
     Promise.resolve().then(() => {
       reload.finish(grants(first));
     }),
   );
-  await screen.findByText("Grants: 1");
+  await screen.findByText(`GRANT-${first}`);
+  expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(1);
+  expect(screen.queryByText("SECOND")).toBeNull();
   expect(request).toHaveBeenCalledTimes(3);
   fireEvent.click(screen.getByRole("button", { name: "Back to actors" }));
-  expect(screen.queryByText(/^Grants:/u)).toBeNull();
+  expect(document.querySelector(".actor-grant-items")).toBeNull();
 });
 
 const authorTarget = async () => {
@@ -407,7 +410,7 @@ it("focuses the stable actors heading during a pending reload and keeps it after
   fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
   expect(screen.queryByRole("link", { name: / ·/u })).toBeNull();
   focusedBack();
-  const heading = screen.getByRole("heading", { name: "Actors and grants" });
+  const heading = screen.getByRole("heading", { name: "People & access" });
   await waitFor(() => {
     expect(heading).toHaveFocus();
   });
@@ -438,7 +441,7 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
   expect(screen.queryByText(`listed-${second}`)).toBeNull();
   focusedBack();
   await waitFor(() => {
-    expect(screen.getByRole("heading", { name: "Actors and grants" })).toHaveFocus();
+    expect(screen.getByRole("heading", { name: "People & access" })).toHaveFocus();
   });
 });
 it("does not restore actor focus when global disclosure refusal removes the selected pane", async () => {

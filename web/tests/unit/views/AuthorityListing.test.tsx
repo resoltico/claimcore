@@ -1,43 +1,35 @@
 import userEvent from "@testing-library/user-event";
 import { fireEvent, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
+import type { ActorReviewItem } from "@contracts/client";
 import { render, screen } from "../../support/presentation-test-support";
 import { mockEndpoint } from "../../support/endpoint-mocks";
-import { AuthorityListing, type KnownActorGrantCount } from "../../../src/views/AuthorityListing";
+import { AuthorityListing } from "../../../src/views/AuthorityListing";
 const actorId = "10000000-0000-4000-8000-000000000001";
 const subject = "A long principal subject whose complete value remains accessible";
 const displayName = "Authored account name";
-const setup = (mayReadGrants: boolean, knownGrantCount: KnownActorGrantCount | null = null) => {
+const setup = (mayReadGrants: boolean, changes: Partial<ActorReviewItem> = {}) => {
+  const actor: ActorReviewItem = {
+    actor: {
+      actorId,
+      displayName: { kind: "NAMED", value: displayName },
+      principalKind: "HUMAN",
+      availability: "NOT_ELIGIBLE",
+    },
+    contact: "support@example.invalid",
+    state: "ACTIVE",
+    roles: [{ role: "OWNER", installation: true, caseCount: 0 }],
+    principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject },
+    ...changes,
+  };
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          items: [
-            {
-              actor: {
-                actorId,
-                displayName: { kind: "NAMED", value: displayName },
-                principalKind: "HUMAN",
-                availability: "AVAILABLE",
-              },
-              contact: null,
-              state: "NO_ROLES",
-              roles: [],
-              principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject },
-            },
-          ],
-          nextCursor: null,
-        },
-      },
-    },
+    value: { outcome: { kind: "SUCCEEDED", data: { items: [actor], nextCursor: null } } },
   });
   const select = vi.fn();
   render(
     <AuthorityListing
-      knownGrantCount={knownGrantCount}
       mayReadGrants={mayReadGrants}
       onSelect={select}
       onDisclosureRefused={vi.fn()}
@@ -46,23 +38,30 @@ const setup = (mayReadGrants: boolean, knownGrantCount: KnownActorGrantCount | n
   );
   return select;
 };
-it("exposes labelled table columns and one native keyboard link per actor", async () => {
+it("shows core account state and raw roles with one native person link and no row grant reads", async () => {
   const grants = mockEndpoint("authority.grants");
-  const select = setup(true, { actorId, count: 0 });
-  const table = screen.getByRole("table", { name: "Actors and grants" });
+  const select = setup(true);
+  const table = screen.getByRole("table", { name: "People & access" });
   await within(table).findByText(displayName);
   expect(
     within(table)
       .getAllByRole("columnheader")
       .map((header) => header.textContent),
-  ).toEqual(["Type", "Actor", "Enabled", "Grant count"]);
+  ).toEqual(["Person", "Roles", "Access to", "Status"]);
   for (const header of within(table).getAllByRole("columnheader")) {
     expect(header).toHaveAttribute("scope", "col");
   }
-  const link = within(table).getByRole("link", { name: `Human · ${displayName} Yes` });
+  const link = within(table).getByRole("link", {
+    name: `Human · ${displayName} Enabled with roles`,
+  });
   expect(within(table).getAllByRole("link")).toHaveLength(1);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
-  expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("Grants: 0");
+  expect(within(table).getAllByRole("cell")[1]).toHaveTextContent("Owner");
+  expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Installation");
+  expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Case-specific grants: 0");
+  expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("Enabled with roles");
+  expect(within(table).queryByText("No roles")).toBeNull();
+  expect(within(table).getByText("support@example.invalid")).toBeVisible();
   expect(grants).not.toHaveBeenCalled();
   expect(link).toHaveAttribute("href", `/people/${actorId}`);
   expect(link.querySelector("bdi")).toHaveAttribute("title", displayName);
@@ -76,11 +75,11 @@ it("exposes labelled table columns and one native keyboard link per actor", asyn
   fireEvent.click(link, { ctrlKey: true });
   expect(select).not.toHaveBeenCalled();
 });
-it("keeps the same table facts without inventing a link when grants are not offered", async () => {
-  setup(false, { actorId, count: 0 });
-  const table = screen.getByRole("table", { name: "Actors and grants" });
+it("keeps disclosed table facts without offering a person link when grants are not readable", async () => {
+  setup(false, { state: "DISABLED", roles: [] });
+  const table = screen.getByRole("table", { name: "People & access" });
   await within(table).findByText(displayName);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
   expect(within(table).queryByRole("link")).toBeNull();
-  expect(within(table).queryByText("Grants: 0")).toBeNull();
+  expect(within(table).getByText("Disabled", { exact: true })).toBeVisible();
 });

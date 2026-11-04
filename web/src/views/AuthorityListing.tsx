@@ -1,5 +1,5 @@
+import { ActorRoleScopes } from "../components/ActorRoleScopes";
 import { actorName } from "../presentation/actorName";
-import { ActorIdentity } from "../components/ActorIdentity";
 import { followLink } from "../routing/followLink";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
@@ -11,30 +11,7 @@ import { usePresentation } from "../presentation/context";
 const authorityPage = (response: ServiceResponse<"authority.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 type Actor = NonNullable<ReturnType<typeof authorityPage>>["items"][number];
-export type KnownActorGrantCount = { actorId: string; count: number };
-export const ActorSummary = ({ actor }: { actor: Actor }) => {
-  const p = usePresentation();
-  return (
-    <dl className="actor-summary">
-      <dt>{p.text("ui.actor")}</dt>
-      <dd>
-        <ActorIdentity actor={actor.actor} />
-      </dd>
-      <dt>{p.text("ui.principal")}</dt>
-      <dd>
-        {p.term("principalKind", actor.principal.kind)} ·{" "}
-        <bdi dir="ltr" className="principal-issuer" title={actor.principal.issuer}>
-          {actor.principal.issuer}
-        </bdi>{" "}
-        · <bdi>{actor.principal.subject}</bdi>
-      </dd>
-      <dt>{p.text("label.enabled")}</dt>
-      <dd>{p.text(actor.actor.availability === "DISABLED" ? "ui.no" : "ui.yes")}</dd>
-    </dl>
-  );
-};
 type ListingProps = {
-  knownGrantCount?: KnownActorGrantCount | null;
   mayReadGrants: boolean;
   onSelect: (actorId: string) => void;
   onDisclosureRefused: (notice?: Notice) => void;
@@ -61,13 +38,6 @@ const useAuthorityPage = ({ onDisclosureRefused, onDisclosureRestored }: Listing
     restored,
   );
 };
-const KnownGrantCount = ({ count }: { count: number | null }) => {
-  const p = usePresentation();
-  if (count === null) {
-    return null;
-  }
-  return <small>{p.text("ui.knownGrantCount", { count: p.integer(count) })}</small>;
-};
 const ActorSubject = ({
   actor,
   onSelect,
@@ -93,7 +63,7 @@ const ActorSubject = ({
       href={href}
       id={`actor-grants-${actor.actor.actorId}`}
       title={label}
-      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${label} ${p.text(actor.actor.availability === "DISABLED" ? "ui.no" : "ui.yes")}`}
+      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${label} ${p.term("accountState", actor.state)}`}
       onClick={(event) => {
         followLink(event, () => {
           onSelect(actor.actor.actorId);
@@ -106,41 +76,43 @@ const ActorSubject = ({
 };
 const ActorRow = (props: {
   actor: Actor;
-  knownGrantCount?: KnownActorGrantCount | null;
   onSelect: ListingProps["onSelect"];
   mayReadGrants: boolean;
 }) => {
   const p = usePresentation();
   return (
     <tr className="authority-row">
-      <td>{p.term("principalKind", props.actor.principal.kind)}</td>
       <td className="authority-subject">
         <ActorSubject {...props} />
+        {props.actor.contact === null ? null : (
+          <small className="actor-contact">
+            <bdi>{props.actor.contact}</bdi>
+          </small>
+        )}
       </td>
-      <td className="authority-enabled">
-        <span className="authority-cell-label" aria-hidden="true">
-          {p.text("label.enabled")}:{" "}
+      <td>
+        <ul className="actor-role-chips">
+          {props.actor.roles.map((summary) => (
+            <li key={summary.role}>{p.term("role", summary.role)}</li>
+          ))}
+        </ul>
+      </td>
+      <td>
+        <ActorRoleScopes roles={props.actor.roles} />
+      </td>
+      <td>
+        <span className={`account-state account-state-${props.actor.state.toLowerCase()}`}>
+          {p.term("accountState", props.actor.state)}
         </span>
-        {p.text(props.actor.actor.availability === "DISABLED" ? "ui.no" : "ui.yes")}
-      </td>
-      <td className="authority-grant-count">
-        {props.mayReadGrants ? (
-          <KnownGrantCount
-            count={
-              props.knownGrantCount?.actorId === props.actor.actor.actorId
-                ? props.knownGrantCount.count
-                : null
-            }
-          />
-        ) : null}
       </td>
     </tr>
   );
 };
+
 const AuthorityTable = ({
   items,
   ...props
-}: Pick<ListingProps, "mayReadGrants" | "onSelect" | "knownGrantCount"> & {
+}: Pick<ListingProps, "mayReadGrants" | "onSelect"> & {
   items: Actor[];
 }) => {
   const p = usePresentation();
@@ -148,10 +120,10 @@ const AuthorityTable = ({
     <table className="authority-table" aria-labelledby="authority-actors-title">
       <thead className="authority-columns">
         <tr>
-          <th scope="col">{p.fieldLabel("principal.kind")}</th>
-          <th scope="col">{p.text("ui.actor")}</th>
-          <th scope="col">{p.text("label.enabled")}</th>
-          <th scope="col">{p.text("ui.grantCount")}</th>
+          <th scope="col">{p.text("ui.people.person")}</th>
+          <th scope="col">{p.text("ui.people.roles")}</th>
+          <th scope="col">{p.text("ui.people.scope")}</th>
+          <th scope="col">{p.text("ui.people.status")}</th>
         </tr>
       </thead>
       <tbody className="authority-rows">
@@ -168,11 +140,10 @@ export const AuthorityListing = (props: ListingProps) => {
   return (
     <section>
       <h2 id="authority-actors-title" tabIndex={-1}>
-        {p.text("ui.actors")}
+        {p.text("ui.shell.people")}
       </h2>
       <AuthorityTable
         items={page.items}
-        knownGrantCount={props.knownGrantCount ?? null}
         onSelect={props.onSelect}
         mayReadGrants={props.mayReadGrants}
       />

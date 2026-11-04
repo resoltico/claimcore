@@ -11,7 +11,7 @@ import { productMetadata } from "../protocol/productMetadata";
 import { isDisclosureRefused } from "../api/outcomes";
 import { resultNotice, type ServiceResponse, type OperationReceipt } from "../api/service";
 import { AuthorityGrants } from "./AuthorityGrants";
-import { AuthorityListing, type KnownActorGrantCount } from "./AuthorityListing";
+import { AuthorityListing } from "./AuthorityListing";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
@@ -78,12 +78,10 @@ const SelectedActorGrants = ({
   actorId,
   refused,
   onActor,
-  onGrantCount,
 }: {
   actorId: string | null;
   refused: (notice?: Notice) => void;
   onActor: (actor: ActorReviewItem) => void;
-  onGrantCount: (count: KnownActorGrantCount | null) => void;
 }) =>
   actorId === null ? null : (
     <AuthorityGrants
@@ -97,7 +95,6 @@ const SelectedActorGrants = ({
       }}
       onDisclosureRefused={refused}
       onActor={onActor}
-      onGrantCount={onGrantCount}
     />
   );
 const AuthorityDirectory = ({
@@ -115,7 +112,6 @@ const AuthorityDirectory = ({
   mayReadGrants: boolean;
   onActor: (actor: ActorReviewItem) => void;
 }) => {
-  const [knownGrantCount, setKnownGrantCount] = useState<KnownActorGrantCount | null>(null);
   if (!available) {
     return null;
   }
@@ -125,10 +121,8 @@ const AuthorityDirectory = ({
         actorId={selectedActorId}
         refused={disclosure.refused}
         onActor={onActor}
-        onGrantCount={setKnownGrantCount}
       />
       <AuthorityListing
-        knownGrantCount={knownGrantCount?.actorId === selectedActorId ? knownGrantCount : null}
         mayReadGrants={mayReadGrants}
         onSelect={onSelect}
         onDisclosureRefused={disclosure.refused}
