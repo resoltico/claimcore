@@ -52,31 +52,12 @@ module CaseDue =
             | Some date when CalendarDate.value date = today -> CaseDue.Today
             | Some _ -> CaseDue.Upcoming
 
-[<RequireQualifiedAccess>]
-type CaseProgress =
-    | Undecided
-    | Decided
-    | Paid
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseListOrder =
     let vocabulary =
         Vocabulary.ofUnion<CaseListOrder> "caseOrder" TokenCasing.ScreamingSnake None
 
     let token = Vocabulary.token vocabulary
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module CaseProgress =
-    let vocabulary =
-        Vocabulary.ofUnion<CaseProgress> "progress" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
-
-    let ofPayment =
-        function
-        | PaymentProgress.Undecided -> CaseProgress.Undecided
-        | PaymentProgress.Decided _ -> CaseProgress.Decided
-        | PaymentProgress.Paid _ -> CaseProgress.Paid
 
 module CaseSearch =
     let normalize (value: string) =
@@ -111,6 +92,7 @@ type CaseListFilter<'text> =
         Progress: CaseProgress list
         Text: 'text option
         Order: CaseListOrder
+        View: CaseView option
         Assignment: CaseAssignment option
         Due: CaseDue option
     }
@@ -123,6 +105,7 @@ module CaseListFilter =
             Progress = progress
             Text = text
             Order = order
+            View = None
             Assignment = None
             Due = None
         }
@@ -146,6 +129,7 @@ module CaseListFilter =
                 input.Order
             |> fun filter ->
                 { filter with
+                    View = input.View
                     Assignment = input.Assignment
                     Due = input.Due
                 })

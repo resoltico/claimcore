@@ -1,5 +1,25 @@
 namespace ClaimCore.Domain
 
+[<RequireQualifiedAccess>]
+type CaseProgress =
+    | Undecided
+    | Decided
+    | Paid
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseProgress =
+    let vocabulary =
+        Vocabulary.ofUnion<CaseProgress> "progress" TokenCasing.ScreamingSnake None
+
+    let token = Vocabulary.token vocabulary
+
+    let ofPayment =
+        function
+        | PaymentProgress.Undecided -> CaseProgress.Undecided
+        | PaymentProgress.Decided _ -> CaseProgress.Decided
+        | PaymentProgress.Paid _ -> CaseProgress.Paid
+
+
 /// Core facts needed to classify a case in a worklist. Availability is resolved by the core read.
 type CaseWorkFacts =
     {
@@ -31,22 +51,6 @@ type ReminderView =
     | Upcoming
     | Completed
     | Cancelled
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module CaseView =
-    let vocabulary =
-        Vocabulary.ofUnion<CaseView> "caseView" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module ReminderView =
-    let vocabulary =
-        Vocabulary.ofUnion<ReminderView> "reminderView" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
 
 [<RequireQualifiedAccess>]
 type CaseAttention =
@@ -84,6 +88,68 @@ module CaseAttention =
         | CaseState.Active(CaseStatus.Closed, _)
         | CaseState.Voided _
         | CaseState.Erased -> []
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseView =
+    let vocabulary =
+        Vocabulary.ofUnion<CaseView> "caseView" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+    let matches today requester view facts =
+        let attention reason =
+            CaseAttention.at today facts |> List.contains reason
+
+        match view with
+        | CaseView.All -> true
+        | CaseView.Mine -> facts.Responsible |> Option.exists (fun (actor, _) -> actor = requester)
+        | CaseView.NeedsAttention -> CaseAttention.at today facts |> List.isEmpty |> not
+        | CaseView.Overdue -> attention CaseAttention.Overdue
+        | CaseView.DueToday -> attention CaseAttention.DueToday
+        | CaseView.NoNextAction -> attention CaseAttention.NoNextAction
+        | CaseView.Unassigned -> attention CaseAttention.Unassigned
+        | CaseView.Undecided ->
+            facts.State = CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided)
+        | CaseView.DecidedUnpaid ->
+            facts.State = CaseState.Active(CaseStatus.Opened, CaseProgress.Decided)
+        | CaseView.Closed ->
+            facts.State
+            |> CaseState.fields
+            |> Option.exists (fun (status, _) -> status = CaseStatus.Closed)
+        | CaseView.Voided -> CaseState.lifecycle facts.State = Lifecycle.Voided
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module ReminderView =
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderView> "reminderView" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+    let matches today requester view parent reminder =
+        let readableParent = parent.State <> CaseState.Erased
+
+        let actionable =
+            match parent.State with
+            | CaseState.Active(CaseStatus.Opened, _) ->
+                Reminder.state reminder = ReminderState.Pending
+            | _ -> false
+
+        let timing = ReminderDue.at today actionable reminder
+
+        match view with
+        | ReminderView.Completed ->
+            readableParent && Reminder.state reminder = ReminderState.Completed
+        | ReminderView.Cancelled ->
+            readableParent && Reminder.state reminder = ReminderState.Cancelled
+        | ReminderView.Pending -> actionable
+        | ReminderView.Mine ->
+            actionable
+            && (parent.Responsible |> Option.exists (fun (actor, _) -> actor = requester))
+        | ReminderView.Overdue -> timing = Some ReminderDue.Overdue
+        | ReminderView.Today -> timing = Some ReminderDue.Today
+        | ReminderView.Upcoming -> timing = Some ReminderDue.Upcoming
 
 /// A case has one headline, independent of the renderer and of the fields it displays.
 [<RequireQualifiedAccess>]

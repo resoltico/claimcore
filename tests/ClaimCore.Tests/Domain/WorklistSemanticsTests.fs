@@ -265,3 +265,217 @@ let views =
                 "READY_TO_CLOSE"
             ]
             "Attention reasons are not views")
+
+let private reminder state due =
+    Reminder.ofAccepted
+        (ReminderId.create (Guid.Parse "bbc83e6f-ecff-4023-8ff5-3d45db933cc1")
+         |> Option.get)
+        (CaseId.create (Guid.Parse "b32ec722-dfb9-426a-b574-c813be19999e") |> Option.get)
+        Revision.first
+        (ReminderAction.parse "Contact claimant"
+         |> Result.defaultWith (fun _ -> failtest "Valid action"))
+        (date due)
+        state
+    |> Result.defaultWith (fun _ -> failtest "Valid accepted reminder")
+
+[<Tests>]
+let predicates =
+    testList
+        "core view predicates"
+        [
+            testCase
+                "MINE includes assigned inactive cases while UNASSIGNED matches current attention"
+                (fun () ->
+                    for state in states do
+                        Expect.isTrue
+                            (CaseView.matches
+                                today
+                                actor
+                                CaseView.Mine
+                                (facts state (Some(actor, false)) None))
+                            "Current assignment owns MINE regardless of lifecycle or availability"
+
+                        let unassigned = facts state None None
+
+                        Expect.equal
+                            (CaseView.matches today actor CaseView.Unassigned unassigned)
+                            (CaseAttention.at today unassigned
+                             |> List.contains CaseAttention.Unassigned)
+                            "Unassigned view and attention have identical boundaries"
+
+                        Expect.isFalse
+                            (CaseView.matches today actor CaseView.Mine unassigned)
+                            "No assignment is never mine")
+            testCase "case view progress, lifecycle and date predicates are independent" (fun () ->
+                let opened progress due =
+                    facts (CaseState.Active(CaseStatus.Opened, progress)) (Some(actor, true)) due
+
+                for view, progress, due in
+                    [
+                        CaseView.Undecided, CaseProgress.Undecided, None
+                        CaseView.DecidedUnpaid, CaseProgress.Decided, None
+                        CaseView.Overdue, CaseProgress.Paid, Some(date "2026-11-03")
+                        CaseView.DueToday, CaseProgress.Decided, Some(date "2026-11-04")
+                        CaseView.NoNextAction, CaseProgress.Paid, None
+                    ] do
+                    Expect.isTrue
+                        (CaseView.matches today actor view (opened progress due))
+                        "Positive boundary"
+
+                    Expect.isFalse
+                        (CaseView.matches
+                            today
+                            actor
+                            view
+                            (facts (CaseState.Active(CaseStatus.Closed, progress)) None due))
+                        "Closing excludes active work views"
+
+                Expect.isFalse
+                    (CaseView.matches
+                        today
+                        actor
+                        CaseView.DecidedUnpaid
+                        (opened CaseProgress.Paid None))
+                    "Paid is not decided-unpaid"
+
+                Expect.isFalse
+                    (CaseView.matches
+                        today
+                        actor
+                        CaseView.Overdue
+                        (opened CaseProgress.Decided (Some(date "2026-11-04"))))
+                    "Today is not overdue"
+
+                for state in states do
+                    let current = facts state None None
+
+                    let closed =
+                        match state with
+                        | CaseState.Active(CaseStatus.Closed, _)
+                        | CaseState.Voided(CaseStatus.Closed, _) -> true
+                        | _ -> false
+
+                    let voided =
+                        match state with
+                        | CaseState.Voided _ -> true
+                        | _ -> false
+
+                    Expect.equal
+                        (CaseView.matches today actor CaseView.Closed current)
+                        closed
+                        "Closed includes readable retained closed status"
+
+                    Expect.equal
+                        (CaseView.matches today actor CaseView.Voided current)
+                        voided
+                        "Voided includes retained status"
+
+                    Expect.isTrue
+                        (CaseView.matches today actor CaseView.All current)
+                        "ALL adds no restriction"
+
+                    Expect.equal
+                        (CaseView.matches today actor CaseView.NeedsAttention current)
+                        (CaseAttention.at today current |> List.isEmpty |> not)
+                        "Attention union contributes one case")
+            testCase "actionable reminder views require pending and active open parent" (fun () ->
+                for parentState in states do
+                    for reminderState in
+                        [ ReminderState.Pending; ReminderState.Completed; ReminderState.Cancelled ] do
+                        let parent = facts parentState (Some(actor, true)) None
+                        let current = reminder reminderState "2026-11-03"
+
+                        let actionable =
+                            match parentState with
+                            | CaseState.Active(CaseStatus.Opened, _) ->
+                                reminderState = ReminderState.Pending
+                            | _ -> false
+
+                        for view in
+                            [ ReminderView.Pending; ReminderView.Mine; ReminderView.Overdue ] do
+                            Expect.equal
+                                (ReminderView.matches today actor view parent current)
+                                actionable
+                                "Queue predicates share the active-open pending guard"
+
+                        for view in [ ReminderView.Today; ReminderView.Upcoming ] do
+                            Expect.isFalse
+                                (ReminderView.matches today actor view parent current)
+                                "Overdue remains disjoint from today/upcoming"
+
+                        Expect.equal
+                            (ReminderView.matches today actor ReminderView.Completed parent current)
+                            (parentState <> CaseState.Erased
+                             && reminderState = ReminderState.Completed)
+                            "Completed includes readable inactive parents"
+
+                        Expect.equal
+                            (ReminderView.matches today actor ReminderView.Cancelled parent current)
+                            (parentState <> CaseState.Erased
+                             && reminderState = ReminderState.Cancelled)
+                            "Cancelled includes readable inactive parents")
+            testCase
+                "reminder MINE uses current responsibility and date equality is exact"
+                (fun () ->
+                    let parent =
+                        facts
+                            (CaseState.Active(CaseStatus.Opened, CaseProgress.Undecided))
+                            None
+                            None
+
+                    Expect.isFalse
+                        (ReminderView.matches
+                            today
+                            actor
+                            ReminderView.Mine
+                            parent
+                            (reminder ReminderState.Pending "2026-11-04"))
+                        "Unassigned work is not mine"
+
+                    Expect.isTrue
+                        (ReminderView.matches
+                            today
+                            actor
+                            ReminderView.Today
+                            parent
+                            (reminder ReminderState.Pending "2026-11-04"))
+                        "Today uses the snapshot business date"
+
+                    Expect.isTrue
+                        (ReminderView.matches
+                            today
+                            actor
+                            ReminderView.Upcoming
+                            parent
+                            (reminder ReminderState.Pending "2026-11-05"))
+                        "Tomorrow is upcoming")
+            testCase "view survives admission alongside explicit filters" (fun () ->
+                let authored =
+                    { CaseListFilter.empty<string> with
+                        View = Some CaseView.Mine
+                        Lifecycles = [ Lifecycle.Active ]
+                        Statuses = [ CaseStatus.Closed ]
+                        Assignment = Some CaseAssignment.Unassigned
+                    }
+
+                let admitted =
+                    CaseListFilter.admit authored
+                    |> Result.defaultWith (fun _ -> failtest "Filter admits")
+
+                Expect.equal admitted.View (Some CaseView.Mine) "Admission preserves view"
+
+                Expect.equal
+                    admitted.Statuses
+                    [ CaseStatus.Closed ]
+                    "View does not replace explicit status"
+
+                Expect.equal
+                    admitted.Assignment
+                    (Some CaseAssignment.Unassigned)
+                    "Contradictory intersections remain explicit"
+
+                Expect.equal
+                    (CaseListFilter.empty<string>).View
+                    None
+                    "Omitted view adds no restriction")
+        ]
