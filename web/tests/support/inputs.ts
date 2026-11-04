@@ -3,6 +3,7 @@ import type {
   ActorContext,
   ActorRef,
   CaseView,
+  ListedCaseFields,
   Principal,
   Registration,
   Decision,
@@ -142,24 +143,19 @@ export const principal = (changes: Partial<Principal> = {}): Principal => ({
 
 // Response seeds are inputs to browser behavior, not generated expectations for product code.
 
-type LiveSummary = Extract<Summary["state"], { kind: "ACTIVE" | "VOIDED" }>;
 type SummarySeed = Partial<Omit<Summary, "state">> & {
-  state?: { kind: "ERASED" } | (Pick<LiveSummary, "kind" | "status"> & Partial<LiveSummary>);
+  state?: { kind: "ERASED" } | { kind: "ACTIVE" | "VOIDED"; fields?: ListedCaseFields };
+};
+export const listedFieldsInput: ListedCaseFields = {
+  claimantName: "Synthetic claimant",
+  insurerName: "Synthetic insurer",
+  claimedAmount: "12.34",
+  claimedCurrency: "EUR",
+  payableAmount: null,
+  payableCurrency: null,
 };
 export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
-  const state = changes.state ?? { kind: "ACTIVE", status: "OPENED" };
-  const live: Omit<LiveSummary, "kind" | "status"> = {
-    work: {
-      ...unscheduledWork,
-      due: state.kind === "ACTIVE" && state.status === "OPENED" ? "UNSCHEDULED" : "INACTIVE",
-    },
-    claimantName: "Synthetic claimant",
-    insurerName: "Synthetic insurer",
-    claimed: { amount: "12.34", currency: "EUR" },
-    payable: null,
-    progress: "UNDECIDED",
-    incidentNotificationDate: "2026-09-02",
-  };
+  const state = changes.state ?? { kind: "ACTIVE" };
   return {
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: "SYNTHETIC-001",
@@ -171,7 +167,10 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     responsible: null,
     pendingReminders: 0,
     ...changes,
-    state: state.kind === "ERASED" ? state : { ...live, ...state },
+    state:
+      state.kind === "ERASED"
+        ? state
+        : { kind: state.kind, fields: state.fields ?? listedFieldsInput },
   };
 };
 

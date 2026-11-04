@@ -30,7 +30,7 @@ it.each([
     const value = caseSummaryInput({
       caseId: current.caseId,
       caseReference: current.caseReference,
-      state: { kind: "ACTIVE", status: "OPENED" },
+      state: {kind: "ACTIVE"},
     });
     const page = (items: (typeof value)[]) =>
       ({

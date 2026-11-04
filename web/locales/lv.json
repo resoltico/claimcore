@@ -19,7 +19,6 @@
   "ui.actorRequestRetained": "Pašreizējam pieprasījumam ir cits mērķis. Turpiniet to vai atmetiet pirms darbības sākšanas šim dalībniekam.",
   "ui.actors": "Dalībnieki un pilnvaras",
   "ui.after": "Pēc: {value}",
-  "ui.age": "Vecums",
   "ui.amountEntryHint": "Varat izmantot izvēlēto skaitļu formātu. Atļautas ne vairāk kā {maximumFractionDigits} zīmes aiz komata; nerakstiet plusa vai mīnusa zīmi un liekas nulles sākumā.",
   "ui.anyFilter": "Jebkurš",
   "ui.appearance": "Izskats",

@@ -1,13 +1,47 @@
+import { listedCaseFieldNames } from "@contracts/client";
+import { productMetadata } from "../../protocol/productMetadata";
 import { ActorIdentity } from "../../components/ActorIdentity";
 import type { CaseSelector } from "@contracts/client";
 import type { CaseSummary } from "../../api/service";
-import { CharacterWarning } from "../../components/BusinessValue";
+import { BusinessValue, CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 import { changedTime } from "../../presentation/changedTime";
 import { casePath } from "../../routing/routes";
 import { followLink } from "../../routing/followLink";
 import { CaseHeadline } from "../../components/CaseHeadline";
 import { CaseAttention } from "../../components/CaseAttention";
+type LiveSummary = Exclude<CaseSummary["state"], { kind: "ERASED" }>;
+type ListedName = (typeof listedCaseFieldNames)[number];
+const listedNames = new Set<string>(listedCaseFieldNames);
+const primaryColumns = new Set<string>([
+  "claimantName",
+  "insurerName",
+  "claimedAmount",
+  "claimedCurrency",
+  "payableAmount",
+  "payableCurrency",
+]);
+const isListedName = (name: string): name is ListedName => listedNames.has(name);
+const extraFields = productMetadata.catalog.fields.filter(
+  (field) => isListedName(field.name) && !primaryColumns.has(field.name),
+);
+const AdditionalFields = ({ live }: { live: LiveSummary | null }) => {
+  const p = usePresentation();
+  return live === null || extraFields.length === 0 ? null : (
+    <dl className="worklist-extra-fields">
+      {extraFields.map((field) =>
+        isListedName(field.name) ? (
+          <div key={field.name}>
+            <dt>{p.fieldLabel(field.name)}</dt>
+            <dd>
+              <BusinessValue field={field} value={live.fields[field.name]} />
+            </dd>
+          </div>
+        ) : null,
+      )}
+    </dl>
+  );
+};
 const RowReference = ({ value }: { value: string }) => {
   const tail = Math.min(9, Math.floor(value.length / 2));
   return (
@@ -26,15 +60,14 @@ const Changed = ({ value }: { value: string }) => {
     </time>
   );
 };
-type LiveSummary = Exclude<CaseSummary["state"], { kind: "ERASED" }>;
 const Parties = ({ live }: { live: LiveSummary | null }) =>
   live === null ? null : (
     <span className="worklist-person">
-      <bdi>{live.claimantName}</bdi>
-      <CharacterWarning value={live.claimantName} />
+      <bdi>{live.fields.claimantName}</bdi>
+      <CharacterWarning value={live.fields.claimantName} />
       <small>
-        <bdi>{live.insurerName}</bdi>
-        <CharacterWarning value={live.insurerName} />
+        <bdi>{live.fields.insurerName}</bdi>
+        <CharacterWarning value={live.fields.insurerName} />
       </small>
     </span>
   );
@@ -46,13 +79,13 @@ const Money = ({ live }: { live: LiveSummary | null }) => {
   return (
     <>
       <span className="worklist-cell-label">{p.fieldLabel("claimedAmount")}</span>
-      <bdi dir="ltr">{p.money(live.claimed.amount, live.claimed.currency)}</bdi>
+      <bdi dir="ltr">{p.money(live.fields.claimedAmount, live.fields.claimedCurrency)}</bdi>
       <small className="worklist-payable">
         <span>{p.fieldLabel("payableAmount")}: </span>
-        {live.payable === null ? (
+        {live.fields.payableAmount === null ? (
           p.text("ui.notRecorded")
         ) : (
-          <bdi dir="ltr">{p.money(live.payable.amount, live.payable.currency)}</bdi>
+          <bdi dir="ltr">{p.money(live.fields.payableAmount, live.fields.payableCurrency)}</bdi>
         )}
       </small>
     </>
@@ -61,16 +94,13 @@ const Money = ({ live }: { live: LiveSummary | null }) => {
 export const CaseRow = ({
   value,
   onSelect,
-  businessDate,
 }: {
   value: CaseSummary;
   onSelect: (target: CaseSelector) => void;
-  businessDate: string;
 }) => {
   const p = usePresentation();
   const { state } = value;
   const live = state.kind === "ERASED" ? null : state;
-  const age = p.age(live?.incidentNotificationDate ?? null, businessDate);
   return (
     <tr className={`worklist-row ${state.kind === "ERASED" ? "erased-row" : ""}`}>
       <td className="worklist-reference">
@@ -89,6 +119,7 @@ export const CaseRow = ({
           <RowReference value={value.caseReference} />
         </a>
         <Parties live={live} />
+        <AdditionalFields live={live} />
       </td>
       <td className="worklist-badges">
         <CaseHeadline value={value.headline} />
@@ -133,10 +164,6 @@ export const CaseRow = ({
       <td className="worklist-changed">
         <span className="worklist-cell-label">{p.text("label.changedAt")}</span>
         <Changed value={value.changedAt} />
-        <small>
-          <span>{p.text("ui.age")}: </span>
-          <span>{age}</span>
-        </small>
       </td>
     </tr>
   );

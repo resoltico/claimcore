@@ -1,3 +1,4 @@
+import { productMetadata } from "../protocol/productMetadata";
 import { isAmountText, isGregorianDate } from "../protocol/scalars";
 import type { FieldCatalogEntry } from "../api/service";
 import type { DisplayLocale } from "./preferences";
@@ -12,18 +13,14 @@ export const exactInteger = (value: string, locale: DisplayLocale): string => {
   }
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(value));
 };
-const currencies = new Set(Intl.supportedValuesOf("currency"));
+const currencyMinorUnits = new Map(
+  productMetadata.catalog.moneyMinorUnits.map(({ currency, minorUnits }) => [currency, minorUnits]),
+);
 const canonicalTotal = /^(0|[1-9][0-9]{0,39})(\.[0-9]{1,4})?$/u;
 const fractionDigits = (currency: string | undefined, own: number): number =>
-  currency !== undefined && currencies.has(currency)
-    ? Math.max(
-        own,
-        new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions()
-          .maximumFractionDigits ?? 0,
-      )
-    : own;
+  Math.max(own, currency === undefined ? 0 : (currencyMinorUnits.get(currency) ?? 0));
 
-/** Integer and fractional text stay exact; Intl supplies grouping, digits and currency padding only. */
+/** Integer and fractional text stay exact; Intl supplies grouping and digits; currency padding comes from the core catalog. */
 const decimalText = (value: string, locale: DisplayLocale, currency?: string): string => {
   const [whole = "", own = ""] = value.split(".");
   const fraction = own.padEnd(fractionDigits(currency, own.length), "0");

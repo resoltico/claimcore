@@ -37,7 +37,7 @@ const queueListPages = () => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -51,10 +51,11 @@ const queueListPages = () => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "CLOSED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-2",
           revision: 2,
+          headline: "CLOSED",
         }),
       ],
       nextCursor: null,
@@ -232,7 +233,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -246,7 +247,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,

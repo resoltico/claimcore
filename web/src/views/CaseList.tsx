@@ -2,7 +2,7 @@ import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import "./worklist/worklist.css";
 import { useCallback, useEffect, useMemo, useState } from "react";
-import type { ActorContext, CaseSelector, CaseRef } from "@contracts/client";
+import type { CaseSelector, CaseRef } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { SummaryBand } from "./worklist/SummaryBand";
 import { PageStatus } from "../components/PageStatus";
@@ -149,15 +149,7 @@ const ExactResult = ({
     </section>
   );
 };
-const WorklistResults = ({
-  page,
-  onSelect,
-  businessDate,
-}: {
-  page: Page;
-  onSelect: Props["onSelect"];
-  businessDate: string;
-}) => {
+const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSelect"] }) => {
   const p = usePresentation();
   const exact = page.page?.exactReference ?? null;
   return (
@@ -167,12 +159,7 @@ const WorklistResults = ({
         <WorklistColumns />
         <tbody className="case-list worklist-rows">
           {page.items.map((value) => (
-            <CaseRow
-              key={value.caseReference}
-              value={value}
-              onSelect={onSelect}
-              businessDate={businessDate}
-            />
+            <CaseRow key={value.caseReference} value={value} onSelect={onSelect} />
           ))}
         </tbody>
       </table>
@@ -190,7 +177,7 @@ const WorklistResults = ({
     </>
   );
 };
-const ReadyCaseList = ({ onSelect, context }: Props & { context: ActorContext }) => {
+const ReadyCaseList = ({ onSelect }: Props) => {
   const p = usePresentation();
   const page = useWorklist();
   const views = useWorkspaceViews().cases;
@@ -245,11 +232,7 @@ const ReadyCaseList = ({ onSelect, context }: Props & { context: ActorContext })
       >
         <SummaryBand filter={page.query} />
         <WorklistLoading page={page} />
-        <WorklistResults
-          page={page}
-          onSelect={onSelect}
-          businessDate={page.page?.basis.businessDate ?? context.businessDate}
-        />
+        <WorklistResults page={page} onSelect={onSelect} />
         <WorklistFeedback page={page} />
       </ViewTabs>
     </section>
@@ -287,5 +270,5 @@ export const CaseList = (props: Props) => {
     }
     return <WorkspaceViewsStatus area="cases" />;
   }
-  return <ReadyCaseList {...props} context={context} />;
+  return <ReadyCaseList {...props} />;
 };

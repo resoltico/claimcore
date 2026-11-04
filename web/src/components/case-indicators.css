@@ -23,3 +23,13 @@
   color: var(--success-text);
   background: var(--success-bg);
 }
+.worklist-extra-fields {
+  margin-block: var(--space-2) 0;
+  font-size: var(--text-xs);
+}
+.worklist-extra-fields dt {
+  color: var(--text-secondary);
+}
+.worklist-extra-fields dd {
+  margin-inline: 0;
+}

@@ -19,7 +19,6 @@
   "ui.actorRequestRetained": "The current request has a different target. Continue it or discard it before starting an action for this actor.",
   "ui.actors": "Actors and grants",
   "ui.after": "After: {value}",
-  "ui.age": "Age",
   "ui.amountEntryHint": "You can use the selected number format. Use up to {maximumFractionDigits} decimal places, without signs or redundant leading zeros.",
   "ui.anyFilter": "Any",
   "ui.appearance": "Appearance",

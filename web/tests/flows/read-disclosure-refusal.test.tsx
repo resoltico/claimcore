@@ -31,7 +31,7 @@ const initial: ApiResult<ListResponse> = {
         offers: [],
         items: [
           caseSummaryInput({
-            state: { kind: "ACTIVE", status: "OPENED" },
+            state: {kind: "ACTIVE"},
             caseId: "20000000-0000-4000-8000-000000000001",
             caseReference: "SYNTHETIC-PRIVATE",
             revision: 1,

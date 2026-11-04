@@ -10,12 +10,12 @@ it("makes the whole row one native keyboard link with full reference and no copy
   const reference = "A-VERY-LONG-REFERENCE-ENDING-1234";
   const value = caseSummaryInput({
     caseReference: reference,
-    state: { kind: "ACTIVE", status: "OPENED", incidentNotificationDate: "2026-09-02" },
+    state: { kind: "ACTIVE" },
   });
   render(
     <table>
       <tbody>
-        <CaseRow value={value} businessDate="2026-09-09" onSelect={select} />
+        <CaseRow value={value} onSelect={select} />
       </tbody>
     </table>,
   );
@@ -25,7 +25,6 @@ it("makes the whole row one native keyboard link with full reference and no copy
   expect(link).toHaveAttribute("title", reference);
   expect(link.textContent).toBe(reference);
   expect(link.querySelector(".reference-suffix")).toHaveTextContent("DING-1234");
-  expect(screen.getByText("7 days")).toBeVisible();
   await user.tab();
   expect(link).toHaveFocus();
   await user.keyboard("{Enter}");
@@ -40,14 +39,14 @@ it("makes the whole row one native keyboard link with full reference and no copy
 });
 it("renders core headline and ordered attention without deriving them from state", () => {
   const value = caseSummaryInput({
-    state: { kind: "VOIDED", status: "CLOSED", progress: "DECIDED" },
+    state: { kind: "VOIDED" },
     headline: "PAID",
     attention: ["UNASSIGNED", "OVERDUE"],
   });
   const view = render(
     <table>
       <tbody>
-        <CaseRow value={value} businessDate="2026-09-09" onSelect={vi.fn()} />
+        <CaseRow value={value} onSelect={vi.fn()} />
       </tbody>
     </table>,
   );
@@ -78,7 +77,7 @@ it("renders the supplied scheduling projection rather than reconstructing work s
   const view = render(
     <table>
       <tbody>
-        <CaseRow value={value} businessDate="2026-11-04" onSelect={vi.fn()} />
+        <CaseRow value={value} onSelect={vi.fn()} />
       </tbody>
     </table>,
   );
