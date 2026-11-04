@@ -203,7 +203,10 @@ module internal Queries =
         let principal = services.Principal
 
         let active (requester: Actor) : ActorContext =
+            let _, issuer, _ = PrincipalKey.parts principal
+
             {
+                Issuer = issuer
                 Self = Actor.currentReference requester
                 Maintenance = maintenance
                 InstallationId = services.InstallationId

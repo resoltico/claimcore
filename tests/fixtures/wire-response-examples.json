@@ -125,7 +125,9 @@
                 },
                 "principalKind": "HUMAN",
                 "availability": "AVAILABLE"
-              }
+              },
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "issuer": "https://issuer.example/"
             }
           }
         }
@@ -612,7 +614,8 @@
                 "context": {
                   "productVersion": "x",
                   "businessDate": "2026-01-01",
-                  "timeZone": "x"
+                  "timeZone": "x",
+                  "observedAt": "2026-01-01T12:00:00.000000Z"
                 }
               }
             }
@@ -678,6 +681,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -777,6 +785,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -840,6 +853,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -950,6 +968,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -1035,6 +1058,11 @@
                   }
                 }
               ]
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -1083,6 +1111,11 @@
                   }
                 }
               ]
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -1359,7 +1392,9 @@
                 },
                 "principalKind": "HUMAN",
                 "availability": "AVAILABLE"
-              }
+              },
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "issuer": "https://issuer.example/"
             }
           }
         }
@@ -1937,7 +1972,8 @@
                 "context": {
                   "productVersion": "x",
                   "businessDate": "2026-01-01",
-                  "timeZone": "x"
+                  "timeZone": "x",
+                  "observedAt": "2026-01-01T12:00:00.000000Z"
                 }
               }
             }
@@ -2003,6 +2039,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -2070,6 +2111,11 @@
                       }
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
+                  },
+                  "basis": {
+                    "observedAt": "2026-01-01T00:00:00.000000Z",
+                    "businessDate": "2026-01-01",
+                    "timeZone": "Etc/UTC"
                   }
                 },
                 "difference": null
@@ -2113,6 +2159,11 @@
                 "kind": "WITHHELD"
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -2154,6 +2205,11 @@
                       "kind": "WITHHELD"
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
+                  },
+                  "basis": {
+                    "observedAt": "2026-01-01T00:00:00.000000Z",
+                    "businessDate": "2026-01-01",
+                    "timeZone": "Etc/UTC"
                   }
                 },
                 "difference": null
@@ -2197,6 +2253,11 @@
                 "kind": "ERASED"
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -2238,6 +2299,11 @@
                       "kind": "ERASED"
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
+                  },
+                  "basis": {
+                    "observedAt": "2026-01-01T00:00:00.000000Z",
+                    "businessDate": "2026-01-01",
+                    "timeZone": "Etc/UTC"
                   }
                 },
                 "difference": null
@@ -3340,6 +3406,11 @@
                 "kind": "WITHHELD"
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -3422,6 +3493,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -3902,6 +3978,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -4461,6 +4542,11 @@
                       }
                     },
                     "caseId": "10000000-0000-4000-8000-000000000001"
+                  },
+                  "basis": {
+                    "observedAt": "2026-01-01T00:00:00.000000Z",
+                    "businessDate": "2026-01-01",
+                    "timeZone": "Etc/UTC"
                   }
                 },
                 "difference": {
@@ -4708,6 +4794,11 @@
                 }
               },
               "caseId": "10000000-0000-4000-8000-000000000001"
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         },
@@ -5211,7 +5302,9 @@
                 },
                 "principalKind": "HUMAN",
                 "availability": "AVAILABLE"
-              }
+              },
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "issuer": "https://issuer.example/"
             }
           }
         }
@@ -5500,6 +5593,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5537,6 +5635,11 @@
               "snapshot": {
                 "kind": "WITHHELD"
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5574,6 +5677,11 @@
               "snapshot": {
                 "kind": "ERASED"
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5611,7 +5719,8 @@
                 "context": {
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
-                  "businessDate": "2026-11-02"
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
                 },
                 "parent": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
@@ -5696,6 +5805,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5747,6 +5861,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5798,6 +5917,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5849,6 +5973,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5900,6 +6029,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -5966,6 +6100,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -6009,6 +6148,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -6052,6 +6196,11 @@
                   }
                 }
               }
+            },
+            "basis": {
+              "observedAt": "2026-11-02T04:00:00.000000Z",
+              "businessDate": "2026-11-02",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -6086,7 +6235,8 @@
                 "context": {
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
-                  "businessDate": "2026-11-02"
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
                 },
                 "parent": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
@@ -6161,7 +6311,8 @@
                 "context": {
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
-                  "businessDate": "2026-11-02"
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
                 },
                 "parent": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
@@ -6244,7 +6395,8 @@
                 "context": {
                   "productVersion": "synthetic",
                   "timeZone": "Europe/Riga",
-                  "businessDate": "2026-11-02"
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
                 },
                 "parent": {
                   "caseId": "20000000-0000-4000-8000-000000000001",
@@ -7096,6 +7248,11 @@
                   }
                 }
               ]
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }
@@ -12094,7 +12251,9 @@
                 },
                 "principalKind": "HUMAN",
                 "availability": "AVAILABLE"
-              }
+              },
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "issuer": "https://issuer.example/"
             }
           }
         }
@@ -13400,6 +13559,11 @@
                   }
                 }
               ]
+            },
+            "basis": {
+              "observedAt": "2026-01-01T00:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
             }
           }
         }

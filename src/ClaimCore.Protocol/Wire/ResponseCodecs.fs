@@ -380,9 +380,11 @@ module ResponseCodecs =
                 offers
                 (identity, assigned)
                 maintenance
-                self ->
+                self
+                issuer ->
                 {
-                    ActorContext.InstallationId = installation
+                    ActorContext.Issuer = issuer
+                    InstallationId = installation
                     Self = self
                     Maintenance = maintenance
                     ActorId = identity
@@ -404,6 +406,13 @@ module ResponseCodecs =
         |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
         |> field "maintenance" _.Maintenance registerMaintenance
         |> field "self" _.Self ActorCodecs.actorRef
+        |> field
+            "issuer"
+            _.Issuer
+            (boundedText 1 PrincipalKey.MaximumIssuerCharacters
+             |> constrained
+                 (Schema.String(None, None, Some 1, Some PrincipalKey.MaximumIssuerCharacters))
+                 PrincipalKey.isIssuer)
 
     let actorContext = actorContextFields |> build |> named "ActorContext"
 
@@ -468,12 +477,13 @@ module ResponseCodecs =
                     (function
                     | RequesterState.NotRegistered value -> Some value
                     | _ -> None)
-                    (record (fun issuer subject claims ->
+                    ((record (fun issuer subject claims ->
                         {
                             UnregisteredRequester.Issuer = issuer
                             Subject = subject
                             Claims = claims
                         })
+                     : Fields<UnregisteredRequester, _>)
                      |> field "issuer" _.Issuer (boundedText 1 PrincipalKey.MaximumIssuerCharacters)
                      |> field
                          "subject"

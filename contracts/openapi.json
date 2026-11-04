@@ -12956,6 +12956,11 @@
           },
           "self": {
             "$ref": "#/components/schemas/ActorRef"
+          },
+          "issuer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
           }
         },
         "required": [
@@ -12971,7 +12976,8 @@
           "actorId",
           "hasScopedCases",
           "maintenance",
-          "self"
+          "self",
+          "issuer"
         ]
       },
       "RequesterState.DISABLED": {
