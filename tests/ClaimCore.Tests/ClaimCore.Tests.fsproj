@@ -65,6 +65,7 @@
     <Compile Include="Domain/GroupValuesTests.fs" />
     <Compile Include="Domain/TypedBusinessApiTests.fs" />
     <Compile Include="Domain/WorklistFilterTests.fs" />
+    <Compile Include="Domain/WorklistSemanticsTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/CaseWorkAndUpdateTests.fs" />

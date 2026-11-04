@@ -21,6 +21,7 @@
     <Compile Include="CaseActs.fs" />
     <Compile Include="AuthorityActs.fs" />
     <Compile Include="Reads.fs" />
+    <Compile Include="WorklistSemantics.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
