@@ -347,16 +347,21 @@ module ResponseCodecs =
             ]
 
     let private runtimeFields =
-        (record (fun version date zone ->
+        (record (fun version date zone observed ->
             {
-                ProductVersion = version
-                EffectiveBusinessDate = date
-                TimeZoneId = zone
+                RuntimeContext.ProductVersion = version
+                Basis =
+                    {
+                        ObservedAt = observed
+                        BusinessDate = date
+                        TimeZoneId = zone
+                    }
             })
         : Fields<RuntimeContext, _>)
         |> field "productVersion" _.ProductVersion nonempty
-        |> field "businessDate" _.EffectiveBusinessDate dateValue
-        |> field "timeZone" _.TimeZoneId nonempty
+        |> field "businessDate" (fun value -> value.Basis.BusinessDate) dateValue
+        |> field "timeZone" (fun value -> value.Basis.TimeZoneId) nonempty
+        |> field "observedAt" (fun value -> value.Basis.ObservedAt) instant
 
     let runtimeContext = runtimeFields |> build |> named "RuntimeContext"
 

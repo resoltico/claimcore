@@ -29,8 +29,12 @@ let private reviewed frame =
                 Context =
                     {
                         ProductVersion = "synthetic"
-                        EffectiveBusinessDate = DateOnly(2026, 10, 1)
-                        TimeZoneId = "Etc/UTC"
+                        Basis =
+                            {
+                                ObservedAt = DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero)
+                                BusinessDate = DateOnly(2026, 10, 1)
+                                TimeZoneId = "Etc/UTC"
+                            }
                     }
             }
 

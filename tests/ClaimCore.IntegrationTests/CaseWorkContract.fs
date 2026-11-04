@@ -134,7 +134,7 @@ let internal assignmentAndDisclosure fixture =
         let! readerCase = get (core fixture reader) caseId
         Expect.isFalse (read readerCase).Mine "A scoped read grant is not responsibility"
         let! context = Service.context owner () token
-        let today = (Inputs.activeContext (read context)).Runtime.EffectiveBusinessDate
+        let today = (Inputs.activeContext (read context)).Runtime.Basis.BusinessDate
         let tomorrow = CalendarDate.ofDate (today.AddDays 1) |> CalendarDate.format
 
         let update: WorkOperationRequest =
@@ -455,7 +455,7 @@ let internal dueFiltersAndOrder fixture =
         let! owner = caseWorker fixture
         let! context = Service.context owner () token
         let context = Inputs.activeContext (read context)
-        let today = context.Runtime.EffectiveBusinessDate
+        let today = context.Runtime.Basis.BusinessDate
 
         let date offset =
             today.AddDays offset |> CalendarDate.ofDate |> CalendarDate.format
@@ -675,8 +675,7 @@ let internal reminderTiming fixture =
         acceptedAuthority stewardship
         let! context = Service.context initialOwner () token
 
-        let initialDate =
-            (Inputs.activeContext (read context)).Runtime.EffectiveBusinessDate
+        let initialDate = (Inputs.activeContext (read context)).Runtime.Basis.BusinessDate
 
         let mutable businessDate = initialDate
 

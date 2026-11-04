@@ -12,7 +12,7 @@ module internal ViewQueries =
             | Some visibility, Some requester ->
                 Ok
                     {
-                        CaseSelection.DateBasis = CaseWorkReads.basis services tx.ObservedAt
+                        CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
                         Visibility = visibility
                         ActorId = requester.ActorId
                         ReadRoles = Authority.readRoles services.Principal

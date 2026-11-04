@@ -69,8 +69,6 @@ module Service =
         }
 
     let private advisory (services: ServiceContext) instant act before after =
-        let productVersion = services.ProductVersion
-        let calendar = services.Calendar
         let before = before |> Option.map Case.snapshot
         let after = Case.snapshot after
 
@@ -78,12 +76,7 @@ module Service =
             Before = before
             Proposed = after
             Changes = CaseChanges.review act before after
-            Context =
-                {
-                    ProductVersion = productVersion
-                    EffectiveBusinessDate = calendar.DateAt instant
-                    TimeZoneId = calendar.TimeZoneId
-                }
+            Context = ServiceContext.runtime services instant
         }
 
     let private review

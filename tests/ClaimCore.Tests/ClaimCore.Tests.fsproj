@@ -50,6 +50,7 @@
     <Compile Include="Application/ProjectionIndexChecks.fs" />
     <Compile Include="Application/WorkProjectionTests.fs" />
     <Compile Include="Application/AssignmentReferenceTests.fs" />
+    <Compile Include="Application/ContextObservationTests.fs" />
     <Compile Include="Application/VerificationFoldTests.fs" />
     <Compile Include="Domain/RepresentationTests.fs" />
     <Compile Include="Domain/OutcomeTests.fs" />

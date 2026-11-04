@@ -18,13 +18,6 @@ module internal CaseWorkReads =
             NextPendingDue = work.FollowUp
         }
 
-    let basis (services: ServiceContext) observed =
-        {
-            ObservedAt = observed
-            BusinessDate = services.Calendar.DateAt observed
-            TimeZoneId = services.Calendar.TimeZoneId
-        }
-
     let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =
         match summary with
         | None ->

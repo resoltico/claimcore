@@ -106,7 +106,7 @@ let private qualify pair =
                                     {
                                         Action = "Check supplied evidence"
                                         Due =
-                                            context.Runtime.EffectiveBusinessDate.AddDays(offset)
+                                            context.Runtime.Basis.BusinessDate.AddDays(offset)
                                             |> CalendarDate.ofDate
                                             |> CalendarDate.format
                                     }

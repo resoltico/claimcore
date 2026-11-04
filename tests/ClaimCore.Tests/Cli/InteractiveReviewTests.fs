@@ -74,8 +74,12 @@ let private review =
             Context =
                 {
                     ProductVersion = "synthetic"
-                    EffectiveBusinessDate = DateOnly(2026, 9, 7)
-                    TimeZoneId = "Etc/UTC"
+                    Basis =
+                        {
+                            ObservedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
+                            BusinessDate = DateOnly(2026, 9, 7)
+                            TimeZoneId = "Etc/UTC"
+                        }
                 }
         }
 

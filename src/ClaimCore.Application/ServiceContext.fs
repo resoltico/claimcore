@@ -17,3 +17,18 @@ type ServiceContext =
             Claims: RequesterClaims
             Principal: PrincipalKey
         }
+
+/// One snapshot instant and the installation calendar own all read/review date metadata.
+module internal ServiceContext =
+    let basis (services: ServiceContext) observed =
+        {
+            WorkDateBasis.ObservedAt = observed
+            BusinessDate = services.Calendar.DateAt observed
+            TimeZoneId = services.Calendar.TimeZoneId
+        }
+
+    let runtime services observed =
+        {
+            RuntimeContext.ProductVersion = services.ProductVersion
+            Basis = basis services observed
+        }

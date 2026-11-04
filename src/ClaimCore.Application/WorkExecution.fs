@@ -159,13 +159,6 @@ module internal WorkExecution =
         | Work(operation, _, _, _)
         | Reminder(operation, _, _) -> operation
 
-    let private runtime (services: ServiceContext) instant =
-        {
-            ProductVersion = services.ProductVersion
-            EffectiveBusinessDate = services.Calendar.DateAt instant
-            TimeZoneId = services.Calendar.TimeZoneId
-        }
-
     let private authorized (services: ServiceContext) (view: CaseFacts) =
         match view.Case with
         | Some parent when
@@ -352,7 +345,10 @@ module internal WorkExecution =
                                                         Parent = parent.Snapshot
                                                         Before = before
                                                         Proposed = after
-                                                        Context = runtime services view.ObservedAt
+                                                        Context =
+                                                            ServiceContext.runtime
+                                                                services
+                                                                view.ObservedAt
                                                     }
                                         }
                 | _ -> return Verdict.Fail CoreFault.StoreIntegrityError
@@ -521,7 +517,8 @@ module internal WorkExecution =
                                             CaseId = parent.CaseId
                                             Before = before
                                             Effects = effects
-                                            Context = runtime services view.ObservedAt
+                                            Context =
+                                                ServiceContext.runtime services view.ObservedAt
                                         }
                             }
             | other ->

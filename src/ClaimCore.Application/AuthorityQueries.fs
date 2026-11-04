@@ -46,7 +46,7 @@ module internal AuthorityQueries =
 
                 let selection =
                     {
-                        CaseSelection.DateBasis = CaseWorkReads.basis services tx.ObservedAt
+                        CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
                         Visibility = visibility
                         ActorId = requester.ActorId
                         ReadRoles = Authority.readRoles services.Principal

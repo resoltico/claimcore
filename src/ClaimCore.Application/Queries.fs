@@ -88,7 +88,7 @@ module internal Queries =
                                             let! work =
                                                 CaseWorkReads.view
                                                     tx
-                                                    (CaseWorkReads.basis services tx.ObservedAt)
+                                                    (ServiceContext.basis services tx.ObservedAt)
                                                     record
 
                                             let! stages = stageDisplay tx record
@@ -200,8 +200,6 @@ module internal Queries =
         (maintenance: RegisterMaintenance)
         (actor: AuthorityView)
         =
-        let productVersion = services.ProductVersion
-        let calendar = services.Calendar
         let principal = services.Principal
 
         let active (requester: Actor) : ActorContext =
@@ -210,12 +208,7 @@ module internal Queries =
                 Maintenance = maintenance
                 InstallationId = services.InstallationId
                 ActorId = requester.ActorId
-                Runtime =
-                    {
-                        ProductVersion = productVersion
-                        EffectiveBusinessDate = calendar.DateAt observedAt
-                        TimeZoneId = calendar.TimeZoneId
-                    }
+                Runtime = ServiceContext.runtime services observedAt
                 HasScopedCases = actor.HasScopedCases
                 View = Advice.views principal actor
                 Offers =
@@ -253,13 +246,15 @@ module internal Queries =
                 AccountState.classify requester.Enabled actor.HasAssignedRoles =
                     AccountState.NoRoles
                 ->
+                let basis = ServiceContext.basis services observedAt
+
                 Ok(
                     RequesterState.NoRoles
                         {
                             Self = Actor.currentReference requester
                             InstallationId = services.InstallationId
-                            BusinessDate = calendar.DateAt observedAt
-                            TimeZone = calendar.TimeZoneId
+                            BusinessDate = basis.BusinessDate
+                            TimeZone = basis.TimeZoneId
                         }
                 )
             | Some requester -> Ok(RequesterState.Active(active requester))
@@ -437,7 +432,7 @@ module internal Queries =
                                             selectCases
                                                 services.InstallationId
                                                 principal
-                                                (CaseWorkReads.basis services tx.ObservedAt)
+                                                (ServiceContext.basis services tx.ObservedAt)
                                                 request
                                                 actor
                                         with
@@ -516,7 +511,7 @@ module internal Queries =
                                         selectCases
                                             services.InstallationId
                                             services.Principal
-                                            (CaseWorkReads.basis services tx.ObservedAt)
+                                            (ServiceContext.basis services tx.ObservedAt)
                                             request
                                             actor
                                     with

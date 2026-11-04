@@ -22,7 +22,7 @@ module internal WorkQueries =
             | Some visibility, Some requester ->
                 Ok
                     {
-                        CaseSelection.DateBasis = CaseWorkReads.basis services tx.ObservedAt
+                        CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
                         Visibility = visibility
                         ActorId = requester.ActorId
                         ReadRoles = Authority.readRoles services.Principal
@@ -146,7 +146,7 @@ module internal WorkQueries =
                                                         |> Option.map _.Status
 
                                                     let basis =
-                                                        CaseWorkReads.basis services tx.ObservedAt
+                                                        ServiceContext.basis services tx.ObservedAt
 
                                                     let active =
                                                         CaseState.isActionable lifecycle status

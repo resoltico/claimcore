@@ -44,8 +44,16 @@ let internal contextCodec () =
                             Runtime =
                                 {
                                     ProductVersion = "0.10.0"
-                                    EffectiveBusinessDate = today
-                                    TimeZoneId = "Etc/UTC"
+                                    Basis =
+                                        {
+                                            ObservedAt =
+                                                System.DateTimeOffset(
+                                                    today.ToDateTime(System.TimeOnly.MinValue),
+                                                    System.TimeSpan.Zero
+                                                )
+                                            BusinessDate = today
+                                            TimeZoneId = "Etc/UTC"
+                                        }
                                 }
                             ActorId =
                                 ActorId.create (
@@ -232,8 +240,16 @@ let internal previewCodecs () =
             Context =
                 {
                     ProductVersion = "0.10.0"
-                    EffectiveBusinessDate = today
-                    TimeZoneId = "Etc/UTC"
+                    Basis =
+                        {
+                            ObservedAt =
+                                System.DateTimeOffset(
+                                    today.ToDateTime(System.TimeOnly.MinValue),
+                                    System.TimeSpan.Zero
+                                )
+                            BusinessDate = today
+                            TimeZoneId = "Etc/UTC"
+                        }
                 }
         }
 

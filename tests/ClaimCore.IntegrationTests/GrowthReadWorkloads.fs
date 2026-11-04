@@ -302,8 +302,7 @@ let private workProfiles progressed publish (actor: ServiceContext) cases =
                                 } -> value
             | _ -> failtest "Case-work growth requires the actual registered handler context"
 
-        let followUp =
-            CalendarDate.ofDate (context.Runtime.EffectiveBusinessDate.AddDays -1)
+        let followUp = CalendarDate.ofDate (context.Runtime.Basis.BusinessDate.AddDays -1)
 
         let references = ResizeArray<string>()
 
@@ -478,7 +477,7 @@ let private reminderProfiles progressed publish actor cases =
         let population = cases / 10
 
         let due =
-            context.Runtime.EffectiveBusinessDate
+            context.Runtime.Basis.BusinessDate
                 .AddDays(-2)
                 .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
 

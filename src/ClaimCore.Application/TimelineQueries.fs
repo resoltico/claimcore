@@ -106,7 +106,7 @@ module internal TimelineQueries =
                                                             |> Result.map (fun items ->
                                                                 {
                                                                     CaseTimelinePage.Basis =
-                                                                        CaseWorkReads.basis
+                                                                        ServiceContext.basis
                                                                             services
                                                                             tx.ObservedAt
                                                                     CaseId = parent.CaseId
