@@ -505,5 +505,9 @@
   "endpoint.authority.requests.label": "Piekļuves pieprasījumi",
   "endpoint.authority.requests.meaning": "Lasīt vienu uzņemšanu gaidošu pieprasījumu lapu.",
   "endpoint.authority.requests.dismiss.label": "Noraidīt piekļuves pieprasījumu",
-  "endpoint.authority.requests.dismiss.meaning": "Noņemt šo pieprasījumu, nepiešķirot piekļuvi."
+  "endpoint.authority.requests.dismiss.meaning": "Noņemt šo pieprasījumu, nepiešķirot piekļuvi.",
+  "caseStage.OPENED.label": "Atvērta",
+  "caseStage.DECIDED.label": "Ar lēmumu",
+  "caseStage.PAID.label": "Apmaksāta",
+  "caseStage.CLOSED.label": "Slēgta"
 }

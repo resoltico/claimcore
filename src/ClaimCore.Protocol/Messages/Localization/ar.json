@@ -505,5 +505,9 @@
   "endpoint.authority.requests.label": "طلبات الوصول",
   "endpoint.authority.requests.meaning": "قراءة صفحة واحدة من الطلبات التي تنتظر القبول.",
   "endpoint.authority.requests.dismiss.label": "تجاهل طلب الوصول",
-  "endpoint.authority.requests.dismiss.meaning": "إزالة هذا الطلب دون منح الوصول."
+  "endpoint.authority.requests.dismiss.meaning": "إزالة هذا الطلب دون منح الوصول.",
+  "caseStage.OPENED.label": "مفتوح",
+  "caseStage.DECIDED.label": "بقرار",
+  "caseStage.PAID.label": "مدفوع",
+  "caseStage.CLOSED.label": "مغلق"
 }

@@ -505,5 +505,9 @@
   "endpoint.authority.requests.label": "Access requests",
   "endpoint.authority.requests.meaning": "Read one page of requests awaiting admission.",
   "endpoint.authority.requests.dismiss.label": "Dismiss access request",
-  "endpoint.authority.requests.dismiss.meaning": "Remove this request without granting access."
+  "endpoint.authority.requests.dismiss.meaning": "Remove this request without granting access.",
+  "caseStage.OPENED.label": "Opened",
+  "caseStage.DECIDED.label": "Decided",
+  "caseStage.PAID.label": "Paid",
+  "caseStage.CLOSED.label": "Closed"
 }
