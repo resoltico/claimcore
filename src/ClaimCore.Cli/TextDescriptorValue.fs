@@ -24,7 +24,7 @@ module internal TextDescriptorValue =
                 TextReplyFormat.label language key
             else
                 text token
-        | PresentedValue.Actor value -> TextReplyFormat.actorName language value
+        | PresentedValue.Actor value -> TextReplyFormat.actorName language value |> text
         | PresentedValue.State value -> TextReplyFormat.term language CaseHeadline.vocabulary value
         | PresentedValue.Count value -> value.ToString(CultureInfo.InvariantCulture)
         | PresentedValue.Reference value -> CaseReference.format value |> text

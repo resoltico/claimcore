@@ -208,6 +208,65 @@ let tests =
                             (parseCsv bytes)
                             [ [ expected; "sentinel" ] ]
                             "Independent CSV readback")
+            testCase
+                "descriptor actor names escape retained controls and bidi without changing JSON"
+                (fun () ->
+                    let raw = "Agent\u001B[31m\u202EB\\u{202E}"
+
+                    let actor =
+                        {
+                            ActorId =
+                                CaseFixtures.actorId (
+                                    Guid.Parse "30000000-0000-4000-8000-000000000001"
+                                )
+                            DisplayName =
+                                DisplayName.Named(PartyName.parse raw |> Fixtures.accepted)
+                            PrincipalKind = PrincipalKind.Human
+                            Availability = ActorAvailability.Available
+                        }
+
+                    let value =
+                        { row "SAFE" with
+                            Responsible = Some actor
+                        }
+
+                    for options in [ []; [ "--all" ] ] do
+                        let code, bytes, _, _ =
+                            run options [ Outcome.Succeeded(page [ value ] None) ]
+
+                        let rendered = Encoding.UTF8.GetString bytes
+                        Expect.equal code 0 "The actual descriptor-backed CLI path succeeds"
+
+                        Expect.stringContains
+                            rendered
+                            "Agent\\u{001B}[31m\\u{202E}B\\\\u{202E}"
+                            "Control escapes and literal backslashes stay distinguishable"
+
+                        Expect.isFalse
+                            (rendered.Contains('\u001B') || rendered.Contains('\u202E'))
+                            "Untrusted terminal controls and bidi never become layout"
+
+                    let code, bytes, _, _ =
+                        run [ "--format"; "json" ] [ Outcome.Succeeded(page [ value ] None) ]
+
+                    Expect.equal code 0 "Structured output remains supported"
+
+                    let decoded =
+                        Frames.decode (
+                            Encoding.UTF8.GetString(bytes).TrimEnd() |> Encoding.UTF8.GetBytes
+                        )
+                        |> Fixtures.accepted
+
+                    match decoded.Result with
+                    | FrameResult.Reply reply ->
+                        match ServiceReply.value Api.caseList reply with
+                        | Some(Outcome.Succeeded page) ->
+                            Expect.equal
+                                page.Items.Head.Responsible
+                                (Some actor)
+                                "JSON retains the exact typed actor value"
+                        | other -> failtestf "Expected structured case page: %A" other
+                    | _ -> failtest "Expected a structured reply")
             testCase "JSON and text preserve formula-leading authored values" (fun () ->
                 let exported =
                     { row "=CASE" with
