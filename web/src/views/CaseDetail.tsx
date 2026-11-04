@@ -19,7 +19,6 @@ import { CopyValue } from "../components/CopyValue";
 import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseTimeline } from "./case/CaseTimeline";
-import { LifecycleStatus } from "./LifecycleStatus";
 import { CaseHeadline } from "../components/CaseHeadline";
 import { CaseAttention } from "../components/CaseAttention";
 
@@ -69,10 +68,7 @@ const CurrentPresentation = ({
   return (
     <>
       {disclosureAvailable ? (
-        <>
-          <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
-          <CaseProgress current={current} definition={definition} />
-        </>
+        <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
       ) : null}
       <div className="case-workspace">
         <div className="case-main-column">
@@ -253,7 +249,7 @@ const CaseDisclosure = ({
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
       <CurrentFeedback message={current.message} loading={current.loading} />
-      {state === null ? null : <LifecycleStatus value={state} />}
+      {state === null ? null : <CaseProgress value={state.stages} />}
       {current.message === null ? null : (
         <Button
           onPress={() => {
@@ -277,12 +273,6 @@ const CaseDisclosure = ({
         />
       )}
       {mounted === null ? recordDetails : null}
-      {state?.state.kind === "ERASED" ? (
-        <p role="status">
-          <bdi dir="ltr">{state.caseReference}</bdi> ·{" "}
-          <bdi dir="ltr">{p.integer(state.revision)}</bdi>
-        </p>
-      ) : null}
       {mounted === null ? timeline : null}
     </section>
   );

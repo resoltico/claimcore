@@ -51,7 +51,13 @@ const diagnosticText = (
   const supplied: Readonly<Record<string, unknown>> =
     diagnostic.code === "INVALID_INPUT" && "issues" in diagnostic
       ? { issueCount: diagnostic.issues.length }
-      : Object.fromEntries(Object.entries(diagnostic).filter(([key]) => !contextFields.has(key)));
+      : Object.fromEntries(
+          Object.entries(diagnostic).filter(
+            ([key]) =>
+              !contextFields.has(key) &&
+              !(diagnostic.code === "REVISION_CONFLICT" && key === "changes"),
+          ),
+        );
   const suppliedKeys = Object.keys(supplied).sort().join(",");
   if (
     messageKey === undefined ||

@@ -24,22 +24,6 @@
 .case-lifecycle-erased {
   background: var(--bg-sunken);
 }
-.case-progress [role="list"] {
-  display: flex;
-  flex-wrap: wrap;
-  list-style: none;
-  padding: 0;
-  gap: var(--space-2);
-}
-.case-progress [role="listitem"] {
-  padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid var(--border-control);
-  border-radius: var(--radius-sm);
-}
-.case-progress [aria-current="step"] {
-  background: var(--accent-solid);
-  color: var(--on-accent-solid);
-}
 .case-workspace,
 .case-fact-groups {
   display: grid;
@@ -192,30 +176,6 @@ button.case-action-danger {
 }
 .explain-fields {
   font-size: var(--text-xs);
-}
-.case-progress [role="list"] {
-  list-style: none;
-  display: flex;
-  gap: 0;
-  padding: 0;
-  counter-reset: case-step;
-}
-.case-progress [role="listitem"] {
-  counter-increment: case-step;
-  border: 0;
-  border-block-end: var(--border-width) solid var(--border-control);
-  border-radius: 0;
-  background: transparent;
-  padding: var(--space-2);
-  color: var(--text-secondary);
-}
-.case-progress [role="listitem"]::before {
-  content: counter(case-step) ". ";
-}
-.case-progress [role="listitem"][aria-current="step"] {
-  color: var(--accent-text);
-  border-block-end: var(--focus-width) solid var(--accent-text);
-  font-weight: 700;
 }
 @media (hover: none), (pointer: coarse) {
   .field-row .copy-icon {

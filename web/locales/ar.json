@@ -256,5 +256,8 @@
   "ui.accessState.requested": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",
   "ui.accessState.provider": "موفّر الهوية",
   "ui.accessState.copy": "تفاصيل للمسؤول",
-  "ui.accessState.check": "التحقق من الوصول"
+  "ui.accessState.check": "التحقق من الوصول",
+  "ui.stage.recorded": "مسجّل",
+  "ui.stage.noDate": "التاريخ غير متاح",
+  "ui.stage.reinstated": "أُعيد الملف. راجع الحقائق الحالية والإجراءات التالية."
 }

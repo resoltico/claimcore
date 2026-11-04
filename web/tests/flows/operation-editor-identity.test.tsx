@@ -70,6 +70,7 @@ const staleRefusal: Diagnostic = {
   code: "REVISION_CONFLICT",
   action: "REVIEW_LATEST",
   actualRevision: 2,
+  changes: { kind: "WITHHELD" },
 };
 const rejectedResponse = (rejection: Diagnostic) =>
   response("operation.preview", "REJECTED", rejection);

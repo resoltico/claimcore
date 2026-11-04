@@ -765,6 +765,11 @@ for (const language of ["en", "ar"] as const) {
     });
     await page.goto(casePath(target.caseId), { waitUntil: "commit" });
     await expect(page.getByText("Timeline recorder", { exact: true })).toBeVisible();
+    await expect(page.locator(".case-progress .case-stage-step")).toHaveCount(4);
+    await expect(page.locator(".case-stage-step").first().locator("time")).toHaveAttribute(
+      "datetime",
+      "2026-09-01",
+    );
     const timeline = page.locator(".case-timeline-panel");
     await expect(timeline.locator("del")).toContainText("JPY");
     await expect(timeline.locator("ins")).toContainText("EUR");

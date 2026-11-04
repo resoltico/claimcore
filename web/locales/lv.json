@@ -256,5 +256,8 @@
   "ui.accessState.requested": "Īpašnieki ir informēti. Īpašnieks var piešķirt šim kontam piekļuvi.",
   "ui.accessState.provider": "Pakalpojuma sniedzējs",
   "ui.accessState.copy": "Informācija administratoram",
-  "ui.accessState.check": "Pārbaudīt piekļuvi"
+  "ui.accessState.check": "Pārbaudīt piekļuvi",
+  "ui.stage.recorded": "Reģistrēts",
+  "ui.stage.noDate": "Datums nav pieejams",
+  "ui.stage.reinstated": "Lieta atjaunota. Pārskatiet pašreizējos faktus un nākamās darbības."
 }

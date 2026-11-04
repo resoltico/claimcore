@@ -1,3 +1,4 @@
+import { CaseStageMini } from "../../components/CaseStageMini";
 import { listedCaseFieldNames } from "@contracts/client";
 import { productMetadata } from "../../protocol/productMetadata";
 import { ActorIdentity } from "../../components/ActorIdentity";
@@ -123,6 +124,7 @@ export const CaseRow = ({
       </td>
       <td className="worklist-badges">
         <CaseHeadline value={value.headline} />
+        <CaseStageMini value={value.stages} />
       </td>
       <td className="worklist-next-action">
         <span className="worklist-cell-label">{p.text("ui.reminderAction")}</span>

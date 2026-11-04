@@ -1,56 +1,33 @@
-import { caseViewInput } from "../../support/inputs";
-import { caseAdvice } from "../../support/case-advice.fixtures";
 import { it, expect } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { LifecycleStatus } from "../../../src/views/LifecycleStatus";
-import { fields } from "../../support/service-ui.fixtures";
-const fullHistory = { ...caseAdvice([]), history: ["SUMMARY", "FULL"] as const };
-it("renders stewardship meanings for voided and erased accepted states", () => {
-  const { rerender } = render(
+const labels = { REINSTATED: "Case reinstated", VOIDED: "Voided", ERASED: "Erased" } as const;
+it.each(["VOIDED", "ERASED", "REINSTATED"] as const)(
+  "renders the core-selected %s status",
+  (kind) => {
+    render(<LifecycleStatus value={{ kind }} />);
+    expect(screen.getByRole("status")).toHaveTextContent(labels[kind]);
+  },
+);
+it("does not duplicate a tracker with a lifecycle panel", () => {
+  render(
     <LifecycleStatus
-      value={caseViewInput({
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: fields.caseReference,
-        revision: 1,
-        advice: fullHistory,
-        state: {
-          kind: "ACTIVE",
-          fields,
-        },
-      })}
+      value={{
+        kind: "TRACKER",
+        current: "OPENED",
+        steps: [
+          {
+            stage: "OPENED",
+            completed: true,
+            date: "2026-09-01",
+            amount: { amount: "12.34", currency: "EUR" },
+          },
+          { stage: "DECIDED", completed: false, date: null, amount: null },
+          { stage: "PAID", completed: false, date: null, amount: null },
+          { stage: "CLOSED", completed: false, date: null, amount: null },
+        ],
+      }}
     />,
   );
   expect(screen.queryByRole("status")).toBeNull();
-  rerender(
-    <LifecycleStatus
-      value={caseViewInput({
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: fields.caseReference,
-        revision: 2,
-        advice: fullHistory,
-        state: {
-          kind: "VOIDED",
-          fields,
-        },
-      })}
-    />,
-  );
-  expect(screen.getByRole("status")).toHaveTextContent("Voided");
-  rerender(
-    <LifecycleStatus
-      value={caseViewInput({
-        state: {
-          kind: "ERASED",
-        },
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: "CASE-1",
-        revision: 3,
-        advice: {
-          ...caseAdvice([]),
-          history: ["SUMMARY"],
-        },
-      })}
-    />,
-  );
-  expect(screen.getByRole("status")).toHaveTextContent("Erased");
 });

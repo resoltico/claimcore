@@ -50,8 +50,8 @@ const preferences = (language: (typeof languages)[number]) => {
     }),
   );
 };
-const historyReply = (value: string) =>
-  timelinePage(
+const historyReply = (value: string) => ({
+  ...timelinePage(
     [
       timelineEntry({
         changes: {
@@ -66,7 +66,9 @@ const historyReply = (value: string) =>
       }),
     ],
     "next",
-  );
+  ),
+  caseReference: value,
+});
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
     return response("context", "SUCCEEDED", context);

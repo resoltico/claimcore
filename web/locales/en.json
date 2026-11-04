@@ -256,5 +256,8 @@
   "ui.accessState.requested": "We’ve let the owners know. An owner can give this account access.",
   "ui.accessState.provider": "Provider",
   "ui.accessState.copy": "Details for your administrator",
-  "ui.accessState.check": "Check access"
+  "ui.accessState.check": "Check access",
+  "ui.stage.recorded": "Recorded",
+  "ui.stage.noDate": "Date not available",
+  "ui.stage.reinstated": "Case reinstated. Review the current facts and next actions."
 }

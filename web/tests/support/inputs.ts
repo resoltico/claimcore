@@ -2,6 +2,8 @@ import type { CaseSummary as Summary } from "../../src/protocol/types";
 import type {
   RequesterState_ACTIVE,
   ActorRef,
+  CaseStageDisplay,
+  CaseStageOutline,
   CaseView,
   ListedCaseFields,
   Principal,
@@ -46,12 +48,30 @@ type AdviceSeed = Omit<CaseView["advice"], "maintenance" | "recommended"> &
   Partial<Pick<CaseView["advice"], "maintenance" | "recommended">>;
 type CaseViewSeed = Omit<
   CaseView,
-  "mine" | "caseId" | "work" | "state" | "advice" | "headline" | "attention"
+  "mine" | "caseId" | "work" | "state" | "advice" | "headline" | "attention" | "stages"
 > &
-  Partial<Pick<CaseView, "mine" | "caseId" | "work" | "headline" | "attention">> & {
+  Partial<Pick<CaseView, "mine" | "caseId" | "work" | "headline" | "attention" | "stages">> & {
     state: LiveStateSeed | { kind: "ERASED" };
     advice: AdviceSeed;
   };
+// This read-model fixture represents an opened case. Stage-specific tests supply literal projections.
+const openedStages: CaseStageDisplay = {
+  kind: "TRACKER",
+  current: "OPENED",
+  steps: [
+    {
+      stage: "OPENED",
+      completed: true,
+      date: "2026-09-01",
+      amount: { amount: "12.34", currency: "EUR" },
+    },
+    { stage: "DECIDED", completed: false, date: null, amount: null },
+    { stage: "PAID", completed: false, date: null, amount: null },
+    { stage: "CLOSED", completed: false, date: null, amount: null },
+  ],
+};
+const stageDisplayInput = (kind: unknown): CaseStageDisplay =>
+  kind === "VOIDED" || kind === "ERASED" ? { kind } : openedStages;
 type LiveViewSeed = CaseViewSeed & { state: LiveStateSeed };
 export function caseViewInput(
   value: LiveViewSeed,
@@ -69,6 +89,7 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
     },
     headline: value.headline ?? "UNDECIDED",
     attention: value.attention ?? [],
+    stages: value.stages ?? stageDisplayInput(state.kind),
     state,
     work: value.work ?? {
       ...unscheduledWork,
@@ -173,6 +194,7 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     nextAction: null,
     responsible: null,
     pendingReminders: 0,
+    stages: state.kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null,
     ...changes,
     state:
       state.kind === "ERASED"
@@ -208,7 +230,13 @@ const isCaseReadSeed = (value: Record<string, unknown>): boolean =>
   ["state", "caseReference", "revision"].every((key) => Object.hasOwn(value, key)) &&
   (Object.hasOwn(value, "advice") || Object.hasOwn(value, "changedAt"));
 const completeCaseRead = (completed: Record<string, unknown>) => {
-  const data = { headline: "UNDECIDED", attention: [], ...completed };
+  const { state } = completed;
+  const kind = isObject(state) ? state["kind"] : undefined;
+  let stages: CaseStageDisplay | CaseStageOutline | null = stageDisplayInput(kind);
+  if (Object.hasOwn(completed, "changedAt")) {
+    stages = kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null;
+  }
+  const data = { headline: "UNDECIDED", attention: [], stages, ...completed };
   return Object.hasOwn(completed, "changedAt")
     ? { nextAction: null, responsible: null, pendingReminders: 0, ...data }
     : data;

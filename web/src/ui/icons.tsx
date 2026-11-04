@@ -1,6 +1,7 @@
 import "./icons.css";
 
 export type IconName =
+  | "check"
   | "calendar"
   | "chevron-start"
   | "chevron-end"
@@ -18,6 +19,9 @@ export type IconName =
 export const IconSprite = () => (
   <svg className="ui-icon-sprite" aria-hidden="true" focusable="false">
     <defs>
+      <symbol id="claimcore-icon-check" viewBox="0 0 24 24">
+        <path d="m5 12 4 4 10-10" />
+      </symbol>
       <symbol id="claimcore-icon-calendar" viewBox="0 0 24 24">
         <rect x="3" y="5" width="18" height="16" rx="2" />
         <path d="M8 3v4m8-4v4M3 11h18M8 15h.01M12 15h.01M16 15h.01" />

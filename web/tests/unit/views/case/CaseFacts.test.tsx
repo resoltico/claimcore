@@ -34,9 +34,9 @@ it("renders grouped facts with missing decision and payment and retains help and
   );
 });
 it("marks exactly one current progress step", () => {
-  const view = render(<CaseProgress current={current} definition={definition.catalog} />);
+  const view = render(<CaseProgress value={current.stages} />);
   expect(view.container.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
-  expect(view.container.querySelector('[aria-current="step"]')).toHaveTextContent("Undecided");
+  expect(view.container.querySelector('[aria-current="step"]')).toHaveTextContent("Opened");
 });
 it("separates core-classified stewardship and does not invent a primary for incompatible offers", async () => {
   const user = userEvent.setup();
