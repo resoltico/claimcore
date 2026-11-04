@@ -39,6 +39,63 @@ let tests =
     testList
         "ADMIT collection CLI"
         [
+            testCase "profile issuer is explicit in the actual prepared admission frame" (fun () ->
+                let withoutIssuer =
+                    [
+                        "authority"
+                        "admit"
+                        "--principal-kind"
+                        "HUMAN"
+                        "--subject"
+                        "person"
+                        "--name"
+                        "Authored"
+                        "--role"
+                        "CASE_READER"
+                    ]
+
+                let profile = Map.ofList [ CliSetting.Issuer, "https://profile.example/" ]
+
+                let words =
+                    CliInvocations.principalIssuer profile (CliInvocation.Verb withoutIssuer)
+                    |> function
+                        | CliInvocation.Verb words -> words
+                        | _ -> failtest "Expected human verb"
+
+                let prepared = Grammar.prepare identity words |> Fixtures.accepted
+
+                match Frames.value Api.operationExecute prepared.Invocation with
+                | Some(OperationInput.Authority request) ->
+                    Expect.equal
+                        request.Target.Issuer
+                        "https://profile.example/"
+                        "The wire principal is explicit; the server never infers it"
+                | other -> failtestf "Expected authority input: %A" other)
+            testCase "explicit issuer and structured modes bypass profile defaulting" (fun () ->
+                let profile = Map.ofList [ CliSetting.Issuer, "https://profile.example/" ]
+
+                for issuer in
+                    [
+                        [ "--issuer"; "https://explicit.example/" ]
+                        [ "--issuer=https://explicit.example/" ]
+                    ] do
+                    let invocation = CliInvocation.Verb([ "authority"; "admit" ] @ issuer)
+
+                    Expect.equal
+                        (CliInvocations.principalIssuer profile invocation)
+                        invocation
+                        "Explicit input wins even before admission"
+
+                for invocation in
+                    [
+                        CliInvocation.Call
+                        CliInvocation.Session
+                        CliInvocation.Verb [ "case"; "list" ]
+                    ] do
+                    Expect.equal
+                        (CliInvocations.principalIssuer profile invocation)
+                        invocation
+                        "Unrelated modes gain no issuer argument")
             testCase
                 "actual collection metadata determines installation and explicit reference rows"
                 (fun () ->

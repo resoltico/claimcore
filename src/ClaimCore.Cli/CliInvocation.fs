@@ -247,6 +247,30 @@ module CliInvocations =
                         commandHelp words (Option.defaultValue "en" language))
             | None -> Ok(CliInvocation.Verb arguments)
 
+    /// Defaults belong only to human verbs; explicit arguments and structured modes retain their bytes.
+    let internal principalIssuer profile invocation =
+        match invocation with
+        | CliInvocation.Verb words ->
+            let explicit =
+                words
+                |> List.exists (fun (word: string) ->
+                    word = "--issuer"
+                    || word.StartsWith("--issuer=", System.StringComparison.Ordinal))
+
+            let acceptsIssuer =
+                CommandGrammar.tryOperation words
+                |> Option.exists (fun operation ->
+                    let inputs, _ = CommandGrammar.derive operation
+
+                    inputs
+                    |> List.exists (fun input ->
+                        input.Name = InteractionInput.Target InputTarget.PrincipalIssuer))
+
+            match explicit, acceptsIssuer, Map.tryFind CliSetting.Issuer profile with
+            | false, true, Some issuer -> CliInvocation.Verb(words @ [ "--issuer"; issuer ])
+            | _ -> invocation
+        | _ -> invocation
+
     /// Resolve profile/environment defaults only at the executable and shell boundaries.
     let admitConfigured arguments =
         let explicit =
@@ -275,6 +299,16 @@ module CliInvocations =
                 | CliInvocation.Verb words when CommandGrammar.tryOperation words |> Option.isSome ->
                     CliInvocation.Verb(words @ [ "--language"; CliLanguage.effective () ])
                 | _ -> invocation)
+        |> Result.map (fun invocation ->
+            match invocation with
+            | CliInvocation.Verb _ ->
+                let profile =
+                    CliProfile.location CliLanguage.environment
+                    |> Result.bind CliProfile.read
+                    |> Result.defaultValue Map.empty
+
+                principalIssuer profile invocation
+            | _ -> invocation)
 
     let usageLanguage arguments =
         let separate =
