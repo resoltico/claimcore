@@ -31,6 +31,29 @@ let private probe =
 let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private read codec value = Codec.decode 65536 codec (bytes value)
 
+[<Tests>]
+let namedSchema =
+    testCase "repeated codec naming preserves the definition and refuses alias cycles" (fun () ->
+        let first = Codec.text |> Codec.named "StableName"
+        let repeated = first |> Codec.named "StableName"
+        Expect.equal repeated.Schema first.Schema "The reference stays stable"
+
+        Expect.equal
+            repeated.Definitions
+            first.Definitions
+            "Naming cannot replace the concrete definition with a self-reference"
+
+        Expect.equal
+            (Codec.encode repeated "value" |> Codec.decode 65536 repeated)
+            (Ok "value")
+            "The real value codec still round trips"
+
+        let alias = first |> Codec.named "OtherName"
+
+        Expect.throws
+            (fun () -> Codec.named "StableName" alias |> ignore)
+            "Renaming cannot replace the original definition with an alias cycle")
+
 let private strict value = StrictJson.read 65536 value
 
 let private byteProfile () =

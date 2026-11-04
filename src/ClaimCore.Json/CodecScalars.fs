@@ -63,10 +63,21 @@ module internal CodecScalars =
 
     /// Registers the codec's schema once under a name and refers to it from users.
     let named name (codec: Codec<'T>) : Codec<'T> =
-        { codec with
-            Schema = Schema.Ref name
-            Definitions = Map.add name codec.Schema codec.Definitions
-        }
+        match codec.Schema with
+        | Schema.Ref current when current = name ->
+            if not (Map.containsKey name codec.Definitions) then
+                invalidArg (nameof codec) "A named codec requires its schema definition."
+
+            codec
+        | schema ->
+            match Map.tryFind name codec.Definitions with
+            | Some existing when existing <> schema ->
+                invalidArg (nameof name) "A schema name cannot replace an existing definition."
+            | _ ->
+                { codec with
+                    Schema = Schema.Ref name
+                    Definitions = Map.add name schema codec.Definitions
+                }
 
     /// Semantic vocabulary identity accompanies structure without changing its wire grammar.
     let vocabulary name (codec: Codec<'T>) =
