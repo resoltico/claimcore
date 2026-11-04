@@ -34,7 +34,7 @@ let private drafts nonce =
             ActorId = actor
             OperationId = operation
             Effects =
-                [ AuthorityKind.Register; AuthorityKind.Grant ]
+                [ AuthorityKind.Register; AuthorityKind.SetProfile ]
                 |> List.map (fun kind ->
                     {
                         Subject = EntryTarget.Authority(actor, kind)
@@ -69,11 +69,12 @@ let private metadataControls () =
     let different =
         CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000098")
 
+    Expect.isNone
+        (LedgerEffects.create (Some AuthorityKind.Register) 3 1)
+        "Invalid group counts cannot enter the metadata type"
+
     for changed in
         [
-            { child with
-                Effects = LedgerEffects.authority AuthorityKind.Register 3 1
-            }
             { child with
                 Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 2 1
             }
@@ -240,22 +241,20 @@ let private foldCompletion () =
                 OperationId = operation
                 Effects =
                     [
-                        AuthorityAct.ProvisionOwner
-                        AuthorityAct.Grant
-                            {
-                                Role = Role.CaseReader
-                                Scope = RecordedGrantScope.Installation
-                            }
+                        AuthorityEffect.ProvisionOwner(PrincipalKey.toInput principal)
+                        AuthorityEffect.SetProfile(
+                            ActorProfile.parse Inputs.ownerProfile |> accepted
+                        )
                     ]
                     |> List.map (fun act ->
                         {
-                            Subject = EntryTarget.Authority(target, AuthorityAct.kind act)
+                            Subject = EntryTarget.Authority(target, AuthorityEffect.kind act)
                             Request =
                                 AuthorityRecord.encode
                                     {
                                         OperationId = OperationId.value operation
-                                        Target = PrincipalKey.toInput principal
-                                        Act = act
+                                        TargetActorId = target
+                                        Effect = act
                                     }
                             Snapshot = Array.empty
                         })
@@ -345,7 +344,12 @@ let private foldCompletion () =
     let view = AuthorityView.ofActor (Some authority)
 
     let receipt =
-        LedgerEntries.receiptOperation principal view ReceiptCurrent.Authority validated
+        LedgerEntries.receiptOperation
+            principal
+            view
+            (Some(Actor.currentReference authority.Actor))
+            ReceiptCurrent.Authority
+            validated
         |> accepted
 
     Expect.equal

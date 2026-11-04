@@ -110,7 +110,11 @@ let private repairs database =
                 (Some
                     {
                         ActorId = CaseFixtures.actorId (id 1)
-                        DisplayName = DisplayName.Erased
+                        DisplayName =
+                            DisplayName.Named(
+                                PartyName.parse Inputs.ownerProfile.DisplayName
+                                |> Result.defaultWith (string >> failtest)
+                            )
                         PrincipalKind = PrincipalKind.Human
                         Availability = ActorAvailability.Available
                     })

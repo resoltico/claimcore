@@ -175,4 +175,14 @@ let internal completeOperations previousHead (state: State) =
         | Ok operation ->
             operation.Entries.Length = 1
             || (operation.Entries
-                |> List.forall (fun entry -> entry.Payload.IsSome && entry.PayloadNonce.IsSome)))
+                |> List.forall (fun entry ->
+                    match entry.Payload, entry.PayloadNonce, entry.Subject with
+                    | Some _, Some _, _ -> true
+                    | None, None, EntryTarget.Authority(id, AuthorityKind.SetProfile) ->
+                        state.Entries
+                        |> Map.values
+                        |> Seq.exists (fun erased ->
+                            erased.Subject =
+                                EntryTarget.Authority(id, AuthorityKind.EraseProfile)
+                            && erased.Sequence > entry.Sequence)
+                    | _ -> false)))

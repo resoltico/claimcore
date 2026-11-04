@@ -50,7 +50,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = (CaseFixtures.actorId (id))
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
     }
 
 let internal authority =

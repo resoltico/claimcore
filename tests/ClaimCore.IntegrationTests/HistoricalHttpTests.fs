@@ -38,7 +38,12 @@ let private caller (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 20) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 20)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered

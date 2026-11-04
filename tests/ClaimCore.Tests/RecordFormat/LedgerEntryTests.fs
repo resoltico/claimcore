@@ -307,6 +307,8 @@ let tests =
                             AuthorityKind.Revoke, 35uy
                             AuthorityKind.Enable, 36uy
                             AuthorityKind.Disable, 37uy
+                            AuthorityKind.SetProfile, 38uy
+                            AuthorityKind.EraseProfile, 39uy
                         ] do
                         let subject =
                             {
@@ -316,7 +318,17 @@ let tests =
 
                         let candidate =
                             { entry with
-                                Effects = LedgerEffects.authority kind 1 0
+                                Effects =
+                                    LedgerEffects.authority
+                                        kind
+                                        (if
+                                             kind = AuthorityKind.Register
+                                             || kind = AuthorityKind.ProvisionOwner
+                                         then
+                                             2
+                                         else
+                                             1)
+                                        0
                                 Subject = RecordedTarget.Authority subject
                             }
 

@@ -115,6 +115,14 @@
             "maintenance": {
               "active": false,
               "generation": 0
+            },
+            "self": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
             }
           }
         }
@@ -487,7 +495,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -579,7 +594,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -635,7 +657,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -738,7 +767,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -831,7 +867,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
@@ -856,7 +899,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
@@ -972,13 +1022,12 @@
           "data": {
             "actor": {
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "principal": {
-                "kind": "HUMAN",
-                "issuer": "https://issuer.example/",
-                "subject": "x"
+              "profile": null,
+              "displayName": {
+                "kind": "ERASED"
               },
-              "enabled": false,
-              "profile": null
+              "principalKind": "HUMAN",
+              "availability": "DISABLED"
             },
             "items": [],
             "nextCursor": "x"
@@ -1037,12 +1086,14 @@
                 "before": {
                   "enabled": false,
                   "grants": [],
-                  "access": []
+                  "access": [],
+                  "profile": null
                 },
                 "after": {
                   "enabled": true,
                   "grants": [],
-                  "access": []
+                  "access": [],
+                  "profile": null
                 },
                 "accessScope": {
                   "kind": "INSTALLATION"
@@ -1112,6 +1163,14 @@
             "maintenance": {
               "active": false,
               "generation": 0
+            },
+            "self": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
             }
           }
         }
@@ -1405,13 +1464,12 @@
           "data": {
             "actor": {
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "principal": {
-                "kind": "HUMAN",
-                "issuer": "https://issuer.example/",
-                "subject": "x"
+              "profile": null,
+              "displayName": {
+                "kind": "ERASED"
               },
-              "enabled": false,
-              "profile": null
+              "principalKind": "HUMAN",
+              "availability": "DISABLED"
             },
             "items": [
               {
@@ -1480,27 +1538,41 @@
           "data": {
             "items": [
               {
-                "actorId": "10000000-0000-4000-8000-000000000001",
                 "principal": {
                   "kind": "HUMAN",
                   "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
-                "enabled": false,
                 "profile": {
                   "displayName": "Synthetic person",
                   "contact": "Synthetic contact"
-                }
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "DISABLED"
+                },
+                "contact": null
               },
               {
-                "actorId": "10000000-0000-4000-8000-000000000001",
                 "principal": {
                   "kind": "SERVICE",
                   "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
-                "enabled": false,
-                "profile": null
+                "profile": null,
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "SERVICE",
+                  "availability": "DISABLED"
+                },
+                "contact": null
               }
             ],
             "nextCursor": "x"
@@ -1674,7 +1746,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -1734,7 +1813,14 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "recordedBy": {
+                    "actorId": "10000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
                   "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
@@ -1796,7 +1882,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -1830,7 +1923,14 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "recordedBy": {
+                    "actorId": "10000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
                   "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
@@ -1866,7 +1966,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -1900,7 +2007,14 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "recordedBy": {
+                    "actorId": "10000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
                   "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
@@ -2981,7 +3095,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -3030,7 +3151,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -3360,7 +3488,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -3404,23 +3539,30 @@
     },
     {
       "name": "reply-principal-issuer-format-refused",
-      "endpoint": "authority.grants",
+      "endpoint": "authority.list",
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
-            "actor": {
-              "actorId": "10000000-0000-4000-8000-000000000001",
-              "principal": {
-                "kind": "HUMAN",
-                "issuer": "x",
-                "subject": "x"
-              },
-              "enabled": false,
-              "profile": null
-            },
-            "items": [],
-            "nextCursor": "x"
+            "items": [
+              {
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "DISABLED"
+                },
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "x",
+                  "subject": "x"
+                },
+                "contact": null
+              }
+            ],
+            "nextCursor": null
           }
         }
       },
@@ -3526,26 +3668,60 @@
               {
                 "sequence": 6,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
-                "recordedBy": "10000000-0000-4000-8000-000000000001",
-                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "act": {
                   "kind": "DISABLE"
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 }
               },
               {
                 "sequence": 5,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
-                "recordedBy": "10000000-0000-4000-8000-000000000001",
-                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "act": {
                   "kind": "ENABLE"
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 }
               },
               {
                 "sequence": 4,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
-                "recordedBy": "10000000-0000-4000-8000-000000000001",
-                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "act": {
                   "kind": "REVOKE",
                   "role": "CASE_READER",
@@ -3554,13 +3730,27 @@
                     "caseReference": "HISTORY-001",
                     "caseId": "20000000-0000-4000-8000-000000000001"
                   }
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 }
               },
               {
                 "sequence": 3,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
-                "recordedBy": "10000000-0000-4000-8000-000000000001",
-                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "act": {
                   "kind": "GRANT",
                   "role": "CASE_READER",
@@ -3569,13 +3759,27 @@
                     "caseReference": "HISTORY-001",
                     "caseId": "20000000-0000-4000-8000-000000000001"
                   }
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 }
               },
               {
                 "sequence": 2,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
-                "recordedBy": "10000000-0000-4000-8000-000000000001",
-                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "act": {
                   "kind": "REGISTER",
                   "principal": {
@@ -3583,13 +3787,27 @@
                     "issuer": "https://issuer.example/",
                     "subject": "history-owner"
                   }
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 }
               },
               {
                 "sequence": 1,
                 "recordedAt": "2026-01-01T00:00:00.000000Z",
-                "recordedBy": "10000000-0000-4000-8000-000000000001",
-                "targetActorId": "10000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "act": {
                   "kind": "PROVISION_OWNER",
                   "principal": {
@@ -3597,6 +3815,14 @@
                     "issuer": "https://issuer.example/",
                     "subject": "history-owner"
                   }
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
                 }
               }
             ],
@@ -3808,7 +4034,14 @@
                     "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
                   },
                   "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": "10000000-0000-4000-8000-000000000001",
+                  "recordedBy": {
+                    "actorId": "10000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
                   "subject": {
                     "kind": "CASE",
                     "caseReference": "x",
@@ -3895,14 +4128,21 @@
               "subject": {
                 "kind": "AUTHORITY",
                 "target": {
-                  "actorId": "10000000-0000-4000-8000-000000000002",
                   "principal": {
                     "kind": "HUMAN",
                     "issuer": "https://issuer.example/",
                     "subject": "dormant-target"
                   },
-                  "enabled": false,
-                  "profile": null
+                  "profile": null,
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "DISABLED"
+                  },
+                  "contact": null
                 },
                 "accessScope": {
                   "kind": "CASE",
@@ -3937,7 +4177,8 @@
                       ],
                       "effective": false
                     }
-                  ]
+                  ],
+                  "profile": null
                 },
                 "after": {
                   "enabled": false,
@@ -3980,7 +4221,8 @@
                       ],
                       "effective": false
                     }
-                  ]
+                  ],
+                  "profile": null
                 }
               }
             }
@@ -4025,7 +4267,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "CASE",
               "caseReference": "x",
@@ -4428,6 +4677,14 @@
             "maintenance": {
               "active": false,
               "generation": 0
+            },
+            "self": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
             }
           }
         }
@@ -4566,7 +4823,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "WORK",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4604,7 +4868,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "WORK",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4634,7 +4905,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "WORK",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4735,7 +5013,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4779,7 +5064,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4823,7 +5115,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4867,7 +5166,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4911,7 +5217,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4955,7 +5268,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -5014,7 +5334,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -5050,7 +5377,14 @@
               "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
             },
             "recordedAt": "2026-11-02T04:00:00.000000Z",
-            "recordedBy": "40000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "40000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "REMINDER",
               "caseId": "20000000-0000-4000-8000-000000000001",
@@ -5322,7 +5656,14 @@
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "acts": [
                   "UPDATE",
                   "COMPLETE",
@@ -5343,7 +5684,14 @@
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "acts": [
                   "REOPEN"
                 ],
@@ -5361,7 +5709,14 @@
                 },
                 "caseReference": "NARRATIVE-REMINDERS",
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "acts": [
                   "REOPEN"
                 ],
@@ -5445,7 +5800,14 @@
                   "act": "CLOSE"
                 },
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "detail": null
               },
               {
@@ -5460,7 +5822,14 @@
                   "act": "UPDATE_WORK"
                 },
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "detail": null
               },
               {
@@ -5477,7 +5846,14 @@
                   "next": null
                 },
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "detail": null
               },
               {
@@ -5497,7 +5873,14 @@
                   }
                 },
                 "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": "40000000-0000-4000-8000-000000000001",
+                "recordedBy": {
+                  "actorId": "40000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
                 "detail": null
               }
             ],
@@ -5828,7 +6211,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [
                 "UPDATE",
                 "COMPLETE",
@@ -5885,7 +6275,14 @@
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
-            "recordedBy": "10000000-0000-4000-8000-000000000001",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
@@ -5919,7 +6316,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [
                 "UPDATE",
                 "COMPLETE",
@@ -5957,7 +6361,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [
                 "UPDATE",
                 "COMPLETE",
@@ -5995,7 +6406,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [],
               "active": false,
               "timing": null
@@ -6028,7 +6446,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [
                 "UPDATE",
                 "COMPLETE",
@@ -6065,7 +6490,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [
                 "UPDATE",
                 "COMPLETE",
@@ -6103,7 +6535,14 @@
               },
               "caseReference": "NARRATIVE-REMINDERS",
               "recordedAt": "2026-11-02T04:00:00.000000Z",
-              "recordedBy": "40000000-0000-4000-8000-000000000001",
+              "recordedBy": {
+                "actorId": "40000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
               "acts": [
                 "UPDATE",
                 "COMPLETE",
@@ -10122,6 +10561,327 @@
           }
         }
       }
+    },
+    {
+      "name": "assignee-named-display-cannot-be-empty",
+      "endpoint": "case.assignees",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": ""
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "actor-ref-AVAILABLE",
+      "endpoint": "authority.list",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Anna Ozola"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "authored-fixture-subject"
+                },
+                "contact": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "actor-ref-DISABLED",
+      "endpoint": "authority.list",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "DISABLED"
+                },
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "authored-fixture-subject"
+                },
+                "contact": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "actor-ref-work-NOT_ELIGIBLE",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              }
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": "Authored worker"
+                },
+                "principalKind": "HUMAN",
+                "availability": "NOT_ELIGIBLE"
+              },
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "profile-input-issues",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "profile.displayName",
+                "code": "TEXT_REQUIRED"
+              },
+              {
+                "field": "profile.contact",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        },
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "name": "profile-history-SET_PROFILE",
+      "endpoint": "authority.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "sequence": 1,
+                "recordedAt": "2026-11-04T00:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Authored account"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Authored account"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "act": {
+                  "kind": "SET_PROFILE",
+                  "profile": {
+                    "displayName": "Authored profile",
+                    "contact": null
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "profile-history-ERASE_PROFILE",
+      "endpoint": "authority.history",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "entries": [
+              {
+                "sequence": 2,
+                "recordedAt": "2026-11-04T00:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Authored account"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "target": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Authored account"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "act": {
+                  "kind": "ERASE_PROFILE"
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "profile-operation-offers",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "productVersion": "x",
+            "businessDate": "2026-01-01",
+            "timeZone": "x",
+            "offers": [
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "SET_PROFILE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "ERASE_PROFILE"
+              }
+            ],
+            "capabilities": [],
+            "views": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ],
+            "hasScopedCases": false,
+            "actorId": "10000000-0000-4000-8000-000000000001",
+            "installationId": "90000000-0000-4000-8000-000000000001",
+            "maintenance": {
+              "active": false,
+              "generation": 0
+            },
+            "self": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            }
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

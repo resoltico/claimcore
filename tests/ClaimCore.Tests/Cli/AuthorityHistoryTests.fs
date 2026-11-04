@@ -53,8 +53,8 @@ let private csvSubjects () =
         {
             AuthorityHistoryEntry.Sequence = Sequence.first
             RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-            RecordedBy = actor
-            TargetActorId = actor
+            RecordedBy = Inputs.actorReference actor
+            Target = Inputs.actorReference actor
             Facts = AuthorityHistoryFacts.Registered principal
         }
 
@@ -67,8 +67,8 @@ let private csvSubjects () =
     reader.HasFieldsEnclosedInQuotes <- true
     let header = reader.ReadFields() |> nonNull
     let values = reader.ReadFields() |> nonNull
-    Expect.equal header[7] "principal.subject" "Machine-readable column identity"
-    Expect.equal values[7] ("'" + subject) "Protection precedes independent RFC4180 decoding"
+    Expect.equal header[9] "principal.subject" "Machine-readable column identity"
+    Expect.equal values[9] ("'" + subject) "Protection precedes independent RFC4180 decoding"
 
     let page =
         {

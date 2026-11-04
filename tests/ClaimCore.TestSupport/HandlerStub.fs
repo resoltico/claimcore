@@ -71,7 +71,7 @@ let receipt id (reference: string) =
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = CaseFixtures.actorId operationId
+        RecordedBy = Inputs.actorReference (CaseFixtures.actorId operationId)
     }
 
 let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =

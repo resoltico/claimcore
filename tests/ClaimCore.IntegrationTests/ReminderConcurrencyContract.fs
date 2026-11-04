@@ -414,7 +414,12 @@ let internal revocationAndCompound fixture =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 10) person AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 10)
+                        person
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         acceptedAuthority registered

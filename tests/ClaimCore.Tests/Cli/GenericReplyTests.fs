@@ -23,12 +23,14 @@ let private authorityReview () =
                                 Before =
                                     {
                                         Enabled = false
+                                        Profile = None
                                         Grants = []
                                         Access = []
                                     }
                                 After =
                                     {
                                         Enabled = true
+                                        Profile = None
                                         Access = []
                                         Grants =
                                             [

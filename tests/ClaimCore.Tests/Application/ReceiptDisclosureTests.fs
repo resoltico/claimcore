@@ -12,7 +12,13 @@ open ClaimCore.Tests.DecisionFixtures
 
 let private receipt authority current entry =
     LedgerEntries.validate installation entry
-    |> Result.bind (LedgerEntries.receipt owner authority (ReceiptCurrent.Case(Some current)))
+    |> Result.bind (
+        LedgerEntries.receipt
+            owner
+            authority
+            (Some(Inputs.actorReference entry.ActorId))
+            (ReceiptCurrent.Case(Some current))
+    )
     |> Fixtures.accepted
 
 let private disclosure () =

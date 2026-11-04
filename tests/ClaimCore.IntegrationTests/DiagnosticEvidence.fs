@@ -282,10 +282,15 @@ let internal authorityEvidence actor =
                 (OperationInput.Authority(authorityRequest (id n) target act))
                 (ct))
 
-        let! registered = send 30 owner AuthorityAct.Register
+        let! registered =
+            send 30 owner (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
         let! unknown = send 31 service (AuthorityAct.Disable)
         let! last = send 32 owner (AuthorityAct.Disable)
-        let! admitted = send 33 service AuthorityAct.Register
+
+        let! admitted =
+            send 33 service (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
         acceptedAuthority admitted
 
         let! human =
@@ -337,7 +342,12 @@ let internal identityEvidence actor =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 35) reader AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 35)
+                        reader
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (ct))
 
         acceptedAuthority registered
@@ -378,7 +388,9 @@ let internal principalEvidence (actor: ServiceContext) =
                             Issuer = issuer
                             Subject = subject
                         }
-                    Act = ClaimCore.Domain.AuthorityAct.Register
+                    Act =
+                        (ClaimCore.Domain.AuthorityAct.Register
+                            ClaimCore.TestSupport.Inputs.actorProfile)
                 }
 
             let! outcome = (Service.execute actor (OperationInput.Authority request) (ct))

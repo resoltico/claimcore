@@ -46,7 +46,12 @@ let private setup (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 3) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 3)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered

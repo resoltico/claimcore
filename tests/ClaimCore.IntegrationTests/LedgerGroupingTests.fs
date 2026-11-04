@@ -33,7 +33,7 @@ let private structuralGroups (database: PostgresFixture.Database) =
                     ActorId = actor
                     OperationId = op
                     Effects =
-                        [ AuthorityKind.Register; AuthorityKind.Grant ]
+                        [ AuthorityKind.Register; AuthorityKind.SetProfile ]
                         |> List.map (fun kind ->
                             {
                                 Subject = EntryTarget.Authority(actor, kind)
@@ -51,7 +51,7 @@ let private structuralGroups (database: PostgresFixture.Database) =
                     [
                         rows[0]
                         { rows[1] with
-                            Effects = LedgerEffects.authority AuthorityKind.Register 3 1
+                            Effects = LedgerEffects.authority AuthorityKind.SetProfile 1 0
                         }
                     ])
                 "mixed actor",
@@ -107,9 +107,27 @@ let private structuralGroups (database: PostgresFixture.Database) =
                     let! head, instant = Transactions.head connection token
 
                     try
-                        for entry in entries head instant |> alter do
-                            let! _ = Persistence.entry connection entry token
+                        let rows = entries head instant
+
+                        if name = "mixed count" then
+                            let! _ = Persistence.entry connection rows[0] token
+                            // Bypass the validated descriptor factory to challenge SQL's physical count check.
+                            let! _ =
+                                DatabaseSession.execute
+                                    connection
+                                    "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) SELECT sequence+1,entry_hash,$1,entry_format,subject_kind,'SET_PROFILE',operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,$2,1,1,authority_operation FROM claimcore.ledger WHERE operation_id=$3"
+                                    [|
+                                        box rows[1].EntryHash
+                                        box rows[1].PayloadNonce
+                                        box (OperationId.value op)
+                                    |]
+                                    token
+
                             ()
+                        else
+                            for entry in alter rows do
+                                let! _ = Persistence.entry connection entry token
+                                ()
 
                         do! transaction.CommitAsync token
                         return None

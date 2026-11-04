@@ -62,6 +62,7 @@ let tests =
                                 BuildIdentity.current.Version
                                 (id 1)
                                 database.Fixture.Owner
+                                ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
 
                         match first with
@@ -75,6 +76,7 @@ let tests =
                                 BuildIdentity.current.Version
                                 (id 1)
                                 database.Fixture.Owner
+                                ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
 
                         Expect.isTrue
@@ -93,6 +95,7 @@ let tests =
                                 BuildIdentity.current.Version
                                 (id 2)
                                 other
+                                ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
 
                         Expect.equal
@@ -108,6 +111,7 @@ let tests =
                                 BuildIdentity.current.Version
                                 (id 1)
                                 other
+                                ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
 
                         Expect.equal
@@ -323,6 +327,7 @@ let tests =
                                     administration.ProvisionOwner(
                                         id 1,
                                         database.Fixture.Owner,
+                                        ClaimCore.TestSupport.Inputs.ownerProfile,
                                         token
                                     ))
                                 "Provision refuses foreign schema"

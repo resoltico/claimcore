@@ -11,6 +11,7 @@ open System.Globalization
 open System.Text
 open Expecto
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.Fixtures
 
@@ -121,16 +122,16 @@ let private textFormats () =
             "Persisted text refuses noncharacters, NUL and invalid Unicode"
 
 let private envelope () =
-    let owner: AuthorityRequestRecord =
+    let id = Guid.Parse "a0000000-0000-4000-8000-000000000001"
+
+    let principal =
+        PrincipalKey.human "https://issuer.example/" "owner" |> Fixtures.accepted
+
+    let owner: AuthorityEffectRecord =
         {
-            OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-            Target =
-                {
-                    Kind = PrincipalKind.Human
-                    Issuer = "https://issuer.example/"
-                    Subject = "owner"
-                }
-            Act = AuthorityAct.ProvisionOwner
+            OperationId = id
+            TargetActorId = CaseFixtures.actorId id
+            Effect = AuthorityEffect.ProvisionOwner(PrincipalKey.toInput principal)
         }
 
     let durable = AuthorityRecord.encode owner
@@ -138,29 +139,38 @@ let private envelope () =
     Expect.equal
         (AuthorityRecord.decode 65536 durable)
         (Ok owner)
-        "Provisioning is retained history"
-
-    let asWire bytes =
-        Encoding.UTF8.GetString(bytes: byte array)
-        |> fun value -> value.Replace("\"format\":2,", "")
-
-        |> Encoding.UTF8.GetBytes
+        "Identity-only provisioning effect roundtrip"
 
     let ordinary =
         { owner with
-            Act = AuthorityAct.Register
+            Effect = AuthorityEffect.Register(PrincipalKey.toInput principal)
         }
 
-    Expect.isOk
+    let asWire bytes =
+        Encoding.UTF8.GetString(bytes: byte[])
+        |> fun value -> value.Replace("\"format\":3,", "") |> Encoding.UTF8.GetBytes
+
+    Expect.isError
         (Codec.decode
             Limits.MaximumRequestBytes
             Api.operationExecute.Input
             (AuthorityRecord.encode ordinary |> asWire))
-        "The control envelope is otherwise valid wire input"
+        "A durable identity effect is not an authored registration request"
 
     Expect.isError
         (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input (asWire durable))
-        "Provisioning is never case-work authority API input"
+        "Provisioning has no ordinary endpoint"
+
+    let authored =
+        Inputs.authorityRequest id principal (AuthorityAct.Register Inputs.actorProfile)
+        |> OperationInput.Authority
+
+    let bytes = Api.operationExecute.Input.Write authored |> WireWriter.bytes
+
+    Expect.equal
+        (Codec.decode Limits.MaximumRequestBytes Api.operationExecute.Input bytes)
+        (Ok authored)
+        "Required authored profile is present on the normal request"
 
     let case = request 0L (AuthoredCaseAct.Open registration) |> CaseFixtures.encode
 
@@ -211,7 +221,7 @@ let private permanentLimits () =
         vectors.RootElement.GetProperty("permanentLimits").EnumerateArray()
         |> Seq.toArray
 
-    Expect.equal entries.Length 49 "Every authored scalar boundary is discovered"
+    Expect.equal entries.Length 55 "Every authored scalar boundary is discovered"
 
     for entry in entries do
         let text name =
@@ -229,17 +239,7 @@ let private permanentLimits () =
             match text "subject" with
             | "CASE" -> RequestRecord.decode Int32.MaxValue bytes |> Result.isOk
             | "SNAPSHOT" -> CaseRecord.decodeSnapshot bytes |> Result.isOk
-            | "AUTHORITY" ->
-                AuthorityRecord.decode Int32.MaxValue bytes
-                |> Result.bind (
-                    AuthorityRecord.interpret
-                    >> Result.mapError (fun _ ->
-                        {
-                            DecodeProblem.Field = "$"
-                            Message = "Invalid permanent authority input"
-                        })
-                )
-                |> Result.isOk
+            | "AUTHORITY" -> AuthorityRecord.decode Int32.MaxValue bytes |> Result.isOk
             | other -> failtest ("Unexpected authored vector subject: " + other)
 
         Expect.equal valid (entry.GetProperty("accepted").GetBoolean()) (text "name")
@@ -285,21 +285,26 @@ let private independentNames () =
         (RequestRecord.decode Int32.MaxValue oversized)
         "Callers cannot expand the permanent record decode ceiling"
 
-    let authority: AuthorityRequestRecord =
+    let authority: AuthorityEffectRecord =
         {
             OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-            Target =
-                {
-                    Kind = PrincipalKind.Human
-                    Issuer = String('a', RecordLimits.MaximumRequestRecordBytes)
-                    Subject = "boundary"
-                }
-            Act = AuthorityAct.Register
+            TargetActorId = CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000001")
+            Effect =
+                AuthorityEffect.Register
+                    {
+                        Kind = PrincipalKind.Human
+                        Issuer = String('a', RecordLimits.MaximumRequestRecordBytes)
+                        Subject = "boundary"
+                    }
         }
 
-    Expect.throwsT<InvalidOperationException>
+    Expect.throwsT<ArgumentException>
         (fun () -> AuthorityRecord.encode authority |> ignore)
-        "Oversized encoding is an internal fault"
+        "Invalid permanent identity cannot be encoded"
+
+    Expect.isError
+        (AuthorityRecord.decode Int32.MaxValue oversized)
+        "An authority decoder cannot expand the permanent record ceiling"
 
 let private kindRoundTrips () =
     let cases = Inputs.caseActs registration Fixtures.decision Inputs.payment "boundary"
@@ -339,29 +344,30 @@ let private kindRoundTrips () =
             Scope = RecordedGrantScope.Installation
         }
 
-    let acts = Inputs.authorityActs [ grant ]
+    let acts = Inputs.authorityEffects [ grant ]
 
     Expect.equal
-        (acts |> List.map (fst >> AuthorityAct.kind) |> Set.ofList)
+        (acts |> List.map (fst >> AuthorityEffect.kind) |> Set.ofList)
         (Set.ofList AuthorityKind.all)
         "Every authority kind is independently authored"
 
     for act, token in acts do
         Expect.equal
-            (DurableNames.authorityAct (AuthorityAct.kind act))
+            (DurableNames.authorityAct (AuthorityEffect.kind act))
             token
             "Independent permanent authority token"
 
         Expect.equal
             (DurableNames.tryAuthorityAct token)
-            (Some(AuthorityAct.kind act))
+            (Some(AuthorityEffect.kind act))
             "Permanent authority inverse"
 
-        let record: AuthorityRequestRecord =
+        let record: AuthorityEffectRecord =
             {
                 OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-                Target = Inputs.principal
-                Act = act
+                TargetActorId =
+                    CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000001")
+                Effect = act
             }
 
         let bytes = AuthorityRecord.encode record

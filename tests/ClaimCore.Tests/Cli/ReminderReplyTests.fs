@@ -26,7 +26,10 @@ let private item active state timing : ReminderReadModel =
         Reminder = reminder state
         Reference = CaseReference.parse "CLI-TIMING" |> required
         RecordedAt = DateTimeOffset(2026, 11, 1, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = ActorId.create identity |> Option.get
+        RecordedBy =
+            ActorId.create identity
+            |> Option.get
+            |> ClaimCore.TestSupport.Inputs.actorReference
         Acts = []
         Active = active
         Timing = timing

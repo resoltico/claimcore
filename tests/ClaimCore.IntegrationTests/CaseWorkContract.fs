@@ -62,7 +62,10 @@ let internal assignmentAndDisclosure fixture =
                 Service.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id operation) principal AuthorityAct.Register
+                        authorityRequest
+                            (id operation)
+                            principal
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
 
@@ -101,7 +104,11 @@ let internal assignmentAndDisclosure fixture =
             [
                 {
                     ActorId = CaseFixtures.actorId (id 10)
-                    DisplayName = DisplayName.Erased
+                    DisplayName =
+                        DisplayName.Named(
+                            PartyName.parse Inputs.actorProfile.DisplayName
+                            |> Result.defaultWith (string >> failtest)
+                        )
                     PrincipalKind = PrincipalKind.Human
                     Availability = ActorAvailability.Available
                 }
@@ -270,7 +277,10 @@ let internal assignmentAndDisclosure fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    authorityRequest (id 13) authorityOnly AuthorityAct.Register
+                    authorityRequest
+                        (id 13)
+                        authorityOnly
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 

@@ -21,13 +21,19 @@ let private owner issuer subject =
             operationId = operation
             issuer = issuer
             subject = subject
+            profile =
+                {|
+                    displayName = "Authored owner"
+                    contact = (None: string option)
+                |}
         |}
 
 let private accepted () =
     let bytes = owner "https://issuer.example/" "human-owner"
     let original = Array.copy bytes
-    let id, principal = Inputs.decodeOwner bytes
+    let id, principal, profile = Inputs.decodeOwner bytes
     Expect.equal id operation "Operation identity retained"
+    Expect.equal profile.DisplayName "Authored owner" "An authored profile is required"
     Expect.isTrue (PrincipalKey.isHuman principal) "The format denotes a human owner"
 
     Expect.equal

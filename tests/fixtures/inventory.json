@@ -132,11 +132,11 @@
   "authorityActs": [
     {
       "token": "PROVISION_OWNER",
-      "payload": "BARE"
+      "payload": "PROFILE"
     },
     {
       "token": "REGISTER",
-      "payload": "BARE"
+      "payload": "PROFILE"
     },
     {
       "token": "GRANT",
@@ -152,6 +152,14 @@
     },
     {
       "token": "DISABLE",
+      "payload": "BARE"
+    },
+    {
+      "token": "SET_PROFILE",
+      "payload": "PROFILE"
+    },
+    {
+      "token": "ERASE_PROFILE",
       "payload": "BARE"
     }
   ],
@@ -415,9 +423,11 @@
     "mine",
     "caseView",
     "reminderView",
-    "timelineFilter"
+    "timelineFilter",
+    "profile.displayName",
+    "profile.contact"
   ],
-  "cliFrameCount": 55,
+  "cliFrameCount": 57,
   "readInputs": {
     "case.get": [
       "target"
@@ -560,7 +570,8 @@
     "CASE_CLAIMED_CURRENCY_PROJECTION",
     "CASE_PAYABLE_AMOUNT_PROJECTION",
     "CASE_PAYABLE_CURRENCY_PROJECTION",
-    "CASE_WORK_PROJECTION"
+    "CASE_WORK_PROJECTION",
+    "AUTHORITY_PROFILE_PROJECTION"
   ],
   "renderedVocabularies": [
     "status",
@@ -593,7 +604,8 @@
     "caseView",
     "reminderView",
     "timelineFilter",
-    "timelineKind"
+    "timelineKind",
+    "actorAvailability"
   ],
   "goldens": [
     "wire-request-examples.json",
@@ -619,7 +631,9 @@
     "reminderDueDate": "2026-11-10",
     "reminderId": "10000000-0000-4000-8000-000000000007",
     "expectedWorkRevision": "0",
-    "expectedReminderRevision": "1"
+    "expectedReminderRevision": "1",
+    "profile.displayName": "Authored",
+    "profile.contact": "Contact"
   },
   "caseAssignments": [
     "MINE",

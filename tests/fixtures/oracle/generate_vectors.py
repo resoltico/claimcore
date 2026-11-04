@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, resolved case identities, framed ledger payloa
 salted commitments, framed retained creation identities and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 4 --snapshot 4 --authority 2 --ledger 5
+  python3 -I generate_vectors.py --request 4 --snapshot 4 --authority 3 --ledger 5
 
 Writes JSON to standard output.
 """
@@ -25,7 +25,7 @@ ACT_CODES = {
     "OPEN": 1, "AMEND_REGISTRATION": 2, "CORRECT": 3, "DECIDE": 4, "WITHDRAW_DECISION": 5,
     "RECORD_PAYMENT": 6, "CLEAR_PAYMENT": 7, "CLOSE": 8, "REOPEN": 9, "VOID": 10,
     "REINSTATE": 11, "ERASE": 12, "UPDATE_WORK": 80, "PROVISION_OWNER": 32, "REGISTER": 33, "GRANT": 34, "REVOKE": 35,
-    "ENABLE": 36, "DISABLE": 37, "NOT_ACCEPTED": 64,
+    "ENABLE": 36, "DISABLE": 37, "SET_PROFILE": 38, "ERASE_PROFILE": 39, "NOT_ACCEPTED": 64,
     "CREATE": 81, "UPDATE": 82, "COMPLETE": 83, "CANCEL": 84, "REMINDER_REOPEN": 85, "COMPLETE_AND_PLAN_NEXT": 86,
 }
 
@@ -181,7 +181,7 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             subject = spec["operationId"]
             subject_byte, revision = 3, 0
         else:
-            request_bytes = canonical(authority).encode("utf-8")
+            request_bytes = canonical(spec.get("authorityValue", authority)).encode("utf-8")
             snapshot_bytes = b""
             subject = spec["subjectId"]
             subject_byte, revision = 2, 0

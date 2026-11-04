@@ -71,6 +71,7 @@ let private pressure () =
             Service.provisionOwner
                 (service memory principal)
                 (Guid.NewGuid())
+                Inputs.ownerProfile
                 CancellationToken.None
 
         match provisioned with

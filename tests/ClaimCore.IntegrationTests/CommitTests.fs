@@ -168,7 +168,11 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
             |> Result.defaultWith (string >> failtest)
 
-        let request = authorityRequest (id 145) target AuthorityAct.Register
+        let request =
+            authorityRequest
+                (id 145)
+                target
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let! unknown =
             (Service.execute (proxyCore database source) (OperationInput.Authority request) (token))

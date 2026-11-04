@@ -35,7 +35,10 @@ let internal authority (actor: ServiceContext) principals =
                 (Service.execute
                     actor
                     (OperationInput.Authority(
-                        authorityRequest (id (100000 + index * 20)) principal AuthorityAct.Register
+                        authorityRequest
+                            (id (100000 + index * 20))
+                            principal
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     (token))
 

@@ -351,6 +351,58 @@ type internal Writer(inputs: WriteInputs) =
                                 state.Actors
                         Grants = Set.add (id, Role.Owner, None) state.Grants
                     }
+                | AuthorityProjection.SetProfile(id, profile) ->
+                    { state with
+                        Actors =
+                            Map.add
+                                id
+                                { state.Actors[id] with
+                                    Profile = Some profile
+                                }
+                                state.Actors
+                    }
+                | AuthorityProjection.EraseProfile(id, sequence) ->
+                    let erasures =
+                        state.Entries
+                        |> Map.values
+                        |> Seq.filter (fun entry ->
+                            entry.Subject = EntryTarget.Authority(id, AuthorityKind.EraseProfile))
+                        |> Seq.map _.Sequence
+                        |> Seq.toList
+
+                    if not (List.contains sequence erasures) then
+                        raise CorruptProjection
+
+                    let frontier = List.max erasures
+
+                    let later =
+                        state.Entries
+                        |> Map.values
+                        |> Seq.exists (fun entry ->
+                            entry.Subject = EntryTarget.Authority(id, AuthorityKind.SetProfile)
+                            && entry.Sequence > frontier)
+
+                    { state with
+                        Entries =
+                            state.Entries
+                            |> Map.map (fun _ entry ->
+                                if
+                                    entry.Subject =
+                                        EntryTarget.Authority(id, AuthorityKind.SetProfile)
+                                    && entry.Sequence < frontier
+                                then
+                                    { entry with
+                                        Payload = None
+                                        PayloadNonce = None
+                                    }
+                                else
+                                    entry)
+                        Actors =
+                            if later then
+                                state.Actors
+                            else
+                                Map.add id { state.Actors[id] with Profile = None } state.Actors
+                    }
                 | AuthorityProjection.SetEnabled(id, enabled) ->
                     { state with
                         Actors =

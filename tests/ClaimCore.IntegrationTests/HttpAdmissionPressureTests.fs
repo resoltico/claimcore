@@ -172,7 +172,12 @@ let private qualify () =
             let! registered =
                 Service.execute
                     actor
-                    (OperationInput.Authority(authorityRequest (id 10) other AuthorityAct.Register))
+                    (OperationInput.Authority(
+                        authorityRequest
+                            (id 10)
+                            other
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                    ))
                     CancellationToken.None
 
             acceptedAuthority registered

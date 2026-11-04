@@ -22,6 +22,7 @@ $$;
 
 \set h0 '''\\x0000000000000000000000000000000000000000000000000000000000000000'''
 \set h1 '''\\x1111111111111111111111111111111111111111111111111111111111111111'''
+\set hp '''\\x5555555555555555555555555555555555555555555555555555555555555555'''
 \set h2 '''\\x2222222222222222222222222222222222222222222222222222222222222222'''
 \set h3 '''\\x3333333333333333333333333333333333333333333333333333333333333333'''
 \set hx '''\\x9999999999999999999999999999999999999999999999999999999999999999'''
@@ -31,49 +32,54 @@ $$;
 \set case1 '''10000000-0000-4000-8000-000000000002'''
 
 -- Ledger linkage, shape and identity --------------------------------------------------------
+BEGIN;
+SELECT clock_timestamp() AS group_time \gset
 INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (1, :h0, :h1, 5, 'AUTHORITY', 'PROVISION_OWNER', :owner,
-    :owner, clock_timestamp(), :owner, NULL, NULL, :h3, :body, :n32, NULL,0,1,'PROVISION_OWNER');
+    :owner, :'group_time'::timestamptz, :owner, NULL, NULL, :h3, :body, :n32, NULL,0,2,'PROVISION_OWNER');
+INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (2, :h1, :hp, 5, 'AUTHORITY', 'SET_PROFILE', :owner,
+    :owner, :'group_time'::timestamptz, :owner, NULL, NULL, :h3, :body, decode(repeat('cd',32),'hex'), NULL,1,2,'PROVISION_OWNER');
+COMMIT;
 SELECT pg_temp.expect('gap refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'OPEN',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'CASE', 'OPEN',
       '10000000-0000-4000-8000-000000000003', %L, clock_timestamp(), %L, 1, current_date,
       %L, %L, %L, 'Demo-0001',0,1,NULL)$s$, :h1, :hx, :owner, :case1, :h3, :body, :n32), 'CC001');
 SELECT pg_temp.expect('wrong previous hash refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (2, %L, %L, 5, 'CASE', 'OPEN',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'OPEN',
       '10000000-0000-4000-8000-000000000002', %L, clock_timestamp(), %L, 1, current_date,
       %L, %L, %L, 'Demo-0001',0,1,NULL)$s$, :hx, :hx, :owner, :case1, :h3, :body, :n32), 'CC001');
-INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (2, :h1, :h2, 5, 'CASE', 'OPEN',
+INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, :hp, :h2, 5, 'CASE', 'OPEN',
     '10000000-0000-4000-8000-000000000002', :owner, clock_timestamp(), :case1, 1, current_date,
     :h3, :body, :n32, 'Demo-0001',0,1,NULL);
 SELECT pg_temp.expect('duplicate operation refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000002', %L, clock_timestamp(), %L, 2, current_date,
       %L, %L, %L, NULL,0,1,NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23505');
 SELECT pg_temp.expect('duplicate case revision refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000009', %L, clock_timestamp(), %L, 1, current_date,
       %L, %L, %L, NULL,0,1,NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23505');
 SELECT pg_temp.expect('case row without business date refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 2, NULL,
       %L, %L, %L, NULL,0,1,NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('authority row without payload refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'AUTHORITY', 'GRANT',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'AUTHORITY', 'GRANT',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, NULL, NULL, NULL,0,1,'GRANT')$s$, :h2, :hx, :owner, :owner, :h3), '23514');
 SELECT pg_temp.expect('malformed authority act token refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'AUTHORITY', 'invalid',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'AUTHORITY', 'invalid',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, NULL, NULL,
       %L, %L, %L, NULL,0,1,'GRANT')$s$, :h2, :hx, :owner, :owner, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('payload without nonce refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 2, current_date,
       %L, %L, NULL, NULL,0,1,NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body), '23514');
 SELECT pg_temp.expect('revision beyond 2^53-1 refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 5, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 5, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 9007199254740992,
       current_date, %L, %L, %L, NULL,0,1,NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23514');
 SELECT pg_temp.expect('earlier entry format refused',
-    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, %L, %L, 1, 'CASE', 'CLOSE',
+    format($s$INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, %L, %L, 1, 'CASE', 'CLOSE',
       '10000000-0000-4000-8000-000000000004', %L, clock_timestamp(), %L, 2, current_date,
       %L, %L, %L, NULL,0,1,NULL)$s$, :h2, :hx, :owner, :case1, :h3, :body, :n32), '23514');
 
@@ -90,7 +96,7 @@ SELECT pg_temp.expect('runtime cannot run DDL',
 -- Erasure -------------------------------------------------------------------------------------
 SELECT pg_temp.expect('erasure before an accepted ERASE refused',
     format('SELECT claimcore.erase_case_payload(%L)', :case1), 'CC002');
-INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (3, :h2, :h3, 5, 'CASE', 'ERASE',
+INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,effect_index,effect_count,authority_operation) VALUES (4, :h2, :h3, 5, 'CASE', 'ERASE',
     '10000000-0000-4000-8000-000000000005', :owner, clock_timestamp(), :case1, 2, current_date,
     :h3, :body, :n32, NULL,0,1,NULL);
 SELECT claimcore.erase_case_payload(:case1) = 2 AS erased_two_case_payloads \gset
@@ -100,7 +106,7 @@ SELECT claimcore.erase_case_payload(:case1) = 2 AS erased_two_case_payloads \gse
 \echo FAIL erasure did not clear exactly two payloads
 \quit 3
 \endif
-SELECT count(*) = 1 AS authority_payload_kept FROM claimcore.ledger
+SELECT count(*) = 2 AS authority_payload_kept FROM claimcore.ledger
  WHERE subject_kind = 'AUTHORITY' AND payload IS NOT NULL \gset
 \if :authority_payload_kept
 \echo PASS authority payload untouched by case erasure

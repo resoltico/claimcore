@@ -19,7 +19,7 @@ let authorityRequest: AuthorityRequest =
                 Issuer = "https://issuer.example/"
                 Subject = "synthetic"
             }
-        Act = AuthorityAct.Register
+        Act = (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
     }
 
 let snapshot =
@@ -72,5 +72,5 @@ let receipt =
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = (CaseFixtures.actorId (id))
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
     }

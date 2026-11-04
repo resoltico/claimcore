@@ -150,7 +150,7 @@ let authorityFactReads =
                             "Only required head-locked protection facts are queried"
                     }
 
-                do! check 600 AuthorityAct.Register []
+                do! check 600 (AuthorityAct.Register Inputs.actorProfile) []
 
                 do!
                     check

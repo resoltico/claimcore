@@ -50,7 +50,10 @@ let private summaries () =
                 Service.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id 200) reader AuthorityAct.Register
+                        authorityRequest
+                            (id 200)
+                            reader
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
                 |> Async.AwaitTask

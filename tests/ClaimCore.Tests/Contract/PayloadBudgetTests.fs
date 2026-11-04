@@ -56,7 +56,7 @@ let private receipt disclosure : OperationReceipt =
                      |> Option.get)
             }
         RecordedAt = instant
-        RecordedBy = (CaseFixtures.actorId (id))
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.Case
                 {
@@ -185,7 +185,7 @@ let private boundedAuthority () =
             Api.authorityList.Output
             (Outcome.Succeeded
                 {
-                    Items = List.replicate count actor
+                    Items = List.replicate count (ActorReviewItem.ofActor actor)
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 })
 
@@ -194,7 +194,7 @@ let private boundedAuthority () =
             Api.authorityGrants.Output
             (Outcome.Succeeded
                 {
-                    Actor = actor
+                    Actor = Actor.currentReference actor
                     Items = List.replicate count grant
                     NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                 })

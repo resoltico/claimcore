@@ -28,7 +28,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         let first = succeeded first
 
         Expect.equal
-            (first.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
+            (first.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
             [ id 1 ]
             "Stable actor-ID order"
 
@@ -44,7 +44,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         let second = succeeded second
 
         Expect.equal
-            (second.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
+            (second.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
             [ id 10; id 11 ]
             "Changed page size"
 
@@ -60,7 +60,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         match third with
         | Outcome.Succeeded page ->
             Expect.equal
-                (page.Items |> List.map (fun actor -> ActorId.value actor.ActorId))
+                (page.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
                 [ id 12 ]
                 "No omission"
 

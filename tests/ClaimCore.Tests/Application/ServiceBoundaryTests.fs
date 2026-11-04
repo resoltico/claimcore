@@ -20,7 +20,12 @@ let private unavailable () =
 let private inputs () =
     [
         ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
-        OperationInput.Authority(authorityRequest (id 471) other AuthorityAct.Register)
+        OperationInput.Authority(
+            authorityRequest
+                (id 471)
+                other
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+        )
     ]
 
 let private malformed () =
@@ -44,7 +49,12 @@ let private malformed () =
                 ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
-                OperationInput.Authority(authorityRequest Guid.Empty other AuthorityAct.Register)
+                OperationInput.Authority(
+                    authorityRequest
+                        Guid.Empty
+                        other
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                )
             ]
 
         for input in invalid do

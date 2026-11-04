@@ -111,7 +111,7 @@ let private delayedExecute (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position verified).Sequence
-            (CaseFixtures.sequence (4L))
+            (CaseFixtures.sequence (5L))
             "Bootstrap, grants and exactly one final-nonacceptance control exist"
 
         do!
@@ -230,7 +230,12 @@ let private foreign (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 120) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 120)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -287,7 +292,12 @@ let private actorAdmission (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 120) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 120)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -337,7 +347,12 @@ let private authorityFence (database: PostgresFixture.Database) =
         let! rejected =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 130) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 130)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         Expect.equal
@@ -348,7 +363,12 @@ let private authorityFence (database: PostgresFixture.Database) =
         let! created =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 131) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 131)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         let receipt = accepted created

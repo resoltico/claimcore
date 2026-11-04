@@ -116,13 +116,18 @@ let decide request view =
         view.Read
 
 let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
+    let mutable counter = 0uy
+
     AuthorityExecution.execute
         (services installation calendar principal)
         request
         {
             Head = view.Head
             Fenced = view.IsFenced
-            Nonce = view.PayloadNonce
+            NewPayloadNonce =
+                (fun () ->
+                    counter <- counter + 1uy
+                    Array.create 32 counter)
         }
         view.Read
 
@@ -138,13 +143,19 @@ let provisionAuthority
     principal
     (view: LockedFacts<AuthorityExecutionFacts>)
     =
+    let mutable counter = 0uy
+
     AuthorityExecution.provision
         (services installation calendar principal)
         operation
+        Inputs.ownerProfile
         {
             Head = view.Head
             Fenced = view.IsFenced
-            Nonce = view.PayloadNonce
+            NewPayloadNonce =
+                (fun () ->
+                    counter <- counter + 1uy
+                    Array.create 32 counter)
         }
         view.Read
 
@@ -182,10 +193,7 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 Actor = caller
-                ExistingOperation =
-                    existing
-                    |> Option.map (fun entry ->
-                        StoredOperation.create [ entry ] |> Result.defaultWith (string >> failtest))
+                ExistingOperation = existing
                 Target = target
                 TargetCase = None
                 EnabledHumanOwners = Some 2
@@ -194,6 +202,10 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
     }
 
 let admitted n target act : AuthorityCommand =
-    AuthorityRequests.input (id n) target act
-    |> Result.bind Authority.parse
+    Authority.parse
+        {
+            OperationId = id n
+            Target = PrincipalKey.toInput target
+            Act = act
+        }
     |> Result.defaultWith (fun refusal -> failtestf "Invalid authority test command: %A" refusal)

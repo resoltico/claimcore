@@ -74,7 +74,10 @@ let private freshness (database: PostgresFixture.Database) =
                 Service.execute
                     admin
                     (OperationInput.Authority(
-                        authorityRequest (id operation) who AuthorityAct.Register
+                        authorityRequest
+                            (id operation)
+                            who
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
 

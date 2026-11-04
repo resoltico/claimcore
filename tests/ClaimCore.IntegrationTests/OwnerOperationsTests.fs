@@ -42,7 +42,7 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
             {
                 CaseRequest = 4
                 Snapshot = 4
-                Authority = 2
+                Authority = 3
                 Control = 2
                 LedgerEntry = 5
                 Work = 1
@@ -73,7 +73,11 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
         Expect.equal repeated.State entered.State "Repeated entry does not advance generation"
 
         let! provisioned =
-            Service.provisionOwner (core database.Fixture database.Fixture.Owner) (id 1) token
+            Service.provisionOwner
+                (core database.Fixture database.Fixture.Owner)
+                (id 1)
+                ClaimCore.TestSupport.Inputs.ownerProfile
+                token
 
         match provisioned with
         | Ok(Verdict.Refuse Refusal.RegisterMaintenance) -> ()
@@ -142,7 +146,12 @@ let private actionState (database: PostgresFixture.Database) =
         let! authority =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 12) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 12)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         Expect.equal

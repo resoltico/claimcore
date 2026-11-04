@@ -802,7 +802,12 @@ let private currentLookup database =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 603) reader AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 603)
+                        reader
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         acceptedAuthority registered

@@ -326,6 +326,10 @@ let private authorityPreviewInvocation verb =
                 "--preview"
             ]
             @ role
+            @ (if verb = "register" then
+                   [ "--profile.display-name"; "Authored" ]
+               else
+                   [])
         )
 
     Frames.admit prepared.Bytes |> Result.defaultWith (fun _ -> failtest "Prepared")
@@ -355,12 +359,14 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                             Before =
                                 {
                                     Enabled = enabledBefore
+                                    Profile = None
                                     Access = []
                                     Grants = grants grantBefore
                                 }
                             After =
                                 {
                                     Enabled = enabledAfter
+                                    Profile = None
                                     Access = []
                                     Grants = grants grantAfter
                                 }

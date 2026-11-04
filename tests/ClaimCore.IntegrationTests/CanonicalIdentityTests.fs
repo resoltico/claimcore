@@ -35,26 +35,34 @@ let private authorityInput vector side =
         AuthorityRecord.decode Limits.MaximumRequestBytes (encoded vector side)
         |> Result.defaultWith (fun _ -> failtest "The independent authority vector must decode")
 
-    let command =
-        AuthorityRequests.fromRecord record
-        |> Result.defaultWith (fun _ -> failtest "The independent authority vector must admit")
+    // A grant effect deliberately has no principal identity. The independently authored scenario supplies its target.
+    let target =
+        PrincipalKey.human "https://issuer.example/" "canonical-target"
+        |> Result.defaultWith (string >> failtest)
 
-    // Exercise reference selectors at the current boundary; permanent scopes retain resolved IDs.
+    let grant (value: RecordedGrant) =
+        {
+            AuthoredGrant.Role = value.Role
+            Scope =
+                match value.Scope with
+                | RecordedGrantScope.Installation -> GrantTarget.Installation
+                | RecordedGrantScope.Case(_, reference) ->
+                    GrantTarget.CaseReference(CaseReference.format reference)
+        }
+
     let act =
-        AuthorityAct.map
-            (fun (grant: RecordedGrant) ->
-                {
-                    AuthoredGrant.Role = grant.Role
-                    Scope =
-                        match grant.Scope with
-                        | RecordedGrantScope.Installation -> GrantTarget.Installation
-                        | RecordedGrantScope.Case(_, reference) ->
-                            GrantTarget.CaseReference(CaseReference.format reference)
-                })
-            record.Act
+        match record.Effect with
+        | AuthorityEffect.Grant value -> AuthorityAct.Grant(grant value)
+        | AuthorityEffect.Revoke value -> AuthorityAct.Revoke(grant value)
+        | _ -> failtest "Reference-bearing grant effect required"
 
-    Authority.restore record.OperationId command.Target act
-    |> Result.defaultWith (fun _ -> failtest "The independent reference input must admit")
+    Authority.parse
+        {
+            OperationId = record.OperationId
+            Target = PrincipalKey.toInput target
+            Act = act
+        }
+    |> Result.defaultWith (fun _ -> failtest "Independent reference input must admit")
 
 let private retainedRequest database (receipt: OperationReceipt) =
     task {
@@ -146,7 +154,12 @@ let private authorityPairs (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 901) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 901)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -221,7 +234,12 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 920) outsider AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 920)
+                        outsider
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered

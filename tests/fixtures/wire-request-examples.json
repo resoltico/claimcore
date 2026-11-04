@@ -630,7 +630,10 @@
           "subject": "x"
         },
         "act": {
-          "kind": "REGISTER"
+          "kind": "REGISTER",
+          "profile": {
+            "displayName": "Authored fixture account"
+          }
         }
       }
     },
@@ -707,7 +710,10 @@
           "subject": "x"
         },
         "act": {
-          "kind": "REGISTER"
+          "kind": "REGISTER",
+          "profile": {
+            "displayName": "Authored fixture account"
+          }
         }
       }
     },
@@ -2315,6 +2321,86 @@
           "caseReference": "CASE-001"
         },
         "limit": 51
+      }
+    },
+    {
+      "id": "operation.execute.profile-SET_PROFILE",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_PROFILE",
+          "profile": {
+            "displayName": "Authored profile",
+            "contact": "Contact text"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute.profile-ERASE_PROFILE",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "ERASE_PROFILE"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.profile-SET_PROFILE",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_PROFILE",
+          "profile": {
+            "displayName": "Authored profile",
+            "contact": "Contact text"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.preview.profile-ERASE_PROFILE",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "ERASE_PROFILE"
+        }
       }
     }
   ]

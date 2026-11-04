@@ -334,7 +334,12 @@ let grantScopes (fixture: Fixture) =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 631) reader AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 631)
+                        reader
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         acceptedAuthority registered
@@ -404,8 +409,8 @@ let grantScopes (fixture: Fixture) =
             |> Result.defaultWith (fun _ -> failtest "Permanent scope positive control")
 
         Expect.equal
-            permanent.Act
-            (AuthorityAct.Grant
+            permanent.Effect
+            (ClaimCore.RecordFormat.AuthorityEffect.Grant
                 {
                     Role = Role.CaseReader
                     Scope = ClaimCore.RecordFormat.RecordedGrantScope.Case(expectedId, reference)

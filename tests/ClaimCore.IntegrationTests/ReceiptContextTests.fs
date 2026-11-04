@@ -23,7 +23,12 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 3) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 3)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -102,7 +107,7 @@ let private commitSnapshot (_: ClaimCore.TestSupport.PostgresFixture.Database) (
             (RegistrationInput.value BusinessField.ClaimantName (registration))
             "Disclosure uses the write's locked context"
 
-        Expect.equal receipt.RecordedBy ((CaseFixtures.actorId (id 3))) "Original executor"
+        Expect.equal receipt.RecordedBy.ActorId ((CaseFixtures.actorId (id 3))) "Original executor"
 
         let! denied =
             (Service.get

@@ -52,7 +52,7 @@ let private row payload =
 
     let metadata: LedgerMetadata =
         {
-            Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 1 0
+            Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 2 0
             CreationReference = None
             InstallationId = installation
             Sequence = CaseFixtures.sequence 1L
@@ -377,11 +377,11 @@ let private authorityChecks =
                         EntryTarget.Authority((CaseFixtures.actorId id), AuthorityKind.Register)
                 }
 
-            let request: AuthorityRequestRecord =
+            let request: AuthorityEffectRecord =
                 {
                     OperationId = id
-                    Target = PrincipalKey.toInput human
-                    Act = ClaimCore.Domain.AuthorityAct.Register
+                    TargetActorId = CaseFixtures.actorId id
+                    Effect = AuthorityEffect.Register(PrincipalKey.toInput human)
                 }
 
             AuthorityFold.apply
@@ -394,6 +394,18 @@ let private authorityChecks =
         VerificationFinding.AuthorityProjection,
         fun () ->
             ProjectionVerification.authority (Map.ofList [ (CaseFixtures.actorId id), owner ]) [] []
+        VerificationFinding.AuthorityProfileProjection,
+        fun () ->
+            let profile = ActorProfile.parse Inputs.actorProfile |> accepted
+
+            ProjectionVerification.authority
+                (Map.ofList [ CaseFixtures.actorId id, owner ])
+                [
+                    { owner.Actor with
+                        Profile = Some profile
+                    }
+                ]
+                [ CaseFixtures.actorId id, Role.Owner, None ]
     ]
 
 let private finding expected run =
@@ -410,8 +422,8 @@ let private acceptedIdentityPrecedence () =
                     AuthorityRecord.encode
                         {
                             OperationId = id
-                            Target = PrincipalKey.toInput human
-                            Act = AuthorityAct.ProvisionOwner
+                            TargetActorId = CaseFixtures.actorId id
+                            Effect = AuthorityEffect.ProvisionOwner(PrincipalKey.toInput human)
                         }
                 Snapshot = Array.empty
             }

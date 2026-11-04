@@ -38,7 +38,7 @@ let private receipt revision disclosure : OperationReceipt =
                     Snapshot = disclosure
                 }
         RecordedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = CaseFixtures.actorId identity
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference (CaseFixtures.actorId identity)
     }
 
 let private live name =

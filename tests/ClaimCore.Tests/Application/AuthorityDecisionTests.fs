@@ -78,23 +78,38 @@ let private humanOnly () =
         "Bootstrap also requires a human"
 
 let private replay () =
-    let request = admitted 103 other AuthorityAct.Register
+    let request =
+        admitted 103 other (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
     let view = authorityView worker AuthorityView.empty None
 
     let entry, receipt =
         match executeAuthority installation owner request view with
-        | Verdict.Proceed(entry, AuthorityProjection.Register(target, principal), receipt) ->
+        | Verdict.Proceed(entries,
+                          [ AuthorityProjection.Register(target, principal)
+                            AuthorityProjection.SetProfile _ ],
+                          receipt) ->
             Expect.equal
                 target
                 (ActorId.ofOperationId (request.OperationId))
                 "Registration owns the target identity"
 
             Expect.equal principal other "Exact authored principal"
-            entry, receipt
+            entries, receipt
         | _ -> failtest "Expected actor registration"
 
     let target = actor other (ActorId.ofOperationId (request.OperationId)) [] []
-    let existing = authorityView worker target (Some(LedgerEntries.stored entry))
+
+    let existing =
+        authorityView
+            worker
+            target
+            (Some(
+                entry
+                |> List.map LedgerEntries.stored
+                |> StoredOperation.create
+                |> Result.defaultWith (string >> failtest)
+            ))
 
     Expect.equal
         (executeAuthority installation owner request existing)
@@ -147,22 +162,49 @@ let private provision () =
         match
             provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner initial
         with
-        | Verdict.Proceed(entry, AuthorityProjection.ProvisionOwner(target, principal), receipt) ->
+        | Verdict.Proceed(entries,
+                          [ AuthorityProjection.ProvisionOwner(target, principal)
+                            AuthorityProjection.SetProfile _ ],
+                          receipt) ->
             Expect.equal
                 (target, principal)
                 ((CaseFixtures.actorId (id 104)), owner)
                 "Bootstrap has explicit identity"
 
-            entry, receipt
+            entries, receipt
         | _ -> failtest "Expected explicit bootstrap"
 
     Expect.equal
-        entry.Subject
+        entry.Head.Subject
         (EntryTarget.Authority((CaseFixtures.actorId (id 104)), AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
     let target = actor owner ((CaseFixtures.actorId (id 104))) [ Role.Owner ] []
-    let view = authorityView target target (Some(LedgerEntries.stored entry))
+
+    let target =
+        { target with
+            Actor =
+                target.Actor
+                |> Option.map (fun actor ->
+                    { actor with
+                        Profile =
+                            Some(
+                                ActorProfile.parse Inputs.ownerProfile
+                                |> Result.defaultWith (string >> failtest)
+                            )
+                    })
+        }
+
+    let view =
+        authorityView
+            target
+            target
+            (Some(
+                entry
+                |> List.map LedgerEntries.stored
+                |> StoredOperation.create
+                |> Result.defaultWith (string >> failtest)
+            ))
 
     Expect.equal
         (provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner view)
@@ -170,7 +212,9 @@ let private provision () =
         "Bootstrap exact replay is idempotent"
 
 let private reviewAndFences () =
-    let request = admitted 105 other AuthorityAct.Register
+    let request =
+        admitted 105 other (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
     let view = authorityView worker AuthorityView.empty None
 
     match
@@ -179,7 +223,9 @@ let private reviewAndFences () =
             request
             view.Read
     with
-    | Verdict.Proceed(_, AuthorityProjection.Register _) -> ()
+    | Verdict.Proceed {
+                          Change = AuthorityChange.Registered _
+                      } -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     Expect.equal
@@ -215,6 +261,8 @@ let private reviewAndFences () =
             InstallationOffer.AuthorityAct AuthorityKind.Revoke
             InstallationOffer.AuthorityAct AuthorityKind.Enable
             InstallationOffer.AuthorityAct AuthorityKind.Disable
+            InstallationOffer.AuthorityAct AuthorityKind.SetProfile
+            InstallationOffer.AuthorityAct AuthorityKind.EraseProfile
         ]
         "Installation offers contain only ordinary operations; owner provisioning uses its dedicated bootstrap boundary"
 

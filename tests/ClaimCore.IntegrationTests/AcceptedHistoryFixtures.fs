@@ -115,7 +115,11 @@ let internal seed (database: PostgresFixture.Database) claimant =
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
             |> Result.bind (
-                LedgerEntries.receipt fixture.Owner view.Actor (ReceiptCurrent.Case(Some current))
+                LedgerEntries.receipt
+                    fixture.Owner
+                    view.Actor
+                    (view.Actor.Actor |> Option.map Actor.currentReference)
+                    (ReceiptCurrent.Case(Some current))
             )
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")

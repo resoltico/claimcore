@@ -66,7 +66,9 @@ let private ordering () =
     let revoke role scope =
         Attempt.Authored(AuthorityAct.Revoke { Role = role; Scope = scope })
 
-    let register = Attempt.Authored AuthorityAct.Register
+    let register =
+        Attempt.Authored(AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
     let enable = Attempt.Authored AuthorityAct.Enable
     let disable = Attempt.Authored AuthorityAct.Disable
 

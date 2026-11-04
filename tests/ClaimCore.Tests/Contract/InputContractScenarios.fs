@@ -184,7 +184,11 @@ let internal authorityWire kind issuer subject =
                     issuer = issuer
                     subject = subject
                 |}
-            act = {| kind = "REGISTER" |}
+            act =
+                {|
+                    kind = "REGISTER"
+                    profile = {| displayName = "Authored" |}
+                |}
         |}
 
 let internal principalAdmission () =

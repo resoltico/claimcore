@@ -41,7 +41,13 @@ let internal factsAndPaging fixture =
     task {
         let! owner = caseWorker fixture
         let target = principal "authority-history-target"
-        let! registered = execute owner 10 target AuthorityAct.Register
+
+        let! registered =
+            execute
+                owner
+                10
+                target
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let targetId =
             match registered.Subject with
@@ -73,7 +79,7 @@ let internal factsAndPaging fixture =
 
         Expect.equal
             (entries |> List.map (fun entry -> Sequence.value entry.Sequence))
-            [ 9L; 8L; 7L; 6L; 4L; 3L; 2L; 1L ]
+            [ 11L; 10L; 9L; 8L; 6L; 5L; 4L; 3L; 2L; 1L ]
             "Mixed case entries never enter authority history"
 
         Expect.equal
@@ -83,9 +89,11 @@ let internal factsAndPaging fixture =
                 AuthorityKind.Disable
                 AuthorityKind.Revoke
                 AuthorityKind.Grant
+                AuthorityKind.SetProfile
                 AuthorityKind.Register
                 AuthorityKind.Grant
                 AuthorityKind.Grant
+                AuthorityKind.SetProfile
                 AuthorityKind.ProvisionOwner
             ]
             "Every authority act has independently specified chronological meaning"
@@ -104,32 +112,36 @@ let internal factsAndPaging fixture =
             "Typed case reference and role"
 
         Expect.equal
-            entries[4].Facts
+            entries[5].Facts
             (AuthorityHistoryFacts.Registered target)
             "Registered principal facts"
 
         Expect.equal
-            entries[7].Facts
+            entries[9].Facts
             (AuthorityHistoryFacts.OwnerProvisioned fixture.Owner)
             "Provision facts"
 
         Expect.isTrue
             (entries
-             |> List.forall (fun entry -> entry.RecordedBy = entries[7].TargetActorId))
+             |> List.forall (fun entry -> entry.RecordedBy.ActorId = entries[9].Target.ActorId))
             "The executing actor is retained"
 
         let! first = read owner None None 2
         let! second = read owner None (page first).NextCursor 2
         let! third = read owner None (page second).NextCursor 2
         let! fourth = read owner None (page third).NextCursor 2
-        let paged = [ first; second; third; fourth ] |> List.collect (page >> _.Entries)
+        let! fifth = read owner None (page fourth).NextCursor 2
+
+        let paged =
+            [ first; second; third; fourth; fifth ] |> List.collect (page >> _.Entries)
+
         Expect.equal paged entries "Newest-first keyset pages cover the mixed ledger exactly once"
-        Expect.isNone (page fourth).NextCursor "Final page has no continuation"
+        Expect.isNone (page fifth).NextCursor "Final page has no continuation"
         let! filtered = read owner (Some(ActorId.value targetId)) None 50
 
         Expect.equal
             ((page filtered).Entries |> List.map (fun entry -> Sequence.value entry.Sequence))
-            [ 9L; 8L; 7L; 6L; 4L ]
+            [ 11L; 10L; 9L; 8L; 6L; 5L ]
             "Actor filter means target, not executor"
 
         let! filteredFirst = read owner (Some(ActorId.value targetId)) None 1
@@ -157,7 +169,13 @@ let internal permissions fixture =
         let handler = principal "history-handler"
         let scoped = principal "history-scoped-auditor"
         let auditor = principal "history-auditor"
-        let! _ = execute owner 11 handler AuthorityAct.Register
+
+        let! _ =
+            execute
+                owner
+                11
+                handler
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let! _ =
             execute
@@ -170,7 +188,12 @@ let internal permissions fixture =
                         Scope = GrantTarget.Installation
                     })
 
-        let! _ = execute owner 13 scoped AuthorityAct.Register
+        let! _ =
+            execute
+                owner
+                13
+                scoped
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let! _ =
             execute
@@ -183,7 +206,12 @@ let internal permissions fixture =
                         Scope = GrantTarget.CaseReference "HISTORY-ACCESS"
                     })
 
-        let! _ = execute owner 15 auditor AuthorityAct.Register
+        let! _ =
+            execute
+                owner
+                15
+                auditor
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let! _ =
             execute

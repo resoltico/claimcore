@@ -181,6 +181,7 @@ let internal bootstrap fixture =
             AuthorityExecution.provisionStore
                 (core fixture fixture.Owner)
                 (id 1)
+                Inputs.ownerProfile
                 CancellationToken.None
 
         match result with

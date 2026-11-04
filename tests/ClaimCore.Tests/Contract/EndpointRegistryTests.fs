@@ -97,7 +97,7 @@ let private receipt =
                      |> Option.get)
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
-        RecordedBy = (CaseFixtures.actorId (id))
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.Authority
                 {
@@ -114,12 +114,14 @@ let private authorityReview =
             Before =
                 {
                     Enabled = false
+                    Profile = None
                     Grants = []
                     Access = []
                 }
             After =
                 {
                     Enabled = true
+                    Profile = None
                     Grants = []
                     Access = []
                 }

@@ -70,7 +70,12 @@ let internal passiveStatusAndRolelessAuthorship fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 10) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 10)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 CancellationToken.None
 
         acceptedAuthority registered

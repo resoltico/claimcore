@@ -313,7 +313,12 @@ let internal assignmentExcludesForbiddenRoles fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 100) service AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 100)
+                        service
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         let actorId =

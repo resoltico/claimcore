@@ -143,7 +143,22 @@ let private authorityActs reference =
                         Scope = scope
                     }
     ]
-    |> Inputs.authorityActs
+    |> fun grants ->
+        [
+            yield AuthorityEffect.Register Inputs.principal, "REGISTER"
+            yield AuthorityEffect.ProvisionOwner Inputs.principal, "PROVISION_OWNER"
+            yield
+                AuthorityEffect.SetProfile(
+                    ActorProfile.parse Inputs.actorProfile |> Fixtures.accepted
+                ),
+                "SET_PROFILE"
+            yield AuthorityEffect.EraseProfile, "ERASE_PROFILE"
+            yield AuthorityEffect.Enable, "ENABLE"
+            yield AuthorityEffect.Disable, "DISABLE"
+            for grant in grants do
+                yield AuthorityEffect.Grant grant, "GRANT"
+                yield AuthorityEffect.Revoke grant, "REVOKE"
+        ]
 
 let private inventories () =
     let registration, decision, payment =
@@ -189,7 +204,7 @@ let private inventories () =
         "The authored scope inventory covers every durable scope case"
 
     Expect.equal
-        (authorityActs "ref" |> List.map (fst >> AuthorityAct.kind) |> Set.ofList)
+        (authorityActs "ref" |> List.map (fst >> AuthorityEffect.kind) |> Set.ofList)
         (Set.ofList AuthorityKind.all)
         "Authority inventory"
 
@@ -277,8 +292,8 @@ let private snapshotProperty =
 
 let private grantTokens act bytes =
     match act with
-    | AuthorityAct.Grant grant
-    | AuthorityAct.Revoke grant ->
+    | AuthorityEffect.Grant grant
+    | AuthorityEffect.Revoke grant ->
         let scope =
             match grant.Scope with
             | RecordedGrantScope.Installation -> "INSTALLATION"
@@ -309,16 +324,25 @@ let private authorityProperty =
                             principalKinds
 
                     for kind, kindToken in kinds do
-                        let expected: AuthorityRequestRecord =
+                        let principal =
+                            {
+                                PrincipalInput.Kind = kind
+                                Issuer = "https://issuer-" + id.ToString("N") + ".example/"
+                                Subject = subject
+                            }
+
+                        let effect =
+                            match act with
+                            | AuthorityEffect.Register _ -> AuthorityEffect.Register principal
+                            | AuthorityEffect.ProvisionOwner _ ->
+                                AuthorityEffect.ProvisionOwner principal
+                            | _ -> act
+
+                        let expected: AuthorityEffectRecord =
                             {
                                 OperationId = id
-                                Target =
-                                    {
-                                        Kind = kind
-                                        Issuer = "https://issuer-" + id.ToString("N") + ".example/"
-                                        Subject = subject
-                                    }
-                                Act = act
+                                TargetActorId = CaseFixtures.actorId id
+                                Effect = effect
                             }
 
                         let bytes = AuthorityRecord.encode expected
@@ -326,7 +350,10 @@ let private authorityProperty =
                         yield
                             AuthorityRecord.decode Int32.MaxValue bytes = Ok expected
                             && tokenAt [ "act"; "kind" ] token bytes
-                            && tokenAt [ "target"; "kind" ] kindToken bytes
+                            && (if token = "REGISTER" || token = "PROVISION_OWNER" then
+                                    tokenAt [ "act"; "principal"; "kind" ] kindToken bytes
+                                else
+                                    true)
                             && grantTokens act bytes
             ]
             |> List.forall (fun value -> value)

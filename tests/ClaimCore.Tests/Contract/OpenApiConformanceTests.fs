@@ -91,7 +91,7 @@ let private corpus response filename () =
             Expect.equal
                 (evaluate selected value)
                 expected
-                "Independent validator judges the frozen example."
+                ("Independent validator judges the frozen example: " + example.GetRawText())
 
             let altered = JsonNode.Parse(value.GetRawText()) |> nonNull
             altered["unexpectedMember"] <- JsonValue.Create true

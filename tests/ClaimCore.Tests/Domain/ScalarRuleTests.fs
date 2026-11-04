@@ -197,7 +197,8 @@ let permanentBoundaries =
                         AuthorityRequest.OperationId =
                             Guid.Parse "90000000-0000-4000-8000-000000000001"
                         Target = Inputs.principal
-                        Act = AuthorityAct.ProvisionOwner
+                        Act =
+                            (AuthorityAct.ProvisionOwner ClaimCore.TestSupport.Inputs.ownerProfile)
                     }
 
                 Expect.equal

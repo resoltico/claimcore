@@ -18,6 +18,15 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "profile groups and erasure projections roll back atomically"
+                (withFixture factory ActorProfilesContract.atomicWrites)
+            testCaseAsync
+                "profile erasure preserves identity grants accepted existence and later re-profile"
+                (withFixture factory ActorProfilesContract.lifecycle)
+            testCaseAsync
+                "registration separates identity and authored profile with independent salts"
+                (withFixture factory ActorProfilesContract.registrationIsolation)
+            testCaseAsync
                 "different and same reminder revisions retain financial preview isolation"
                 (withFixture factory ReminderConcurrencyContract.independentRevisions)
             testCaseAsync

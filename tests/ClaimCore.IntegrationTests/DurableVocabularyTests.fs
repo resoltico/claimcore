@@ -109,7 +109,7 @@ let tests =
                     (fun database ->
                         guardedSql
                             database
-                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN',creation_reference=NULL WHERE sequence=4"
+                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN',creation_reference=NULL WHERE sequence=5"
                             [||])
                     readEntry
                     rawEntry)

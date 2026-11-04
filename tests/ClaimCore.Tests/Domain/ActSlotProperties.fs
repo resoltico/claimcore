@@ -65,9 +65,9 @@ let private authorityProperty =
         return
             candidates
             |> List.forall (fun act ->
-                let mapped = AuthorityAct.map ((+) 1) act
-                let restored = AuthorityAct.map (fun value -> value - 1) mapped
-                let rejected = AuthorityAct.traverse (fun _ -> Error()) act
+                let mapped = AuthorityAct.map ((+) 1) id act
+                let restored = AuthorityAct.map (fun value -> value - 1) id mapped
+                let rejected = AuthorityAct.traverse (fun _ -> Error()) Ok act
 
                 let hasGrant =
                     match act with
