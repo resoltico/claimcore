@@ -18,6 +18,10 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "summary attribution follows text edits rather than assignment updates"
+                (withFixture factory (fun fixture ->
+                    task { let! _ = SummaryAttributionContract.lifecycle fixture in return () }))
+            testCaseAsync
                 "all7 role summaries stay bounded and deterministic"
                 (withFixture factory PeopleDirectoryContract.maximumRoles)
             testCaseAsync

@@ -38,6 +38,8 @@ let private work: WorkHistory =
         Snapshot = Some workSnapshot
         ChangedAt = Some instant
         RecordedBy = Some actor
+        SummaryChangedAt = Some instant
+        SummaryRecordedBy = Some actor
         MissingPayloadAt = None
         PresentPayloadAt = Some Sequence.first
     }
@@ -50,6 +52,8 @@ let private workRow: StoredWork =
         SnapshotBytes = WorkRecord.encodeSnapshot workSnapshot
         ChangedAt = Some instant
         RecordedBy = Some actor
+        SummaryChangedAt = Some instant
+        SummaryRecordedBy = Some actor
     }
 
 let private reminderId =
@@ -119,17 +123,34 @@ let tests =
                             }
                         ]
                         [ { workRow with RecordedBy = None } ]
+                        [
+                            { workRow with
+                                SummaryChangedAt = Some(instant.AddSeconds 1.)
+                            }
+                        ]
+                        [
+                            { workRow with
+                                SummaryRecordedBy = None
+                            }
+                        ]
                     ] do
                     Expect.isError
                         (ProjectionVerification.workRows expected rows)
                         "Independent corruption detected"
 
-                let erased = { work with Snapshot = None }
+                let erased =
+                    { work with
+                        Snapshot = None
+                        SummaryChangedAt = None
+                        SummaryRecordedBy = None
+                    }
 
                 let tombstone =
                     { workRow with
                         Snapshot = None
                         SnapshotBytes = Array.empty
+                        SummaryChangedAt = None
+                        SummaryRecordedBy = None
                     }
 
                 Expect.isOk

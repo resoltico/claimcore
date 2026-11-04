@@ -37,6 +37,9 @@ module internal CaseWorkReads =
                     value.CaseId = record.CaseId && value.Revision = summary.Work.Revision))
             && (summary.Next
                 |> Option.forall (fun value -> Reminder.caseId value = record.CaseId))
+            && (payload |> Option.bind _.Work.Summary |> Option.isSome) =
+                summary.Work.SummaryChangedAt.IsSome
+            && summary.Work.SummaryChangedAt.IsSome = summary.Work.SummaryRecordedBy.IsSome
             && record.Index.Responsible = responsible
             && record.Index.FollowUp = followUp
             && record.Index.WorkSearchText =
@@ -64,7 +67,8 @@ module internal CaseWorkReads =
             let authorIds =
                 summaries
                 |> Map.values
-                |> Seq.choose (fun summary -> summary.Work.RecordedBy)
+                |> Seq.collect (fun summary ->
+                    [ summary.Work.RecordedBy; summary.Work.SummaryRecordedBy ] |> List.choose id)
                 |> Seq.distinct
                 |> Seq.toList
 
@@ -132,6 +136,24 @@ module internal CaseWorkReads =
                                                 result <- Error CoreFault.StoreIntegrityError
                                                 None))
                             Summary = if erased then None else work.Summary
+                            SummaryChangedAt =
+                                if erased then
+                                    None
+                                else
+                                    summary |> Option.bind _.Work.SummaryChangedAt
+                            SummaryRecordedBy =
+                                if erased then
+                                    None
+                                else
+                                    summary
+                                    |> Option.bind (fun value ->
+                                        value.Work.SummaryRecordedBy
+                                        |> Option.bind (fun id ->
+                                            match Map.tryFind id authors with
+                                            | Some actor -> Some actor
+                                            | None ->
+                                                result <- Error CoreFault.StoreIntegrityError
+                                                None))
                             NextAction = if erased then None else next |> Option.map Reminder.action
                             PendingReminders = if erased then 0L else pending
                             OverdueReminders =

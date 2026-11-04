@@ -167,6 +167,8 @@ type internal Writer(inputs: WriteInputs) =
                             SnapshotBytes = WorkRecord.encodeSnapshot root
                             ChangedAt = None
                             RecordedBy = None
+                            SummaryChangedAt = None
+                            SummaryRecordedBy = None
                         }
                         state.Work
                 | CaseProjection.Erase(id, _, _) ->
@@ -177,6 +179,8 @@ type internal Writer(inputs: WriteInputs) =
                             { row with
                                 Snapshot = None
                                 SnapshotBytes = Array.empty
+                                SummaryChangedAt = None
+                                SummaryRecordedBy = None
                             }))
                 | _ -> state.Work
 
@@ -254,6 +258,8 @@ type internal Writer(inputs: WriteInputs) =
                             SnapshotBytes = WorkRecord.encodeSnapshot snapshot
                             ChangedAt = Some update.ChangedAt
                             RecordedBy = Some update.RecordedBy
+                            SummaryChangedAt = update.SummaryChangedAt
+                            SummaryRecordedBy = update.SummaryRecordedBy
                         }
 
                     { state with

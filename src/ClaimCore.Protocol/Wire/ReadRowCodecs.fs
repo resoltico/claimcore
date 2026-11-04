@@ -27,6 +27,8 @@ module internal ReadRowCodecs =
                 changedAt
                 recordedBy
                 summary
+                summaryChangedAt
+                summaryRecordedBy
                 nextAction
                 pending
                 overdue
@@ -43,6 +45,8 @@ module internal ReadRowCodecs =
                     ChangedAt = changedAt
                     RecordedBy = recordedBy
                     Summary = summary
+                    SummaryChangedAt = summaryChangedAt
+                    SummaryRecordedBy = summaryRecordedBy
                     NextAction = nextAction
                     PendingReminders = pending
                     OverdueReminders = overdue
@@ -60,6 +64,8 @@ module internal ReadRowCodecs =
         |> field "changedAt" _.ChangedAt (nullable instant)
         |> field "recordedBy" _.RecordedBy (nullable ActorCodecs.actorRef)
         |> field "summary" _.Summary (nullable handlingSummary)
+        |> field "summaryChangedAt" _.SummaryChangedAt (nullable instant)
+        |> field "summaryRecordedBy" _.SummaryRecordedBy (nullable ActorCodecs.actorRef)
         |> field "nextAction" _.NextAction (nullable reminderAction)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
         |> field "overdueReminders" _.OverdueReminders (integer 0L SafeInteger.Maximum)

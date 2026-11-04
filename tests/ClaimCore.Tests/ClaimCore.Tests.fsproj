@@ -106,6 +106,7 @@
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/OperationRecoveryContract.fs" Link="Application/OperationRecoveryContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/CaseWorkContract.fs" Link="Application/CaseWorkContract.fs" />
+    <Compile Include="../ClaimCore.IntegrationTests/SummaryAttributionContract.fs" Link="Application/SummaryAttributionContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/ReminderConcurrencyContract.fs" Link="Application/ReminderConcurrencyContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
     <Compile Include="../ClaimCore.IntegrationTests/WorklistTriageContract.fs" Link="Application/WorklistTriageContract.fs" />

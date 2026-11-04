@@ -12,6 +12,8 @@ type WorkHistory =
         Snapshot: CaseWorkSnapshot option
         ChangedAt: DateTimeOffset option
         RecordedBy: ActorId option
+        SummaryChangedAt: DateTimeOffset option
+        SummaryRecordedBy: ActorId option
         MissingPayloadAt: Sequence option
         PresentPayloadAt: Sequence option
     }
@@ -90,6 +92,8 @@ module internal WorkFold =
                             Snapshot = Some root
                             ChangedAt = None
                             RecordedBy = None
+                            SummaryChangedAt = None
+                            SummaryRecordedBy = None
                             MissingPayloadAt = None
                             PresentPayloadAt = None
                         }
@@ -97,7 +101,15 @@ module internal WorkFold =
                     reminders
             | EntryTarget.Case(id, _, CaseActKind.Erase, _) ->
                 let work =
-                    work |> Map.change id (Option.map (fun value -> { value with Snapshot = None }))
+                    work
+                    |> Map.change
+                        id
+                        (Option.map (fun value ->
+                            { value with
+                                Snapshot = None
+                                SummaryChangedAt = None
+                                SummaryRecordedBy = None
+                            }))
 
                 let reminders =
                     reminders
@@ -151,6 +163,16 @@ module internal WorkFold =
                     | VerifiedPayload.Erased -> Ok None
                     | _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
+                let summaryChangedAt, summaryRecordedBy =
+                    match snapshot |> Option.bind (fun value -> value.Work.Summary) with
+                    | None -> None, None
+                    | Some summary when
+                        previous.Snapshot |> Option.bind (fun value -> value.Work.Summary) =
+                            Some summary
+                        ->
+                        previous.SummaryChangedAt, previous.SummaryRecordedBy
+                    | Some _ -> Some entry.RecordedAt, Some entry.ActorId
+
                 let missing, present =
                     evidence entry previous.MissingPayloadAt previous.PresentPayloadAt
 
@@ -162,6 +184,8 @@ module internal WorkFold =
                             Snapshot = snapshot
                             ChangedAt = Some entry.RecordedAt
                             RecordedBy = Some entry.ActorId
+                            SummaryChangedAt = summaryChangedAt
+                            SummaryRecordedBy = summaryRecordedBy
                             MissingPayloadAt = missing
                             PresentPayloadAt = present
                         }

@@ -32,7 +32,9 @@ module internal WorkStorage =
     let workColumns =
         "case_id,revision,snapshot,responsible_actor,handling_summary,search_text,"
         + DatabaseSession.instantExpression "changed_at"
-        + " AS changed_at,recorded_by"
+        + " AS changed_at,recorded_by,"
+        + DatabaseSession.instantExpression "summary_changed_at"
+        + " AS summary_changed_at,summary_recorded_by"
 
     let reminderColumns =
         "r.reminder_id,r.case_id,r.revision,r.snapshot,r.state,r.action,"
@@ -65,6 +67,14 @@ module internal WorkStorage =
         then
             raise (RecordCorruptException "Work columns disagree with snapshot.")
 
+        let summaryAt =
+            DatabaseSession.namedOptional<string> (name "summary_changed_at") row
+
+        let summaryBy = actorOption (name "summary_recorded_by") row
+
+        if summary.IsSome <> summaryAt.IsSome || summaryAt.IsSome <> summaryBy.IsSome then
+            raise (RecordCorruptException "Summary attribution disagrees with its current content.")
+
         {
             CaseId = id
             Revision = revision
@@ -75,6 +85,11 @@ module internal WorkStorage =
                 |> Option.map (fun _ ->
                     DatabaseSession.namedRecordedInstant (name "changed_at") row)
             RecordedBy = actorOption (name "recorded_by") row
+            SummaryChangedAt =
+                DatabaseSession.namedOptional<string> (name "summary_changed_at") row
+                |> Option.map (fun _ ->
+                    DatabaseSession.namedRecordedInstant (name "summary_changed_at") row)
+            SummaryRecordedBy = actorOption (name "summary_recorded_by") row
         }
 
     let private readReminder name row : StoredReminder =
@@ -162,7 +177,9 @@ module internal WorkStorage =
     let summaryColumns =
         "w.case_id AS work_record_case_id,w.revision AS work_record_revision,w.snapshot AS work_record_snapshot,w.responsible_actor AS work_record_responsible_actor,w.handling_summary AS work_record_handling_summary,w.search_text AS work_record_search_text,"
         + DatabaseSession.instantExpression "w.changed_at"
-        + " AS work_record_changed_at,w.recorded_by AS work_record_recorded_by,n.pending AS work_record_pending,n.overdue AS work_record_overdue,"
+        + " AS work_record_changed_at,w.recorded_by AS work_record_recorded_by,"
+        + DatabaseSession.instantExpression "w.summary_changed_at"
+        + " AS work_record_summary_changed_at,w.summary_recorded_by AS work_record_summary_recorded_by,n.pending AS work_record_pending,n.overdue AS work_record_overdue,"
         + "r.reminder_id AS next_reminder_id,r.case_id AS next_case_id,r.revision AS next_revision,r.snapshot AS next_snapshot,r.state AS next_state,r.action AS next_action,"
         + DatabaseSession.dateExpression "r.due"
         + " AS next_due,r.search_text AS next_search_text,"

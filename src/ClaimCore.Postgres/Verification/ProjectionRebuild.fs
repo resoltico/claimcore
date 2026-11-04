@@ -106,6 +106,8 @@ module internal ProjectionRebuild =
                                     Snapshot = snapshot
                                     ChangedAt = history.ChangedAt.Value
                                     RecordedBy = history.RecordedBy.Value
+                                    SummaryChangedAt = history.SummaryChangedAt
+                                    SummaryRecordedBy = history.SummaryRecordedBy
                                 })
                             token
                 | Some _ -> ()

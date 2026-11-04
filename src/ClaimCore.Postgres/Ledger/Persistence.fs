@@ -318,7 +318,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.case_work SET revision=$2,snapshot=$3,responsible_actor=$4,handling_summary=$5,search_text=$6,changed_at=$7,recorded_by=$8 WHERE case_id=$1"
+                        "UPDATE claimcore.case_work SET revision=$2,snapshot=$3,responsible_actor=$4,handling_summary=$5,search_text=$6,changed_at=$7,recorded_by=$8,summary_changed_at=$9,summary_recorded_by=$10 WHERE case_id=$1"
                         [|
                             box (CaseId.value value.CaseId)
                             box (Revision.value value.Revision)
@@ -330,6 +330,10 @@ module internal Persistence =
                             DatabaseSession.parameter (summary |> Option.map CaseSearch.normalize)
                             box projection.ChangedAt
                             box (ActorId.value projection.RecordedBy)
+                            DatabaseSession.parameter projection.SummaryChangedAt
+                            DatabaseSession.parameter (
+                                projection.SummaryRecordedBy |> Option.map ActorId.value
+                            )
                         |]
                         token
 

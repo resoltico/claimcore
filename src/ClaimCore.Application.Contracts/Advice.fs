@@ -34,6 +34,8 @@ type CaseWorkView =
         ChangedAt: DateTimeOffset option
         RecordedBy: ActorRef option
         Summary: HandlingSummary option
+        SummaryChangedAt: DateTimeOffset option
+        SummaryRecordedBy: ActorRef option
         NextAction: ReminderAction option
         PendingReminders: int64
         OverdueReminders: int64

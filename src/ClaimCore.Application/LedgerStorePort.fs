@@ -172,6 +172,8 @@ type StoredWork =
         SnapshotBytes: byte array
         ChangedAt: DateTimeOffset option
         RecordedBy: ActorId option
+        SummaryChangedAt: DateTimeOffset option
+        SummaryRecordedBy: ActorId option
     }
 
 type StoredReminder =
@@ -205,6 +207,8 @@ type WorkProjection =
         Snapshot: CaseWorkSnapshot
         ChangedAt: DateTimeOffset
         RecordedBy: ActorId
+        SummaryChangedAt: DateTimeOffset option
+        SummaryRecordedBy: ActorId option
     }
 
 type ReminderProjection =

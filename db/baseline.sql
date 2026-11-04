@@ -345,7 +345,7 @@ BEGIN
      WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
 
     GET DIAGNOSTICS erased = ROW_COUNT;
-    UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL WHERE case_id=target_case_id;
+    UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL,summary_changed_at=NULL,summary_recorded_by=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
     RETURN erased;
 END;
@@ -473,6 +473,9 @@ CREATE TABLE claimcore.case_work (
     search_text text,
     changed_at timestamptz,
     recorded_by uuid REFERENCES claimcore.actors(actor_id),
+    summary_changed_at timestamptz,
+    summary_recorded_by uuid REFERENCES claimcore.actors(actor_id),
+    CHECK ((handling_summary IS NULL AND summary_changed_at IS NULL AND summary_recorded_by IS NULL) OR (handling_summary IS NOT NULL AND summary_changed_at IS NOT NULL AND summary_recorded_by IS NOT NULL)),
     CHECK ((revision=0 AND changed_at IS NULL AND recorded_by IS NULL AND responsible_actor IS NULL AND handling_summary IS NULL) OR (revision>0 AND changed_at IS NOT NULL AND recorded_by IS NOT NULL)),
     CHECK (snapshot IS NOT NULL OR (responsible_actor IS NULL AND handling_summary IS NULL AND search_text IS NULL))
 );

@@ -314,6 +314,14 @@ module internal WorkExecution =
 
                                 let recordedBy = LedgerEnvelope.actorId view.Actor
 
+                                let summaryChangedAt, summaryRecordedBy =
+                                    if after.Work.Summary.IsNone then
+                                        None, None
+                                    elif before.Work.Summary = after.Work.Summary then
+                                        current.SummaryChangedAt, current.SummaryRecordedBy
+                                    else
+                                        Some view.ObservedAt, Some recordedBy
+
                                 let stored =
                                     { current with
                                         Revision = after.Revision
@@ -321,6 +329,8 @@ module internal WorkExecution =
                                         SnapshotBytes = WorkRecord.encodeSnapshot after
                                         ChangedAt = Some view.ObservedAt
                                         RecordedBy = Some recordedBy
+                                        SummaryChangedAt = summaryChangedAt
+                                        SummaryRecordedBy = summaryRecordedBy
                                     }
 
                                 let relations =
@@ -366,6 +376,8 @@ module internal WorkExecution =
                                                             Snapshot = after
                                                             ChangedAt = view.ObservedAt
                                                             RecordedBy = recordedBy
+                                                            SummaryChangedAt = summaryChangedAt
+                                                            SummaryRecordedBy = summaryRecordedBy
                                                         }
                                                 Review =
                                                     OperationReview.Work

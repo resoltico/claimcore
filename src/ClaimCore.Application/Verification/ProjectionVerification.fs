@@ -282,6 +282,8 @@ module ProjectionVerification =
                      |> Option.defaultValue Array.empty)
                 && row.ChangedAt = history.ChangedAt
                 && row.RecordedBy = history.RecordedBy
+                && row.SummaryChangedAt = history.SummaryChangedAt
+                && row.SummaryRecordedBy = history.SummaryRecordedBy
 
         require
             None
