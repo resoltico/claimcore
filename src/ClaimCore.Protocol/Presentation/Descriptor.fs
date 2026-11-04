@@ -68,11 +68,11 @@ module Descriptor =
         | CaseFieldValue.Business(Admitted.Currency value) ->
             PresentedValue.Code("currency", Currency.format value)
 
-    let caseFields (declarations: FieldDescriptor list) getFields =
+    let private fields (declarations: FieldDescriptor list) getFields =
         let paired = declarations |> List.choose _.Pairs |> Set.ofList
 
         declarations
-        |> List.filter (fun field -> field.Listed && not (Set.contains field.Field paired))
+        |> List.filter (fun field -> not (Set.contains field.Field paired))
         |> List.map (fun field ->
             {
                 EntryDefinition.Key = field.Key
@@ -96,6 +96,125 @@ module Descriptor =
                         | None ->
                             value field.Field |> Option.map scalar |> Option.defaultValue absent
             })
+
+    let caseFields declarations getFields =
+        fields (declarations |> List.filter _.Listed) getFields
+
+    let private value key label prominence value =
+        {
+            Entry.Key = key
+            LabelId = label
+            Prominence = prominence
+            Value = value
+        }
+
+    let private optional format =
+        Option.map format >> Option.defaultValue absent
+
+    /// A full card uses all declared facts, including non-listed fields; complete money pairs stay atomic.
+    let caseFacts (snapshot: CaseSnapshot) =
+        match CaseState.fields snapshot.State with
+        | None -> []
+        | Some facts ->
+            let values =
+                CaseFields.declarations
+                |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field facts)
+                |> Map.ofList
+
+            RecordGroup.vocabulary
+            |> Vocabulary.all
+            |> List.map (fun group ->
+                let declarations =
+                    CaseFields.declarations |> List.filter (fun field -> field.Group = Some group)
+
+                {
+                    TitleId = Vocabulary.messageKey RecordGroup.vocabulary group "label"
+                    Entries = entries (fields declarations (fun () -> Some values)) ()
+                })
+
+    let caseWork (work: CaseWorkView) =
+        {
+            TitleId = "section.work.label"
+            Entries =
+                [
+                    value
+                        "responsible"
+                        "field.responsibleActor.label"
+                        Prominence.Primary
+                        (work.Responsible
+                         |> Option.map PresentedValue.Actor
+                         |> Option.defaultValue (PresentedValue.Absent "view.UNASSIGNED.label"))
+                    value
+                        "handlingSummary"
+                        "field.handlingSummary.label"
+                        Prominence.Secondary
+                        (optional (HandlingSummary.format >> PresentedValue.Text) work.Summary)
+                    value
+                        "nextAction"
+                        "field.reminderAction.label"
+                        Prominence.Primary
+                        (optional (ReminderAction.format >> PresentedValue.Text) work.NextAction)
+                    value
+                        "followUp"
+                        "label.nextFollowUp"
+                        Prominence.Secondary
+                        (optional PresentedValue.Date work.FollowUp)
+                    value
+                        "pendingReminders"
+                        "label.pendingReminders"
+                        Prominence.Secondary
+                        (PresentedValue.Count work.PendingReminders)
+                    value
+                        "overdueReminders"
+                        "label.overdueReminders"
+                        Prominence.Secondary
+                        (PresentedValue.Count work.OverdueReminders)
+                    value
+                        "workRevision"
+                        "label.workRevision"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(Revision.format work.Revision))
+                    value
+                        "workChangedAt"
+                        "label.workChangedAt"
+                        Prominence.Detail
+                        (optional PresentedValue.Instant work.ChangedAt)
+                    value
+                        "workRecordedBy"
+                        "label.workRecordedBy"
+                        Prominence.Detail
+                        (optional PresentedValue.Actor work.RecordedBy)
+                ]
+        }
+
+    let caseView (reply: CaseReadModel) =
+        [
+            yield
+                {
+                    TitleId = "subject.CASE.label"
+                    Entries =
+                        [
+                            value
+                                "caseReference"
+                                "field.caseReference.label"
+                                Prominence.Primary
+                                (PresentedValue.Reference reply.Snapshot.Reference)
+                            value
+                                "headline"
+                                "field.status.label"
+                                Prominence.Primary
+                                (PresentedValue.State reply.Headline)
+                            value
+                                "revision"
+                                "label.revisionLabel"
+                                Prominence.Detail
+                                (PresentedValue.Identifier(Revision.format reply.Snapshot.Revision))
+                        ]
+                }
+            yield! caseFacts reply.Snapshot
+            if CaseState.lifecycle reply.Snapshot.State <> Lifecycle.Erased then
+                yield caseWork reply.Work
+        ]
 
     let caseSummaryColumns =
         [

@@ -35,3 +35,9 @@ module internal TextDescriptorValue =
         TextReplyFormat.line language entry.LabelId (render language entry.Value)
 
     let entries language values = List.map (entry language) values
+
+    let sections language values =
+        values
+        |> List.collect (fun (section: Section) ->
+            TextReplyFormat.label language section.TitleId
+            :: entries language section.Entries)

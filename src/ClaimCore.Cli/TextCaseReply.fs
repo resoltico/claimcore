@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -43,42 +44,11 @@ module internal TextCaseReply =
              + displayed language (Some(actorName language account))))
         @ nextLines language page.NextCursor
 
-    let private workAccount language (work: CaseWorkView) =
-        work.Responsible
-        |> Option.map (fun assigned ->
-            line
-                language
-                (FieldPresentation.labelId BusinessField.ResponsibleActor)
-                (displayed language (Some(actorName language assigned))
-                 + " ["
-                 + ActorId.format assigned.ActorId
-                 + "] — "
-                 + label
-                     language
-                     (if assigned.Availability = ActorAvailability.Available then
-                          "label.assigneeAvailable"
-                      else
-                          "label.assigneeUnavailable")))
-        |> Option.toList
-
     let offerAct language act =
         term language CaseActKind.vocabulary act
 
     let caseLines language (value: CaseReadModel) =
-        [
-            line
-                language
-                (FieldPresentation.labelId BusinessField.CaseReference)
-                (TerminalText.data (CaseReference.format value.Snapshot.Reference))
-            line
-                language
-                (CliMessages.key CliMessage.RevisionLabel)
-                (Revision.format value.Snapshot.Revision)
-            line
-                language
-                (CliMessages.key CliMessage.StateLabel)
-                (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
-        ]
+        TextDescriptorValue.sections language (Descriptor.caseView value)
         @ (if value.Advice.Maintenance.Active then
                [ label language "diagnostic.REGISTER_MAINTENANCE" ]
            else
@@ -89,41 +59,6 @@ module internal TextCaseReply =
             + CalendarDate.format (CalendarDate.ofDate value.Work.Basis.BusinessDate)
             + "  "
             + TerminalText.data value.Work.Basis.TimeZoneId
-        ]
-        @ workAccount language value.Work
-        @ [
-            line language "label.workRevision" (Revision.format value.Work.Revision)
-            line
-                language
-                "label.workChangedAt"
-                (value.Work.ChangedAt |> Option.map instant |> displayed language)
-            line
-                language
-                "label.workRecordedBy"
-                (value.Work.RecordedBy |> Option.map (actorName language) |> displayed language)
-            line
-                language
-                (FieldPresentation.labelId BusinessField.HandlingSummary)
-                (value.Work.Summary |> Option.map HandlingSummary.format |> narrative language)
-            line
-                language
-                "label.nextFollowUp"
-                (value.Work.FollowUp |> Option.map CalendarDate.format |> displayed language)
-            line
-                language
-                "field.reminderAction.label"
-                (value.Work.NextAction |> Option.map ReminderAction.format |> displayed language)
-            line language "label.pendingReminders" (number value.Work.PendingReminders)
-            line language "label.overdueReminders" (number value.Work.OverdueReminders)
-        ]
-        @ (if value.Work.NeedsNextAction then
-               [ label language "label.noNextAction" ]
-           else
-               [])
-        @ (CaseState.fields value.Snapshot.State
-           |> Option.map (fieldLines language)
-           |> Option.defaultValue [])
-        @ [
             line
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
