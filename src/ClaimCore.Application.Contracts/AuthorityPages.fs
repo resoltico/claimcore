@@ -5,12 +5,22 @@ open ClaimCore.Domain
 
 open System
 
+/// Present only when the viewer can read cases; zero means a known scoped count.
+type ActorResponsibleCases =
+    {
+        Count: int64
+        ResponsibleActor: ActorId
+    }
+
+    member _.View = CaseView.All
+
 /// Directory details are explicit; contact never becomes part of a reusable actor reference.
 type ActorReviewItem =
     {
         Actor: ActorRef
         Principal: PrincipalKey
         Contact: ContactText option
+        ResponsibleCases: ActorResponsibleCases option
     }
 
 module ActorReviewItem =
@@ -19,6 +29,7 @@ module ActorReviewItem =
             Actor = Actor.currentReference actor
             Principal = actor.Principal
             Contact = actor.Profile |> Option.bind _.Contact
+            ResponsibleCases = None
         }
 
 type ActorReviewPage =

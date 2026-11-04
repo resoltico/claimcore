@@ -677,7 +677,7 @@ List cases
 Read one page of cases visible to the actor.
 
 ```sh
-claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--format text|json|csv] [--language en|lv|ar] [--dry-run] [--all]
+claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--responsible-actor VALUE] [--format text|json|csv] [--language en|lv|ar] [--dry-run] [--all]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -692,6 +692,7 @@ claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|eras
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |
+| `--responsible-actor` | Responsible account filter — Restrict cases to the selected responsible account within your readable scope. Other filters further restrict its results. |  |  |
 
 ## case summary
 
@@ -700,7 +701,7 @@ Case summary
 Count matching visible cases and sum claimed and payable amounts separately for each currency.
 
 ```sh
-claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--format text|json] [--language en|lv|ar] [--dry-run]
+claimcore case summary [--lifecycle active|voided|erased]... [--status opened|closed]... [--progress undecided|decided|paid]... [--text VALUE] [--order reference|recent|notified|follow-up] [--assignment mine|unassigned] [--due overdue|today|upcoming|unscheduled|inactive] [--view needs-attention|mine|overdue|due-today|no-next-action|unassigned|undecided|decided-unpaid|closed|voided|all] [--responsible-actor VALUE] [--format text|json] [--language en|lv|ar] [--dry-run]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -713,6 +714,7 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |
+| `--responsible-actor` | Responsible account filter — Restrict cases to the selected responsible account within your readable scope. Other filters further restrict its results. |  |  |
 
 ## operation observe
 

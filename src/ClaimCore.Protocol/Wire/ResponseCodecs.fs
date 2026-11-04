@@ -501,6 +501,19 @@ module ResponseCodecs =
         |> field "changes" _.Changes (list CaseFields.declarations.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
+    let private actorResponsibleCases =
+        (record (fun count actor _view ->
+            {
+                ActorResponsibleCases.Count = count
+                ResponsibleActor = actor
+            })
+        : Fields<ActorResponsibleCases, _>)
+        |> field "count" _.Count (integer 0L SafeInteger.Maximum)
+        |> field "responsibleActor" _.ResponsibleActor actorId
+        |> field "view" _.View (constant "ALL" |> map (fun () -> CaseView.All) (fun _ -> ()))
+        |> build
+        |> named "ActorResponsibleCases"
+
     let actorSummary =
         let contact =
             nonempty
@@ -514,16 +527,18 @@ module ResponseCodecs =
                         }))
                 ContactText.format
 
-        (record (fun actor principal contact ->
+        (record (fun actor principal contact responsibleCases ->
             {
                 ActorReviewItem.Actor = actor
                 Principal = principal
                 Contact = contact
+                ResponsibleCases = responsibleCases
             })
         : Fields<ActorReviewItem, _>)
         |> field "actor" _.Actor ActorCodecs.actorRef
         |> field "principal" _.Principal principal
         |> field "contact" _.Contact (nullable contact)
+        |> optionalField "responsibleCases" _.ResponsibleCases actorResponsibleCases
         |> build
         |> named "ActorReviewItem"
 

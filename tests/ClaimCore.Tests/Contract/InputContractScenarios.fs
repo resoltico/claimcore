@@ -297,6 +297,7 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Status
             | InteractionInput.Progress
             | InteractionInput.CaseView
+            | InteractionInput.ResponsibleActorFilter
             | InteractionInput.ReminderView
             | InteractionInput.TimelineFilter
             | InteractionInput.Order

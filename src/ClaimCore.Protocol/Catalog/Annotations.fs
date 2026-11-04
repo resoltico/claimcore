@@ -295,6 +295,7 @@ module CatalogAnnotations =
                         "status", InteractionInput.Status
                         "progress", InteractionInput.Progress
                         "view", InteractionInput.CaseView
+                        "responsibleActor", InteractionInput.ResponsibleActorFilter
                         "text", InteractionInput.Target InputTarget.Text
                     ] do
                     yield (owner, name), constant (annotation input)

@@ -509,5 +509,7 @@
   "caseStage.OPENED.label": "Atvērta",
   "caseStage.DECIDED.label": "Ar lēmumu",
   "caseStage.PAID.label": "Apmaksāta",
-  "caseStage.CLOSED.label": "Slēgta"
+  "caseStage.CLOSED.label": "Slēgta",
+  "input.responsibleActorFilter.label": "Atbildīgā konta filtrs",
+  "input.responsibleActorFilter.meaning": "Atlasīt lietas, par kurām atbild norādītais konts, tikai jūsu lasīšanas tiesību ietvaros. Tiek piemēroti arī pārējie filtri."
 }

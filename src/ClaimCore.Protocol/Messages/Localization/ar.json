@@ -509,5 +509,7 @@
   "caseStage.OPENED.label": "مفتوح",
   "caseStage.DECIDED.label": "بقرار",
   "caseStage.PAID.label": "مدفوع",
-  "caseStage.CLOSED.label": "مغلق"
+  "caseStage.CLOSED.label": "مغلق",
+  "input.responsibleActorFilter.label": "تصفية حسب الحساب المسؤول",
+  "input.responsibleActorFilter.meaning": "اعرض القضايا المسندة إلى الحساب المحدد ضمن نطاق القضايا التي يحق لك قراءتها، مع تطبيق عوامل التصفية الأخرى."
 }

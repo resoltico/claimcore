@@ -436,6 +436,7 @@ type IReadTx =
     abstract FindReminder: ReminderId -> Task<StoredReminder option>
     abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>
     abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId, ActorRef>>
+    abstract ResponsibilityCounts: CaseSelection * ActorId list -> Task<Map<ActorId, int64>>
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
     abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
     abstract CaseViewCounts: CaseSelection -> Task<CaseViewCount list>

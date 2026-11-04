@@ -2,9 +2,9 @@
   "accepted": [
     {
       "endpoint": "case.list",
-      "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"assignment\":null,\"due\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"status\":[],\"text\":null,\"view\":null},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASES\",\"v\":6}",
-      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ",
-      "tokenLength": 318
+      "canonicalJson": "{\"after\":{\"reference\":\"DEMO-0050\"},\"filters\":{\"assignment\":null,\"due\":null,\"lifecycle\":[],\"order\":\"REFERENCE\",\"progress\":[],\"responsibleActor\":null,\"status\":[],\"text\":null,\"view\":null},\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"CASES\",\"v\":6}",
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJyZXNwb25zaWJsZUFjdG9yIjpudWxsLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ",
+      "tokenLength": 350
     },
     {
       "endpoint": "case.history",
@@ -46,15 +46,15 @@
   "refused": [
     {
       "name": "padding",
-      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ="
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJyZXNwb25zaWJsZUFjdG9yIjpudWxsLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ="
     },
     {
       "name": "non-canonical member order",
-      "token": "eyJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7InJlZmVyZW5jZSI6IkRFTU8tMDA1MCJ9LCJmaWx0ZXJzIjp7ImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsInZpZXciOm51bGx9LCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
+      "token": "eyJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImFmdGVyIjp7InJlZmVyZW5jZSI6IkRFTU8tMDA1MCJ9LCJmaWx0ZXJzIjp7ImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsInZpZXciOm51bGwsInJlc3BvbnNpYmxlQWN0b3IiOm51bGx9LCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
     },
     {
       "name": "unknown member",
-      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2LCJ4IjoxfQ"
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJyZXNwb25zaWJsZUFjdG9yIjpudWxsLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2LCJ4IjoxfQ"
     },
     {
       "name": "wrong version",
@@ -70,7 +70,7 @@
     },
     {
       "name": "folded reference not uppercase",
-      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJkZW1vLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJkZW1vLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJyZXNwb25zaWJsZUFjdG9yIjpudWxsLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
     },
     {
       "name": "revision zero",
@@ -78,7 +78,7 @@
     },
     {
       "name": "standard base64 alphabet",
-      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTA+PiJ9LCJmaWx0ZXJzIjp7ImFzc2lnbm1lbnQiOm51bGwsImR1ZSI6bnVsbCwibGlmZWN5Y2xlIjpbXSwib3JkZXIiOiJSRUZFUkVOQ0UiLCJwcm9ncmVzcyI6W10sInN0YXR1cyI6W10sInRleHQiOm51bGwsInZpZXciOm51bGx9LCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFUyIsInYiOjZ9"
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTA+PiJ9LCJmaWx0ZXJzIjp7ImFzc2lnbm1lbnQiOm51bGwsImR1ZSI6bnVsbCwibGlmZWN5Y2xlIjpbXSwib3JkZXIiOiJSRUZFUkVOQ0UiLCJwcm9ncmVzcyI6W10sInJlc3BvbnNpYmxlQWN0b3IiOm51bGwsInN0YXR1cyI6W10sInRleHQiOm51bGwsInZpZXciOm51bGx9LCJpbnN0YWxsYXRpb25JZCI6IjkwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDAwMSIsImtpbmQiOiJDQVNFUyIsInYiOjZ9"
     },
     {
       "name": "retired case-list format 4",
@@ -87,6 +87,10 @@
     {
       "name": "retired case-list format 5",
       "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo1fQ"
+    },
+    {
+      "name": "unreleased six omits responsibility filter member",
+      "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
     }
   ]
 }

@@ -501,6 +501,12 @@
       "scalar": null
     },
     {
+      "name": "responsibleActorFilter",
+      "labelId": "input.responsibleActorFilter.label",
+      "meaningId": "input.responsibleActorFilter.meaning",
+      "scalar": null
+    },
+    {
       "name": "reminderView",
       "labelId": "input.reminderView.label",
       "meaningId": "input.reminderView.meaning",
@@ -6885,6 +6891,28 @@
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
+        },
+        {
+          "identity": "responsibleActor",
+          "field": null,
+          "path": [
+            "responsibleActor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.responsibleActorFilter.label",
+          "meaningId": "input.responsibleActorFilter.meaning",
+          "order": 10,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
         }
       ],
       "constants": []
@@ -7122,6 +7150,28 @@
           "labelId": "input.caseView.label",
           "meaningId": "input.caseView.meaning",
           "order": 7,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "responsibleActor",
+          "field": null,
+          "path": [
+            "responsibleActor"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.responsibleActorFilter.label",
+          "meaningId": "input.responsibleActorFilter.meaning",
+          "order": 8,
           "prefill": null,
           "required": false,
           "wireRequired": false,

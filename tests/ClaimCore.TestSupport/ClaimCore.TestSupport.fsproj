@@ -31,6 +31,7 @@
     <Compile Include="MemoryStore.fs" />
     <Compile Include="StoreFixtures.fs" />
     <Compile Include="PostgresFixture.fs" />
+    <Compile Include="ActorResponsibilityScenarios.fs" />
     <Compile Include="IdentityReadiness.fs" />
     <Compile Include="IdentityRealm.fs" />
     <Compile Include="IdentityServer.fs" />

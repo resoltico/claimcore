@@ -11749,6 +11749,112 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "authority.list-viewer-scoped-responsibility",
+      "endpoint": "authority.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "DISABLED"
+                },
+                "contact": "Synthetic contact",
+                "responsibleCases": {
+                  "count": 2,
+                  "responsibleActor": "10000000-0000-4000-8000-000000000001",
+                  "view": "ALL"
+                }
+              },
+              {
+                "principal": {
+                  "kind": "SERVICE",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "SERVICE",
+                  "availability": "DISABLED"
+                },
+                "contact": null
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "authority.list-invalid-responsibility-view",
+      "endpoint": "authority.list",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "DISABLED"
+                },
+                "contact": "Synthetic contact",
+                "responsibleCases": {
+                  "count": 2,
+                  "responsibleActor": "10000000-0000-4000-8000-000000000001",
+                  "view": "MINE"
+                }
+              },
+              {
+                "principal": {
+                  "kind": "SERVICE",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "SERVICE",
+                  "availability": "DISABLED"
+                },
+                "contact": null
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
     }
   ]
 }

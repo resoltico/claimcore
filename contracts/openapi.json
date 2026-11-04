@@ -3333,6 +3333,28 @@
           "availability"
         ]
       },
+      "ActorResponsibleCases": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          },
+          "responsibleActor": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "view": {
+            "const": "ALL"
+          }
+        },
+        "required": [
+          "count",
+          "responsibleActor",
+          "view"
+        ]
+      },
       "ActorReviewItem": {
         "type": "object",
         "additionalProperties": false,
@@ -3354,6 +3376,9 @@
                 "type": "null"
               }
             ]
+          },
+          "responsibleCases": {
+            "$ref": "#/components/schemas/ActorResponsibleCases"
           }
         },
         "required": [
@@ -5275,6 +5300,9 @@
               "VOIDED",
               "ALL"
             ]
+          },
+          "responsibleActor": {
+            "$ref": "#/components/schemas/Uuid"
           }
         },
         "required": [
@@ -6186,6 +6214,9 @@
               "VOIDED",
               "ALL"
             ]
+          },
+          "responsibleActor": {
+            "$ref": "#/components/schemas/Uuid"
           }
         },
         "required": []

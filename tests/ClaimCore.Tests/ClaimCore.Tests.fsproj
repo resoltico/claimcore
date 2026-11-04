@@ -114,6 +114,7 @@
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
     <Compile Include="Application/WorklistAuthorizationTests.fs" />
+    <Compile Include="Application/ActorResponsibilityTests.fs" />
     <Compile Include="Application/ViewCountTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Application/AuthorityPolicyInputs.fs" />
@@ -144,6 +145,7 @@
     <Compile Include="Contract/WorkProtocolTests.fs" />
     <Compile Include="Contract/OperationCatalogTests.fs" />
     <Compile Include="Contract/ConsequenceTests.fs" />
+    <Compile Include="Contract/ResponsibilitySelectionTests.fs" />
     <Compile Include="Cli/RemoteClientTests.fs" />
     <Compile Include="Cli/RemoteTlsTests.fs" />
     <Compile Include="Cli/TokenLifetimeTests.fs" />

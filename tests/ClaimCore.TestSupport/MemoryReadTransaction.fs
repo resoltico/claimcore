@@ -63,6 +63,8 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
                 record.Index.FollowUp
                 =
                 due))
+    && (selection.Filter.ResponsibleActor
+        |> Option.forall (fun actor -> record.Index.Responsible = Some actor))
     && not forbidden
     && CaseListFilter.matches
         selection.Filter
@@ -297,6 +299,29 @@ type internal Reader
                 |> List.map (fun (caseId, actorId) -> caseId, assignedAccount state caseId actorId)
                 |> Map.ofList
             )
+
+        member _.ResponsibilityCounts(selection, actors) =
+            read ()
+
+            if actors.Length > Paging.MaximumPageSize then
+                invalidArg (nameof actors) "Use at most one admitted actor page."
+
+            let state = get ()
+
+            let assigned =
+                state.Cases
+                |> Map.values
+                |> Seq.filter (selected state selection)
+                |> Seq.choose _.Index.Responsible
+                |> Seq.countBy id
+                |> Map.ofSeq
+
+            actors
+            |> List.distinct
+            |> List.map (fun actor ->
+                actor, (Map.tryFind actor assigned |> Option.defaultValue 0 |> int64))
+            |> Map.ofList
+            |> Task.FromResult
 
         member _.ReminderPage query =
             read ()

@@ -188,6 +188,10 @@ type internal PausedPageStore
                                         tx.WorkSummaries(ids, today)
 
                                     member _.AssignedAccounts pairs = tx.AssignedAccounts pairs
+
+                                    member _.ResponsibilityCounts(selection, actors) =
+                                        tx.ResponsibilityCounts(selection, actors)
+
                                     member _.ReminderPage query = tx.ReminderPage query
 
                                     member _.WorkOverview(selection, mine) =

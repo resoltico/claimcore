@@ -435,9 +435,10 @@
     "reminderView",
     "timelineFilter",
     "profile.displayName",
-    "profile.contact"
+    "profile.contact",
+    "responsibleActorFilter"
   ],
-  "cliFrameCount": 57,
+  "cliFrameCount": 59,
   "readInputs": {
     "case.get": [
       "target"
@@ -452,7 +453,8 @@
       "order",
       "assignment",
       "due",
-      "view"
+      "view",
+      "responsibleActor"
     ],
     "case.history": [
       "target",
@@ -489,7 +491,8 @@
       "order",
       "assignment",
       "due",
-      "view"
+      "view",
+      "responsibleActor"
     ],
     "operation.status": [
       "operationId"

@@ -43,6 +43,7 @@
     <Compile Include="WorklistFixtures.fs" />
     <Compile Include="WorklistQueryTests.fs" />
     <Compile Include="ViewCountQueryTests.fs" />
+    <Compile Include="ActorResponsibilityTests.fs" />
     <Compile Include="ReminderViewQueryTests.fs" />
     <Compile Include="WorklistCursorPrecisionTests.fs" />
     <Compile Include="ApplicationFixtures.fs" />

@@ -509,5 +509,7 @@
   "caseStage.OPENED.label": "Opened",
   "caseStage.DECIDED.label": "Decided",
   "caseStage.PAID.label": "Paid",
-  "caseStage.CLOSED.label": "Closed"
+  "caseStage.CLOSED.label": "Closed",
+  "input.responsibleActorFilter.label": "Responsible account filter",
+  "input.responsibleActorFilter.meaning": "Restrict cases to the selected responsible account within your readable scope. Other filters further restrict its results."
 }

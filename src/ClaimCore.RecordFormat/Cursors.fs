@@ -150,6 +150,10 @@ module Cursors =
                 filter.Assignment
                 |> Option.map (DurableNames.caseAssignment >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
+                "responsibleActor",
+                filter.ResponsibleActor
+                |> Option.map (ActorId.format >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
                 "view",
                 filter.View
                 |> Option.map (DurableNames.caseView >> JsonValue.String)

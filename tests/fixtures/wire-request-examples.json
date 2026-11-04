@@ -2433,6 +2433,33 @@
         "issuer": "https://issuer.example/",
         "subject": "waiting"
       }
+    },
+    {
+      "id": "case.list-responsible-actor",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "responsibleActor": "b26d20d5-47c5-4522-9c8f-0982c5e08fd8",
+        "view": "ALL",
+        "status": [
+          "CLOSED"
+        ],
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.summary-responsible-actor",
+      "endpoint": "case.summary",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "responsibleActor": "b26d20d5-47c5-4522-9c8f-0982c5e08fd8",
+        "view": "ALL",
+        "status": [
+          "CLOSED"
+        ]
+      }
     }
   ]
 }

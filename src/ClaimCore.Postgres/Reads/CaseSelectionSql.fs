@@ -51,7 +51,7 @@ module internal CaseSelectionSql =
         let view =
             selection.Filter.View |> Option.map viewPredicate |> Option.defaultValue "TRUE"
 
-        $"{basePredicate} AND ({view})"
+        $"{basePredicate} AND ({view}) AND ($12::uuid IS NULL OR c.responsible_actor=$12)"
 
     let parameters (selection: CaseSelection) =
         let filter = selection.Filter
@@ -76,4 +76,5 @@ module internal CaseSelectionSql =
             DatabaseSession.parameter (filter.Assignment |> Option.map CaseAssignment.token)
             DatabaseSession.parameter (filter.Due |> Option.map CaseDue.token)
             box selection.DateBasis.BusinessDate
+            DatabaseSession.parameter (filter.ResponsibleActor |> Option.map ActorId.value)
         |]

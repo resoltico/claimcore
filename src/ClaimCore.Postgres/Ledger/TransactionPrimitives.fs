@@ -36,10 +36,10 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Reference value) -> Some value
                     | _ -> invalidArg (nameof query) "Expected a reference position."
 
-                key + " > $12 COLLATE \"C\"",
+                key + " > $13 COLLATE \"C\"",
                 key + " ASC",
                 [| DatabaseSession.parameter reference |],
-                "$13"
+                "$14"
             | CaseListOrder.Recent, position ->
                 let reference, changedAt =
                     match position with
@@ -47,12 +47,12 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Recent(time, reference)) -> Some reference, Some time
                     | _ -> invalidArg (nameof query) "Expected a recent position."
 
-                "(c.changed_at < $13::timestamptz OR (c.changed_at = $13 AND "
+                "(c.changed_at < $14::timestamptz OR (c.changed_at = $14 AND "
                 + key
-                + " > $12 COLLATE \"C\"))",
+                + " > $13 COLLATE \"C\"))",
                 "c.changed_at DESC," + key + " ASC",
                 [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
-                "$14"
+                "$15"
             | CaseListOrder.Notified, position ->
                 let reference, date =
                     match position with
@@ -60,17 +60,17 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a notification position."
 
-                "(($13::date IS NULL AND c.notified_on IS NULL AND "
+                "(($14::date IS NULL AND c.notified_on IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13::date OR c.notified_on IS NULL OR (c.notified_on=$13::date AND "
+                + " > $13 COLLATE \"C\") OR ($14::date IS NOT NULL AND (c.notified_on > $14::date OR c.notified_on IS NULL OR (c.notified_on=$14::date AND "
                 + key
-                + " > $12 COLLATE \"C\"))))",
+                + " > $13 COLLATE \"C\"))))",
                 "c.notified_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
-                "$14"
+                "$15"
 
             | CaseListOrder.FollowUp, position ->
                 let reference, date =
@@ -79,20 +79,20 @@ module internal TransactionPages =
                     | Some(CaseListPosition.FollowUp(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a follow-up position."
 
-                "(($13::date IS NULL AND c.follow_up IS NULL AND "
+                "(($14::date IS NULL AND c.follow_up IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13::date OR c.follow_up IS NULL OR (c.follow_up=$13::date AND "
+                + " > $13 COLLATE \"C\") OR ($14::date IS NOT NULL AND (c.follow_up > $14::date OR c.follow_up IS NULL OR (c.follow_up=$14::date AND "
                 + key
-                + " > $12 COLLATE \"C\"))))",
+                + " > $13 COLLATE \"C\"))))",
                 "c.follow_up ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
-                "$14"
+                "$15"
 
         let sql =
-            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate query.Selection} AND ($12::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
+            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate query.Selection} AND ($13::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
 
         let parameters =
             Array.concat
@@ -273,6 +273,9 @@ type private ReadTx
 
         member _.AssignedAccounts pairs =
             WorkStorage.accounts connection pairs token
+
+        member _.ResponsibilityCounts(selection, actors) =
+            ResponsibilityCountStorage.counts connection selection actors token
 
         member _.ReminderPage query = WorkStorage.page connection query token
 

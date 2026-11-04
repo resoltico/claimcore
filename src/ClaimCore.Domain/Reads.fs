@@ -93,6 +93,7 @@ type CaseListFilter<'text> =
         Text: 'text option
         Order: CaseListOrder
         View: CaseView option
+        ResponsibleActor: ActorId option
         Assignment: CaseAssignment option
         Due: CaseDue option
     }
@@ -106,6 +107,7 @@ module CaseListFilter =
             Text = text
             Order = order
             View = None
+            ResponsibleActor = None
             Assignment = None
             Due = None
         }
@@ -130,6 +132,7 @@ module CaseListFilter =
             |> fun filter ->
                 { filter with
                     View = input.View
+                    ResponsibleActor = input.ResponsibleActor
                     Assignment = input.Assignment
                     Due = input.Due
                 })

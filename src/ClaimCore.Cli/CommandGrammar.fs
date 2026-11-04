@@ -45,6 +45,8 @@ module CommandGrammar =
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
 
+    // This flat input-name table has no nested decisions; canonical flag names have one owner.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let inputName =
         function
         | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
@@ -52,6 +54,7 @@ module CommandGrammar =
         | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
         | InteractionInput.CaseView
         | InteractionInput.ReminderView -> "view"
+        | InteractionInput.ResponsibleActorFilter -> "responsibleActor"
         | InteractionInput.ReminderDue -> "due"
         | InteractionInput.ReminderState -> "state"
         | InteractionInput.Target InputTarget.ReminderAction -> "action"
