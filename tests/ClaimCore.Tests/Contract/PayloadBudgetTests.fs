@@ -212,6 +212,92 @@ let private boundedAuthority () =
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"
     Expect.throws (fun () -> grants 51 |> ignore) "Grant overproduction refuses, never truncates"
 
+let private timelineBudget () =
+    let required =
+        function
+        | Ok value -> value
+        | Error problem -> failtestf "Budget fixture must be representable: %A" problem
+
+    let person number character =
+        {
+            ActorId =
+                CaseFixtures.actorId (Guid.Parse(sprintf "d0000000-0000-4000-8000-%012d" number))
+            DisplayName =
+                DisplayName.Named(
+                    PartyName.parse (String(character, PartyName.MaximumBytes)) |> required
+                )
+            PrincipalKind = PrincipalKind.Human
+            Availability = ActorAvailability.Available
+        }
+
+    let entry =
+        {
+            CaseTimelineEntry.OperationId = CaseFixtures.operationId id
+            Position = (receipt SnapshotDisclosure.Withheld).Position
+            Subject = TimelineSubject.Work(CaseFixtures.revision maximum, WorkActKind.UpdateWork)
+            RecordedAt = instant
+            RecordedBy = person 1 (char 1)
+            Changes =
+                TimelineChanges.Disclosed
+                    [
+                        TimelineChange.Responsibility
+                            {
+                                Before = Some(person 2 (char 2))
+                                After = Some(person 3 (char 3))
+                            }
+                        TimelineChange.HandlingSummary
+                            {
+                                Before =
+                                    Some(
+                                        HandlingSummary.parse (
+                                            String(char 4, HandlingSummary.MaximumBytes)
+                                        )
+                                        |> required
+                                    )
+                                After =
+                                    Some(
+                                        HandlingSummary.parse (
+                                            String(char 5, HandlingSummary.MaximumBytes)
+                                        )
+                                        |> required
+                                    )
+                            }
+                    ]
+        }
+
+    let bytes =
+        Codec.encode
+            Api.caseTimeline.Output
+            (Outcome.Succeeded
+                {
+                    CaseTimelinePage.Basis = Inputs.workBasis
+                    CaseId = CaseFixtures.caseId id
+                    Reference = CaseFixtures.reference reference
+                    Items = List.replicate Paging.MaximumPageSize entry
+                    NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
+                })
+
+    let caseBound = 2 * LedgerPayload.MaximumBytes + 6 * PartyName.MaximumBytes + 4096
+
+    let workBound =
+        12 * HandlingSummary.MaximumBytes + 18 * PartyName.MaximumBytes + 4096
+
+    let bound = Paging.MaximumPageSize * max caseBound workBound + 4096
+
+    Expect.isLessThan
+        bytes.Length
+        bound
+        "Worst work changes include both names, the author and both summaries with full JSON escaping"
+
+    Expect.isLessThan
+        bound
+        Limits.MaximumResponseBytes
+        "A full fifty-entry timeline fits the unchanged 4 MiB response limit"
+
+    Expect.isOk
+        (Codec.decode Limits.MaximumResponseBytes Api.caseTimeline.Output bytes)
+        "The actual maximal page decodes under the public limit"
+
 [<Tests>]
 let tests =
     testList
@@ -221,4 +307,7 @@ let tests =
                 "fifty full entries fit the budget derived from permanent field bounds"
                 fullHistoryBudget
             testCase "authority headers and grants have actual bounded codecs" boundedAuthority
+            testCase
+                "fifty typed timeline differences fit the unchanged response budget"
+                timelineBudget
         ]
