@@ -109,12 +109,10 @@ let private repairs database =
                 current.Work.Responsible
                 (Some
                     {
-                        Account =
-                            {
-                                ActorId = CaseFixtures.actorId (id 1)
-                                Subject = "synthetic-owner"
-                            }
-                        Available = true
+                        ActorId = CaseFixtures.actorId (id 1)
+                        DisplayName = DisplayName.Erased
+                        PrincipalKind = PrincipalKind.Human
+                        Availability = ActorAvailability.Available
                     })
                 "Actor rows and authority are restored before referenced case work"
 

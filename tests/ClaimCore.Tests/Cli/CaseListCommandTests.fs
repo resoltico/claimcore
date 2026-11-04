@@ -240,7 +240,8 @@ let tests =
                             "state.payable.currency"
                             "state.progress"
                             "state.incidentNotificationDate"
-                            "state.work.responsible.account.actorId"
+                            "state.work.responsible.actorId"
+                            "state.work.responsible.displayName"
                             "state.work.followUpDate"
                             "state.work.due"
                             "state.work.basis.businessDate"
@@ -304,16 +305,18 @@ let tests =
                             Responsible =
                                 Some
                                     {
-                                        Account =
-                                            {
-                                                ActorId =
-                                                    CaseFixtures.actorId (
-                                                        Guid.Parse
-                                                            "80000000-0000-4000-8000-000000000001"
-                                                    )
-                                                Subject = "=retained account subject"
-                                            }
-                                        Available = false
+                                        ActorId =
+                                            CaseFixtures.actorId (
+                                                Guid.Parse "80000000-0000-4000-8000-000000000001"
+                                            )
+                                        DisplayName =
+                                            DisplayName.Named(
+                                                PartyName.parse "=authored display name"
+                                                |> Result.defaultWith (fun _ ->
+                                                    failtest "Name fixture")
+                                            )
+                                        PrincipalKind = PrincipalKind.Human
+                                        Availability = ActorAvailability.NotEligible
                                     }
                             FollowUp = Some(Inputs.date "2026-08-31")
                             Due = CaseDue.Today
@@ -331,9 +334,10 @@ let tests =
                     let cells = (parseCsv bytes)[1]
 
                     Expect.equal
-                        (cells |> List.skip 12 |> List.take 5)
+                        (cells |> List.skip 12 |> List.take 6)
                         [
                             "80000000-0000-4000-8000-000000000001"
+                            "'=authored display name"
                             "2026-08-31"
                             "TODAY"
                             "2026-08-31"
@@ -341,9 +345,10 @@ let tests =
                         ]
                         "ID, planned date, due meaning and observation basis remain distinct"
 
-                    Expect.isFalse
-                        (Encoding.UTF8.GetString(bytes).Contains "retained account subject")
-                        "The fact export does not invent another account-directory column")
+                    Expect.stringContains
+                        (Encoding.UTF8.GetString bytes)
+                        "'=authored display name"
+                        "New profile-name column retains formula neutrality")
             testCase "CSV all follows cursors with one header and unchanged filters" (fun () ->
                 let code, bytes, _, calls =
                     run

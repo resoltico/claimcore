@@ -232,7 +232,7 @@ module internal WorkStorage =
                 let! rows =
                     DatabaseSession.namedRows
                         connection
-                        "SELECT p.case_id,a.actor_id,a.subject,(a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($3::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($4::text[]))) AS available FROM unnest($1::uuid[],$2::uuid[]) AS p(case_id,actor_id) JOIN claimcore.actors a USING(actor_id)"
+                        "SELECT p.case_id,a.actor_id,a.principal_kind,a.enabled,a.display_name,a.contact,(a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($3::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($4::text[]))) AS available FROM unnest($1::uuid[],$2::uuid[]) AS p(case_id,actor_id) JOIN claimcore.actors a USING(actor_id)"
                         [|
                             box (pairs |> List.map (fst >> CaseId.value) |> List.toArray)
                             box (pairs |> List.map (snd >> ActorId.value) |> List.toArray)
@@ -253,14 +253,22 @@ module internal WorkStorage =
                     rows
                     |> List.map (fun row ->
                         caseId "case_id" row,
-                        {
-                            AssignedAccount.Account =
-                                {
-                                    ActorId = actor "actor_id" row
-                                    Subject = DatabaseSession.namedValue<string> "subject" row
-                                }
-                            Available = DatabaseSession.namedValue<bool> "available" row
-                        })
+                        ActorRef.create
+                            (actor "actor_id" row)
+                            (DurableNames.tryPrincipalKind (
+                                DatabaseSession.namedValue<string> "principal_kind" row
+                             )
+                             |> Option.defaultWith (fun () ->
+                                 raise (RecordCorruptException "Invalid assigned principal kind.")))
+                            (if not (DatabaseSession.namedValue<bool> "enabled" row) then
+                                 ActorAvailability.Disabled
+                             elif DatabaseSession.namedValue<bool> "available" row then
+                                 ActorAvailability.Available
+                             else
+                                 ActorAvailability.NotEligible)
+                            (Projections.profile
+                                (DatabaseSession.namedOptional<string> "display_name" row)
+                                (DatabaseSession.namedOptional<string> "contact" row)))
                     |> Map.ofList
         }
 

@@ -71,6 +71,7 @@ module internal AuthorityReviews =
                                     ActorId = id
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                             Grants =
                                 match projection with

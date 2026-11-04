@@ -166,6 +166,7 @@ let private authorityFixture () =
             ActorId = (CaseFixtures.actorId (id))
             Principal = principal
             Enabled = false
+            Profile = None
         }
 
     let grant: ScopedGrant =

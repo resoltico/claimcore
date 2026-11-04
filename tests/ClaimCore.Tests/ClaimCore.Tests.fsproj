@@ -69,6 +69,7 @@
     <Compile Include="Domain/DecimalTotalTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/CaseWorkAndUpdateTests.fs" />
+    <Compile Include="Domain/ActorProfileTests.fs" />
     <Compile Include="Domain/BusinessDateTests.fs" />
     <Compile Include="Domain/DomainAdmissionTests.fs" />
     <Compile Include="Contract/TextFormatTests.fs" />

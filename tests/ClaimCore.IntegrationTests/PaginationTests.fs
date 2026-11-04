@@ -262,6 +262,7 @@ type internal PausedPageStore
                                             }
                                         )
 
+                                    member _.ActorRefs ids = tx.ActorRefs ids
                                     member _.FindActor id = tx.FindActor id
                                     member _.AssigneePage query = tx.AssigneePage query
                                     member _.EnabledHumanOwners() = tx.EnabledHumanOwners()

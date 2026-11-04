@@ -43,7 +43,7 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
                     Responsible =
                         record.Index.Responsible
                         |> Option.map (fun actor ->
-                            actor, (assignedAccount state record.CaseId actor).Available)
+                            actor, (assignedAccount state record.CaseId actor).Availability = ActorAvailability.Available)
                     NextPendingDue = record.Index.FollowUp
                 }))
     && (selection.Filter.Assignment
@@ -392,7 +392,8 @@ type internal Reader
                     let unavailable =
                         parent.Index.Responsible
                         |> Option.exists (fun actor ->
-                            not (assignedAccount state parent.CaseId actor).Available)
+                            (assignedAccount state parent.CaseId actor).Availability
+                            <> ActorAvailability.Available)
 
                     pending.IsEmpty, overdue, unassigned, unavailable)
 
@@ -507,16 +508,22 @@ type internal Reader
                     && permitted query.WorkRoles actor.ActorId)
                 |> Seq.sortBy _.ActorId
                 |> Seq.truncate (query.Limit + 1)
-                |> Seq.map (fun actor ->
-                    let _, _, subject = PrincipalKey.parts actor.Principal
-
-                    {
-                        AccountSubject.ActorId = actor.ActorId
-                        Subject = subject
-                    })
+                |> Seq.map Actor.currentReference
                 |> Seq.toList
 
             Task.FromResult(page query.Limit _.ActorId rows)
+
+        member _.ActorRefs ids =
+            read ()
+            let state = get ()
+
+            ids
+            |> List.distinct
+            |> List.choose (fun id ->
+                Map.tryFind id state.Actors
+                |> Option.map (fun actor -> id, Actor.currentReference actor))
+            |> Map.ofList
+            |> Task.FromResult
 
         member _.FindActor id =
             read ()

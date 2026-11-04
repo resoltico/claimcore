@@ -133,7 +133,21 @@ type Actor =
         ActorId: ActorId
         Principal: PrincipalKey
         Enabled: bool
+        Profile: ActorProfile option
     }
+
+module Actor =
+    let reference availability (actor: Actor) =
+        let kind, _, _ = PrincipalKey.parts actor.Principal
+        ActorRef.create actor.ActorId kind availability actor.Profile
+
+    let currentReference (actor: Actor) =
+        reference
+            (if actor.Enabled then
+                 ActorAvailability.Available
+             else
+                 ActorAvailability.Disabled)
+            actor
 
 type ActorAuthority =
     {

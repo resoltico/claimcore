@@ -228,6 +228,7 @@ let private meaninglessScope () =
                     ActorId = CaseFixtures.actorId (id 2)
                     Principal = other
                     Enabled = true
+                    Profile = None
                 }
             Grants = []
         }
@@ -353,6 +354,7 @@ let private accessExplanation () =
                                 ActorId = CaseFixtures.actorId (id 3)
                                 Principal = service
                                 Enabled = true
+                                Profile = None
                             }
                         Grants =
                             [

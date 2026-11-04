@@ -37,30 +37,6 @@ module internal ReadRowCodecs =
         |> build
         |> named "WorkDateBasis"
 
-    let accountSubject =
-        (record (fun actor subject ->
-            {
-                AccountSubject.ActorId = actor
-                Subject = subject
-            })
-        : Fields<AccountSubject, _>)
-        |> field "actorId" _.ActorId actorId
-        |> field "subject" _.Subject nonempty
-        |> build
-        |> named "AccountSubject"
-
-    let private assignedAccount =
-        (record (fun account available ->
-            {
-                AssignedAccount.Account = account
-                Available = available
-            })
-        : Fields<AssignedAccount, _>)
-        |> field "account" _.Account accountSubject
-        |> field "available" _.Available boolean
-        |> build
-        |> named "AssignedAccount"
-
     let workView =
         (record
             (fun
@@ -99,7 +75,7 @@ module internal ReadRowCodecs =
         : Fields<CaseWorkView, _>)
         |> field "revision" _.Revision revision
         |> field "changedAt" _.ChangedAt (nullable instant)
-        |> field "recordedBy" _.RecordedBy (nullable actorId)
+        |> field "recordedBy" _.RecordedBy (nullable ActorCodecs.actorRef)
         |> field "summary" _.Summary (nullable handlingSummary)
         |> field "nextAction" _.NextAction (nullable reminderAction)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
@@ -108,7 +84,7 @@ module internal ReadRowCodecs =
         |> field "canUpdateSummary" _.CanUpdateSummary boolean
         |> field "canAssign" _.CanAssign boolean
         |> field "canCreateReminder" _.CanCreateReminder boolean
-        |> field "responsible" _.Responsible (nullable assignedAccount)
+        |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "followUpDate" _.FollowUp (nullable calendarDate)
         |> field "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)
         |> field "basis" _.Basis dateBasis

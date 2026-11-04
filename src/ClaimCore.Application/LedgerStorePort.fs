@@ -407,7 +407,7 @@ type IReadTx =
     abstract FindWork: CaseId -> Task<StoredWork option>
     abstract FindReminder: ReminderId -> Task<StoredReminder option>
     abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>
-    abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId, AssignedAccount>>
+    abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId, ActorRef>>
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
     abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
     abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
@@ -423,8 +423,9 @@ type IReadTx =
 
     abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
 
+    abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
-    abstract AssigneePage: AssigneePageQuery -> Task<Page<AccountSubject, ActorId>>
+    abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
 

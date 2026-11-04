@@ -28,6 +28,7 @@ let private actor principal grants : ActorAuthority =
                 ActorId = (CaseFixtures.actorId id)
                 Principal = principal
                 Enabled = true
+                Profile = None
             }
         Grants = grants
     }
@@ -457,6 +458,7 @@ let private invalidProjectionRows () =
             ActorId = (CaseFixtures.actorId id)
             Principal = human
             Enabled = true
+            Profile = None
         }
 
     let actors = Map.ofList [ CaseFixtures.actorId id, owner ]

@@ -13,7 +13,7 @@ module internal CaseWorkReads =
                     fields.Status, CaseProgress.ofPayment fields.Progress)
             Responsible =
                 work.Responsible
-                |> Option.map (fun assigned -> assigned.Account.ActorId, assigned.Available)
+                |> Option.map (fun assigned -> assigned.ActorId, assigned.Availability = ActorAvailability.Available)
             NextPendingDue = work.FollowUp
         }
 
@@ -66,6 +66,15 @@ module internal CaseWorkReads =
                         snapshot.Work.Responsible |> Option.map (fun actor -> id, actor)))
 
             let! accounts = tx.AssignedAccounts assignments
+
+            let authorIds =
+                summaries
+                |> Map.values
+                |> Seq.choose (fun summary -> summary.Work.RecordedBy)
+                |> Seq.distinct
+                |> Seq.toList
+
+            let! authors = tx.ActorRefs authorIds
             let mutable result = Ok Map.empty
 
             for record in records do
@@ -117,7 +126,15 @@ module internal CaseWorkReads =
                                 if erased then
                                     None
                                 else
-                                    summary |> Option.bind _.Work.RecordedBy
+                                    summary
+                                    |> Option.bind (fun value ->
+                                        value.Work.RecordedBy
+                                        |> Option.bind (fun id ->
+                                            match Map.tryFind id authors with
+                                            | Some actor -> Some actor
+                                            | None ->
+                                                result <- Error CoreFault.StoreIntegrityError
+                                                None))
                             Summary = if erased then None else work.Summary
                             NextAction = if erased then None else next |> Option.map Reminder.action
                             PendingReminders = if erased then 0L else pending

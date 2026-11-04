@@ -141,19 +141,17 @@ let internal assignedAccount state caseId actorId =
                     }
             )
 
-        let _, _, subject = PrincipalKey.parts actor.Principal
+        let available =
+            PrincipalKey.isHuman actor.Principal
+            && Authority.can actor.Principal authority Capability.ReadCase (Scope.Case caseId)
+            && Authority.can actor.Principal authority Capability.ManageCaseWork (Scope.Case caseId)
 
-        {
-            AssignedAccount.Account = { ActorId = actorId; Subject = subject }
-            Available =
-                PrincipalKey.isHuman actor.Principal
-                && Authority.can actor.Principal authority Capability.ReadCase (Scope.Case caseId)
-                && Authority.can
-                    actor.Principal
-                    authority
-                    Capability.ManageCaseWork
-                    (Scope.Case caseId)
-        }
+        let availability =
+            if not actor.Enabled then ActorAvailability.Disabled
+            elif available then ActorAvailability.Available
+            else ActorAvailability.NotEligible
+
+        Actor.reference availability actor
 
 let internal completeOperations previousHead (state: State) =
     let changed =

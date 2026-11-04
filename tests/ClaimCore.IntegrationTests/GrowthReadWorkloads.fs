@@ -399,7 +399,7 @@ let private workProfiles progressed publish (actor: ServiceContext) cases =
                                 "The database observation classifies actual past follow-up"
 
                             Expect.equal
-                                (facts.Work.Responsible |> Option.map _.Account.ActorId)
+                                (facts.Work.Responsible |> Option.map _.ActorId)
                                 (Some context.ActorId)
                                 "Mine is explicit responsibility, not grant-based visibility"
                         | _ -> failtest "Only seeded active work can match the work filter"

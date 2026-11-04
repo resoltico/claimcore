@@ -94,7 +94,7 @@ module internal Advice =
                 Advice = advice
                 Mine =
                     match actor.Actor, work.Responsible with
-                    | Some requester, Some assigned -> assigned.Account.ActorId = requester.ActorId
+                    | Some requester, Some assigned -> assigned.ActorId = requester.ActorId
                     | _ -> false
             })
 

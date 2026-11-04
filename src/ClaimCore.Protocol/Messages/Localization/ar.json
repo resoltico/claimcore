@@ -336,6 +336,7 @@
   "interactionEffect.READ.label": "قراءة المعلومات الحالية",
   "interactionEffect.RECORD_FACTS.label": "تسجيل بيانات الملف",
   "interactionEffect.UPDATE_WORK.label": "تحديث عمل الملف",
+  "label.formerAccount": "حساب سابق {id}",
   "label.action": "الإجراء",
   "label.actionableCases": "القضايا القابلة للعمل",
   "label.assigneeAvailable": "متاح للإسناد",

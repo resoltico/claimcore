@@ -111,6 +111,7 @@ module internal AuthorityFold =
                             ActorId = id
                             Principal = principal
                             Enabled = true
+                            Profile = None
                         }
                     Grants = if provision then [ ownerGrant ] else []
                 }

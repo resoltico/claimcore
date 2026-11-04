@@ -52,6 +52,7 @@ let actor principal actorId roles cases : AuthorityView =
                     ActorId = actorId
                     Principal = principal
                     Enabled = true
+                    Profile = None
                 }
         Installation = roles
         Cases = Map.ofList cases

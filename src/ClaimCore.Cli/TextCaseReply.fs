@@ -40,7 +40,7 @@ module internal TextCaseReply =
          |> List.map (fun account ->
              ActorId.format account.ActorId
              + "  "
-             + displayed language (Some account.Subject)))
+             + displayed language (Some(actorName language account))))
         @ nextLines language page.NextCursor
 
     let private workAccount language (work: CaseWorkView) =
@@ -49,13 +49,13 @@ module internal TextCaseReply =
             line
                 language
                 (FieldPresentation.labelId BusinessField.ResponsibleActor)
-                (displayed language (Some assigned.Account.Subject)
+                (displayed language (Some(actorName language assigned))
                  + " ["
-                 + ActorId.format assigned.Account.ActorId
+                 + ActorId.format assigned.ActorId
                  + "] — "
                  + label
                      language
-                     (if assigned.Available then
+                     (if assigned.Availability = ActorAvailability.Available then
                           "label.assigneeAvailable"
                       else
                           "label.assigneeUnavailable")))
@@ -100,7 +100,7 @@ module internal TextCaseReply =
             line
                 language
                 "label.workRecordedBy"
-                (value.Work.RecordedBy |> Option.map ActorId.format |> displayed language)
+                (value.Work.RecordedBy |> Option.map (actorName language) |> displayed language)
             line
                 language
                 (FieldPresentation.labelId BusinessField.HandlingSummary)

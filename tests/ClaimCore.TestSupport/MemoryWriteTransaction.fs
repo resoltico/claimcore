@@ -333,6 +333,7 @@ type internal Writer(inputs: WriteInputs) =
                                     ActorId = id
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                                 state.Actors
                     }
@@ -345,6 +346,7 @@ type internal Writer(inputs: WriteInputs) =
                                     ActorId = id
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                                 state.Actors
                         Grants = Set.add (id, Role.Owner, None) state.Grants

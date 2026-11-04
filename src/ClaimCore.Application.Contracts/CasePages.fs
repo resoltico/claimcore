@@ -44,6 +44,6 @@ type CaseSummaryPage =
 
 type AssigneePage =
     {
-        Items: AccountSubject list
+        Items: ActorRef list
         NextCursor: string option
     }

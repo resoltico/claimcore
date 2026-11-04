@@ -402,16 +402,18 @@ module ResponseCodecs =
         |> field "context" _.Context runtimeContext
 
     let actorSummary =
-        (record (fun v0 v1 v2 ->
+        (record (fun v0 v1 v2 profile ->
             {
                 Actor.ActorId = v0
                 Principal = v1
                 Enabled = v2
+                Profile = profile
             })
         : Fields<Actor, _>)
         |> field "actorId" _.ActorId actorId
         |> field "principal" _.Principal (principal)
         |> field "enabled" _.Enabled (boolean)
+        |> field "profile" _.Profile (nullable ActorCodecs.profile)
         |> build
         |> named "ActorSummary"
 
@@ -611,7 +613,7 @@ module ResponseCodecs =
                 NextCursor = next
             })
         : Fields<AssigneePage, _>)
-        |> field "items" _.Items (list Paging.MaximumPageSize ReadRowCodecs.accountSubject)
+        |> field "items" _.Items (list Paging.MaximumPageSize ActorCodecs.actorRef)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "AssigneePage"

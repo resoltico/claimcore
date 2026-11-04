@@ -199,7 +199,7 @@ module internal VerificationRows =
             let! actors =
                 fold
                     connection
-                    "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors ORDER BY actor_id"
+                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors ORDER BY actor_id"
                     {
                         Read = fun reader () -> DatabaseSession.row reader |> Projections.actorRow
                         Append = ProjectionVerification.actor

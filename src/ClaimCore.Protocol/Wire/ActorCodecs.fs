@@ -22,6 +22,30 @@ module internal ActorCodecs =
                 unitVariant "ERASED" DisplayName.Erased
             ]
 
+    let profile =
+        let contact =
+            nonempty
+            |> mapResult
+                (fun path raw ->
+                    ContactText.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid profile contact."
+                        }))
+                ContactText.format
+
+        (record (fun name contact ->
+            {
+                ActorProfile.DisplayName = name
+                Contact = contact
+            })
+        : Fields<ActorProfile, _>)
+        |> field "displayName" _.DisplayName partyName
+        |> field "contact" _.Contact (nullable contact)
+        |> build
+        |> named "ActorProfile"
+
     let actorRef =
         (record (fun actor name kind availability ->
             {

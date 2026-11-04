@@ -54,6 +54,7 @@ module internal AuthorityExecution =
                             ActorId = actor.ActorId
                             Principal = actor.Principal
                             Enabled = actor.Enabled
+                            Profile = actor.Profile
                         }
                     Grants =
                         (view.Target.Installation

@@ -34,6 +34,7 @@ let tests =
                 ActorId = CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000002")
                 Principal = adminPrincipal
                 Enabled = true
+                Profile = None
             }
 
         memory.SeedActor admin [ Role.CaseHandler, None ]
@@ -67,6 +68,7 @@ let tests =
                 ActorId = CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000010")
                 Principal = servicePrincipal
                 Enabled = true
+                Profile = None
             }
 
         let caseId = CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")

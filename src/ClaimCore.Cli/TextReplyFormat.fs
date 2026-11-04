@@ -12,6 +12,9 @@ module internal TextReplyFormat =
     let label language key =
         MessageCatalogs.render language key Map.empty
 
+    let actorName language actor =
+        ActorPresentation.displayName (MessageCatalogs.render language) actor
+
     let term language vocabulary value =
         label language (Vocabulary.messageKey vocabulary value "label")
 

@@ -146,7 +146,7 @@ let private assertOther database expected =
 
             Expect.equal
                 (view.Work.Summary |> Option.map HandlingSummary.format,
-                 view.Work.Responsible |> Option.map _.Account.ActorId)
+                 view.Work.Responsible |> Option.map _.ActorId)
                 (Some "Restorable handling summary", Some(CaseFixtures.actorId (id 1)))
                 "Identical current context and inherited responsibility remain"
         | other -> failtestf "The unrelated readable case was affected: %A" other

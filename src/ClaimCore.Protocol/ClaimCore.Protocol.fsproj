@@ -22,6 +22,7 @@
     <Compile Include="Vocabulary/ProtocolFailures.fs" />
     <Compile Include="Messages/Templates.fs" />
     <Compile Include="Messages/Messages.fs" />
+    <Compile Include="Presentation/ActorPresentation.fs" />
     <Compile Include="Messages/TextDisplay.fs" />
     <Compile Include="Api/Limits.fs" />
     <Compile Include="Wire/HostReplies.fs" />

@@ -101,7 +101,9 @@ let internal assignmentAndDisclosure fixture =
             [
                 {
                     ActorId = CaseFixtures.actorId (id 10)
-                    Subject = "case-work-assignee"
+                    DisplayName = DisplayName.Erased
+                    PrincipalKind = PrincipalKind.Human
+                    Availability = ActorAvailability.Available
                 }
             ]
             "Only purpose-limited account identity is disclosed"
@@ -185,7 +187,8 @@ let internal assignmentAndDisclosure fixture =
 
         Expect.equal
             (current.Work.Responsible
-             |> Option.map (fun value -> value.Account.ActorId, value.Available))
+             |> Option.map (fun value ->
+                 value.ActorId, (value.Availability = ActorAvailability.Available)))
             (Some(CaseFixtures.actorId (id 10), true))
             "Relation-scoped identity and eligibility"
 
@@ -343,7 +346,8 @@ let internal assignmentAndDisclosure fixture =
         Expect.equal (Revision.value retained.Work.Revision) 1L "No work revision from refusal"
 
         Expect.equal
-            (retained.Work.Responsible |> Option.map _.Available)
+            (retained.Work.Responsible
+             |> Option.map (fun value -> value.Availability = ActorAvailability.Available))
             (Some false)
             "Unavailable relation remains factual"
 
@@ -1552,7 +1556,8 @@ let internal pairedPage fixture =
 
             Expect.equal
                 (fields.Work.Responsible
-                 |> Option.map (fun account -> account.Account.ActorId, account.Available))
+                 |> Option.map (fun account ->
+                     account.ActorId, (account.Availability = ActorAvailability.Available)))
                 (Some(CaseFixtures.actorId (id 1), true))
                 "Assignment labels retain the case-scoped availability check"
 

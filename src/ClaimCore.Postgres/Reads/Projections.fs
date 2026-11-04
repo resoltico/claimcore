@@ -18,6 +18,19 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
+    let profile (name: string option) (contact: string option) =
+        match name, contact with
+        | None, None -> None
+        | Some name, contact ->
+            ActorProfile.restore
+                {
+                    DisplayName = name
+                    Contact = contact
+                }
+            |> parsed
+            |> Some
+        | None, Some _ -> raise (RecordCorruptException "Contact without an actor display name.")
+
     let caseColumns =
         "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
         + DatabaseSession.instantExpression "changed_at"
@@ -211,6 +224,7 @@ module internal Projections =
                             ActorId = required 0 first |> DatabaseSession.admitted ActorId.create
                             Principal = principal
                             Enabled = required 1 first
+                            Profile = profile (optional<string> 4 first) (optional<string> 5 first)
                         }
                     Grants = grants
                 }
@@ -230,7 +244,8 @@ module internal Projections =
             box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
         |]
 
-    let private actorColumns = "a.actor_id,a.enabled,g.role,g.case_id"
+    let private actorColumns =
+        "a.actor_id,a.enabled,g.role,g.case_id,a.display_name,a.contact"
 
     let actor connection principal (caseIds: CaseId list) token =
         task {
@@ -275,7 +290,7 @@ module internal Projections =
         | [] -> view
         | first :: _ ->
             { view with
-                HasScopedCases = DatabaseSession.value<bool> 4 first
+                HasScopedCases = DatabaseSession.value<bool> 6 first
             }
 
     /// Global visibility and actor/grant facts belong to the same read snapshot, without a second round trip.
@@ -297,10 +312,10 @@ module internal Projections =
 
             let mode =
                 match rows with
-                | first :: _ when DatabaseSession.value<int64> 7 first = 1L ->
+                | first :: _ when DatabaseSession.value<int64> 9 first = 1L ->
                     RegisterMaintenance.create
-                        (DatabaseSession.value<bool> 5 first)
-                        (DatabaseSession.value<int64> 6 first)
+                        (DatabaseSession.value<bool> 7 first)
+                        (DatabaseSession.value<int64> 8 first)
                     |> Result.defaultWith (fun _ ->
                         raise (RecordCorruptException "Invalid register maintenance state."))
                 | _ ->
@@ -330,6 +345,7 @@ module internal Projections =
                 |> fun kind -> PrincipalKey.ofKind kind (required 2 row) (required 3 row)
                 |> parsed
             Enabled = required 4 row
+            Profile = profile (optional<string> 5 row) (optional<string> 6 row)
         }
 
     let grantRow row : ScopedGrant * GrantPosition =

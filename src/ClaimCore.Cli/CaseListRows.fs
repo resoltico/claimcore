@@ -85,12 +85,22 @@ module internal CaseListRows =
                 Value = live (fun facts -> CalendarDate.format facts.IncidentNotificationDate)
             }
             {
-                Key = "state.work.responsible.account.actorId"
+                Key = "state.work.responsible.actorId"
                 Label = field BusinessField.ResponsibleActor
                 Value =
                     optional (fun facts ->
                         facts.Work.Responsible
-                        |> Option.map (fun account -> ActorId.format account.Account.ActorId))
+                        |> Option.map (fun account -> ActorId.format account.ActorId))
+            }
+            {
+                Key = "state.work.responsible.displayName"
+                Label = "field.responsibleActor.label"
+                Value =
+                    optional (fun facts ->
+                        facts.Work.Responsible
+                        |> Option.map (
+                            TextReplyFormat.actorName LocalizationPolicy.defaultLanguage
+                        ))
             }
             {
                 Key = "state.work.followUpDate"
@@ -154,6 +164,11 @@ module internal CaseListRows =
                         (CaseState.lifecycle row.State)
                 | "state.status", (CaseState.Active facts | CaseState.Voided facts) ->
                     TextReplyFormat.term language CaseStatus.vocabulary facts.Status
+                | "state.work.responsible.displayName",
+                  (CaseState.Active facts | CaseState.Voided facts) ->
+                    facts.Work.Responsible
+                    |> Option.map (TextReplyFormat.actorName language)
+                    |> TextReplyFormat.displayed language
                 | "state.work.due", (CaseState.Active facts | CaseState.Voided facts) ->
                     TextReplyFormat.term language CaseDue.vocabulary facts.Work.Due
                 | "state.progress", (CaseState.Active facts | CaseState.Voided facts) ->

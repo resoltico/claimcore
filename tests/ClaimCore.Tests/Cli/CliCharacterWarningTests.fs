@@ -336,6 +336,7 @@ let private terminalDataBoundaries () =
                 |> Option.get
             Principal = principal
             Enabled = true
+            Profile = None
         }
 
     for language in LocalizationPolicy.languages do

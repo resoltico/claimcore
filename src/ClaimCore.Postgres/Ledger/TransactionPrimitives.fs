@@ -193,7 +193,7 @@ module internal TransactionPages =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) ORDER BY actor_id LIMIT $2"
+                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) ORDER BY actor_id LIMIT $2"
                     [|
                         DatabaseSession.parameter (after |> Option.map ActorId.value)
                         box (limit + 1)
@@ -365,7 +365,7 @@ type private ReadTx
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT a.actor_id,a.subject FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
+                        "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
                         [|
                             box (CaseId.value query.CaseId)
                             box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
@@ -379,14 +379,30 @@ type private ReadTx
 
                 return
                     rows
-                    |> List.map (fun row ->
-                        {
-                            AccountSubject.ActorId =
-                                DatabaseSession.value<Guid> 0 row
-                                |> DatabaseSession.admitted ActorId.create
-                            Subject = DatabaseSession.value<string> 1 row
-                        })
+                    |> List.map (Projections.actorRow >> Actor.currentReference)
                     |> TransactionPages.page query.Limit _.ActorId
+            }
+
+        member _.ActorRefs ids =
+            task {
+                if ids.IsEmpty then
+                    return Map.empty
+                else
+                    let! rows =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE actor_id=ANY($1::uuid[])"
+                            [|
+                                box (ids |> List.distinct |> List.map ActorId.value |> List.toArray)
+                            |]
+                            token
+
+                    return
+                        rows
+                        |> List.map (fun row ->
+                            let actor = Projections.actorRow row in
+                            actor.ActorId, Actor.currentReference actor)
+                        |> Map.ofList
             }
 
         member _.FindActor id =
@@ -394,7 +410,7 @@ type private ReadTx
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors WHERE actor_id=$1"
+                        "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE actor_id=$1"
                         [| box (ActorId.value id) |]
                         token
 

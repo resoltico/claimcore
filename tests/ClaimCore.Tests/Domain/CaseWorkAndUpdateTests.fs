@@ -281,6 +281,7 @@ let tests =
                                     ActorId = ActorId.create (id 10) |> Option.get
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                         Installation = [ Role.CaseHandler ]
                     }

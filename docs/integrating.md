@@ -340,7 +340,7 @@ directional formatting and literal backslashes; see [CLI text output](cli.md).
 The header order is:
 
 ```text
-caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,state.work.responsible.account.actorId,state.work.followUpDate,state.work.due,state.work.basis.businessDate,state.work.basis.timeZone,changedAt
+caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,state.work.responsible.actorId,state.work.responsible.displayName,state.work.followUpDate,state.work.due,state.work.basis.businessDate,state.work.basis.timeZone,changedAt
 ```
 
 Work columns export the responsible ActorId, planned date, due token and that row's business-date/zone basis.

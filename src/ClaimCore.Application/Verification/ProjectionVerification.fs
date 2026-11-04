@@ -48,6 +48,7 @@ module ProjectionVerification =
                             ActorId = id
                             Principal = principal
                             Enabled = row.Enabled
+                            Profile = row.Profile
                         }
                     Grants = []
                 }

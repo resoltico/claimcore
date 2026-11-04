@@ -336,6 +336,7 @@
   "interactionEffect.READ.label": "Lasīt pašreizējo informāciju",
   "interactionEffect.RECORD_FACTS.label": "Ierakstīt lietas faktus",
   "interactionEffect.UPDATE_WORK.label": "Mainīt lietas darbu",
+  "label.formerAccount": "Bijušais konts {id}",
   "label.action": "Darbība",
   "label.actionableCases": "Apstrādājamās lietas",
   "label.assigneeAvailable": "Pieejams piešķiršanai",

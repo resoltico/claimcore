@@ -336,6 +336,7 @@
   "interactionEffect.READ.label": "Read current information",
   "interactionEffect.RECORD_FACTS.label": "Record case facts",
   "interactionEffect.UPDATE_WORK.label": "Update case work",
+  "label.formerAccount": "Former account {id}",
   "label.action": "Action",
   "label.actionableCases": "Actionable cases",
   "label.assigneeAvailable": "Available for assignment",

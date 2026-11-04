@@ -50,8 +50,10 @@ let internal scalarText =
                 "\f"
                 "\r"
                 "\u001f"
-                " "
-                " "
+                "
+"
+                "
+"
                 " "
             ]
 

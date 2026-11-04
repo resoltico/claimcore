@@ -2400,24 +2400,6 @@
       }
     },
     "schemas": {
-      "AccountSubject": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "subject": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          }
-        },
-        "required": [
-          "actorId",
-          "subject"
-        ]
-      },
       "ActivitySubject": {
         "oneOf": [
           {
@@ -2642,6 +2624,64 @@
           "maintenance"
         ]
       },
+      "ActorProfile": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "contact": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "displayName",
+          "contact"
+        ]
+      },
+      "ActorRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "displayName": {
+            "$ref": "#/components/schemas/DisplayName"
+          },
+          "principalKind": {
+            "enum": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "availability": {
+            "enum": [
+              "AVAILABLE",
+              "DISABLED",
+              "NOT_ELIGIBLE"
+            ]
+          }
+        },
+        "required": [
+          "actorId",
+          "displayName",
+          "principalKind",
+          "availability"
+        ]
+      },
       "ActorSummary": {
         "type": "object",
         "additionalProperties": false,
@@ -2654,12 +2694,23 @@
           },
           "enabled": {
             "type": "boolean"
+          },
+          "profile": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "actorId",
           "principal",
-          "enabled"
+          "enabled",
+          "profile"
         ]
       },
       "ActorsPage": {
@@ -2773,22 +2824,6 @@
           "data"
         ]
       },
-      "AssignedAccount": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "account": {
-            "$ref": "#/components/schemas/AccountSubject"
-          },
-          "available": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "account",
-          "available"
-        ]
-      },
       "AssigneePage": {
         "type": "object",
         "additionalProperties": false,
@@ -2796,7 +2831,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/AccountSubject"
+              "$ref": "#/components/schemas/ActorRef"
             },
             "minItems": 0,
             "maxItems": 50
@@ -5240,7 +5275,7 @@
           "recordedBy": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/Uuid"
+                "$ref": "#/components/schemas/ActorRef"
               },
               {
                 "type": "null"
@@ -5296,7 +5331,7 @@
           "responsible": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/AssignedAccount"
+                "$ref": "#/components/schemas/ActorRef"
               },
               {
                 "type": "null"
@@ -6145,6 +6180,53 @@
         "required": [
           "code",
           "action"
+        ]
+      },
+      "DisplayName": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/DisplayName.NAMED"
+          },
+          {
+            "$ref": "#/components/schemas/DisplayName.ERASED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "NAMED": "#/components/schemas/DisplayName.NAMED",
+            "ERASED": "#/components/schemas/DisplayName.ERASED"
+          }
+        }
+      },
+      "DisplayName.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "DisplayName.NAMED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NAMED"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          }
+        },
+        "required": [
+          "kind",
+          "value"
         ]
       },
       "DueCount": {

@@ -391,8 +391,13 @@ CREATE TABLE claimcore.actors (
     issuer text NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
     subject text NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
     enabled boolean NOT NULL,
+    display_name text CHECK (display_name IS NULL OR (octet_length(display_name) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(display_name))),
+    contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
+    CONSTRAINT actor_profile_shape CHECK (display_name IS NOT NULL OR contact IS NULL),
     UNIQUE (issuer, principal_kind, subject)
 );
+
+CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name gin_trgm_ops);
 
 ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
     FOREIGN KEY (responsible_actor) REFERENCES claimcore.actors (actor_id);
