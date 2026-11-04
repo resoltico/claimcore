@@ -306,6 +306,12 @@ type private ReadTx
                     |> TransactionPages.page query.Limit _.Sequence
             }
 
+        member _.TimelinePage query =
+            TimelineStorage.page connection installation query token
+
+        member _.PreviousEntries entries =
+            TimelineStorage.previous connection installation entries token
+
         member _.FindOperation id =
             StoredEntries.operation connection installation id token
 

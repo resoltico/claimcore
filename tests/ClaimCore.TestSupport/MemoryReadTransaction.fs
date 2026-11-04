@@ -515,6 +515,69 @@ type internal Reader
 
             Task.FromResult(page query.Limit _.Sequence rows)
 
+        member _.TimelinePage(query: TimelinePageQuery) =
+            read ()
+
+            let rows =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry ->
+                    let parent, facts =
+                        match entry.Subject with
+                        | EntryTarget.Case(id, _, _, _) -> Some id, true
+                        | EntryTarget.Work work -> Some work.CaseId, false
+                        | EntryTarget.Reminder reminder -> Some reminder.CaseId, false
+                        | _ -> None, false
+
+                    parent = Some query.CaseId
+                    && (query.BeforeSequence
+                        |> Option.forall (fun before -> entry.Sequence < before))
+                    && (query.Filter
+                        |> Option.forall (function
+                            | TimelineFilter.Facts -> facts
+                            | TimelineFilter.Work -> not facts)))
+                |> Seq.sortByDescending _.Sequence
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            Task.FromResult(page query.Limit _.Sequence rows)
+
+        member _.PreviousEntries entries =
+            read ()
+
+            if entries.Length > Paging.MaximumPageSize then
+                invalidArg (nameof entries) "Use at most one admitted timeline page."
+
+            let sameEntity subject candidate =
+                match subject, candidate with
+                | EntryTarget.Case(id, revision, _, _), EntryTarget.Case(other, prior, _, _) ->
+                    id = other && Revision.value prior + 1L = Revision.value revision
+                | EntryTarget.Work work, EntryTarget.Work other ->
+                    work.CaseId = other.CaseId
+                    && Revision.value other.Revision + 1L = Revision.value work.Revision
+                | EntryTarget.Reminder reminder, EntryTarget.Reminder other ->
+                    (reminder.ReminderId = other.ReminderId
+                     && Revision.value other.Revision + 1L = Revision.value reminder.Revision)
+                    || (Revision.value reminder.Revision = 2L
+                        && other.NextReminderId = Some reminder.ReminderId)
+                | _ -> false
+
+            entries
+            |> List.choose (fun entry ->
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun previous ->
+                    previous.Sequence < entry.Sequence
+                    && sameEntity entry.Subject previous.Subject)
+                |> Seq.toList
+                |> function
+                    | [] -> None
+                    | [ previous ] -> Some previous
+                    | _ -> raise CorruptProjection
+                |> Option.map (fun previous -> entry.Sequence, copyEntry previous))
+            |> Map.ofList
+            |> Task.FromResult
+
         member _.FindOperation id =
             read ()
 

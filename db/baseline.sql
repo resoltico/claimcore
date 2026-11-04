@@ -437,6 +437,7 @@ CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_
 CREATE INDEX reminders_pending_due ON claimcore.reminders(due,reminder_id) WHERE state='PENDING';
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
 CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER');
+CREATE INDEX ledger_reminder_next ON claimcore.ledger(next_reminder_id,sequence DESC) WHERE next_reminder_id IS NOT NULL;
 
 CREATE TABLE claimcore.grants (
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),

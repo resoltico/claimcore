@@ -279,6 +279,11 @@ let private changingHistory (fixture: Fixture) change =
                                             tx.ReminderViewCounts selection
 
                                         member _.ActivityPage query = tx.ActivityPage query
+                                        member _.TimelinePage query = tx.TimelinePage query
+
+                                        member _.PreviousEntries entries =
+                                            tx.PreviousEntries entries
+
                                         member _.FindOperation id = tx.FindOperation id
                                         member _.NonAcceptance key = tx.NonAcceptance key
                                         member _.CasePage query = tx.CasePage query

@@ -72,6 +72,8 @@ type internal OperationIdentityRequest =
     }
 
 module LedgerEntries =
+    let internal content (validated: ValidatedEntry) = validated.Content
+
     let private width expected (bytes: byte array) =
         not (obj.ReferenceEquals(bytes, null)) && bytes.Length = expected
 

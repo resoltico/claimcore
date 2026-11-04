@@ -1,0 +1,102 @@
+namespace ClaimCore.Postgres
+
+open ClaimCore.Domain
+open ClaimCore.Application
+open ClaimCore.Application.Contracts
+
+module internal TimelineStorage =
+    let page connection installation (query: TimelinePageQuery) token =
+        task {
+            let filter =
+                match query.Filter with
+                | None -> "TRUE"
+                | Some TimelineFilter.Facts -> "subject_kind='CASE'"
+                | Some TimelineFilter.Work -> "subject_kind IN ('WORK','REMINDER')"
+
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    ($"SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id=$1)) AND ({filter}) AND ($2::bigint IS NULL OR sequence<$2) ORDER BY sequence DESC LIMIT $3")
+                    [|
+                        box (CaseId.value query.CaseId)
+                        DatabaseSession.parameter (
+                            query.BeforeSequence |> Option.map Sequence.value
+                        )
+                        box (query.Limit + 1)
+                    |]
+                    token
+
+            let entries = rows |> List.map (StoredEntries.decode installation >> _.Entry)
+            let items = List.truncate query.Limit entries
+
+            return
+                {
+                    Items = items
+                    Next =
+                        if entries.Length > query.Limit then
+                            items |> List.tryLast |> Option.map _.Sequence
+                        else
+                            None
+                }
+        }
+
+    let private target (entry: StoredEntry) =
+        match entry.Subject with
+        | EntryTarget.Case(id, revision, _, _) -> "CASE", CaseId.value id, Revision.value revision
+        | EntryTarget.Work work -> "WORK", CaseId.value work.CaseId, Revision.value work.Revision
+        | EntryTarget.Reminder reminder ->
+            "REMINDER", ReminderId.value reminder.ReminderId, Revision.value reminder.Revision
+        | EntryTarget.Authority _
+        | EntryTarget.NonAcceptance _ -> invalidArg (nameof entry) "Use case timeline entries."
+
+    /// One bounded query loads each visible entry's immediate entity predecessor, including a reminder born in complete-and-plan-next.
+    let previous connection installation (entries: StoredEntry list) token =
+        task {
+            if entries.Length > Paging.MaximumPageSize then
+                invalidArg (nameof entries) "Use at most one admitted timeline page."
+
+            if List.isEmpty entries then
+                return Map.empty
+            else
+                let targets = entries |> List.map target
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ($"SELECT matched.*,requested_seq FROM unnest($1::bigint[],$2::text[],$3::uuid[],$4::bigint[]) AS requested(requested_seq,requested_kind,requested_id,requested_revision) CROSS JOIN LATERAL (SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE sequence<requested_seq AND subject_kind=requested_kind AND subject_id=requested_id AND case_revision=requested_revision-1 UNION ALL SELECT {StoredEntries.columns} FROM claimcore.ledger WHERE requested_kind='REMINDER' AND requested_revision=2 AND subject_kind='REMINDER' AND next_reminder_id=requested_id AND sequence<requested_seq) matched")
+                        [|
+                            box (
+                                entries
+                                |> List.map (fun entry -> Sequence.value entry.Sequence)
+                                |> List.toArray
+                            )
+                            box (targets |> List.map (fun (kind, _, _) -> kind) |> List.toArray)
+                            box (targets |> List.map (fun (_, id, _) -> id) |> List.toArray)
+                            box (
+                                targets
+                                |> List.map (fun (_, _, revision) -> revision)
+                                |> List.toArray
+                            )
+                        |]
+                        token
+
+                let predecessors =
+                    rows
+                    |> List.map (fun row ->
+                        let requested =
+                            DatabaseSession.value<int64> (row.Length - 1) row
+                            |> DatabaseSession.admitted Sequence.create
+
+                        requested, (StoredEntries.decode installation row).Entry)
+
+                if
+                    predecessors |> List.map fst |> List.distinct |> List.length
+                    <> predecessors.Length
+                then
+                    raise (
+                        RecordCorruptException
+                            "A timeline entity has duplicate predecessor identities."
+                    )
+
+                return Map.ofList predecessors
+        }

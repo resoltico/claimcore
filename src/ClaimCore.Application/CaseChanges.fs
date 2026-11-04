@@ -43,7 +43,7 @@ module internal CaseChanges =
         | LiveCase.Active fields -> Lifecycle.Active, fields
         | LiveCase.Voided fields -> Lifecycle.Voided, fields
 
-    let private compared before after =
+    let internal compared before after =
         let afterLifecycle, afterFields = live after
         let beforeLifecycle = before |> Option.map (live >> fst)
 

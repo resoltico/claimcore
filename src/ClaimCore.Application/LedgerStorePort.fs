@@ -389,6 +389,14 @@ type ActivityPageQuery =
         Limit: int
     }
 
+type TimelinePageQuery =
+    {
+        CaseId: CaseId
+        Filter: TimelineFilter option
+        BeforeSequence: Sequence option
+        Limit: int
+    }
+
 /// Independently owned global facts observed together by read consumers that require both.
 type GlobalReadFacts =
     {
@@ -413,6 +421,8 @@ type IReadTx =
     abstract CaseViewCounts: CaseSelection -> Task<CaseViewCount list>
     abstract ReminderViewCounts: CaseSelection -> Task<ReminderViewCount list>
     abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
+    abstract TimelinePage: TimelinePageQuery -> Task<Page<StoredEntry, Sequence>>
+    abstract PreviousEntries: StoredEntry list -> Task<Map<Sequence, StoredEntry>>
     abstract FindOperation: OperationId -> Task<StoredOperation option>
     abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
