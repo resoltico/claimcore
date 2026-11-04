@@ -180,6 +180,10 @@ let private authorityView state principal caseId =
 
     { view with
         HasScopedCases = caseId.IsNone && assigned
+        HasAssignedRoles =
+            actor
+            |> Option.exists (fun actor ->
+                state.Grants |> Seq.exists (fun (id, _, _) -> id = actor.ActorId))
     }
 
 
@@ -727,6 +731,36 @@ type internal Reader
                 |> Seq.toList
 
             Task.FromResult(page query.Limit _.ActorId rows)
+
+        member _.ActorRoleSummaries ids =
+            read ()
+            let state = get ()
+
+            ids
+            |> List.distinct
+            |> List.choose (fun id ->
+                if not (Map.containsKey id state.Actors) then
+                    None
+                else
+                    let roles =
+                        state.Grants
+                        |> Seq.choose (fun (actor, role, scope) ->
+                            if actor = id then Some(role, scope) else None)
+                        |> Seq.groupBy fst
+                        |> Seq.map (fun (role, scopes) ->
+                            let scopes = scopes |> Seq.map snd |> Seq.toList
+
+                            {
+                                ActorRoleSummary.Role = role
+                                Installation = List.contains None scopes
+                                CaseCount =
+                                    scopes |> List.filter Option.isSome |> List.length |> int64
+                            })
+                        |> Seq.toList
+
+                    Some(id, roles))
+            |> Map.ofList
+            |> Task.FromResult
 
         member _.ActorRefs ids =
             read ()

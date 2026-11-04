@@ -342,7 +342,7 @@ let private terminalDataBoundaries () =
     for language in LocalizationPolicy.languages do
         for text in
             [
-                TextAuthorityReply.actorRow language (ActorReviewItem.ofActor actor)
+                TextAuthorityReply.actorRow language (ActorReviewItem.ofActor [] actor)
                 TextReplyFormat.displayed language (Some dangerous)
                 UsageText.render language [] [ UsageError.ExtraOperand dangerous ]
             ] do

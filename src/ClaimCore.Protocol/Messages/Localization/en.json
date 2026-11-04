@@ -479,8 +479,8 @@
   "workAct.UPDATE_WORK.label": "Update case work",
   "workChange.CLEAR.label": "Clear",
   "workChange.SET.label": "Set",
-  "requesterState.ACTIVE.label": "Access granted",
-  "requesterState.ACTIVE.meaning": "The account is enabled and has access roles.",
+  "requesterState.ACTIVE.label": "Enabled with roles",
+  "requesterState.ACTIVE.meaning": "The account is enabled and has assigned roles. Each operation still checks eligibility and authorization.",
   "requesterState.NO_ROLES.label": "No roles assigned",
   "requesterState.NO_ROLES.meaning": "This account has no access roles. Ask an owner to grant access.",
   "requesterState.DISABLED.label": "Account disabled",
@@ -505,5 +505,11 @@
   "field.grants.label": "Access grants",
   "field.grants.meaning": "Select roles and their scopes. Each role and scope pair may appear only once.",
   "diagnostic.GRANT_COUNT_RANGE": "Choose between 1 and {maximumGrants} access grants.",
-  "diagnostic.DUPLICATE_GRANT": "Choose each role and scope pair only once."
+  "diagnostic.DUPLICATE_GRANT": "Choose each role and scope pair only once.",
+  "accountState.ACTIVE.label": "Enabled with roles",
+  "accountState.ACTIVE.meaning": "The account is enabled and has assigned roles. Each operation still checks eligibility and authorization.",
+  "accountState.NO_ROLES.label": "No roles assigned",
+  "accountState.NO_ROLES.meaning": "The account is registered and enabled but has no assigned roles.",
+  "accountState.DISABLED.label": "Disabled",
+  "accountState.DISABLED.meaning": "The account is disabled. Assigned roles remain visible for authority review."
 }

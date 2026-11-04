@@ -250,6 +250,9 @@ Authenticated callers see their own ACTIVE, NO_ROLES, DISABLED or NOT_REGISTERED
 
 The non-ledger `access_request` table temporarily records not-registered callers, keyed by issuer, principal kind and subject. A repeated visit refreshes hints and last-seen time while retaining first-seen time. Requests expire after 30 days; each requester refresh removes at most 50 expired rows, and concurrent inserts retain at most 1,000 rows by evicting the oldest. Registration and initial-owner provisioning remove the matching request in the same transaction. The cache is excluded from ledger verification and is not a source of authority or actor names. Only `MANAGE_AUTHORITY` permits `authority.requests` and `authority.requests.dismiss`; `READ_AUTHORITY` does not. Dismissal deletes one kind-aware identity without a ledger entry or access grant; a later visit may create a new request.
 
+People rows report registered account assignment state: disabled; enabled without assigned roles; or enabled with assigned roles. Their bounded role summaries show installation assignments and scoped-case counts. These facts do not assert effective access: every operation still applies principal-kind, scope and authorization checks. Recognized inadmissible assignments remain visible to authorized authority reviewers and remain removable; they never grant protected rights.
+
+
 
 The append-only guard permits parent-scoped fact/work/reminder payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and

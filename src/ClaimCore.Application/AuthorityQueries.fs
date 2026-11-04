@@ -23,11 +23,25 @@ module internal AuthorityQueries =
         (actors: Actor list)
         =
         task {
-            let items = actors |> List.map ActorReviewItem.ofActor
+            let ids = actors |> List.map _.ActorId |> List.distinct
+            let! summaries = tx.ActorRoleSummaries ids
 
-            match Authority.visibility services.Principal viewer, viewer.Actor with
-            | None, _ -> return Ok items
-            | Some visibility, Some requester ->
+            let valid =
+                (summaries |> Map.keys |> Set.ofSeq) = Set.ofList ids
+                && (summaries |> Map.forall (fun _ roles -> ActorRoleSummary.valid roles))
+
+            let items =
+                if valid then
+                    actors
+                    |> List.map (fun actor ->
+                        ActorReviewItem.ofActor (Map.find actor.ActorId summaries) actor)
+                else
+                    []
+
+            match valid, Authority.visibility services.Principal viewer, viewer.Actor with
+            | false, _, _ -> return Error CoreFault.StoreIntegrityError
+            | true, None, _ -> return Ok items
+            | true, Some visibility, Some requester ->
                 let ids = actors |> List.map _.ActorId |> List.distinct
 
                 let selection =
@@ -64,7 +78,7 @@ module internal AuthorityQueries =
                                         }
                             })
                         |> Ok
-            | Some _, None -> return Error CoreFault.StoreIntegrityError
+            | true, Some _, None -> return Error CoreFault.StoreIntegrityError
         }
 
     let actors (services: ServiceContext) (request: PageRequest) token =

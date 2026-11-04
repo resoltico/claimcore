@@ -20,12 +20,16 @@ type ActorReviewItem =
         Actor: ActorRef
         Principal: PrincipalKey
         Contact: ContactText option
+        State: AccountState
+        Roles: ActorRoleSummary list
         ResponsibleCases: ActorResponsibleCases option
     }
 
 module ActorReviewItem =
-    let ofActor (actor: Actor) =
+    let ofActor roles (actor: Actor) =
         {
+            State = AccountState.classify actor.Enabled (not (List.isEmpty roles))
+            Roles = ActorRoleSummary.ordered roles
             Actor = Actor.currentReference actor
             Principal = actor.Principal
             Contact = actor.Profile |> Option.bind _.Contact

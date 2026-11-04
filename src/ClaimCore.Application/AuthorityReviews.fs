@@ -211,7 +211,10 @@ module internal AuthorityReviews =
 
         {
             Effects = effects
-            Target = view.Target.Actor |> Option.map ActorReviewItem.ofActor
+            Target =
+                view.Target.Actor
+                |> Option.map (fun actor ->
+                    ActorReviewItem.ofActor (Map.find actor.ActorId view.TargetRoles) actor)
             AccessScope = scope
             Before =
                 { before with

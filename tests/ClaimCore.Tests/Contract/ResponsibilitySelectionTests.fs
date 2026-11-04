@@ -115,7 +115,7 @@ let tests =
                                 }
                     }
 
-                let unknown = ActorReviewItem.ofActor actor
+                let unknown = ActorReviewItem.ofActor [] actor
 
                 Expect.isNone
                     (ResponseCodecs.actorSummary.Write unknown

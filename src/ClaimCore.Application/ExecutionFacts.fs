@@ -23,6 +23,7 @@ type internal AuthorityExecutionFacts =
         Actor: AuthorityView
         ExistingOperation: StoredOperation option
         Target: AuthorityView
+        TargetRoles: Map<ActorId, ActorRoleSummary list>
         TargetCases: Map<GrantTarget, StoredCase>
         EnabledHumanOwners: int option
         ActorCount: int option
@@ -114,6 +115,9 @@ module internal ExecutionFacts =
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
 
+            let! targetRoles =
+                tx.ActorRoleSummaries(target.Actor |> Option.map _.ActorId |> Option.toList)
+
             let! owners =
                 if List.contains AuthorityFact.EnabledHumanOwners needed then
                     task { let! count = tx.EnabledHumanOwners() in return Some count }
@@ -133,6 +137,7 @@ module internal ExecutionFacts =
                     Actor = actor
                     ExistingOperation = existing
                     Target = target
+                    TargetRoles = targetRoles
                     TargetCases = records
                     EnabledHumanOwners = owners
                     ActorCount = actors

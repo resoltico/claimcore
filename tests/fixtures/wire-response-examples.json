@@ -208,7 +208,105 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -1108,7 +1206,9 @@
                 "issuer": "https://issuer.example/",
                 "subject": "synthetic-grant-target"
               },
-              "contact": null
+              "contact": null,
+              "state": "DISABLED",
+              "roles": []
             },
             "items": [],
             "nextCursor": "x"
@@ -1318,7 +1418,8 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": []
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -1405,7 +1506,8 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": []
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -1579,7 +1681,9 @@
                 "issuer": "https://issuer.example/",
                 "subject": "synthetic-grant-target"
               },
-              "contact": null
+              "contact": null,
+              "state": "DISABLED",
+              "roles": []
             },
             "items": [
               {
@@ -1662,7 +1766,9 @@
                   "principalKind": "HUMAN",
                   "availability": "DISABLED"
                 },
-                "contact": "Synthetic contact"
+                "contact": "Synthetic contact",
+                "state": "DISABLED",
+                "roles": []
               },
               {
                 "principal": {
@@ -1678,7 +1784,9 @@
                   "principalKind": "SERVICE",
                   "availability": "DISABLED"
                 },
-                "contact": null
+                "contact": null,
+                "state": "DISABLED",
+                "roles": []
               }
             ],
             "nextCursor": "x"
@@ -3604,7 +3712,105 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4319,7 +4525,9 @@
                     "principalKind": "HUMAN",
                     "availability": "DISABLED"
                   },
-                  "contact": null
+                  "contact": null,
+                  "state": "DISABLED",
+                  "roles": []
                 },
                 "accessScope": {
                   "kind": "CASE",
@@ -4804,7 +5012,97 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": "DECIDE"
+              "recommended": "DECIDE",
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -5001,7 +5299,93 @@
                 "active": true,
                 "generation": 3
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "REGISTER_MAINTENANCE",
+                    "action": "READ_CURRENT"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -6423,7 +6807,105 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -6921,7 +7403,97 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": "DECIDE"
+              "recommended": "DECIDE",
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -7042,7 +7614,97 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": "DECIDE"
+              "recommended": "DECIDE",
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -11014,7 +11676,9 @@
                   "issuer": "https://issuer.example/",
                   "subject": "authored-fixture-subject"
                 },
-                "contact": null
+                "contact": null,
+                "state": "NO_ROLES",
+                "roles": []
               }
             ],
             "nextCursor": null
@@ -11045,7 +11709,9 @@
                   "issuer": "https://issuer.example/",
                   "subject": "authored-fixture-subject"
                 },
-                "contact": null
+                "contact": null,
+                "state": "DISABLED",
+                "roles": []
               }
             ],
             "nextCursor": null
@@ -11096,7 +11762,105 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -11715,7 +12479,105 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -11792,7 +12654,105 @@
                 "active": false,
                 "generation": 0
               },
-              "recommended": null
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -11860,7 +12820,9 @@
                   "count": 2,
                   "responsibleActor": "10000000-0000-4000-8000-000000000001",
                   "view": "ALL"
-                }
+                },
+                "state": "DISABLED",
+                "roles": []
               },
               {
                 "principal": {
@@ -11876,7 +12838,9 @@
                   "principalKind": "SERVICE",
                   "availability": "DISABLED"
                 },
-                "contact": null
+                "contact": null,
+                "state": "DISABLED",
+                "roles": []
               }
             ],
             "nextCursor": "x"
@@ -12172,7 +13136,9 @@
                     "issuer": "https://issuer.example/",
                     "subject": "admitted-person"
                   },
-                  "contact": "authored@example.invalid"
+                  "contact": "authored@example.invalid",
+                  "state": "NO_ROLES",
+                  "roles": []
                 },
                 "accessScope": {
                   "kind": "INSTALLATION"
@@ -12230,7 +13196,9 @@
                     "issuer": "https://issuer.example/",
                     "subject": "admitted-person"
                   },
-                  "contact": "authored@example.invalid"
+                  "contact": "authored@example.invalid",
+                  "state": "NO_ROLES",
+                  "roles": []
                 },
                 "accessScope": {
                   "kind": "INSTALLATION"
@@ -12304,7 +13272,9 @@
                     "issuer": "https://issuer.example/",
                     "subject": "admitted-person"
                   },
-                  "contact": "authored@example.invalid"
+                  "contact": "authored@example.invalid",
+                  "state": "NO_ROLES",
+                  "roles": []
                 },
                 "accessScope": {
                   "kind": "INSTALLATION"
@@ -12435,6 +13405,936 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "case-advice-blocked-array-required",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case-advice-blocked-act-duplicate",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                }
+              ]
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case-advice-blocked-offered-act-refused",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [
+                "OPEN"
+              ],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case-advice-blocked-unrelated-reason-refused",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NO_CHANGES",
+                    "action": "CORRECT_INPUT"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "people-assignment-state-active",
+      "endpoint": "authority.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "contact": "Synthetic contact",
+                "state": "ACTIVE",
+                "roles": [
+                  {
+                    "role": "CASE_READER",
+                    "installation": true,
+                    "caseCount": 2
+                  },
+                  {
+                    "role": "AUDITOR",
+                    "installation": false,
+                    "caseCount": 1
+                  }
+                ]
+              },
+              {
+                "principal": {
+                  "kind": "SERVICE",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "SERVICE",
+                  "availability": "DISABLED"
+                },
+                "contact": null,
+                "state": "DISABLED",
+                "roles": []
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "people-assignment-state-no_roles",
+      "endpoint": "authority.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "contact": "Synthetic contact",
+                "state": "NO_ROLES",
+                "roles": []
+              },
+              {
+                "principal": {
+                  "kind": "SERVICE",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "SERVICE",
+                  "availability": "DISABLED"
+                },
+                "contact": null,
+                "state": "DISABLED",
+                "roles": []
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "people-assignment-state-disabled",
+      "endpoint": "authority.list",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "DISABLED"
+                },
+                "contact": "Synthetic contact",
+                "state": "DISABLED",
+                "roles": []
+              },
+              {
+                "principal": {
+                  "kind": "SERVICE",
+                  "issuer": "https://issuer.example/",
+                  "subject": "x"
+                },
+                "actor": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "SERVICE",
+                  "availability": "DISABLED"
+                },
+                "contact": null,
+                "state": "DISABLED",
+                "roles": []
+              }
+            ],
+            "nextCursor": "x"
+          }
+        }
+      }
     }
   ]
 }

@@ -122,12 +122,69 @@ let private requestExpiry () =
             fixture.Dispose()
     }
 
+let private directoryBatch () =
+    async {
+        let! fixture = fixture () |> Async.AwaitTask
+
+        try
+            let memory = fixture.Store :?> MemoryStore.Store
+            let! owner = bootstrap fixture |> Async.AwaitTask
+
+            for number in [ 2000..2049 ] do
+                let principal =
+                    PrincipalKey.human "https://issuer.example/" ($"batch-{number}")
+                    |> Result.defaultWith (string >> failtest)
+
+                memory.SeedActor
+                    {
+                        ActorId = CaseFixtures.actorId (id number)
+                        Principal = principal
+                        Enabled = true
+                        Profile = None
+                    }
+                    []
+
+            let page limit =
+                async {
+                    let before = memory.Events |> List.filter ((=) "read") |> List.length
+
+                    let! result =
+                        Service.actors
+                            owner
+                            { AfterCursor = None; Limit = limit }
+                            CancellationToken.None
+                        |> Async.AwaitTask
+
+                    let after = memory.Events |> List.filter ((=) "read") |> List.length
+
+                    match result with
+                    | Outcome.Succeeded page ->
+                        Expect.equal page.Items.Length limit "Requested page is materialized"
+                    | other -> failtestf "Directory batch: %A" other
+
+                    return after - before
+                }
+
+            let! one = page 1
+            let! many = page 50
+
+            Expect.equal
+                many
+                one
+                "A50-person page uses the same number of snapshot primitives as a one-person page"
+        finally
+            fixture.Dispose()
+    }
+
 [<Tests>]
 let tests =
     testList
         "memory transaction store"
         [
             StoreContractTests.tests fixture
+            testCaseAsync
+                "directory role facts are one batch rather than per-person reads"
+                (directoryBatch ())
             testCaseAsync
                 "expired requester hints reset and provisioning deletes the request"
                 (requestExpiry ())

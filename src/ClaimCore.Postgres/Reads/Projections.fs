@@ -266,7 +266,7 @@ module internal Projections =
             "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($4::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($5::text[])))"
 
         let sql =
-            $"SELECT {actorColumns},{scoped} FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+            $"SELECT {actorColumns},{scoped},EXISTS(SELECT 1 FROM claimcore.grants assigned WHERE assigned.actor_id=a.actor_id) FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
 
         let parameters =
             [|
@@ -291,6 +291,7 @@ module internal Projections =
         | first :: _ ->
             { view with
                 HasScopedCases = DatabaseSession.value<bool> 6 first
+                HasAssignedRoles = DatabaseSession.value<bool> 7 first
             }
 
     /// Global visibility and actor/grant facts belong to the same read snapshot, without a second round trip.
@@ -312,10 +313,10 @@ module internal Projections =
 
             let mode =
                 match rows with
-                | first :: _ when DatabaseSession.value<int64> 9 first = 1L ->
+                | first :: _ when DatabaseSession.value<int64> 10 first = 1L ->
                     RegisterMaintenance.create
-                        (DatabaseSession.value<bool> 7 first)
-                        (DatabaseSession.value<int64> 8 first)
+                        (DatabaseSession.value<bool> 8 first)
+                        (DatabaseSession.value<int64> 9 first)
                     |> Result.defaultWith (fun _ ->
                         raise (RecordCorruptException "Invalid register maintenance state."))
                 | _ ->
@@ -368,3 +369,39 @@ module internal Projections =
                 )
 
         { Role = role; Scope = scope }, { Role = role; CaseId = caseId }
+
+    let actorRoleSummaries connection ids token =
+        task {
+            if List.isEmpty ids then
+                return Map.empty
+            else
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT a.actor_id,g.role,bool_or(g.case_id IS NULL),count(g.case_id) FROM claimcore.actors a LEFT JOIN claimcore.grants g USING(actor_id) WHERE a.actor_id=ANY($1::uuid[]) GROUP BY a.actor_id,g.role ORDER BY a.actor_id,g.role"
+                        [| box (ids |> List.map ActorId.value |> List.distinct |> List.toArray) |]
+                        token
+
+                return
+                    rows
+                    |> List.groupBy (fun row ->
+                        DatabaseSession.value<Guid> 0 row
+                        |> DatabaseSession.admitted ActorId.create)
+                    |> List.map (fun (id, rows) ->
+                        id,
+                        rows
+                        |> List.choose (fun row ->
+                            DatabaseSession.optional<string> 1 row
+                            |> Option.map (fun role ->
+                                {
+                                    ActorRoleSummary.Role =
+                                        DurableNames.tryRole role
+                                        |> Option.defaultWith (fun () ->
+                                            raise (
+                                                RecordCorruptException "Unknown assigned role."
+                                            ))
+                                    Installation = DatabaseSession.value<bool> 2 row
+                                    CaseCount = DatabaseSession.value<int64> 3 row
+                                })))
+                    |> Map.ofList
+        }

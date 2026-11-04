@@ -3379,12 +3379,59 @@
           },
           "responsibleCases": {
             "$ref": "#/components/schemas/ActorResponsibleCases"
+          },
+          "state": {
+            "enum": [
+              "ACTIVE",
+              "NO_ROLES",
+              "DISABLED"
+            ]
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActorRoleSummary"
+            },
+            "minItems": 0,
+            "maxItems": 7
           }
         },
         "required": [
           "actor",
           "principal",
-          "contact"
+          "contact",
+          "state",
+          "roles"
+        ]
+      },
+      "ActorRoleSummary": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "installation": {
+            "type": "boolean"
+          },
+          "caseCount": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 9007199254740991
+          }
+        },
+        "required": [
+          "role",
+          "installation",
+          "caseCount"
         ]
       },
       "ActorsPage": {

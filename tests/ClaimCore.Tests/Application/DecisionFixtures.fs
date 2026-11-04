@@ -60,6 +60,7 @@ let actor principal actorId roles cases : AuthorityView =
         Installation = roles
         Cases = Map.ofList cases
         HasScopedCases = not cases.IsEmpty
+        HasAssignedRoles = not roles.IsEmpty || not cases.IsEmpty
     }
 
 let worker =
@@ -186,7 +187,11 @@ let created n reference =
 
     request, LedgerEntries.stored entry, current, receipt
 
-let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> =
+let authorityView
+    (caller: AuthorityView)
+    (target: AuthorityView)
+    existing
+    : LockedFacts<AuthorityExecutionFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -197,6 +202,32 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
                 ObservedAt = instant
                 Actor = caller
                 ExistingOperation = existing
+                TargetRoles =
+                    target.Actor
+                    |> Option.map (fun actor ->
+                        actor.ActorId,
+                        (Role.all
+                         |> List.choose (fun role ->
+                             let installation = List.contains role target.Installation
+
+                             let cases =
+                                 target.Cases
+                                 |> Map.values
+                                 |> Seq.filter (List.contains role)
+                                 |> Seq.length
+                                 |> int64
+
+                             if installation || cases > 0L then
+                                 Some
+                                     {
+                                         ActorRoleSummary.Role = role
+                                         Installation = installation
+                                         CaseCount = cases
+                                     }
+                             else
+                                 None)))
+                    |> Option.toList
+                    |> Map.ofList
                 Target = target
                 TargetCases = Map.empty
                 EnabledHumanOwners = Some 2

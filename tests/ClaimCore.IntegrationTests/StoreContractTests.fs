@@ -18,6 +18,15 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "all7 role summaries stay bounded and deterministic"
+                (withFixture factory PeopleDirectoryContract.maximumRoles)
+            testCaseAsync
+                "bounded People summaries preserve disabled review and scoped counts"
+                (withFixture factory PeopleDirectoryContract.summaries)
+            testCaseAsync
+                "assignment state does not weaken corrupt service scope vetoes"
+                (withFixture factory PeopleDirectoryContract.corruptAssignment)
+            testCaseAsync
                 "admission effect failures restore projections and exact waiting hints"
                 (withFixture factory AdmitContract.atomicWrites)
             testCaseAsync

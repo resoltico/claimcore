@@ -479,8 +479,8 @@
   "workAct.UPDATE_WORK.label": "تحديث عمل القضية",
   "workChange.CLEAR.label": "مسح",
   "workChange.SET.label": "تعيين",
-  "requesterState.ACTIVE.label": "تم منح الوصول",
-  "requesterState.ACTIVE.meaning": "الحساب مفعّل وله أدوار وصول.",
+  "requesterState.ACTIVE.label": "مفعّل وله أدوار",
+  "requesterState.ACTIVE.meaning": "الحساب مفعّل وله أدوار معيّنة. تظل كل عملية خاضعة للتحقق من الأهلية والتفويض.",
   "requesterState.NO_ROLES.label": "لم يتم تعيين أدوار",
   "requesterState.NO_ROLES.meaning": "ليس لهذا الحساب أدوار وصول. اطلب من المالك منح الوصول.",
   "requesterState.DISABLED.label": "الحساب معطّل",
@@ -505,5 +505,11 @@
   "field.grants.label": "منح الوصول",
   "field.grants.meaning": "اختر الأدوار ونطاقاتها. يمكن تحديد كل زوج من الدور والنطاق مرة واحدة فقط.",
   "diagnostic.GRANT_COUNT_RANGE": "اختر من 1 إلى {maximumGrants} من منح الوصول.",
-  "diagnostic.DUPLICATE_GRANT": "اختر كل زوج من الدور والنطاق مرة واحدة فقط."
+  "diagnostic.DUPLICATE_GRANT": "اختر كل زوج من الدور والنطاق مرة واحدة فقط.",
+  "accountState.ACTIVE.label": "مفعّل وله أدوار",
+  "accountState.ACTIVE.meaning": "الحساب مفعّل وله أدوار معيّنة. تظل كل عملية خاضعة للتحقق من الأهلية والتفويض.",
+  "accountState.NO_ROLES.label": "لم يتم تعيين أدوار",
+  "accountState.NO_ROLES.meaning": "الحساب مسجّل ومفعّل ولكن لم يتم تعيين أدوار له.",
+  "accountState.DISABLED.label": "معطّل",
+  "accountState.DISABLED.meaning": "الحساب معطّل. تظل الأدوار المعيّنة مرئية لمراجعة الصلاحيات."
 }

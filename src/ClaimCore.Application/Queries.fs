@@ -244,9 +244,15 @@ module internal Queries =
                 )
             | Some requester when requester.Principal <> principal ->
                 Error CoreFault.StoreIntegrityError
-            | Some requester when not requester.Enabled ->
+            | Some requester when
+                AccountState.classify requester.Enabled actor.HasAssignedRoles =
+                    AccountState.Disabled
+                ->
                 Ok(RequesterState.Disabled(Actor.currentReference requester))
-            | Some requester when List.isEmpty actor.Installation && not actor.HasScopedCases ->
+            | Some requester when
+                AccountState.classify requester.Enabled actor.HasAssignedRoles =
+                    AccountState.NoRoles
+                ->
                 Ok(
                     RequesterState.NoRoles
                         {

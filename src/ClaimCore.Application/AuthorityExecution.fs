@@ -8,9 +8,16 @@ open ClaimCore.RecordFormat
 /// Loads and persists authority work; Domain owns parsing, policy and state decisions.
 module internal AuthorityExecution =
     let private targets installationId (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        let rolesValid =
+            let ids = view.Target.Actor |> Option.map _.ActorId |> Option.toList |> Set.ofList
+
+            (view.TargetRoles |> Map.keys |> Set.ofSeq) = ids
+            && (view.TargetRoles |> Map.forall (fun _ roles -> ActorRoleSummary.valid roles))
+
         if
-            view.Target.Actor
-            |> Option.exists (fun actor -> actor.Principal <> command.Target)
+            not rolesValid
+            || (view.Target.Actor
+                |> Option.exists (fun actor -> actor.Principal <> command.Target))
         then
             Error CoreFault.StoreIntegrityError
         else

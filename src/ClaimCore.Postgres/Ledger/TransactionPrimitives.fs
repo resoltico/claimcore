@@ -404,6 +404,9 @@ type private ReadTx
                     |> TransactionPages.page query.Limit _.ActorId
             }
 
+        member _.ActorRoleSummaries ids =
+            Projections.actorRoleSummaries connection ids token
+
         member _.ActorRefs ids =
             task {
                 if ids.IsEmpty then

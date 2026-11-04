@@ -460,6 +460,7 @@ type IReadTx =
 
     abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
 
+    abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
     abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
     abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>

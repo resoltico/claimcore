@@ -479,8 +479,8 @@
   "workAct.UPDATE_WORK.label": "Mainīt lietas darbu",
   "workChange.CLEAR.label": "Noņemt",
   "workChange.SET.label": "Norādīt",
-  "requesterState.ACTIVE.label": "Piekļuve piešķirta",
-  "requesterState.ACTIVE.meaning": "Konts ir iespējots, un tam ir piekļuves lomas.",
+  "requesterState.ACTIVE.label": "Iespējots ar lomām",
+  "requesterState.ACTIVE.meaning": "Konts ir iespējots, un tam ir piešķirtas lomas. Katrai darbībai joprojām pārbauda piemērotību un pilnvaras.",
   "requesterState.NO_ROLES.label": "Nav piešķirtu lomu",
   "requesterState.NO_ROLES.meaning": "Šim kontam nav piekļuves lomu. Lūdziet īpašniekam piešķirt piekļuvi.",
   "requesterState.DISABLED.label": "Konts atspējots",
@@ -505,5 +505,11 @@
   "field.grants.label": "Piekļuves piešķīrumi",
   "field.grants.meaning": "Izvēlieties lomas un to tvērumus. Katru lomas un tvēruma pāri drīkst norādīt tikai vienu reizi.",
   "diagnostic.GRANT_COUNT_RANGE": "Izvēlieties no 1 līdz {maximumGrants} piekļuves piešķīrumiem.",
-  "diagnostic.DUPLICATE_GRANT": "Katru lomas un tvēruma pāri izvēlieties tikai vienu reizi."
+  "diagnostic.DUPLICATE_GRANT": "Katru lomas un tvēruma pāri izvēlieties tikai vienu reizi.",
+  "accountState.ACTIVE.label": "Iespējots ar lomām",
+  "accountState.ACTIVE.meaning": "Konts ir iespējots, un tam ir piešķirtas lomas. Katrai darbībai joprojām pārbauda piemērotību un pilnvaras.",
+  "accountState.NO_ROLES.label": "Nav piešķirtu lomu",
+  "accountState.NO_ROLES.meaning": "Konts ir reģistrēts un iespējots, bet tam nav piešķirtu lomu.",
+  "accountState.DISABLED.label": "Atspējots",
+  "accountState.DISABLED.meaning": "Konts ir atspējots. Piešķirtās lomas paliek redzamas pilnvaru pārskatīšanai."
 }

@@ -534,6 +534,20 @@ module ResponseCodecs =
         |> build
         |> named "ActorResponsibleCases"
 
+    let private actorRoleSummary =
+        (record (fun role installation count ->
+            {
+                ActorRoleSummary.Role = role
+                Installation = installation
+                CaseCount = count
+            })
+        : Fields<ActorRoleSummary, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "installation" _.Installation boolean
+        |> field "caseCount" _.CaseCount (integer 0L SafeInteger.Maximum)
+        |> build
+        |> named "ActorRoleSummary"
+
     let actorSummary =
         let contact =
             nonempty
@@ -547,9 +561,11 @@ module ResponseCodecs =
                         }))
                 ContactText.format
 
-        (record (fun actor principal contact responsibleCases ->
+        (record (fun actor principal contact responsibleCases state roles ->
             {
-                ActorReviewItem.Actor = actor
+                ActorReviewItem.State = state
+                Roles = roles
+                Actor = actor
                 Principal = principal
                 Contact = contact
                 ResponsibleCases = responsibleCases
@@ -559,6 +575,8 @@ module ResponseCodecs =
         |> field "principal" _.Principal principal
         |> field "contact" _.Contact (nullable contact)
         |> optionalField "responsibleCases" _.ResponsibleCases actorResponsibleCases
+        |> field "state" _.State (VocabularyCodec.create AccountState.vocabulary)
+        |> field "roles" _.Roles (list Role.all.Length actorRoleSummary)
         |> build
         |> named "ActorReviewItem"
 
