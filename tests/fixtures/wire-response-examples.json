@@ -905,7 +905,7 @@
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
-              "sequence": 1,
+              "sequence": 2,
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
@@ -920,7 +920,23 @@
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
-              "act": "REGISTER"
+              "act": "REGISTER",
+              "effects": [
+                {
+                  "act": "REGISTER",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                  }
+                },
+                {
+                  "act": "SET_PROFILE",
+                  "position": {
+                    "sequence": 2,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                }
+              ]
             }
           }
         }
@@ -937,7 +953,7 @@
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
-              "sequence": 1,
+              "sequence": 2,
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
@@ -952,7 +968,23 @@
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
-              "act": "REGISTER"
+              "act": "REGISTER",
+              "effects": [
+                {
+                  "act": "REGISTER",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                  }
+                },
+                {
+                  "act": "SET_PROFILE",
+                  "position": {
+                    "sequence": 2,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                }
+              ]
             }
           }
         }
@@ -1146,7 +1178,12 @@
                 },
                 "accessScope": {
                   "kind": "INSTALLATION"
-                }
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ]
               }
             }
           }
@@ -4363,7 +4400,20 @@
                     }
                   ],
                   "profile": null
-                }
+                },
+                "effects": [
+                  {
+                    "kind": "GRANT",
+                    "grant": {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "CASE",
+                        "caseId": "20000000-0000-4000-8000-000000000001",
+                        "caseReference": "OVERLAPPING"
+                      }
+                    }
+                  }
+                ]
               }
             }
           }
@@ -6532,7 +6582,7 @@
           "data": {
             "operationId": "10000000-0000-4000-8000-000000000001",
             "position": {
-              "sequence": 1,
+              "sequence": 2,
               "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
             },
             "recordedAt": "2026-01-01T00:00:00.000000Z",
@@ -6547,7 +6597,23 @@
             "subject": {
               "kind": "AUTHORITY",
               "targetActorId": "10000000-0000-4000-8000-000000000001",
-              "act": "PROVISION_OWNER"
+              "act": "PROVISION_OWNER",
+              "effects": [
+                {
+                  "act": "PROVISION_OWNER",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                  }
+                },
+                {
+                  "act": "SET_PROFILE",
+                  "position": {
+                    "sequence": 2,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                }
+              ]
             }
           }
         }
@@ -11928,6 +11994,447 @@
           }
         }
       }
+    },
+    {
+      "name": "authority-admit-ordered-effects",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": null,
+                  "enabled": false,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [
+                    {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "INSTALLATION"
+                      }
+                    },
+                    {
+                      "role": "AUDITOR",
+                      "scope": {
+                        "kind": "CASE",
+                        "caseId": "20000000-0000-4000-8000-000000000001",
+                        "caseReference": "10000000-0000-4000-8000-000000000777"
+                      }
+                    }
+                  ],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "REGISTER",
+                    "principal": {
+                      "kind": "HUMAN",
+                      "issuer": "https://issuer.example/",
+                      "subject": "admitted-person"
+                    }
+                  },
+                  {
+                    "kind": "SET_PROFILE",
+                    "profile": {
+                      "displayName": "Authored admission name",
+                      "contact": "authored@example.invalid"
+                    }
+                  },
+                  {
+                    "kind": "GRANT",
+                    "grant": {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "INSTALLATION"
+                      }
+                    }
+                  },
+                  {
+                    "kind": "GRANT",
+                    "grant": {
+                      "role": "AUDITOR",
+                      "scope": {
+                        "kind": "CASE",
+                        "caseId": "20000000-0000-4000-8000-000000000001",
+                        "caseReference": "10000000-0000-4000-8000-000000000777"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "private-provisioning-review-effect-grammar",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": null,
+                  "enabled": false,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [
+                    {
+                      "role": "OWNER",
+                      "scope": {
+                        "kind": "INSTALLATION"
+                      }
+                    }
+                  ],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "PROVISION_OWNER",
+                    "principal": {
+                      "kind": "HUMAN",
+                      "issuer": "https://issuer.example/",
+                      "subject": "admitted-person"
+                    }
+                  },
+                  {
+                    "kind": "SET_PROFILE",
+                    "profile": {
+                      "displayName": "Authored admission name",
+                      "contact": "authored@example.invalid"
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-erase-profile-effect",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Authored admission name"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  },
+                  "contact": "authored@example.invalid"
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": null,
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "ERASE_PROFILE"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-revoke-effect",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Authored admission name"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  },
+                  "contact": "authored@example.invalid"
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [
+                    {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "INSTALLATION"
+                      }
+                    }
+                  ],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "REVOKE",
+                    "grant": {
+                      "role": "CASE_READER",
+                      "scope": {
+                        "kind": "INSTALLATION"
+                      }
+                    }
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-disable-effect",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Authored admission name"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  },
+                  "contact": "authored@example.invalid"
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": false,
+                  "grants": [],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "DISABLE"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-admit-grant_count_range",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "grants",
+                "code": "GRANT_COUNT_RANGE",
+                "maximumGrants": 48
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-admit-duplicate_grant",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "grants",
+                "code": "DUPLICATE_GRANT"
+              }
+            ]
+          }
+        }
+      }
+    },
+    {
+      "name": "authority-admit-accepted-tail-proof",
+      "endpoint": "operation.execute",
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "ACCEPTED",
+          "data": {
+            "operationId": "10000000-0000-4000-8000-000000000001",
+            "position": {
+              "sequence": 3,
+              "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+            },
+            "recordedAt": "2026-01-01T00:00:00.000000Z",
+            "recordedBy": {
+              "actorId": "10000000-0000-4000-8000-000000000001",
+              "displayName": {
+                "kind": "ERASED"
+              },
+              "principalKind": "HUMAN",
+              "availability": "AVAILABLE"
+            },
+            "subject": {
+              "kind": "AUTHORITY",
+              "targetActorId": "10000000-0000-4000-8000-000000000001",
+              "act": "ADMIT",
+              "effects": [
+                {
+                  "act": "REGISTER",
+                  "position": {
+                    "sequence": 1,
+                    "entryHash": "1111111111111111111111111111111111111111111111111111111111111111"
+                  }
+                },
+                {
+                  "act": "SET_PROFILE",
+                  "position": {
+                    "sequence": 2,
+                    "entryHash": "2222222222222222222222222222222222222222222222222222222222222222"
+                  }
+                },
+                {
+                  "act": "GRANT",
+                  "position": {
+                    "sequence": 3,
+                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
+                  }
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }
