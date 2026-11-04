@@ -4239,6 +4239,21 @@
               "UNSCHEDULED",
               "INACTIVE"
             ]
+          },
+          "view": {
+            "enum": [
+              "NEEDS_ATTENTION",
+              "MINE",
+              "OVERDUE",
+              "DUE_TODAY",
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "UNDECIDED",
+              "DECIDED_UNPAID",
+              "CLOSED",
+              "VOIDED",
+              "ALL"
+            ]
           }
         },
         "required": [
@@ -4872,6 +4887,21 @@
               "UPCOMING",
               "UNSCHEDULED",
               "INACTIVE"
+            ]
+          },
+          "view": {
+            "enum": [
+              "NEEDS_ATTENTION",
+              "MINE",
+              "OVERDUE",
+              "DUE_TODAY",
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "UNDECIDED",
+              "DECIDED_UNPAID",
+              "CLOSED",
+              "VOIDED",
+              "ALL"
             ]
           }
         },

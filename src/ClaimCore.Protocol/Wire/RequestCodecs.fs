@@ -682,10 +682,11 @@ module RequestCodecs =
             (VocabularyCodec.create CaseListOrder.vocabulary)
 
     let private filterFields =
-        (record (fun (filter: CaseListFilter<string>) assignment due ->
+        (record (fun (filter: CaseListFilter<string>) assignment due view ->
             { filter with
                 Assignment = assignment
                 Due = due
+                View = view
             })
         : Fields<CaseListFilter<string>, _>)
         |> flatten id baseFilterFields
@@ -694,6 +695,7 @@ module RequestCodecs =
             _.Assignment
             (VocabularyCodec.create CaseAssignment.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)
+        |> optionalField "view" _.View (VocabularyCodec.create CaseView.vocabulary)
 
     let caseListRequest =
         let paging =

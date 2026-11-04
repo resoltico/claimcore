@@ -397,7 +397,8 @@
     "reminderState",
     "reminderDue",
     "includeInactive",
-    "mine"
+    "mine",
+    "caseView"
   ],
   "cliFrameCount": 49,
   "readInputs": {
@@ -413,7 +414,8 @@
       "text",
       "order",
       "assignment",
-      "due"
+      "due",
+      "view"
     ],
     "case.history": [
       "target",
@@ -449,7 +451,8 @@
       "text",
       "order",
       "assignment",
-      "due"
+      "due",
+      "view"
     ],
     "operation.status": [
       "operationId"

@@ -138,6 +138,10 @@ module Cursors =
                 filter.Assignment
                 |> Option.map (DurableNames.caseAssignment >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
+                "view",
+                filter.View
+                |> Option.map (CaseView.token >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
             ]
 
     let private instant (value: string) =
@@ -199,7 +203,7 @@ module Cursors =
                 DurableNames.After, after
                 "filters", caseFilters filter
                 DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 5L
+                DurableNames.V, JsonValue.Integer 6L
             ]
 
     let private casePosition order =
@@ -244,7 +248,7 @@ module Cursors =
             | JsonValue.Object [ DurableNames.After, after
                                  "filters", filters
                                  DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 5L ] when
+                                 DurableNames.V, JsonValue.Integer 6L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after

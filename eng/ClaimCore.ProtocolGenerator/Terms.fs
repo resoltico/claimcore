@@ -99,6 +99,8 @@ module Terms =
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary
+            rendered CaseHeadline.vocabulary
+            rendered CaseAttention.vocabulary
             rendered ActSubject.vocabulary
             fieldTerms
             rendered RecordGroup.vocabulary

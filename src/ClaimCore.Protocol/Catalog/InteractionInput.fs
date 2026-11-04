@@ -14,6 +14,7 @@ type InteractionInput =
     | Lifecycle
     | Status
     | Progress
+    | CaseView
     | Order
     | Assignment
     | Due
@@ -43,6 +44,7 @@ module InteractionInput =
         | InteractionInput.Lifecycle -> "lifecycle"
         | InteractionInput.Status -> "status"
         | InteractionInput.Progress -> "progress"
+        | InteractionInput.CaseView -> "caseView"
         | InteractionInput.Order -> "order"
         | InteractionInput.Due -> "due"
         | InteractionInput.WorkChoice field -> BusinessField.key field + "Action"
@@ -69,6 +71,7 @@ module InteractionInput =
         | InteractionInput.Lifecycle
         | InteractionInput.Status
         | InteractionInput.Progress
+        | InteractionInput.CaseView
         | InteractionInput.Order
         | InteractionInput.Due
         | InteractionInput.Assignment -> vocabularyName + "." + key input + "." + part

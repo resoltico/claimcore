@@ -192,7 +192,7 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":5", "\"v\":5.0")
+            baseJson.Replace("\"v\":6", "\"v\":6.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
@@ -307,6 +307,9 @@ let private worklistBinding () =
             { selected with Text = None }
             { selected with
                 Assignment = Some CaseAssignment.Mine
+            }
+            { selected with
+                View = Some CaseView.All
             }
             { selected with
                 Order = CaseListOrder.Reference

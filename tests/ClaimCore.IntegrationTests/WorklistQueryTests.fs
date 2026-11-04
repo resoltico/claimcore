@@ -140,6 +140,53 @@ let private namedQueues pair =
                 do! walk pair filter limit rows
     }
 
+let private views pair =
+    task {
+        // These literal memberships do not call the Domain matcher or inspect SQL predicates.
+        let expectedViews =
+            [
+                CaseView.NeedsAttention, [ "mix-04"; "work-01"; "Work-11" ]
+                CaseView.Mine, []
+                CaseView.Overdue, []
+                CaseView.DueToday, []
+                CaseView.NoNextAction, [ "mix-04"; "work-01"; "Work-11" ]
+                CaseView.Unassigned, [ "mix-04"; "work-01"; "Work-11" ]
+                CaseView.Undecided, [ "mix-04" ]
+                CaseView.DecidedUnpaid, [ "Work-11" ]
+                CaseView.Closed,
+                [ "work-02"; "work-05"; "work-06"; "work-08"; "WORK-09"; "Work-10" ]
+                CaseView.Voided,
+                [ "work-03"; "work-07"; "work-08"; "WORK-09"; "Work-10"; "Work-12" ]
+                CaseView.All, (expected CaseListFilter.empty<string> |> List.map _.Reference)
+            ]
+
+        Expect.equal
+            (expectedViews |> List.map fst |> Set.ofList)
+            (Set.ofList CaseView.all)
+            "Every closed view executes"
+
+        for view, references in expectedViews do
+            let filter =
+                { CaseListFilter.empty<string> with
+                    View = Some view
+                }
+
+            let rows =
+                references
+                |> List.map (fun reference ->
+                    cases |> List.find (fun row -> row.Reference = reference))
+
+            do! walk pair filter 1 rows
+
+        let intersection =
+            { CaseListFilter.empty<string> with
+                View = Some CaseView.DecidedUnpaid
+                Statuses = [ CaseStatus.Closed ]
+            }
+
+        do! walk pair intersection 1 []
+    }
+
 let private facets pair =
     task {
         do! namedQueues pair
@@ -248,6 +295,7 @@ let private cursorBinding pair =
                 CaseListFilter.create [] [] [ CaseProgress.Decided ] None CaseListOrder.Reference
                 CaseListFilter.create [] [] [] (Some "Rīgas") CaseListOrder.Reference
                 CaseListFilter.create [] [] [] None CaseListOrder.Recent
+                { all with View = Some CaseView.All }
             ]
 
         for filter in changes do
@@ -273,6 +321,7 @@ let tests =
         "worklist store equivalence"
         [
             testCaseAsync "all facet sets orders and page boundaries agree" (run facets)
+            testCaseAsync "closed views and explicit filter intersections agree" (run views)
             testCaseAsync
                 "literal wildcard Unicode normalization and erased-name search agree"
                 (run search)

@@ -320,7 +320,7 @@ use current admission. Empty partial updates, null required facts, half money an
 refuse. A correction cannot add missing groups or create a no-op revision. Revision conflicts require
 fresh intent. Chronology diagnostics identify the asserted field and carry typed counterpart context.
 
-Case-list continuations use format 5; assignee, reminder and activity continuations use format 1; other continuations use format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
+Case-list continuations use format 6; assignee, reminder and activity continuations use format 1; other continuations use format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
 positions bind admitted filters and ordering. Unsupported formats are refused.
 
 ```sh

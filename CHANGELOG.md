@@ -6,6 +6,7 @@
 - Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
 - Case lists identify exact visible reference matches using installation case-folding; unavailable cases remain undisclosed.
+- Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - CLI adds family/verb help and --version, rejects irrelevant clear flags, names escaped usage tokens and reports declined reviews.
 - CLI language follows explicit flag, environment, profile and POSIX locale precedence; configure --show reports the effective choice and source.
 

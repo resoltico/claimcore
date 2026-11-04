@@ -291,6 +291,7 @@ let internal authorityFieldPresentation () =
             | InteractionInput.Lifecycle
             | InteractionInput.Status
             | InteractionInput.Progress
+            | InteractionInput.CaseView
             | InteractionInput.Order
             | InteractionInput.Due
             | InteractionInput.WorkChoice _

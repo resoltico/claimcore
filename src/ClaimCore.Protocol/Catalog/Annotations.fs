@@ -287,6 +287,7 @@ module CatalogAnnotations =
                         "lifecycle", InteractionInput.Lifecycle
                         "status", InteractionInput.Status
                         "progress", InteractionInput.Progress
+                        "view", InteractionInput.CaseView
                         "text", InteractionInput.Target InputTarget.Text
                     ] do
                     yield (owner, name), constant (annotation input)

@@ -29,6 +29,23 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
             && List.contains role selection.ForbiddenRoles)
 
     (selection.Visibility = CaseVisibility.Every || scopedRead)
+    && (selection.Filter.View
+        |> Option.forall (fun view ->
+            CaseView.matches
+                selection.DateBasis.BusinessDate
+                selection.ActorId
+                view
+                {
+                    State =
+                        record.Snapshot.State
+                        |> CaseState.map (fun fields ->
+                            fields.Status, CaseProgress.ofPayment fields.Progress)
+                    Responsible =
+                        record.Index.Responsible
+                        |> Option.map (fun actor ->
+                            actor, (assignedAccount state record.CaseId actor).Available)
+                    NextPendingDue = record.Index.FollowUp
+                }))
     && (selection.Filter.Assignment
         |> Option.forall (function
             | CaseAssignment.Mine -> record.Index.Responsible = Some selection.ActorId

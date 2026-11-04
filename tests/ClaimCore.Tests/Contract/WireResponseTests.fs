@@ -128,9 +128,19 @@ let private malformed () =
             "Host phases form a closed vocabulary"
 
     let ordinary =
-        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[]}"""
+        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
 
-    let missing = """{"acts":["CORRECT"],"history":[]}"""
+    let missing =
+        """{"acts":["CORRECT"],"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
+
+    for valid in
+        [
+            """{"acts":["CLOSE"],"history":[],"maintenance":{"active":false,"generation":0},"recommended":"CLOSE"}"""
+            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
+        ] do
+        Expect.isOk
+            (Codec.decode 4096 ResponseCodecs.caseAdvice (bytes valid))
+            "The matching complete advice admits"
 
     for raw in [ ordinary; missing ] do
         Expect.isError

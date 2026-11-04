@@ -437,6 +437,12 @@
       "scalar": null
     },
     {
+      "name": "caseView",
+      "labelId": "input.caseView.label",
+      "meaningId": "input.caseView.meaning",
+      "scalar": null
+    },
+    {
       "name": "order",
       "labelId": "input.order.label",
       "meaningId": "input.order.meaning",
@@ -6172,6 +6178,42 @@
           "default": null,
           "diagnosticTargets": [],
           "source": "AUTHORED"
+        },
+        {
+          "identity": "view",
+          "field": null,
+          "path": [
+            "view"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "caseView",
+            "options": [
+              "NEEDS_ATTENTION",
+              "MINE",
+              "OVERDUE",
+              "DUE_TODAY",
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "UNDECIDED",
+              "DECIDED_UNPAID",
+              "CLOSED",
+              "VOIDED",
+              "ALL"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.caseView.label",
+          "meaningId": "input.caseView.meaning",
+          "order": 9,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
         }
       ],
       "constants": []
@@ -6372,6 +6414,42 @@
           "labelId": "input.due.label",
           "meaningId": "input.due.meaning",
           "order": 6,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "view",
+          "field": null,
+          "path": [
+            "view"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "caseView",
+            "options": [
+              "NEEDS_ATTENTION",
+              "MINE",
+              "OVERDUE",
+              "DUE_TODAY",
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "UNDECIDED",
+              "DECIDED_UNPAID",
+              "CLOSED",
+              "VOIDED",
+              "ALL"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "input.caseView.label",
+          "meaningId": "input.caseView.meaning",
+          "order": 7,
           "prefill": null,
           "required": false,
           "wireRequired": false,

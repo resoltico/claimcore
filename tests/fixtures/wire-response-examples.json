@@ -196,7 +196,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -220,7 +221,13 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ]
           }
         }
       },
@@ -274,7 +281,8 @@
               "observedAt": "2026-01-01T12:00:00.000000Z",
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
-            }
+            },
+            "exactReference": null
           }
         }
       },
@@ -1160,7 +1168,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -1184,7 +1193,9 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "ERASED",
+            "attention": []
           }
         }
       }
@@ -1241,7 +1252,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -1265,7 +1277,9 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "ERASED",
+            "attention": []
           }
         }
       }
@@ -1317,7 +1331,12 @@
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
-                "caseId": "20000000-0000-4000-8000-000000000001"
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "UNDECIDED",
+                "attention": [
+                  "NO_NEXT_ACTION",
+                  "UNASSIGNED"
+                ]
               },
               {
                 "caseReference": "CASE-002",
@@ -1357,7 +1376,9 @@
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
-                "caseId": "20000000-0000-4000-8000-000000000001"
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "VOIDED",
+                "attention": []
               },
               {
                 "caseReference": "CASE-003",
@@ -1366,7 +1387,9 @@
                   "kind": "ERASED"
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
-                "caseId": "20000000-0000-4000-8000-000000000001"
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "ERASED",
+                "attention": []
               }
             ],
             "nextCursor": "x",
@@ -1399,6 +1422,10 @@
               "observedAt": "2026-01-01T12:00:00.000000Z",
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
+            },
+            "exactReference": {
+              "caseId": "20000000-0000-4000-8000-000000000001",
+              "caseReference": "CASE-001"
             }
           }
         }
@@ -3164,7 +3191,33 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
+            },
+            "headline": "ERASED",
+            "attention": [],
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "mine": false,
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
@@ -3216,7 +3269,33 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
+            },
+            "headline": "PAID",
+            "attention": [],
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "mine": false,
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
             }
           }
         }
@@ -3264,7 +3343,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -3288,7 +3368,9 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "VOIDED",
+            "attention": []
           }
         }
       },
@@ -3442,7 +3524,12 @@
                     "canCreateReminder": false
                   }
                 },
-                "caseId": "20000000-0000-4000-8000-000000000001"
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "DECIDED",
+                "attention": [
+                  "NO_NEXT_ACTION",
+                  "UNASSIGNED"
+                ]
               },
               {
                 "caseReference": "WORK-PAID",
@@ -3485,7 +3572,9 @@
                     "canCreateReminder": false
                   }
                 },
-                "caseId": "20000000-0000-4000-8000-000000000001"
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "CLOSED",
+                "attention": []
               }
             ],
             "nextCursor": null,
@@ -3494,7 +3583,8 @@
               "observedAt": "2026-01-01T12:00:00.000000Z",
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
-            }
+            },
+            "exactReference": null
           }
         }
       },
@@ -4271,7 +4361,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4283,8 +4374,21 @@
                 "observedAt": "2026-01-01T12:00:00.000000Z",
                 "businessDate": "2026-01-01",
                 "timeZone": "Etc/UTC"
-              }
-            }
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "ERASED",
+            "attention": []
           }
         }
       }
@@ -4319,12 +4423,15 @@
               }
             },
             "advice": {
-              "acts": [],
+              "acts": [
+                "DECIDE"
+              ],
               "history": [],
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": "DECIDE"
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4348,7 +4455,12 @@
               "canUpdateSummary": true,
               "canAssign": true,
               "canCreateReminder": true
-            }
+            },
+            "headline": "UNDECIDED",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED"
+            ]
           }
         }
       },
@@ -4466,7 +4578,8 @@
               "maintenance": {
                 "active": true,
                 "generation": 3
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -4490,7 +4603,13 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ]
           }
         }
       },
@@ -5712,7 +5831,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -5736,7 +5856,13 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ]
           }
         }
       },
