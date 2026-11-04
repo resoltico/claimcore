@@ -64,6 +64,7 @@ let private idleConfirmation () =
                                 {
                                     Mine = false
                                     Work = Inputs.workView CliReplyFixtures.snapshot.State
+                                    Stages = Inputs.stageDisplay CliReplyFixtures.snapshot.State
                                     Snapshot = CliReplyFixtures.snapshot
                                     Headline = CaseHeadline.Undecided
                                     Attention = []

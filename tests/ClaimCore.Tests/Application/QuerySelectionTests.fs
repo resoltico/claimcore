@@ -184,7 +184,8 @@ let private resources () =
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
             read
-            (Inputs.workView current.Snapshot.State))
+            (Inputs.workView current.Snapshot.State)
+            (Inputs.stageDisplay current.Snapshot.State))
         expected
         "Inaccessible live case"
 
@@ -192,7 +193,8 @@ let private resources () =
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
             { read with Case = None }
-            (Inputs.workView current.Snapshot.State))
+            (Inputs.workView current.Snapshot.State)
+            (Inputs.stageDisplay current.Snapshot.State))
         expected
         "Absent case is indistinguishable"
 
@@ -208,7 +210,8 @@ let private resources () =
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
             { read with Case = Some erased }
-            (Inputs.workView erased.Snapshot.State))
+            (Inputs.workView erased.Snapshot.State)
+            (Inputs.stageDisplay erased.Snapshot.State))
         expected
         "Erased beyond view is indistinguishable"
 

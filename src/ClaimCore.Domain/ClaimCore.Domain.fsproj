@@ -23,6 +23,7 @@
     <Compile Include="CaseActs.fs" />
     <Compile Include="AuthorityActs.fs" />
     <Compile Include="WorklistSemantics.fs" />
+    <Compile Include="CaseStages.fs" />
     <Compile Include="Reads.fs" />
     <Compile Include="Changes.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />

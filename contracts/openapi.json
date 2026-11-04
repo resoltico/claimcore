@@ -5689,6 +5689,175 @@
           "state"
         ]
       },
+      "CaseStageDisplay": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseStageDisplay.TRACKER"
+          },
+          {
+            "$ref": "#/components/schemas/CaseStageDisplay.VOIDED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseStageDisplay.ERASED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseStageDisplay.REINSTATED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "TRACKER": "#/components/schemas/CaseStageDisplay.TRACKER",
+            "VOIDED": "#/components/schemas/CaseStageDisplay.VOIDED",
+            "ERASED": "#/components/schemas/CaseStageDisplay.ERASED",
+            "REINSTATED": "#/components/schemas/CaseStageDisplay.REINSTATED"
+          }
+        }
+      },
+      "CaseStageDisplay.ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "CaseStageDisplay.REINSTATED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REINSTATED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "CaseStageDisplay.TRACKER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "TRACKER"
+          },
+          "current": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "steps": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseStageEntry"
+            },
+            "minItems": 4,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "kind",
+          "current",
+          "steps"
+        ]
+      },
+      "CaseStageDisplay.VOIDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "VOIDED"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "CaseStageEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "stage": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "date": {
+            "oneOf": [
+              {
+                "type": "string",
+                "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+                "format": "date",
+                "minLength": 10,
+                "maxLength": 10
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/Money"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "stage",
+          "completed",
+          "date",
+          "amount"
+        ]
+      },
+      "CaseStageOutline": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "current": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          },
+          "completed": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPENED",
+                "DECIDED",
+                "PAID",
+                "CLOSED"
+              ]
+            },
+            "minItems": 1,
+            "maxItems": 4
+          }
+        },
+        "required": [
+          "current",
+          "completed"
+        ]
+      },
       "CaseState": {
         "oneOf": [
           {
@@ -5831,6 +6000,16 @@
             "type": "integer",
             "minimum": 0,
             "maximum": 9007199254740991
+          },
+          "stages": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseStageOutline"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
@@ -5843,7 +6022,8 @@
           "attention",
           "nextAction",
           "responsible",
-          "pendingReminders"
+          "pendingReminders",
+          "stages"
         ]
       },
       "CaseSummaryReply": {
@@ -6477,6 +6657,9 @@
             },
             "minItems": 0,
             "maxItems": 6
+          },
+          "stages": {
+            "$ref": "#/components/schemas/CaseStageDisplay"
           }
         },
         "required": [
@@ -6488,7 +6671,8 @@
           "mine",
           "work",
           "headline",
-          "attention"
+          "attention",
+          "stages"
         ]
       },
       "CaseViewCount": {

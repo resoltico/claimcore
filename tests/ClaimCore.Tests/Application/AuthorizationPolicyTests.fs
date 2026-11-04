@@ -301,6 +301,7 @@ let private scopedAdvice () =
                 (DecisionFixtures.services installation DecisionFixtures.calendar human)
                 (AuthorityView.ofActor (Some authority))
                 (Inputs.workView record.Snapshot.State)
+                (Inputs.stageDisplay record.Snapshot.State)
                 record
             |> accepted
 
@@ -386,6 +387,7 @@ let private noUsableCorrectionOffer () =
             (DecisionFixtures.services installation DecisionFixtures.calendar human)
             (AuthorityView.ofActor (Some authority))
             (Inputs.workView record.Snapshot.State)
+            (Inputs.stageDisplay record.Snapshot.State)
             record
         |> accepted
 

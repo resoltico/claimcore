@@ -118,6 +118,7 @@ let internal retainedText () =
                 {
                     Mine = false
                     Work = Inputs.workView snapshot.State
+                    Stages = Inputs.stageDisplay snapshot.State
                     Snapshot = snapshot
                     Headline = CaseHeadline.Undecided
                     Attention = []

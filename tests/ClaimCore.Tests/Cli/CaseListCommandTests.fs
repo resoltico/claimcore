@@ -63,6 +63,12 @@ let private row reference =
         Revision = CaseFixtures.revision 1L
         ChangedAt = moment
         State = CaseState.Active facts
+        Stages =
+            Some
+                {
+                    Current = CaseStageKind.Opened
+                    Completed = [ CaseStageKind.Opened ]
+                }
         Headline = CaseHeadline.Undecided
         Attention = []
         NextAction = None
@@ -228,6 +234,7 @@ let tests =
                         { row "ERASED" with
                             Revision = CaseFixtures.revision 9L
                             State = CaseState.Erased
+                            Stages = None
                             Headline = CaseHeadline.Erased
                         }
 

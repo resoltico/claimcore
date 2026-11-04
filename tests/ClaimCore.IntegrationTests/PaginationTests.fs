@@ -200,6 +200,7 @@ type internal PausedPageStore
 
                                     member _.ActivityPage query = tx.ActivityPage query
                                     member _.TimelinePage query = tx.TimelinePage query
+                                    member _.CaseStageFacts id = tx.CaseStageFacts id
                                     member _.PreviousEntries entries = tx.PreviousEntries entries
                                     member _.FindOperation id = tx.FindOperation id
                                     member _.NonAcceptance key = tx.NonAcceptance key

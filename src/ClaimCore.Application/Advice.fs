@@ -36,7 +36,13 @@ module internal Advice =
             else
                 None)
 
-    let caseRecord (services: ServiceContext) actor (work: CaseWorkView) (record: StoredCase) =
+    let caseRecord
+        (services: ServiceContext)
+        actor
+        (work: CaseWorkView)
+        stages
+        (record: StoredCase)
+        =
         let installationId = services.InstallationId
         let principal = services.Principal
 
@@ -88,6 +94,7 @@ module internal Advice =
                         CanCreateReminder = active && opened && permitted
                     }
                 Snapshot = record.Snapshot
+                Stages = stages
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
                 Attention =
                     CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)

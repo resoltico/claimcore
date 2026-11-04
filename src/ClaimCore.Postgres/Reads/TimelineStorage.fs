@@ -5,6 +5,47 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 
 module internal TimelineStorage =
+    let stages connection caseId token =
+        task {
+            let opened =
+                DatabaseSession.dateExpression
+                    "(SELECT business_date FROM claimcore.ledger o WHERE o.subject_kind='CASE' AND o.subject_id=$1 AND o.case_revision=1 AND o.act='OPEN')"
+
+            let closed =
+                DatabaseSession.dateExpression
+                    "(SELECT business_date FROM claimcore.ledger c WHERE c.subject_kind='CASE' AND c.subject_id=$1 AND c.act='CLOSE' ORDER BY c.case_revision DESC LIMIT 1)"
+
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    ($"SELECT case_revision,act,{opened},{closed} FROM claimcore.ledger WHERE subject_kind='CASE' AND subject_id=$1 ORDER BY case_revision DESC LIMIT 1")
+                    [| box (CaseId.value caseId) |]
+                    token
+
+            return
+                match rows with
+                | [] -> None
+                | [ row ] ->
+                    let lastAct =
+                        DatabaseSession.value<string> 1 row
+                        |> ClaimCore.RecordFormat.DurableNames.tryCaseAct
+                        |> Option.defaultWith (fun () ->
+                            raise (RecordCorruptException "Invalid last case stage act."))
+
+                    Some
+                        {
+                            CaseStageFacts.Revision =
+                                DatabaseSession.value<int64> 0 row
+                                |> DatabaseSession.admitted Revision.create
+                            LastAct = lastAct
+                            OpenedOn = DatabaseSession.calendarDate 2 row |> CalendarDate.ofDate
+                            ClosedOn =
+                                DatabaseSession.optionalCalendarDate 3 row
+                                |> Option.map CalendarDate.ofDate
+                        }
+                | _ -> raise (RecordCorruptException "Duplicate current case stage.")
+        }
+
     let page connection installation (query: TimelinePageQuery) token =
         task {
             let filter =

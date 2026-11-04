@@ -313,6 +313,7 @@ let private changingHistory (fixture: Fixture) change =
 
                                         member _.ActivityPage query = tx.ActivityPage query
                                         member _.TimelinePage query = tx.TimelinePage query
+                                        member _.CaseStageFacts id = tx.CaseStageFacts id
 
                                         member _.PreviousEntries entries =
                                             tx.PreviousEntries entries

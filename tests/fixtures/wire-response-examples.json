@@ -238,7 +238,46 @@
               "NO_NEXT_ACTION",
               "UNASSIGNED",
               "READY_TO_CLOSE"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -1268,7 +1307,10 @@
               "canCreateReminder": false
             },
             "headline": "ERASED",
-            "attention": []
+            "attention": [],
+            "stages": {
+              "kind": "ERASED"
+            }
           }
         }
       }
@@ -1352,7 +1394,10 @@
               "canCreateReminder": false
             },
             "headline": "ERASED",
-            "attention": []
+            "attention": [],
+            "stages": {
+              "kind": "ERASED"
+            }
           }
         }
       }
@@ -1389,7 +1434,13 @@
                 ],
                 "nextAction": null,
                 "responsible": null,
-                "pendingReminders": 0
+                "pendingReminders": 0,
+                "stages": {
+                  "current": "OPENED",
+                  "completed": [
+                    "OPENED"
+                  ]
+                }
               },
               {
                 "caseReference": "CASE-002",
@@ -1411,7 +1462,8 @@
                 "attention": [],
                 "nextAction": null,
                 "responsible": null,
-                "pendingReminders": 0
+                "pendingReminders": 0,
+                "stages": null
               },
               {
                 "caseReference": "CASE-003",
@@ -1425,7 +1477,8 @@
                 "attention": [],
                 "nextAction": null,
                 "responsible": null,
-                "pendingReminders": 0
+                "pendingReminders": 0,
+                "stages": null
               }
             ],
             "nextCursor": "x",
@@ -3335,6 +3388,9 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
+            },
+            "stages": {
+              "kind": "ERASED"
             }
           }
         }
@@ -3413,6 +3469,45 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
+            },
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
             }
           }
         }
@@ -3487,7 +3582,10 @@
               "canCreateReminder": false
             },
             "headline": "VOIDED",
-            "attention": []
+            "attention": [],
+            "stages": {
+              "kind": "VOIDED"
+            }
           }
         }
       },
@@ -3638,7 +3736,14 @@
                 ],
                 "nextAction": null,
                 "responsible": null,
-                "pendingReminders": 0
+                "pendingReminders": 0,
+                "stages": {
+                  "current": "DECIDED",
+                  "completed": [
+                    "OPENED",
+                    "DECIDED"
+                  ]
+                }
               },
               {
                 "caseReference": "WORK-PAID",
@@ -3660,7 +3765,13 @@
                 "attention": [],
                 "nextAction": null,
                 "responsible": null,
-                "pendingReminders": 0
+                "pendingReminders": 0,
+                "stages": {
+                  "current": "OPENED",
+                  "completed": [
+                    "OPENED"
+                  ]
+                }
               }
             ],
             "nextCursor": null,
@@ -4586,7 +4697,10 @@
               "canCreateReminder": false
             },
             "headline": "ERASED",
-            "attention": []
+            "attention": [],
+            "stages": {
+              "kind": "ERASED"
+            }
           }
         }
       }
@@ -4658,7 +4772,40 @@
             "attention": [
               "NO_NEXT_ACTION",
               "UNASSIGNED"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "OPENED",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                },
+                {
+                  "stage": "PAID",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -4823,7 +4970,46 @@
               "NO_NEXT_ACTION",
               "UNASSIGNED",
               "READY_TO_CLOSE"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -6202,7 +6388,46 @@
               "NO_NEXT_ACTION",
               "UNASSIGNED",
               "READY_TO_CLOSE"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -6659,7 +6884,40 @@
             "attention": [
               "OVERDUE",
               "ASSIGNEE_UNAVAILABLE"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "OPENED",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                },
+                {
+                  "stage": "PAID",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -6740,7 +6998,40 @@
             "attention": [
               "DUE_TODAY",
               "UNASSIGNED"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "OPENED",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                },
+                {
+                  "stage": "PAID",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -6788,7 +7079,13 @@
                   "principalKind": "HUMAN",
                   "availability": "AVAILABLE"
                 },
-                "pendingReminders": 1
+                "pendingReminders": 1,
+                "stages": {
+                  "current": "OPENED",
+                  "completed": [
+                    "OPENED"
+                  ]
+                }
               }
             ],
             "nextCursor": "x",
@@ -10544,7 +10841,13 @@
                   "principalKind": "HUMAN",
                   "availability": "AVAILABLE"
                 },
-                "pendingReminders": 1
+                "pendingReminders": 1,
+                "stages": {
+                  "current": "OPENED",
+                  "completed": [
+                    "OPENED"
+                  ]
+                }
               }
             ],
             "nextCursor": "x",
@@ -10750,7 +11053,46 @@
               "NO_NEXT_ACTION",
               "ASSIGNEE_UNAVAILABLE",
               "READY_TO_CLOSE"
-            ]
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
           }
         }
       },
@@ -11245,6 +11587,164 @@
           "data": {
             "code": "CORE_STORE_UNAVAILABLE",
             "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case-stage-voided",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "VOIDED",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": false,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "VOIDED",
+            "attention": [],
+            "stages": {
+              "kind": "VOIDED"
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case-stage-reinstated",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "REINSTATED"
+            }
           }
         }
       },

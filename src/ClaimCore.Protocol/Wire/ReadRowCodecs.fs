@@ -99,7 +99,18 @@ module internal ReadRowCodecs =
 
     let caseSummary =
         (record
-            (fun id reference revision changedAt state headline attention next responsible pending ->
+            (fun
+                id
+                reference
+                revision
+                changedAt
+                state
+                headline
+                attention
+                next
+                responsible
+                pending
+                stages ->
                 {
                     CaseSummary.CaseId = id
                     Reference = reference
@@ -111,6 +122,7 @@ module internal ReadRowCodecs =
                     NextAction = next
                     Responsible = responsible
                     PendingReminders = pending
+                    Stages = stages
                 })
         : Fields<CaseSummary, _>)
         |> field "caseId" _.CaseId caseId
@@ -126,5 +138,6 @@ module internal ReadRowCodecs =
         |> field "nextAction" _.NextAction (nullable caseNextAction)
         |> field "responsible" _.Responsible (nullable ActorCodecs.actorRef)
         |> field "pendingReminders" _.PendingReminders (integer 0L SafeInteger.Maximum)
+        |> field "stages" _.Stages (nullable CaseStageCodecs.outline)
         |> build
         |> named "CaseSummary"

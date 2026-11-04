@@ -61,6 +61,14 @@ type StoredCase =
         Index: CaseIndex
     }
 
+type CaseStageFacts =
+    {
+        Revision: Revision
+        OpenedOn: CalendarDate
+        ClosedOn: CalendarDate option
+        LastAct: CaseActKind
+    }
+
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | NonAcceptance of targetOperationId: OperationId
@@ -423,6 +431,7 @@ type IReadTx =
     abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
+    abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
     abstract FindReminder: ReminderId -> Task<StoredReminder option>
     abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>

@@ -89,6 +89,15 @@ let workView (state: CaseState<CaseFields>) : CaseWorkView =
         CanCreateReminder = actionable
     }
 
+/// A complete stage value for transport-only fixtures; behavior tests use literal expected stages.
+let stageDisplay state =
+    CaseStages.describe
+        state
+        (Some(CalendarDate.ofDate workBasis.BusinessDate))
+        (Some(CalendarDate.ofDate workBasis.BusinessDate))
+        None
+    |> Result.defaultWith invalidOp
+
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
     let samples =

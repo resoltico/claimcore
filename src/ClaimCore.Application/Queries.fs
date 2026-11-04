@@ -12,10 +12,10 @@ module internal Queries =
     let fault = QueryResults.fault
     let failure = QueryResults.failure
 
-    let caseRecord (services: ServiceContext) actor work record =
-        Advice.caseRecord services actor work record
+    let caseRecord (services: ServiceContext) actor work stages record =
+        Advice.caseRecord services actor work stages record
 
-    let caseResult (services: ServiceContext) (view: CaseFacts) work =
+    let caseResult (services: ServiceContext) (view: CaseFacts) work stages =
         let principal = services.Principal
 
         if not (CaseExecution.authorize principal view.Actor Capability.ReadCase view.Case) then
@@ -23,7 +23,7 @@ module internal Queries =
         else
             match view.Case with
             | Some record ->
-                caseRecord services view.Actor work record
+                caseRecord services view.Actor work stages record
                 |> Result.map (fun model ->
                     { model with
                         Advice = CaseAdvice.duringMaintenance view.Maintenance model.Advice
@@ -39,6 +39,28 @@ module internal Queries =
                     })
                 |> succeeded
             | None -> Outcome.Failed CoreFault.StoreIntegrityError
+
+    let private stageDisplay (tx: IReadTx) (record: StoredCase) =
+        task {
+            match record.Snapshot.State with
+            | CaseState.Active _ ->
+                let! facts = tx.CaseStageFacts record.CaseId
+
+                return
+                    match facts with
+                    | Some facts when facts.Revision = record.Snapshot.Revision ->
+                        CaseStages.describe
+                            record.Snapshot.State
+                            (Some facts.OpenedOn)
+                            facts.ClosedOn
+                            (Some facts.LastAct)
+                        |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+                    | _ -> Error CoreFault.StoreIntegrityError
+            | _ ->
+                return
+                    CaseStages.describe record.Snapshot.State None None None
+                    |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+        }
 
     let get (services: ServiceContext) selector token =
         let store = services.Store
@@ -69,10 +91,14 @@ module internal Queries =
                                                     (CaseWorkReads.basis services tx.ObservedAt)
                                                     record
 
+                                            let! stages = stageDisplay tx record
+
                                             return
-                                                work
-                                                |> Result.map (caseResult services view)
-                                                |> Result.defaultWith Outcome.Failed
+                                                match work, stages with
+                                                | Ok work, Ok stages ->
+                                                    caseResult services view work stages
+                                                | Error fault, _
+                                                | _, Error fault -> Outcome.Failed fault
                                         | _ -> return unavailable
                                     })
                             CancellationToken = token
@@ -291,6 +317,7 @@ module internal Queries =
                 Revision = record.Snapshot.Revision
                 ChangedAt = record.Index.ChangedAt
                 Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
+                Stages = CaseStages.outline record.Snapshot.State
                 Attention =
                     CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)
                 NextAction =

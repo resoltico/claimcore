@@ -306,6 +306,9 @@ type private ReadTx
                     |> TransactionPages.page query.Limit _.Sequence
             }
 
+        member _.CaseStageFacts caseId =
+            TimelineStorage.stages connection caseId token
+
         member _.TimelinePage query =
             TimelineStorage.page connection installation query token
 

@@ -57,6 +57,8 @@ let internal listBounds (path: string) =
                 "CaseSummaryPage.Offers", 4
                 "CaseViews.Items", 11
                 "ReminderViews.Items", 7
+                "CaseStageOutline.Completed", 4
+                "Tracker.steps", 4
                 "CaseReadModel.Attention", 6
                 "CaseSummary.Attention", 6
                 "AdvisoryReview.Changes", Inventory.fieldCount
@@ -67,7 +69,11 @@ let internal listBounds (path: string) =
         |> Option.defaultValue 50
 
     let minimum =
-        if path.Contains("HistoryEntries.", StringComparison.Ordinal) then
+        if context = "CaseStageOutline.Completed" then
+            1
+        elif context = "Tracker.steps" then
+            4
+        elif path.Contains("HistoryEntries.", StringComparison.Ordinal) then
             1
         else
             0

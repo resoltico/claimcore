@@ -49,6 +49,7 @@
     <Compile Include="TimelineStorageTests.fs" />
     <Compile Include="TimelineQueryTests.fs" />
     <Compile Include="RevisionConflictTests.fs" />
+    <Compile Include="CaseStageTests.fs" />
     <Compile Include="PaginationScenarios.fs" />
     <Compile Include="PositionPaginationTests.fs" />
     <Compile Include="AuthorityContinuationTests.fs" />

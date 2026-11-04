@@ -268,7 +268,7 @@ module ResponseCodecs =
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun id reference revision view advice assigned work headline attention ->
+        (record (fun id reference revision view advice assigned work headline attention stages ->
             {
                 Snapshot =
                     {
@@ -282,6 +282,7 @@ module ResponseCodecs =
                 Work = work
                 Headline = headline
                 Attention = attention
+                Stages = stages
             })
         : Fields<CaseReadModel, _>)
         |> field "caseId" _.Snapshot.CaseId caseId
@@ -296,6 +297,7 @@ module ResponseCodecs =
             "attention"
             _.Attention
             (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
+        |> field "stages" _.Stages CaseStageCodecs.display
         |> build
         |> named "CaseView"
 

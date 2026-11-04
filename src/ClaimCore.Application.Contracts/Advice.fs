@@ -136,6 +136,7 @@ type CaseReadModel =
         Work: CaseWorkView
         Headline: CaseHeadline
         Attention: CaseAttention list
+        Stages: CaseStageDisplay
     }
 
 type AdvisoryReview =

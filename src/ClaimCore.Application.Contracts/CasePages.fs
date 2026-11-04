@@ -26,6 +26,7 @@ type CaseSummary =
         State: CaseState<CaseSummaryFacts>
         Headline: CaseHeadline
         Attention: CaseAttention list
+        Stages: CaseStageOutline option
         NextAction: CaseNextAction option
         Responsible: ActorRef option
         PendingReminders: int64

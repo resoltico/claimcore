@@ -530,6 +530,40 @@ type internal Reader
 
             Task.FromResult(page query.Limit _.Sequence rows)
 
+        member _.CaseStageFacts caseId =
+            read ()
+
+            let entries =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.choose (fun entry ->
+                    match entry.Subject with
+                    | EntryTarget.Case(id, revision, act, date) when id = caseId ->
+                        Some(revision, act, date)
+                    | _ -> None)
+                |> Seq.sortByDescending (fun (revision, _, _) -> revision)
+                |> Seq.toList
+
+            let opened =
+                entries
+                |> List.tryFind (fun (revision, act, _) ->
+                    revision = Revision.first && act = CaseActKind.Open)
+
+            let closed = entries |> List.tryFind (fun (_, act, _) -> act = CaseActKind.Close)
+
+            match entries, opened with
+            | (revision, act, _) :: _, Some(_, _, opened) ->
+                Some
+                    {
+                        CaseStageFacts.Revision = revision
+                        LastAct = act
+                        OpenedOn = CalendarDate.ofDate opened
+                        ClosedOn =
+                            closed |> Option.map (fun (_, _, date) -> CalendarDate.ofDate date)
+                    }
+            | _ -> None
+            |> Task.FromResult
+
         member _.TimelinePage(query: TimelinePageQuery) =
             read ()
 

@@ -84,6 +84,7 @@ let internal queryCodecs () =
                 {
                     Mine = false
                     Work = Inputs.workView view.State
+                    Stages = Inputs.stageDisplay view.State
                     Snapshot = view
                     Headline =
                         if view.State = ClaimCore.Domain.CaseState.Erased then

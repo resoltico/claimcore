@@ -42,6 +42,7 @@ let private caseReply =
     {
         Mine = false
         Work = Inputs.workView current.State
+        Stages = Inputs.stageDisplay current.State
         Snapshot = current
         Headline = CaseHeadline.Undecided
         Attention = []
