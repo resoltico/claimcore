@@ -2240,8 +2240,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ALREADY_VOIDED",
-            "action": "NONE_REQUIRED"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "VOIDED"
           }
         }
       }
@@ -2254,8 +2255,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ALREADY_CLOSED",
-            "action": "NONE_REQUIRED"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "CLOSED"
           }
         }
       }
@@ -2282,8 +2284,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "ALREADY_OPENED",
-            "action": "NONE_REQUIRED"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "UNDECIDED"
           }
         }
       }
@@ -2296,8 +2299,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "AMENDMENT_REQUIRES_UNDECIDED",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "DECIDED"
           }
         }
       }
@@ -2310,8 +2314,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_CLOSED",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "CLOSED"
           }
         }
       }
@@ -2324,8 +2329,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "DECISION_ALREADY_PAID",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "PAID"
           }
         }
       }
@@ -2339,7 +2345,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "DECISION_REQUIRED",
-            "action": "REVIEW_LATEST"
+            "action": "CORRECT_INPUT"
           }
         }
       }
@@ -2352,8 +2358,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_ERASED",
-            "action": "NONE_REQUIRED"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "ERASED"
           }
         }
       }
@@ -2366,8 +2373,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "PAYMENT_ALREADY_RECORDED",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "PAID"
           }
         }
       }
@@ -2380,8 +2388,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "PAYMENT_NOT_RECORDED",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "DECIDED"
           }
         }
       }
@@ -2412,8 +2421,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "CASE_VOIDED",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "VOIDED"
           }
         }
       }
@@ -2427,7 +2437,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ZERO_DECISION_CANNOT_BE_PAID",
-            "action": "REVIEW_LATEST"
+            "action": "CORRECT_INPUT"
           }
         }
       }
@@ -2481,7 +2491,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "CORRECTION_REQUIRES_EXISTING_VALUE",
-            "action": "REVIEW_LATEST"
+            "action": "CORRECT_INPUT"
           }
         }
       }
@@ -2549,7 +2559,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "HUMAN_PRINCIPAL_REQUIRED",
-            "action": "REVIEW_LATEST"
+            "action": "CORRECT_INPUT"
           }
         }
       }
@@ -2961,8 +2971,9 @@
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "NOT_VOIDED",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "UNDECIDED"
           }
         }
       }
@@ -4240,7 +4251,7 @@
           "kind": "REJECTED",
           "data": {
             "code": "ROLE_SCOPE_NOT_APPLICABLE",
-            "action": "REVIEW_LATEST"
+            "action": "CORRECT_INPUT"
           }
         }
       }
@@ -6099,57 +6110,61 @@
       }
     },
     {
-      "name": "reminder-rule-PARENT_NOT_ACTIVE",
+      "name": "reminder-parent-voided-not-offered",
       "endpoint": "context",
       "valid": true,
       "value": {
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "REMINDER_PARENT_NOT_ACTIVE",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "VOIDED"
           }
         }
       }
     },
     {
-      "name": "reminder-rule-PARENT_NOT_OPEN",
+      "name": "reminder-parent-closed-not-offered",
       "endpoint": "context",
       "valid": true,
       "value": {
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "REMINDER_PARENT_NOT_OPEN",
-            "action": "REVIEW_LATEST"
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "CLOSED"
           }
         }
       }
     },
     {
-      "name": "reminder-rule-PENDING_REQUIRED",
+      "name": "completed-reminder-not-offered",
       "endpoint": "context",
       "valid": true,
       "value": {
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "REMINDER_PENDING_REQUIRED",
-            "action": "REVIEW_LATEST"
+            "code": "REMINDER_NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "COMPLETED"
           }
         }
       }
     },
     {
-      "name": "reminder-rule-TERMINAL_REQUIRED",
+      "name": "pending-reminder-not-offered",
       "endpoint": "context",
       "valid": true,
       "value": {
         "outcome": {
           "kind": "REJECTED",
           "data": {
-            "code": "REMINDER_TERMINAL_REQUIRED",
-            "action": "REVIEW_LATEST"
+            "code": "REMINDER_NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "PENDING"
           }
         }
       }
@@ -11852,6 +11867,64 @@
               }
             ],
             "nextCursor": "x"
+          }
+        }
+      }
+    },
+    {
+      "name": "not-offered-state-required",
+      "endpoint": "context",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST"
+          }
+        }
+      }
+    },
+    {
+      "name": "not-offered-invalid-state",
+      "endpoint": "context",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "PENDING"
+          }
+        }
+      }
+    },
+    {
+      "name": "reminder-not-offered-invalid-state",
+      "endpoint": "context",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "REMINDER_NOT_OFFERED",
+            "action": "REVIEW_LATEST",
+            "state": "PAID"
+          }
+        }
+      }
+    },
+    {
+      "name": "retired-state-refusal-rejected",
+      "endpoint": "context",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "ALREADY_CLOSED",
+            "action": "NONE_REQUIRED"
           }
         }
       }

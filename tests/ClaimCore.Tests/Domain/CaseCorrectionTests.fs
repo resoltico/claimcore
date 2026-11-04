@@ -172,7 +172,7 @@ let private validationTests =
 
                 Expect.equal
                     (opened () |> apply act)
-                    (Error(Refusal.Case CaseRefusal.CorrectionRequiresExistingValue))
+                    (Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)))
                     "Correction works on existing decided, paid, or closed facts")
             testCase "newly asserted correction dates cannot be future dates" (fun () ->
                 let act =

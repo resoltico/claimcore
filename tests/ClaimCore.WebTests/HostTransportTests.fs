@@ -175,7 +175,10 @@ let private outcomes () =
                 [
                     ExecuteResult.Accepted accepted, "ACCEPTED"
                     ExecuteResult.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseVoided), "REJECTED"
+                    ExecuteResult.Rejected(
+                        Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided)
+                    ),
+                    "REJECTED"
                     ExecuteResult.Failed CoreFault.StoreUnavailable, "FAILED"
                     ExecuteResult.OutcomeUnknown, "OUTCOME_UNKNOWN"
                 ]

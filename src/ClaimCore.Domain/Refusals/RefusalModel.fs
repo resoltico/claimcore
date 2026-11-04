@@ -41,20 +41,10 @@ type CaseRefusal =
     | WorkNoChanges
     | AssigneeUnavailable
     | CaseAlreadyExists
-    | CaseErased
-    | CaseVoided
-    | AlreadyVoided
-    | NotVoided
-    | CaseClosed
-    | AlreadyClosed
-    | AlreadyOpened
-    | AmendmentRequiresUndecided
+    | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
     | CorrectionRequiresExistingValue
     | DecisionRequired
-    | PaymentAlreadyRecorded
-    | PaymentNotRecorded
-    | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
 
 [<RequireQualifiedAccess>]

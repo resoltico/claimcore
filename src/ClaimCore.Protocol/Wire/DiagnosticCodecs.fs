@@ -171,9 +171,20 @@ module DiagnosticCodecs =
         )
 
     let private caseVariants =
-        familyVariants Refusal.Case (function
+        (familyVariants Refusal.Case (function
             | Refusal.Case value -> Some value
-            | _ -> None)
+            | _ -> None))
+        @ [
+            variant
+                "NOT_OFFERED"
+                (CaseRefusal.NotOffered >> Refusal.Case)
+                (function
+                | Refusal.Case(CaseRefusal.NotOffered state) -> Some state
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.ReviewLatest
+                 |> field "state" id (VocabularyCodec.create CaseHeadline.vocabulary))
+        ]
 
     let private authorityVariants =
         familyVariants Refusal.Authority (function
@@ -197,9 +208,20 @@ module DiagnosticCodecs =
         ]
 
     let private reminderVariants =
-        familyVariants Refusal.Reminder (function
+        ((familyVariants Refusal.Reminder (function
             | Refusal.Reminder value -> Some value
-            | _ -> None)
+            | _ -> None))
+         @ [
+             variant
+                 "NOT_OFFERED"
+                 (ReminderRuleRefusal.NotOffered >> Refusal.Reminder)
+                 (function
+                 | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) -> Some state
+                 | _ -> None)
+                 (record id
+                  |> actionField RecommendedAction.ReviewLatest
+                  |> field "state" id (VocabularyCodec.create ReminderState.vocabulary))
+         ])
         |> List.map (fun variant ->
             { variant with
                 Tag = "REMINDER_" + variant.Tag

@@ -28,10 +28,10 @@ let private transitions =
         (CaseState.Active()), AuthoredCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
         (CaseState.Voided()),
         AuthoredCaseAct.Void "Recorded in error",
-        Error(Refusal.Case CaseRefusal.AlreadyVoided)
+        Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
         (CaseState.Active()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
-        Error(Refusal.Case CaseRefusal.NotVoided)
+        Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
         (CaseState.Voided()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
         Ok(CaseState.Active())

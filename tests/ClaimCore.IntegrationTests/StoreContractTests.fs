@@ -27,6 +27,9 @@ let internal tests factory =
                 "registration separates identity and authored profile with independent salts"
                 (withFixture factory ActorProfilesContract.registrationIsolation)
             testCaseAsync
+                "state refusals report current state after capability and disclosure gates"
+                (withFixture factory ReminderConcurrencyContract.notOffered)
+            testCaseAsync
                 "different and same reminder revisions retain financial preview isolation"
                 (withFixture factory ReminderConcurrencyContract.independentRevisions)
             testCaseAsync

@@ -258,9 +258,10 @@ module internal WorkExecution =
             match replay with
             | Verdict.Proceed() ->
                 match current, parent.Snapshot.State with
-                | _, CaseState.Erased -> return Verdict.Refuse(Refusal.Case CaseRefusal.CaseErased)
+                | _, CaseState.Erased ->
+                    return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
                 | _, CaseState.Voided _ ->
-                    return Verdict.Refuse(Refusal.Case CaseRefusal.CaseVoided)
+                    return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
                 | Some current, CaseState.Active fields when current.Snapshot.IsSome ->
                     let before = current.Snapshot.Value
 
@@ -293,7 +294,10 @@ module internal WorkExecution =
                             | _ -> Ok()
 
                         if responsibilityChanged && fields.Status <> CaseStatus.Opened then
-                            return Verdict.Refuse(Refusal.Case CaseRefusal.CaseClosed)
+                            return
+                                Verdict.Refuse(
+                                    Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)
+                                )
                         elif not eligible then
                             return Verdict.Refuse(Refusal.Case CaseRefusal.AssigneeUnavailable)
                         elif next = before.Work then
@@ -359,7 +363,7 @@ module internal WorkExecution =
                         other
         }
 
-    let private reminderRefusal =
+    let private reminderRefusal (parent: StoredCase) current =
         function
         | ReminderRefusal.IdentityReserved -> Verdict.Fail CoreFault.StoreIntegrityError
         | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.revisionConflict actual)
@@ -368,14 +372,22 @@ module internal WorkExecution =
         | ReminderRefusal.NotFound
         | ReminderRefusal.ParentMismatch ->
             Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-        | ReminderRefusal.ParentNotActive ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.ParentNotActive)
+        | ReminderRefusal.ParentNotActive
         | ReminderRefusal.ParentNotOpen ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.ParentNotOpen)
-        | ReminderRefusal.PendingRequired ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.PendingRequired)
+            let state =
+                parent.Snapshot.State
+                |> CaseState.map (fun fields ->
+                    fields.Status, CaseProgress.ofPayment fields.Progress)
+
+            Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered(CaseHeadline.ofState state)))
+        | ReminderRefusal.PendingRequired
         | ReminderRefusal.TerminalRequired ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.TerminalRequired)
+            match current with
+            | Some reminder ->
+                Verdict.Refuse(
+                    Refusal.Reminder(ReminderRuleRefusal.NotOffered(Reminder.state reminder))
+                )
+            | None -> Verdict.Fail CoreFault.StoreIntegrityError
         | ReminderRefusal.NoChanges ->
             Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.NoChanges)
 
@@ -451,7 +463,7 @@ module internal WorkExecution =
                         next.IsSome
 
                 match Reminder.decide operation parent.Snapshot before reserved command with
-                | Error refusal -> return reminderRefusal refusal
+                | Error refusal -> return reminderRefusal parent before refusal
                 | Ok effects ->
                     let recordedBy = LedgerEnvelope.actorId view.Actor
 

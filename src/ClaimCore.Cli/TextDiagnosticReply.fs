@@ -63,6 +63,20 @@ module internal TextDiagnosticReply =
                         (DiagnosticCode.key "NOT_AUTHORIZED")
                         (Map.ofList [ "required", names ])
                 ]
+            | Refusal.Case(CaseRefusal.NotOffered state) ->
+                [
+                    MessageCatalogs.render
+                        language
+                        (DiagnosticCode.key "NOT_OFFERED")
+                        (Map.ofList [ "state", term language CaseHeadline.vocabulary state ])
+                ]
+            | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) ->
+                [
+                    MessageCatalogs.render
+                        language
+                        (DiagnosticCode.key "REMINDER_NOT_OFFERED")
+                        (Map.ofList [ "state", term language ReminderState.vocabulary state ])
+                ]
             | refusal ->
                 let code, parameters = DiagnosticCodecs.describe refusal
                 let message = render code parameters

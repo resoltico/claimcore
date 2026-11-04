@@ -17,27 +17,31 @@ module Refusals =
     let private caseAction =
         function
         | CaseRefusal.CaseAlreadyExists -> RecommendedAction.ChooseAnotherReference
-        | CaseRefusal.AlreadyVoided
-        | CaseRefusal.AlreadyClosed
-        | CaseRefusal.AlreadyOpened
         | CaseRefusal.CorrectionNoChanges
-        | CaseRefusal.WorkNoChanges
-        | CaseRefusal.CaseErased -> RecommendedAction.NoneRequired
-        | _ -> RecommendedAction.ReviewLatest
+        | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
+        | CaseRefusal.CorrectionRequiresExistingValue
+        | CaseRefusal.DecisionRequired
+        | CaseRefusal.ZeroDecisionCannotBePaid -> RecommendedAction.CorrectInput
+        | CaseRefusal.AssigneeUnavailable
+        | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest
 
     let action =
         function
         | Refusal.InvalidInput _ -> RecommendedAction.CorrectInput
-        | Refusal.Access _ -> RecommendedAction.AskForAccess
+        | Refusal.Access(AccessRefusal.ResourceUnavailable | AccessRefusal.NotAuthorized _) ->
+            RecommendedAction.AskForAccess
         | Refusal.Case value -> caseAction value
         | Refusal.OperationResolved
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
         | Refusal.Reminder ReminderRuleRefusal.NoChanges -> RecommendedAction.NoneRequired
+        | Refusal.Authority(AuthorityRefusal.HumanPrincipalRequired | AuthorityRefusal.RoleScopeNotApplicable) ->
+            RecommendedAction.CorrectInput
         | Refusal.RevisionConflict _
-        | Refusal.Reminder _
-        | Refusal.Authority _ -> RecommendedAction.ReviewLatest
+        | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)
+        | Refusal.Authority(AuthorityRefusal.LastOwner | AuthorityRefusal.ActorAlreadyRegistered | AuthorityRefusal.ActorUnknown) ->
+            RecommendedAction.ReviewLatest
 
     let actualRevision =
         function

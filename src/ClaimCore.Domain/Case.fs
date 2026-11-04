@@ -208,7 +208,7 @@ module Case =
             invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
-            | CaseState.Erased, _ -> Error(Refusal.Case CaseRefusal.CaseErased)
+            | CaseState.Erased, _ -> Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
             | _, CaseAct.Open _ -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
             | _ when record.Revision <> request.ExpectedRevision ->
                 Error(Refusal.revisionConflict record.Revision)
