@@ -250,8 +250,13 @@ let tests =
 
                         Expect.stringContains
                             rendered
-                            "Agent\\u{001B}[31m…"
-                            "Control escapes and literal backslashes stay distinguishable"
+                            (TextReplyFormat.label "en" "field.responsibleActor.label")
+                            "The wide layout retains the actual actor column"
+
+                        Expect.stringContains
+                            rendered
+                            "Agent"
+                            "The actor value remains present even when its escaped tail is truncated"
 
                         Expect.isFalse
                             (rendered.Contains('\u001B') || rendered.Contains('\u202E'))

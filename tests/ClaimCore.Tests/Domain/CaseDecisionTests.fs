@@ -286,15 +286,30 @@ let private wireSpelling () =
                 }
         }
 
-    Expect.equal
-        (decide (decodeWire respelledOpening) later)
-        (Verdict.Replay receipt)
-        "Raw JSON re-spelling retains original receipt, executor and instant"
+    let historical (receipt: OperationReceipt) =
+        receipt.OperationId,
+        receipt.Position,
+        receipt.Subject,
+        receipt.RecordedAt,
+        receipt.RecordedBy
 
-    Expect.equal
-        (decide (decodeWire (respelledOpening.Replace("1000.00", "1000.0"))) later)
-        (Verdict.Replay receipt)
-        "Equivalent decimal value retains the original receipt"
+    for spelling in [ respelledOpening; respelledOpening.Replace("1000.00", "1000.0") ] do
+        match decide (decodeWire spelling) later with
+        | Verdict.Replay replay ->
+            Expect.equal
+                (historical replay)
+                (historical receipt)
+                "Re-spelling retains every historical receipt field, executor and accepting instant"
+
+            Expect.equal
+                replay.Basis
+                {
+                    ObservedAt = DateTimeOffset(2026, 9, 7, 12, 1, 0, TimeSpan.Zero)
+                    BusinessDate = DateOnly(2026, 9, 7)
+                    TimeZoneId = "Etc/UTC"
+                }
+                "Replay reports its actual later observation independently of the accepted event"
+        | other -> failtestf "Equivalent spelling must replay the accepted operation: %A" other
 
     Expect.equal
         (decide (decodeWire (respelledOpening.Replace("1000.00", "1000.01"))) later)
