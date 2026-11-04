@@ -15,7 +15,7 @@ import { chooseChoice, goToView } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { isResponse } from "../src/protocol/client";
 import { currentCase } from "./localization-correction-workflow";
-import { pauseJsonReply, selectFormat } from "./localization-support";
+import { pauseJsonReply, selectFormat, settingsNavigation } from "./localization-support";
 
 test("records future planned work and scoped responsibility, then finds My cases", async ({
   page,
@@ -119,11 +119,11 @@ test("records future planned work and scoped responsibility, then finds My cases
   await expect(page.getByRole("link", { name: reference, exact: true })).toBeVisible();
 });
 
-for (const [entered, display, expected] of [
-  ["en-GB", "lv-LV", "1234"],
-  ["lv-LV", "en-GB", "1.234"],
+for (const [entered, expected] of [
+  ["en-GB", "1234"],
+  ["lv-LV", "1.234"],
 ] as const) {
-  test(`keeps ${entered} amount meaning after switching to ${display} in a connected partial editor`, async ({
+  test(`guards Settings navigation while preserving ${entered} amount meaning in a partial editor`, async ({
     page,
   }) => {
     await openAuthenticated(page);
@@ -133,7 +133,14 @@ for (const [entered, display, expected] of [
     await startAct(page, "Amend registration");
     await page.locator('input[data-selects-fields~="claimedAmount"]').check();
     await fillBusinessField(page, "claimedAmount", "1,234");
-    await selectFormat(page, display);
+    const editorUrl = page.url();
+    await (await settingsNavigation(page)).click();
+    const guard = page.getByRole("dialog", { name: "Discard these draft changes?", exact: true });
+    await expect(guard).toBeVisible();
+    await guard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(page).toHaveURL(editorUrl);
+    await expect(page.locator(".settings-panel")).toHaveCount(0);
+    await expect(page.locator('[data-field-name="claimedAmount"]')).toHaveValue("1,234");
     const preview = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes", exact: true }).click();
     const captured = await preview.ready;

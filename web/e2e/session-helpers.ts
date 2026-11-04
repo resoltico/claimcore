@@ -1,3 +1,4 @@
+import { showAccountActions } from "./workspace-navigation";
 import {
   loginNavigationTimeout,
   loginAdmissionAttempt,
@@ -343,13 +344,10 @@ export const login = async (
   await retainResponseBodies(page);
   const authenticated =
     workspaceHeading === null
-      ? page.getByRole("button", { name: "Sign out", exact: true })
+      ? page.locator(".workspace-header")
       : page.getByRole("heading", { name: workspaceHeading, exact: true });
   try {
-    await authenticated
-      .or(page.getByRole("heading", { name: "ClaimCore", exact: true }))
-      .first()
-      .waitFor({ timeout: 5_000 });
+    await authenticated.or(page.locator(".login-card h1")).first().waitFor({ timeout: 5_000 });
   } catch {
     const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
     const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
@@ -387,10 +385,18 @@ export const logout = async (page: Page): Promise<void> => {
   const responseEvent = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/session.logout",
   );
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await showAccountActions(page);
+  const signOut = page.getByRole("button", { name: "Sign out", exact: true });
+  if (!(await signOut.isVisible())) {
+    await page.locator('a[href="/settings"]').click();
+    await expect(page.locator(".settings-panel")).toBeVisible();
+  }
+  await signOut.click();
   const response = await responseEvent;
   expect(response.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {

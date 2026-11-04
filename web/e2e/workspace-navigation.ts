@@ -7,6 +7,17 @@ export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
     .locator(".workspace-header button[aria-expanded]")
     .waitFor({ state: compact ? "visible" : "detached" });
 };
+/** Open the actual account actions in desktop or compact navigation. */
+export const showAccountActions = async (page: Page): Promise<void> => {
+  await settledWorkspaceHeader(page);
+  const account = page.locator(".account-menu > summary");
+  if (!(await account.isVisible())) {
+    await page.locator(".workspace-header button[aria-expanded]").click();
+  }
+  if ((await page.locator(".account-menu").getAttribute("open")) === null) {
+    await account.click();
+  }
+};
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
   page.locator(`input[type="radio"][name="${name}"][value="${value}"]`).check();
 export const choiceGroup = (page: Page, name: string): Locator =>

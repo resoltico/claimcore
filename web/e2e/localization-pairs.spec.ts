@@ -1,3 +1,5 @@
+import { pseudolocalizeLiteral } from "../src/presentation/templates";
+import { showAccountActions } from "./workspace-navigation";
 import { expect, test, type Page } from "@playwright/test";
 import { openApplication, openAuthenticated } from "./session-helpers";
 import {
@@ -16,7 +18,12 @@ import type { Language } from "../src/presentation/preferences";
 
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
   if (!authenticated) {
-    await openApplication(page, "ClaimCore");
+    await openApplication(
+      page,
+      source === "en-XA"
+        ? `⟦${pseudolocalizeLiteral(ui("en", "ui.signInTitle"))}⟧`
+        : ui(source, "ui.signInTitle"),
+    );
     return;
   }
   const endpoint = endpoints.find((entry) => entry.id === "case.list");
@@ -60,9 +67,11 @@ const visibleLanguage = async (
         exact: true,
       }),
     ).toBeVisible();
+    await showAccountActions(page);
     await expect(
       page.getByRole("button", { name: ui(language, "ui.signOut"), exact: true }),
     ).toBeVisible();
+    await page.locator(".account-menu > summary").click();
   } else {
     await expect(
       page.getByRole("link", { name: ui(language, "ui.signIn"), exact: true }),
