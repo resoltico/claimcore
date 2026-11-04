@@ -50,7 +50,7 @@ case list --view needs-attention --limit 5	{"endpoint":"case.list","input":{"lim
 reminder list --view completed --limit 5	{"endpoint":"reminder.list","input":{"view":"COMPLETED","limit":5}}
 case timeline CASE-001 --filter facts --limit 1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"CASE-001"},"filter":"FACTS","limit":1}}
 case timeline CASE-001 --filter work --limit 2	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"CASE-001"},"filter":"WORK","limit":2}}
-case timeline R-1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"}}}
+case timeline R-1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"limit":50}}
 case timeline R-1 --filter facts --limit 5 --all	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"filter":"FACTS","limit":5}}
 case timeline R-1 --filter work --cursor abc --limit 1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"filter":"WORK","cursor":"abc","limit":1}}
 authority set-profile --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-4333-8444-555555555555 --profile.display-name Authored	{"endpoint":"operation.execute","input":{"kind":"AUTHORITY","operationId":"11111111-2222-4333-8444-555555555555","target":{"kind":"HUMAN","issuer":"https://id.example","subject":"u1"},"act":{"kind":"SET_PROFILE","profile":{"displayName":"Authored"}}}}

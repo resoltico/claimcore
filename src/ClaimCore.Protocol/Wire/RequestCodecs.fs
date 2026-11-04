@@ -796,11 +796,7 @@ module RequestCodecs =
                 |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
                 |> optionalField
                     "limit"
-                    (fun request ->
-                        if request.Limit = Paging.DefaultPageSize then
-                            None
-                        else
-                            Some request.Limit)
+                    (fun request -> Some request.Limit)
                     (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
         }
         |> finishRead "CaseTimelineRequest" QueryEndpoint.CaseTimeline

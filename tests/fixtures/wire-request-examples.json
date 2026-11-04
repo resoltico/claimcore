@@ -2265,7 +2265,8 @@
         "target": {
           "kind": "REFERENCE",
           "caseReference": "CASE-001"
-        }
+        },
+        "limit": 50
       }
     },
     {

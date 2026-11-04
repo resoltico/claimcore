@@ -9,8 +9,26 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
+open ClaimCore.Json
 open ClaimCore.Cli
 open ClaimCore.TestSupport
+
+[<Tests>]
+let optionalLimit =
+    testCase "timeline admits omitted limits and materializes the shared default" (fun () ->
+        let raw =
+            Encoding.UTF8.GetBytes """{"target":{"kind":"REFERENCE","caseReference":"R-1"}}"""
+
+        let decoded = Codec.decode 4096 Api.caseTimeline.Input raw |> Fixtures.accepted
+        Expect.equal decoded.Limit 50 "Omission keeps the public default"
+
+        let canonical =
+            Codec.encode Api.caseTimeline.Input decoded |> Encoding.UTF8.GetString
+
+        Expect.stringContains
+            canonical
+            "\"limit\":50"
+            "CLI and browser assembly share explicit canonical paging")
 
 let private actor =
     {
