@@ -25,6 +25,8 @@ it("focuses the selected actor route h1 and restores its originating control on 
       availability: "AVAILABLE" as const,
     },
     contact: null,
+    state: "NO_ROLES" as const,
+    roles: [],
     principal: {
       kind: "HUMAN" as const,
       issuer: "https://issuer.example/",

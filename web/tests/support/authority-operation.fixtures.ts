@@ -14,6 +14,7 @@ export const authorityPreview = () =>
             review: {
               subject: {
                 kind: "AUTHORITY",
+                effects: [],
                 target: null,
                 accessScope: { kind: "INSTALLATION" },
                 before: {

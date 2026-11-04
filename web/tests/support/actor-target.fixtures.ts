@@ -15,6 +15,8 @@ export const firstActor = {
     availability: "AVAILABLE" as const,
   },
   contact: null,
+  state: "NO_ROLES" as const,
+  roles: [],
   principal: { kind: "HUMAN" as const, issuer: "https://issuer.example/", subject: "server-first" },
 };
 export const secondActor = {

@@ -25,6 +25,8 @@ const actor = (actorId: string, prefix = "header") => ({
     availability: "DISABLED" as const,
   },
   contact: null,
+  state: "DISABLED" as const,
+  roles: [{ role: "CASE_READER" as const, installation: false, caseCount: 1 }],
   principal: {
     kind: "SERVICE" as const,
     issuer: "https://issuer.example/",

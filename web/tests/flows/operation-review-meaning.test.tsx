@@ -100,6 +100,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
   const proposed: Review = {
     subject: {
       kind: "AUTHORITY",
+      effects: [],
       target: null,
       accessScope: resolvedScope,
       before: {
@@ -253,6 +254,7 @@ it("shows the core's profile values in authority review before consent", () => {
   const proposed: Review = {
     subject: {
       kind: "AUTHORITY",
+      effects: [],
       target: null,
       accessScope: { kind: "INSTALLATION" },
       before: {

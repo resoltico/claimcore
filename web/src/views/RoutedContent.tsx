@@ -70,9 +70,11 @@ export type EditorCallbacks = {
 const EditorBootstrap = ({
   route,
   onReady,
+  onBack,
 }: EditorCallbacks & {
   route: Extract<Route, { screen: "caseAct" }>;
   onReady: (current: CurrentCase) => void;
+  onBack: () => void;
 }) => {
   const p = usePresentation();
   const current = useCaseDisclosure(route.target);
@@ -93,28 +95,17 @@ const EditorBootstrap = ({
     return <EditorFailure message={current.message} retry={current.revalidate} />;
   }
   const { value } = current;
-  if (
-    value === null ||
-    !isCurrentCase(value) ||
-    !isCaseAct(route.act) ||
-    !value.advice.acts.some((act) => act === route.act)
-  ) {
+  if (value !== null && isCaseAct(route.act) && !value.advice.acts.includes(route.act)) {
+    const unavailable = value.advice.blocked.find((item) => item.act === route.act);
     return (
-      <section>
-        <h1>{p.text("ui.caseDetail")}</h1>
-        <button
-          type="button"
-          onClick={() => {
-            navigate(
-              route.target.kind === "ID"
-                ? casePath(route.target.caseId)
-                : referencePath(route.target.caseReference),
-            );
-          }}
-        >
-          {p.text("ui.backToCase")}
-        </button>
-      </section>
+      <CaseDetail
+        target={route.target}
+        reloadSignal={0}
+        definition={productMetadata.catalog}
+        onBack={onBack}
+        onAct={selectAct}
+        {...(unavailable === undefined ? {} : { unavailableAct: unavailable })}
+      />
     );
   }
   return <p role="status">{p.text("ui.loadingCurrentCase")}</p>;
@@ -123,6 +114,7 @@ const RoutedEditor = (
   props: EditorCallbacks & {
     route: Extract<Route, { screen: "caseAct" }>;
     disclosureAvailable: boolean;
+    onBack: () => void;
   },
 ) => {
   const [opened, setOpened] = useState<CurrentCase | null>(null);
@@ -227,6 +219,7 @@ export const RoutedContent = ({
           key={`${JSON.stringify(route.target)}:${route.act}`}
           route={route}
           disclosureAvailable={caseAvailable}
+          onBack={backToCases}
           setLocked={setLocked}
           committed={committed}
         />

@@ -289,3 +289,12 @@ button.case-action-danger {
 .case-work-rail > .case-technical dl {
   display: grid;
 }
+
+.case-action-refusal {
+  padding: var(--space-4);
+  margin-block: var(--space-4);
+  border: var(--border-width) solid var(--warning-text);
+  border-radius: var(--radius-md);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}

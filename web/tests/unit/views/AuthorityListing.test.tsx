@@ -24,6 +24,8 @@ const setup = (mayReadGrants: boolean, knownGrantCount: KnownActorGrantCount | n
                 availability: "AVAILABLE",
               },
               contact: null,
+              state: "NO_ROLES",
+              roles: [],
               principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject },
             },
           ],

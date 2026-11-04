@@ -1,4 +1,4 @@
-import type { CaseSelector, CaseView } from "@contracts/client";
+import type { CaseSelector, CaseView, CaseActRefusal } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { useState, type ReactNode } from "react";
@@ -24,6 +24,7 @@ import { CaseAttention } from "../components/CaseAttention";
 
 type CaseDetailProps = {
   target: CaseSelector;
+  unavailableAct?: CaseActRefusal;
   reloadSignal: number;
   definition: CatalogDocument;
   onBack: () => void;
@@ -216,6 +217,36 @@ const CaseRecordDetails = ({ state }: { state: CaseView }) => {
   );
 };
 
+const UnavailableAct = ({
+  value,
+  state,
+  onAct,
+}: {
+  value: CaseActRefusal;
+  state: CaseView;
+  onAct: CaseDetailProps["onAct"];
+}) => {
+  const p = usePresentation();
+  const current = asCurrentCase(state);
+  const alternative = state.advice.recommended;
+  return (
+    <aside className="case-action-refusal" role="alert">
+      <p>
+        <strong>{p.actLabel(value.act)}</strong>:{" "}
+        <NoticeView value={{ kind: "diagnostic", diagnostic: value.reason }} />
+      </p>
+      {current === null || alternative === null ? null : (
+        <Button
+          onPress={() => {
+            onAct(current, alternative);
+          }}
+        >
+          {p.actLabel(alternative)}
+        </Button>
+      )}
+    </aside>
+  );
+};
 const ignoreMutationLock = (_locked: boolean): void => undefined;
 const useRetainedCase = (lookup: CurrentCase | null) => {
   const [retained, setRetained] = useState<CurrentCase | null>(null);
@@ -230,6 +261,7 @@ const CaseDisclosure = ({
   onBack,
   onAct,
   onMutationLockChange = ignoreMutationLock,
+  unavailableAct,
 }: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(target);
@@ -249,6 +281,9 @@ const CaseDisclosure = ({
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
       <CurrentFeedback message={current.message} loading={current.loading} />
+      {state === null || unavailableAct === undefined ? null : (
+        <UnavailableAct value={unavailableAct} state={state} onAct={onAct} />
+      )}
       {state === null ? null : <CaseProgress value={state.stages} />}
       {current.message === null ? null : (
         <Button

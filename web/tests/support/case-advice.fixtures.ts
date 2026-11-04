@@ -1,3 +1,4 @@
+import { blockedCaseActs } from "./blocked-case-acts.fixtures";
 import { initialMaintenance } from "./inputs";
 import type { CaseView, RequestByEndpoint } from "@contracts/client";
 type Act = Extract<RequestByEndpoint["operation.execute"], { kind: "CASE" }>["act"]["kind"];
@@ -8,6 +9,7 @@ export const caseAdvice = (
   maintenance: initialMaintenance,
   recommended,
   acts,
+  blocked: blockedCaseActs(acts),
   ...(acts.includes("CORRECT")
     ? {
         correction: {

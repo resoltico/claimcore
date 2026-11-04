@@ -27,6 +27,8 @@ const disclosedActor = {
     availability: "AVAILABLE",
   },
   contact: null,
+  state: "NO_ROLES",
+  roles: [],
   principal: {
     kind: "SERVICE",
     issuer: "https://issuer.example/",

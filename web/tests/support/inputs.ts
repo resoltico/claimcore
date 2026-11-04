@@ -1,3 +1,5 @@
+import { isCaseAct } from "../../src/operation/metadata";
+import { blockedCaseActs } from "./blocked-case-acts.fixtures";
 import type { CaseSummary as Summary } from "../../src/protocol/types";
 import type {
   RequesterState_ACTIVE,
@@ -44,8 +46,8 @@ type LiveStateSeed = {
   kind: "ACTIVE" | "VOIDED";
   fields: CaseFields;
 };
-type AdviceSeed = Omit<CaseView["advice"], "maintenance" | "recommended"> &
-  Partial<Pick<CaseView["advice"], "maintenance" | "recommended">>;
+type AdviceSeed = Omit<CaseView["advice"], "maintenance" | "recommended" | "blocked"> &
+  Partial<Pick<CaseView["advice"], "maintenance" | "recommended" | "blocked">>;
 type CaseViewSeed = Omit<
   CaseView,
   "mine" | "caseId" | "work" | "state" | "advice" | "headline" | "attention" | "stages"
@@ -84,6 +86,11 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
     ...value,
     advice: {
       recommended: null,
+      blocked: blockedCaseActs(
+        value.advice.acts,
+        value.headline ?? "UNDECIDED",
+        value.advice.maintenance?.active,
+      ),
       ...value.advice,
       maintenance: value.advice.maintenance ?? initialMaintenance,
     },
@@ -241,16 +248,46 @@ const completeCaseRead = (completed: Record<string, unknown>) => {
     ? { nextAction: null, responsible: null, pendingReminders: 0, ...data }
     : data;
 };
+const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
+  if (
+    Object.hasOwn(completed, "actor") &&
+    Object.hasOwn(completed, "principal") &&
+    Object.hasOwn(completed, "contact")
+  ) {
+    const { actor } = completed;
+    return {
+      state: isObject(actor) && actor["availability"] === "DISABLED" ? "DISABLED" : "NO_ROLES",
+      roles: [],
+      ...completed,
+    };
+  }
+  if (
+    completed["kind"] === "AUTHORITY" &&
+    Object.hasOwn(completed, "before") &&
+    Object.hasOwn(completed, "after") &&
+    Object.hasOwn(completed, "accessScope")
+  ) {
+    return { effects: [], ...completed };
+  }
+  return null;
+};
+const adviceActs = (value: unknown) => (Array.isArray(value) ? value.filter(isCaseAct) : []);
 const completeRead = (completed: Record<string, unknown>): unknown => {
   if (isAdviceOrContext(completed)) {
     return {
       maintenance: initialMaintenance,
-      ...(Object.hasOwn(completed, "acts") ? { recommended: null } : {}),
+      ...(Object.hasOwn(completed, "acts")
+        ? {
+            recommended: null,
+            blocked: blockedCaseActs(adviceActs(completed["acts"])),
+          }
+        : {}),
       ...completed,
     };
   }
-  if (["actorId", "principal", "enabled"].every((key) => Object.hasOwn(completed, key))) {
-    return { profile: null, ...completed };
+  const authority = completeAuthorityRead(completed);
+  if (authority !== null) {
+    return authority;
   }
   if (isCaseReadSeed(completed)) {
     return completeCaseRead(completed);
