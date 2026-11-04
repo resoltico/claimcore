@@ -6180,6 +6180,158 @@
           }
         }
       }
+    },
+    {
+      "name": "case-overdue-unavailable-attention",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": null,
+                "payment": null,
+                "progress": "UNDECIDED"
+              }
+            },
+            "advice": {
+              "acts": [
+                "DECIDE"
+              ],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": "DECIDE"
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": {
+                "account": {
+                  "actorId": "20000000-0000-4000-8000-000000000002",
+                  "subject": "Synthetic unavailable person"
+                },
+                "available": false
+              },
+              "followUpDate": "2025-12-31",
+              "due": "OVERDUE",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 1,
+              "changedAt": "2026-01-01T12:00:00.000000Z",
+              "recordedBy": "20000000-0000-4000-8000-000000000002",
+              "summary": null,
+              "nextAction": "Review evidence",
+              "pendingReminders": 1,
+              "overdueReminders": 1,
+              "needsNextAction": false,
+              "canUpdateSummary": true,
+              "canAssign": true,
+              "canCreateReminder": true
+            },
+            "headline": "UNDECIDED",
+            "attention": [
+              "OVERDUE",
+              "ASSIGNEE_UNAVAILABLE"
+            ]
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case-due-today-attention",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": null,
+                "payment": null,
+                "progress": "UNDECIDED"
+              }
+            },
+            "advice": {
+              "acts": [
+                "DECIDE"
+              ],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": "DECIDE"
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": "2026-01-01",
+              "due": "TODAY",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 1,
+              "changedAt": "2026-01-01T12:00:00.000000Z",
+              "recordedBy": "20000000-0000-4000-8000-000000000002",
+              "summary": null,
+              "nextAction": "Review evidence",
+              "pendingReminders": 1,
+              "overdueReminders": 0,
+              "needsNextAction": false,
+              "canUpdateSummary": true,
+              "canAssign": true,
+              "canCreateReminder": true
+            },
+            "headline": "UNDECIDED",
+            "attention": [
+              "DUE_TODAY",
+              "UNASSIGNED"
+            ]
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

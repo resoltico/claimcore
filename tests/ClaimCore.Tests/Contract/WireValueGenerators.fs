@@ -55,6 +55,8 @@ let internal listBounds (path: string) =
                 "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
+                "CaseReadModel.Attention", 6
+                "CaseSummary.Attention", 6
                 "AdvisoryReview.Changes", Inventory.fieldCount
                 "HistoryDifference.Fields", Inventory.fieldCount
             ]
@@ -270,10 +272,18 @@ and private freshRepresentation response source context (kind: Type) (value: obj
 
             let! maintenance = maintenanceValue
 
+            let! recommended =
+                if maintenance.Active || List.isEmpty acts then
+                    Gen.constant None
+                else
+                    Gen.choice [ Gen.constant None; Gen.item acts |> Gen.map Some ]
+
             return
                 CaseAdvice.create acts correction history
                 |> Result.defaultWith invalidOp
                 |> CaseAdvice.duringMaintenance maintenance
+                |> CaseAdvice.withRecommendation recommended
+                |> Result.defaultWith invalidOp
                 |> box
         }
     elif kind = typeof<InputIssues> then

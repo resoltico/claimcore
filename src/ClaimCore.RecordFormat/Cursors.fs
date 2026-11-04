@@ -140,7 +140,7 @@ module Cursors =
                 |> Option.defaultValue JsonValue.Null
                 "view",
                 filter.View
-                |> Option.map (CaseView.token >> JsonValue.String)
+                |> Option.map (DurableNames.caseView >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
             ]
 

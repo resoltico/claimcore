@@ -56,6 +56,22 @@ module DurableNames =
         | CaseAssignment.Mine -> "MINE"
         | CaseAssignment.Unassigned -> "UNASSIGNED"
 
+    // The permanent view-name table is exhaustive and contains no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let caseView =
+        function
+        | CaseView.NeedsAttention -> "NEEDS_ATTENTION"
+        | CaseView.Mine -> "MINE"
+        | CaseView.Overdue -> "OVERDUE"
+        | CaseView.DueToday -> "DUE_TODAY"
+        | CaseView.NoNextAction -> "NO_NEXT_ACTION"
+        | CaseView.Unassigned -> "UNASSIGNED"
+        | CaseView.Undecided -> "UNDECIDED"
+        | CaseView.DecidedUnpaid -> "DECIDED_UNPAID"
+        | CaseView.Closed -> "CLOSED"
+        | CaseView.Voided -> "VOIDED"
+        | CaseView.All -> "ALL"
+
     let status =
         function
         | CaseStatus.Opened -> "OPENED"

@@ -561,7 +561,9 @@
     "workAct",
     "reminderAct",
     "reminderState",
-    "reminderDue"
+    "reminderDue",
+    "headline",
+    "attention"
   ],
   "goldens": [
     "wire-request-examples.json",
