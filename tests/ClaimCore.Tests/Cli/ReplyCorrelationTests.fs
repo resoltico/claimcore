@@ -122,6 +122,48 @@ let tests =
                             "A post-dispatch mismatched reply cannot settle the operation"
 
                         Expect.isTrue (refused.ExitCode <> 0) "It never becomes acceptance")
+            testCase "grants correlation follows the related actor reference" (fun () ->
+                let invocation = frame "authority.grants"
+                let bytes = samples "authority.grants" |> List.head |> correlatedBody invocation
+
+                let admitted =
+                    Codec.decode Limits.MaximumResponseBytes Api.authorityGrants.Output bytes
+                    |> Result.defaultWith (fun error ->
+                        failtestf "Positive grants reply: %A" error)
+
+                let page =
+                    match admitted with
+                    | Outcome.Succeeded page -> page
+                    | other -> failtestf "Expected grants page: %A" other
+
+                Expect.equal
+                    (exchange invocation (Api.authorityGrants.Output.Write admitted)).ExitCode
+                    0
+                    "The matching nested actor ID is admitted"
+
+                let wrong =
+                    CaseFixtures.actorId (Guid.Parse "90000000-0000-4000-8000-000000000099")
+
+                let mismatched =
+                    Outcome.Succeeded
+                        { page with
+                            Actor =
+                                { page.Actor with
+                                    Actor =
+                                        { page.Actor.Actor with
+                                            ActorId = wrong
+                                        }
+                                }
+                        }
+                    |> Api.authorityGrants.Output.Write
+
+                Expect.isOk
+                    ((Frames.endpoint invocation).NormalizeOutput mismatched)
+                    "The negative control remains schema-valid"
+
+                Expect.isTrue
+                    ((exchange invocation mismatched).ExitCode <> 0)
+                    "A reply about another actor is rejected")
             testCase "reference correlation folds ASCII only" (fun () ->
                 let operation = Guid.Parse "10000000-0000-4000-8000-000000000001"
 

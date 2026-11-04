@@ -694,6 +694,7 @@ module ReplyCorrelation =
                              | _ -> true))))
             | "authority.grants", Some "SUCCEEDED", Some value ->
                 memberValue "actor" value
+                |> Option.bind (memberValue "actor")
                 |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)
             | _ -> true
 

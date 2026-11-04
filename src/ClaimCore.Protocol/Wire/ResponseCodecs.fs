@@ -395,14 +395,14 @@ module ResponseCodecs =
             "RequesterState"
             [
                 variant
-                    "ACTIVE"
+                    (RequesterKind.token RequesterKind.Active)
                     RequesterState.Active
                     (function
                     | RequesterState.Active value -> Some value
                     | _ -> None)
                     actorContextFields
                 variant
-                    "NO_ROLES"
+                    (RequesterKind.token RequesterKind.NoRoles)
                     RequesterState.NoRoles
                     (function
                     | RequesterState.NoRoles value -> Some value
@@ -420,14 +420,14 @@ module ResponseCodecs =
                      |> field "businessDate" _.BusinessDate dateValue
                      |> field "timeZone" _.TimeZone text)
                 variant
-                    "DISABLED"
+                    (RequesterKind.token RequesterKind.Disabled)
                     RequesterState.Disabled
                     (function
                     | RequesterState.Disabled value -> Some value
                     | _ -> None)
                     (record id |> field "self" id ActorCodecs.actorRef)
                 variant
-                    "NOT_REGISTERED"
+                    (RequesterKind.token RequesterKind.NotRegistered)
                     RequesterState.NotRegistered
                     (function
                     | RequesterState.NotRegistered value -> Some value

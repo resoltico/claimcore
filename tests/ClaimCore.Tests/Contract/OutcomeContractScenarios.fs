@@ -293,7 +293,11 @@ let internal actionExpectations =
             Revision = None
         }
         {
-            Refusal = (Refusal.revisionConflict (CaseFixtures.revision 7L))
+            Refusal =
+                Refusal.RevisionConflict(
+                    RevisionConflictInfo.at (CaseFixtures.revision 7L)
+                    |> RevisionConflictInfo.explain ConflictChanges.Withheld
+                )
             Action = RecommendedAction.ReviewLatest
             Token = "REVIEW_LATEST"
             Field = None

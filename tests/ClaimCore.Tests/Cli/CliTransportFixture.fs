@@ -139,7 +139,7 @@ let correlatedBody invocation bytes =
             | _ -> echoed
         elif endpoint = "authority.grants" && tag = Some "SUCCEEDED" then
             match JsonValue.tryMember "actorId" input with
-            | Some actor -> update [ "outcome"; "data"; "actor"; "actorId" ] actor echoed
+            | Some actor -> update [ "outcome"; "data"; "actor"; "actor"; "actorId" ] actor echoed
             | _ -> echoed
         else
             echoed

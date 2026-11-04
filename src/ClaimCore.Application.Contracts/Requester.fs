@@ -66,14 +66,6 @@ type RequesterState =
     | Disabled of ActorRef
     | NotRegistered of UnregisteredRequester
 
-module RequesterState =
-    let kind =
-        function
-        | RequesterState.Active _ -> RequesterKind.Active
-        | RequesterState.NoRoles _ -> RequesterKind.NoRoles
-        | RequesterState.Disabled _ -> RequesterKind.Disabled
-        | RequesterState.NotRegistered _ -> RequesterKind.NotRegistered
-
 type ContextReply = { Requester: RequesterState }
 
 type AccessRequest =

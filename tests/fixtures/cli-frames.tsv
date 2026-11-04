@@ -57,3 +57,5 @@ authority set-profile --principal-kind HUMAN --issuer https://id.example --subje
 authority erase-profile --principal-kind HUMAN --issuer https://id.example --subject u1 --operation-id 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.execute","input":{"kind":"AUTHORITY","operationId":"11111111-2222-4333-8444-555555555555","target":{"kind":"HUMAN","issuer":"https://id.example","subject":"u1"},"act":{"kind":"ERASE_PROFILE"}}}
 case list --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all --limit 1	{"endpoint":"case.list","input":{"limit":1,"view":"ALL","responsibleActor":"b26d20d5-47c5-4522-9c8f-0982c5e08fd8"}}
 case summary --responsible-actor b26d20d5-47c5-4522-9c8f-0982c5e08fd8 --view all	{"endpoint":"case.summary","input":{"view":"ALL","responsibleActor":"b26d20d5-47c5-4522-9c8f-0982c5e08fd8"}}
+authority requests	{"endpoint":"authority.requests","input":{"limit":50}}
+authority requests dismiss --principal-kind HUMAN --issuer https://id.example --subject u1	{"endpoint":"authority.requests.dismiss","input":{"kind":"HUMAN","issuer":"https://id.example","subject":"u1"}}
