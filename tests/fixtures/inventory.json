@@ -161,6 +161,10 @@
     {
       "token": "ERASE_PROFILE",
       "payload": "BARE"
+    },
+    {
+      "token": "ADMIT",
+      "payload": "ADMISSION"
     }
   ],
   "roles": [
@@ -423,9 +427,10 @@
     "timelineFilter",
     "profile.displayName",
     "profile.contact",
-    "responsibleActorFilter"
+    "responsibleActorFilter",
+    "grants"
   ],
-  "cliFrameCount": 61,
+  "cliFrameCount": 62,
   "readInputs": {
     "case.get": [
       "target"

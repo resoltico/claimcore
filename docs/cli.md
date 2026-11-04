@@ -300,7 +300,7 @@ Register actor
 Register an account with an authored display name and optional contact details, without granting case or administration capabilities.
 
 ```sh
-claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --profile.display-name VALUE [--profile.contact VALUE] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -309,8 +309,8 @@ claimcore authority register [--operation-id VALUE] --principal-kind human|servi
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
-| `--profile.display-name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
-| `--profile.contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+| `--name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
+| `--contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
 
 ## authority grant
 
@@ -391,7 +391,7 @@ Update profile
 Record a display name and optional contact details for an account. This does not change its identity or access permissions.
 
 ```sh
-claimcore authority set-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --profile.display-name VALUE [--profile.contact VALUE] [--clear-profile.contact] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+claimcore authority set-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--clear-contact] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -400,8 +400,8 @@ claimcore authority set-profile [--operation-id VALUE] --principal-kind human|se
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
-| `--profile.display-name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
-| `--profile.contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+| `--name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
+| `--contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
 
 ## authority erase-profile
 
@@ -427,7 +427,7 @@ Add person
 Register this account, record its authored profile and grant its initial access together.
 
 ```sh
-claimcore authority admit [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --profile.display-name VALUE [--profile.contact VALUE] [--clear-profile.contact] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+claimcore authority admit [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] --role ROLE[@CASE-REF]... [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -436,8 +436,9 @@ claimcore authority admit [--operation-id VALUE] --principal-kind human|service 
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
-| `--profile.display-name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
-| `--profile.contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+| `--name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
+| `--contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+| `--role ROLE[@CASE-REF]...` | Access grants — Select roles and their scopes. Each role and scope pair may appear only once. | 1–48 | |
 
 ## work update
 

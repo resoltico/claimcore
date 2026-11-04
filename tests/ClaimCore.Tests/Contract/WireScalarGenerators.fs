@@ -198,6 +198,7 @@ let internal integer response context =
                         "MaximumPageSize"
                         "MaximumIntegerDigits"
                         "maximumPageSize"
+                        "maximumGrants"
                         "integerDigits"
                     ])
         then

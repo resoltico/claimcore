@@ -104,6 +104,26 @@ module CliDocumentation =
                         + " | "
                         + escape defaultValue
                         + " |")
+                yield!
+                    CommandGrammar.collections operation
+                    |> List.map (fun definition ->
+                        let binding = definition.Binding
+
+                        "| `"
+                        + CommandGrammar.collectionFlag definition
+                        + " "
+                        + CommandGrammar.collectionPlaceholder definition
+                        + "...` | "
+                        + escape (message binding.LabelId)
+                        + " — "
+                        + escape (
+                            binding.MeaningId |> Option.map message |> Option.defaultValue ""
+                        )
+                        + " | "
+                        + string binding.MinimumItems
+                        + "–"
+                        + string binding.MaximumItems
+                        + " | |")
                 ""
             ]
 

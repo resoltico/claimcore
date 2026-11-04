@@ -52,6 +52,8 @@ module CommandGrammar =
         | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
         | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
         | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
+        | InteractionInput.Target InputTarget.ProfileDisplayName -> "name"
+        | InteractionInput.Target InputTarget.ProfileContact -> "contact"
         | InteractionInput.CaseView
         | InteractionInput.ReminderView -> "view"
         | InteractionInput.ResponsibleActorFilter -> "responsibleActor"
@@ -126,6 +128,20 @@ module CommandGrammar =
 
         inputs |> List.map grammar, constants
 
+    let collections operation =
+        (OperationCatalog.derive operation).Collections
+
+    let collectionFlag (definition: OperationCollectionDefinition) =
+        match definition.Name with
+        | InteractionInput.Target InputTarget.Grants ->
+            "--" + kebab (inputName (InteractionInput.Target InputTarget.Role))
+        | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
+
+    let collectionPlaceholder (definition: OperationCollectionDefinition) =
+        match definition.Name with
+        | InteractionInput.Target InputTarget.Grants -> "ROLE[@CASE-REF]"
+        | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
+
     let families = operations |> List.map (words >> List.head) |> List.distinct
 
     let supportsAll (operation: CatalogOperation) =
@@ -197,6 +213,7 @@ module CommandGrammar =
            | Some(ActKind.Case kind) when (CaseActKind.describe kind).Revision = RevisionInput.New ->
                false
            | Some(ActKind.Authority AuthorityKind.Register)
+           | Some(ActKind.Authority AuthorityKind.Admit)
            | Some(ActKind.Reminder ReminderActKind.Create) -> false
            | _ -> true
 
@@ -259,4 +276,15 @@ module CommandGrammar =
             |> List.map (fun (flag, value) ->
                 "[" + flag + (if value = "" then "" else " " + value) + "]")
 
-        String.concat " " (words operation @ arguments @ textSources @ clears @ globals)
+        let repeated =
+            collections operation
+            |> List.map (fun definition ->
+                let syntax = collectionFlag definition + " " + collectionPlaceholder definition
+
+                (if definition.Binding.Required then
+                     syntax
+                 else
+                     "[" + syntax + "]")
+                + "...")
+
+        String.concat " " (words operation @ arguments @ repeated @ textSources @ clears @ globals)

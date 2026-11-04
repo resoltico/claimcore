@@ -106,6 +106,22 @@ module Discovery =
                        + (input.Binding.MeaningId |> Option.map message |> Option.defaultValue "")
                        + allowed
                        + hint))
+                @ (CommandGrammar.collections operation
+                   |> List.map (fun definition ->
+                       let binding = definition.Binding
+
+                       message binding.LabelId
+                       + ": "
+                       + (binding.MeaningId |> Option.map message |> Option.defaultValue "")
+                       + " ["
+                       + CommandGrammar.collectionFlag definition
+                       + " "
+                       + CommandGrammar.collectionPlaceholder definition
+                       + "; "
+                       + string binding.MinimumItems
+                       + "–"
+                       + string binding.MaximumItems
+                       + "]"))
                 |> String.concat "\n")
             |> String.concat "\n\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n"))

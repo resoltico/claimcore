@@ -2460,6 +2460,86 @@
           "CLOSED"
         ]
       }
+    },
+    {
+      "id": "operation.preview-admit-scoped-grants",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "11111111-2222-4333-8444-555555555555",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://id.example/",
+          "subject": "admitted"
+        },
+        "act": {
+          "kind": "ADMIT",
+          "profile": {
+            "displayName": "Authored",
+            "contact": "Contact"
+          },
+          "grants": [
+            {
+              "role": "CASE_READER",
+              "scope": {
+                "kind": "INSTALLATION"
+              }
+            },
+            {
+              "role": "CASE_HANDLER",
+              "scope": {
+                "kind": "CASE",
+                "target": {
+                  "kind": "REFERENCE",
+                  "caseReference": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "operation.execute-admit-scoped-grants",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "11111111-2222-4333-8444-555555555555",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://id.example/",
+          "subject": "admitted"
+        },
+        "act": {
+          "kind": "ADMIT",
+          "profile": {
+            "displayName": "Authored",
+            "contact": "Contact"
+          },
+          "grants": [
+            {
+              "role": "CASE_READER",
+              "scope": {
+                "kind": "INSTALLATION"
+              }
+            },
+            {
+              "role": "CASE_HANDLER",
+              "scope": {
+                "kind": "CASE",
+                "target": {
+                  "kind": "REFERENCE",
+                  "caseReference": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          ]
+        }
+      }
     }
   ]
 }

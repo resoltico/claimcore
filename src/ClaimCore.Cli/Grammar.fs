@@ -66,12 +66,6 @@ module Grammar =
                 group |> Seq.sortByDescending priority |> Seq.truncate 1)
         |> Seq.toList
 
-    let private constant =
-        function
-        | BindingValue.Text value -> JsonValue.String value
-        | BindingValue.Integer value -> JsonValue.Integer value
-        | BindingValue.Boolean value -> JsonValue.Boolean value
-
     let private scalarValue
         newId
         (item: CatalogDerivedInput)
@@ -83,7 +77,7 @@ module Grammar =
         | Some value -> Some(atom name item.Atom value problems)
         | None when item.Binding.Source = InputSource.OperationIdentity ->
             Some(JsonValue.String(newId ()))
-        | None when item.Binding.Default.IsSome -> Some(constant item.Binding.Default.Value)
+        | None when item.Binding.Default.IsSome -> Some(bindingValue item.Binding.Default.Value)
         | None when item.Binding.Required ->
             problems.Add(
                 if item.Argument = CatalogArgument.Operand then
@@ -112,46 +106,9 @@ module Grammar =
         let mutable position = 0
         let mutable body = JsonValue.Object []
 
-        let rec at path value =
-            match path with
-            | [] -> Some value
-            | key :: rest -> JsonValue.tryMember key value |> Option.bind (at rest)
-
-        let rec insert path value current =
-            match path, current with
-            | [], _ -> value
-            | key :: rest, JsonValue.Object fields ->
-                let previous =
-                    fields
-                    |> List.tryFind (fst >> (=) key)
-                    |> Option.map snd
-                    |> Option.defaultValue (JsonValue.Object [])
-
-                let next = insert rest value previous
-
-                JsonValue.Object(
-                    if fields |> List.exists (fst >> (=) key) then
-                        fields
-                        |> List.map (fun (name, old) -> name, if name = key then next else old)
-                    else
-                        fields @ [ key, next ]
-                )
-            | _ -> invalidOp "A catalog path must traverse objects."
-
-        let applies (branches: BindingCondition list) =
-            branches
-            |> List.forall (fun branch -> at branch.Path body = Some(JsonValue.String branch.Value))
-
+        let applies branches = VerbOptions.applies branches body
         let assign path value = body <- insert path value body
-
-        let fixedValues () =
-            for item in constants do
-                if
-                    applies item.Branches
-                    && (not item.RequiresParent
-                        || (at (item.Path |> List.take (item.Path.Length - 1)) body).IsSome)
-                then
-                    assign item.Path (constant item.Value)
+        let fixedValues () = body <- assignConstants constants body
 
         fixedValues ()
 
@@ -238,6 +195,21 @@ module Grammar =
 
                 fixedValues ()
 
+        for definition in CommandGrammar.collections entry do
+            if applies definition.Binding.Branches then
+                let name = CommandGrammar.collectionFlag definition
+                used.Add name |> ignore
+
+                let values =
+                    match options.TryGetValue name with
+                    | true, values -> values |> List.rev |> List.choose id
+                    | _ -> []
+
+                if definition.Binding.Required || options.ContainsKey name then
+                    assign
+                        definition.Binding.Path
+                        (CollectionArguments.build definition values problems)
+
         for value in operands |> List.skip (min position operands.Length) do
             problems.Add(UsageError.ExtraOperand value)
 
@@ -312,7 +284,13 @@ module Grammar =
                     else
                         None)
 
-            let flags = (named |> List.map (fun input -> flag input.Name)) @ clearFlags
+            let collectionFlags =
+                CommandGrammar.collections entry |> List.map CommandGrammar.collectionFlag
+
+            let flags =
+                (named |> List.map (fun input -> flag input.Name))
+                @ clearFlags
+                @ collectionFlags
 
             let switches =
                 (named
@@ -328,6 +306,8 @@ module Grammar =
                     match input.Atom with
                     | CatalogAtom.Choices _ -> Some(flag input.Name)
                     | _ -> None)
+
+            let repeated = repeated @ collectionFlags
 
             let options, operands =
                 tokenize

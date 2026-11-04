@@ -22,7 +22,7 @@ let private fieldSamples =
         "--" + CommandGrammar.kebab (BusinessField.key field), sample)
     |> fun fields ->
         fields
-        @ [ "--profile.display-name", "Authored"; "--profile.contact", "Contact" ]
+        @ [ "--name", "Authored"; "--contact", "Contact"; "--role", "CASE_READER" ]
     |> Map.ofList
 
 /// Fill only omitted business inputs. Grammar still owns branch selection and required syntax.

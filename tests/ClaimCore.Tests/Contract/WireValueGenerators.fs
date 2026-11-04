@@ -41,7 +41,10 @@ let internal listBounds (path: string) =
                 "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
                 "CaseWorklistCounts.Assignment", 2
                 "CaseWorklistCounts.Due", 5
-                "AuthorityState.Grants", 1
+                "AuthorityState.Grants", 48
+                "AuthorityAdmission`2.Grants", 48
+                "AuthorityReview.Effects", 50
+                "AuthorityReceipt.Effects", 50
                 "AuthorityState.Access", 11
                 "CapabilityAccess.DirectRoles", 7
                 "CapabilityAccess.InstallationRoles", 7
@@ -69,7 +72,9 @@ let internal listBounds (path: string) =
         |> Option.defaultValue 50
 
     let minimum =
-        if context = "CaseStageOutline.Completed" then
+        if context = "AuthorityAdmission`2.Grants" then
+            1
+        elif context = "CaseStageOutline.Completed" then
             1
         elif context = "Tracker.steps" then
             4
