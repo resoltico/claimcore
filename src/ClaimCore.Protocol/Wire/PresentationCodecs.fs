@@ -90,9 +90,10 @@ module PresentationCodecs =
         |> field "displayScale" _.DisplayScale displayScale
 
     let private tokens vocabulary =
-        Vocabulary.tokens vocabulary
-        |> List.map (fun token -> token, token)
-        |> enumeration
+        VocabularyCodec.create vocabulary
+        |> map (Vocabulary.token vocabulary) (fun token ->
+            Vocabulary.tryParse vocabulary token
+            |> Option.defaultWith (fun () -> invalidOp "A presented code must belong to its declared vocabulary."))
 
     let private codeVariant many vocabulary =
         let name = Vocabulary.name vocabulary
