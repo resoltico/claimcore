@@ -30,6 +30,7 @@
     <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="ActorProfilesPostgresTests.fs" />
     <Compile Include="AdmitPostgresTests.fs" />
+    <Compile Include="AdmitNonceGuardTests.fs" />
     <Compile Include="RequesterContextTests.fs" />
     <Compile Include="LedgerGroupingTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />

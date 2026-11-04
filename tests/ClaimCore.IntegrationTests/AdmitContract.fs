@@ -493,3 +493,109 @@ let internal maximum fixture =
             50
             "The maximum group still has independent salts"
     }
+
+let internal atomicWrites fixture =
+    task {
+        let! owner = bootstrap fixture
+        let target = principal "rollback-admission"
+        let hints = RequesterClaims.admit (Some "Original waiting hint") None None
+        let! _ = Service.context (core fixture target |> Service.withClaims hints) () token
+        let! pending = Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
+
+        let original =
+            (successful pending).Items |> List.find (fun value -> value.Principal = target)
+
+        let grants =
+            [
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                {
+                    Role = Role.CaseRegistrar
+                    Scope = GrantTarget.Installation
+                }
+                {
+                    Role = Role.Auditor
+                    Scope = GrantTarget.Installation
+                }
+            ]
+
+        for after in [ 1..5 ] do
+            let operation = id (850 + after)
+
+            let command =
+                Authority.parse (
+                    Inputs.authorityRequest
+                        operation
+                        target
+                        (AuthorityAct.Admit { Profile = profile; Grants = grants })
+                )
+                |> required
+
+            let! failed =
+                fixture.Store.Write
+                    {
+                        CancellationToken = token
+                        Work =
+                            fun tx ->
+                                task {
+                                    let! view =
+                                        ExecutionFacts.target
+                                            owner
+                                            tx
+                                            (Authority.factsNeeded command.Act)
+                                            command.OperationId
+                                            command.Target
+                                            (AuthorityRequests.targetCases command)
+
+                                    let verdict =
+                                        AuthorityExecution.execute
+                                            owner
+                                            command
+                                            {
+                                                Head = tx.Head
+                                                NewPayloadNonce = tx.NewPayloadNonce
+                                                Fenced = false
+                                            }
+                                            view
+
+                                    match verdict with
+                                    | Verdict.Proceed(entries, projections, _) ->
+                                        for entry, projection in
+                                            List.zip entries projections |> List.take after do
+                                            do! tx.Append entry
+                                            do! tx.ProjectAuthority projection
+
+                                        return
+                                            failwith
+                                                "Injected failure after an admission effect and projection"
+                                    | other ->
+                                        return
+                                            failtestf "Injection requires valid admission: %A" other
+                                }
+                    }
+
+            Expect.equal
+                failed
+                (Error StoreFailure.Internal: Result<Verdict<unit>, StoreFailure>)
+                "A partial or fully staged admission rolls back before commit"
+
+            let! missing = lookup fixture operation
+            Expect.equal missing (Ok None) "No accepted operation prefix survives rollback"
+            let! absent = actor fixture target
+
+            Expect.isNone
+                (required absent).Actor
+                "No identity, profile or grant projection survives rollback"
+
+            let! waiting = Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
+
+            let retained =
+                (successful waiting).Items |> List.find (fun value -> value.Principal = target)
+
+            Expect.equal
+                retained
+                original
+                "Atomic rollback restores the exact waiting request, hints and timestamps"
+    }

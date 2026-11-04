@@ -17,6 +17,7 @@ let internal tests factory =
     testList
         "ledger store contract"
         [
+            testCaseAsync "admission effect failures restore projections and exact waiting hints" (withFixture factory AdmitContract.atomicWrites)
             testCaseAsync
                 "admission preserves typed effects names authority scopes and erased replay"
                 (withFixture factory AdmitContract.lifecycle)
