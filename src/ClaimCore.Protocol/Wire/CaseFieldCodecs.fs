@@ -13,8 +13,9 @@ module internal CaseFieldCodecs =
             match kind with
             | FieldValueKind.CalendarDate -> date
             | FieldValueKind.Country -> country
-            | FieldValueKind.PartyName
-            | FieldValueKind.IncidentDescription
+            | FieldValueKind.PartyName -> boundedUtf8Text 1 PartyName.MaximumBytes
+            | FieldValueKind.IncidentDescription ->
+                boundedUtf8Text 1 IncidentDescription.MaximumBytes
             | FieldValueKind.HandlingSummary -> nonempty
             | FieldValueKind.Amount -> amount
             | FieldValueKind.Currency -> currency

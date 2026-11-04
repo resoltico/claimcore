@@ -7,6 +7,9 @@ module Codec =
     let boundedText minimum maximum =
         CodecScalars.boundedText minimum maximum
 
+    let boundedUtf8Text minimum maximumBytes =
+        CodecScalars.boundedUtf8Text minimum maximumBytes
+
     let named name codec = CodecScalars.named name codec
     let vocabulary name codec = CodecScalars.vocabulary name codec
     let uuid = CodecScalars.uuid

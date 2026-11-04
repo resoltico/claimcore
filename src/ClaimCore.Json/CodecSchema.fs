@@ -91,7 +91,7 @@ module internal CodecSchema =
             writeSchema prefix writer items
             writer.WriteNumber("minItems", minimum)
             writer.WriteNumber("maxItems", maximum)
-        | Schema.String(pattern, format, minimum, maximum) ->
+        | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->
             WriterProfile.writeMember writer "type" "string"
             pattern |> Option.iter (WriterProfile.writeMember writer "pattern")
             format |> Option.iter (WriterProfile.writeMember writer "format")
@@ -101,6 +101,10 @@ module internal CodecSchema =
 
             maximum
             |> Option.iter (fun value -> writer.WriteNumber("maxLength", (value: int)))
+
+            maximumUtf8Bytes
+            |> Option.iter (fun value ->
+                writer.WriteNumber(Schema.MaximumUtf8BytesKeyword, (value: int)))
         | Schema.Integer(minimum, maximum) ->
             WriterProfile.writeMember writer "type" "integer"
             writer.WriteNumber("minimum", minimum)

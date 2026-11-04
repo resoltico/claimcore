@@ -16,7 +16,8 @@ type Schema =
         pattern: string option *
         format: string option *
         minimumLength: int option *
-        maximumLength: int option
+        maximumLength: int option *
+        maximumUtf8Bytes: int option
     | Integer of minimum: int64 * maximum: int64
     | Boolean
     | Null
@@ -33,6 +34,9 @@ type Schema =
         rejectedKey: string
 
 module Schema =
+    [<Literal>]
+    let MaximumUtf8BytesKeyword = "x-claimcore-maxUtf8Bytes"
+
     /// Distinct string literals are disjoint, so their oneOf is exactly one enum.
     let tryLiteralSet variants =
         let values =

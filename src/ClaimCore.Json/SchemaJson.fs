@@ -33,12 +33,13 @@ module SchemaJson =
     let private optional key encode =
         Option.map (fun value -> key, encode value) >> Option.toList
 
-    let private stringFields pattern format minimum maximum =
+    let private stringFields pattern format minimum maximum maximumUtf8Bytes =
         [ "type", text "string" ]
         @ optional "pattern" text pattern
         @ optional "format" text format
         @ optional "minLength" number minimum
         @ optional "maxLength" number maximum
+        @ optional Schema.MaximumUtf8BytesKeyword number maximumUtf8Bytes
 
     let private discriminator prefix (property, mapping) =
         JsonValue.Object
@@ -134,8 +135,8 @@ module SchemaJson =
                     "minItems", number minimum
                     "maxItems", number maximum
                 ]
-        | Schema.String(pattern, format, minimum, maximum) ->
-            JsonValue.Object(stringFields pattern format minimum maximum)
+        | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->
+            JsonValue.Object(stringFields pattern format minimum maximum maximumUtf8Bytes)
         | Schema.Integer(minimum, maximum) ->
             JsonValue.Object
                 [

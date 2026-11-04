@@ -347,9 +347,12 @@ module Bindings =
         | Schema.Integer(minimum, maximum), BindingValue.Integer value ->
             value >= minimum && value <= maximum
         | Schema.Boolean, BindingValue.Boolean _ -> true
-        | Schema.String(pattern, _, minimum, maximum), BindingValue.Text value ->
+        | Schema.String(pattern, _, minimum, maximum, maximumUtf8Bytes), BindingValue.Text value ->
             (minimum |> Option.forall (fun bound -> value.Length >= bound))
             && (maximum |> Option.forall (fun bound -> value.Length <= bound))
+            && (maximumUtf8Bytes
+                |> Option.forall (fun bound ->
+                    System.Text.Encoding.UTF8.GetByteCount value <= bound))
             && (pattern
                 |> Option.forall (fun pattern ->
                     Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant)))

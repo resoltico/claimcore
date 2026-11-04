@@ -15,7 +15,8 @@ module internal PrincipalCodecs =
                 Some("^" + PrincipalKey.issuerScheme + "://[^/?#@\\s]+/[^?#\\s]*$"),
                 None,
                 Some 1,
-                Some maximumIssuer
+                Some maximumIssuer,
+                None
             )
 
         boundedText 1 maximumIssuer |> constrained schema PrincipalKey.isIssuer

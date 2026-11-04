@@ -172,7 +172,11 @@ let private responseLabels () =
 
 let private reachable () =
     let definitions =
-        Map.ofList [ "Used", Schema.String(None, None, None, None); "Unused", Schema.Boolean ]
+        Map.ofList
+            [
+                "Used", Schema.String(None, None, None, None, None)
+                "Unused", Schema.Boolean
+            ]
 
     Expect.equal
         (SchemaJson.reachable definitions [ Schema.Ref "Used" ] |> Map.keys |> Seq.toList)

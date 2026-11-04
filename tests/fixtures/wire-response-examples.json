@@ -19421,6 +19421,2208 @@
           }
         }
       }
+    },
+    {
+      "name": "utf8-party-ascii-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-ascii-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-ascii-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-ascii-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-two-byte-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-two-byte-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-two-byte-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-two-byte-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-three-byte-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€x"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-three-byte-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€x"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-three-byte-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€xy"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-three-byte-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€€xy"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-supplementary-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-supplementary-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-supplementary-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀x"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-supplementary-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀x"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-joining-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻x"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-joining-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻x"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-party-joining-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻xy"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-actor-joining-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "provided.precision",
+                    "labelId": "field.claimedAmount.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "10000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻👩‍💻xy"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-profile-contact-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Authored admission name"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  },
+                  "contact": "authored@example.invalid",
+                  "state": "NO_ROLES",
+                  "roles": []
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Updated saved name",
+                    "contact": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "SET_PROFILE",
+                    "profile": {
+                      "displayName": "Updated saved name",
+                      "contact": null
+                    }
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "Authored admission name"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "Updated saved name"
+                    }
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label",
+                    "before": {
+                      "kind": "TEXT",
+                      "value": "authored@example.invalid"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-profile-contact-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": {
+                  "actor": {
+                    "actorId": "10000000-0000-4000-8000-000000000002",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Authored admission name"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "principal": {
+                    "kind": "HUMAN",
+                    "issuer": "https://issuer.example/",
+                    "subject": "admitted-person"
+                  },
+                  "contact": "authored@example.invalid",
+                  "state": "NO_ROLES",
+                  "roles": []
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "before": {
+                  "profile": {
+                    "displayName": "Authored admission name",
+                    "contact": "authored@example.invalid"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "after": {
+                  "profile": {
+                    "displayName": "Updated saved name",
+                    "contact": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé"
+                  },
+                  "enabled": true,
+                  "grants": [],
+                  "access": []
+                },
+                "effects": [
+                  {
+                    "kind": "SET_PROFILE",
+                    "profile": {
+                      "displayName": "Updated saved name",
+                      "contact": null
+                    }
+                  }
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "profileName",
+                    "labelId": "field.profile.displayName.label",
+                    "before": {
+                      "kind": "PARTY",
+                      "value": "Authored admission name"
+                    },
+                    "after": {
+                      "kind": "PARTY",
+                      "value": "Updated saved name"
+                    }
+                  },
+                  {
+                    "key": "profileContact",
+                    "labelId": "field.profile.contact.label",
+                    "before": {
+                      "kind": "TEXT",
+                      "value": "authored@example.invalid"
+                    },
+                    "after": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    }
+                  }
+                ],
+                "unchanged": [
+                  {
+                    "key": "enabled",
+                    "labelId": "label.enabled"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-work-summary-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "WORK",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 0,
+                  "responsible": null,
+                  "handlingSummary": null
+                },
+                "proposed": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "responsible": {
+                    "actorId": "40000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "handlingSummary": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "responsible",
+                    "labelId": "field.responsibleActor.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "40000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "ERASED"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  },
+                  {
+                    "key": "handlingSummary",
+                    "labelId": "field.handlingSummary.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "First paragraph\nSecond paragraph"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-case-description-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "WORK",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 0,
+                  "responsible": null,
+                  "handlingSummary": null
+                },
+                "proposed": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "responsible": {
+                    "actorId": "40000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "handlingSummary": "First paragraph\nSecond paragraph"
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "responsible",
+                    "labelId": "field.responsibleActor.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "40000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "ERASED"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  },
+                  {
+                    "key": "handlingSummary",
+                    "labelId": "field.handlingSummary.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "First paragraph\nSecond paragraph"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-work-summary-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "WORK",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 0,
+                  "responsible": null,
+                  "handlingSummary": null
+                },
+                "proposed": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "responsible": {
+                    "actorId": "40000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "handlingSummary": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀x"
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "responsible",
+                    "labelId": "field.responsibleActor.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "40000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "ERASED"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  },
+                  {
+                    "key": "handlingSummary",
+                    "labelId": "field.handlingSummary.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "First paragraph\nSecond paragraph"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-case-description-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "WORK",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 0,
+                  "responsible": null,
+                  "handlingSummary": null
+                },
+                "proposed": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "revision": 1,
+                  "responsible": {
+                    "actorId": "40000000-0000-4000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  },
+                  "handlingSummary": "First paragraph\nSecond paragraph"
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀😀x"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "responsible",
+                    "labelId": "field.responsibleActor.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "ACTOR",
+                      "value": {
+                        "actorId": "40000000-0000-4000-8000-000000000001",
+                        "displayName": {
+                          "kind": "ERASED"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    }
+                  },
+                  {
+                    "key": "handlingSummary",
+                    "labelId": "field.handlingSummary.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "NARRATIVE",
+                      "value": "First paragraph\nSecond paragraph"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-reminder-action-at",
+      "endpoint": "operation.preview",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "REMINDER",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": null,
+                "effects": {
+                  "kind": "CREATED",
+                  "reminder": {
+                    "reminderId": "10000000-0000-4000-8000-000000000001",
+                    "caseId": "20000000-0000-4000-8000-000000000001",
+                    "revision": 1,
+                    "action": "éééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+                    "dueDate": "2026-11-10",
+                    "state": "PENDING"
+                  }
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.id",
+                    "labelId": "field.reminderId.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-4000-8000-000000000001"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.action",
+                    "labelId": "field.reminderAction.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "Contact insurer"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.due",
+                    "labelId": "field.reminderDueDate.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2026-11-10"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.state",
+                    "labelId": "input.reminderState.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "utf8-reminder-action-over",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "REMINDER",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "caseReference": "NARRATIVE-REMINDERS",
+                "before": null,
+                "effects": {
+                  "kind": "CREATED",
+                  "reminder": {
+                    "reminderId": "10000000-0000-4000-8000-000000000001",
+                    "caseId": "20000000-0000-4000-8000-000000000001",
+                    "revision": 1,
+                    "action": "ééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééééé",
+                    "dueDate": "2026-11-10",
+                    "state": "PENDING"
+                  }
+                },
+                "context": {
+                  "productVersion": "synthetic",
+                  "timeZone": "Europe/Riga",
+                  "businessDate": "2026-11-02",
+                  "observedAt": "2026-11-02T12:00:00.000000Z"
+                },
+                "parent": {
+                  "caseId": "20000000-0000-4000-8000-000000000001",
+                  "caseReference": "NARRATIVE-REMINDERS",
+                  "revision": 5,
+                  "state": {
+                    "kind": "ACTIVE",
+                    "fields": {
+                      "caseReference": "NARRATIVE-REMINDERS",
+                      "status": "OPENED",
+                      "registration": {
+                        "incidentDate": "2026-01-01",
+                        "incidentNotificationDate": "2026-01-02",
+                        "incidentCountry": "LV",
+                        "claimantName": "Claimant",
+                        "insurerName": "Insurer",
+                        "claimedAmount": "500",
+                        "claimedCurrency": "EUR",
+                        "incidentDescription": "Incident context"
+                      },
+                      "decision": {
+                        "paymentDecisionDate": "2026-01-03",
+                        "payableAmount": "400",
+                        "payableCurrency": "EUR"
+                      },
+                      "payment": {
+                        "paymentDate": "2026-01-04"
+                      },
+                      "progress": "PAID"
+                    }
+                  }
+                }
+              },
+              "presentation": {
+                "changes": [
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.id",
+                    "labelId": "field.reminderId.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-4000-8000-000000000001"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.action",
+                    "labelId": "field.reminderAction.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "TEXT",
+                      "value": "Contact insurer"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.due",
+                    "labelId": "field.reminderDueDate.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "DATE",
+                      "value": "2026-11-10"
+                    }
+                  },
+                  {
+                    "key": "10000000-0000-4000-8000-000000000001.state",
+                    "labelId": "input.reminderState.label",
+                    "before": {
+                      "kind": "ABSENT",
+                      "reasonId": "label.notRecorded"
+                    },
+                    "after": {
+                      "kind": "CODE",
+                      "vocabulary": "reminderState",
+                      "token": "PENDING"
+                    }
+                  }
+                ],
+                "unchanged": []
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }

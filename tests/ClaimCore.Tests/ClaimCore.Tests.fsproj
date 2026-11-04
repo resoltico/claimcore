@@ -39,7 +39,9 @@
     <Compile Include="Contract/WireCodecTests.fs" />
     <Compile Include="Contract/FlatGroupCodecTests.fs" />
     <Compile Include="Contract/WireRequestTests.fs" />
+    <Compile Include="Contract/Utf8SchemaValidation.fs" />
     <Compile Include="Contract/OpenApiConformanceTests.fs" />
+    <Compile Include="Contract/Utf8ByteLimitTests.fs" />
     <Compile Include="Contract/WireResponseTests.fs" />
     <Compile Include="Contract/ReviewFacetFixtureTests.fs" />
     <Compile Include="Contract/WireSeedCorpus.fs" />

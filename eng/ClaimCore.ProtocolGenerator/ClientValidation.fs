@@ -65,10 +65,14 @@ const wireFormat = (value: string, format: string | null): boolean => {
   }
   return true;
 };
-const wireString = (minimum: number | null, maximum: number | null, pattern: RegExp | null, format: string | null): WireCheck => (value,draft,path) => {
+const wireUtf8Bytes = (value: string): number => Array.from(value).reduce((bytes, character) => {
+  const scalar=character.codePointAt(0)!;
+  return bytes+(scalar<=0x7f?1:scalar<=0x7ff?2:scalar<=0xffff?3:4);
+},0);
+const wireString = (minimum: number | null, maximum: number | null, pattern: RegExp | null, format: string | null, maximumUtf8Bytes: number | null = null): WireCheck => (value,draft,path) => {
   if (typeof value !== "string" || !isRepresentable(value)) { return path; }
   if (draft) { return null; }
-  return wireLength(value,minimum,maximum) && (pattern === null || pattern.test(value)) && wireFormat(value,format) ? null : path;
+  return wireLength(value,minimum,maximum) && (pattern === null || pattern.test(value)) && wireFormat(value,format) && (maximumUtf8Bytes === null || wireUtf8Bytes(value)<=maximumUtf8Bytes) ? null : path;
 };
 const wireInteger = (minimum: number,maximum: number): WireCheck => (value,draft,path) => typeof value === "number" && Number.isSafeInteger(value) && (draft || (value >= minimum && value <= maximum)) ? null : path;
 const wireBoolean: WireCheck = (value,_draft,path) => typeof value === "boolean" ? null : path;
@@ -135,8 +139,8 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         | Schema.Boolean -> "wireBoolean"
         | Schema.Const value -> "wireConstant(" + quote value + ")"
         | Schema.Integer(minimum, maximum) -> $"wireInteger({minimum},{maximum})"
-        | Schema.String(pattern, format, minimum, maximum) ->
-            stringCheck pattern format minimum maximum
+        | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->
+            stringCheck pattern format minimum maximum maximumUtf8Bytes
         | Schema.Array(items, minimum, maximum) -> $"wireArray({check items},{minimum},{maximum})"
         | Schema.Object(properties, optional) ->
             properties
@@ -152,7 +156,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
             |> fun fields -> "wireObject([" + fields + "])"
         | Schema.OneOf(variants, discriminator) -> unionCheck variants discriminator
 
-    and private stringCheck pattern format minimum maximum =
+    and private stringCheck pattern format minimum maximum maximumUtf8Bytes =
         if
             format
             |> Option.exists (fun value ->
@@ -170,6 +174,8 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         + pattern
         + ","
         + (format |> Option.map quote |> Option.defaultValue "null")
+        + ","
+        + optionNumber maximumUtf8Bytes
         + ")"
 
     and private unionCheck variants discriminator =

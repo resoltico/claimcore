@@ -431,7 +431,7 @@ module ResponseCodecs =
         let hint =
             partyName
             |> constrained
-                (Schema.String(None, None, Some 1, Some 200))
+                (Schema.String(None, None, Some 1, Some 200, None))
                 (PartyName.admit >> Result.isOk)
 
         (record (fun name username email ->
@@ -573,7 +573,7 @@ module ResponseCodecs =
 
     let actorSummary =
         let contact =
-            nonempty
+            boundedUtf8Text 1 PartyName.MaximumBytes
             |> mapResult
                 (fun path raw ->
                     ContactText.parse raw

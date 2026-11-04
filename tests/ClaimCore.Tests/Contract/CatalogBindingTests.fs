@@ -17,7 +17,7 @@ let private annotation =
         Fixed = None
     }
 
-let private scalar = Schema.String(None, None, None, None)
+let private scalar = Schema.String(None, None, None, None, None)
 
 let private definitions =
     Map.ofList [ "Input", Schema.Object([ "value", scalar ], []) ]

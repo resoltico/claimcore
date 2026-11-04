@@ -28,7 +28,7 @@ module internal CodecScalars =
                             "Expected Unicode scalar text without NUL or noncharacters."
 
                     JsonValue.String value
-            Schema = Schema.String(None, None, None, None)
+            Schema = Schema.String(None, None, None, None, None)
             Definitions = Map.empty
         }
 
@@ -58,7 +58,34 @@ module internal CodecScalars =
                         invalidArg (nameof value) "Text outside its wire bounds."
 
                     text.Write value
-            Schema = Schema.String(None, None, Some minimum, Some maximum)
+            Schema = Schema.String(None, None, Some minimum, Some maximum, None)
+        }
+
+    /// A wire byte limit is independent of character admission and applies to retained text too.
+    let boundedUtf8Text minimum maximumBytes =
+        orderedBounds 0 Int32.MaxValue minimum maximumBytes "Use ordered UTF-8 byte bounds."
+
+        let within (value: string) =
+            Encoding.UTF8.GetByteCount value <= maximumBytes
+
+        let scalar = boundedText minimum maximumBytes
+
+        { scalar with
+            Read =
+                fun path value ->
+                    scalar.Read path value
+                    |> Result.bind (fun text ->
+                        if within text then
+                            Ok text
+                        else
+                            fail path "text exceeds its UTF-8 byte limit")
+            Write =
+                fun value ->
+                    if not (within value) then
+                        invalidArg (nameof value) "Text exceeds its UTF-8 byte limit."
+
+                    scalar.Write value
+            Schema = Schema.String(None, None, Some minimum, Some maximumBytes, Some maximumBytes)
         }
 
     /// Registers the codec's schema once under a name and refers to it from users.
@@ -108,7 +135,8 @@ module internal CodecScalars =
                         "^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$",
                     Some "uuid",
                     Some 36,
-                    Some 36
+                    Some 36,
+                    None
                 )
             Definitions = Map.empty
         }
@@ -188,7 +216,8 @@ module internal CodecScalars =
                     Some "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
                     Some "date-time",
                     Some 27,
-                    Some 27
+                    Some 27,
+                    None
                 )
             Definitions = Map.empty
         }

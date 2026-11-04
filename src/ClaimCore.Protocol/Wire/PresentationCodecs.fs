@@ -34,7 +34,7 @@ module PresentationCodecs =
 
         boundedText 1 MaximumKeyCharacters
         |> constrained
-            (Schema.String(Some pattern, None, Some 1, Some MaximumKeyCharacters))
+            (Schema.String(Some pattern, None, Some 1, Some MaximumKeyCharacters, None))
             (fun value -> Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant))
 
     let private displayScale =
@@ -62,7 +62,7 @@ module PresentationCodecs =
         let pattern = "^(?:" + DecimalTotal.Grammar + ")(?![\\s\\S])"
 
         boundedText 1 maximum
-        |> constrained (Schema.String(Some pattern, None, Some 1, Some maximum)) (fun value ->
+        |> constrained (Schema.String(Some pattern, None, Some 1, Some maximum, None)) (fun value ->
             Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant))
         |> parsed DecimalTotal.parse DecimalTotal.format
 
@@ -93,7 +93,8 @@ module PresentationCodecs =
         VocabularyCodec.create vocabulary
         |> map (Vocabulary.token vocabulary) (fun token ->
             Vocabulary.tryParse vocabulary token
-            |> Option.defaultWith (fun () -> invalidOp "A presented code must belong to its declared vocabulary."))
+            |> Option.defaultWith (fun () ->
+                invalidOp "A presented code must belong to its declared vocabulary."))
 
     let private codeVariant many vocabulary =
         let name = Vocabulary.name vocabulary
