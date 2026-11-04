@@ -188,15 +188,25 @@ module internal TransactionPages =
                 |> page query.Limit (fun entry -> entry.Sequence)
         }
 
-    let actors connection after limit token =
+    let actors connection text after limit token =
         task {
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) ORDER BY actor_id LIMIT $2"
+                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) AND ($3::text IS NULL OR display_name_search LIKE '%'||$3||'%' ESCAPE chr(92)) ORDER BY actor_id LIMIT $2"
                     [|
                         DatabaseSession.parameter (after |> Option.map ActorId.value)
                         box (limit + 1)
+                        DatabaseSession.parameter (
+                            text
+                            |> Option.map (fun query ->
+                                ActorNameSearchText.value query
+                                |> fun value ->
+                                    value
+                                        .Replace("\\", "\\\\")
+                                        .Replace("%", "\\%")
+                                        .Replace("_", "\\_"))
+                        )
                     |]
                     token
 
@@ -367,10 +377,11 @@ type private ReadTx
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after
+                 Text = text
                  Limit = limit
              })
             =
-            TransactionPages.actors connection after limit token
+            TransactionPages.actors connection text after limit token
 
         member _.GrantPage
             ({

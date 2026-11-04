@@ -406,6 +406,20 @@
       }
     },
     {
+      "name": "actorNameSearch",
+      "labelId": "field.actorNameSearch.label",
+      "hintId": "field.actorNameSearch.hint",
+      "ruleId": "field.actorNameSearch.rule",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      }
+    },
+    {
       "name": "grants",
       "labelId": "field.grants.label",
       "hintId": "field.grants.hint",
@@ -8119,6 +8133,31 @@
       "consequence": "ROUTINE",
       "inputs": [
         {
+          "identity": "text",
+          "field": "actorNameSearch",
+          "path": [
+            "text"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.actorNameSearch.label",
+          "hintId": "field.actorNameSearch.hint",
+          "ruleId": "field.actorNameSearch.rule",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "actorNameSearch"
+          ],
+          "source": "AUTHORED"
+        },
+        {
           "identity": "cursor",
           "field": null,
           "path": [
@@ -8132,7 +8171,7 @@
           "labelId": "field.cursor.label",
           "hintId": "field.cursor.hint",
           "ruleId": "field.cursor.rule",
-          "order": 0,
+          "order": 1,
           "prefill": null,
           "required": false,
           "wireRequired": false,
@@ -8157,7 +8196,7 @@
           "labelId": "field.limit.label",
           "hintId": "field.limit.hint",
           "ruleId": "field.limit.rule",
-          "order": 1,
+          "order": 2,
           "prefill": null,
           "required": false,
           "wireRequired": true,

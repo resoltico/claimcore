@@ -108,7 +108,7 @@ let internal reindex state (record: StoredCase) =
                 WorkSearchText =
                     work
                     |> Option.bind (fun value -> value.Work.Summary)
-                    |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+                    |> Option.map (HandlingSummary.format >> TextSearch.normalize)
             }
     }
 

@@ -59,16 +59,17 @@ module CaseListOrder =
 
     let token = Vocabulary.token vocabulary
 
-module CaseSearch =
+module TextSearch =
     let normalize (value: string) =
         value.Normalize(System.Text.NormalizationForm.FormKC).ToLowerInvariant()
 
+module CaseSearch =
     let private searchableFields = CaseFields.declarations |> List.filter _.Searchable
 
     let text fields =
         searchableFields
         |> List.choose (fun row -> CaseFields.value row.Field fields)
-        |> List.map normalize
+        |> List.map TextSearch.normalize
         |> String.concat "\u001f"
 
 [<Struct>]
@@ -83,7 +84,24 @@ module CaseSearchText =
     let parse raw =
         ScalarText.parse (Some PartyName.MaximumBytes) MaximumCharacters raw
         |> Result.bind (ScalarText.admit MaximumCharacters)
-        |> Result.map (CaseSearch.normalize >> CaseSearchText)
+        |> Result.map (TextSearch.normalize >> CaseSearchText)
+
+/// Literal current-name lookup shares the established NFKC/invariant-lower search meaning.
+[<Struct>]
+type ActorNameSearchText = private ActorNameSearchText of string
+
+module ActorNameSearchText =
+    let MaximumCharacters = PartyName.MaximumCharacters
+    let value (ActorNameSearchText value) = value
+
+    let parse raw =
+        PartyName.parse raw
+        |> Result.bind PartyName.admit
+        |> Result.map (PartyName.format >> TextSearch.normalize >> ActorNameSearchText)
+
+    let matches query name =
+        TextSearch.normalize name
+        |> fun name -> name.Contains(value query, System.StringComparison.Ordinal)
 
 type CaseListFilter<'text> =
     {

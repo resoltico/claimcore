@@ -190,6 +190,17 @@ module ProjectionVerification =
                 (Ok Set.empty))
         |> Result.bind (finishCases histories)
 
+    let actorNameSearch (expected: Map<ActorId, ActorAuthority>) (id, search) =
+        match Map.tryFind id expected with
+        | None -> Error(divergence None VerificationFinding.AuthorityProfileProjection)
+        | Some actor ->
+            let wanted =
+                actor.Actor.Profile
+                |> Option.map (fun profile ->
+                    TextSearch.normalize (PartyName.format profile.DisplayName))
+
+            require None VerificationFinding.AuthorityProfileProjection (search = wanted)
+
     let finishAuthority expected actual =
         result {
             do! require None VerificationFinding.AuthorityProjection (matching expected actual)
@@ -256,7 +267,7 @@ module ProjectionVerification =
                     let search =
                         current
                         |> Option.bind _.Summary
-                        |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+                        |> Option.map (HandlingSummary.format >> TextSearch.normalize)
 
                     require
                         None

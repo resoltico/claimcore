@@ -119,7 +119,15 @@ let private prepare (database: PostgresFixture.Database) =
             acceptedAuthority added
 
 
-        let! actors = (Service.actors admin ({ AfterCursor = None; Limit = 50 }) (token))
+        let! actors =
+            (Service.actors
+                admin
+                ({
+                    Text = None
+                    AfterCursor = None
+                    Limit = 50
+                })
+                (token))
 
         let actorId =
             (page actors).Items
@@ -278,7 +286,14 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
         Expect.equal crossTarget (Outcome.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint =
-            (Service.actors admin ({ AfterCursor = cursor; Limit = 50 }) (token))
+            (Service.actors
+                admin
+                ({
+                    Text = None
+                    AfterCursor = cursor
+                    Limit = 50
+                })
+                (token))
 
         Expect.equal crossEndpoint (Outcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 

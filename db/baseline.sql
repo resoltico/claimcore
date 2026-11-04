@@ -365,7 +365,7 @@ BEGIN
      WHERE subject_kind='AUTHORITY' AND act='SET_PROFILE' AND subject_id=target_actor_id
        AND sequence<frontier AND payload IS NOT NULL;
     GET DIAGNOSTICS erased=ROW_COUNT;
-    UPDATE claimcore.actors SET display_name=NULL,contact=NULL WHERE actor_id=target_actor_id
+    UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL WHERE actor_id=target_actor_id
        AND NOT EXISTS(SELECT 1 FROM claimcore.ledger later WHERE later.subject_kind='AUTHORITY'
                       AND later.act='SET_PROFILE' AND later.subject_id=target_actor_id AND later.sequence>frontier);
     RETURN erased;
@@ -436,11 +436,12 @@ CREATE TABLE claimcore.actors (
     enabled boolean NOT NULL,
     display_name text CHECK (display_name IS NULL OR (octet_length(display_name) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(display_name))),
     contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
-    CONSTRAINT actor_profile_shape CHECK (display_name IS NOT NULL OR contact IS NULL),
+    display_name_search text CHECK (display_name_search IS NULL OR (octet_length(display_name_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(display_name_search))),
+    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR contact IS NULL) AND ((display_name IS NULL)=(display_name_search IS NULL))),
     UNIQUE (issuer, principal_kind, subject)
 );
 
-CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name gin_trgm_ops);
+CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
 
 -- Bounded authentication hints, never ledger authority. Identity includes principal kind.
 CREATE TABLE claimcore.access_request (

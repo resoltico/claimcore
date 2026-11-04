@@ -688,17 +688,26 @@ module RequestCodecs =
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.AssigneeRequest QueryEndpoint.CaseAssignees
 
-    let private pageFields =
-        (read (fun cursor limit ->
+    let actorListRequest =
+        let fields
+            : ReadFields<ActorListRequest, string option -> string option -> int -> ActorListRequest> =
             {
-                PageRequest.AfterCursor = cursor
-                Limit = limit
-            })
-        : ReadFields<PageRequest, _>)
-        |> page _.AfterCursor _.Limit
+                Inputs = [ ReadInput.ActorNameSearch ]
+                Fields =
+                    record (fun text cursor limit ->
+                        {
+                            ActorListRequest.Text = text
+                            AfterCursor = cursor
+                            Limit = limit
+                        })
+            }
 
-    let pageRequest =
-        pageFields |> finishRead RequestSchemas.PageRequest QueryEndpoint.AuthorityList
+        {
+            Inputs = fields.Inputs
+            Fields = fields.Fields |> optionalField "text" _.Text text
+        }
+        |> pageWith Paging.MaximumActorCursorCharacters _.AfterCursor _.Limit
+        |> finishRead RequestSchemas.ActorListRequest QueryEndpoint.AuthorityList
 
     let accessRequestsRequest =
         (read (fun cursor limit ->

@@ -606,5 +606,8 @@
   "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence": "Complete this reminder and plan the next action together.",
   "endpoint.operation.resolve.consequence": "This permanently marks the change as not recorded. Its change identifier cannot be used again.",
   "endpoint.operation.resolve.done": "Change settled as not recorded.",
-  "endpoint.authority.requests.dismiss.done": "Access request dismissed."
+  "endpoint.authority.requests.dismiss.done": "Access request dismissed.",
+  "field.actorNameSearch.label": "Name search",
+  "field.actorNameSearch.hint": "Find a person by part of their current saved name.",
+  "field.actorNameSearch.rule": "Use up to {maximumCharacters} characters. Capitalization does not matter."
 }

@@ -68,7 +68,11 @@ let tests =
                 let! result =
                     Service.actors
                         (core fixture viewer)
-                        { AfterCursor = None; Limit = 50 }
+                        {
+                            Text = None
+                            AfterCursor = None
+                            Limit = 50
+                        }
                         CancellationToken.None
                     |> Async.AwaitTask
 

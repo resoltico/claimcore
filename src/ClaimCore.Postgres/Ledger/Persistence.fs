@@ -216,13 +216,14 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.actors SET display_name=$2,contact=$3 WHERE actor_id=$1"
+                        "UPDATE claimcore.actors SET display_name=$2,contact=$3,display_name_search=$4 WHERE actor_id=$1"
                         [|
                             box (ActorId.value id)
                             box (PartyName.format profile.DisplayName)
                             DatabaseSession.parameter (
                                 profile.Contact |> Option.map ContactText.format
                             )
+                            box (TextSearch.normalize (PartyName.format profile.DisplayName))
                         |]
                         token
 
@@ -289,7 +290,7 @@ module internal Persistence =
                         box (ReminderState.token (Reminder.state value))
                         box (ReminderAction.format (Reminder.action value))
                         box (CalendarDate.format (Reminder.due value))
-                        box (CaseSearch.normalize (ReminderAction.format (Reminder.action value)))
+                        box (TextSearch.normalize (ReminderAction.format (Reminder.action value)))
                         box changedAt
                         box (ActorId.value recordedBy)
                     |]
@@ -327,7 +328,7 @@ module internal Persistence =
                                 value.Work.Responsible |> Option.map ActorId.value
                             )
                             DatabaseSession.parameter summary
-                            DatabaseSession.parameter (summary |> Option.map CaseSearch.normalize)
+                            DatabaseSession.parameter (summary |> Option.map TextSearch.normalize)
                             box projection.ChangedAt
                             box (ActorId.value projection.RecordedBy)
                             DatabaseSession.parameter projection.SummaryChangedAt
@@ -349,7 +350,7 @@ module internal Persistence =
                             DatabaseSession.parameter (
                                 value.Work.Responsible |> Option.map ActorId.value
                             )
-                            DatabaseSession.parameter (summary |> Option.map CaseSearch.normalize)
+                            DatabaseSession.parameter (summary |> Option.map TextSearch.normalize)
                         |]
                         token
 

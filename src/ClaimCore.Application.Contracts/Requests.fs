@@ -115,3 +115,11 @@ type ReminderGetRequest =
         Target: CaseSelector
         ReminderId: Guid
     }
+
+/// Current profile names only; cursor and predicate bind the same admitted filter.
+type ActorListRequest =
+    {
+        AfterCursor: string option
+        Limit: int
+        Text: string option
+    }

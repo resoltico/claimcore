@@ -227,7 +227,15 @@ let internal lifecycle fixture =
                         .Contains(profile.DisplayName, StringComparison.Ordinal))
                     "Identity and grant payloads contain no authored profile"
 
-        let! directory = Service.actors owner { AfterCursor = None; Limit = 50 } token
+        let! directory =
+            Service.actors
+                owner
+                {
+                    Text = None
+                    AfterCursor = None
+                    Limit = 50
+                }
+                token
 
         let person =
             (successful directory).Items

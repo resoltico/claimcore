@@ -35,7 +35,16 @@ let private register owner operation principal =
 
 let private directory owner principal =
     task {
-        let! page = Service.actors owner { AfterCursor = None; Limit = 50 } token
+        let! page =
+            Service.actors
+                owner
+                {
+                    Text = None
+                    AfterCursor = None
+                    Limit = 50
+                }
+                token
+
         return (successful page).Items |> List.find (fun item -> item.Principal = principal)
     }
 

@@ -328,6 +328,7 @@ type AuthorityHistoryPageQuery =
 
 type ActorPageQuery =
     {
+        Text: ActorNameSearchText option
         AfterActorId: ActorId option
         Limit: int
     }

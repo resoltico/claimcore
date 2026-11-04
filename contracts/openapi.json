@@ -1800,7 +1800,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/PageRequest"
+                "$ref": "#/components/schemas/ActorListRequest"
               }
             }
           }
@@ -3251,6 +3251,28 @@
           "kind",
           "revision",
           "act"
+        ]
+      },
+      "ActorListRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "text": {
+            "type": "string"
+          },
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "limit"
         ]
       },
       "ActorProfile": {
@@ -10392,6 +10414,7 @@
           "principal.subject",
           "profile.displayName",
           "profile.contact",
+          "actorNameSearch",
           "grants",
           "role",
           "limit",
@@ -11063,25 +11086,6 @@
         },
         "required": [
           "subject"
-        ]
-      },
-      "PageRequest": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "cursor": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 512
-          },
-          "limit": {
-            "type": "integer",
-            "minimum": 1,
-            "maximum": 50
-          }
-        },
-        "required": [
-          "limit"
         ]
       },
       "Payment": {

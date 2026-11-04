@@ -357,7 +357,7 @@ type internal Reader
                     && (query.IncludeInactive || actionable)
                     && (query.Text
                         |> Option.forall (fun text ->
-                            (CaseSearch.normalize (ReminderAction.format (Reminder.action value)))
+                            (TextSearch.normalize (ReminderAction.format (Reminder.action value)))
                                 .Contains(CaseSearchText.value text, StringComparison.Ordinal)))
                     && (query.Due
                         |> Option.forall (fun due ->
@@ -1021,6 +1021,7 @@ type internal Reader
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after
+                 Text = text
                  Limit = limit
              })
             =
@@ -1029,6 +1030,14 @@ type internal Reader
             let rows =
                 (get ()).Actors
                 |> Map.values
+                |> Seq.filter (fun actor ->
+                    text
+                    |> Option.forall (fun query ->
+                        actor.Profile
+                        |> Option.exists (fun profile ->
+                            ActorNameSearchText.matches
+                                query
+                                (PartyName.format profile.DisplayName))))
                 |> Seq.filter (fun actor ->
                     after
                     |> Option.forall (fun after ->

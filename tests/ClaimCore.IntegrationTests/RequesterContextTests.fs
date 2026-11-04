@@ -116,7 +116,14 @@ let private lifecycle (database: PostgresFixture.Database) =
         | other -> failtestf "Expected NO_ROLES: %A" other
 
         let! denied =
-            Service.actors (core database.Fixture human) { AfterCursor = None; Limit = 10 } token
+            Service.actors
+                (core database.Fixture human)
+                {
+                    Text = None
+                    AfterCursor = None
+                    Limit = 10
+                }
+                token
 
         Expect.equal
             denied

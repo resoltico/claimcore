@@ -368,6 +368,7 @@ module Bindings =
         | InteractionInput.Target InputTarget.Reason -> Some InputTarget.Reason
         | InteractionInput.Target InputTarget.Role -> Some InputTarget.Role
         | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
+        | InteractionInput.Target InputTarget.ActorNameSearch -> Some InputTarget.ActorNameSearch
         | InteractionInput.Target(InputTarget.ReminderId as target)
         | InteractionInput.Target(InputTarget.ReminderAction as target)
         | InteractionInput.Target(InputTarget.ReminderDueDate as target)

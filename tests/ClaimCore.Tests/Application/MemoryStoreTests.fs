@@ -151,7 +151,11 @@ let private directoryBatch () =
                     let! result =
                         Service.actors
                             owner
-                            { AfterCursor = None; Limit = limit }
+                            {
+                                Text = None
+                                AfterCursor = None
+                                Limit = limit
+                            }
                             CancellationToken.None
                         |> Async.AwaitTask
 

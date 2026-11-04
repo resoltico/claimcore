@@ -396,7 +396,7 @@ module Api =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList))
             HttpMethod.Post
-            RequestCodecs.pageRequest
+            RequestCodecs.actorListRequest
             (ReplyCodecs.readReply "ActorsReply" ResponseCodecs.actorsPage)
 
     let authorityGrants =

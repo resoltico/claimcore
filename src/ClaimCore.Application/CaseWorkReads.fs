@@ -45,7 +45,7 @@ module internal CaseWorkReads =
             && record.Index.WorkSearchText =
                 (payload
                  |> Option.bind _.Work.Summary
-                 |> Option.map (HandlingSummary.format >> CaseSearch.normalize))
+                 |> Option.map (HandlingSummary.format >> TextSearch.normalize))
 
     let viewsFromSummaries
         (tx: IReadTx)

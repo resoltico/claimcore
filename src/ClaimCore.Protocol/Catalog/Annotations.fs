@@ -272,11 +272,14 @@ module CatalogAnnotations =
             yield
                 ("ReminderListRequest", "includeInactive"),
                 constant (annotation InteractionInput.IncludeInactive)
+            yield
+                (RequestSchemas.ActorListRequest, "text"),
+                constant (target InputTarget.ActorNameSearch)
             yield ("WorkOverviewRequest", "mine"), constant (annotation InteractionInput.Mine)
             yield ("ReminderGetRequest", "reminderId"), constant (target InputTarget.ReminderId)
             for owner in
                 [
-                    RequestSchemas.PageRequest
+                    RequestSchemas.ActorListRequest
                     RequestSchemas.AccessRequestsRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest

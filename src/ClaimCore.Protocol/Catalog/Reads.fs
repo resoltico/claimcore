@@ -11,6 +11,7 @@ type ReadInput =
     | PrincipalOperand
     | ActorFilter
     | Page
+    | ActorNameSearch
     | Detail
     | Worklist
     | Reminders
@@ -90,7 +91,7 @@ module ReadCatalog =
             }
             {
                 Endpoint = QueryEndpoint.AuthorityList
-                Inputs = [ ReadInput.Page ]
+                Inputs = [ ReadInput.ActorNameSearch; ReadInput.Page ]
             }
             {
                 Endpoint = QueryEndpoint.AuthorityGrants

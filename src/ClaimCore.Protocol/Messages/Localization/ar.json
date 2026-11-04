@@ -606,5 +606,8 @@
   "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence": "أكمل هذا التذكير وخطط للإجراء التالي معًا.",
   "endpoint.operation.resolve.consequence": "يحدد هذا نهائيًا أن التغيير لم يُسجّل. ولا يمكن استخدام معرّف التغيير مرة أخرى.",
   "endpoint.operation.resolve.done": "حُسم التغيير على أنه غير مسجّل.",
-  "endpoint.authority.requests.dismiss.done": "رُفض طلب الوصول."
+  "endpoint.authority.requests.dismiss.done": "رُفض طلب الوصول.",
+  "field.actorNameSearch.label": "البحث بالاسم",
+  "field.actorNameSearch.hint": "اعثر على شخص باستخدام جزء من اسمه المحفوظ حاليًا.",
+  "field.actorNameSearch.rule": "استخدم حتى {maximumCharacters} حرفًا. لا تهم حالة الأحرف."
 }

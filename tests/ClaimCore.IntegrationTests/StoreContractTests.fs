@@ -22,6 +22,9 @@ let internal tests factory =
                 (withFixture factory (fun fixture ->
                     task { let! _ = SummaryAttributionContract.lifecycle fixture in return () }))
             testCaseAsync
+                "current-name search is normalized literal bounded and cursor-bound"
+                (withFixture factory ActorNameSearchContract.lookup)
+            testCaseAsync
                 "all7 role summaries stay bounded and deterministic"
                 (withFixture factory PeopleDirectoryContract.maximumRoles)
             testCaseAsync

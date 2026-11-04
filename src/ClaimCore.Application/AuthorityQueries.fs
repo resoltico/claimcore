@@ -9,12 +9,30 @@ open ClaimCore.RecordFormat
 module internal AuthorityQueries =
     open QueryResults
 
-    let selectActors installation principal (request: PageRequest) actor =
+    let selectActors installation principal (request: ActorListRequest) actor =
         if not (Authority.can principal actor Capability.ReadAuthority Scope.Installation) then
             Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         else
             currentActor principal actor
-            |> Result.bind (fun _ -> cursor (Cursors.decodeActors installation) request.AfterCursor)
+            |> Result.bind (fun _ ->
+                let text =
+                    match request.Text with
+                    | None -> Ok None
+                    | Some raw ->
+                        ActorNameSearchText.parse raw
+                        |> Result.map Some
+                        |> Result.mapError (fun violation ->
+                            Refusal.invalidInput (InputTarget.ActorNameSearch, violation))
+
+                text
+                |> Result.bind (fun text ->
+                    cursor
+                        (Cursors.decodeActors
+                            Paging.MaximumActorCursorCharacters
+                            installation
+                            text)
+                        request.AfterCursor
+                    |> Result.map (fun after -> text, after)))
 
     let private reviewedActors
         (services: ServiceContext)
@@ -81,7 +99,7 @@ module internal AuthorityQueries =
             | true, Some _, None -> return Error CoreFault.StoreIntegrityError
         }
 
-    let actors (services: ServiceContext) (request: PageRequest) token =
+    let actors (services: ServiceContext) (request: ActorListRequest) token =
         task {
             if not (validLimit request.Limit) then
                 return invalidLimit ()
@@ -107,10 +125,11 @@ module internal AuthorityQueries =
                                                 viewer
                                         with
                                         | Error refusal -> return Outcome.Rejected refusal
-                                        | Ok after ->
+                                        | Ok(text, after) ->
                                             let! page =
                                                 tx.ActorPage
                                                     {
+                                                        Text = text
                                                         AfterActorId = after
                                                         Limit = request.Limit
                                                     }
@@ -132,6 +151,7 @@ module internal AuthorityQueries =
                                                                     |> Option.map (
                                                                         Cursors.encodeActors
                                                                             services.InstallationId
+                                                                            text
                                                                     )
                                                             })
                                                     |> Result.defaultWith Outcome.Failed

@@ -375,23 +375,39 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeActors installation (after: ActorId) =
+    let private actorQueryFingerprint text =
+        text
+        |> Option.map (fun value ->
+            System.Text.Encoding.UTF8.GetBytes(
+                "claimcore/actor-name-query/1\n" + ActorNameSearchText.value value
+            )
+            |> System.Security.Cryptography.SHA256.HashData
+            |> Convert.ToHexStringLower
+            |> JsonValue.String)
+        |> Option.defaultValue JsonValue.Null
+
+    let encodeActors installation text (after: ActorId) =
         encode
             installation
             [
-                DurableNames.After, JsonValue.String(ActorId.format after)
-                DurableNames.Kind, JsonValue.String "ACTORS"
-                DurableNames.V, JsonValue.Integer 2L
+                "after", JsonValue.String(ActorId.format after)
+                "kind", JsonValue.String "ACTORS"
+                "query", actorQueryFingerprint text
+                "v", JsonValue.Integer 3L
             ]
 
-    let decodeActors installation token =
+    let decodeActors maximum installation text token =
+        let expected = actorQueryFingerprint text
+
         decode
             installation
-            MaximumTokenCharacters
+            maximum
             (function
-            | JsonValue.Object [ DurableNames.After, JsonValue.String after
-                                 DurableNames.Kind, JsonValue.String "ACTORS"
-                                 DurableNames.V, JsonValue.Integer 2L ] -> uuid ActorId.create after
+            | JsonValue.Object [ "after", JsonValue.String after
+                                 "kind", JsonValue.String "ACTORS"
+                                 "query", actual
+                                 "v", JsonValue.Integer 3L ] when actual = expected ->
+                uuid ActorId.create after
             | _ -> None)
             token
 

@@ -35,7 +35,11 @@ let private authorityAndCursor () =
         (Queries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            page
+            {
+                ActorListRequest.Text = None
+                AfterCursor = page.AfterCursor
+                Limit = page.Limit
+            }
             read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Authority precedes token parsing"
@@ -44,7 +48,11 @@ let private authorityAndCursor () =
         (Queries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            page
+            {
+                ActorListRequest.Text = None
+                AfterCursor = page.AfterCursor
+                Limit = page.Limit
+            }
             worker)
         (Error Refusal.InvalidCursor)
         "Authorized malformed cursor refuses"
@@ -302,7 +310,11 @@ let private context () =
         (Queries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            { AfterCursor = None; Limit = 50 }
+            {
+                Text = None
+                AfterCursor = None
+                Limit = 50
+            }
             scoped)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Scoped audit cannot enumerate installation actors"

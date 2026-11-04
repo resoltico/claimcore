@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CursorTests
 
 open ClaimCore.RecordFormat
+open ClaimCore.Json
 
 open ClaimCore.Protocol
 
@@ -27,6 +28,62 @@ let private token (json: string) =
         .TrimEnd('=')
         .Replace('+', '-')
         .Replace('/', '_')
+
+let private actorNameCursorBudget () =
+    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let raw = String.replicate 200 "ﷺ"
+    let query = ActorNameSearchText.parse raw |> Result.defaultWith (string >> failtest)
+
+    Expect.equal
+        (ActorNameSearchText.value query).Length
+        3600
+        "Legal compatibility expansion does not enlarge the public cursor"
+
+    let actor = CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000050")
+    let cursor = Cursors.encodeActors installation (Some query) actor
+    Expect.isLessThanOrEqual cursor.Length 512 "Existing cursor admission budget is unchanged"
+
+    let padded =
+        cursor.Replace('-', '+').Replace('_', '/')
+        + String.replicate ((4 - cursor.Length % 4) % 4) "="
+
+    use document = JsonDocument.Parse(Convert.FromBase64String padded)
+
+    Expect.equal
+        (document.RootElement.GetProperty("query").GetString())
+        "255d5e1b082fb1ef1012f2f7feccd62bdbd6c8286afbb33254ab7307e2ec482a"
+        "Independent query-only fingerprint pins normalized filter binding"
+
+    Expect.equal
+        (Cursors.decodeActors Paging.MaximumActorCursorCharacters installation (Some query) cursor)
+        (Ok actor)
+        "Expanded query cursor remains usable"
+
+    let different =
+        ActorNameSearchText.parse "other" |> Result.defaultWith (string >> failtest)
+
+    Expect.equal
+        (Cursors.decodeActors
+            Paging.MaximumActorCursorCharacters
+            installation
+            (Some different)
+            cursor)
+        (Error Refusal.InvalidCursor)
+        "The same position cannot change its normalized filter"
+
+    let bytes =
+        Codec.encode
+            Api.authorityList.Input
+            {
+                ActorListRequest.Text = Some raw
+                AfterCursor = Some cursor
+                Limit = 50
+            }
+
+    Expect.isLessThan
+        bytes.Length
+        65536
+        "Worst legal expansion query plus bounded cursor fits the unchanged64KiB request gate"
 
 [<Tests>]
 let conflictRangeCursor =
@@ -124,13 +181,16 @@ let private accepted () =
 
                     Expect.equal
                         (Cursors.decodeActors
+                            Paging.MaximumActorCursorCharacters
                             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            None
                             encoded)
                         (Ok(CaseFixtures.actorId (expected)))
                         "Independent actor position"
 
                     Cursors.encodeActors
                         (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        None
                         (CaseFixtures.actorId (expected))
                 | "authority.grants" ->
                     let caseId = position.GetProperty "caseId"
@@ -495,6 +555,9 @@ let tests =
         "plain canonical keysets"
         [
             testCase
+                "name-search cursor fingerprints preserve existing admission budgets"
+                actorNameCursorBudget
+            testCase
                 "access-request cursors preserve full bounded identity and database precision"
                 accessRequestBinding
             testCase "worklist filters bind every cursor dimension" worklistBinding
@@ -559,7 +622,12 @@ let installationBinding =
                             Cursors.decodeHistory foreign (CaseFixtures.caseId actor) encoded
                             |> Result.map ignore
                         | "authority.list" ->
-                            Cursors.decodeActors foreign encoded |> Result.map ignore
+                            Cursors.decodeActors
+                                Paging.MaximumActorCursorCharacters
+                                foreign
+                                None
+                                encoded
+                            |> Result.map ignore
                         | "authority.grants" ->
                             Cursors.decodeGrants foreign (CaseFixtures.actorId actor) encoded
                             |> Result.map ignore

@@ -14,3 +14,6 @@ module Paging =
 
     [<Literal>]
     let MaximumAccessRequestCursorCharacters = 32768
+
+    [<Literal>]
+    let MaximumActorCursorCharacters = 512

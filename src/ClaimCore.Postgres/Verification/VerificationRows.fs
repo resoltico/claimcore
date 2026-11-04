@@ -223,7 +223,28 @@ module internal VerificationRows =
                         }
                         token
 
-                return actual |> Result.bind (ProjectionVerification.finishAuthority expected)
+                match actual |> Result.bind (ProjectionVerification.finishAuthority expected) with
+                | Error error -> return Error error
+                | Ok() ->
+                    return!
+                        fold
+                            connection
+                            "SELECT actor_id,display_name_search FROM claimcore.actors ORDER BY actor_id"
+                            {
+                                Read =
+                                    (fun reader () ->
+                                        let row = DatabaseSession.row reader in
+
+                                        DatabaseSession.value<System.Guid> 0 row
+                                        |> DatabaseSession.admitted ActorId.create,
+                                        DatabaseSession.optional<string> 1 row)
+                                Append =
+                                    (fun () row ->
+                                        ProjectionVerification.actorNameSearch expected row)
+                                Initial = ()
+                                Finding = VerificationFinding.AuthorityProfileProjection
+                            }
+                            token
         }
 
     let fences connection expected token =

@@ -606,5 +606,8 @@
   "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence": "Vienlaikus pabeidziet šo atgādinājumu un ieplānojiet nākamo darbību.",
   "endpoint.operation.resolve.consequence": "Tas neatgriezeniski atzīmē izmaiņu kā nereģistrētu. Tās izmaiņas identifikatoru nevarēs izmantot vēlreiz.",
   "endpoint.operation.resolve.done": "Izmaiņa galīgi atzīmēta kā nereģistrēta.",
-  "endpoint.authority.requests.dismiss.done": "Piekļuves pieprasījums noraidīts."
+  "endpoint.authority.requests.dismiss.done": "Piekļuves pieprasījums noraidīts.",
+  "field.actorNameSearch.label": "Meklēšana pēc vārda",
+  "field.actorNameSearch.hint": "Atrast personu pēc pašlaik saglabātā vārda daļas.",
+  "field.actorNameSearch.rule": "Izmantojiet ne vairāk kā {maximumCharacters} rakstzīmes. Reģistram nav nozīmes."
 }

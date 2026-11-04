@@ -14,9 +14,9 @@
     },
     {
       "endpoint": "authority.list",
-      "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"ACTORS\",\"v\":2}",
-      "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9",
-      "tokenLength": 168
+      "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"ACTORS\",\"query\":null,\"v\":3}",
+      "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJ2IjozfQ",
+      "tokenLength": 186
     },
     {
       "endpoint": "authority.grants",
@@ -91,6 +91,11 @@
     {
       "name": "unreleased six omits responsibility filter member",
       "token": "eyJhZnRlciI6eyJyZWZlcmVuY2UiOiJERU1PLTAwNTAifSwiZmlsdGVycyI6eyJhc3NpZ25tZW50IjpudWxsLCJkdWUiOm51bGwsImxpZmVjeWNsZSI6W10sIm9yZGVyIjoiUkVGRVJFTkNFIiwicHJvZ3Jlc3MiOltdLCJzdGF0dXMiOltdLCJ0ZXh0IjpudWxsLCJ2aWV3IjpudWxsfSwiaW5zdGFsbGF0aW9uSWQiOiI5MDAwMDAwMC0wMDAwLTQwMDAtODAwMC0wMDAwMDAwMDAwMDEiLCJraW5kIjoiQ0FTRVMiLCJ2Ijo2fQ"
+    },
+    {
+      "name": "retired actor v2 has no fallback",
+      "endpoint": "authority.list",
+      "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9"
     }
   ]
 }

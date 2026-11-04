@@ -28,7 +28,16 @@ let private execute services input =
 
 let private directory services =
     task {
-        let! page = Service.actors services { AfterCursor = None; Limit = 50 } token
+        let! page =
+            Service.actors
+                services
+                {
+                    Text = None
+                    AfterCursor = None
+                    Limit = 50
+                }
+                token
+
         return read page
     }
 
@@ -366,7 +375,15 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 core fixture staff
                 core fixture (principal "unknown-viewer" PrincipalKey.human)
             ] do
-            let! denied = Service.actors services { AfterCursor = None; Limit = 50 } token
+            let! denied =
+                Service.actors
+                    services
+                    {
+                        Text = None
+                        AfterCursor = None
+                        Limit = 50
+                    }
+                    token
 
             Expect.equal
                 denied

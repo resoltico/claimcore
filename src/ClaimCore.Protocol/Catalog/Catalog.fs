@@ -41,6 +41,14 @@ module Catalog =
                                 Some(ScalarRule.PlainText ReminderAction.constraints)
                             elif input = InteractionInput.Target InputTarget.ReminderDueDate then
                                 Some(ScalarRule.PlannedDate CalendarDate.descriptor)
+                            elif input = InteractionInput.Target InputTarget.ActorNameSearch then
+                                Some(
+                                    ScalarRule.Text
+                                        { PartyName.descriptor with
+                                            MaximumCharacters =
+                                                Some ActorNameSearchText.MaximumCharacters
+                                        }
+                                )
                             elif input = InteractionInput.Target InputTarget.Text then
                                 Some(
                                     ScalarRule.Text

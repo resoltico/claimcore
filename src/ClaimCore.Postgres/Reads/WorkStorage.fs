@@ -63,7 +63,7 @@ module internal WorkStorage =
             responsible <> (expected |> Option.bind _.Responsible)
             || summary
                <> (expected |> Option.bind _.Summary |> Option.map HandlingSummary.format)
-            || search <> (summary |> Option.map CaseSearch.normalize)
+            || search <> (summary |> Option.map TextSearch.normalize)
         then
             raise (RecordCorruptException "Work columns disagree with snapshot.")
 
@@ -123,7 +123,7 @@ module internal WorkStorage =
             state <> (value |> Option.map (Reminder.state >> ReminderState.token))
             || action <> (value |> Option.map (Reminder.action >> ReminderAction.format))
             || due <> (value |> Option.map Reminder.due)
-            || search <> (action |> Option.map CaseSearch.normalize)
+            || search <> (action |> Option.map TextSearch.normalize)
         then
             raise (RecordCorruptException "Reminder columns disagree with snapshot.")
 

@@ -23,6 +23,7 @@
     <Compile Include="ActorProfilesContract.fs" />
     <Compile Include="AdmitContract.fs" />
     <Compile Include="PeopleDirectoryContract.fs" />
+    <Compile Include="ActorNameSearchContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="SummaryAttributionPostgresTests.fs" />

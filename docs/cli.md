@@ -786,11 +786,12 @@ List actors
 Read registered actors and available authority acts.
 
 ```sh
-claimcore authority list [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run]
+claimcore authority list [--actor-name-search VALUE] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run]
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
+| `--actor-name-search` | Name search — Use up to 200 characters. Capitalization does not matter. |  |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 

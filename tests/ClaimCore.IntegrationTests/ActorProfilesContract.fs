@@ -259,7 +259,16 @@ let internal registrationIsolation fixture =
 
         let nonces = stored.Entries |> List.map _.PayloadNonce
         Expect.equal (List.distinct nonces).Length 2 "Physical effects use separate salts"
-        let! directory = Service.actors owner { Limit = 50; AfterCursor = None } token
+
+        let! directory =
+            Service.actors
+                owner
+                {
+                    Text = None
+                    Limit = 50
+                    AfterCursor = None
+                }
+                token
 
         match directory with
         | Outcome.Succeeded page ->

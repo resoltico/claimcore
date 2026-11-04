@@ -45,7 +45,14 @@ let private readGrants (tx: IReadTx) =
 
 let private readActors (tx: IReadTx) =
     task {
-        let! _ = tx.ActorPage { AfterActorId = None; Limit = 50 }
+        let! _ =
+            tx.ActorPage
+                {
+                    Text = None
+                    AfterActorId = None
+                    Limit = 50
+                }
+
         return ()
     }
 
@@ -69,7 +76,7 @@ let private rawGrants database =
         TransactionPages.grants connection (CaseFixtures.actorId (id 1)) None 50 token)
 
 let private rawActors database =
-    rawRead database (fun connection -> TransactionPages.actors connection None 50 token)
+    rawRead database (fun connection -> TransactionPages.actors connection None None 50 token)
 
 let private rejectsUnknown mutate read raw =
     run (fun database ->
