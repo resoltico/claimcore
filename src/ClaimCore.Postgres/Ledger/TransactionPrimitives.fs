@@ -510,6 +510,49 @@ type private WriteTx(connection, installation, head, observedAt, token) =
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
     interface IStore with
+        member _.Context query =
+            Transactions.write source settings query.CancellationToken (fun connection ->
+                task {
+                    // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
+                    // The following single authority query must acquire a fresh snapshot after that wait.
+                    let! _ =
+                        AccessRequests.lockPrincipal
+                            connection
+                            query.Principal
+                            query.CancellationToken
+
+                    let! observed =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT clock_timestamp()"
+                            [||]
+                            query.CancellationToken
+
+                    let observedAt = DatabaseSession.instant 0 observed.Head
+
+                    let! facts =
+                        Projections.globalReadFacts
+                            connection
+                            query.Principal
+                            query.CancellationToken
+
+                    if facts.Authority.Actor.IsNone then
+                        do!
+                            AccessRequests.refresh
+                                connection
+                                query.Principal
+                                query.Claims
+                                observedAt
+                                query.CancellationToken
+
+                    return
+                        {
+                            ContextFacts.Facts = facts
+                            ObservedAt = observedAt
+                        },
+                        true
+                })
+
         member _.Read
             ({
                  ReadOperation.Work = work

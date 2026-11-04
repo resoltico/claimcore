@@ -246,6 +246,11 @@ owner mutations remain isolated.
 
 Profile erasure removes the account’s saved display name and contact, including retained SET_PROFILE payloads and their nonces. The principal identity, enabled state, grants and work references remain; references display “Former account” and a short ID. A later SET_PROFILE records a new profile and survives an older erase frontier. Profile erasure does not remove earlier exports, private provisioning files or client retry journals. Those copies have separate operator and client custody.
 
+Authenticated callers see their own ACTIVE, NO_ROLES, DISABLED or NOT_REGISTERED state through `context`. Other endpoints retain the non-disclosing `RESOURCE_UNAVAILABLE` refusal. Optional identity-provider `name`, `preferred_username` and `email` hints are independently admitted as single-line text of at most 200 Unicode scalars; missing, ambiguous or invalid hints are omitted. They never become actor profiles automatically.
+
+The non-ledger `access_request` table temporarily records not-registered callers, keyed by issuer, principal kind and subject. A repeated visit refreshes hints and last-seen time while retaining first-seen time. Requests expire after 30 days; each requester refresh removes at most 50 expired rows, and concurrent inserts retain at most 1,000 rows by evicting the oldest. Registration and initial-owner provisioning remove the matching request in the same transaction. The cache is excluded from ledger verification and is not a source of authority or actor names.
+
+
 The append-only guard permits parent-scoped fact/work/reminder payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
 all evidence remains outside that protection.

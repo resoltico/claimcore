@@ -36,27 +36,34 @@ let internal contextCodec () =
         Api.context.Output
         (Outcome.Succeeded
             {
-                InstallationId = System.Guid.Parse "90000000-0000-4000-8000-000000000001"
-                Runtime =
-                    {
-                        ProductVersion = "0.10.0"
-                        EffectiveBusinessDate = today
-                        TimeZoneId = "Etc/UTC"
-                    }
-                ActorId =
-                    ActorId.create (System.Guid.Parse "10000000-0000-4000-8000-000000000001")
-                    |> Option.get
-                Self =
-                    ClaimCore.TestSupport.Inputs.actorReference (
-                        CaseFixtures.actorId (
-                            System.Guid.Parse "10000000-0000-4000-8000-000000000001"
-                        )
-                    )
-                HasScopedCases = false
-                Maintenance = RegisterMaintenance.initial
-                Capability = []
-                View = []
-                Offers = []
+                Requester =
+                    RequesterState.Active
+                        {
+                            InstallationId =
+                                System.Guid.Parse "90000000-0000-4000-8000-000000000001"
+                            Runtime =
+                                {
+                                    ProductVersion = "0.10.0"
+                                    EffectiveBusinessDate = today
+                                    TimeZoneId = "Etc/UTC"
+                                }
+                            ActorId =
+                                ActorId.create (
+                                    System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                )
+                                |> Option.get
+                            Self =
+                                ClaimCore.TestSupport.Inputs.actorReference (
+                                    CaseFixtures.actorId (
+                                        System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                    )
+                                )
+                            HasScopedCases = false
+                            Maintenance = RegisterMaintenance.initial
+                            Capability = []
+                            View = []
+                            Offers = []
+                        }
             })
 
     |> ignore

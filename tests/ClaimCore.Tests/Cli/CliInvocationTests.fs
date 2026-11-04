@@ -538,7 +538,9 @@ let recoveryCommands =
 
                     let context =
                         match ClaimCore.TestSupport.ResponseExamples.defaultReply Api.context with
-                        | Outcome.Succeeded value -> value
+                        | Outcome.Succeeded {
+                                                Requester = RequesterState.Active value
+                                            } -> value
                         | _ -> failtest "Settlement needs an authenticated context fixture"
 
                     for language, yes in [ "en", "yes"; "lv", "jā"; "ar", "نعم" ] do

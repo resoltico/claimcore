@@ -22,12 +22,13 @@ module internal PrincipalCodecs =
             boundedText 1 maximumIssuer |> constrained issuerSchema PrincipalKey.isIssuer
 
         let fields kind maximumSubject =
-            record (fun issuer subject ->
+            (record (fun issuer subject ->
                 {
                     PrincipalInput.Kind = kind
                     Issuer = issuer
                     Subject = subject
                 })
+            : Fields<PrincipalInput, _>)
             |> field "issuer" _.Issuer issuer
             |> field "subject" _.Subject (boundedText 1 maximumSubject)
 

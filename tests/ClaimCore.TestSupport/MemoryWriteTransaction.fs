@@ -326,6 +326,7 @@ type internal Writer(inputs: WriteInputs) =
                 match projection with
                 | AuthorityProjection.Register(id, principal) ->
                     { state with
+                        Requests = Map.remove principal state.Requests
                         Actors =
                             Map.add
                                 id
@@ -339,6 +340,7 @@ type internal Writer(inputs: WriteInputs) =
                     }
                 | AuthorityProjection.ProvisionOwner(id, principal) ->
                     { state with
+                        Requests = Map.remove principal state.Requests
                         Actors =
                             Map.add
                                 id

@@ -199,6 +199,8 @@ let private committed () =
 
             let probe =
                 { new IStore with
+                    member _.Context query = inner.Context query
+
                     member _.Read
                         ({
                              ReadOperation.Work = work

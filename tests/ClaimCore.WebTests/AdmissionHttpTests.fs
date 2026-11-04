@@ -29,6 +29,19 @@ type private HeldReads(storage: IStore) =
     member _.Reads = Volatile.Read(&reads)
 
     interface IStore with
+        member _.Context operation =
+            task {
+                let count = Interlocked.Increment(&reads)
+
+                if count <= 2 then
+                    if count = 2 then
+                        entered.SetResult()
+
+                    do! release.Task
+
+                return! storage.Context operation
+            }
+
         member _.Read operation =
             task {
                 let count = Interlocked.Increment(&reads)

@@ -14,5 +14,6 @@ type ServiceContext =
             Store: IStore
             Calendar: IBusinessCalendar
             ProductVersion: string
+            Claims: RequesterClaims
             Principal: PrincipalKey
         }

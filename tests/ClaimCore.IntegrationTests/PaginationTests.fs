@@ -115,6 +115,8 @@ type internal PausedPageStore
             failtest "Page release was not signalled"
 
     interface IStore with
+        member _.Context query = inner.Context query
+
         member _.Write
             ({
                  WriteOperation.Work = work

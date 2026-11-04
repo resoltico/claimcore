@@ -99,30 +99,33 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
-            "productVersion": "x",
-            "businessDate": "2026-01-01",
-            "timeZone": "x",
-            "offers": [],
-            "capabilities": [],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ],
-            "hasScopedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001",
-            "maintenance": {
-              "active": false,
-              "generation": 0
-            },
-            "self": {
+            "requester": {
+              "kind": "ACTIVE",
+              "productVersion": "x",
+              "businessDate": "2026-01-01",
+              "timeZone": "x",
+              "offers": [],
+              "capabilities": [],
+              "views": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ],
+              "hasScopedCases": false,
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
+              "installationId": "90000000-0000-4000-8000-000000000001",
+              "maintenance": {
+                "active": false,
+                "generation": 0
               },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "self": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             }
           }
         }
@@ -1111,65 +1114,68 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
-            "productVersion": "x",
-            "businessDate": "2026-01-01",
-            "timeZone": "x",
-            "offers": [
-              {
-                "kind": "OPEN"
-              },
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "REGISTER"
-              },
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "ENABLE"
-              },
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "GRANT"
-              },
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "REVOKE"
-              },
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "DISABLE"
-              }
-            ],
-            "capabilities": [
-              "READ_CASE",
-              "READ_HISTORY",
-              "READ_HISTORY_FULL",
-              "REGISTER",
-              "DECIDE",
-              "RECORD_PAYMENT",
-              "CLOSE",
-              "STEWARD",
-              "MANAGE_AUTHORITY",
-              "READ_AUTHORITY"
-            ],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ],
-            "hasScopedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001",
-            "maintenance": {
-              "active": false,
-              "generation": 0
-            },
-            "self": {
+            "requester": {
+              "kind": "ACTIVE",
+              "productVersion": "x",
+              "businessDate": "2026-01-01",
+              "timeZone": "x",
+              "offers": [
+                {
+                  "kind": "OPEN"
+                },
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "REGISTER"
+                },
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "ENABLE"
+                },
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "GRANT"
+                },
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "REVOKE"
+                },
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "DISABLE"
+                }
+              ],
+              "capabilities": [
+                "READ_CASE",
+                "READ_HISTORY",
+                "READ_HISTORY_FULL",
+                "REGISTER",
+                "DECIDE",
+                "RECORD_PAYMENT",
+                "CLOSE",
+                "STEWARD",
+                "MANAGE_AUTHORITY",
+                "READ_AUTHORITY"
+              ],
+              "views": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ],
+              "hasScopedCases": false,
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
+              "installationId": "90000000-0000-4000-8000-000000000001",
+              "maintenance": {
+                "active": false,
+                "generation": 0
               },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "self": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             }
           }
         }
@@ -4646,38 +4652,41 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
-            "productVersion": "x",
-            "businessDate": "2026-01-01",
-            "timeZone": "x",
-            "offers": [],
-            "capabilities": [
-              "READ_CASE",
-              "READ_HISTORY",
-              "READ_HISTORY_FULL",
-              "REGISTER",
-              "DECIDE",
-              "CLOSE",
-              "MANAGE_CASE_WORK"
-            ],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ],
-            "hasScopedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001",
-            "maintenance": {
-              "active": false,
-              "generation": 0
-            },
-            "self": {
+            "requester": {
+              "kind": "ACTIVE",
+              "productVersion": "x",
+              "businessDate": "2026-01-01",
+              "timeZone": "x",
+              "offers": [],
+              "capabilities": [
+                "READ_CASE",
+                "READ_HISTORY",
+                "READ_HISTORY_FULL",
+                "REGISTER",
+                "DECIDE",
+                "CLOSE",
+                "MANAGE_CASE_WORK"
+              ],
+              "views": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ],
+              "hasScopedCases": false,
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
+              "installationId": "90000000-0000-4000-8000-000000000001",
+              "maintenance": {
+                "active": false,
+                "generation": 0
               },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "self": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
             }
           }
         }
@@ -10844,39 +10853,113 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
-            "productVersion": "x",
-            "businessDate": "2026-01-01",
-            "timeZone": "x",
-            "offers": [
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "SET_PROFILE"
-              },
-              {
-                "kind": "AUTHORITY_ACT",
-                "act": "ERASE_PROFILE"
-              }
-            ],
-            "capabilities": [],
-            "views": [
-              "CASES",
-              "AUTHORITY",
-              "OPERATIONS"
-            ],
-            "hasScopedCases": false,
-            "actorId": "10000000-0000-4000-8000-000000000001",
-            "installationId": "90000000-0000-4000-8000-000000000001",
-            "maintenance": {
-              "active": false,
-              "generation": 0
-            },
-            "self": {
+            "requester": {
+              "kind": "ACTIVE",
+              "productVersion": "x",
+              "businessDate": "2026-01-01",
+              "timeZone": "x",
+              "offers": [
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "SET_PROFILE"
+                },
+                {
+                  "kind": "AUTHORITY_ACT",
+                  "act": "ERASE_PROFILE"
+                }
+              ],
+              "capabilities": [],
+              "views": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ],
+              "hasScopedCases": false,
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
+              "installationId": "90000000-0000-4000-8000-000000000001",
+              "maintenance": {
+                "active": false,
+                "generation": 0
               },
-              "principalKind": "HUMAN",
-              "availability": "AVAILABLE"
+              "self": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "requester-no-roles",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "requester": {
+              "kind": "NO_ROLES",
+              "self": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              },
+              "installationId": "90000000-0000-4000-8000-000000000001",
+              "businessDate": "2026-01-01",
+              "timeZone": "x"
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "requester-disabled",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "requester": {
+              "kind": "DISABLED",
+              "self": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "DISABLED"
+              }
+            }
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "requester-unregistered",
+      "endpoint": "context",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "requester": {
+              "kind": "NOT_REGISTERED",
+              "issuer": "https://issuer.example/",
+              "subject": "synthetic-waiting",
+              "claims": {
+                "name": "Authored hint",
+                "preferredUsername": "hint-user",
+                "email": "hint@example.invalid"
+              }
             }
           }
         }

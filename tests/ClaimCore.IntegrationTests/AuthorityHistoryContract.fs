@@ -265,6 +265,8 @@ let internal permissions fixture =
 let private changingHistory (fixture: Fixture) change =
     let store =
         { new IStore with
+            member _.Context query = fixture.Store.Context query
+
             member _.Read operation =
                 fixture.Store.Read
                     { operation with

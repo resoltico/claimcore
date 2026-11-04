@@ -186,13 +186,40 @@ let private scalarDomainValue (kind: Type) =
     else
         financialValue kind
 
+let private claimsValue =
+    gen {
+        let! name = Gen.option scalarText
+        let! username = Gen.option scalarText
+        let! email = Gen.option scalarText
+        return RequesterClaims.admit name username email
+    }
+
 let internal domainValue kind =
-    match groupValue kind with
-    | Some value -> Some value
-    | None ->
-        match WireWorkGenerators.domainValue kind with
+    if kind = typeof<RequesterClaims> then
+        Some(claimsValue |> Gen.map box)
+    elif kind = typeof<UnregisteredRequester> then
+        Some(
+            gen {
+                let! id = guid
+                let! claims = claimsValue
+
+                return
+                    box
+                        {
+                            UnregisteredRequester.Issuer =
+                                "https://issuer-" + id.ToString("N") + ".example/"
+                            Subject = id.ToString("N")
+                            Claims = claims
+                        }
+            }
+        )
+    else
+        match groupValue kind with
         | Some value -> Some value
-        | None -> scalarDomainValue kind
+        | None ->
+            match WireWorkGenerators.domainValue kind with
+            | Some value -> Some value
+            | None -> scalarDomainValue kind
 
 let private positionValue response context kind =
     if kind = typeof<Revision> then

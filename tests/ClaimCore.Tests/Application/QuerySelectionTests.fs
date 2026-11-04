@@ -224,51 +224,60 @@ let private context () =
             RegisterMaintenance.initial
             view
     with
-    | Outcome.Succeeded value ->
+    | Outcome.Succeeded {
+                            Requester = RequesterState.NoRoles value
+                        } ->
         Expect.equal
-            value.ActorId
+            value.Self.ActorId
             (CaseFixtures.actorId (id 1))
-            "Context identifies its admitted requester"
-
-        Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
+            "Roleless context identifies only its caller"
 
         Expect.equal
-            value.View
-            [ View.Operations ]
-            "Roleless valid actors retain their own recovery area"
-
-        Expect.isEmpty value.Offers "No offers before grants"
-
-        Expect.equal
-            value.Runtime.EffectiveBusinessDate
+            value.BusinessDate
             (calendar.DateAt instant)
             "Supplied instant owns business date"
 
-        Expect.equal value.Runtime.TimeZoneId calendar.TimeZoneId "Stored zone is retained"
-    | _ -> failtest "Enabled ungranted actor needs context"
+        Expect.equal value.TimeZone calendar.TimeZoneId "Stored zone is retained"
+    | other -> failtestf "Enabled ungranted actor needs NO_ROLES context, got %A" other
 
-    Expect.equal
-        (Queries.contextResult
+    match
+        Queries.contextResult
             (DecisionFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
-            AuthorityView.empty)
-        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Unregistered actor has no context"
+            AuthorityView.empty
+    with
+    | Outcome.Succeeded {
+                            Requester = RequesterState.NotRegistered value
+                        } ->
+        let _, issuer, subject = PrincipalKey.parts owner
+
+        Expect.equal
+            (value.Issuer, value.Subject)
+            (issuer, subject)
+            "Unregistered context reveals only caller identity"
+    | other -> failtestf "Unregistered caller needs own requester state: %A" other
 
     let disabled =
         { ungranted with
             Actor = ungranted.Actor |> Option.map (fun value -> { value with Enabled = false })
         }
 
-    Expect.equal
-        (Queries.contextResult
+    match
+        Queries.contextResult
             (DecisionFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
-            disabled)
-        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Disabled actor has no context"
+            disabled
+    with
+    | Outcome.Succeeded {
+                            Requester = RequesterState.Disabled self
+                        } ->
+        Expect.equal
+            self.ActorId
+            (CaseFixtures.actorId (id 1))
+            "Disabled context identifies only its caller"
+    | other -> failtestf "Disabled caller needs own requester state: %A" other
 
     let _, entry, current, _ = created 462 "SCOPED-AUDITOR"
 

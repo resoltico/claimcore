@@ -87,12 +87,50 @@ let private rollback () =
             Expect.equal count (Ok 0) "Rejected staged projection is discarded"
     }
 
+let private requestExpiry () =
+    async {
+        let! fixture = fixture () |> Async.AwaitTask
+
+        try
+            let memory = fixture.Store :?> MemoryStore.Store
+            let actor = core fixture fixture.Owner
+            let before = memory.ObservedAt
+
+            let! _ =
+                Service.context
+                    (Service.withClaims (RequesterClaims.admit (Some "Hint") None None) actor)
+                    ()
+                    CancellationToken.None
+                |> Async.AwaitTask
+
+            memory.ObservedAt <- before.AddDays 31.
+            let! _ = Service.context actor () CancellationToken.None |> Async.AwaitTask
+            let request = List.exactlyOne memory.AccessRequests
+
+            Expect.equal
+                request.FirstSeen
+                memory.ObservedAt
+                "An expired request starts a fresh first-seen lifetime"
+
+            Expect.isNone request.Claims.Name "A refreshed absence does not retain an old hint"
+            let! _ = bootstrap fixture |> Async.AwaitTask
+
+            Expect.isEmpty
+                memory.AccessRequests
+                "Owner provisioning removes its matching request atomically"
+        finally
+            fixture.Dispose()
+    }
+
 [<Tests>]
 let tests =
     testList
         "memory transaction store"
         [
             StoreContractTests.tests fixture
+            testCaseAsync
+                "expired requester hints reset and provisioning deletes the request"
+                (requestExpiry ())
             testCaseAsync
                 "rejection discards pending writes and locking precedes reads"
                 (rollback ())

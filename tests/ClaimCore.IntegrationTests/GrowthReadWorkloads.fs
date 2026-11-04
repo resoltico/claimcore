@@ -297,7 +297,9 @@ let private workProfiles progressed publish (actor: ServiceContext) cases =
 
         let context =
             match context with
-            | Outcome.Succeeded value -> value
+            | Outcome.Succeeded {
+                                    Requester = RequesterState.Active value
+                                } -> value
             | _ -> failtest "Case-work growth requires the actual registered handler context"
 
         let followUp =
@@ -467,7 +469,9 @@ let private reminderProfiles progressed publish actor cases =
 
         let context =
             match contextResult with
-            | Outcome.Succeeded value -> value
+            | Outcome.Succeeded {
+                                    Requester = RequesterState.Active value
+                                } -> value
             | other -> failtestf "Reminder growth context unavailable: %A" other
 
         let reference = GrowthWorkloadPlan.readReference 3

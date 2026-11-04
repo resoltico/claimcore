@@ -172,65 +172,90 @@ module internal Queries =
         (services: ServiceContext)
         observedAt
         (maintenance: RegisterMaintenance)
-        actor
+        (actor: AuthorityView)
         =
         let productVersion = services.ProductVersion
         let calendar = services.Calendar
         let principal = services.Principal
 
-        match currentActor principal actor, actor.Actor with
-        | Ok _, Some requester ->
-            Outcome.Succeeded
-                {
-                    Self = Actor.currentReference requester
-                    Maintenance = maintenance
-                    InstallationId = services.InstallationId
-                    ActorId = requester.ActorId
-                    Runtime =
+        let active (requester: Actor) : ActorContext =
+            {
+                Self = Actor.currentReference requester
+                Maintenance = maintenance
+                InstallationId = services.InstallationId
+                ActorId = requester.ActorId
+                Runtime =
+                    {
+                        ProductVersion = productVersion
+                        EffectiveBusinessDate = calendar.DateAt observedAt
+                        TimeZoneId = calendar.TimeZoneId
+                    }
+                HasScopedCases = actor.HasScopedCases
+                View = Advice.views principal actor
+                Offers =
+                    if maintenance.Active then
+                        []
+                    else
+                        Advice.installationOffers principal actor
+                Capability =
+                    Capability.all
+                    |> List.filter (fun capability ->
+                        Authority.can principal actor capability Scope.Installation)
+            }
+
+        let state =
+            match actor.Actor with
+            | None ->
+                let _, issuer, subject = PrincipalKey.parts principal
+
+                Ok(
+                    RequesterState.NotRegistered
                         {
-                            ProductVersion = productVersion
-                            EffectiveBusinessDate = calendar.DateAt observedAt
-                            TimeZoneId = calendar.TimeZoneId
+                            Issuer = issuer
+                            Subject = subject
+                            Claims = services.Claims
                         }
-                    HasScopedCases = actor.HasScopedCases
-                    View = Advice.views principal actor
-                    Offers =
-                        if maintenance.Active then
-                            []
-                        else
-                            Advice.installationOffers principal actor
-                    Capability =
-                        Capability.all
-                        |> List.filter (fun capability ->
-                            Authority.can principal actor capability Scope.Installation)
-                }
-        | _ -> unavailable
+                )
+            | Some requester when requester.Principal <> principal ->
+                Error CoreFault.StoreIntegrityError
+            | Some requester when not requester.Enabled ->
+                Ok(RequesterState.Disabled(Actor.currentReference requester))
+            | Some requester when List.isEmpty actor.Installation && not actor.HasScopedCases ->
+                Ok(
+                    RequesterState.NoRoles
+                        {
+                            Self = Actor.currentReference requester
+                            InstallationId = services.InstallationId
+                            BusinessDate = calendar.DateAt observedAt
+                            TimeZone = calendar.TimeZoneId
+                        }
+                )
+            | Some requester -> Ok(RequesterState.Active(active requester))
+
+        state
+        |> Result.map (fun state -> { ContextReply.Requester = state })
+        |> Result.map Outcome.Succeeded
+        |> Result.defaultWith Outcome.Failed
 
     let context (services: ServiceContext) token =
-        let store = services.Store
-        let principal = services.Principal
-
         task {
             let! result =
-                store.Read(
+                services.Store.Context
                     {
-                        ReadOperation.Work =
-                            (fun tx ->
-                                task {
-                                    let! facts = tx.GlobalReadFacts principal
-
-                                    return
-                                        contextResult
-                                            services
-                                            tx.ObservedAt
-                                            facts.Maintenance
-                                            facts.Authority
-                                })
+                        Principal = services.Principal
+                        Claims = services.Claims
                         CancellationToken = token
                     }
-                )
 
-            return readResult result
+            return
+                result
+                |> Result.map (fun facts ->
+                    contextResult
+                        services
+                        facts.ObservedAt
+                        facts.Facts.Maintenance
+                        facts.Facts.Authority)
+                |> readResult
         }
 
     let selectCases installation principal basis (request: CaseListRequest) actor =

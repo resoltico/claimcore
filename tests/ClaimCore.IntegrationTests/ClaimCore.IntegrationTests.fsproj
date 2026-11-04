@@ -28,6 +28,7 @@
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="ActorProfilesPostgresTests.fs" />
+    <Compile Include="RequesterContextTests.fs" />
     <Compile Include="LedgerGroupingTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="ResolutionTests.fs" />

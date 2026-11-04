@@ -432,6 +432,21 @@ CREATE TABLE claimcore.actors (
 
 CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name gin_trgm_ops);
 
+-- Bounded authentication hints, never ledger authority. Identity includes principal kind.
+CREATE TABLE claimcore.access_request (
+    principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN','SERVICE')),
+    issuer text COLLATE "C" NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
+    subject text COLLATE "C" NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
+    first_seen timestamptz NOT NULL,
+    last_seen timestamptz NOT NULL CHECK (last_seen>=first_seen),
+    name text CHECK (name IS NULL OR (char_length(name) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(name))),
+    preferred_username text CHECK (preferred_username IS NULL OR (char_length(preferred_username) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(preferred_username))),
+    email text CHECK (email IS NULL OR (char_length(email) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(email))),
+    PRIMARY KEY (issuer,principal_kind,subject)
+);
+CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,issuer,principal_kind,subject);
+
+
 ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
     FOREIGN KEY (responsible_actor) REFERENCES claimcore.actors (actor_id);
 CREATE INDEX cases_responsible ON claimcore.cases (responsible_actor, upper(case_reference COLLATE "C")) WHERE responsible_actor IS NOT NULL;
@@ -526,6 +541,7 @@ GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.l
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
+GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_profile_payload(uuid) TO claimcore_runtime;

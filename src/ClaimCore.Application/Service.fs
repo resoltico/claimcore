@@ -29,8 +29,11 @@ module Service =
             InstallationId = installationId
             Store = store
             Calendar = calendar
+            Claims = RequesterClaims.empty
             Principal = principal
         }
+
+    let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
     let private mutationResult =
         function

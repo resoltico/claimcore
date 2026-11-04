@@ -34,6 +34,9 @@ let calendar =
 
 let private decisionStore =
     { new IStore with
+        member _.Context _ =
+            failtest "Pure decisions must not load requester context"
+
         member _.Read _ =
             failtest "Pure decisions must not read storage"
 

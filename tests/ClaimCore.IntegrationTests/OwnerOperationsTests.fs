@@ -185,7 +185,7 @@ let private actionState (database: PostgresFixture.Database) =
         Expect.isTrue read.Advice.Maintenance.Active "Case advice reports its observed mode"
         Expect.isEmpty read.Advice.Acts "Current advice offers no register writes"
         let! context = Service.context actor () token
-        let context = success context
+        let context = Inputs.activeContext (success context)
         Expect.isTrue context.Maintenance.Active "Context exposes register maintenance"
         Expect.isEmpty context.Offers "Context offers are read-only during maintenance"
         let! replay = Service.execute actor pending token
@@ -304,6 +304,7 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
 
         let store =
             { new IStore with
+                member _.Context query = database.Fixture.Store.Context query
                 member _.Read operation = database.Fixture.Store.Read operation
 
                 member _.Write operation =

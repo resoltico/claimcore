@@ -493,5 +493,13 @@
   "view.VOIDED.label": "ملغاة",
   "workAct.UPDATE_WORK.label": "تحديث عمل القضية",
   "workChange.CLEAR.label": "مسح",
-  "workChange.SET.label": "تعيين"
+  "workChange.SET.label": "تعيين",
+  "requesterState.ACTIVE.label": "تم منح الوصول",
+  "requesterState.ACTIVE.meaning": "الحساب مفعّل وله أدوار وصول.",
+  "requesterState.NO_ROLES.label": "لم يتم تعيين أدوار",
+  "requesterState.NO_ROLES.meaning": "ليس لهذا الحساب أدوار وصول. اطلب من المالك منح الوصول.",
+  "requesterState.DISABLED.label": "الحساب معطّل",
+  "requesterState.DISABLED.meaning": "تم تعطيل هذا الحساب. اطلب من المالك تفعيل الوصول.",
+  "requesterState.NOT_REGISTERED.label": "تم طلب الوصول",
+  "requesterState.NOT_REGISTERED.meaning": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore."
 }

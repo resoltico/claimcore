@@ -332,7 +332,7 @@ module ResponseCodecs =
         |> field "actorId" fst actorId
         |> field "hasScopedCases" snd boolean
 
-    let actorContext =
+    let private actorContextFields =
         (record
             (fun
                 installation
@@ -366,8 +366,89 @@ module ResponseCodecs =
         |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
         |> field "maintenance" _.Maintenance registerMaintenance
         |> field "self" _.Self ActorCodecs.actorRef
+
+    let actorContext = actorContextFields |> build |> named "ActorContext"
+
+    let requesterClaims =
+        let hint =
+            partyName
+            |> constrained
+                (Schema.String(None, None, Some 1, Some 200))
+                (PartyName.admit >> Result.isOk)
+
+        (record (fun name username email ->
+            RequesterClaims.admit
+                (name |> Option.map PartyName.format)
+                (username |> Option.map PartyName.format)
+                (email |> Option.map PartyName.format))
+        : Fields<RequesterClaims, _>)
+        |> optionalField "name" _.Name hint
+        |> optionalField "preferredUsername" _.PreferredUsername hint
+        |> optionalField "email" _.Email hint
         |> build
-        |> named "ActorContext"
+        |> named "RequesterClaims"
+
+    let private requesterState =
+        tagged
+            "RequesterState"
+            [
+                variant
+                    "ACTIVE"
+                    RequesterState.Active
+                    (function
+                    | RequesterState.Active value -> Some value
+                    | _ -> None)
+                    actorContextFields
+                variant
+                    "NO_ROLES"
+                    RequesterState.NoRoles
+                    (function
+                    | RequesterState.NoRoles value -> Some value
+                    | _ -> None)
+                    ((record (fun self installation date zone ->
+                        {
+                            RequesterWithoutRoles.Self = self
+                            InstallationId = installation
+                            BusinessDate = date
+                            TimeZone = zone
+                        })
+                     : Fields<RequesterWithoutRoles, _>)
+                     |> field "self" _.Self ActorCodecs.actorRef
+                     |> field "installationId" _.InstallationId uuid
+                     |> field "businessDate" _.BusinessDate dateValue
+                     |> field "timeZone" _.TimeZone text)
+                variant
+                    "DISABLED"
+                    RequesterState.Disabled
+                    (function
+                    | RequesterState.Disabled value -> Some value
+                    | _ -> None)
+                    (record id |> field "self" id ActorCodecs.actorRef)
+                variant
+                    "NOT_REGISTERED"
+                    RequesterState.NotRegistered
+                    (function
+                    | RequesterState.NotRegistered value -> Some value
+                    | _ -> None)
+                    (record (fun issuer subject claims ->
+                        {
+                            UnregisteredRequester.Issuer = issuer
+                            Subject = subject
+                            Claims = claims
+                        })
+                     |> field "issuer" _.Issuer (boundedText 1 PrincipalKey.MaximumIssuerCharacters)
+                     |> field
+                         "subject"
+                         _.Subject
+                         (boundedText 1 PrincipalKey.MaximumHumanSubjectCharacters)
+                     |> field "claims" _.Claims requesterClaims)
+            ]
+
+    let contextReply =
+        record (fun requester -> { ContextReply.Requester = requester })
+        |> field "requester" _.Requester requesterState
+        |> build
+        |> named "RequesterContext"
 
     let position = LedgerCodecs.position
     let changeSummary = LedgerCodecs.changeSummary

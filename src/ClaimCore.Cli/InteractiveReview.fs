@@ -222,8 +222,13 @@ module internal InteractiveReview =
             let! contextReply = transport.Exchange context token
 
             match unpack Api.context contextReply with
-            | Some(Outcome.Succeeded scope) ->
+            | Some(Outcome.Succeeded {
+                                         Requester = RequesterState.Active scope
+                                     }) ->
                 return! readCase newId console transport draft scope.InstallationId token
+            | Some(Outcome.Succeeded _) ->
+                transport.Deliver context contextReply
+                return ExitCode.value ExitCode.Rejected
             | _ ->
                 transport.Deliver context contextReply
                 return contextReply.ExitCode

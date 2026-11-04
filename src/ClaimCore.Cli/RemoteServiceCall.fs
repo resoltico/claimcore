@@ -143,8 +143,15 @@ module RemoteServiceCall =
                 match reply.Frame.Result with
                 | FrameResult.Reply value ->
                     match ServiceReply.value Api.context value with
-                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded context) ->
-                        return Ok context
+                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded {
+                                                                                 Requester = ClaimCore.Application.Contracts.RequesterState.Active context
+                                                                             }) -> return Ok context
+                    | Some(ClaimCore.Application.Contracts.Outcome.Succeeded _) ->
+                        return
+                            Error
+                                { reply with
+                                    ExitCode = ExitCode.value ExitCode.Rejected
+                                }
                     | _ -> return Error(CliReply.local ClientFailure.InvalidResponse)
                 | _ -> return Error reply
             with

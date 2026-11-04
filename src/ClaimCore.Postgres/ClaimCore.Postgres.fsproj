@@ -10,6 +10,7 @@
     <Compile Include="InstallationCheck/InstallationCheck.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Ledger/StoredEntries.fs" />
+    <Compile Include="AccessRequests.fs" />
     <Compile Include="Ledger/Persistence.fs" />
     <Compile Include="Ledger/Transactions.fs" />
     <Compile Include="RegisterMaintenanceStore.fs" />

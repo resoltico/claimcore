@@ -84,7 +84,9 @@ let private projection (database: PostgresFixture.Database) =
         let! context = Service.context owner () token
 
         match context with
-        | Outcome.Succeeded context ->
+        | Outcome.Succeeded {
+                                Requester = RequesterState.Active context
+                            } ->
             Expect.equal
                 context.Self.DisplayName
                 (DisplayName.Named(

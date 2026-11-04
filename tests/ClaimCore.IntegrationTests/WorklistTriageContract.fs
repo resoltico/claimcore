@@ -227,7 +227,9 @@ let internal exactTotals fixture =
         let! context = Service.context owner () token
 
         match context with
-        | Outcome.Succeeded value ->
+        | Outcome.Succeeded {
+                                Requester = RequesterState.Active value
+                            } ->
             Expect.isTrue value.HasScopedCases "Scoped read visibility remains independent"
         | _ -> failtest "Expected context"
 

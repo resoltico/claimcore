@@ -8,6 +8,11 @@ open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Json
 
+let activeContext (reply: ContextReply) =
+    match reply.Requester with
+    | RequesterState.Active context -> context
+    | other -> failtestf "Fixture requires ACTIVE requester, observed %A" other
+
 let private accepted result =
     result
     |> Result.defaultWith (fun _ -> failtest "The fixture requires a permanently valid value.")

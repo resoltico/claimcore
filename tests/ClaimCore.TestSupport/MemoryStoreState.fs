@@ -20,6 +20,7 @@ type internal State =
         Cases: Map<CaseId, StoredCase>
         Work: Map<CaseId, StoredWork>
         Reminders: Map<ReminderId, StoredReminder>
+        Requests: Map<PrincipalKey, AccessRequest>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>
         Fences: Map<ActorId * OperationId, DateTimeOffset>

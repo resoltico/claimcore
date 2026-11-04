@@ -468,6 +468,23 @@ type WriteOperation<'result> =
         CancellationToken: CancellationToken
     }
 
+/// Context cache writes are non-ledger facts. Implementations serialize the principal before
+/// taking the authority snapshot and refresh a request only when that snapshot has no actor.
+[<NoComparison>]
+type ContextQuery =
+    {
+        Principal: PrincipalKey
+        Claims: RequesterClaims
+        CancellationToken: CancellationToken
+    }
+
+type ContextFacts =
+    {
+        Facts: GlobalReadFacts
+        ObservedAt: DateTimeOffset
+    }
+
 type IStore =
+    abstract Context: ContextQuery -> Task<Result<ContextFacts, StoreFailure>>
     abstract Read: ReadOperation<'result> -> Task<Result<'result, StoreFailure>>
     abstract Write: WriteOperation<'result> -> Task<Result<Verdict<'result>, StoreFailure>>

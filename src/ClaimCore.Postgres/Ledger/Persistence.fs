@@ -181,18 +181,19 @@ module internal Persistence =
         }
 
     let private register connection id principal token =
-        let kind, issuer, subject = PrincipalKey.parts principal
+        task {
+            let! _ = AccessRequests.lockPrincipal connection principal token
 
-        DatabaseSession.execute
-            connection
-            "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
-            [|
-                box (ActorId.value id)
-                box (DurableNames.principalKind kind)
-                box issuer
-                box subject
-            |]
-            token
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
+                    (Array.append [| box (ActorId.value id) |] (AccessRequests.parameters principal))
+                    token
+
+            let! _ = AccessRequests.delete connection principal token
+            return changed
+        }
 
     let authority connection projection token =
         task {

@@ -7,6 +7,7 @@
     <Compile Include="Outcome.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="Advice.fs" />
+    <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />
     <Compile Include="History.fs" />

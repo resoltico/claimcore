@@ -96,9 +96,20 @@ module PrincipalIdentity =
         | [ claim ] -> Some claim.Value
         | _ -> None
 
+    let private claims (identity: ClaimsIdentity) =
+        ClaimCore.Application.Contracts.RequesterClaims.admit
+            (singleClaim "name" identity)
+            (singleClaim "preferred_username" identity)
+            (singleClaim "email" identity)
+
     let fromBrowserSession issuer principal =
-        match authenticatedIdentity principal |> Option.bind (singleClaim "sub") with
-        | Some subject -> human issuer subject
+        match authenticatedIdentity principal with
+        | Some identity ->
+            match singleClaim "sub" identity with
+            | Some subject ->
+                human issuer subject
+                |> Result.map (AuthenticatedPrincipals.withClaims (claims identity))
+            | None -> Error AuthenticationFailure.SubjectInvalid
         | None -> Error AuthenticationFailure.SubjectInvalid
 
     let private optionalClaim name (identity: ClaimsIdentity) =
@@ -122,7 +133,10 @@ module PrincipalIdentity =
         match authenticatedIdentity principal with
         | None -> Error AuthenticationFailure.PrincipalUnauthenticated
         | Some identity ->
-            match clientIdentity identity, optionalClaim "sub" identity with
-            | Ok client, Ok(Some subject) when client = cliClient -> human issuer subject
-            | Ok client, Ok _ when client <> cliClient -> service issuer client
-            | _ -> Error AuthenticationFailure.PrincipalInvalid
+            let admitted =
+                match clientIdentity identity, optionalClaim "sub" identity with
+                | Ok client, Ok(Some subject) when client = cliClient -> human issuer subject
+                | Ok client, Ok _ when client <> cliClient -> service issuer client
+                | _ -> Error AuthenticationFailure.PrincipalInvalid
+
+            admitted |> Result.map (AuthenticatedPrincipals.withClaims (claims identity))

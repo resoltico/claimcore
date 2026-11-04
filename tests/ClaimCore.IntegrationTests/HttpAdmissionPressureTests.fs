@@ -61,6 +61,17 @@ type private StoreProbe(storage: IStore) =
     member _.CancelledReads = tokens |> Seq.filter _.IsCancellationRequested |> Seq.length
 
     interface IStore with
+        member _.Context query =
+            if ignoreCancellation then
+                tokens.Add query.CancellationToken
+
+                storage.Context
+                    { query with
+                        CancellationToken = CancellationToken.None
+                    }
+            else
+                storage.Context query
+
         member _.Read operation =
             if ignoreCancellation then
                 tokens.Add operation.CancellationToken

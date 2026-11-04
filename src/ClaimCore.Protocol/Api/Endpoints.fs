@@ -223,7 +223,7 @@ module Api =
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
             HttpMethod.Post
             RequestCodecs.empty
-            (ReplyCodecs.readReply "ContextReply" ResponseCodecs.actorContext)
+            (ReplyCodecs.readReply "ContextReply" ResponseCodecs.contextReply)
 
     let caseViews =
         read

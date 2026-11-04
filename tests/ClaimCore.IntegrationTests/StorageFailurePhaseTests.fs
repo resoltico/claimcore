@@ -271,8 +271,9 @@ let private globalFactsIntegrity (database: PostgresFixture.Database) =
         let! initial = Service.context owner () token
 
         match initial with
-        | Outcome.Succeeded context ->
-            Expect.isFalse context.Maintenance.Active "Positive ordinary mode"
+        | Outcome.Succeeded {
+                                Requester = RequesterState.Active context
+                            } -> Expect.isFalse context.Maintenance.Active "Positive ordinary mode"
         | other -> failtestf "Expected context: %A" other
 
         do! sql database "DELETE FROM claimcore.register_maintenance" [||]
@@ -316,7 +317,9 @@ let private globalFactsIntegrity (database: PostgresFixture.Database) =
         let! repaired = Service.context owner () token
 
         match repaired with
-        | Outcome.Succeeded context ->
+        | Outcome.Succeeded {
+                                Requester = RequesterState.Active context
+                            } ->
             Expect.isFalse
                 context.Maintenance.Active
                 "Restored constraints and single valid owner remain readable"

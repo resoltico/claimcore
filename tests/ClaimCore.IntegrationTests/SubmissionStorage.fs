@@ -7,6 +7,8 @@ open ClaimCore.Protocol
 
 let private interceptWrites (store: IStore) intercept =
     { new IStore with
+        member _.Context query = store.Context query
+
         member _.Read
             ({
                  ReadOperation.Work = work

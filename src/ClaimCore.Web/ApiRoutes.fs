@@ -187,6 +187,11 @@ module internal ApiRoutes =
                             else
                                 let! result =
                                     withActor (AuthenticatedPrincipals.key principal) (fun core ->
+                                        let core =
+                                            Service.withClaims
+                                                (AuthenticatedPrincipals.claims principal)
+                                                core
+
                                         task {
                                             if
                                                 Api.requiresInstallation endpoint

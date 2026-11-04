@@ -43,7 +43,9 @@ let private self owner =
         let! result = Service.context owner () token
 
         match result with
-        | Outcome.Succeeded context -> return context.Self
+        | Outcome.Succeeded {
+                                Requester = RequesterState.Active context
+                            } -> return context.Self
         | other -> return failtestf "Owner context failed: %A" other
     }
 

@@ -119,6 +119,7 @@ let internal passiveStatusAndRolelessAuthorship fixture =
 
         let readOnly =
             { new IStore with
+                member _.Context query = fixture.Store.Context query
                 member _.Read operation = fixture.Store.Read operation
 
                 member _.Write _ =

@@ -493,5 +493,13 @@
   "view.VOIDED.label": "Voided",
   "workAct.UPDATE_WORK.label": "Update case work",
   "workChange.CLEAR.label": "Clear",
-  "workChange.SET.label": "Set"
+  "workChange.SET.label": "Set",
+  "requesterState.ACTIVE.label": "Access granted",
+  "requesterState.ACTIVE.meaning": "The account is enabled and has access roles.",
+  "requesterState.NO_ROLES.label": "No roles assigned",
+  "requesterState.NO_ROLES.meaning": "This account has no access roles. Ask an owner to grant access.",
+  "requesterState.DISABLED.label": "Account disabled",
+  "requesterState.DISABLED.meaning": "This account has been disabled. Ask an owner to enable access.",
+  "requesterState.NOT_REGISTERED.label": "Access requested",
+  "requesterState.NOT_REGISTERED.meaning": "An owner needs to admit this account before it can access ClaimCore."
 }

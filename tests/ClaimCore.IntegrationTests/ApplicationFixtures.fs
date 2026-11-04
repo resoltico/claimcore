@@ -48,6 +48,8 @@ type AfterCaseWriteStore(inner: IStore, afterWrite: unit -> Task<unit>) =
     member _.ReadCalls = reads
 
     interface IStore with
+        member _.Context query = inner.Context query
+
         member _.Read
             ({
                  ReadOperation.Work = work

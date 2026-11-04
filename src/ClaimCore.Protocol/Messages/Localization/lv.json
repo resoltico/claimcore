@@ -493,5 +493,13 @@
   "view.VOIDED.label": "Anulētas",
   "workAct.UPDATE_WORK.label": "Mainīt lietas darbu",
   "workChange.CLEAR.label": "Noņemt",
-  "workChange.SET.label": "Norādīt"
+  "workChange.SET.label": "Norādīt",
+  "requesterState.ACTIVE.label": "Piekļuve piešķirta",
+  "requesterState.ACTIVE.meaning": "Konts ir iespējots, un tam ir piekļuves lomas.",
+  "requesterState.NO_ROLES.label": "Nav piešķirtu lomu",
+  "requesterState.NO_ROLES.meaning": "Šim kontam nav piekļuves lomu. Lūdziet īpašniekam piešķirt piekļuvi.",
+  "requesterState.DISABLED.label": "Konts atspējots",
+  "requesterState.DISABLED.meaning": "Šis konts ir atspējots. Lūdziet īpašniekam iespējot piekļuvi.",
+  "requesterState.NOT_REGISTERED.label": "Piekļuve pieprasīta",
+  "requesterState.NOT_REGISTERED.meaning": "Īpašniekam jāuzņem šis konts, pirms tas var piekļūt ClaimCore."
 }

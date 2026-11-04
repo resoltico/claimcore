@@ -93,6 +93,7 @@ module Terms =
             rendered Role.vocabulary
             rendered PrincipalKind.vocabulary
             rendered ActorAvailability.vocabulary
+            rendered RequesterKind.vocabulary
             rendered CorrectionGroupAction.vocabulary
             rendered ScopeKind.vocabulary
             rendered ActKind.vocabulary
