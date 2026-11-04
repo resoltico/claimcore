@@ -117,6 +117,7 @@ module CaseAdvice =
 
 type ActorContext =
     {
+        Self: ActorRef
         Maintenance: RegisterMaintenance
         InstallationId: Guid
         ActorId: ActorId

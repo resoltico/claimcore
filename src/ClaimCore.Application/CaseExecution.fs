@@ -123,7 +123,11 @@ module internal CaseExecution =
                     Bytes = bytes
                     Existing = view.ExistingOperation
                 }
-                (LedgerEntries.receiptOperation principal view.Actor (ReceiptCurrent.Case view.Case))
+                (LedgerEntries.receiptOperation
+                    principal
+                    view.Actor
+                    (view.Actor.Actor |> Option.map Actor.currentReference)
+                    (ReceiptCurrent.Case view.Case))
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
         try

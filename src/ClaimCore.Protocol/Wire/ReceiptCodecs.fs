@@ -197,7 +197,7 @@ module ReceiptCodecs =
         |> field "operationId" _.OperationId operationId
         |> field "position" _.Position ResponseCodecs.position
         |> field "recordedAt" _.RecordedAt Codec.instant
-        |> field "recordedBy" _.RecordedBy actorId
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "subject" _.Subject subjectCodec
         |> build
 

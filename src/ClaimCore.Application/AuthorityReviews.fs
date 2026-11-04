@@ -3,37 +3,44 @@ namespace ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-/// Review display is derived from an already-admitted projection; it decides no authority rules.
+/// Reviews describe admitted domain changes, independently of physical effect sequencing.
 module internal AuthorityReviews =
-    let private grant role caseId (view: AuthorityExecutionFacts) =
-        let scope, roles =
-            match caseId with
-            | None -> GrantScope.Installation, view.Target.Installation
-            | Some id ->
-                let record = view.TargetCase |> Option.get
+    let describe (view: AuthorityExecutionFacts) (proposal: AuthorityProposal) =
+        let profile = view.Target.Actor |> Option.bind _.Profile
 
-                GrantScope.Case(record.CaseId, record.Snapshot.Reference),
-                (view.Target.Cases |> Map.tryFind id |> Option.defaultValue [])
-
-        let value: ScopedGrant = { Role = role; Scope = scope }
-        value, (if List.contains role roles then [ value ] else [])
-
-    let describe (view: AuthorityExecutionFacts) projection =
         let before: AuthorityState =
             {
                 Enabled = view.Target.Actor |> Option.exists _.Enabled
+                Profile = profile
                 Grants = []
                 Access = []
             }
 
+        let resource, scope =
+            match proposal.Change with
+            | AuthorityChange.Granted(_, Scope.Case id)
+            | AuthorityChange.Revoked(_, Scope.Case id) ->
+                let record =
+                    view.TargetCase
+                    |> Option.defaultWith (fun () ->
+                        invalidOp "A scoped authority proposal requires its case.")
+
+                Scope.Case id, GrantScope.Case(id, record.Snapshot.Reference)
+            | _ -> Scope.Installation, GrantScope.Installation
+
         let before, after =
-            match projection with
-            | AuthorityProjection.Register _ -> before, { before with Enabled = true }
-            | AuthorityProjection.ProvisionOwner _ ->
+            match proposal.Change with
+            | AuthorityChange.Registered profile ->
                 before,
-                {
+                { before with
                     Enabled = true
-                    Access = []
+                    Profile = Some profile
+                }
+            | AuthorityChange.OwnerProvisioned profile ->
+                before,
+                { before with
+                    Enabled = true
+                    Profile = Some profile
                     Grants =
                         [
                             {
@@ -42,74 +49,102 @@ module internal AuthorityReviews =
                             }
                         ]
                 }
-            | AuthorityProjection.SetEnabled(_, enabled) ->
-                before, { before with Enabled = enabled }
-            | AuthorityProjection.AddGrant(_, role, caseId) ->
-                let value, current = grant role caseId view
-                { before with Grants = current }, { before with Grants = [ value ] }
-            | AuthorityProjection.RemoveGrant(_, role, caseId) ->
-                let _, current = grant role caseId view
-                { before with Grants = current }, before
+            | AuthorityChange.ProfileSet profile -> before, { before with Profile = Some profile }
+            | AuthorityChange.ProfileErased -> before, { before with Profile = None }
+            | AuthorityChange.Enabled -> before, { before with Enabled = true }
+            | AuthorityChange.Disabled -> before, { before with Enabled = false }
+            | AuthorityChange.Granted(role, _)
+            | AuthorityChange.Revoked(role, _) ->
+                let roles =
+                    match resource with
+                    | Scope.Installation -> view.Target.Installation
+                    | Scope.Case id -> Map.tryFind id view.Target.Cases |> Option.defaultValue []
 
-        let resource, scope =
-            match projection with
-            | AuthorityProjection.AddGrant(_, _, Some id)
-            | AuthorityProjection.RemoveGrant(_, _, Some id) ->
-                let record = view.TargetCase |> Option.get
-                Scope.Case id, GrantScope.Case(id, record.Snapshot.Reference)
-            | _ -> Scope.Installation, GrantScope.Installation
+                let grant =
+                    {
+                        ScopedGrant.Role = role
+                        Scope = scope
+                    }
+
+                let before =
+                    { before with
+                        Grants = (if List.contains role roles then [ grant ] else [])
+                    }
+
+                let grants =
+                    match proposal.Change with
+                    | AuthorityChange.Granted _ -> [ grant ]
+                    | _ -> []
+
+                before, { before with Grants = grants }
 
         let proposed =
-            match projection with
-            | AuthorityProjection.Register(id, principal)
-            | AuthorityProjection.ProvisionOwner(id, principal) ->
+            match proposal.Change with
+            | AuthorityChange.Registered profile
+            | AuthorityChange.OwnerProvisioned profile ->
+                let grants =
+                    match proposal.Change with
+                    | AuthorityChange.OwnerProvisioned _ ->
+                        [
+                            {
+                                ActorGrant.Role = Role.Owner
+                                Scope = Scope.Installation
+                            }
+                        ]
+                    | _ -> []
+
                 AuthorityView.ofActor (
                     Some
                         {
                             Actor =
                                 {
-                                    ActorId = id
-                                    Principal = principal
+                                    ActorId = proposal.TargetActorId
+                                    Principal = proposal.Principal
                                     Enabled = true
-                                    Profile = None
+                                    Profile = Some profile
                                 }
-                            Grants =
-                                match projection with
-                                | AuthorityProjection.ProvisionOwner _ ->
-                                    [
-                                        {
-                                            Role = Role.Owner
-                                            Scope = Scope.Installation
-                                        }
-                                    ]
-                                | _ -> []
+                            Grants = grants
                         }
                 )
-            | AuthorityProjection.SetEnabled(_, enabled) ->
+            | AuthorityChange.ProfileSet profile ->
                 { view.Target with
                     Actor =
                         view.Target.Actor
-                        |> Option.map (fun actor -> { actor with Enabled = enabled })
+                        |> Option.map (fun actor -> { actor with Profile = Some profile })
                 }
-            | AuthorityProjection.AddGrant(_, role, caseId)
-            | AuthorityProjection.RemoveGrant(_, role, caseId) ->
+            | AuthorityChange.ProfileErased ->
+                { view.Target with
+                    Actor =
+                        view.Target.Actor |> Option.map (fun actor -> { actor with Profile = None })
+                }
+            | AuthorityChange.Enabled
+            | AuthorityChange.Disabled ->
+                { view.Target with
+                    Actor =
+                        view.Target.Actor
+                        |> Option.map (fun actor -> { actor with Enabled = after.Enabled })
+                }
+            | AuthorityChange.Granted(role, _)
+            | AuthorityChange.Revoked(role, _) ->
                 let update roles =
-                    match projection with
-                    | AuthorityProjection.AddGrant _ ->
-                        if List.contains role roles then roles else roles @ [ role ]
-                    | _ -> roles |> List.filter ((<>) role)
+                    match proposal.Change with
+                    | AuthorityChange.Granted _ -> role :: (List.filter ((<>) role) roles)
+                    | _ -> List.filter ((<>) role) roles
 
-                match caseId with
-                | None ->
+                match resource with
+                | Scope.Installation ->
                     { view.Target with
                         Installation = update view.Target.Installation
                     }
-                | Some id ->
-                    let roles =
-                        view.Target.Cases |> Map.tryFind id |> Option.defaultValue [] |> update
-
+                | Scope.Case id ->
                     { view.Target with
-                        Cases = Map.add id roles view.Target.Cases
+                        Cases =
+                            Map.add
+                                id
+                                (Map.tryFind id view.Target.Cases
+                                 |> Option.defaultValue []
+                                 |> update)
+                                view.Target.Cases
                     }
 
         let access (target: AuthorityView) =
@@ -118,7 +153,7 @@ module internal AuthorityReviews =
             |> Option.defaultValue []
 
         {
-            Target = view.Target.Actor
+            Target = view.Target.Actor |> Option.map ActorReviewItem.ofActor
             AccessScope = scope
             Before =
                 { before with

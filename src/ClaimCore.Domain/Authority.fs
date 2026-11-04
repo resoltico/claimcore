@@ -3,7 +3,7 @@ namespace ClaimCore.Domain
 open System
 open ClaimCore.Domain.ResultFlow
 
-type ValidAuthorityAct = AuthorityAct<AuthoredGrant>
+type ValidAuthorityAct = AuthorityAct<AuthoredGrant, ActorProfile>
 
 type AuthorityCommand =
     private
@@ -19,12 +19,14 @@ type AuthorityCommand =
 
 [<RequireQualifiedAccess>]
 type AuthorityChange =
-    | Registered
-    | OwnerProvisioned
+    | Registered of ActorProfile
+    | OwnerProvisioned of ActorProfile
     | Granted of Role * Scope
     | Revoked of Role * Scope
     | Enabled
     | Disabled
+    | ProfileSet of ActorProfile
+    | ProfileErased
 
 [<RequireQualifiedAccess>]
 type AuthorityFact =
@@ -53,7 +55,7 @@ module Authority =
     /// Only these acts need installation-wide protection facts; callers load them in the action snapshot.
     let factsNeeded (act: ValidAuthorityAct) =
         match act with
-        | AuthorityAct.ProvisionOwner -> [ AuthorityFact.ActorCount ]
+        | AuthorityAct.ProvisionOwner _ -> [ AuthorityFact.ActorCount ]
         | AuthorityAct.Disable
         | AuthorityAct.Revoke {
                                   Role = Role.Owner
@@ -298,42 +300,59 @@ module Authority =
                 Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
         | _ -> Ok()
 
-    let private command operationId target act =
-        Admission.map2
-            (fun identity () ->
+    let private admitProfile input =
+        ActorProfile.parse input
+        |> Result.mapError (fun issues ->
+            issues
+            |> List.map (fun (field, violation) ->
                 {
-                    Id = identity
-                    Principal = target
-                    Action = act
+                    InputIssue.Target =
+                        (match field with
+                         | ActorProfileField.DisplayName -> InputTarget.ProfileDisplayName
+                         | ActorProfileField.Contact -> InputTarget.ProfileContact)
+                    Violation = violation
+                    RelatedDate = None
                 })
-            (operationIdentity operationId)
-            (scopeReference act)
-
-    /// Restores structurally parsed permanent inputs without current authorization decisions.
-    let restore operationId target (act: ValidAuthorityAct) = command operationId target act
+            |> InputIssues.ofList
+            |> Option.defaultWith (fun () -> invalidOp "Profile errors are nonempty.")
+            |> Refusal.InvalidInput)
 
     let parse (request: AuthorityRequest) =
         match request.Act with
-        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        | AuthorityAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | act ->
-            Admission.map2
-                (fun (identity, target) () ->
-                    {
-                        Id = identity
-                        Principal = target
-                        Action = act
-                    })
-                (Admission.map2
-                    (fun identity target -> identity, target)
+            let action = AuthorityAct.traverse Ok admitProfile act
+
+            let identity =
+                Admission.map2
+                    (fun operation principal -> operation, principal)
                     (operationIdentity request.OperationId)
                     (PrincipalKey.ofKind
                         request.Target.Kind
                         request.Target.Issuer
-                        request.Target.Subject))
-                (scopeReference act)
+                        request.Target.Subject)
 
-    let provision operationId target =
-        command operationId target AuthorityAct.ProvisionOwner
+            Admission.map2
+                (fun (id, principal) act ->
+                    {
+                        Id = id
+                        Principal = principal
+                        Action = act
+                    })
+                identity
+                action
+            |> fun result -> Admission.map2 (fun value () -> value) result (scopeReference act)
+
+    let provision operationId target profile =
+        Admission.map2
+            (fun id profile ->
+                {
+                    Id = id
+                    Principal = target
+                    Action = AuthorityAct.ProvisionOwner profile
+                })
+            (operationIdentity operationId)
+            (admitProfile profile)
 
     let private owner (actor: ActorAuthority) =
         actor.Enabled
@@ -386,23 +405,27 @@ module Authority =
             grantChange facts active role scope actor |> Result.mapError Refusal.Authority)
 
 
+    let private disableChange facts actor =
+        if owner actor && required "enabled human owners" facts.EnabledHumanOwners <= 1 then
+            Error(Refusal.Authority AuthorityRefusal.LastOwner)
+        else
+            Ok AuthorityChange.Disabled
+
     let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
         match command.Act, facts.TargetActor with
-        | AuthorityAct.ProvisionOwner, _ when not (PrincipalKey.isHuman command.Target) ->
+        | AuthorityAct.ProvisionOwner _, _ when not (PrincipalKey.isHuman command.Target) ->
             Error(Refusal.Authority AuthorityRefusal.HumanPrincipalRequired)
-        | AuthorityAct.ProvisionOwner, None when required "actor count" facts.ActorCount = 0 ->
-            Ok AuthorityChange.OwnerProvisioned
-        | AuthorityAct.ProvisionOwner, _
-        | AuthorityAct.Register, Some _ ->
+        | AuthorityAct.ProvisionOwner profile, None when required "actor count" facts.ActorCount = 0 ->
+            Ok(AuthorityChange.OwnerProvisioned profile)
+        | AuthorityAct.ProvisionOwner _, _
+        | AuthorityAct.Register _, Some _ ->
             Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
-        | AuthorityAct.Register, None -> Ok AuthorityChange.Registered
+        | AuthorityAct.Register profile, None -> Ok(AuthorityChange.Registered profile)
         | _, None -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
-        | AuthorityAct.Disable, Some actor when
-            owner actor && required "enabled human owners" facts.EnabledHumanOwners <= 1
-            ->
-            Error(Refusal.Authority AuthorityRefusal.LastOwner)
+        | AuthorityAct.SetProfile profile, Some _ -> Ok(AuthorityChange.ProfileSet profile)
+        | AuthorityAct.EraseProfile, Some _ -> Ok AuthorityChange.ProfileErased
         | AuthorityAct.Enable, Some _ -> Ok AuthorityChange.Enabled
-        | AuthorityAct.Disable, Some _ -> Ok AuthorityChange.Disabled
+        | AuthorityAct.Disable, Some actor -> disableChange facts actor
         | AuthorityAct.Grant { Role = role; Scope = target }, Some actor ->
             scopedChange facts true role target actor
         | AuthorityAct.Revoke { Role = role; Scope = target }, Some actor ->
@@ -411,7 +434,7 @@ module Authority =
     let decide (facts: AuthorityFacts) (command: AuthorityCommand) =
         let permitted =
             match command.Act, facts.Requester.Actor with
-            | AuthorityAct.ProvisionOwner, _ -> true
+            | AuthorityAct.ProvisionOwner _, _ -> true
             | _, Some actor ->
                 can actor.Principal facts.Requester Capability.ManageAuthority Scope.Installation
             | _, None -> false

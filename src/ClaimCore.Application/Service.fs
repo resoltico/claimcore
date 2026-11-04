@@ -174,8 +174,8 @@ module Service =
                         CancellationToken = ct
                     })
             (AuthorityExecution.review services)
-            (fun _ (view: AuthorityExecutionFacts) (_, projection) ->
-                AuthorityReviews.describe view projection |> OperationReview.Authority)
+            (fun _ (view: AuthorityExecutionFacts) proposal ->
+                AuthorityReviews.describe view proposal |> OperationReview.Authority)
 
     let preview (services: ServiceContext) input ct =
         task {
@@ -282,5 +282,5 @@ module Service =
     let grants = Queries.grants
     let authorityHistory = Queries.authorityHistory
 
-    let provisionOwner services operationId token =
-        AuthorityExecution.provisionStore services operationId token
+    let provisionOwner services operationId profile token =
+        AuthorityExecution.provisionStore services operationId profile token

@@ -7,6 +7,7 @@ open System
 
 type AuthorityState =
     {
+        Profile: ActorProfile option
         Enabled: bool
         Grants: ScopedGrant list
         Access: CapabilityAccess list
@@ -14,7 +15,7 @@ type AuthorityState =
 
 type AuthorityReview =
     {
-        Target: Actor option
+        Target: ActorReviewItem option
         AccessScope: GrantScope
         Before: AuthorityState
         After: AuthorityState

@@ -29,7 +29,7 @@ existing database, configuration directory or volume.
 
 ```sh
 claimcore_config="$HOME/claimcore-first-run-config"
-bash deployment/configure-local.sh "$claimcore_config" Etc/UTC 7443 7444
+bash deployment/configure-local.sh "$claimcore_config" "Evaluation owner" Etc/UTC 7443 7444
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml up --build -d
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```

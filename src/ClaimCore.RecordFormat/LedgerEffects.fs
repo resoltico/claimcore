@@ -20,18 +20,26 @@ module LedgerEffects =
     let count value = value.Count
     let authorityOperation value = value.AuthorityOperation
 
-    let create operation count index =
-        let supported =
-            match operation with
-            | None -> count = 1
-            | Some AuthorityKind.Register
-            | Some AuthorityKind.ProvisionOwner -> true
-            | Some AuthorityKind.Grant
-            | Some AuthorityKind.Revoke
-            | Some AuthorityKind.Enable
-            | Some AuthorityKind.Disable -> count = 1
+    let private supportedCount operation count =
+        match operation with
+        | None -> count = 1
+        | Some AuthorityKind.Register
+        | Some AuthorityKind.ProvisionOwner -> count = 2
+        | Some AuthorityKind.Grant
+        | Some AuthorityKind.Revoke
+        | Some AuthorityKind.Enable
+        | Some AuthorityKind.Disable
+        | Some AuthorityKind.SetProfile
+        | Some AuthorityKind.EraseProfile -> count = 1
 
-        if supported && count >= 1 && count <= MaximumCount && index >= 0 && index < count then
+    let create operation count index =
+        if
+            supportedCount operation count
+            && count >= 1
+            && count <= MaximumCount
+            && index >= 0
+            && index < count
+        then
             Some
                 {
                     Index = index
@@ -54,5 +62,20 @@ module LedgerEffects =
             invalidArg (nameof count) "Invalid authority effect group.")
 
     let describesAuthority act value =
-        value.AuthorityOperation
-        |> Option.exists (fun operation -> value.Count > 1 || operation = act)
+        match value.AuthorityOperation with
+        | Some AuthorityKind.Register ->
+            value.Count = 2
+            && act =
+                (if value.Index = 0 then
+                     AuthorityKind.Register
+                 else
+                     AuthorityKind.SetProfile)
+        | Some AuthorityKind.ProvisionOwner ->
+            value.Count = 2
+            && act =
+                (if value.Index = 0 then
+                     AuthorityKind.ProvisionOwner
+                 else
+                     AuthorityKind.SetProfile)
+        | Some operation -> value.Count = 1 && value.Index = 0 && operation = act
+        | None -> false

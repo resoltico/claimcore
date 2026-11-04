@@ -291,34 +291,7 @@ module internal RecordCodecs =
                      |> field DurableNames.CaseReference snd reference)
             ]
 
-    let private authorityVariantsWith role scope =
-        let grant =
-            record (fun role scope -> { Grant.Role = role; Scope = scope })
-            |> field DurableNames.Role _.Role role
-            |> field DurableNames.Scope _.Scope scope
-
-        [
-            unitVariant "REGISTER" AuthorityAct.Register
-            variant
-                "GRANT"
-                AuthorityAct.Grant
-                (function
-                | AuthorityAct.Grant value -> Some value
-                | _ -> None)
-                grant
-            variant
-                "REVOKE"
-                AuthorityAct.Revoke
-                (function
-                | AuthorityAct.Revoke value -> Some value
-                | _ -> None)
-                grant
-            unitVariant "ENABLE" AuthorityAct.Enable
-            unitVariant "DISABLE" AuthorityAct.Disable
-        ]
-
     let role = enumeration DurableNames.roleEntries
-    let authorityVariants role = authorityVariantsWith role scope
 
     let caseOperation =
         let version = int64 RecordVersions.CaseRequest

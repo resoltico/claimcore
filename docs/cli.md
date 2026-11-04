@@ -297,10 +297,10 @@ claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N
 
 Register actor
 
-Register a principal without granting case or administration capabilities.
+Register an account with an authored display name and optional contact details, without granting case or administration capabilities.
 
 ```sh
-claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --profile.display-name VALUE [--profile.contact VALUE] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -309,6 +309,8 @@ claimcore authority register [--operation-id VALUE] --principal-kind human|servi
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+| `--profile.display-name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
+| `--profile.contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
 
 ## authority grant
 
@@ -373,6 +375,42 @@ Disable a registered actor. The final enabled human owner remains protected.
 
 ```sh
 claimcore authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+
+## authority set-profile
+
+Update profile
+
+Record a display name and optional contact details for an account. This does not change its identity or access permissions.
+
+```sh
+claimcore authority set-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --profile.display-name VALUE [--profile.contact VALUE] [--clear-profile.contact] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+| `--profile.display-name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
+| `--profile.contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+
+## authority erase-profile
+
+Erase profile
+
+Permanently remove the saved display name and contact details for this account. Its identity, access permissions and recorded work remain.
+
+```sh
+claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |

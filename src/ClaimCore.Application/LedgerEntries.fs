@@ -11,10 +11,11 @@ open ClaimCore.RecordFormat
 type internal EntryContent =
     | NonAcceptance
     | Case of request: CaseCommand * snapshot: CaseSnapshot option
-    | Authority of AuthorityRequestRecord
+    | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
     | Reminder of ReminderRequestRecord * ReminderEffects
     | ErasedCase
+    | ErasedProfile
 
 [<NoComparison>]
 type internal ValidatedEntry =
@@ -330,8 +331,8 @@ module LedgerEntries =
         match AuthorityRecord.decode RecordLimits.MaximumRequestRecordBytes data.Request with
         | Ok request when
             request.OperationId = OperationId.value entry.OperationId
-            && AuthorityAct.kind request.Act = act
-            && AuthorityRequests.validRecord request
+            && AuthorityEffect.kind request.Effect = act
+            && request.TargetActorId = target
             && Array.isEmpty data.Snapshot
             ->
             let identity =
@@ -394,6 +395,8 @@ module LedgerEntries =
                 match entry.Subject, entry.Payload, entry.PayloadNonce with
                 | (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _), None, None ->
                     Ok EntryContent.ErasedCase
+                | EntryTarget.Authority(_, AuthorityKind.SetProfile), None, None ->
+                    Ok EntryContent.ErasedProfile
                 | _ ->
                     payload entry
                     |> Result.bind (fun data ->
@@ -434,31 +437,56 @@ module LedgerEntries =
                 ValidatedEntries = List.rev reversed
             })
 
+    let private authorityEffectFacts effect =
+        let principal (input: PrincipalInput) =
+            PrincipalKey.ofKind input.Kind input.Issuer input.Subject
+            |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
+
+        match effect with
+        | AuthorityEffect.Register input ->
+            principal input |> Result.map AuthorityHistoryFacts.Registered
+        | AuthorityEffect.ProvisionOwner input ->
+            principal input |> Result.map AuthorityHistoryFacts.OwnerProvisioned
+        | AuthorityEffect.SetProfile profile -> Ok(AuthorityHistoryFacts.ProfileSet(Some profile))
+        | AuthorityEffect.EraseProfile -> Ok AuthorityHistoryFacts.ProfileErased
+        | AuthorityEffect.Enable -> Ok AuthorityHistoryFacts.Enabled
+        | AuthorityEffect.Disable -> Ok AuthorityHistoryFacts.Disabled
+        | AuthorityEffect.Grant grant ->
+            Ok(AuthorityHistoryFacts.Granted(AuthorityRequests.display grant))
+        | AuthorityEffect.Revoke grant ->
+            Ok(AuthorityHistoryFacts.Revoked(AuthorityRequests.display grant))
+
+    let private authorityHistoryFacts act content =
+        match content with
+        | EntryContent.ErasedProfile when act = AuthorityKind.SetProfile ->
+            Ok(AuthorityHistoryFacts.ProfileSet None)
+        | EntryContent.Authority record -> authorityEffectFacts record.Effect
+        | _ -> Error CoreFault.StoreIntegrityError
+
     /// Only a validated authority payload can supply typed audit facts.
-    let internal authorityHistory (validated: ValidatedEntry) =
+    let internal authorityHistory (actors: Map<ActorId, ActorRef>) (validated: ValidatedEntry) =
         let entry = validated.Entry
 
         match entry.Subject, validated.Content with
-        | EntryTarget.Authority(target, act), EntryContent.Authority request ->
-            AuthorityRequests.fromRecord request
-            |> Result.mapError (fun _ -> CoreFault.StoreIntegrityError)
-            |> Result.bind (fun command ->
-                let facts =
-                    AuthorityHistoryFacts.ofAct
-                        command.Target
-                        (AuthorityAct.map AuthorityRequests.display request.Act)
-
+        | EntryTarget.Authority(target, act), content ->
+            authorityHistoryFacts act content
+            |> Result.bind (fun facts ->
                 if AuthorityHistoryFacts.kind facts <> act then
                     Error CoreFault.StoreIntegrityError
                 else
-                    Ok
-                        {
-                            AuthorityHistoryEntry.Sequence = entry.Sequence
-                            RecordedAt = entry.RecordedAt
-                            RecordedBy = entry.ActorId
-                            TargetActorId = target
-                            Facts = facts
-                        })
+                    match Map.tryFind entry.ActorId actors, Map.tryFind target actors with
+                    | Some author, Some targetRef when
+                        author.ActorId = entry.ActorId && targetRef.ActorId = target
+                        ->
+                        Ok
+                            {
+                                AuthorityHistoryEntry.Sequence = entry.Sequence
+                                RecordedAt = entry.RecordedAt
+                                RecordedBy = author
+                                Target = targetRef
+                                Facts = facts
+                            }
+                    | _ -> Error CoreFault.StoreIntegrityError)
         | _ -> Error CoreFault.StoreIntegrityError
 
     /// Comparison bytes are canonical; retained ledger payloads remain authored.
@@ -473,6 +501,7 @@ module LedgerEntries =
         | EntryContent.Authority request ->
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase
+        | EntryContent.ErasedProfile
         | EntryContent.NonAcceptance -> None
 
     /// Canonical request bytes exist only while every required effect payload remains available.
@@ -694,41 +723,50 @@ module LedgerEntries =
                     })
         | _ -> Error CoreFault.StoreIntegrityError
 
-    let internal receipt principal actor current (validated: ValidatedEntry) =
+    let internal receipt
+        principal
+        actor
+        (recordedBy: ActorRef option)
+        current
+        (validated: ValidatedEntry)
+        =
         let entry = validated.Entry
 
         let subject =
-            match entry.Subject, validated.Content with
-            | EntryTarget.Case _, _ ->
-                match current with
-                | ReceiptCurrent.Case record -> caseReceipt principal actor record validated
-                | _ -> Error CoreFault.StoreIntegrityError
-            | EntryTarget.Work subject, content ->
-                match current with
-                | ReceiptCurrent.Work(parent, work) ->
-                    workReceipt principal actor parent work subject content
-                | _ -> Error CoreFault.StoreIntegrityError
-            | EntryTarget.Reminder subject, content ->
-                match current with
-                | ReceiptCurrent.Reminder(parent, reminders) ->
-                    reminderReceipt principal actor parent reminders subject content
-                | _ -> Error CoreFault.StoreIntegrityError
-            | EntryTarget.Authority(target, act), EntryContent.Authority _ ->
-                Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
+            match entry.Subject, validated.Content, current with
+            | EntryTarget.Case _, _, ReceiptCurrent.Case record ->
+                caseReceipt principal actor record validated
+            | EntryTarget.Work subject, content, ReceiptCurrent.Work(parent, work) ->
+                workReceipt principal actor parent work subject content
+            | EntryTarget.Reminder subject, content, ReceiptCurrent.Reminder(parent, reminders) ->
+                reminderReceipt principal actor parent reminders subject content
+            | EntryTarget.Authority(target, act),
+              (EntryContent.Authority _ | EntryContent.ErasedProfile),
+              _ -> Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
             | _ -> Error CoreFault.StoreIntegrityError
 
         subject
-        |> Result.map (fun subject ->
-            {
-                OperationId = entry.OperationId
-                Position = position entry.Sequence entry.EntryHash
-                Subject = subject
-                RecordedAt = entry.RecordedAt
-                RecordedBy = entry.ActorId
-            })
+        |> Result.bind (fun subject ->
+            match recordedBy with
+            | Some author when author.ActorId = entry.ActorId ->
+                Ok
+                    {
+                        OperationId = entry.OperationId
+                        Position = position entry.Sequence entry.EntryHash
+                        Subject = subject
+                        RecordedAt = entry.RecordedAt
+                        RecordedBy = author
+                    }
+            | _ -> Error CoreFault.StoreIntegrityError)
 
-    let internal receiptOperation principal actor current (operation: ValidatedOperation) =
-        receipt principal actor current (List.head operation.ValidatedEntries)
+    let internal receiptOperation
+        principal
+        actor
+        recordedBy
+        current
+        (operation: ValidatedOperation)
+        =
+        receipt principal actor recordedBy current (List.head operation.ValidatedEntries)
         |> Result.map (fun receipt ->
             let subject =
                 match

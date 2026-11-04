@@ -61,7 +61,9 @@ module internal AuthorityQueries =
                                                 return
                                                     Outcome.Succeeded
                                                         {
-                                                            ActorReviewPage.Items = page.Items
+                                                            ActorReviewPage.Items =
+                                                                page.Items
+                                                                |> List.map ActorReviewItem.ofActor
 
                                                             NextCursor =
                                                                 page.Next
@@ -154,7 +156,8 @@ module internal AuthorityQueries =
                                                     return
                                                         Outcome.Succeeded
                                                             {
-                                                                AuthorityGrantPage.Actor = target
+                                                                AuthorityGrantPage.Actor =
+                                                                    Actor.currentReference target
                                                                 Items = page.Items
                                                                 NextCursor =
                                                                     page.Next
@@ -192,6 +195,7 @@ module internal AuthorityQueries =
     let private historyEntries
         installation
         (query: AuthorityHistoryPageQuery)
+        actors
         (page: Page<StoredEntry, Sequence>)
         =
         let ordered =
@@ -210,10 +214,10 @@ module internal AuthorityQueries =
             page.Items
             |> List.map (fun entry ->
                 LedgerEntries.validate installation entry
-                |> Result.bind LedgerEntries.authorityHistory
+                |> Result.bind (LedgerEntries.authorityHistory actors)
                 |> Result.bind (fun value ->
                     if
-                        (query.TargetActorId |> Option.forall ((=) value.TargetActorId))
+                        (query.TargetActorId |> Option.forall ((=) value.Target.ActorId))
                         && (query.BeforeSequence
                             |> Option.forall (fun before -> value.Sequence < before))
                     then
@@ -261,8 +265,23 @@ module internal AuthorityQueries =
 
                                             let! page = tx.AuthorityHistoryPage query
 
+                                            let ids =
+                                                page.Items
+                                                |> List.collect (fun entry ->
+                                                    entry.ActorId
+                                                    :: (match entry.Subject with
+                                                        | EntryTarget.Authority(id, _) -> [ id ]
+                                                        | _ -> []))
+                                                |> List.distinct
+
+                                            let! actors = tx.ActorRefs ids
+
                                             return
-                                                historyEntries services.InstallationId query page
+                                                historyEntries
+                                                    services.InstallationId
+                                                    query
+                                                    actors
+                                                    page
                                                 |> Result.map (fun entries ->
                                                     {
                                                         AuthorityHistoryPage.Entries = entries

@@ -47,3 +47,19 @@ module internal Verdict =
 type IBusinessCalendar =
     abstract TimeZoneId: string
     abstract DateAt: instant: DateTimeOffset -> DateOnly
+
+
+type internal AuthorityProposal =
+    {
+        TargetActorId: ActorId
+        Principal: PrincipalKey
+        Change: AuthorityChange
+    }
+
+[<NoEquality; NoComparison>]
+type internal AuthorityWriteContext =
+    {
+        Head: LedgerPosition
+        NewPayloadNonce: unit -> byte array
+        Fenced: bool
+    }

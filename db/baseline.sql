@@ -87,9 +87,10 @@ CREATE TABLE claimcore.ledger (
     authority_operation text,
     CONSTRAINT ledger_operation_shape CHECK (
         (subject_kind = 'AUTHORITY' AND authority_operation IS NOT NULL AND authority_operation ~ '^[A-Z][A-Z_]{0,39}$'
-            AND (effect_count > 1 OR authority_operation = act)
-            AND (effect_count = 1 OR authority_operation IN ('REGISTER','PROVISION_OWNER','ADMIT')))
-        OR (subject_kind <> 'AUTHORITY' AND effect_index = 0 AND effect_count = 1 AND authority_operation IS NULL)
+         AND ((authority_operation IN ('REGISTER','PROVISION_OWNER') AND effect_count=2
+               AND ((effect_index=0 AND act=authority_operation) OR (effect_index=1 AND act='SET_PROFILE')))
+              OR (authority_operation NOT IN ('REGISTER','PROVISION_OWNER') AND effect_count=1 AND effect_index=0 AND act=authority_operation)))
+        OR (subject_kind <> 'AUTHORITY' AND effect_index=0 AND effect_count=1 AND authority_operation IS NULL)
     ),
     actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (
@@ -105,7 +106,8 @@ CREATE TABLE claimcore.ledger (
     -- SHA-256(payload_nonce || payload). Retained forever; reveals nothing once the nonce is gone.
     payload_commitment bytea NOT NULL CHECK (octet_length(payload_commitment) = 32),
     -- Length-framed canonical request and resulting snapshot (RecordFormat). Both columns become
-    -- NULL together when, and only when, the case is erased. Authority payloads are never erased.
+    -- NULL together after case erasure, or for SET_PROFILE effects after a later profile erasure.
+    -- Identity and grant payloads are retained; profile erasure never removes them.
     payload bytea,
     payload_nonce bytea,
     creation_reference text,
@@ -131,7 +133,7 @@ CREATE TABLE claimcore.ledger (
             AND parent_case_id IS NULL AND next_reminder_id IS NULL
             AND case_revision IS NULL
             AND business_date IS NULL
-            AND payload IS NOT NULL
+            AND (payload IS NOT NULL OR act='SET_PROFILE')
             AND act ~ '^[A-Z][A-Z_]{0,39}$')
     ),
     CONSTRAINT ledger_payload_shape CHECK (
@@ -154,7 +156,14 @@ DECLARE
     actual_count bigint;
     coherent boolean;
     nonce_count bigint;
+    live_nonce_count bigint;
 BEGIN
+    IF NEW.subject_kind='AUTHORITY' AND NEW.act='SET_PROFILE'
+       AND (SELECT payload IS NULL FROM claimcore.ledger WHERE sequence=NEW.sequence)
+       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
+                      AND erased.act='ERASE_PROFILE' AND erased.subject_id=NEW.subject_id AND erased.sequence>NEW.sequence) THEN
+        RAISE EXCEPTION 'profile payload has no later erasure' USING ERRCODE='CC004';
+    END IF;
     IF NEW.subject_kind = 'CONTROL' OR NEW.effect_count = 1 THEN RETURN NULL; END IF;
     SELECT * INTO root FROM claimcore.ledger
       WHERE operation_id = NEW.operation_id AND subject_kind <> 'CONTROL' AND effect_index = 0;
@@ -174,11 +183,11 @@ BEGIN
           AND actor_id=root.actor_id AND recorded_at=root.recorded_at
           AND sequence=root.sequence+effect_index
           AND (root.effect_count=1 OR (subject_kind='AUTHORITY' AND subject_id=root.subject_id
-              AND authority_operation=root.authority_operation))), count(DISTINCT payload_nonce)
-      INTO actual_count, coherent, nonce_count
+              AND authority_operation=root.authority_operation))), count(DISTINCT payload_nonce), count(payload_nonce)
+      INTO actual_count, coherent, nonce_count, live_nonce_count
       FROM claimcore.ledger WHERE operation_id=NEW.operation_id AND subject_kind<>'CONTROL';
     IF actual_count <> root.effect_count OR coherent IS NOT TRUE
-       OR (root.effect_count > 1 AND nonce_count <> root.effect_count) THEN
+       OR (nonce_count <> live_nonce_count) THEN
         RAISE EXCEPTION 'operation effects are incomplete or inconsistent' USING ERRCODE = 'CC004';
     END IF;
     RETURN NULL;
@@ -273,7 +282,10 @@ BEGIN
         RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
     END IF;
 
-    IF OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
+    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
+        AND NOT (OLD.subject_kind='AUTHORITY' AND OLD.act='SET_PROFILE'
+                 AND EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
+                            AND erased.act='ERASE_PROFILE' AND erased.subject_id=OLD.subject_id AND erased.sequence>OLD.sequence)))
        OR NEW.payload IS NOT NULL
        OR NEW.payload_nonce IS NOT NULL
        OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
@@ -284,7 +296,7 @@ BEGIN
            OLD.act, OLD.operation_id, OLD.effect_index, OLD.effect_count, OLD.authority_operation, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
            OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.parent_case_id, OLD.next_reminder_id, OLD.payload_commitment)
     THEN
-        RAISE EXCEPTION 'ledger rows change only by case erasure' USING ERRCODE = 'CC003';
+        RAISE EXCEPTION 'ledger rows change only by authorized payload erasure' USING ERRCODE = 'CC003';
     END IF;
 
     RETURN NEW;
@@ -325,6 +337,27 @@ BEGIN
     GET DIAGNOSTICS erased = ROW_COUNT;
     UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
+    RETURN erased;
+END;
+$$;
+
+-- A retained erase frontier authorizes only earlier SET_PROFILE bytes, never a later re-profile.
+CREATE FUNCTION claimcore.erase_profile_payload(target_actor_id uuid)
+RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE frontier bigint; erased bigint;
+BEGIN
+    SELECT max(sequence) INTO frontier FROM claimcore.ledger
+     WHERE subject_kind='AUTHORITY' AND act='ERASE_PROFILE' AND subject_id=target_actor_id;
+    IF frontier IS NULL THEN
+        RAISE EXCEPTION 'actor has no accepted ERASE_PROFILE entry' USING ERRCODE='CC002';
+    END IF;
+    UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL
+     WHERE subject_kind='AUTHORITY' AND act='SET_PROFILE' AND subject_id=target_actor_id
+       AND sequence<frontier AND payload IS NOT NULL;
+    GET DIAGNOSTICS erased=ROW_COUNT;
+    UPDATE claimcore.actors SET display_name=NULL,contact=NULL WHERE actor_id=target_actor_id
+       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger later WHERE later.subject_kind='AUTHORITY'
+                      AND later.act='SET_PROFILE' AND later.subject_id=target_actor_id AND later.sequence>frontier);
     RETURN erased;
 END;
 $$;
@@ -495,6 +528,7 @@ GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.erase_profile_payload(uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
 

@@ -29,7 +29,11 @@ module Catalog =
                         LabelId = InteractionInput.messageKey input "label"
                         MeaningId = Some(InteractionInput.messageKey input "meaning")
                         Scalar =
-                            if input = InteractionInput.Target InputTarget.Reason then
+                            if input = InteractionInput.Target InputTarget.ProfileDisplayName then
+                                Some(ScalarRule.Text PartyName.descriptor)
+                            elif input = InteractionInput.Target InputTarget.ProfileContact then
+                                Some(ScalarRule.Text ContactText.descriptor)
+                            elif input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
                             elif input = InteractionInput.Target InputTarget.ReminderAction then
                                 Some(ScalarRule.PlainText ReminderAction.constraints)

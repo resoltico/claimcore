@@ -8,7 +8,7 @@ type ReminderReadModel =
         Reminder: Reminder
         Reference: CaseReference
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
+        RecordedBy: ActorRef
         Acts: ReminderActKind list
         Active: bool
         Timing: ReminderDue option
@@ -52,7 +52,7 @@ type CaseActivity =
         Position: LedgerPosition
         Subject: ActivitySubject
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
+        RecordedBy: ActorRef
         Detail: OperationReceipt option
     }
 

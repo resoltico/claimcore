@@ -127,7 +127,7 @@ module internal LedgerAdministration =
         | Error StoreFailure.Integrity -> ProvisionOwnerOutcome.Failed CoreFault.StoreIntegrityError
         | Error StoreFailure.Unavailable -> ProvisionOwnerOutcome.Failed CoreFault.StoreUnavailable
 
-    let provisionOwner source productVersion operationId principal cancellationToken =
+    let provisionOwner source productVersion operationId principal profile cancellationToken =
         task {
             let! installationId, timeZoneId =
                 DatabaseSession.read source cancellationToken (fun connection ->
@@ -150,7 +150,7 @@ module internal LedgerAdministration =
                 }
 
             let services = Service.create productVersion installationId store calendar principal
-            let! result = Service.provisionOwner services operationId cancellationToken
+            let! result = Service.provisionOwner services operationId profile cancellationToken
 
             return provisionResult (OperationId.create operationId |> Option.get) result
         }
@@ -205,12 +205,13 @@ type Administration(connectionString: string, productVersion: string) =
     member _.Head(cancellationToken) =
         LedgerAdministration.head source cancellationToken
 
-    member _.ProvisionOwner(operationId, principal, cancellationToken) =
+    member _.ProvisionOwner(operationId, principal, profile, cancellationToken) =
         LedgerAdministration.provisionOwner
             source
             productVersion
             operationId
             principal
+            profile
             cancellationToken
 
     interface IDisposable with

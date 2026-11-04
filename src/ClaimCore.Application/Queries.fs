@@ -182,6 +182,7 @@ module internal Queries =
         | Ok _, Some requester ->
             Outcome.Succeeded
                 {
+                    Self = Actor.currentReference requester
                     Maintenance = maintenance
                     InstallationId = services.InstallationId
                     ActorId = requester.ActorId
@@ -495,6 +496,7 @@ module internal Queries =
         actor
         current
         detail
+        authors
         (slice: CaseHistorySlice)
         =
         if detail = HistoryDetail.Summary then
@@ -511,6 +513,7 @@ module internal Queries =
                     LedgerEntries.receipt
                         services.Principal
                         actor
+                        (Map.tryFind entry.ActorId authors)
                         (ReceiptCurrent.Case(Some current))
                 ))
             |> collect
@@ -580,6 +583,18 @@ module internal Queries =
                                                         }
                                                     )
 
+                                                let! authors =
+                                                    if request.Detail = HistoryDetail.Summary then
+                                                        System.Threading.Tasks.Task.FromResult
+                                                            Map.empty
+                                                    else
+                                                        tx.ActorRefs(
+                                                            (slice.Page.Items
+                                                             @ Option.toList slice.Previous)
+                                                            |> List.map _.ActorId
+                                                            |> List.distinct
+                                                        )
+
                                                 return
                                                     CaseExecution.current installation current
                                                     |> Result.bind (fun _ ->
@@ -588,6 +603,7 @@ module internal Queries =
                                                             actor
                                                             current
                                                             request.Detail
+                                                            authors
                                                             slice)
                                                     |> Result.map (fun entries ->
                                                         {
@@ -647,6 +663,8 @@ module internal Queries =
                                             if entry.OperationId <> operation then
                                                 return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
+                                                let! authors = tx.ActorRefs [ entry.ActorId ]
+
                                                 return
                                                     LedgerEntries.validateOperation
                                                         installation
@@ -655,6 +673,7 @@ module internal Queries =
                                                         LedgerEntries.receiptOperation
                                                             principal
                                                             actor
+                                                            (Map.tryFind entry.ActorId authors)
                                                             current
                                                     )
                                                     |> succeeded

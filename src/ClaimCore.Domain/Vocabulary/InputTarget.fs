@@ -16,6 +16,8 @@ module InputTarget =
         | InputTarget.PrincipalKind -> "principal.kind"
         | InputTarget.PrincipalIssuer -> "principal.issuer"
         | InputTarget.PrincipalSubject -> "principal.subject"
+        | InputTarget.ProfileDisplayName -> "profile.displayName"
+        | InputTarget.ProfileContact -> "profile.contact"
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"

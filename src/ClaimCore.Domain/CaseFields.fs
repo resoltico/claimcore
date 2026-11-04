@@ -47,6 +47,8 @@ type InputTarget =
     | PrincipalKind
     | PrincipalIssuer
     | PrincipalSubject
+    | ProfileDisplayName
+    | ProfileContact
     | Role
     | Limit
     | Cursor

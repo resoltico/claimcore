@@ -27,7 +27,8 @@ module internal WorkListCommand =
                     CalendarDate.format (Reminder.due value)
                     ReminderState.token (Reminder.state value)
                     TextReplyFormat.instant row.RecordedAt
-                    ActorId.format row.RecordedBy
+                    ActorId.format row.RecordedBy.ActorId
+                    TextReplyFormat.actorName LocalizationPolicy.defaultLanguage row.RecordedBy
                     TextReplyFormat.boolean row.Active
                 ])
         |> Array.concat
@@ -118,7 +119,8 @@ module internal WorkListCommand =
                             "dueDate"
                             "state"
                             "recordedAt"
-                            "recordedBy"
+                            "recordedBy.actorId"
+                            "recordedBy.displayName"
                             "active"
                         ]
                 )

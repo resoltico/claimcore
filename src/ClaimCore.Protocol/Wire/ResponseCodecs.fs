@@ -334,9 +334,18 @@ module ResponseCodecs =
 
     let actorContext =
         (record
-            (fun installation runtime capabilities views offers (identity, assigned) maintenance ->
+            (fun
+                installation
+                runtime
+                capabilities
+                views
+                offers
+                (identity, assigned)
+                maintenance
+                self ->
                 {
                     ActorContext.InstallationId = installation
+                    Self = self
                     Maintenance = maintenance
                     ActorId = identity
                     Runtime = runtime
@@ -356,6 +365,7 @@ module ResponseCodecs =
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
         |> field "maintenance" _.Maintenance registerMaintenance
+        |> field "self" _.Self ActorCodecs.actorRef
         |> build
         |> named "ActorContext"
 
@@ -378,20 +388,30 @@ module ResponseCodecs =
         |> field "context" _.Context runtimeContext
 
     let actorSummary =
-        (record (fun v0 v1 v2 profile ->
+        let contact =
+            nonempty
+            |> mapResult
+                (fun path raw ->
+                    ContactText.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid profile contact."
+                        }))
+                ContactText.format
+
+        (record (fun actor principal contact ->
             {
-                Actor.ActorId = v0
-                Principal = v1
-                Enabled = v2
-                Profile = profile
+                ActorReviewItem.Actor = actor
+                Principal = principal
+                Contact = contact
             })
-        : Fields<Actor, _>)
-        |> field "actorId" _.ActorId actorId
-        |> field "principal" _.Principal (principal)
-        |> field "enabled" _.Enabled (boolean)
-        |> field "profile" _.Profile (nullable ActorCodecs.profile)
+        : Fields<ActorReviewItem, _>)
+        |> field "actor" _.Actor ActorCodecs.actorRef
+        |> field "principal" _.Principal principal
+        |> field "contact" _.Contact (nullable contact)
         |> build
-        |> named "ActorSummary"
+        |> named "ActorReviewItem"
 
     let internal authorityGrantFields =
         (record (fun v0 v1 -> { ScopedGrant.Role = v0; Scope = v1 }): Fields<ScopedGrant, _>)
@@ -408,7 +428,7 @@ module ResponseCodecs =
                 NextCursor = v2
             })
         : Fields<AuthorityGrantPage, _>)
-        |> field "actor" _.Actor (actorSummary)
+        |> field "actor" _.Actor ActorCodecs.actorRef
         |> field "items" _.Items (list 50 authorityGrant)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

@@ -97,8 +97,23 @@ module ScalarGuidance =
             "scalar.text.guidance"
             [ "maximumCharacters", GuidanceArgument.Count CaseSearchText.MaximumCharacters ]
 
+    let forProfileName =
+        message
+            "scalar.text.guidance"
+            [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
+
+    let forProfileContact =
+        message
+            "scalar.text.guidance"
+            [ "maximumCharacters", GuidanceArgument.Count(maximum ContactText.descriptor) ]
+
     let all =
         (CaseFields.declarations
          |> List.choose (fun field ->
              forField field.Field |> Option.map (fun guidance -> field.Key, guidance)))
-        @ [ "reason", forReason; "text", forSearchText ]
+        @ [
+            "reason", forReason
+            "text", forSearchText
+            "profile.displayName", forProfileName
+            "profile.contact", forProfileContact
+        ]

@@ -458,6 +458,21 @@ module RequestCodecs =
                     (record id |> field "target" id caseSelector)
             ]
 
+    let actorProfileInput =
+        (record (fun name contact ->
+            {
+                ActorProfileInput.DisplayName = name
+                Contact = Option.flatten contact
+            })
+        : Fields<ActorProfileInput, _>)
+        |> field "displayName" _.DisplayName text
+        |> optionalField
+            "contact"
+            (fun profile -> profile.Contact |> Option.map Some)
+            (nullable text)
+        |> build
+        |> named "ActorProfileInput"
+
     let private authorityVariantsWith role scope =
         let grant =
             record (fun role scope ->
@@ -469,7 +484,21 @@ module RequestCodecs =
             |> field WireMembers.Scope _.Scope scope
 
         [
-            unitVariant (AuthorityKind.token AuthorityKind.Register) AuthorityAct.Register
+            variant
+                (AuthorityKind.token AuthorityKind.Register)
+                AuthorityAct.Register
+                (function
+                | AuthorityAct.Register profile -> Some profile
+                | _ -> None)
+                (record id |> field "profile" id actorProfileInput)
+            variant
+                (AuthorityKind.token AuthorityKind.SetProfile)
+                AuthorityAct.SetProfile
+                (function
+                | AuthorityAct.SetProfile profile -> Some profile
+                | _ -> None)
+                (record id |> field "profile" id actorProfileInput)
+            unitVariant (AuthorityKind.token AuthorityKind.EraseProfile) AuthorityAct.EraseProfile
             variant
                 (AuthorityKind.token AuthorityKind.Grant)
                 AuthorityAct.Grant

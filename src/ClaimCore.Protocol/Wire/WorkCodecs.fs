@@ -92,7 +92,7 @@ module WorkCodecs =
         |> field "reminder" _.Reminder reminder
         |> field "caseReference" _.Reference caseReference
         |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy actorId
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field
             "acts"
             _.Acts

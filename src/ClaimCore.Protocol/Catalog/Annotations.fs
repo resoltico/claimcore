@@ -243,6 +243,10 @@ module CatalogAnnotations =
                 yield (actBranch kind, WireMembers.Reason), constant (target InputTarget.Reason)
             for kind in [ AuthorityKind.Grant; AuthorityKind.Revoke ] do
                 yield (authorityBranch kind, WireMembers.Role), constant (target InputTarget.Role)
+            yield
+                ("ActorProfileInput", "displayName"),
+                constant (target InputTarget.ProfileDisplayName)
+            yield ("ActorProfileInput", "contact"), constant (target InputTarget.ProfileContact)
             yield (RequestSchemas.Scope, WireMembers.Kind), scope
             for owner in
                 [

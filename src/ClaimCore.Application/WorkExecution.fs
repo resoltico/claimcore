@@ -249,7 +249,11 @@ module internal WorkExecution =
                         Bytes = bytes
                         Existing = view.ExistingOperation
                     }
-                    (LedgerEntries.receiptOperation services.Principal view.Actor state)
+                    (LedgerEntries.receiptOperation
+                        services.Principal
+                        view.Actor
+                        (view.Actor.Actor |> Option.map Actor.currentReference)
+                        state)
 
             match replay with
             | Verdict.Proceed() ->
@@ -428,7 +432,11 @@ module internal WorkExecution =
                         Bytes = bytes
                         Existing = view.ExistingOperation
                     }
-                    (LedgerEntries.receiptOperation services.Principal view.Actor state)
+                    (LedgerEntries.receiptOperation
+                        services.Principal
+                        view.Actor
+                        (view.Actor.Actor |> Option.map Actor.currentReference)
+                        state)
 
             match replay with
             | Verdict.Proceed() when view.Maintenance.Active ->

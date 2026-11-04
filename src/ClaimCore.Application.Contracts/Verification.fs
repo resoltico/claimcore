@@ -34,6 +34,7 @@ type VerificationFinding =
     | CasePayableCurrencyProjection
     | FenceProjection
     | AuthorityProjection
+    | AuthorityProfileProjection
     | Head
     | ExpectedPosition
 

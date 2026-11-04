@@ -137,7 +137,7 @@ module WorkReadCodecs =
         |> field "position" _.Position ResponseCodecs.position
         |> field "subject" _.Subject subject
         |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy actorId
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
         |> field "detail" _.Detail (nullable ReceiptCodecs.receipt)
         |> build
         |> named "CaseActivity"

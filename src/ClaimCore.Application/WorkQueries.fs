@@ -129,47 +129,58 @@ module internal WorkQueries =
                                                 && CaseState.lifecycle parent.Snapshot.State
                                                    <> Lifecycle.Erased
                                                 ->
-                                                let reminder = value.Snapshot.Value
+                                                let! authors = tx.ActorRefs [ value.RecordedBy ]
 
-                                                let lifecycle =
-                                                    CaseState.lifecycle parent.Snapshot.State
+                                                match Map.tryFind value.RecordedBy authors with
+                                                | None ->
+                                                    return
+                                                        Outcome.Failed CoreFault.StoreIntegrityError
+                                                | Some author ->
+                                                    let reminder = value.Snapshot.Value
 
-                                                let status =
-                                                    CaseState.fields parent.Snapshot.State
-                                                    |> Option.map _.Status
+                                                    let lifecycle =
+                                                        CaseState.lifecycle parent.Snapshot.State
 
-                                                let basis =
-                                                    CaseWorkReads.basis services tx.ObservedAt
+                                                    let status =
+                                                        CaseState.fields parent.Snapshot.State
+                                                        |> Option.map _.Status
 
-                                                let active = CaseState.isActionable lifecycle status
+                                                    let basis =
+                                                        CaseWorkReads.basis services tx.ObservedAt
 
-                                                return
-                                                    Outcome.Succeeded
-                                                        {
-                                                            ReminderRead.Basis = basis
-                                                            Item =
-                                                                {
-                                                                    Reminder = reminder
-                                                                    Reference =
-                                                                        parent.Snapshot.Reference
-                                                                    RecordedAt = value.RecordedAt
-                                                                    RecordedBy = value.RecordedBy
-                                                                    Acts =
-                                                                        reminderActs
-                                                                            services.Principal
-                                                                            view.Actor
-                                                                            view.Maintenance.Active
-                                                                            lifecycle
-                                                                            status
-                                                                            reminder
-                                                                    Active = active
-                                                                    Timing =
-                                                                        ReminderDue.at
-                                                                            basis.BusinessDate
-                                                                            active
-                                                                            reminder
-                                                                }
-                                                        }
+                                                    let active =
+                                                        CaseState.isActionable lifecycle status
+
+                                                    return
+                                                        Outcome.Succeeded
+                                                            {
+                                                                ReminderRead.Basis = basis
+                                                                Item =
+                                                                    {
+                                                                        Reminder = reminder
+                                                                        Reference =
+                                                                            parent.Snapshot
+                                                                                .Reference
+                                                                        RecordedAt =
+                                                                            value.RecordedAt
+                                                                        RecordedBy = author
+                                                                        Acts =
+                                                                            reminderActs
+                                                                                services.Principal
+                                                                                view.Actor
+                                                                                view.Maintenance
+                                                                                    .Active
+                                                                                lifecycle
+                                                                                status
+                                                                                reminder
+                                                                        Active = active
+                                                                        Timing =
+                                                                            ReminderDue.at
+                                                                                basis.BusinessDate
+                                                                                active
+                                                                                reminder
+                                                                    }
+                                                            }
                                             | _ -> return QueryResults.unavailable
                                         | _ -> return QueryResults.unavailable
                                     }
@@ -341,13 +352,26 @@ module internal WorkQueries =
                                                             |> List.distinct
                                                         )
 
+                                                    let! authors =
+                                                        tx.ActorRefs(
+                                                            page.Items
+                                                            |> List.map _.Stored.RecordedBy
+                                                            |> List.distinct
+                                                        )
+
                                                     let items =
                                                         page.Items
                                                         |> List.map (fun row ->
-                                                            match row.Stored.Snapshot with
-                                                            | None ->
+                                                            match
+                                                                row.Stored.Snapshot,
+                                                                Map.tryFind
+                                                                    row.Stored.RecordedBy
+                                                                    authors
+                                                            with
+                                                            | None, _
+                                                            | _, None ->
                                                                 Error CoreFault.StoreIntegrityError
-                                                            | Some reminder ->
+                                                            | Some reminder, Some author ->
                                                                 let active =
                                                                     CaseState.isActionable
                                                                         row.Lifecycle
@@ -360,8 +384,7 @@ module internal WorkQueries =
                                                                         Reference = row.Reference
                                                                         RecordedAt =
                                                                             row.Stored.RecordedAt
-                                                                        RecordedBy =
-                                                                            row.Stored.RecordedBy
+                                                                        RecordedBy = author
                                                                         Acts =
                                                                             reminderActs
                                                                                 services.Principal
@@ -459,6 +482,13 @@ module internal WorkQueries =
                                                             Limit = request.Limit
                                                         }
 
+                                                let! authors =
+                                                    tx.ActorRefs(
+                                                        page.Items
+                                                        |> List.map _.ActorId
+                                                        |> List.distinct
+                                                    )
+
                                                 let mutable items = Ok []
 
                                                 for entry in page.Items do
@@ -509,6 +539,9 @@ module internal WorkQueries =
                                                                 LedgerEntries.receipt
                                                                     services.Principal
                                                                     view.Actor
+                                                                    (Map.tryFind
+                                                                        entry.ActorId
+                                                                        authors)
                                                                     current
                                                                     validated
                                                                 |> Result.map Some
@@ -518,8 +551,12 @@ module internal WorkQueries =
                                                     items <-
                                                         items
                                                         |> Result.bind (fun items ->
-                                                            match subject, detail with
-                                                            | Ok subject, Ok detail ->
+                                                            match
+                                                                subject,
+                                                                detail,
+                                                                Map.tryFind entry.ActorId authors
+                                                            with
+                                                            | Ok subject, Ok detail, Some author ->
                                                                 Ok(
                                                                     {
                                                                         CaseActivity.OperationId =
@@ -531,13 +568,15 @@ module internal WorkQueries =
                                                                         Subject = subject
                                                                         RecordedAt =
                                                                             entry.RecordedAt
-                                                                        RecordedBy = entry.ActorId
+                                                                        RecordedBy = author
                                                                         Detail = detail
                                                                     }
                                                                     :: items
                                                                 )
-                                                            | Error fault, _
-                                                            | _, Error fault -> Error fault)
+                                                            | Error fault, _, _
+                                                            | _, Error fault, _ -> Error fault
+                                                            | _, _, None ->
+                                                                Error CoreFault.StoreIntegrityError)
 
                                                 return
                                                     items

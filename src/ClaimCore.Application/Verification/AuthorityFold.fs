@@ -10,12 +10,6 @@ open ClaimCore.Application.VerificationChecks
 [<NoEquality; NoComparison>]
 type internal AuthorityFoldContext = { FindCase: string -> CaseId option }
 
-type internal AuthorityFoldTarget =
-    {
-        ActorId: ActorId
-        Principal: PrincipalKey
-    }
-
 /// Permanent authority interpretation uses only earlier ledger state, never projections or today's matrix.
 module internal AuthorityFold =
 
@@ -53,25 +47,9 @@ module internal AuthorityFold =
             return ()
         }
 
-    let private principal (entry: StoredEntry) (request: AuthorityRequestRecord) =
-        PrincipalKey.ofKind request.Target.Kind request.Target.Issuer request.Target.Subject
-        |> Result.mapError (fun _ ->
-            divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
-
-    let private target (actors: Map<ActorId, ActorAuthority>) (entry: StoredEntry) id principal =
-        result {
-            let! actor =
-                Map.tryFind id actors
-                |> known (Some entry.Sequence) VerificationFinding.AuthorityFold
-
-            do!
-                require
-                    (Some entry.Sequence)
-                    VerificationFinding.AuthorityFold
-                    (actor.Principal = principal)
-
-            return actor
-        }
+    let private target (actors: Map<ActorId, ActorAuthority>) (entry: StoredEntry) id =
+        Map.tryFind id actors
+        |> known (Some entry.Sequence) VerificationFinding.AuthorityFold
 
     let private register
         (actors: Map<ActorId, ActorAuthority>)
@@ -158,45 +136,61 @@ module internal AuthorityFold =
                 }
         }
 
+    let private principal (entry: StoredEntry) (input: PrincipalInput) =
+        PrincipalKey.ofKind input.Kind input.Issuer input.Subject
+        |> Result.mapError (fun _ ->
+            divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
+
     let private action
         (context: AuthorityFoldContext)
-        (actors: Map<ActorId, ActorAuthority>)
+        actors
         (entry: StoredEntry)
-        (subject: AuthorityFoldTarget)
-        request
+        (record: AuthorityEffectRecord)
         =
-        let id = subject.ActorId
-        let principal = subject.Principal
+        let id = record.TargetActorId
 
-        match request.Act with
-        | AuthorityAct.ProvisionOwner -> register actors entry id principal true
-        | AuthorityAct.Register -> register actors entry id principal false
-        | AuthorityAct.Enable ->
-            target actors entry id principal
-            |> Result.map (fun actor ->
-                Map.add
-                    id
-                    { actor with
-                        Actor = { actor.Actor with Enabled = true }
-                    }
-                    actors)
-        | AuthorityAct.Disable ->
-            target actors entry id principal
-            |> Result.map (fun actor ->
-                Map.add
-                    id
-                    { actor with
-                        Actor = { actor.Actor with Enabled = false }
-                    }
-                    actors)
-        | AuthorityAct.Grant value
-        | AuthorityAct.Revoke value ->
+        let update change =
+            target actors entry id
+            |> Result.map (fun actor -> Map.add id (change actor) actors)
+
+        match record.Effect with
+        | AuthorityEffect.ProvisionOwner input ->
+            principal entry input
+            |> Result.bind (fun principal -> register actors entry id principal true)
+        | AuthorityEffect.Register input ->
+            principal entry input
+            |> Result.bind (fun principal -> register actors entry id principal false)
+        | AuthorityEffect.SetProfile profile ->
+            update (fun actor ->
+                { actor with
+                    Actor =
+                        { actor.Actor with
+                            Profile = Some profile
+                        }
+                })
+        | AuthorityEffect.EraseProfile ->
+            update (fun actor ->
+                { actor with
+                    Actor = { actor.Actor with Profile = None }
+                })
+        | AuthorityEffect.Enable ->
+            update (fun actor ->
+                { actor with
+                    Actor = { actor.Actor with Enabled = true }
+                })
+        | AuthorityEffect.Disable ->
+            update (fun actor ->
+                { actor with
+                    Actor = { actor.Actor with Enabled = false }
+                })
+        | AuthorityEffect.Grant value
+        | AuthorityEffect.Revoke value ->
             let active =
-                match request.Act with
-                | AuthorityAct.Grant _ -> true
+                match record.Effect with
+                | AuthorityEffect.Grant _ -> true
                 | _ -> false
 
-            target actors entry id principal
+            target actors entry id
             |> Result.bind (fun actor ->
                 grant context entry actor value active
                 |> Result.map (fun actor -> Map.add id actor actors))
@@ -206,10 +200,10 @@ module internal AuthorityFold =
         findCase
         (actors: Map<ActorId, ActorAuthority>)
         (entry: StoredEntry)
-        (request: AuthorityRequestRecord)
+        (record: AuthorityEffectRecord)
         =
         result {
-            let! id, kind =
+            let! target, kind =
                 match entry.Subject with
                 | EntryTarget.Authority(id, kind) -> Ok(id, kind)
                 | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
@@ -218,24 +212,16 @@ module internal AuthorityFold =
                 require
                     (Some entry.Sequence)
                     VerificationFinding.PayloadFormat
-                    (request.OperationId = OperationId.value entry.OperationId
-                     && AuthorityAct.kind request.Act = kind)
-
-            let! principal = principal entry request
+                    (record.OperationId = OperationId.value entry.OperationId
+                     && record.TargetActorId = target
+                     && AuthorityEffect.kind record.Effect = kind)
 
             do!
-                if request.Act = AuthorityAct.ProvisionOwner then
-                    Ok()
-                else
-                    executor actors entry true true
+                match record.Effect with
+                | AuthorityEffect.ProvisionOwner _ -> Ok()
+                | _ -> executor actors entry true true
 
-            let! next =
-                action
-                    { FindCase = findCase }
-                    actors
-                    entry
-                    { ActorId = id; Principal = principal }
-                    request
+            let! next = action { FindCase = findCase } actors entry record
 
             do!
                 require
@@ -244,4 +230,24 @@ module internal AuthorityFold =
                     (next |> Map.values |> Seq.exists owner)
 
             return next
+        }
+
+    let erasedProfile (actors: Map<ActorId, ActorAuthority>) (entry: StoredEntry) =
+        result {
+            do! executor actors entry true true
+
+            let! id =
+                match entry.Subject with
+                | EntryTarget.Authority(id, AuthorityKind.SetProfile) -> Ok id
+                | _ -> Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
+
+            let! actor = target actors entry id
+
+            return
+                Map.add
+                    id
+                    { actor with
+                        Actor = { actor.Actor with Profile = None }
+                    }
+                    actors
         }

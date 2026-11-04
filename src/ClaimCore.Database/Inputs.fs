@@ -240,20 +240,22 @@ module Inputs =
             CryptographicOperations.ZeroMemory value
 
     let private ownerInput =
-        Codec.record (fun operationId issuer subject -> operationId, issuer, subject)
-        |> Codec.field "operationId" (fun (id, _, _) -> id) Codec.uuid
-        |> Codec.field "issuer" (fun (_, issuer, _) -> issuer) Codec.text
-        |> Codec.field "subject" (fun (_, _, subject) -> subject) Codec.text
+        Codec.record (fun operationId issuer subject profile ->
+            operationId, issuer, subject, profile)
+        |> Codec.field "operationId" (fun (id, _, _, _) -> id) Codec.uuid
+        |> Codec.field "issuer" (fun (_, issuer, _, _) -> issuer) Codec.text
+        |> Codec.field "subject" (fun (_, _, subject, _) -> subject) Codec.text
+        |> Codec.field "profile" (fun (_, _, _, profile) -> profile) RequestCodecs.actorProfileInput
         |> Codec.build
 
     let decodeOwner (value: byte array) =
         Codec.decode 8192 ownerInput value
         |> Result.mapError (fun _ -> "Owner input is invalid.")
-        |> Result.bind (fun (operationId, issuer, subject) ->
-            // This format denotes a human principal; PrincipalKey owns its admission.
-            PrincipalKey.human issuer subject
-            |> Result.mapError (fun _ -> "Owner principal is invalid.")
-            |> Result.map (fun principal -> operationId, principal))
+        |> Result.bind (fun (operationId, issuer, subject, profile) ->
+            // Identity and profile are explicitly authored in the private provisioning file.
+            match PrincipalKey.human issuer subject, ActorProfile.parse profile with
+            | Ok principal, Ok _ -> Ok(operationId, principal, profile)
+            | _ -> Error "Owner principal or profile is invalid.")
         |> Result.defaultWith invalidOp
 
     let owner () =

@@ -211,6 +211,32 @@ module internal Persistence =
                         token
 
                 return ()
+            | AuthorityProjection.SetProfile(id, profile) ->
+                let! changed =
+                    DatabaseSession.execute
+                        connection
+                        "UPDATE claimcore.actors SET display_name=$2,contact=$3 WHERE actor_id=$1"
+                        [|
+                            box (ActorId.value id)
+                            box (PartyName.format profile.DisplayName)
+                            DatabaseSession.parameter (
+                                profile.Contact |> Option.map ContactText.format
+                            )
+                        |]
+                        token
+
+                if changed <> 1 then
+                    raise (RecordCorruptException "Profile target is absent.")
+            | AuthorityProjection.EraseProfile(id, sequence) ->
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger WHERE sequence=$2 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
+                        [| box (ActorId.value id); box (Sequence.value sequence) |]
+                        token
+
+                if rows.Length <> 1 then
+                    raise (RecordCorruptException "Profile erase has no matching accepted effect.")
             | AuthorityProjection.SetEnabled(id, enabled) ->
                 let! changed =
                     DatabaseSession.execute

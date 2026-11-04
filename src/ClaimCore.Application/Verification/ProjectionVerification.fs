@@ -88,7 +88,15 @@ module ProjectionVerification =
                 match Map.tryFind id actual with
                 | None -> false
                 | Some current ->
-                    { actor with Grants = [] } = { current with Grants = [] }
+                    { actor with
+                        Actor = { actor.Actor with Profile = None }
+                        Grants = []
+                    }
+                        =
+                        { current with
+                            Actor = { current.Actor with Profile = None }
+                            Grants = []
+                        }
                     && Set.ofList actor.Grants = Set.ofList current.Grants))
 
     let caseProjection installationId histories seen (record: StoredCase) =
@@ -183,7 +191,16 @@ module ProjectionVerification =
         |> Result.bind (finishCases histories)
 
     let finishAuthority expected actual =
-        require None VerificationFinding.AuthorityProjection (matching expected actual)
+        result {
+            do! require None VerificationFinding.AuthorityProjection (matching expected actual)
+
+            do!
+                require
+                    None
+                    VerificationFinding.AuthorityProfileProjection
+                    (Map.map (fun _ (actor: ActorAuthority) -> actor.Actor.Profile) expected =
+                        Map.map (fun _ (actor: ActorAuthority) -> actor.Actor.Profile) actual)
+        }
 
     let authority expected actorRows grantRows =
         actorRows

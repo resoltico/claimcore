@@ -16,10 +16,15 @@ module Execution =
 
                 return Replies.initialized id
             | ProvisionOwner ->
-                let operationId, principal = Inputs.owner ()
+                let operationId, principal, profile = Inputs.owner ()
 
                 let! result =
-                    administration.ProvisionOwner(operationId, principal, CancellationToken.None)
+                    administration.ProvisionOwner(
+                        operationId,
+                        principal,
+                        profile,
+                        CancellationToken.None
+                    )
 
                 return Replies.authority result
             | Verify expected ->

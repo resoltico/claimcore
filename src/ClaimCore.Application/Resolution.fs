@@ -26,7 +26,13 @@ module internal Resolution =
                 Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry when entry.ActorId = owner.ActorId ->
                 LedgerEntries.validateOperation installation entry
-                |> Result.bind (LedgerEntries.receiptOperation principal actor current)
+                |> Result.bind (
+                    LedgerEntries.receiptOperation
+                        principal
+                        actor
+                        (Some(Actor.currentReference owner))
+                        current
+                )
                 |> Result.map Verdict.Replay
                 |> Result.defaultWith Verdict.Fail
             | _ -> Verdict.Proceed owner.ActorId

@@ -33,7 +33,9 @@ not imply a constant-cost write or a production capacity guarantee.
 ### Database administration
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Provisioning also needs
-`CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`, containing operationId, issuer and subject. Keep those inputs
+`CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`, containing operationId, issuer, subject and a required authored profile.
+For example: `{"operationId":"…","issuer":"https://issuer.example/","subject":"…","profile":{"displayName":"Initial owner","contact":null}}`.
+The profile name is not taken from identity-provider claims. Keep those inputs
 unchanged when repeating the same provisioning operation. Remote database connections require verified TLS.
 Runtime credentials have no schema-owner authority. Offline help/version do not connect.
 
@@ -241,6 +243,8 @@ copy custody and physical disposal. VOID preserves history. A pre-erasure restor
 address affected erasures before reopening access. Restored operational generations come from that
 backup too: discard outstanding resume instructions and inspect the restored state while traffic and
 owner mutations remain isolated.
+
+Profile erasure removes the account’s saved display name and contact, including retained SET_PROFILE payloads and their nonces. The principal identity, enabled state, grants and work references remain; references display “Former account” and a short ID. A later SET_PROFILE records a new profile and survives an older erase frontier. Profile erasure does not remove earlier exports, private provisioning files or client retry journals. Those copies have separate operator and client custody.
 
 The append-only guard permits parent-scoped fact/work/reminder payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and

@@ -9,6 +9,12 @@ open ClaimCore.Application.VerificationChecks
 
 /// Deterministic ledger interpretation independent of storage, current admission and clocks.
 module LedgerVerification =
+    type ProfileHistory =
+        {
+            Missing: Sequence option
+            Present: Sequence option
+        }
+
     type PendingEffects =
         {
             Root: StoredEntry
@@ -26,6 +32,7 @@ module LedgerVerification =
             Fences: Map<ActorId * OperationId, DateTimeOffset>
             Accepted: Map<OperationId, ActorId>
             PendingEffects: PendingEffects option
+            Profiles: Map<ActorId, ProfileHistory>
             References: Map<string, CaseId>
             ExpectedSeen: bool
         }
@@ -90,11 +97,39 @@ module LedgerVerification =
             Error(divergence (Some entry.Sequence) VerificationFinding.OperationEffectGroup)
         )
 
+    let private profiles history (entry: StoredEntry) payload =
+        match entry.Subject with
+        | EntryTarget.Authority(id, AuthorityKind.SetProfile) ->
+            let current =
+                Map.tryFind id history |> Option.defaultValue { Missing = None; Present = None }
+
+            let next =
+                match payload with
+                | VerifiedPayload.ErasedProfile ->
+                    { current with
+                        Missing = Option.orElse (Some entry.Sequence) current.Missing
+                    }
+                | _ ->
+                    { current with
+                        Present = Option.orElse (Some entry.Sequence) current.Present
+                    }
+
+            Ok(Map.add id next history)
+        | EntryTarget.Authority(id, AuthorityKind.EraseProfile) ->
+            match Map.tryFind id history |> Option.bind _.Present with
+            | Some position ->
+                Error(divergence (Some position) VerificationFinding.ErasureIncomplete)
+            | None -> Ok(Map.remove id history)
+        | _ -> Ok history
+
     let private histories installationId state (entry: StoredEntry) payload =
         match entry.Subject, payload with
         | EntryTarget.NonAcceptance _, VerifiedPayload.NonAcceptance _ ->
             AuthorityFold.executor state.Actors entry false false
             |> Result.map (fun () -> state.Cases, state.Actors)
+        | EntryTarget.Authority _, VerifiedPayload.ErasedProfile ->
+            AuthorityFold.erasedProfile state.Actors entry
+            |> Result.map (fun actors -> state.Cases, actors)
         | EntryTarget.Authority _, VerifiedPayload.Authority request ->
             AuthorityFold.apply
                 installationId
@@ -210,6 +245,7 @@ module LedgerVerification =
                 | _, Some _ -> Error(divergence at VerificationFinding.PayloadFormat)
 
             let! cases, actors = histories installationId state entry payload
+            let! profiles = profiles state.Profiles entry payload
 
             let! work, reminders =
                 WorkFold.apply state.Cases state.Actors state.Work state.Reminders entry payload
@@ -233,6 +269,7 @@ module LedgerVerification =
                     Cases = cases
                     Actors = actors
                     PendingEffects = pendingEffects
+                    Profiles = profiles
                     Accepted =
                         match payload with
                         | VerifiedPayload.NonAcceptance _ -> state.Accepted
@@ -261,6 +298,7 @@ module LedgerVerification =
             Fences = Map.empty
             Accepted = Map.empty
             PendingEffects = None
+            Profiles = Map.empty
             References = Map.empty
             ExpectedSeen =
                 expected
@@ -282,5 +320,10 @@ module LedgerVerification =
             Ok(state.Head)
 
     let erasure (state: Scan) =
-        CaseFold.erasure state.Cases
+        let missing = state.Profiles |> Map.values |> Seq.choose _.Missing |> Seq.tryHead
+
+        match missing with
+        | Some position ->
+            Error(divergence (Some position) VerificationFinding.PayloadWithoutErasure)
+        | None -> CaseFold.erasure state.Cases
         |> Result.bind (fun () -> WorkFold.erasure state.Cases state.Work state.Reminders)

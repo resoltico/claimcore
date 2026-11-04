@@ -61,7 +61,13 @@ module internal LedgerEnvelope =
                     }
 
             LedgerEntries.validate installationId (LedgerEntries.stored entry)
-            |> Result.bind (LedgerEntries.receipt principal actor plan.Current)
+            |> Result.bind (
+                LedgerEntries.receipt
+                    principal
+                    actor
+                    (actor.Actor |> Option.map Actor.currentReference)
+                    plan.Current
+            )
             |> Result.map (fun receipt -> Verdict.Proceed(entry, plan.Projection, receipt))
             |> Result.defaultWith Verdict.Fail
         with :? OverflowException ->

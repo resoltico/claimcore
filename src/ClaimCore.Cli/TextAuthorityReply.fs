@@ -23,17 +23,19 @@ module internal TextAuthorityReply =
             "  "
             [ term language Role.vocabulary grant.Role; scope; TerminalText.data reference ]
 
-    let actorRow language (actor: Actor) =
+    let actorRow language (actor: ActorReviewItem) =
         let kind, issuer, subject = PrincipalKey.parts actor.Principal
 
         String.concat
             "  "
             [
-                ActorId.format actor.ActorId
+                ActorId.format actor.Actor.ActorId
                 principalKind language kind
                 TerminalText.data issuer
                 displayed language (Some subject)
-                boolean actor.Enabled
+                displayed language (Some(actorName language actor.Actor))
+                term language ActorAvailability.vocabulary actor.Actor.Availability
+                actor.Contact |> Option.map ContactText.format |> displayed language
             ]
 
     let actorPage language (page: ActorReviewPage) =
@@ -70,6 +72,8 @@ module internal TextAuthorityReply =
                    | AuthorityHistoryFacts.Granted grant
                    | AuthorityHistoryFacts.Revoked grant -> grantRow language grant
                    | AuthorityHistoryFacts.Enabled
+                   | AuthorityHistoryFacts.ProfileSet _
+                   | AuthorityHistoryFacts.ProfileErased
                    | AuthorityHistoryFacts.Disabled -> ""
 
                String.concat
@@ -81,8 +85,8 @@ module internal TextAuthorityReply =
                            language
                            AuthorityKind.vocabulary
                            (AuthorityHistoryFacts.kind entry.Facts)
-                       ActorId.format entry.RecordedBy
-                       ActorId.format entry.TargetActorId
+                       actorName language entry.RecordedBy
+                       actorName language entry.Target
                        facts
                    ]))
         @ nextLines language page.NextCursor

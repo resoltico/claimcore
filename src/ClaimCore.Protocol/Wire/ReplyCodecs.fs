@@ -108,13 +108,15 @@ module ReplyCodecs =
         |> named "CapabilityAccess"
 
     let authorityState =
-        (record (fun enabled grants access ->
+        (record (fun profile enabled grants access ->
             {
+                Profile = profile
                 Enabled = enabled
                 Grants = grants
                 Access = access
             })
         : Fields<AuthorityState, _>)
+        |> field "profile" _.Profile (nullable ActorCodecs.profile)
         |> field "enabled" _.Enabled boolean
         |> field "grants" _.Grants (list 1 ResponseCodecs.authorityGrant)
         |> field "access" _.Access (list Capability.all.Length capabilityAccess)

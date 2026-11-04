@@ -81,7 +81,7 @@ type OperationReceipt =
         Position: LedgerPosition
         Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
+        RecordedBy: ActorRef
     }
 
 type ChangeSummary =

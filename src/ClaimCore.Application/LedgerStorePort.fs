@@ -244,6 +244,8 @@ type EntryDraft =
 type AuthorityProjection =
     | Register of actorId: ActorId * principal: PrincipalKey
     | ProvisionOwner of actorId: ActorId * principal: PrincipalKey
+    | SetProfile of actorId: ActorId * profile: ActorProfile
+    | EraseProfile of actorId: ActorId * eraseSequence: Sequence
     | SetEnabled of actorId: ActorId * enabled: bool
     | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option
     | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option

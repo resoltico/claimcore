@@ -356,6 +356,32 @@
       "scalar": null
     },
     {
+      "name": "profile.displayName",
+      "labelId": "field.profile.displayName.label",
+      "meaningId": "field.profile.displayName.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      }
+    },
+    {
+      "name": "profile.contact",
+      "labelId": "field.profile.contact.label",
+      "meaningId": "field.profile.contact.meaning",
+      "scalar": {
+        "kind": "TEXT",
+        "format": {
+          "minimumCharacters": 1,
+          "grammar": null
+        },
+        "maximumCharacters": 200
+      }
+    },
+    {
       "name": "role",
       "labelId": "field.role.label",
       "meaningId": "field.role.meaning",
@@ -3298,6 +3324,58 @@
             "principal.subject"
           ],
           "source": "AUTHORED"
+        },
+        {
+          "identity": "act.profile.displayName",
+          "field": null,
+          "path": [
+            "act",
+            "profile",
+            "displayName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.profile.displayName.label",
+          "meaningId": "field.profile.displayName.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "profile.displayName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.profile.contact",
+          "field": null,
+          "path": [
+            "act",
+            "profile",
+            "contact"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.profile.contact.label",
+          "meaningId": "field.profile.contact.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "profile.contact"
+          ],
+          "source": "AUTHORED"
         }
       ],
       "constants": [
@@ -4114,6 +4192,334 @@
             "kind"
           ],
           "value": "DISABLE",
+          "branches": [],
+          "vocabulary": "act",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "AUTHORITY",
+      "kind": "SET_PROFILE",
+      "labelId": "act.SET_PROFILE.label",
+      "meaningId": "act.SET_PROFILE.meaning",
+      "confirmationId": "act.SET_PROFILE.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "principalKind",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.profile.displayName",
+          "field": null,
+          "path": [
+            "act",
+            "profile",
+            "displayName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.profile.displayName.label",
+          "meaningId": "field.profile.displayName.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "profile.displayName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.profile.contact",
+          "field": null,
+          "path": [
+            "act",
+            "profile",
+            "contact"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.profile.contact.label",
+          "meaningId": "field.profile.contact.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "profile.contact"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "AUTHORITY",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "SET_PROFILE",
+          "branches": [],
+          "vocabulary": "act",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "AUTHORITY",
+      "kind": "ERASE_PROFILE",
+      "labelId": "act.ERASE_PROFILE.label",
+      "meaningId": "act.ERASE_PROFILE.meaning",
+      "confirmationId": "act.ERASE_PROFILE.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "principalKind",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "AUTHORITY",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ERASE_PROFILE",
           "branches": [],
           "vocabulary": "act",
           "requiresParent": false

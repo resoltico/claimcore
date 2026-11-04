@@ -5,15 +5,31 @@ open ClaimCore.Domain
 
 open System
 
+/// Directory details are explicit; contact never becomes part of a reusable actor reference.
+type ActorReviewItem =
+    {
+        Actor: ActorRef
+        Principal: PrincipalKey
+        Contact: ContactText option
+    }
+
+module ActorReviewItem =
+    let ofActor (actor: Actor) =
+        {
+            Actor = Actor.currentReference actor
+            Principal = actor.Principal
+            Contact = actor.Profile |> Option.bind _.Contact
+        }
+
 type ActorReviewPage =
     {
-        Items: Actor list
+        Items: ActorReviewItem list
         NextCursor: string option
     }
 
 type AuthorityGrantPage =
     {
-        Actor: Actor
+        Actor: ActorRef
         Items: ScopedGrant list
         NextCursor: string option
     }
@@ -26,17 +42,10 @@ type AuthorityHistoryFacts =
     | Revoked of ScopedGrant
     | Enabled
     | Disabled
+    | ProfileSet of ActorProfile option
+    | ProfileErased
 
 module AuthorityHistoryFacts =
-    let ofAct target (act: AuthorityAct<ScopedGrant>) =
-        match act with
-        | AuthorityAct.ProvisionOwner -> AuthorityHistoryFacts.OwnerProvisioned target
-        | AuthorityAct.Register -> AuthorityHistoryFacts.Registered target
-        | AuthorityAct.Grant grant -> AuthorityHistoryFacts.Granted grant
-        | AuthorityAct.Revoke grant -> AuthorityHistoryFacts.Revoked grant
-        | AuthorityAct.Enable -> AuthorityHistoryFacts.Enabled
-        | AuthorityAct.Disable -> AuthorityHistoryFacts.Disabled
-
     let kind =
         function
         | AuthorityHistoryFacts.OwnerProvisioned _ -> AuthorityKind.ProvisionOwner
@@ -45,13 +54,15 @@ module AuthorityHistoryFacts =
         | AuthorityHistoryFacts.Revoked _ -> AuthorityKind.Revoke
         | AuthorityHistoryFacts.Enabled -> AuthorityKind.Enable
         | AuthorityHistoryFacts.Disabled -> AuthorityKind.Disable
+        | AuthorityHistoryFacts.ProfileSet _ -> AuthorityKind.SetProfile
+        | AuthorityHistoryFacts.ProfileErased -> AuthorityKind.EraseProfile
 
 type AuthorityHistoryEntry =
     {
         Sequence: Sequence
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
-        TargetActorId: ActorId
+        RecordedBy: ActorRef
+        Target: ActorRef
         Facts: AuthorityHistoryFacts
     }
 

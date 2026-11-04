@@ -2869,7 +2869,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 6
+            "maxItems": 8
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
@@ -2879,6 +2879,9 @@
           },
           "maintenance": {
             "$ref": "#/components/schemas/RegisterMaintenance"
+          },
+          "self": {
+            "$ref": "#/components/schemas/ActorRef"
           }
         },
         "required": [
@@ -2891,7 +2894,8 @@
           "offers",
           "actorId",
           "hasScopedCases",
-          "maintenance"
+          "maintenance",
+          "self"
         ]
       },
       "ActorProfile": {
@@ -2919,6 +2923,28 @@
         "required": [
           "displayName",
           "contact"
+        ]
+      },
+      "ActorProfileInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "displayName": {
+            "type": "string"
+          },
+          "contact": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "displayName"
         ]
       },
       "ActorRef": {
@@ -2952,23 +2978,22 @@
           "availability"
         ]
       },
-      "ActorSummary": {
+      "ActorReviewItem": {
         "type": "object",
         "additionalProperties": false,
         "properties": {
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
+          "actor": {
+            "$ref": "#/components/schemas/ActorRef"
           },
           "principal": {
             "$ref": "#/components/schemas/Principal"
           },
-          "enabled": {
-            "type": "boolean"
-          },
-          "profile": {
+          "contact": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ActorProfile"
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
               },
               {
                 "type": "null"
@@ -2977,10 +3002,9 @@
           }
         },
         "required": [
-          "actorId",
+          "actor",
           "principal",
-          "enabled",
-          "profile"
+          "contact"
         ]
       },
       "ActorsPage": {
@@ -2990,7 +3014,7 @@
           "items": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/ActorSummary"
+              "$ref": "#/components/schemas/ActorReviewItem"
             },
             "minItems": 0,
             "maxItems": 50
@@ -3255,6 +3279,12 @@
             "$ref": "#/components/schemas/AuthorityAct.REGISTER"
           },
           {
+            "$ref": "#/components/schemas/AuthorityAct.SET_PROFILE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityAct.ERASE_PROFILE"
+          },
+          {
             "$ref": "#/components/schemas/AuthorityAct.GRANT"
           },
           {
@@ -3271,6 +3301,8 @@
           "propertyName": "kind",
           "mapping": {
             "REGISTER": "#/components/schemas/AuthorityAct.REGISTER",
+            "SET_PROFILE": "#/components/schemas/AuthorityAct.SET_PROFILE",
+            "ERASE_PROFILE": "#/components/schemas/AuthorityAct.ERASE_PROFILE",
             "GRANT": "#/components/schemas/AuthorityAct.GRANT",
             "REVOKE": "#/components/schemas/AuthorityAct.REVOKE",
             "ENABLE": "#/components/schemas/AuthorityAct.ENABLE",
@@ -3296,6 +3328,18 @@
         "properties": {
           "kind": {
             "const": "ENABLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityAct.ERASE_PROFILE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASE_PROFILE"
           }
         },
         "required": [
@@ -3336,10 +3380,14 @@
         "properties": {
           "kind": {
             "const": "REGISTER"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ActorProfileInput"
           }
         },
         "required": [
-          "kind"
+          "kind",
+          "profile"
         ]
       },
       "AuthorityAct.REVOKE": {
@@ -3368,6 +3416,22 @@
           "kind",
           "role",
           "scope"
+        ]
+      },
+      "AuthorityAct.SET_PROFILE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SET_PROFILE"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ActorProfileInput"
+          }
+        },
+        "required": [
+          "kind",
+          "profile"
         ]
       },
       "AuthorityGrant": {
@@ -3411,10 +3475,10 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/Uuid"
+            "$ref": "#/components/schemas/ActorRef"
           },
-          "targetActorId": {
-            "$ref": "#/components/schemas/Uuid"
+          "target": {
+            "$ref": "#/components/schemas/ActorRef"
           },
           "act": {
             "$ref": "#/components/schemas/AuthorityHistoryFacts"
@@ -3424,7 +3488,7 @@
           "sequence",
           "recordedAt",
           "recordedBy",
-          "targetActorId",
+          "target",
           "act"
         ]
       },
@@ -3443,6 +3507,12 @@
             "$ref": "#/components/schemas/AuthorityHistoryFacts.REVOKE"
           },
           {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.SET_PROFILE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityHistoryFacts.ERASE_PROFILE"
+          },
+          {
             "$ref": "#/components/schemas/AuthorityHistoryFacts.ENABLE"
           },
           {
@@ -3456,6 +3526,8 @@
             "REGISTER": "#/components/schemas/AuthorityHistoryFacts.REGISTER",
             "GRANT": "#/components/schemas/AuthorityHistoryFacts.GRANT",
             "REVOKE": "#/components/schemas/AuthorityHistoryFacts.REVOKE",
+            "SET_PROFILE": "#/components/schemas/AuthorityHistoryFacts.SET_PROFILE",
+            "ERASE_PROFILE": "#/components/schemas/AuthorityHistoryFacts.ERASE_PROFILE",
             "ENABLE": "#/components/schemas/AuthorityHistoryFacts.ENABLE",
             "DISABLE": "#/components/schemas/AuthorityHistoryFacts.DISABLE"
           }
@@ -3479,6 +3551,18 @@
         "properties": {
           "kind": {
             "const": "ENABLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityHistoryFacts.ERASE_PROFILE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASE_PROFILE"
           }
         },
         "required": [
@@ -3571,6 +3655,29 @@
           "kind",
           "role",
           "scope"
+        ]
+      },
+      "AuthorityHistoryFacts.SET_PROFILE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SET_PROFILE"
+          },
+          "profile": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "kind",
+          "profile"
         ]
       },
       "AuthorityHistoryPage": {
@@ -3710,6 +3817,16 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "profile": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/ActorProfile"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "enabled": {
             "type": "boolean"
           },
@@ -3731,6 +3848,7 @@
           }
         },
         "required": [
+          "profile",
           "enabled",
           "grants",
           "access"
@@ -4048,7 +4166,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/Uuid"
+            "$ref": "#/components/schemas/ActorRef"
           },
           "detail": {
             "oneOf": [
@@ -5042,7 +5160,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/Uuid"
+            "$ref": "#/components/schemas/ActorRef"
           },
           "subject": {
             "$ref": "#/components/schemas/CaseReceiptSubject"
@@ -6481,7 +6599,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 6
+            "maxItems": 8
           },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
@@ -7528,7 +7646,7 @@
         "additionalProperties": false,
         "properties": {
           "actor": {
-            "$ref": "#/components/schemas/ActorSummary"
+            "$ref": "#/components/schemas/ActorRef"
           },
           "items": {
             "type": "array",
@@ -8379,6 +8497,8 @@
           "principal.kind",
           "principal.issuer",
           "principal.subject",
+          "profile.displayName",
+          "profile.contact",
           "role",
           "limit",
           "cursor",
@@ -8420,7 +8540,9 @@
               "GRANT",
               "REVOKE",
               "ENABLE",
-              "DISABLE"
+              "DISABLE",
+              "SET_PROFILE",
+              "ERASE_PROFILE"
             ]
           }
         },
@@ -9018,7 +9140,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/Uuid"
+            "$ref": "#/components/schemas/ActorRef"
           },
           "subject": {
             "$ref": "#/components/schemas/ReceiptSubject"
@@ -9441,7 +9563,9 @@
               "GRANT",
               "REVOKE",
               "ENABLE",
-              "DISABLE"
+              "DISABLE",
+              "SET_PROFILE",
+              "ERASE_PROFILE"
             ]
           }
         },
@@ -10475,7 +10599,7 @@
             "maxLength": 27
           },
           "recordedBy": {
-            "$ref": "#/components/schemas/Uuid"
+            "$ref": "#/components/schemas/ActorRef"
           },
           "acts": {
             "type": "array",
@@ -11069,7 +11193,7 @@
           "target": {
             "oneOf": [
               {
-                "$ref": "#/components/schemas/ActorSummary"
+                "$ref": "#/components/schemas/ActorReviewItem"
               },
               {
                 "type": "null"

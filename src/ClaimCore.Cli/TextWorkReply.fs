@@ -68,7 +68,7 @@ module internal TextWorkReply =
            else
                [ term language CaseDue.vocabulary CaseDue.Inactive ])
         @ [
-            instant value.RecordedAt + "  " + ActorId.format value.RecordedBy
+            instant value.RecordedAt + "  " + actorName language value.RecordedBy
             value.Acts
             |> List.map (fun act -> term language ReminderActKind.vocabulary act)
             |> String.concat ", "
@@ -132,7 +132,7 @@ module internal TextWorkReply =
                  + "  "
                  + instant item.RecordedAt
                  + "  "
-                 + ActorId.format item.RecordedBy
+                 + actorName language item.RecordedBy
              ]
              @ (match item.Detail |> Option.map _.Subject with
                 | Some(ReceiptSubject.Work {
