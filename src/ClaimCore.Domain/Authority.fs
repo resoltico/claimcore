@@ -337,32 +337,41 @@ module Authority =
             |> Option.defaultWith (fun () -> invalidOp "Profile errors are nonempty.")
             |> Refusal.InvalidInput)
 
+    let private parsedPayload target act =
+        let action = AuthorityAct.traverse Ok admitProfile act
+
+        Admission.map2
+            (fun principal action -> principal, action)
+            (PrincipalKey.ofKind target.Kind target.Issuer target.Subject)
+            action
+        |> fun result -> Admission.map2 (fun value () -> value) result (grantCount act)
+        |> fun result -> Admission.map2 (fun value () -> value) result (scopeReference act)
+
     let parse (request: AuthorityRequest) =
         match request.Act with
         | AuthorityAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
         | act ->
-            let action = AuthorityAct.traverse Ok admitProfile act
-
-            let identity =
-                Admission.map2
-                    (fun operation principal -> operation, principal)
-                    (operationIdentity request.OperationId)
-                    (PrincipalKey.ofKind
-                        request.Target.Kind
-                        request.Target.Issuer
-                        request.Target.Subject)
-
             Admission.map2
-                (fun (id, principal) act ->
+                (fun id (principal, action) ->
                     {
                         Id = id
                         Principal = principal
-                        Action = act
+                        Action = action
                     })
-                identity
-                action
-            |> fun result -> Admission.map2 (fun value () -> value) result (grantCount act)
-            |> fun result -> Admission.map2 (fun value () -> value) result (scopeReference act)
+                (operationIdentity request.OperationId)
+                (parsedPayload request.Target act)
+
+    let syntaxIntent operationId target act =
+        match act with
+        | AuthorityAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        | _ ->
+            Admission.collect
+                [
+                    operationId
+                    |> Option.map (operationIdentity >> Result.map ignore)
+                    |> Option.defaultValue (Ok())
+                    parsedPayload target act |> Result.map ignore
+                ]
 
     let provision operationId target profile =
         Admission.map2

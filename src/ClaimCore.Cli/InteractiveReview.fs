@@ -22,13 +22,17 @@ type internal DraftAct =
     | Work of AuthoredWorkAct
     | Reminder of ReminderAct<int64 option>
 
+[<RequireQualifiedAccess>]
+type internal DraftIntent =
+    | Case of reference: string * act: DraftAct
+    | Authority of target: PrincipalInput * act: AuthoredAuthorityAct
+
 /// A structurally checked draft has no executable revision or automatically allocated operation id.
 [<NoEquality; NoComparison>]
 type internal InteractiveDraft =
     private
         {
-            Reference: string
-            Act: DraftAct
+            Intent: DraftIntent
             SuppliedId: Guid option
             DisplayLanguage: string
             PreviewOnly: bool
@@ -71,7 +75,8 @@ module internal InteractiveReview =
                | Some(ActKind.Case kind) ->
                    (CaseActKind.describe kind).Revision = RevisionInput.Expected
                | Some(ActKind.Work _)
-               | Some(ActKind.Reminder _) -> true
+               | Some(ActKind.Reminder _)
+               | Some(ActKind.Authority _) -> true
                | _ -> false)
 
     let private keepGroups entry arguments =
@@ -111,36 +116,51 @@ module internal InteractiveReview =
             match operation arguments with
             | None -> Ok None
             | Some entry ->
+                let caseIntent adapt result =
+                    result
+                    |> Result.map (fun ((target, act, supplied), language, preview) ->
+                        let reference =
+                            match target with
+                            | CaseSelector.Reference reference -> reference
+                            | CaseSelector.Id _ ->
+                                invalidOp "Interactive case bindings require a reference."
+
+                        DraftIntent.Case(reference, adapt act), supplied, language, preview)
+
                 let intent =
                     match entry.SelectedAct with
+                    | Some(ActKind.Authority _) ->
+                        Grammar.authorityIntent arguments
+                        |> Result.map (fun ((target, act, supplied), language, preview) ->
+                            DraftIntent.Authority(target, act), supplied, language, preview)
                     | Some(ActKind.Reminder _) ->
                         Grammar.reminderIntent (keepGroups entry arguments)
-                        |> Result.map (fun ((reference, act, supplied), language, preview) ->
-                            (reference, DraftAct.Reminder act, supplied), language, preview)
+                        |> caseIntent DraftAct.Reminder
                     | Some(ActKind.Work _) ->
-                        Grammar.workIntent (keepGroups entry arguments)
-                        |> Result.map (fun ((reference, act, supplied), language, preview) ->
-                            (reference, DraftAct.Work act, supplied), language, preview)
+                        Grammar.workIntent (keepGroups entry arguments) |> caseIntent DraftAct.Work
                     | _ ->
-                        Grammar.caseIntent (keepGroups entry arguments)
-                        |> Result.map (fun ((reference, act, supplied), language, preview) ->
-                            (reference, DraftAct.Case act, supplied), language, preview)
+                        Grammar.caseIntent (keepGroups entry arguments) |> caseIntent DraftAct.Case
 
                 intent
-                |> Result.map (fun ((reference, act, supplied), language, preview) ->
+                |> Result.map (fun (intent, supplied, language, preview) ->
                     Some
                         {
-                            Reference =
-                                match reference with
-                                | CaseSelector.Reference reference -> reference
-                                | CaseSelector.Id _ ->
-                                    invalidOp
-                                        "Interactive reference bindings must supply a reference."
-                            Act = act
+                            Intent = intent
                             SuppliedId = supplied
                             DisplayLanguage = language
                             PreviewOnly = preview
                         })
+
+    let private authoredIntent (draft: InteractiveDraft) =
+        match draft.Intent with
+        | DraftIntent.Case(reference, DraftAct.Case act) ->
+            AuthoredIntent.Case(draft.SuppliedId, Some reference, None, act)
+        | DraftIntent.Case(reference, DraftAct.Work(WorkAct.UpdateWork work)) ->
+            AuthoredIntent.Work(draft.SuppliedId, Some reference, None, work)
+        | DraftIntent.Case(reference, DraftAct.Reminder act) ->
+            AuthoredIntent.Reminder(draft.SuppliedId, Some reference, act)
+        | DraftIntent.Authority(target, act) ->
+            AuthoredIntent.Authority(draft.SuppliedId, target, act)
 
     let private invocation (endpoint: Endpoint<'Input, 'Output>) input =
         Frames.create endpoint input
@@ -172,12 +192,15 @@ module internal InteractiveReview =
                        Outcome = Outcome.Succeeded(PresentedPreviewed.Reviewed _)
                    } when not draft.PreviewOnly ->
                 let consent =
-                    match draft.Act with
-                    | DraftAct.Case act when
-                        Consequence.ofAct (ActKind.Case(CaseAct.kind act)) =
-                            Consequence.Irreversible
-                        ->
-                        CliConfirmation.exactTarget console draft.Language draft.Reference
+                    match Consequence.ofAct (ActKind.ofInput input) with
+                    | Consequence.Irreversible ->
+                        let target =
+                            match draft.Intent with
+                            | DraftIntent.Case(reference, _) -> reference
+                            | DraftIntent.Authority _ ->
+                                (OperationInput.operationId input).ToString("D")
+
+                        CliConfirmation.exactTarget console draft.Language target
                     | _ ->
                         MessageCatalogs.renderCli draft.Language CliMessage.ReviewConfirmation
                         |> Encoding.UTF8.GetBytes
@@ -227,7 +250,7 @@ module internal InteractiveReview =
         | ReminderAct.CompleteAndPlanNext(id, expected, plan) ->
             ReminderAct.CompleteAndPlanNext(id, defaultArg expected revision, plan)
 
-    let rec run newId console transport (draft: InteractiveDraft) token =
+    let rec private runValidated newId console transport (draft: InteractiveDraft) token =
         task {
             let context = invocation Api.context ()
             let! contextReply = transport.Exchange context token
@@ -236,7 +259,28 @@ module internal InteractiveReview =
             | Some(Outcome.Succeeded {
                                          Requester = RequesterState.Active scope
                                      }) ->
-                return! readCase newId console transport draft scope.InstallationId token
+                match draft.Intent with
+                | DraftIntent.Case(reference, act) ->
+                    return!
+                        readCase
+                            newId
+                            console
+                            transport
+                            draft
+                            reference
+                            act
+                            scope.InstallationId
+                            token
+                | DraftIntent.Authority(target, act) ->
+                    let input =
+                        OperationInput.Authority
+                            {
+                                OperationId = draft.SuppliedId |> Option.defaultWith newId
+                                Target = target
+                                Act = act
+                            }
+
+                    return! review console transport draft input scope.InstallationId token
             | Some(Outcome.Succeeded _) ->
                 transport.Deliver context contextReply
                 return ExitCode.value ExitCode.Rejected
@@ -245,13 +289,22 @@ module internal InteractiveReview =
                 return contextReply.ExitCode
         }
 
-    and private readCase newId console transport (draft: InteractiveDraft) installation token =
+    and private readCase
+        newId
+        console
+        transport
+        (draft: InteractiveDraft)
+        reference
+        act
+        installation
+        token
+        =
         task {
             let lookup =
                 invocation
                     Api.caseGet
                     {
-                        CaseGetRequest.Target = CaseSelector.Reference draft.Reference
+                        CaseGetRequest.Target = CaseSelector.Reference reference
                     }
 
             let! response = transport.Exchange lookup token
@@ -260,7 +313,7 @@ module internal InteractiveReview =
             | Some(Outcome.Succeeded current) ->
                 let target = CaseSelector.Id current.Snapshot.CaseId
 
-                match draft.Act with
+                match act with
                 | DraftAct.Reminder act ->
                     let submit revision =
                         let input =
@@ -321,3 +374,14 @@ module internal InteractiveReview =
                 transport.Deliver lookup response
                 return response.ExitCode
         }
+
+
+    let run newId console transport (draft: InteractiveDraft) token =
+        match Validation.syntaxIntent (authoredIntent draft) with
+        | None -> runValidated newId console transport draft token
+        | Some issues ->
+            TextDiagnosticReply.refusalLines draft.Language (Refusal.InvalidInput issues)
+            |> String.concat "\n"
+            |> fun text -> Encoding.UTF8.GetBytes(text + "\n") |> console.Write
+
+            Task.FromResult(ExitCode.value ExitCode.Rejected)

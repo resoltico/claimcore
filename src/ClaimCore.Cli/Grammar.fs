@@ -454,16 +454,16 @@ module Grammar =
         prepareWith false admit finish newId arguments
 
     /// Authored intent is admitted without inventing an executable operation or revision.
-    let private intent actCodec arguments =
+    let private intent targetCodec actCodec arguments =
         let codec =
             Codec.record (fun reference act operation -> reference, act, operation)
-            |> Codec.field "target" (fun (target, _, _) -> target) RequestCodecs.caseSelector
+            |> Codec.field "target" (fun (target, _, _) -> target) targetCodec
             |> Codec.field "act" (fun (_, act, _) -> act) actCodec
             |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
             |> Codec.build
 
         let admit _ body =
-            // The enclosing subject tag is a catalog constant, not part of case intent.
+            // The enclosing subject tag is a catalog constant, not part of authored intent.
             let fields =
                 match body with
                 | JsonValue.Object fields -> fields |> List.filter (fst >> (<>) WireMembers.Kind)
@@ -480,8 +480,11 @@ module Grammar =
             (fun () -> invalidOp "Intent does not allocate an operation ID.")
             arguments
 
-    let internal caseIntent arguments = intent RequestCodecs.caseAct arguments
-    let internal workIntent arguments = intent RequestCodecs.workAct arguments
+    let internal caseIntent arguments =
+        intent RequestCodecs.caseSelector RequestCodecs.caseAct arguments
+
+    let internal workIntent arguments =
+        intent RequestCodecs.caseSelector RequestCodecs.workAct arguments
 
     let internal reminderIntent arguments =
         let target =
@@ -489,4 +492,8 @@ module Grammar =
             |> Codec.field "reminderId" fst Codec.uuid
             |> Codec.optionalField "expectedRevision" snd RequestCodecs.revision
 
-        intent (RequestCodecs.reminderActWith target) arguments
+        intent RequestCodecs.caseSelector (RequestCodecs.reminderActWith target) arguments
+
+
+    let internal authorityIntent arguments =
+        intent RequestCodecs.principal RequestCodecs.authorityAct arguments

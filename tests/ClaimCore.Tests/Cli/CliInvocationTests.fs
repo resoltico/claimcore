@@ -290,6 +290,17 @@ let private localizedReplyRendering () =
 
                 Expect.isGreaterThan rendered.Length 1 "Every admitted reply has human output"
 
+                Expect.isFalse
+                    (rendered.Contains "{\"" || rendered.Contains "[{\"")
+                    "Human replies never fall back to serialized business objects"
+
+                Expect.isFalse
+                    (System.Text.RegularExpressions.Regex.IsMatch(
+                        rendered,
+                        @"(?:^|\s|:)(?:label|field|act|role|capability|view|headline|caseStage|requesterState|accountState|cli)\.[A-Za-z0-9_.]+"
+                    ))
+                    "Every human descriptor uses translated labels and sentences"
+
 [<Tests>]
 let renderingTests =
     testList

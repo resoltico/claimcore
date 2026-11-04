@@ -51,6 +51,13 @@ module ActKind =
         ]
         |> Vocabulary.ofEntries "act"
 
+    let ofInput =
+        function
+        | OperationInput.Case value -> ActKind.Case(CaseAct.kind value.Act)
+        | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
+        | OperationInput.Reminder value -> ActKind.Reminder(AuthoredReminderAct.kind value.Act)
+        | OperationInput.Authority value -> ActKind.Authority(AuthorityAct.kind value.Act)
+
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
     let parse = Vocabulary.tryParse vocabulary

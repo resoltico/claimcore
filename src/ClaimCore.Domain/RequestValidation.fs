@@ -61,20 +61,21 @@ module internal RequestValidation =
                 (fun raw -> reason raw |> Result.bind admitReason)
                 input
 
-    let private parts admit admitReason operationId referenceResult expectedRevision input =
-        let identity =
-            OperationId.create operationId
-            |> Option.map Ok
-            |> Option.defaultWith (fun () ->
-                InputValidation.invalid InputTarget.OperationId Violation.OperationIdRequired)
+    let private identity operationId =
+        OperationId.create operationId
+        |> Option.map Ok
+        |> Option.defaultWith (fun () ->
+            InputValidation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
-        let revision =
-            Revision.create expectedRevision
-            |> Option.map Ok
-            |> Option.defaultWith (fun () ->
-                InputValidation.invalid
-                    InputTarget.ExpectedRevision
-                    Violation.ExpectedRevisionRange)
+    let private expected expectedRevision =
+        Revision.create expectedRevision
+        |> Option.map Ok
+        |> Option.defaultWith (fun () ->
+            InputValidation.invalid InputTarget.ExpectedRevision Violation.ExpectedRevisionRange)
+
+    let private parts admit admitReason operationId referenceResult expectedRevision input =
+        let identity = identity operationId
+        let revision = expected expectedRevision
 
         Admission.map2
             (fun (identity, reference) (revision, act) -> reference, identity, revision, act)
@@ -93,21 +94,34 @@ module internal RequestValidation =
             request.ExpectedRevision
             request.Act
 
+    let private syntaxAdmission _field =
+        FieldValue.admit System.DateOnly.MaxValue
+
+    let private syntaxReason =
+        Reason.admit
+        >> Result.mapError (fun violation -> Refusal.invalidInput (InputTarget.Reason, violation))
+
     let syntax operationId authoredReference expectedRevision input =
         let reference =
             match authoredReference with
             | Some raw -> reference raw |> Result.map Some
             | None -> Ok None
 
-        parts
-            (fun _ -> FieldValue.admit System.DateOnly.MaxValue)
-            (Reason.admit
-             >> Result.mapError (fun violation ->
-                 Refusal.invalidInput (InputTarget.Reason, violation)))
-            operationId
-            reference
-            expectedRevision
-            input
+        parts syntaxAdmission syntaxReason operationId reference expectedRevision input
         |> Result.map ignore
 
     let parse request = parseWith (fun _ -> Ok) Ok request
+
+
+    /// Only supplied request metadata participates; field and chronology rules remain shared.
+    let syntaxIntent operationId authoredReference expectedRevision input =
+        let supplied check =
+            Option.map (check >> Result.map ignore) >> Option.defaultValue (Ok())
+
+        Admission.collect
+            [
+                supplied identity operationId
+                supplied reference authoredReference
+                supplied expected expectedRevision
+                act syntaxAdmission syntaxReason input |> Result.map ignore
+            ]
