@@ -263,6 +263,7 @@ let private reviewAndFences () =
             InstallationOffer.AuthorityAct AuthorityKind.Disable
             InstallationOffer.AuthorityAct AuthorityKind.SetProfile
             InstallationOffer.AuthorityAct AuthorityKind.EraseProfile
+            InstallationOffer.AuthorityAct AuthorityKind.Admit
         ]
         "Installation offers contain only ordinary operations; owner provisioning uses its dedicated bootstrap boundary"
 

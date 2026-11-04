@@ -139,12 +139,15 @@ let private malformed () =
             """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"],"payment":["KEEP"]},"history":[],"maintenance":{"active":false,"generation":0},"recommended":null}"""
         ] do
         Expect.isOk
-            (Codec.decode 4096 ResponseCodecs.caseAdvice (bytes valid))
+            (Codec.decode
+                4096
+                ResponseCodecs.caseAdvice
+                (Fixtures.completeAdviceWire valid |> bytes))
             "The matching complete advice admits"
 
     for raw in [ ordinary; missing ] do
         Expect.isError
-            (Codec.decode 4096 ResponseCodecs.caseAdvice (bytes raw))
+            (Codec.decode 4096 ResponseCodecs.caseAdvice (Fixtures.completeAdviceWire raw |> bytes))
             "Correction advice is conditional"
 
     Expect.isError

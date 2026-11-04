@@ -247,7 +247,7 @@ module ResponseCodecs =
             })
         : Fields<CaseActRefusal, _>)
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
-        |> field "reason" _.Reason DiagnosticCodecs.diagnostic
+        |> field "reason" _.Reason DiagnosticCodecs.caseActAvailability
         |> build
         |> named "CaseActRefusal"
 
@@ -285,6 +285,17 @@ module ResponseCodecs =
                 advice.Maintenance,
                 advice.Recommended,
                 advice.Blocked)
+        |> fun codec ->
+            { codec with
+                Schema =
+                    Schema.EnumPartition(
+                        codec.Schema,
+                        CaseActKind.all |> List.map CaseActKind.token,
+                        "acts",
+                        "blocked",
+                        "act"
+                    )
+            }
         |> named "CaseAdvice"
 
     let caseView =

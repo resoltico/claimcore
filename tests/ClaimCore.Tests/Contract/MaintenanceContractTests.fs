@@ -14,7 +14,7 @@ let tests =
             Codec.decode
                 Limits.MaximumResponseBytes
                 ResponseCodecs.caseAdvice
-                (Encoding.UTF8.GetBytes(text: string))
+                (Encoding.UTF8.GetBytes(Fixtures.completeAdviceWire text))
 
         let valid =
             read

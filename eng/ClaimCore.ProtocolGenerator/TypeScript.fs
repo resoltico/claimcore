@@ -40,6 +40,7 @@ module TypeScript =
         | Schema.OneOf(variants, _) -> variants |> List.map value |> String.concat " | "
         | Schema.Ref name -> identifier name
         | Schema.Vocabulary(_, schema) -> value schema
+        | Schema.EnumPartition(schema, _, _, _, _) -> value schema
 
     let private endpointMap name response =
         Api.all

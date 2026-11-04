@@ -621,7 +621,8 @@
     "timelineKind",
     "actorAvailability",
     "caseStage",
-    "requesterState"
+    "requesterState",
+    "accountState"
   ],
   "goldens": [
     "wire-request-examples.json",

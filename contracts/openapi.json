@@ -4808,6 +4808,142 @@
           "kind"
         ]
       },
+      "CaseActAvailabilityReason": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/CaseActAvailabilityReason.CASE_ALREADY_EXISTS"
+          },
+          {
+            "$ref": "#/components/schemas/CaseActAvailabilityReason.NOT_OFFERED"
+          },
+          {
+            "$ref": "#/components/schemas/CaseActAvailabilityReason.REGISTER_MAINTENANCE"
+          },
+          {
+            "$ref": "#/components/schemas/CaseActAvailabilityReason.RESOURCE_UNAVAILABLE"
+          },
+          {
+            "$ref": "#/components/schemas/CaseActAvailabilityReason.NOT_AUTHORIZED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "code",
+          "mapping": {
+            "CASE_ALREADY_EXISTS": "#/components/schemas/CaseActAvailabilityReason.CASE_ALREADY_EXISTS",
+            "NOT_OFFERED": "#/components/schemas/CaseActAvailabilityReason.NOT_OFFERED",
+            "REGISTER_MAINTENANCE": "#/components/schemas/CaseActAvailabilityReason.REGISTER_MAINTENANCE",
+            "RESOURCE_UNAVAILABLE": "#/components/schemas/CaseActAvailabilityReason.RESOURCE_UNAVAILABLE",
+            "NOT_AUTHORIZED": "#/components/schemas/CaseActAvailabilityReason.NOT_AUTHORIZED"
+          }
+        }
+      },
+      "CaseActAvailabilityReason.CASE_ALREADY_EXISTS": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "CASE_ALREADY_EXISTS"
+          },
+          "action": {
+            "const": "CHOOSE_ANOTHER_REFERENCE"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "CaseActAvailabilityReason.NOT_AUTHORIZED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "NOT_AUTHORIZED"
+          },
+          "action": {
+            "const": "ASK_FOR_ACCESS"
+          },
+          "required": {
+            "enum": [
+              "READ_CASE",
+              "READ_HISTORY",
+              "READ_HISTORY_FULL",
+              "MANAGE_CASE_WORK",
+              "REGISTER",
+              "DECIDE",
+              "RECORD_PAYMENT",
+              "CLOSE",
+              "STEWARD",
+              "MANAGE_AUTHORITY",
+              "READ_AUTHORITY"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "required"
+        ]
+      },
+      "CaseActAvailabilityReason.NOT_OFFERED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "NOT_OFFERED"
+          },
+          "action": {
+            "const": "REVIEW_LATEST"
+          },
+          "state": {
+            "enum": [
+              "ERASED",
+              "VOIDED",
+              "CLOSED",
+              "PAID",
+              "DECIDED",
+              "UNDECIDED"
+            ]
+          }
+        },
+        "required": [
+          "code",
+          "action",
+          "state"
+        ]
+      },
+      "CaseActAvailabilityReason.REGISTER_MAINTENANCE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "REGISTER_MAINTENANCE"
+          },
+          "action": {
+            "const": "READ_CURRENT"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
+      "CaseActAvailabilityReason.RESOURCE_UNAVAILABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "RESOURCE_UNAVAILABLE"
+          },
+          "action": {
+            "const": "ASK_FOR_ACCESS"
+          }
+        },
+        "required": [
+          "code",
+          "action"
+        ]
+      },
       "CaseActRefusal": {
         "type": "object",
         "additionalProperties": false,
@@ -4829,7 +4965,7 @@
             ]
           },
           "reason": {
-            "$ref": "#/components/schemas/Diagnostic"
+            "$ref": "#/components/schemas/CaseActAvailabilityReason"
           }
         },
         "required": [
@@ -5033,85 +5169,725 @@
         ]
       },
       "CaseAdvice": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "acts": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "OPEN",
-                "AMEND_REGISTRATION",
-                "CORRECT",
-                "DECIDE",
-                "WITHDRAW_DECISION",
-                "RECORD_PAYMENT",
-                "CLEAR_PAYMENT",
-                "CLOSE",
-                "REOPEN",
-                "VOID",
-                "REINSTATE",
-                "ERASE"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 12
-          },
-          "correction": {
-            "$ref": "#/components/schemas/CorrectionAdvice"
-          },
-          "history": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "SUMMARY",
-                "FULL"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 2
-          },
-          "maintenance": {
-            "$ref": "#/components/schemas/RegisterMaintenance"
-          },
-          "recommended": {
-            "oneOf": [
-              {
-                "enum": [
-                  "OPEN",
-                  "AMEND_REGISTRATION",
-                  "CORRECT",
-                  "DECIDE",
-                  "WITHDRAW_DECISION",
-                  "RECORD_PAYMENT",
-                  "CLEAR_PAYMENT",
-                  "CLOSE",
-                  "REOPEN",
-                  "VOID",
-                  "REINSTATE",
-                  "ERASE"
+        "allOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "acts": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "OPEN",
+                    "AMEND_REGISTRATION",
+                    "CORRECT",
+                    "DECIDE",
+                    "WITHDRAW_DECISION",
+                    "RECORD_PAYMENT",
+                    "CLEAR_PAYMENT",
+                    "CLOSE",
+                    "REOPEN",
+                    "VOID",
+                    "REINSTATE",
+                    "ERASE"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 12
+              },
+              "correction": {
+                "$ref": "#/components/schemas/CorrectionAdvice"
+              },
+              "history": {
+                "type": "array",
+                "items": {
+                  "enum": [
+                    "SUMMARY",
+                    "FULL"
+                  ]
+                },
+                "minItems": 0,
+                "maxItems": 2
+              },
+              "maintenance": {
+                "$ref": "#/components/schemas/RegisterMaintenance"
+              },
+              "recommended": {
+                "oneOf": [
+                  {
+                    "enum": [
+                      "OPEN",
+                      "AMEND_REGISTRATION",
+                      "CORRECT",
+                      "DECIDE",
+                      "WITHDRAW_DECISION",
+                      "RECORD_PAYMENT",
+                      "CLEAR_PAYMENT",
+                      "CLOSE",
+                      "REOPEN",
+                      "VOID",
+                      "REINSTATE",
+                      "ERASE"
+                    ]
+                  },
+                  {
+                    "type": "null"
+                  }
                 ]
               },
+              "blocked": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/CaseActRefusal"
+                },
+                "minItems": 0,
+                "maxItems": 12
+              }
+            },
+            "required": [
+              "acts",
+              "history",
+              "maintenance",
+              "recommended",
+              "blocked"
+            ]
+          },
+          {
+            "oneOf": [
               {
-                "type": "null"
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "OPEN"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "OPEN"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "OPEN"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "OPEN"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
               }
             ]
           },
-          "blocked": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/CaseActRefusal"
-            },
-            "minItems": 0,
-            "maxItems": 12
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "AMEND_REGISTRATION"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "AMEND_REGISTRATION"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "AMEND_REGISTRATION"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "AMEND_REGISTRATION"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "CORRECT"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "CORRECT"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "CORRECT"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "CORRECT"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "DECIDE"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "DECIDE"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "DECIDE"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "DECIDE"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "WITHDRAW_DECISION"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "WITHDRAW_DECISION"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "WITHDRAW_DECISION"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "WITHDRAW_DECISION"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "RECORD_PAYMENT"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "RECORD_PAYMENT"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "RECORD_PAYMENT"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "RECORD_PAYMENT"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "CLEAR_PAYMENT"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "CLEAR_PAYMENT"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "CLEAR_PAYMENT"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "CLEAR_PAYMENT"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "CLOSE"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "CLOSE"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "CLOSE"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "CLOSE"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "REOPEN"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "REOPEN"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "REOPEN"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "REOPEN"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "VOID"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "VOID"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "VOID"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "VOID"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "REINSTATE"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "REINSTATE"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "REINSTATE"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "REINSTATE"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
+          },
+          {
+            "oneOf": [
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "ERASE"
+                    },
+                    "minContains": 1
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "ERASE"
+                        }
+                      }
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  }
+                }
+              },
+              {
+                "properties": {
+                  "acts": {
+                    "contains": {
+                      "const": "ERASE"
+                    },
+                    "minContains": 0,
+                    "maxContains": 0
+                  },
+                  "blocked": {
+                    "contains": {
+                      "required": [
+                        "act"
+                      ],
+                      "properties": {
+                        "act": {
+                          "const": "ERASE"
+                        }
+                      }
+                    },
+                    "minContains": 1,
+                    "maxContains": 1
+                  }
+                }
+              }
+            ]
           }
-        },
-        "required": [
-          "acts",
-          "history",
-          "maintenance",
-          "recommended",
-          "blocked"
         ]
       },
       "CaseFieldDifference": {

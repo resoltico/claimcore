@@ -153,18 +153,10 @@ module Bindings =
     let walk definitions selections schema =
         let rec visit (position: Position) schema =
             match schema with
+            | Schema.EnumPartition _ -> refuse "set partition constraints are response-only"
             | Schema.Vocabulary(name, schema) ->
                 visit { position with Vocabulary = Some name } schema
-            | Schema.Ref name ->
-                if Set.contains name position.References then
-                    refuse ("recursive request definition " + name)
-
-                visit
-                    { position with
-                        Definition = name
-                        References = Set.add name position.References
-                    }
-                    (definition definitions name)
+            | Schema.Ref name -> referenced position name
             | Schema.Object(properties, optional) -> objects position properties optional
             | Schema.OneOf(_, Some(tag, mapping)) -> tagged position tag mapping
             | Schema.OneOf(cases, None) -> untagged position cases schema
@@ -174,6 +166,17 @@ module Bindings =
             | Schema.Const token -> [ constant position (BindingValue.Text token) ]
             | Schema.Array(items, minimum, maximum) -> arrays position items minimum maximum schema
             | Schema.Null -> refuse "request input is not a finite scalar or tagged object"
+
+        and referenced position name =
+            if Set.contains name position.References then
+                refuse ("recursive request definition " + name)
+
+            visit
+                { position with
+                    Definition = name
+                    References = Set.add name position.References
+                }
+                (definition definitions name)
 
         and arrays position items minimum maximum schema =
             match resolved definitions items with

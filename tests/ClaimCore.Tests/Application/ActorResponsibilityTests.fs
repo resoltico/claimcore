@@ -57,7 +57,7 @@ let tests =
 
             do! ActorResponsibilityScenarios.run fixture corrupt |> Async.AwaitTask
 
-            for subject, expectedReads in [ "owner-only-viewer", 2; "global-viewer", 3 ] do
+            for subject, expectedReads in [ "owner-only-viewer", 3; "global-viewer", 4 ] do
                 let viewer =
                     PrincipalKey.human "https://issuer.example/" subject
                     |> Result.defaultWith (string >> failtest)
@@ -84,5 +84,5 @@ let tests =
                 Expect.equal
                     (store.Events.Length - before)
                     expectedReads
-                    "One batched responsibility read serves the whole page; no read occurs without case visibility"
+                    "Directory roles use one bounded batch; responsibility adds one only when the viewer can read cases"
         })

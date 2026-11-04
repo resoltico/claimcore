@@ -8,8 +8,8 @@
     <Compile Include="CodecScalars.fs" />
     <Compile Include="CodecRecords.fs" />
     <Compile Include="CodecUnions.fs" />
+    <Compile Include="SchemaJson.fs" />
     <Compile Include="CodecSchema.fs" />
     <Compile Include="Codec.fs" />
-    <Compile Include="SchemaJson.fs" />
   </ItemGroup>
 </Project>

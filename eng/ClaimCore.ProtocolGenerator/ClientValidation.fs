@@ -91,6 +91,15 @@ const wireArray = (check: WireCheck, minimum: number,maximum: number): WireCheck
   }
   return null;
 };
+const wireEnumPartition = (check: WireCheck, values: ReadonlyArray<string>, selected: string, rejected: string, key: string): WireCheck => (value,draft,path) => {
+  const issue = check(value,draft,path);
+  if (issue !== null) { return issue; }
+  if (!isObject(value) || !Array.isArray(value[selected]) || !Array.isArray(value[rejected])) { return path; }
+  const offered = value[selected] as unknown[];
+  const unavailable = (value[rejected] as unknown[]).map(item => isObject(item) ? item[key] : undefined);
+  if (new Set(unavailable).size !== unavailable.length || values.some(token => offered.includes(token) === unavailable.includes(token))) { return [...path,rejected]; }
+  return null;
+};
 const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, branches: Readonly<Record<string,WireCheck>>): WireCheck => (value,draft,path) => {
   const issues = checks.map(check => check(value,draft,path));
   if (issues.filter(issue => issue===null).length === 1) { return null; }
@@ -110,6 +119,18 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         function
         | Schema.Ref name -> "check_" + identifier name
         | Schema.Vocabulary(_, schema) -> check schema
+        | Schema.EnumPartition(schema, values, selected, rejected, key) ->
+            "wireEnumPartition("
+            + check schema
+            + ",["
+            + (values |> List.map quote |> String.concat ",")
+            + "],"
+            + quote selected
+            + ","
+            + quote rejected
+            + ","
+            + quote key
+            + ")"
         | Schema.Null -> "wireNull"
         | Schema.Boolean -> "wireBoolean"
         | Schema.Const value -> "wireConstant(" + quote value + ")"

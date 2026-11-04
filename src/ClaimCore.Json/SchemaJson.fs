@@ -5,6 +5,7 @@ module SchemaJson =
         function
         | Schema.Ref name -> [ name ]
         | Schema.Vocabulary(_, schema) -> references schema
+        | Schema.EnumPartition(schema, _, _, _, _) -> references schema
         | Schema.Object(properties, _) -> properties |> List.collect (snd >> references)
         | Schema.Array(items, _, _) -> references items
         | Schema.OneOf(variants, discriminator) ->
@@ -66,6 +67,49 @@ module SchemaJson =
 
     let rec value prefix =
         function
+        | Schema.EnumPartition(shape, values, selected, rejected, key) ->
+            let contains item minimum maximum =
+                JsonValue.Object(
+                    [ "contains", item; "minContains", number minimum ]
+                    @ (maximum
+                       |> Option.map (fun maximum -> "maxContains", number maximum)
+                       |> Option.toList)
+                )
+
+            let properties fields =
+                JsonValue.Object [ "properties", JsonValue.Object fields ]
+
+            let rules =
+                values
+                |> List.map (fun token ->
+                    let selectedValue = JsonValue.Object [ "const", text token ]
+
+                    let rejectedValue =
+                        JsonValue.Object
+                            [
+                                "required", JsonValue.Array [ text key ]
+                                "properties", JsonValue.Object [ key, selectedValue ]
+                            ]
+
+                    JsonValue.Object
+                        [
+                            "oneOf",
+                            JsonValue.Array
+                                [
+                                    properties
+                                        [
+                                            selected, contains selectedValue 1 None
+                                            rejected, contains rejectedValue 0 (Some 0)
+                                        ]
+                                    properties
+                                        [
+                                            selected, contains selectedValue 0 (Some 0)
+                                            rejected, contains rejectedValue 1 (Some 1)
+                                        ]
+                                ]
+                        ])
+
+            JsonValue.Object [ "allOf", JsonValue.Array(value prefix shape :: rules) ]
         | Schema.Object(properties, optional) ->
             JsonValue.Object
                 [

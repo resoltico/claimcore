@@ -24,6 +24,13 @@ type Schema =
     | OneOf of variants: Schema list * discriminator: (string * (string * string) list) option
     | Ref of string
     | Vocabulary of name: string * shape: Schema
+    /// A closed enum is partitioned between a scalar array and a keyed-record array.
+    | EnumPartition of
+        shape: Schema *
+        values: string list *
+        selected: string *
+        rejected: string *
+        rejectedKey: string
 
 module Schema =
     /// Distinct string literals are disjoint, so their oneOf is exactly one enum.

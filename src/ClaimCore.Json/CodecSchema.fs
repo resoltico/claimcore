@@ -8,6 +8,33 @@ open System.Text.Encodings.Web
 open System.Text.Json
 
 module internal CodecSchema =
+    let rec private json (writer: Utf8JsonWriter) =
+        function
+        | JsonValue.Object fields ->
+            writer.WriteStartObject()
+
+            for name, value in fields do
+                writer.WritePropertyName name
+                json writer value
+
+            writer.WriteEndObject()
+        | JsonValue.Array items ->
+            writer.WriteStartArray()
+            items |> List.iter (json writer)
+            writer.WriteEndArray()
+        | JsonValue.String value -> writer.WriteStringValue value
+        | JsonValue.Integer value -> writer.WriteNumberValue value
+        | JsonValue.Boolean value -> writer.WriteBooleanValue value
+        | JsonValue.Null -> writer.WriteNullValue()
+
+    let private assertions prefix (writer: Utf8JsonWriter) schema =
+        match SchemaJson.value prefix schema with
+        | JsonValue.Object fields ->
+            for name, value in fields do
+                writer.WritePropertyName name
+                json writer value
+        | _ -> invalidOp "A schema assertion must be an object."
+
     let rec private objectSchema
         prefix
         (writer: Utf8JsonWriter)
@@ -55,6 +82,7 @@ module internal CodecSchema =
 
     and private schemaFields (prefix: string) (writer: Utf8JsonWriter) schema =
         match schema with
+        | Schema.EnumPartition _ -> assertions prefix writer schema
         | Schema.Object(properties, optionalMembers) ->
             objectSchema prefix writer properties optionalMembers
         | Schema.Array(items, minimum, maximum) ->

@@ -304,6 +304,20 @@ module DiagnosticCodecs =
 
     let diagnostic = groupedTaggedOn "code" "Diagnostic" diagnosticVariants
 
+    let caseActAvailability =
+        diagnosticVariants
+        |> List.filter (fun variant ->
+            List.contains
+                variant.Tag
+                [
+                    "CASE_ALREADY_EXISTS"
+                    "NOT_OFFERED"
+                    "RESOURCE_UNAVAILABLE"
+                    "NOT_AUTHORIZED"
+                    "REGISTER_MAINTENANCE"
+                ])
+        |> groupedTaggedOn "code" "CaseActAvailabilityReason"
+
     let private definitionsOf (variants: Variant<'T> list) : DiagnosticDefinition list =
         variants
         |> List.map (fun variant ->
