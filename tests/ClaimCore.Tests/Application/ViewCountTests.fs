@@ -41,6 +41,7 @@ let tests =
                 ActorId = ActorId.create (id 2) |> Option.get
                 Principal = adminPrincipal
                 Enabled = true
+                Profile = None
             }
 
         store.SeedActor admin [ Role.CaseHandler, None ]
@@ -95,6 +96,7 @@ let tests =
                 ActorId = ActorId.create (id 5) |> Option.get
                 Principal = servicePrincipal
                 Enabled = true
+                Profile = None
             }
 
         store.SeedActor
@@ -139,6 +141,7 @@ let tests =
                 ActorId = ActorId.create (id 6) |> Option.get
                 Principal = denied
                 Enabled = true
+                Profile = None
             }
             []
 

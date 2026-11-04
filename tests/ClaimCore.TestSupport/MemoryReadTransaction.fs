@@ -43,7 +43,9 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
                     Responsible =
                         record.Index.Responsible
                         |> Option.map (fun actor ->
-                            actor, (assignedAccount state record.CaseId actor).Availability = ActorAvailability.Available)
+                            actor,
+                            (assignedAccount state record.CaseId actor).Availability =
+                                ActorAvailability.Available)
                     NextPendingDue = record.Index.FollowUp
                 }))
     && (selection.Filter.Assignment
@@ -82,7 +84,9 @@ let private viewFacts state (record: StoredCase) : CaseWorkFacts =
         Responsible =
             record.Index.Responsible
             |> Option.map (fun actor ->
-                actor, (assignedAccount state record.CaseId actor).Available)
+                actor,
+                (assignedAccount state record.CaseId actor).Availability =
+                    ActorAvailability.Available)
         NextPendingDue = record.Index.FollowUp
     }
 
