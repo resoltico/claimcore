@@ -219,8 +219,8 @@ let private authorityProfiles progressed publish (database: PostgresFixture.Data
 
         Expect.equal
             (ClaimCore.Postgres.DatabaseSession.value<int64> 0 counts.Head)
-            (int64 (GrowthWorkloadPlan.authorityEntries + 3))
-            "History qualification contains the declared actual authority entry population"
+            (int64 (GrowthWorkloadPlan.authorityEntries + 4))
+            "History population includes the two owner effects and two setup grants"
 
         let reports = ResizeArray<_>()
 

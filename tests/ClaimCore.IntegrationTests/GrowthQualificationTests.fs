@@ -81,8 +81,8 @@ let private cardinalityWrites cases keyRing (database: PostgresFixture.Database)
 
         Expect.equal
             position.Sequence
-            (CaseFixtures.sequence (1003L))
-            "Resource comparisons keep accepted history fixed"
+            (CaseFixtures.sequence 1004L)
+            "Two owner effects, two grants and 1000 case writes keep physical history fixed"
 
         let! population = GrowthEnvironment.database database
         Expect.equal population.cases (int64 cases) "Compared resource population is exact"
