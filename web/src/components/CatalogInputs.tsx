@@ -2,9 +2,15 @@ import { AssigneeInput } from "./AssigneeInput";
 import { roleAdmitted } from "../operation/roleAvailability";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { isTerm, isVocabulary } from "../presentation/terms";
-import type { CatalogEntry } from "../protocol/catalogAssembly";
+import type { CatalogCollection, CatalogEntry } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
-import { formValueText, isChoiceValues, type FormValues, type FormValue } from "../protocol/forms";
+import {
+  formValueText,
+  isChoiceValues,
+  isFormCollection,
+  type FormValues,
+  type FormValue,
+} from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { renderCatalogKey } from "../presentation/messages";
@@ -16,6 +22,7 @@ import {
   visibleOperationInputs,
   selectableFact,
   prefilledValue,
+  initialCollectionRow,
   type CatalogInput,
 } from "../operation/operationForm";
 
@@ -25,6 +32,8 @@ type Props = {
   current: CurrentCase | null;
   disabled: boolean;
   fixedTarget?: boolean;
+  namePrefix?: string;
+  roleContext?: { principalKind: string; scope: string };
   fieldErrors: Readonly<Record<string, Notice>>;
   onChange: (path: string, value: FormValue) => void;
   onFieldsChange: (values: FormValues, omitted?: ReadonlyArray<string>) => void;
@@ -80,17 +89,17 @@ const choiceLabel = (
     ? p.term(vocabulary, value)
     : value;
 };
+const roleContext = (props: Props) =>
+  props.roleContext ?? {
+    principalKind: formValueText(props.values["target.kind"]),
+    scope: formValueText(props.values["act.scope.kind"]),
+  };
 const roleOptionUnavailable = (input: CatalogInput, props: Props, value: string) =>
   props.entry.subject === "AUTHORITY" &&
-  props.entry.kind === "GRANT" &&
+  (props.entry.kind === "GRANT" || props.entry.kind === "ADMIT") &&
   input.kind.kind === "CHOICE" &&
   input.kind.vocabulary === "role" &&
-  typeof props.values["target.kind"] === "string" &&
-  !roleAdmitted(
-    value,
-    props.values["target.kind"],
-    typeof props.values["act.scope.kind"] === "string" ? props.values["act.scope.kind"] : undefined,
-  );
+  !roleAdmitted(value, roleContext(props).principalKind, roleContext(props).scope || undefined);
 const groupOptionUnavailable = (input: CatalogInput, props: Props, value: string): boolean => {
   const modes =
     input.adviceGroup === null ? undefined : props.current?.advice.correction?.[input.adviceGroup];
@@ -100,10 +109,9 @@ const choiceUnavailableReason = (input: CatalogInput, props: Props, value: strin
   if (groupOptionUnavailable(input, props, value)) {
     return "ui.choiceNotAvailable";
   }
-  return typeof props.values["target.kind"] === "string" &&
-    !roleAdmitted(value, props.values["target.kind"])
-    ? "ui.roleNotAvailableForService"
-    : "ui.roleNotAvailableAtScope";
+  return roleAdmitted(value, roleContext(props).principalKind)
+    ? "ui.roleNotAvailableAtScope"
+    : "ui.roleNotAvailableForService";
 };
 const ChoiceOption = ({
   input,
@@ -120,7 +128,7 @@ const ChoiceOption = ({
     <label className={props.values[path] === value ? "selected" : ""}>
       <input
         type="radio"
-        name={path}
+        name={`${props.namePrefix ?? ""}${path}`}
         value={value}
         checked={props.values[path] === value}
         disabled={props.disabled || blocked}
@@ -151,7 +159,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const group = input.kind.kind === "GROUP";
   const error = inputError(input, props);
   const admitted = permittedOptions(input, props);
-  const options = group && !input.required ? ["", ...admitted] : admitted;
+  const options = group && !input.required && input.default === null ? ["", ...admitted] : admitted;
   const label = renderCatalogKey(p, input.labelId);
   const roleChoice = input.kind.kind === "CHOICE" && input.kind.vocabulary === "role";
   return (
@@ -192,7 +200,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
       <AssigneeInput
         field={field}
         current={props.current}
-        inputName={path}
+        inputName={`${props.namePrefix ?? ""}${path}`}
         value={formValueText(props.values[path])}
         disabled={props.disabled}
         error={error ?? undefined}
@@ -206,7 +214,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     return (
       <CatalogField
         field={field}
-        inputName={path}
+        inputName={`${props.namePrefix ?? ""}${path}`}
         value={formValueText(props.values[path])}
         disabled={props.disabled}
         error={error ?? undefined}
@@ -221,7 +229,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
       <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
       <input
         id={input.identity}
-        name={path}
+        name={`${props.namePrefix ?? ""}${path}`}
         type="text"
         autoComplete="off"
         {...scalarInputAppearance(input)}
@@ -254,7 +262,7 @@ const ChoiceSetInput = ({ input, ...props }: Props & { input: CatalogInput }) =>
         <label key={option}>
           <input
             type="checkbox"
-            name={path}
+            name={`${props.namePrefix ?? ""}${path}`}
             value={option}
             disabled={props.disabled}
             checked={selected.includes(option)}
@@ -290,7 +298,7 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
           <input
             id={input.identity}
             type="checkbox"
-            name={path}
+            name={`${props.namePrefix ?? ""}${path}`}
             disabled={props.disabled}
             checked={props.values[path] === true}
             aria-invalid={props.fieldErrors[path] !== undefined || undefined}
@@ -422,6 +430,83 @@ const CorrectionGroup = ({
     )}
   </section>
 );
+const CollectionInput = ({ collection, ...props }: Props & { collection: CatalogCollection }) => {
+  const p = usePresentation();
+  const path = collection.path.join(".");
+  const value = props.values[path];
+  const rows = isFormCollection(value) ? value.rows : [];
+  const error = props.fieldErrors[path];
+  const update = (next: typeof rows) => {
+    props.onChange(path, { kind: "COLLECTION", rows: next });
+  };
+  return (
+    <fieldset
+      id={`field-${path}`}
+      tabIndex={-1}
+      aria-invalid={error !== undefined || undefined}
+      aria-describedby={error === undefined ? undefined : `${collection.identity}-error`}
+    >
+      <legend>{renderCatalogKey(p, collection.labelId)}</legend>
+      {rows.map(({ key, values: row }, index) => (
+        <fieldset key={key}>
+          <legend>{p.text("ui.grantNumber", { number: p.integer(String(index + 1)) })}</legend>
+          {collection.rowInputs
+            .filter((input) =>
+              input.branches.every((branch) => row[branch.path.join(".")] === branch.value),
+            )
+            .map((input) => (
+              <BindingInput
+                key={input.identity}
+                input={{ ...input, identity: `${collection.identity}-${key}-${input.identity}` }}
+                {...props}
+                namePrefix={`${path}.${key}.`}
+                values={row}
+                current={null}
+                roleContext={{
+                  principalKind: formValueText(props.values["target.kind"]),
+                  scope: formValueText(row["scope.kind"]),
+                }}
+                fieldErrors={{}}
+                onChange={(fieldPath, next) => {
+                  update(
+                    rows.map((item) =>
+                      item.key === key
+                        ? { ...item, values: { ...item.values, [fieldPath]: next } }
+                        : item,
+                    ),
+                  );
+                }}
+                onFieldsChange={() => undefined}
+              />
+            ))}
+          <button
+            type="button"
+            disabled={props.disabled || rows.length <= collection.minimumItems}
+            onClick={() => {
+              update(rows.filter((item) => item.key !== key));
+            }}
+          >
+            {p.text("ui.removeGrant")}
+          </button>
+        </fieldset>
+      ))}
+      {error === undefined ? null : (
+        <p id={`${collection.identity}-error`}>
+          <NoticeView value={error} />
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={props.disabled || rows.length >= collection.maximumItems}
+        onClick={() => {
+          update([...rows, { key: crypto.randomUUID(), values: initialCollectionRow(collection) }]);
+        }}
+      >
+        {p.text("ui.addGrant")}
+      </button>
+    </fieldset>
+  );
+};
 export const CatalogInputs = (props: Props) => {
   const visible = visibleOperationInputs(props.entry, props.values, props.current).filter(
     (input) =>
@@ -456,6 +541,15 @@ export const CatalogInputs = (props: Props) => {
             })
           ),
         )}
+      {props.entry.collections
+        .filter((collection) =>
+          collection.branches.every(
+            (branch) => props.values[branch.path.join(".")] === branch.value,
+          ),
+        )
+        .map((collection) => (
+          <CollectionInput key={collection.identity} collection={collection} {...props} />
+        ))}
     </>
   );
 };

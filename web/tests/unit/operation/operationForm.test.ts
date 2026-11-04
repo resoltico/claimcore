@@ -1,5 +1,9 @@
 import { describe, expect, it } from "vitest";
-import { initialOperationValues, assembleOperation } from "../../../src/operation/operationForm";
+import {
+  initialOperationValues,
+  assembleOperation,
+  refusalPath,
+} from "../../../src/operation/operationForm";
 import { operationEntry } from "../../../src/protocol/operationCatalog";
 import { current, firstId } from "../../support/operation-form.fixtures";
 import { correctionSerializations } from "../../support/correction-serialization.fixtures";
@@ -113,4 +117,12 @@ it("takes the selected entry from identity while request constants derive from t
     expectedRevision: current.revision,
     act: { kind: "CLOSE" },
   });
+});
+
+it("routes collection and unindexed grant issues to the collection without guessing a row", () => {
+  const entry = operationEntry({ subject: "AUTHORITY", kind: "ADMIT" });
+  const values = initialOperationValues("AUTHORITY", "ADMIT", null, firstId);
+  for (const target of ["grants", "role", "caseReference", "act.grants.1.role"]) {
+    expect(refusalPath(target, entry, values)).toBe("act.grants");
+  }
 });

@@ -1,3 +1,7 @@
+import { useState } from "react";
+import userEvent from "@testing-library/user-event";
+import { within } from "@testing-library/react";
+import { initialOperationValues } from "../../../src/operation/operationForm";
 import { caseViewInput } from "../../support/inputs";
 import { fields } from "../../support/service-ui.fixtures";
 import { caseAdvice } from "../../support/case-advice.fixtures";
@@ -110,4 +114,45 @@ it("keeps a selected reminder identity bound rather than exposing a technical re
   expect(document.querySelector('[name="act.reminderId"]')).toBeNull();
   expect(screen.getByRole("textbox", { name: "Action" })).toHaveValue("Retained action");
   expect(onChange).not.toHaveBeenCalled();
+});
+
+it("edits admission rows independently with catalog scope and principal admission", async () => {
+  const user = userEvent.setup();
+  const entry = operationEntry({ subject: "AUTHORITY", kind: "ADMIT" });
+  const Wrapper = () => {
+    const [values, setValues] = useState(initialOperationValues("AUTHORITY", "ADMIT", null));
+    return (
+      <CatalogInputs
+        entry={entry}
+        current={null}
+        values={values}
+        disabled={false}
+        fieldErrors={{}}
+        onChange={(path, value) => {
+          setValues({ ...values, [path]: value });
+        }}
+        onFieldsChange={vi.fn()}
+      />
+    );
+  };
+  render(<Wrapper />);
+  expect(screen.getByRole("button", { name: "Remove role" })).toBeDisabled();
+  expect(screen.getByRole("radio", { name: "Owner" })).not.toBeChecked();
+  await user.click(screen.getByRole("radio", { name: "Owner" }));
+  await user.click(screen.getByRole("button", { name: "Add role" }));
+  const groups = screen.getAllByRole("radiogroup", { name: "Role" });
+  expect(groups).toHaveLength(2);
+  await user.click(within(groups[1]!).getByRole("radio", { name: "Case reader" }));
+  expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
+  expect(within(groups[1]!).getByRole("radio", { name: "Case reader" })).toBeChecked();
+  const row = screen.getByRole("group", { name: "Role 2" });
+  await user.click(within(row).getByRole("radio", { name: "One case" }));
+  expect(within(row).getByRole("radio", { name: "Owner" })).toBeDisabled();
+  expect(within(row).getByRole("textbox", { name: /case reference/u })).toBeVisible();
+  await user.click(screen.getByRole("radio", { name: "Service" }));
+  expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeDisabled();
+  expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();
+  await user.click(screen.getAllByRole("button", { name: "Remove role" })[0]!);
+  expect(screen.getAllByRole("radiogroup", { name: "Role" })).toHaveLength(1);
+  expect(screen.getByRole("radio", { name: "Case reader" })).toBeChecked();
 });

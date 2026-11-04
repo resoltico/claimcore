@@ -8,6 +8,7 @@ import {
   assembleCatalogInput,
   bindingPath,
   type CatalogInput,
+  type CatalogCollection,
   type CatalogEntry,
 } from "../protocol/catalogAssembly";
 export { bindingPath, type CatalogInput } from "../protocol/catalogAssembly";
@@ -71,6 +72,11 @@ export const selectableFact = (entry: CatalogEntry, input: CatalogInput): boolea
   !input.required &&
   input.field !== null;
 
+export const initialCollectionRow = (collection: CatalogCollection): FormValues =>
+  Object.fromEntries(
+    collection.rowInputs.map((input) => [bindingPath(input), authoredValue(input, null)]),
+  );
+
 export const initialOperationValues = (
   subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER",
   kind: string,
@@ -83,6 +89,15 @@ export const initialOperationValues = (
     if (!selectableFact(definition, input)) {
       values[bindingPath(input)] = initialValue(input, current, id, subject);
     }
+  }
+  for (const collection of definition.collections) {
+    values[collection.path.join(".")] = {
+      kind: "COLLECTION",
+      rows: Array.from({ length: collection.minimumItems }, () => ({
+        key: crypto.randomUUID(),
+        values: initialCollectionRow(collection),
+      })),
+    };
   }
   return values;
 };
@@ -98,7 +113,17 @@ export const refusalPath = (
     (input) => input.diagnosticTargets.includes(target) && applies(input, values),
   );
   const selected = candidates.find((candidate) => candidate.field === target) ?? candidates[0];
-  return selected?.path.join(".") ?? null;
+  if (selected !== undefined) {
+    return bindingPath(selected);
+  }
+  const collection = entry.collections.find(
+    (item) =>
+      applies(item, values) &&
+      (item.field === target ||
+        target.startsWith(`${item.path.join(".")}.`) ||
+        item.rowInputs.some((input) => input.diagnosticTargets.includes(target))),
+  );
+  return collection?.path.join(".") ?? null;
 };
 export const assembleOperation = (entry: CatalogEntry, values: FormValues) =>
   buildRequest("operation.execute", assembleCatalogInput(entry, values));

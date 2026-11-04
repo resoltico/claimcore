@@ -27,8 +27,8 @@ it("assembles all inventoried captured frames including reads and selected corre
             (constant) => constant.path.join(".") === "act.kind" && constant.value === act,
           ),
     )!;
-    const values: FormValues = Object.fromEntries(
-      entry.inputs.flatMap((input) => {
+    const values: FormValues = Object.fromEntries([
+      ...entry.inputs.flatMap((input) => {
         const value = atPath(expected.input, input.path);
         return value === undefined
           ? []
@@ -39,7 +39,25 @@ it("assembles all inventoried captured frames including reads and selected corre
               ],
             ];
       }),
-    );
+      ...entry.collections.map((collection) => {
+        const collectionRows = atPath(expected.input, collection.path) as ReadonlyArray<unknown>;
+        return [
+          collection.path.join("."),
+          {
+            kind: "COLLECTION",
+            rows: collectionRows.map((collectionRow, index) => ({
+              key: String(index),
+              values: Object.fromEntries(
+                collection.rowInputs.flatMap((input) => {
+                  const value = atPath(collectionRow, input.path);
+                  return value === undefined ? [] : [[input.path.join("."), value]];
+                }),
+              ),
+            })),
+          },
+        ];
+      }),
+    ]) as FormValues;
     expect(assembleCatalogInput(entry, values), arguments_).toEqual(expected.input);
   }
 });
@@ -119,4 +137,50 @@ it("a work summary clear is an independent work command with no financial body",
     expectedRevision: 7,
     act: { kind: "UPDATE_WORK", values: { handlingSummary: null } },
   });
+});
+
+it("assembles atomic admission rows with their own scope branches and preserves authored bytes", () => {
+  const entry = productMetadata.catalog.entries.find((item) => item.kind === "ADMIT")!;
+  const input = assembleCatalogInput(entry, {
+    "target.kind": "HUMAN",
+    "target.issuer": "https://identity.invalid",
+    "target.subject": "person",
+    "act.profile.displayName": "Anna Ozola",
+    "act.profile.contact": "anna@example.invalid",
+    "act.grants": {
+      kind: "COLLECTION",
+      rows: [
+        {
+          key: "owner",
+          values: {
+            role: "OWNER",
+            "scope.kind": "INSTALLATION",
+            "scope.target.caseReference": "ignored",
+          },
+        },
+        {
+          key: "reader",
+          values: {
+            role: "CASE_READER",
+            "scope.kind": "CASE",
+            "scope.target.caseReference": "  Exact/مرجع  ",
+          },
+        },
+      ],
+    },
+  });
+  expect(input["act"]).toEqual({
+    kind: "ADMIT",
+    profile: { displayName: "Anna Ozola", contact: "anna@example.invalid" },
+    grants: [
+      { role: "OWNER", scope: { kind: "INSTALLATION" } },
+      {
+        role: "CASE_READER",
+        scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "  Exact/مرجع  " } },
+      },
+    ],
+  });
+  expect(
+    assembleCatalogInput(entry, { "act.grants": { kind: "COLLECTION", rows: [] } })["act"],
+  ).toMatchObject({ grants: [] });
 });
