@@ -803,6 +803,37 @@ claimcore authority history [--actor-id VALUE] [--cursor VALUE] [--limit N] [--f
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 
+## authority requests
+
+Access requests
+
+Read one page of requests awaiting admission.
+
+```sh
+claimcore authority requests [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
+## authority requests dismiss
+
+Dismiss access request
+
+Remove this request without granting access.
+
+```sh
+claimcore authority requests dismiss --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+
 ## context
 
 Read context

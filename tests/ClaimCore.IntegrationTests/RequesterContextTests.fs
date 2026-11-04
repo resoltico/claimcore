@@ -5,12 +5,18 @@ open System.Threading.Tasks
 open Expecto
 open Npgsql
 open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
+
+let private read =
+    function
+    | Outcome.Succeeded value -> value
+    | other -> failtestf "Expected successful request administration: %A" other
 
 let private principal kind subject =
     PrincipalKey.ofKind kind "https://issuer.example/" subject
@@ -259,11 +265,151 @@ let private lockRace (database: PostgresFixture.Database) =
             "No stale snapshot can reinsert the deleted registration request"
     }
 
+let private administration (database: PostgresFixture.Database) =
+    task {
+        let fixture = database.Fixture
+        let! owner = bootstrap fixture
+        let human = principal PrincipalKind.Human "admin-target"
+        let service = principal PrincipalKind.Service "admin-target"
+        let audit = principal PrincipalKind.Human "request-auditor"
+
+        let! registered =
+            Service.execute
+                owner
+                (OperationInput.Authority(
+                    Inputs.authorityRequest
+                        (id 720)
+                        audit
+                        (AuthorityAct.Register Inputs.ownerProfile)
+                ))
+                token
+
+        acceptedAuthority registered
+
+        let! granted =
+            grant
+                owner
+                (id 721)
+                audit
+                {
+                    Role = Role.Auditor
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority granted
+
+        for target in [ human; service ] do
+            let! _ = Service.context (core fixture target) () token
+            ()
+
+        do!
+            sql
+                database
+                "INSERT INTO claimcore.access_request(principal_kind,issuer,subject,first_seen,last_seen) VALUES ('HUMAN','https://issuer.example/','expired-admin',clock_timestamp()-INTERVAL '31 days',clock_timestamp()-INTERVAL '31 days')"
+                [||]
+
+        let! before = verified database
+        let! first = Service.accessRequests owner { AfterCursor = None; Limit = 1 } token
+        let first = read first
+        Expect.equal first.Items.Length 1 "Owner page uses the requested limit"
+
+        let cursor =
+            first.NextCursor
+            |> Option.defaultWith (fun () -> failtest "Two live requests need a continuation")
+
+        let! second =
+            Service.accessRequests owner { AfterCursor = Some cursor; Limit = 1 } token
+
+        let second = read second
+        Expect.equal second.Items.Length 1 "Cursor reaches the second identity"
+
+        Expect.equal
+            (first.Items @ second.Items |> List.map _.Principal |> Set.ofList)
+            (set[human
+                 service])
+            "Kind-aware cursor traversal hides expired requests and visits both identities"
+
+        Expect.isTrue
+            (first.Items.Head.LastSeen >= second.Items.Head.LastSeen)
+            "Requests are newest first"
+
+        Expect.isNone second.NextCursor "The live traversal ends"
+
+        let! foreign =
+            Service.accessRequests
+                (Service.create
+                    BuildIdentity.current.Version
+                    (id 999)
+                    fixture.Store
+                    fixture.Calendar
+                    fixture.Owner)
+                { AfterCursor = Some cursor; Limit = 1 }
+                token
+
+        Expect.equal
+            foreign
+            (Outcome.Rejected Refusal.InvalidCursor)
+            "Cursor binds the installation"
+
+        for target in [ audit; human; principal PrincipalKind.Human "unknown-manager" ] do
+            let actor = core fixture target
+
+            let! denied =
+                Service.accessRequests
+                    actor
+                    {
+                        AfterCursor = Some "malformed"
+                        Limit = 0
+                    }
+                    token
+
+            Expect.equal
+                denied
+                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+                "Only MANAGE_AUTHORITY may inspect requests, including diagnostics"
+
+            let! denied = Service.dismissAccessRequest actor (PrincipalKey.toInput human) token
+
+            Expect.equal
+                denied
+                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
+                "READ_AUTHORITY and an authenticated identity do not permit dismissal"
+
+        let! dismissed =
+            Service.dismissAccessRequest owner (PrincipalKey.toInput human) token
+
+        Expect.equal dismissed (Outcome.Succeeded()) "Owner dismisses one key"
+        let! listed = Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
+
+        Expect.equal
+            ((read listed).Items |> List.map _.Principal)
+            [ service ]
+            "Dismiss does not remove the other principal kind"
+
+        let! replay = Service.dismissAccessRequest owner (PrincipalKey.toInput human) token
+        Expect.equal replay (Outcome.Succeeded()) "Repeated dismissal is harmless"
+        let! after = verified database
+        Expect.equal after before "Request listing and dismissal never append a ledger entry"
+        let! _ = Service.context (core fixture human) () token
+
+        let! revisited =
+            Service.accessRequests owner { AfterCursor = None; Limit = 50 } token
+
+        Expect.equal
+            (read revisited).Items.Length
+            2
+            "A dismissed caller may request access on a later visit"
+    }
+
 [<Tests>]
 let tests =
     testList
         "requester context cache"
         [
+            testCaseAsync
+                "owner-only paging and dismissal retain privacy and no ledger effects"
+                (run administration)
             testCaseAsync
                 "own states refresh hints and preserve kind-aware identities"
                 (run lifecycle)

@@ -1987,6 +1987,186 @@
         }
       }
     },
+    "/api/authority.requests": {
+      "post": {
+        "operationId": "authority.requests",
+        "x-claimcore-effect": "READ",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequestsReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessRequestsRequest"
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/authority.requests.dismiss": {
+      "post": {
+        "operationId": "authority.requests.dismiss",
+        "x-claimcore-effect": "OPERATIONAL_WRITE",
+        "parameters": [
+          {
+            "name": "ClaimCore-Contract",
+            "in": "header",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "pattern": "^(?:[0-9a-f]{64})(?![\\s\\S])",
+              "minLength": 64,
+              "maxLength": 64
+            }
+          },
+          {
+            "name": "X-ClaimCore-Antiforgery",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 2147483647
+            }
+          }
+        ],
+        "security": [
+          {
+            "cookieAuth": [],
+            "antiforgery": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "HTTP 200",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccessRequestDismissReply"
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Host400"
+          },
+          "401": {
+            "$ref": "#/components/responses/Host401"
+          },
+          "403": {
+            "$ref": "#/components/responses/Host403"
+          },
+          "404": {
+            "$ref": "#/components/responses/Host404"
+          },
+          "405": {
+            "$ref": "#/components/responses/Host405"
+          },
+          "409": {
+            "$ref": "#/components/responses/Host409"
+          },
+          "413": {
+            "$ref": "#/components/responses/Host413"
+          },
+          "415": {
+            "$ref": "#/components/responses/Host415"
+          },
+          "429": {
+            "$ref": "#/components/responses/Host429"
+          },
+          "500": {
+            "$ref": "#/components/responses/Host500"
+          }
+        },
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AccessRequestDismissRequest"
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/context": {
       "post": {
         "operationId": "context",
@@ -2670,6 +2850,272 @@
       }
     },
     "schemas": {
+      "AccessRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          },
+          "firstSeen": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "lastSeen": {
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\\.[0-9]{6}Z$",
+            "format": "date-time",
+            "minLength": 27,
+            "maxLength": 27
+          },
+          "claims": {
+            "$ref": "#/components/schemas/RequesterClaims"
+          }
+        },
+        "required": [
+          "principal",
+          "firstSeen",
+          "lastSeen",
+          "claims"
+        ]
+      },
+      "AccessRequestDismissReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "AccessRequestDismissReply.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/AccessRequestDismissReply.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/AccessRequestDismissReply.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AccessRequestDismissReply.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AccessRequestDismissReply.Outcome.FAILED"
+          }
+        }
+      },
+      "AccessRequestDismissReply.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AccessRequestDismissReply.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AccessRequestDismissReply.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "type": "null"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AccessRequestDismissRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "enum": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "issuer": {
+            "type": "string"
+          },
+          "subject": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "issuer",
+          "subject"
+        ]
+      },
+      "AccessRequestPage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AccessRequest"
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "nextCursor": {
+            "oneOf": [
+              {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 32768
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "items",
+          "nextCursor"
+        ]
+      },
+      "AccessRequestsReply": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "outcome": {
+            "$ref": "#/components/schemas/AccessRequestsReply.Outcome"
+          }
+        },
+        "required": [
+          "outcome"
+        ]
+      },
+      "AccessRequestsReply.Outcome": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AccessRequestsReply.Outcome.SUCCEEDED"
+          },
+          {
+            "$ref": "#/components/schemas/AccessRequestsReply.Outcome.REJECTED"
+          },
+          {
+            "$ref": "#/components/schemas/AccessRequestsReply.Outcome.FAILED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "SUCCEEDED": "#/components/schemas/AccessRequestsReply.Outcome.SUCCEEDED",
+            "REJECTED": "#/components/schemas/AccessRequestsReply.Outcome.REJECTED",
+            "FAILED": "#/components/schemas/AccessRequestsReply.Outcome.FAILED"
+          }
+        }
+      },
+      "AccessRequestsReply.Outcome.FAILED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FAILED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Fault"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AccessRequestsReply.Outcome.REJECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REJECTED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AccessRequestsReply.Outcome.SUCCEEDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SUCCEEDED"
+          },
+          "data": {
+            "$ref": "#/components/schemas/AccessRequestPage"
+          }
+        },
+        "required": [
+          "kind",
+          "data"
+        ]
+      },
+      "AccessRequestsRequest": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "cursor": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 32768
+          },
+          "limit": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 50
+          }
+        },
+        "required": [
+          "limit"
+        ]
+      },
       "ActivitySubject": {
         "oneOf": [
           {

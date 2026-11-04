@@ -10,6 +10,7 @@
     <Compile Include="PrincipalAdmissionTests.fs" />
     <Compile Include="RequestAdmissionTests.fs" />
     <Compile Include="AdmissionHttpTests.fs" />
+    <Compile Include="RequesterHttpTests.fs" />
     <Compile Include="AuthTrustTests.fs" />
     <Compile Include="OidcStartupTests.fs" />
     <Compile Include="OidcStartupCancellationTests.fs" />

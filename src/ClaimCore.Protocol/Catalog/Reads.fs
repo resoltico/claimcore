@@ -8,6 +8,7 @@ type ReadInput =
     | CaseOperand
     | OperationOperand
     | ActorOperand
+    | PrincipalOperand
     | ActorFilter
     | Page
     | Detail
@@ -98,6 +99,14 @@ module ReadCatalog =
             {
                 Endpoint = QueryEndpoint.AuthorityHistory
                 Inputs = [ ReadInput.ActorFilter; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityRequests
+                Inputs = [ ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityRequestsDismiss
+                Inputs = [ ReadInput.PrincipalOperand ]
             }
             {
                 Endpoint = QueryEndpoint.Context

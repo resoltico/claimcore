@@ -501,5 +501,9 @@
   "requesterState.DISABLED.label": "الحساب معطّل",
   "requesterState.DISABLED.meaning": "تم تعطيل هذا الحساب. اطلب من المالك تفعيل الوصول.",
   "requesterState.NOT_REGISTERED.label": "تم طلب الوصول",
-  "requesterState.NOT_REGISTERED.meaning": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore."
+  "requesterState.NOT_REGISTERED.meaning": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
+  "endpoint.authority.requests.label": "طلبات الوصول",
+  "endpoint.authority.requests.meaning": "قراءة صفحة واحدة من الطلبات التي تنتظر القبول.",
+  "endpoint.authority.requests.dismiss.label": "تجاهل طلب الوصول",
+  "endpoint.authority.requests.dismiss.meaning": "إزالة هذا الطلب دون منح الوصول."
 }

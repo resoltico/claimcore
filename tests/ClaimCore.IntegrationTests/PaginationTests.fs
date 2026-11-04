@@ -142,6 +142,7 @@ type internal PausedPageStore
                         (fun tx ->
                             work
                                 { new IReadTx with
+                                    member _.AccessRequestPage query = tx.AccessRequestPage query
                                     member _.ObservedAt = tx.ObservedAt
                                     member _.Maintenance() = tx.Maintenance()
 

@@ -311,3 +311,6 @@ module Service =
 
     let provisionOwner services operationId profile token =
         AuthorityExecution.provisionStore services operationId profile token
+
+    let accessRequests = AccessRequestQueries.page
+    let dismissAccessRequest = AccessRequestQueries.dismiss

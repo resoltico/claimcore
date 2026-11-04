@@ -501,5 +501,9 @@
   "requesterState.DISABLED.label": "Account disabled",
   "requesterState.DISABLED.meaning": "This account has been disabled. Ask an owner to enable access.",
   "requesterState.NOT_REGISTERED.label": "Access requested",
-  "requesterState.NOT_REGISTERED.meaning": "An owner needs to admit this account before it can access ClaimCore."
+  "requesterState.NOT_REGISTERED.meaning": "An owner needs to admit this account before it can access ClaimCore.",
+  "endpoint.authority.requests.label": "Access requests",
+  "endpoint.authority.requests.meaning": "Read one page of requests awaiting admission.",
+  "endpoint.authority.requests.dismiss.label": "Dismiss access request",
+  "endpoint.authority.requests.dismiss.meaning": "Remove this request without granting access."
 }

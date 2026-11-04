@@ -106,7 +106,7 @@ type CatalogOperation =
         | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet | QueryEndpoint.ReminderViews) ->
             CatalogSubject.Reminder
         | CatalogOperation.Act(ActKind.Authority _)
-        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
+        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory | QueryEndpoint.AuthorityRequests | QueryEndpoint.AuthorityRequestsDismiss) ->
             CatalogSubject.Authority
         | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Status | QueryEndpoint.Resolve) ->
             CatalogSubject.Operation

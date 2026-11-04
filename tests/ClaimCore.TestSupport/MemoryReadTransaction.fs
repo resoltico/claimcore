@@ -878,6 +878,52 @@ type internal Reader
 
             Task.FromResult(page query.Limit (fun entry -> entry.Sequence) rows)
 
+        member _.AccessRequestPage query =
+            read ()
+
+            let key principal =
+                let kind, issuer, subject = PrincipalKey.parts principal
+                issuer, DurableNames.principalKind kind, subject
+
+            let compare left right =
+                let dates = compare right.LastSeen left.LastSeen
+
+                if dates <> 0 then
+                    dates
+                else
+                    compare (key left.Principal) (key right.Principal)
+
+            let items =
+                get().Requests
+                |> Map.values
+                |> Seq.filter (fun value -> value.LastSeen >= query.ObservedAt.AddDays(-30))
+                |> Seq.sortWith compare
+                |> Seq.filter (fun value ->
+                    query.After
+                    |> Option.forall (fun after ->
+                        compare
+                            value
+                            {
+                                AccessRequest.Principal = after.Principal
+                                FirstSeen = after.LastSeen
+                                LastSeen = after.LastSeen
+                                Claims = RequesterClaims.empty
+                            }
+                            >
+                            0))
+                |> Seq.toList
+
+            Task.FromResult(
+                page
+                    query.Limit
+                    (fun value ->
+                        {
+                            AccessRequestPosition.LastSeen = value.LastSeen
+                            Principal = value.Principal
+                        })
+                    items
+            )
+
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after

@@ -274,6 +274,9 @@ let private changingHistory (fixture: Fixture) change =
                             fun tx ->
                                 operation.Work
                                     { new IReadTx with
+                                        member _.AccessRequestPage query =
+                                            tx.AccessRequestPage query
+
                                         member _.ObservedAt = tx.ObservedAt
                                         member _.Maintenance() = tx.Maintenance()
 

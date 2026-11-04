@@ -11119,6 +11119,136 @@
         }
       },
       "valid": true
+    },
+    {
+      "name": "case-assignees-minimal-identity",
+      "endpoint": "case.assignees",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "request-page",
+      "endpoint": "authority.requests",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "principal": {
+                  "kind": "HUMAN",
+                  "issuer": "https://issuer.example/",
+                  "subject": "waiting"
+                },
+                "firstSeen": "2026-11-04T00:00:00.000000Z",
+                "lastSeen": "2026-11-04T01:00:00.000000Z",
+                "claims": {
+                  "name": "Token hint",
+                  "email": "hint@example.invalid"
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      }
+    },
+    {
+      "name": "request-dismissed",
+      "endpoint": "authority.requests.dismiss",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": null
+        }
+      }
+    },
+    {
+      "name": "authority.requests-rejected",
+      "endpoint": "authority.requests",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "incidentDate",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "authority.requests-failed",
+      "endpoint": "authority.requests",
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "authority.requests.dismiss-rejected",
+      "endpoint": "authority.requests.dismiss",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "INVALID_INPUT",
+            "action": "CORRECT_INPUT",
+            "issues": [
+              {
+                "field": "incidentDate",
+                "code": "TEXT_REQUIRED"
+              }
+            ]
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "authority.requests.dismiss-failed",
+      "endpoint": "authority.requests.dismiss",
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }

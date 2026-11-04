@@ -678,6 +678,38 @@ module RequestCodecs =
     let pageRequest =
         pageFields |> finishRead RequestSchemas.PageRequest QueryEndpoint.AuthorityList
 
+    let accessRequestsRequest =
+        (read (fun cursor limit ->
+            {
+                PageRequest.AfterCursor = cursor
+                Limit = limit
+            })
+        : ReadFields<PageRequest, _>)
+        |> pageWith Paging.MaximumAccessRequestCursorCharacters _.AfterCursor _.Limit
+        |> finishRead RequestSchemas.AccessRequestsRequest QueryEndpoint.AuthorityRequests
+
+    let accessRequestDismissRequest =
+        let payload: ReadFields<PrincipalInput, PrincipalInput> =
+            {
+                Inputs = [ ReadInput.PrincipalOperand ]
+                Fields =
+                    (record (fun kind issuer subject ->
+                        {
+                            PrincipalInput.Kind = kind
+                            Issuer = issuer
+                            Subject = subject
+                        })
+                    : Fields<PrincipalInput, _>)
+                    |> field "kind" _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
+                    |> field "issuer" _.Issuer text
+                    |> field "subject" _.Subject text
+            }
+
+        payload
+        |> finishRead
+            RequestSchemas.AccessRequestDismissRequest
+            QueryEndpoint.AuthorityRequestsDismiss
+
     let private optionalChoices name get vocabulary fields =
         fields
         |> optionalField

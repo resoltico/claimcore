@@ -47,6 +47,10 @@ module internal ApiRoutes =
             Route.bind Api.authorityGrants Service.grants
         | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
             Route.bind Api.authorityHistory Service.authorityHistory
+        | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
+            Route.bind Api.authorityRequests Service.accessRequests
+        | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
+            Route.bind Api.authorityRequestsDismiss Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.bind Api.operationPreview Service.preview
         | ActorEndpoint.Operation OperationEndpoint.Execute ->

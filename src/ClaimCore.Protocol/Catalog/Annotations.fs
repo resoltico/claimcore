@@ -175,15 +175,11 @@ module CatalogAnnotations =
                 then
                     yield (owner, "dueDate"), constant (target InputTarget.ReminderDueDate)
 
-            yield
-                (RequestSchemas.PrincipalInput, WireMembers.Kind),
-                constant (target InputTarget.PrincipalKind)
-            yield
-                (RequestSchemas.PrincipalInput, WireMembers.Issuer),
-                constant (target InputTarget.PrincipalIssuer)
-            yield
-                (RequestSchemas.PrincipalInput, WireMembers.Subject),
-                constant (target InputTarget.PrincipalSubject)
+            for owner in
+                [ RequestSchemas.PrincipalInput; RequestSchemas.AccessRequestDismissRequest ] do
+                yield (owner, WireMembers.Kind), constant (target InputTarget.PrincipalKind)
+                yield (owner, WireMembers.Issuer), constant (target InputTarget.PrincipalIssuer)
+                yield (owner, WireMembers.Subject), constant (target InputTarget.PrincipalSubject)
             for owner, group in
                 [
                     RequestSchemas.Registration, RecordGroup.Registration
@@ -277,6 +273,7 @@ module CatalogAnnotations =
             for owner in
                 [
                     RequestSchemas.PageRequest
+                    RequestSchemas.AccessRequestsRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
                     RequestSchemas.HistoryRequest

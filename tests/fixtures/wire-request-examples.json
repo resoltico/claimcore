@@ -2403,6 +2403,36 @@
           "kind": "ERASE_PROFILE"
         }
       }
+    },
+    {
+      "id": "requests-page",
+      "endpoint": "authority.requests",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 50
+      }
+    },
+    {
+      "id": "request-dismiss-kind-key",
+      "endpoint": "authority.requests.dismiss",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "HUMAN",
+        "issuer": "https://issuer.example/",
+        "subject": "waiting"
+      }
+    },
+    {
+      "id": "request-dismiss-kind-required",
+      "endpoint": "authority.requests.dismiss",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "issuer": "https://issuer.example/",
+        "subject": "waiting"
+      }
     }
   ]
 }

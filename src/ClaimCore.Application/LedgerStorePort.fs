@@ -408,6 +408,13 @@ type GlobalReadFacts =
         Maintenance: RegisterMaintenance
     }
 
+type AccessRequestPageQuery =
+    {
+        After: AccessRequestPosition option
+        ObservedAt: DateTimeOffset
+        Limit: int
+    }
+
 type IReadTx =
     abstract ObservedAt: DateTimeOffset
     abstract Maintenance: unit -> Task<RegisterMaintenance>
@@ -435,6 +442,10 @@ type IReadTx =
 
     abstract HistoryPage: HistoryPageQuery -> Task<CaseHistorySlice>
     abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
+
+    abstract AccessRequestPage:
+        AccessRequestPageQuery -> Task<Page<AccessRequest, AccessRequestPosition>>
+
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
     abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
@@ -451,6 +462,7 @@ type IWriteTx =
     abstract NewPayloadNonce: unit -> byte array
     abstract Append: EntryDraft -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
+    abstract DismissAccessRequest: PrincipalKey -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
     abstract Fence: FenceKey -> Task<unit>

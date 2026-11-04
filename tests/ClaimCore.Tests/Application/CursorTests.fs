@@ -422,11 +422,81 @@ let private recentPrecision () =
         (Error Refusal.InvalidCursor)
         "A forged canonical cursor cannot introduce sub-microsecond keyset semantics"
 
+let private accessRequestBinding () =
+    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let issuerPrefix = "https://issuer.example/"
+
+    let issuer =
+        issuerPrefix
+        + String.replicate (PrincipalKey.MaximumIssuerCharacters - issuerPrefix.Length) "x"
+
+    let principal =
+        PrincipalKey.human issuer (String.replicate PrincipalKey.MaximumHumanSubjectCharacters "\"")
+        |> Result.defaultWith (string >> failtest)
+
+    let after =
+        {
+            AccessRequestPosition.LastSeen = DateTimeOffset(2026, 11, 4, 0, 0, 0, TimeSpan.Zero)
+            Principal = principal
+        }
+
+    let cursor = Cursors.encodeAccessRequests installation after
+
+    Expect.isTrue
+        (cursor.Length > 512
+         && cursor.Length <= Paging.MaximumAccessRequestCursorCharacters)
+        "Longest authenticated principal keys fit the dedicated cursor budget"
+
+    Expect.equal
+        (Cursors.decodeAccessRequests
+            Paging.MaximumAccessRequestCursorCharacters
+            installation
+            cursor)
+        (Ok after)
+        "Exact full identity survives cursor encoding"
+
+    Expect.equal
+        (Cursors.decodeAccessRequests Paging.MaximumAccessRequestCursorCharacters Guid.Empty cursor)
+        (Error Refusal.InvalidCursor)
+        "Cursor cannot cross installations"
+
+    Expect.equal
+        (Cursors.decodeAccessRequests
+            Paging.MaximumAccessRequestCursorCharacters
+            installation
+            (String.replicate (Paging.MaximumAccessRequestCursorCharacters + 1) "A"))
+        (Error Refusal.InvalidCursor)
+        "Oversized cursor is rejected before decoding"
+
+    Expect.throwsT<ArgumentException>
+        (fun () ->
+            Cursors.encodeAccessRequests
+                installation
+                { after with
+                    LastSeen = after.LastSeen.AddTicks 1L
+                }
+            |> ignore)
+        "Encoder cannot manufacture unsupported sub-microsecond positions"
+
+    let raw =
+        """{"installationId":"90000000-0000-4000-8000-000000000001","issuer":"https://issuer.example/","kind":"ACCESS_REQUESTS","lastSeen":"2026-11-04T00:00:00.0000001+00:00","principalKind":"HUMAN","subject":"waiting","v":1}"""
+
+    Expect.equal
+        (Cursors.decodeAccessRequests
+            Paging.MaximumAccessRequestCursorCharacters
+            installation
+            (token raw))
+        (Error Refusal.InvalidCursor)
+        "Forged sub-microsecond positions are refused"
+
 [<Tests>]
 let tests =
     testList
         "plain canonical keysets"
         [
+            testCase
+                "access-request cursors preserve full bounded identity and database precision"
+                accessRequestBinding
             testCase "worklist filters bind every cursor dimension" worklistBinding
             testCase "recent positions retain recorded-instant precision" recentPrecision
             testCase "owner accepted examples" accepted

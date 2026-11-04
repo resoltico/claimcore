@@ -350,6 +350,16 @@
       "token": "case.timeline",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "authority.requests",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "authority.requests.dismiss",
+      "method": "POST",
+      "effect": "OperationalWrite"
     }
   ],
   "refusalCodes": [
@@ -520,6 +530,15 @@
       "filter",
       "cursor",
       "limit"
+    ],
+    "authority.requests": [
+      "limit",
+      "cursor"
+    ],
+    "authority.requests.dismiss": [
+      "kind",
+      "issuer",
+      "subject"
     ]
   },
   "caseLifecycles": [
@@ -633,7 +652,10 @@
     "expectedWorkRevision": "0",
     "expectedReminderRevision": "1",
     "profile.displayName": "Authored",
-    "profile.contact": "Contact"
+    "profile.contact": "Contact",
+    "principal.kind": "HUMAN",
+    "principal.issuer": "https://issuer.example/",
+    "principal.subject": "waiting"
   },
   "caseAssignments": [
     "MINE",

@@ -22,6 +22,7 @@
     <Compile Include="CaseWorkReads.fs" />
     <Compile Include="Advice.fs" />
     <Compile Include="AuthorityQueries.fs" />
+    <Compile Include="AccessRequestQueries.fs" />
     <Compile Include="Queries.fs" />
     <Compile Include="Resolution.fs" />
     <Compile Include="RecoveryStatus.fs" />

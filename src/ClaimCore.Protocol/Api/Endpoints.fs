@@ -413,6 +413,22 @@ module Api =
             RequestCodecs.authorityHistoryRequest
             (ReplyCodecs.readReply "AuthorityHistoryReply" AuthorityHistoryCodecs.page)
 
+    let authorityRequests =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests))
+            HttpMethod.Post
+            RequestCodecs.accessRequestsRequest
+            (ReplyCodecs.readReply "AccessRequestsReply" ResponseCodecs.accessRequestsPage)
+
+    let authorityRequestsDismiss =
+        { read
+              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss))
+              HttpMethod.Post
+              RequestCodecs.accessRequestDismissRequest
+              (ReplyCodecs.readReply "AccessRequestDismissReply" Codec.nullValue) with
+            Effect = EndpointEffect.OperationalWrite
+        }
+
     let private defineHost =
         function
         | HostEndpoint.Session -> EndpointDefinition.create session
@@ -450,6 +466,10 @@ module Api =
             EndpointDefinition.create authorityGrants
         | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
             EndpointDefinition.create authorityHistory
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
+            EndpointDefinition.create authorityRequests
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
+            EndpointDefinition.create authorityRequestsDismiss
 
     let definitions =
         (HostEndpoint.all |> List.map defineHost)

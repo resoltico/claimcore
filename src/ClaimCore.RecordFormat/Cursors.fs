@@ -38,6 +38,12 @@ type TimelinePosition =
     }
 
 /// Plain positions convey no authority. Every selection authorizes before decoding.
+type AccessRequestPosition =
+    {
+        LastSeen: DateTimeOffset
+        Principal: PrincipalKey
+    }
+
 module Cursors =
     [<Literal>]
     let MaximumTokenCharacters = 512
@@ -310,6 +316,58 @@ module Cursors =
                 uuid CaseId.create target = Some caseId
                 ->
                 uuid ActorId.create after
+            | _ -> None)
+            token
+
+    let encodeAccessRequests installation (after: AccessRequestPosition) =
+        if after.LastSeen.Ticks % 10L <> 0L then
+            invalidArg (nameof after) "Access-request positions require database instant precision."
+
+        let kind, issuer, subject = PrincipalKey.parts after.Principal
+
+        encode
+            installation
+            [
+                "kind", JsonValue.String "ACCESS_REQUESTS"
+                "v", JsonValue.Integer 1L
+                "lastSeen",
+                JsonValue.String(
+                    after.LastSeen.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
+                )
+                "principalKind", JsonValue.String(DurableNames.principalKind kind)
+                "issuer", JsonValue.String issuer
+                "subject", JsonValue.String subject
+            ]
+
+    let decodeAccessRequests maximum installation token =
+        decode
+            installation
+            maximum
+            (function
+            | JsonValue.Object [ "issuer", JsonValue.String issuer
+                                 "kind", JsonValue.String "ACCESS_REQUESTS"
+                                 "lastSeen", JsonValue.String seen
+                                 "principalKind", JsonValue.String kind
+                                 "subject", JsonValue.String subject
+                                 "v", JsonValue.Integer 1L ] ->
+                match
+                    DateTimeOffset.TryParseExact(
+                        seen,
+                        "O",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None
+                    ),
+                    DurableNames.tryPrincipalKind kind
+                with
+                | (true, date), Some kind when date.Offset = TimeSpan.Zero && date.Ticks % 10L = 0L ->
+                    PrincipalKey.ofKind kind issuer subject
+                    |> Result.toOption
+                    |> Option.map (fun principal ->
+                        {
+                            AccessRequestPosition.LastSeen = date
+                            Principal = principal
+                        })
+                | _ -> None
             | _ -> None)
             token
 

@@ -319,6 +319,16 @@ type internal Writer(inputs: WriteInputs) =
             set updated
             Task.FromResult(())
 
+        member _.DismissAccessRequest principal =
+            let state = get ()
+
+            set
+                { state with
+                    Requests = Map.remove principal state.Requests
+                }
+
+            Task.FromResult()
+
         member _.ProjectAuthority projection =
             let state = get ()
 

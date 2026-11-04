@@ -11,3 +11,6 @@ module Paging =
 
     [<Literal>]
     let MaximumCaseCursorCharacters = 16384
+
+    [<Literal>]
+    let MaximumAccessRequestCursorCharacters = 32768

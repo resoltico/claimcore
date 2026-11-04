@@ -162,6 +162,11 @@ let private login (context: HttpContext) : Task =
                 CookieAuthenticationDefaults.AuthenticationScheme
             )
 
+        // Synthetic authenticated hints exercise production claim propagation; this route exists only in tests.
+        for name in [ "name"; "preferred_username"; "email" ] do
+            if context.Request.Query.ContainsKey name then
+                identity.AddClaim(Claim(name, context.Request.Query[name].ToString()))
+
         do!
             context.SignInAsync(
                 CookieAuthenticationDefaults.AuthenticationScheme,

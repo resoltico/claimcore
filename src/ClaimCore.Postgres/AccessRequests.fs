@@ -1,6 +1,7 @@
 namespace ClaimCore.Postgres
 
 open ClaimCore.Domain
+open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
@@ -72,4 +73,80 @@ module internal AccessRequests =
                     token
 
             return ()
+        }
+
+    let page connection (query: ClaimCore.Application.AccessRequestPageQuery) token =
+        task {
+            let seen, key =
+                match query.After with
+                | Some after -> Some after.LastSeen, parameters after.Principal
+                | None ->
+                    None,
+                    [|
+                        DatabaseSession.nullValue
+                        DatabaseSession.nullValue
+                        DatabaseSession.nullValue
+                    |]
+
+            let! rows =
+                DatabaseSession.rows
+                    connection
+                    "SELECT principal_kind,issuer,subject,first_seen,last_seen,name,preferred_username,email FROM claimcore.access_request WHERE last_seen >= $1::timestamptz-INTERVAL '30 days' AND ($2::timestamptz IS NULL OR last_seen<$2 OR (last_seen=$2 AND (issuer,principal_kind,subject)>($4,$3,$5))) ORDER BY last_seen DESC,issuer,principal_kind,subject LIMIT $6"
+                    [|
+                        box query.ObservedAt
+                        DatabaseSession.parameter seen
+                        key[0]
+                        key[1]
+                        key[2]
+                        box (query.Limit + 1)
+                    |]
+                    token
+
+            let items =
+                rows
+                |> List.map (fun row ->
+                    let kind =
+                        DatabaseSession.value<string> 0 row
+                        |> DurableNames.tryPrincipalKind
+                        |> Option.defaultWith (fun () ->
+                            raise (
+                                RecordCorruptException "Invalid access-request principal kind."
+                            ))
+
+                    let principal =
+                        PrincipalKey.ofKind
+                            kind
+                            (DatabaseSession.value<string> 1 row)
+                            (DatabaseSession.value<string> 2 row)
+                        |> Result.defaultWith (fun _ ->
+                            raise (RecordCorruptException "Invalid access-request principal."))
+
+                    {
+                        AccessRequest.Principal = principal
+                        FirstSeen = DatabaseSession.instant 3 row
+                        LastSeen = DatabaseSession.instant 4 row
+                        Claims =
+                            RequesterClaims.admit
+                                (DatabaseSession.optional<string> 5 row)
+                                (DatabaseSession.optional<string> 6 row)
+                                (DatabaseSession.optional<string> 7 row)
+                    })
+
+            let visible = List.truncate query.Limit items
+
+            return
+                ({
+                    Items = visible
+                    Next =
+                        if items.Length > query.Limit then
+                            List.tryLast visible
+                            |> Option.map (fun value ->
+                                {
+                                    AccessRequestPosition.LastSeen = value.LastSeen
+                                    Principal = value.Principal
+                                })
+                        else
+                            None
+                }
+                : Page<AccessRequest, AccessRequestPosition>)
         }

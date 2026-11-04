@@ -355,6 +355,9 @@ type private ReadTx
         member _.AuthorityHistoryPage query =
             TransactionPages.authorityHistory connection installation query token
 
+        member _.AccessRequestPage query =
+            AccessRequests.page connection query token
+
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after
@@ -482,6 +485,13 @@ type private WriteTx(connection, installation, head, observedAt, token) =
         member _.ProjectWorkChange projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.workChange connection projection token
+
+        member _.DismissAccessRequest principal =
+            task {
+                let! _ = AccessRequests.lockPrincipal connection principal token
+                let! _ = AccessRequests.delete connection principal token
+                return ()
+            }
 
         member _.ProjectAuthority projection =
             FailureDiagnostics.phase FailurePhase.Projection

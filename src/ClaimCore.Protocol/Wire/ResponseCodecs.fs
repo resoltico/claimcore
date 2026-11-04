@@ -450,6 +450,37 @@ module ResponseCodecs =
         |> build
         |> named "RequesterContext"
 
+    let private accessRequest =
+        (record (fun principal first last claims ->
+            {
+                AccessRequest.Principal = principal
+                FirstSeen = first
+                LastSeen = last
+                Claims = claims
+            })
+        : Fields<AccessRequest, _>)
+        |> field "principal" _.Principal principal
+        |> field "firstSeen" _.FirstSeen instant
+        |> field "lastSeen" _.LastSeen instant
+        |> field "claims" _.Claims requesterClaims
+        |> build
+        |> named "AccessRequest"
+
+    let accessRequestsPage =
+        (record (fun items cursor ->
+            {
+                AccessRequestPage.Items = items
+                NextCursor = cursor
+            })
+        : Fields<AccessRequestPage, _>)
+        |> field "items" _.Items (list Paging.MaximumPageSize accessRequest)
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumAccessRequestCursorCharacters))
+        |> build
+        |> named "AccessRequestPage"
+
     let position = LedgerCodecs.position
     let changeSummary = LedgerCodecs.changeSummary
     let fieldChange = LedgerCodecs.fieldChange
