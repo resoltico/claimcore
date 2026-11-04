@@ -5,7 +5,7 @@ open ClaimCore.Application.Contracts
 
 /// Reviews describe admitted domain changes, independently of physical effect sequencing.
 module internal AuthorityReviews =
-    let describe (view: AuthorityExecutionFacts) (proposal: AuthorityProposal) =
+    let describe services (view: AuthorityExecutionFacts) (proposal: AuthorityProposal) =
         let profile = view.Target.Actor |> Option.bind _.Profile
 
         let before: AuthorityState =
@@ -210,6 +210,7 @@ module internal AuthorityReviews =
             |> Option.defaultValue []
 
         {
+            Basis = ServiceContext.basis services view.ObservedAt
             Effects = effects
             Target =
                 view.Target.Actor

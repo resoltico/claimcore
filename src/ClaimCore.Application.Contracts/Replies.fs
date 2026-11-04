@@ -26,6 +26,7 @@ type AuthorityReviewEffect =
 
 type AuthorityReview =
     {
+        Basis: WorkDateBasis
         Effects: AuthorityReviewEffect list
         Target: ActorReviewItem option
         AccessScope: GrantScope

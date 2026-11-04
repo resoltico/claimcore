@@ -351,6 +351,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                 (Previewed.Reviewed >> Outcome.Succeeded) (
                     OperationReview.Authority
                         {
+                            Basis = ClaimCore.TestSupport.Inputs.workBasis
                             Effects =
                                 (if enabledBefore <> enabledAfter then
                                      [

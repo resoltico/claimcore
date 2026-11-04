@@ -171,8 +171,9 @@ module ReplyCodecs =
             ]
 
     let private authorityReviewFields =
-        (record (fun target scope before after effects ->
+        (record (fun basis target scope before after effects ->
             {
+                Basis = basis
                 Effects = effects
                 Target = target
                 AccessScope = scope
@@ -180,6 +181,7 @@ module ReplyCodecs =
                 After = after
             })
         : Fields<AuthorityReview, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "target" _.Target (nullable ResponseCodecs.actorSummary)
         |> field "accessScope" _.AccessScope ResponseCodecs.grantScope
         |> field "before" _.Before authorityState

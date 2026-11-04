@@ -236,6 +236,36 @@ let authorityPageBasis =
                         expected
                         "Every reply basis comes from its own read snapshot"
 
+                let preview =
+                    Service.preview
+                        services
+                        (OperationInput.Authority
+                            {
+                                OperationId = id 12
+                                Target =
+                                    {
+                                        Kind = PrincipalKind.Human
+                                        Issuer = "https://observation.example/"
+                                        Subject = "owner"
+                                    }
+                                Act =
+                                    AuthorityAct.SetProfile
+                                        {
+                                            DisplayName = "Basis profile"
+                                            Contact = None
+                                        }
+                            })
+                        CancellationToken.None
+                    |> get
+
+                match preview.Outcome with
+                | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review)) ->
+                    Expect.equal
+                        review.Basis
+                        expected
+                        "Authority preview carries the same authorized read snapshot"
+                | other -> failtestf "Expected an authority preview: %A" other
+
                 let wire =
                     ResponseCodecs.actorsPage.Write actors
                     |> JsonValue.tryMember "basis"

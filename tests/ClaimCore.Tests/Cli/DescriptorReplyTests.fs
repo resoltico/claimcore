@@ -18,6 +18,7 @@ let private authorityReview () =
                     Previewed.Reviewed(
                         OperationReview.Authority
                             {
+                                Basis = Inputs.workBasis
                                 Effects =
                                     [
                                         AuthorityReviewEffect.Grant

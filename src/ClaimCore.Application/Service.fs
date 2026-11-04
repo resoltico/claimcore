@@ -195,7 +195,7 @@ module Service =
                     })
             (AuthorityExecution.review services)
             (fun _ (view: AuthorityExecutionFacts) proposal ->
-                AuthorityReviews.describe view proposal |> OperationReview.Authority)
+                AuthorityReviews.describe services view proposal |> OperationReview.Authority)
 
     let preview (services: ServiceContext) input ct =
         task {

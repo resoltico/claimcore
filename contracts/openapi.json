@@ -13364,6 +13364,9 @@
           "kind": {
             "const": "AUTHORITY"
           },
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "target": {
             "oneOf": [
               {
@@ -13394,6 +13397,7 @@
         },
         "required": [
           "kind",
+          "basis",
           "target",
           "accessScope",
           "before",

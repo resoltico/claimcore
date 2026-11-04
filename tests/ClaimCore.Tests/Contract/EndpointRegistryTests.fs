@@ -138,6 +138,7 @@ let private receipt: OperationReceipt =
 let private authorityReview =
     OperationReview.Authority
         {
+            Basis = ClaimCore.TestSupport.Inputs.workBasis
             Effects = [ AuthorityReviewEffect.Enable ]
             Target = None
             AccessScope = GrantScope.Installation
