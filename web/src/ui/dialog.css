@@ -43,3 +43,10 @@
 .ui-dialog [role="dialog"][tabindex="-1"]:focus {
   outline: none;
 }
+
+.ui-dialog-overlay {
+  padding-inline: min(var(--space-4), 2vw);
+}
+.ui-dialog {
+  padding-inline: min(var(--space-5), 4vw);
+}

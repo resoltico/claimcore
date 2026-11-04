@@ -123,3 +123,14 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+.settings-card {
+  padding-inline: min(var(--space-5), 5cqi);
+}
+.settings-option {
+  padding-inline: min(var(--space-4), 4cqi);
+}
+.accent-choice {
+  flex-wrap: wrap;
+  min-inline-size: 0;
+}

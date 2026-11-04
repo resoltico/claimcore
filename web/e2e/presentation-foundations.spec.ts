@@ -245,6 +245,32 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
   await clean();
 });
 
+for (const language of ["en", "lv", "ar"] as const) {
+  test(`sign-in Settings dialog contains accent contents at 320px and 200% text in ${language}`, async ({
+    page,
+  }) => {
+    const clean = await observe(page);
+    await seed(page, { language });
+    await page.setViewportSize({ width: 320, height: 900 });
+    await signInSettings(page);
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+    await page.locator(".settings-accents").scrollIntoViewIfNeeded();
+    const bounds = await page.locator(".accent-card").evaluateAll((cards) =>
+      cards.map((card) => {
+        const bound = card.getBoundingClientRect();
+        return [...card.querySelectorAll("*")].every((child) => {
+          const rect = child.getBoundingClientRect();
+          return rect.left >= bound.left - 1 && rect.right <= bound.right + 1;
+        });
+      }),
+    );
+    expect(bounds).toEqual([true, true]);
+    await clean();
+  });
+}
+
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
 if (engine === "chromium") {
   for (const accent of ["green", "blue"] as const) {
