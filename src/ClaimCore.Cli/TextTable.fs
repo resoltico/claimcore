@@ -89,17 +89,23 @@ module internal TextTable =
         + 1
         + Money.CurrencyCharacters
 
-    let private layout language options (definitions: EntryDefinition<'row> list) =
+    let private layout fixedWidths language options (definitions: EntryDefinition<'row> list) =
         let columns =
             definitions
             |> List.map (fun definition ->
                 definition, TextReplyFormat.label language definition.LabelId)
 
+        let minimumWidth (definition: EntryDefinition<'row>) =
+            if definition.IsMoney then
+                moneyWidth
+            else
+                Map.tryFind definition.Key fixedWidths |> Option.defaultValue 4
+
         let desiredWidth (definition: EntryDefinition<'row>) label =
             if definition.IsMoney then
                 moneyWidth
             else
-                max 8 (min 24 (width label))
+                max (minimumWidth definition) (max 8 (min 24 (width label)))
 
         let desired columns =
             columns
@@ -128,9 +134,7 @@ module internal TextTable =
 
         let columns = select columns
 
-        let minimum =
-            columns
-            |> List.sumBy (fun (definition, _) -> if definition.IsMoney then moneyWidth else 4)
+        let minimum = columns |> List.sumBy (fun (definition, _) -> minimumWidth definition)
 
         if minimum + max 0 (columns.Length - 1) * 2 > options.Width then
             None
@@ -150,7 +154,7 @@ module internal TextTable =
                 else
                     let largest =
                         columns
-                        |> List.filter (fun (definition, _, _) -> not definition.IsMoney)
+                        |> List.filter (fun (definition, _, size) -> size > minimumWidth definition)
                         |> List.map (fun (_, _, size) -> size)
                         |> List.max
 
@@ -158,7 +162,7 @@ module internal TextTable =
 
                     columns
                     |> List.map (fun (definition, label, size) ->
-                        if not reduced && not definition.IsMoney && size = largest then
+                        if not reduced && size > minimumWidth definition && size = largest then
                             reduced <- true
                             definition, label, size - 1
                         else
@@ -172,8 +176,8 @@ module internal TextTable =
         let padding = String(' ', max 0 (size - width value))
         if right then padding + value else value + padding
 
-    let header language options definitions =
-        match layout language options definitions with
+    let private headerWith fixedWidths language options definitions =
+        match layout fixedWidths language options definitions with
         | None -> ""
         | Some columns ->
             let line =
@@ -187,8 +191,8 @@ module internal TextTable =
             else
                 line
 
-    let rows language options definitions rows =
-        match layout language options definitions with
+    let private rowsWith fixedWidths language options definitions rows =
+        match layout fixedWidths language options definitions with
         | None ->
             rows
             |> List.collect (fun row ->
@@ -199,11 +203,9 @@ module internal TextTable =
                         match entry.Value with
                         | PresentedValue.Money _
                         | PresentedValue.MoneyTotal _ ->
-                            TextDescriptorValue.render language entry.Value
+                            TextDescriptorValue.cell language entry.Value
                         | _ ->
-                            truncate
-                                options.Width
-                                (TextDescriptorValue.render language entry.Value)
+                            truncate options.Width (TextDescriptorValue.cell language entry.Value)
                     ]))
         | Some columns ->
             rows
@@ -218,7 +220,7 @@ module internal TextTable =
                         | PresentedValue.MoneyTotal _ -> true
                         | _ -> false
 
-                    let rendered = TextDescriptorValue.render language value
+                    let rendered = TextDescriptorValue.cell language value
 
                     if right && width rendered > size then
                         rendered
@@ -226,3 +228,37 @@ module internal TextTable =
                         padded right size rendered)
                 |> String.concat "  "
                 |> _.TrimEnd())
+
+
+    let header language options definitions =
+        headerWith Map.empty language options definitions
+
+    let rows language options definitions rows =
+        rowsWith Map.empty language options definitions rows
+
+    /// Fixed-size semantic values are measured once for the reply, so header and every row share one plan.
+    let page language options (definitions: EntryDefinition<'row> list) values =
+        let fixedWidths =
+            definitions
+            |> List.map (fun definition ->
+                let minimum =
+                    values
+                    |> List.map (fun row ->
+                        let value = definition.Read row
+
+                        match value with
+                        | PresentedValue.Date _
+                        | PresentedValue.Instant _
+                        | PresentedValue.Count _
+                        | PresentedValue.Code _
+                        | PresentedValue.Codes _
+                        | PresentedValue.State _ ->
+                            TextDescriptorValue.cell language value |> width
+                        | _ -> TextDescriptorValue.cell language value |> width |> min 24 |> max 4)
+                    |> List.fold max 4
+
+                definition.Key, minimum)
+            |> Map.ofList
+
+        headerWith fixedWidths language options definitions,
+        (fun rows -> rowsWith fixedWidths language options definitions rows)

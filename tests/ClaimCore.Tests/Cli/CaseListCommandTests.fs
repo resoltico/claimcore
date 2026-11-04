@@ -581,7 +581,20 @@ let tests =
 
                 let rendered = Encoding.UTF8.GetString bytes
                 Expect.stringContains rendered "FIRST" "First page is retained"
-                Expect.stringContains rendered "SECOND" "Second page is retained")
+                Expect.stringContains rendered "SECOND" "Second page is retained"
+
+                Expect.equal
+                    (lines
+                     |> Array.filter (fun line ->
+                         line.StartsWith("Observed ", StringComparison.Ordinal))
+                     |> Array.length)
+                    2
+                    "Every real reply has exactly one actual observation"
+
+                Expect.equal
+                    (lines |> Array.filter ((=) "1 results.") |> Array.length)
+                    2
+                    "Each real page has its own count")
             testCase "only declared paged readers accept CSV and all options" (fun () ->
                 for args in
                     [

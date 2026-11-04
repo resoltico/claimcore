@@ -757,6 +757,54 @@ module Descriptor =
             Entries = entries
         }
 
+    let reminderColumns =
+        [
+            column
+                "reference"
+                "field.caseReference.label"
+                Prominence.Primary
+                false
+                (fun (item: ReminderReadModel) -> PresentedValue.Reference item.Reference)
+            column "action" "field.reminderAction.label" Prominence.Primary false (fun item ->
+                PresentedValue.Text(ReminderAction.format (Reminder.action item.Reminder)))
+            column "due" "field.reminderDueDate.label" Prominence.Primary false (fun item ->
+                PresentedValue.Date(Reminder.due item.Reminder))
+            column "state" "input.reminderState.label" Prominence.Secondary false (fun item ->
+                code ReminderState.vocabulary (Reminder.state item.Reminder))
+            column "timing" "input.reminderDue.label" Prominence.Primary false (fun item ->
+                if not item.Active then
+                    code CaseDue.vocabulary CaseDue.Inactive
+                else
+                    optional (code ReminderDue.vocabulary) item.Timing)
+            column "recordedBy" "label.recordedBy" Prominence.Detail false (fun item ->
+                PresentedValue.Actor item.RecordedBy)
+            column "recordedAt" "label.recordedAt" Prominence.Detail false (fun item ->
+                PresentedValue.Instant item.RecordedAt)
+            column "id" "field.reminderId.label" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(ReminderId.format (Reminder.id item.Reminder)))
+        ]
+
+    let timelineColumns =
+        [
+            column
+                "recordedBy"
+                "label.recordedBy"
+                Prominence.Primary
+                false
+                (fun (item: CaseTimelineEntry) -> PresentedValue.Actor item.RecordedBy)
+            column "act" "label.action" Prominence.Primary false (fun item ->
+                match item.Subject with
+                | TimelineSubject.CaseFact(_, act) -> code CaseActKind.vocabulary act
+                | TimelineSubject.Work(_, act) -> code WorkActKind.vocabulary act
+                | TimelineSubject.Reminder(act, _, _, _) -> code ReminderActKind.vocabulary act)
+            column "recordedAt" "label.recordedAt" Prominence.Secondary false (fun item ->
+                PresentedValue.Instant item.RecordedAt)
+            column "sequence" "label.sequence" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(Sequence.format item.Position.Sequence))
+            column "operationId" "field.operationId.label" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(OperationId.format item.OperationId))
+        ]
+
     let actorColumns =
         [
             column

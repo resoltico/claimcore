@@ -57,9 +57,12 @@ module internal TextWorkReply =
         currentReminder language value.Item @ basis language value.Basis
 
     let page language (page: ReminderPage) =
-        (page.Items |> List.collect (currentReminder language))
-        @ nextLines language page.NextCursor
-        @ basis language page.Basis
+        let header, rows =
+            TextTable.page language (TextTable.environment ()) Descriptor.reminderColumns page.Items
+
+        (if header = "" then [] else [ header ])
+        @ rows page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis true
 
     let caseViews language (value: CaseViews) =
         TextDescriptorValue.entries language (Descriptor.caseViews value)

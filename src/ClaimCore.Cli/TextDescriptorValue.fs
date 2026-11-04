@@ -55,6 +55,12 @@ module internal TextDescriptorValue =
         | PresentedValue.Identifier value -> text language value
         | PresentedValue.Absent reason -> TextReplyFormat.label language reason
 
+    /// Tables keep admitted paragraph breaks visible as data inside a single cell.
+    let cell language =
+        function
+        | PresentedValue.Narrative value -> TextReplyFormat.displayed language (Some value)
+        | value -> render language value
+
     let entry language (entry: Entry) =
         TextReplyFormat.line language entry.LabelId (render language entry.Value)
 

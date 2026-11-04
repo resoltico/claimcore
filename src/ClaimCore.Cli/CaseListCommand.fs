@@ -45,6 +45,17 @@ module internal CaseListCommand =
         | VerbFormat.Csv -> io.Output(CaseListRows.csvRows page.Basis page.Items)
         | VerbFormat.Text ->
             io.Output(text (CaseListRows.textRowsWith options prepared.Language page.Items))
+
+            io.Output(
+                text (
+                    TextObservation.footer
+                        prepared.Language
+                        page.Items.Length
+                        (if prepared.All then None else page.NextCursor)
+                        page.Basis
+                        true
+                )
+            )
         | VerbFormat.Json -> io.Deliver frame response
 
     let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =

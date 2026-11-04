@@ -430,9 +430,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             match language with
             | "en" ->
                 [
-                    "Register actor"
-                    "Enable actor"
-                    "Disable actor"
+                    "Register account"
+                    "Enable account"
+                    "Disable account"
                     "Grant role"
                     "Revoke role"
                 ],
@@ -441,9 +441,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 "Installation"
             | "lv" ->
                 [
-                    "Reģistrēt dalībnieku"
-                    "Iespējot dalībnieku"
-                    "Atspējot dalībnieku"
+                    "Reģistrēt kontu"
+                    "Iespējot kontu"
+                    "Atspējot kontu"
                     "Piešķirt lomu"
                     "Atsaukt lomu"
                 ],
@@ -451,7 +451,7 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 "Lietu lasītājs",
                 "Instalācija"
             | "ar" ->
-                [ "تسجيل جهة"; "تفعيل الجهة"; "تعطيل الجهة"; "منح دور"; "سحب دور" ],
+                [ "تسجيل حساب"; "تمكين الحساب"; "تعطيل الحساب"; "منح دور"; "سحب دور" ],
                 "شخص",
                 "قارئ الحالات",
                 "التثبيت"

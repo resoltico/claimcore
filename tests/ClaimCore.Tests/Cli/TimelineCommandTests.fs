@@ -402,7 +402,7 @@ let tests =
                                 TextReplyFormat.money language (Inputs.money "0" "USD")
                                 TextReplyFormat.date language (Inputs.date "2026-11-03")
                                 TextReplyFormat.date language (Inputs.date "2026-11-04")
-                                "First\\u{000A}second"
+                                "First\nsecond"
                             ] do
                             Expect.stringContains
                                 text

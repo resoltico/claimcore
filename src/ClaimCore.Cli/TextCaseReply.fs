@@ -147,5 +147,8 @@ module internal TextCaseReply =
         @ nextLines language page.NextCursor
 
     let casePage language (page: CaseSummaryPage) =
-        CaseListRows.textHeader language :: CaseListRows.textRows language page.Items
-        @ nextLines language page.NextCursor
+        let header = CaseListRows.textHeader language
+
+        (if header = "" then [] else [ header ])
+        @ CaseListRows.textRows language page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis true
