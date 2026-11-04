@@ -140,7 +140,11 @@ let private harness language answer scenario =
                                         CaseId = current.CaseId
                                         Reference = current.Reference
                                         Revision = CaseFixtures.revision 8L
-                                        Act = CaseActKind.Close
+                                        Act =
+                                            match Frames.value Api.operationExecute frame with
+                                            | Some(OperationInput.Case input) ->
+                                                CaseAct.kind input.Act
+                                            | _ -> failtest "Expected reviewed case operation"
                                     }
                             | _ -> failtest "The case receipt fixture must identify its actual case"
                     }
@@ -257,6 +261,21 @@ let tests =
                         (Frames.inputBytes h.Calls[2])
                         (Frames.inputBytes h.Calls[3])
                         "Confirmation executes exactly the reviewed input")
+            testCase "erasure requires the authored reference rather than yes" (fun () ->
+                for answer, executed in
+                    [ Some "yes", false; Some "x ", false; None, false; Some "x", true ] do
+                    let h = harness "en" answer Scenario.Accepted
+                    Expect.equal (run [ "case"; "erase"; "x" ] h) 0 "Human completion"
+
+                    Expect.equal
+                        (endpoints h |> List.contains "operation.execute")
+                        executed
+                        "The irreversible write is sent only after exact target entry"
+
+                    Expect.stringContains
+                        (String.concat "" h.Prompts)
+                        "Type x to confirm: "
+                        "Typed target prompt")
             testCase "decline never dispatches execute" (fun () ->
                 let h = harness "en" (Some "n") Scenario.Accepted
 

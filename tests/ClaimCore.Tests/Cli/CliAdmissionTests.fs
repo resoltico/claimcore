@@ -39,6 +39,69 @@ let tests =
     testList
         "ADMIT collection CLI"
         [
+            testCase
+                "irreversible confirmation is a local option and never changes wire bytes"
+                (fun () ->
+                    for words, target in
+                        [
+                            [ "case"; "erase"; "CASE-X"; "--expected-revision"; "7" ], "CASE-X"
+                            [ "operation"; "settle"; identity () ], identity ()
+                            [
+                                "authority"
+                                "erase-profile"
+                                "--principal-kind"
+                                "human"
+                                "--issuer"
+                                "https://id.example/"
+                                "--subject"
+                                "person"
+                            ],
+                            identity ()
+                        ] do
+                        let plain = Grammar.prepare identity words |> Fixtures.accepted
+
+                        let confirmed =
+                            Grammar.prepare identity (words @ [ "--confirm"; target ])
+                            |> Fixtures.accepted
+
+                        Expect.equal
+                            confirmed.Bytes
+                            plain.Bytes
+                            "Confirmation is not a protocol member"
+
+                        Expect.equal
+                            confirmed.Confirmation
+                            (Some target)
+                            "Local confirmation is retained"
+
+                        Expect.equal
+                            (CliConfirmation.validate false plain)
+                            (Some(UsageError.MissingOption "--confirm"))
+                            "Redirected writes require explicit confirmation"
+
+                        Expect.equal
+                            (CliConfirmation.validate false confirmed)
+                            None
+                            "Exact target authorizes this local step"
+
+                        let wrong =
+                            { confirmed with
+                                Confirmation = Some "wrong"
+                            }
+
+                        Expect.equal
+                            (CliConfirmation.validate true wrong)
+                            (Some(UsageError.InvalidChoice("--confirm", "wrong", [ target ])))
+                            "Mismatch is a usage error even at a terminal"
+
+                        Expect.equal
+                            (CliConfirmation.irreversibleTarget confirmed.Invocation)
+                            (Some target)
+                            "Target semantics are explicit"
+
+                    Expect.isError
+                        (Grammar.prepare identity [ "case"; "list"; "--confirm"; "anything" ])
+                        "Ordinary reads do not accept an irrelevant confirmation")
             testCase "profile issuer is explicit in the actual prepared admission frame" (fun () ->
                 let withoutIssuer =
                     [

@@ -28,6 +28,7 @@ type RecoveryAction =
 type RecoveryInvocation =
     {
         Action: RecoveryAction
+        Confirmation: string option
         Text: bool
         Language: string
     }
@@ -159,33 +160,62 @@ module CliInvocations =
         else
             Error(UsageError.NotApplicable("arguments", "command"))
 
+    let private recoveryConfirmation arguments =
+        let rec collect (found: string option) remaining =
+            function
+            | [] -> Ok(List.rev remaining, found)
+            | "--confirm" :: (value: string) :: tail when
+                not (value.StartsWith("--", System.StringComparison.Ordinal))
+                ->
+                if found.IsSome then
+                    Error(UsageError.DuplicateOption "--confirm")
+                else
+                    collect (Some value) remaining tail
+            | "--confirm" :: _ -> Error(UsageError.MissingValue "--confirm")
+            | (value: string) :: tail when
+                value.StartsWith("--confirm=", System.StringComparison.Ordinal)
+                ->
+                if found.IsSome then
+                    Error(UsageError.DuplicateOption "--confirm")
+                else
+                    collect (Some(value.Substring(10))) remaining tail
+            | value :: tail -> collect found (value :: remaining) tail
+
+        collect None [] arguments
+
     let private admitRecovery arguments =
-        options arguments
-        |> Result.bind (fun (operands, format, language) ->
-            let admitted action =
-                Ok(
-                    CliInvocation.Recovery
-                        {
-                            Action = action
-                            Text = format <> Some "json"
-                            Language = Option.defaultValue "en" language
-                        }
-                )
+        recoveryConfirmation arguments
+        |> Result.bind (fun (arguments, confirmation) ->
+            options arguments
+            |> Result.bind (fun (operands, format, language) ->
+                let admitted action =
+                    Ok(
+                        CliInvocation.Recovery
+                            {
+                                Action = action
+                                Confirmation = confirmation
+                                Text = format <> Some "json"
+                                Language = Option.defaultValue "en" language
+                            }
+                    )
 
-            match operands with
-            | [ "list" ] -> admitted RecoveryAction.List
-            | [ ("check" | "settle") as command; raw ] ->
-                match System.Guid.TryParseExact(raw, "D") with
-                | true, attempt when attempt <> System.Guid.Empty ->
-                    let action =
-                        if command = "check" then
-                            RecoveryAttemptAction.Check
-                        else
-                            RecoveryAttemptAction.Settle
+                match operands with
+                | _ when confirmation.IsSome && (operands |> List.tryHead) <> Some "settle" ->
+                    Error(UsageError.NotApplicable("--confirm", "recovery"))
+                | [ "list" ] -> admitted RecoveryAction.List
+                | [ ("check" | "settle") as command; raw ] ->
+                    match System.Guid.TryParseExact(raw, "D") with
+                    | true, attempt when attempt <> System.Guid.Empty ->
+                        let action =
+                            if command = "check" then
+                                RecoveryAttemptAction.Check
+                            else
+                                RecoveryAttemptAction.Settle
 
-                    admitted (RecoveryAction.Attempt(action, attempt))
-                | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
-            | _ -> Error(UsageError.MissingOperand "list | check ATTEMPT_ID | settle ATTEMPT_ID"))
+                        admitted (RecoveryAction.Attempt(action, attempt))
+                    | _ -> Error(UsageError.InvalidValue("ATTEMPT_ID", raw))
+                | _ ->
+                    Error(UsageError.MissingOperand "list | check ATTEMPT_ID | settle ATTEMPT_ID")))
 
     let private admitCommand command tail =
         match tail with

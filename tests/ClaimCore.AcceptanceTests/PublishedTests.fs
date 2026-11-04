@@ -254,7 +254,13 @@ let private stewardship (fixture: PublishedFixture.Fixture) =
         let arguments = verbArguments act bytes
         assertDryRun fixture arguments bytes
 
-        verb fixture (interactiveEnvironment fixture "synthetic-steward" "valid") arguments 0
+        let confirmed =
+            if act = "erase" then
+                arguments @ [ "--confirm"; "DEMO-0001" ]
+            else
+                arguments
+
+        verb fixture (interactiveEnvironment fixture "synthetic-steward" "valid") confirmed 0
         |> require "ACCEPTED"
         |> ignore
 

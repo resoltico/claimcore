@@ -173,6 +173,8 @@ module CommandGrammar =
             "--format", String.concat "|" (formats operation)
             "--language", String.concat "|" LocalizationPolicy.languages
             "--dry-run", ""
+            if CatalogOperation.consequence operation = Consequence.Irreversible then
+                "--confirm", "TARGET"
             if operation.SelectedAct.IsSome then
                 "--preview", ""
             if supportsAll operation then

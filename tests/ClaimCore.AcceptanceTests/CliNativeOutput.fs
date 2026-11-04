@@ -353,7 +353,7 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
     let installation = context.GetProperty("installationId").GetString() |> nonNull
     let original = head fixture
 
-    for answer, expectedHead in [ "", original; "yes", original + 1L ] do
+    for answer, expectedHead in [ "", original; "yes", original; operation, original + 1L ] do
         let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
         let start =
@@ -393,7 +393,9 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
             Path.Combine(
                 fixture.Directory,
                 "settlement-"
-                + (if answer = "" then "cancel" else "confirm")
+                + (if answer = operation then "confirm"
+                   elif answer = "" then "cancel"
+                   else "wrong-target")
                 + ".private-output"
             )
 
@@ -409,7 +411,11 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
                     StandardError = result.StandardError
                 })
 
-        let name = "settlement-" + (if answer = "" then "cancel" else "confirm")
+        let name =
+            "settlement-"
+            + (if answer = operation then "confirm"
+               elif answer = "" then "cancel"
+               else "wrong-target")
 
         FixtureFiles.write fixture.Directory (name + ".stdout") result.StandardOutput
         |> ignore

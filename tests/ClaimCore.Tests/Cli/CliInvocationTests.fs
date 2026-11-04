@@ -570,9 +570,17 @@ let recoveryCommands =
                                             } -> value
                         | _ -> failtest "Settlement needs an authenticated context fixture"
 
-                    for language, yes in [ "en", "yes"; "lv", "jā"; "ar", "نعم" ] do
+                    for language in [ "en"; "lv"; "ar" ] do
                         for answer, expected in
-                            [ None, false; Some "", false; Some "no", false; Some yes, true ] do
+                            [
+                                None, false
+                                Some "", false
+                                Some "yes", false
+                                Some "jā", false
+                                Some "نعم", false
+                                Some(operation.ToString("D") + " "), false
+                                Some(operation.ToString("D")), true
+                            ] do
                             let captured = StringBuilder()
 
                             let console: InteractiveConsole =
@@ -588,7 +596,7 @@ let recoveryCommands =
                             Expect.equal
                                 (CliConfirmation.settlement console language context operation)
                                 expected
-                                "Explicit localized affirmation is required"
+                                "Only the exact operation ID confirms irreversible settlement"
 
                             Expect.stringContains
                                 (captured.ToString())

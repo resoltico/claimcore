@@ -104,6 +104,7 @@ module internal InteractiveReview =
             || hasOption "--expected-work-revision" arguments
             || hasOption "--expected-reminder-revision" arguments
             || hasOption "--dry-run" arguments
+            || hasOption "--confirm" arguments
         then
             Ok None
         else
@@ -170,11 +171,21 @@ module internal InteractiveReview =
             | Some {
                        Outcome = Outcome.Succeeded(Previewed.Reviewed _)
                    } when not draft.PreviewOnly ->
-                MessageCatalogs.renderCli draft.Language CliMessage.ReviewConfirmation
-                |> Encoding.UTF8.GetBytes
-                |> console.Write
+                let consent =
+                    match draft.Act with
+                    | DraftAct.Case act when
+                        Consequence.ofAct (ActKind.Case(CaseAct.kind act)) =
+                            Consequence.Irreversible
+                        ->
+                        CliConfirmation.exactTarget console draft.Language draft.Reference
+                    | _ ->
+                        MessageCatalogs.renderCli draft.Language CliMessage.ReviewConfirmation
+                        |> Encoding.UTF8.GetBytes
+                        |> console.Write
 
-                if CliConfirmation.confirmed draft.Language (console.ReadLine()) then
+                        CliConfirmation.confirmed draft.Language (console.ReadLine())
+
+                if consent then
                     let execute =
                         invocation Api.operationExecute input
                         |> Frames.bindInstallation installation

@@ -19,6 +19,7 @@ type PreparedVerb =
     {
         Invocation: Invocation
         DryRun: bool
+        Confirmation: string option
         Format: VerbFormat
         All: bool
         Language: string
@@ -363,6 +364,17 @@ module Grammar =
                     UsageError.InvalidChoice("--language", language, LocalizationPolicy.languages)
                 )
 
+            if
+                options.ContainsKey "--confirm"
+                && CatalogOperation.consequence entry <> Consequence.Irreversible
+            then
+                problems.Add(
+                    UsageError.NotApplicable(
+                        "--confirm",
+                        String.concat " " (CommandGrammar.words entry)
+                    )
+                )
+
             let found = errors problems
 
             if not found.IsEmpty then
@@ -416,6 +428,9 @@ module Grammar =
                         (options.ContainsKey "--all")
                         language
                         (options.ContainsKey "--preview")
+                        (match options.TryGetValue "--confirm" with
+                         | true, [ Some value ] -> Some value
+                         | _ -> None)
 
     let prepare newId arguments =
         let admit endpoint body =
@@ -423,13 +438,14 @@ module Grammar =
             |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
             |> fun endpoint -> endpoint.ReadInput body
 
-        let finish input dryRun format all language _ =
+        let finish input dryRun format all language _ confirmation =
             Frames.fromInput input
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
             |> Result.map (fun invocation ->
                 {
                     Invocation = invocation
                     DryRun = dryRun
+                    Confirmation = confirmation
                     Format = format
                     All = all
                     Language = language
@@ -455,7 +471,7 @@ module Grammar =
 
             codec.Read "$" (JsonValue.Object fields)
 
-        let finish input _ _ _ language preview = Ok(input, language, preview)
+        let finish input _ _ _ language preview _ = Ok(input, language, preview)
 
         prepareWith
             true

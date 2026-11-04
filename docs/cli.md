@@ -14,7 +14,7 @@ Timeline CSV emits one row per disclosed changed field, or a metadata-only row w
 CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 When stdin and stdout are terminals and text output is selected, omitting the relevant `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
 
-For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; there is no skip-confirmation flag.
+For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; irreversible writes require exact target confirmation. Type the case reference for case ERASE, or the operation ID for ERASE_PROFILE and SETTLE. Redirected commands require `--confirm TARGET`; a mismatching target is a usage error. This local option is never sent in the wire request. Recovery settlement follows the same operation-ID rule.
 
 Human data text visibly escapes terminal controls, line/paragraph separators and directional formatting as `\u{XXXX}` (uppercase hexadecimal). Literal backslashes are doubled, so displayed escapes are distinct from exact stored values. Arabic text and joining characters remain readable. This applies to redirected text too; JSON/NDJSON retain exact decoded values and CSV keeps its export rules.
 Narrative LF paragraph breaks are trusted layout around independently escaped data segments. Optional incident description and handling summary each admit 600 Unicode scalar values, preserving authored whitespace and spelling. Reminder action text is a separate 200-scalar single-line value. Empty or whitespace-only supplied text is invalid; omission keeps an existing value and `--clear-incident-description` or `--clear-handling-summary` explicitly clears it.
@@ -285,7 +285,7 @@ Erase case payload
 Remove this case and its details from ClaimCore. Copies held elsewhere remain.
 
 ```sh
-claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar] [--dry-run] [--confirm TARGET] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -411,7 +411,7 @@ Erase profile
 Permanently remove the saved display name and contact details for this account. Its identity, access permissions and recorded work remain.
 
 ```sh
-claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--confirm TARGET] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -772,7 +772,7 @@ Settle operation permanently
 Return this account’s accepted receipt, or permanently block its operation ID if it has not been accepted for this account. This cannot be undone. Checking status is a separate read.
 
 ```sh
-claimcore operation settle OPERATION-ID [--format text|json] [--language en|lv|ar] [--dry-run]
+claimcore operation settle OPERATION-ID [--format text|json] [--language en|lv|ar] [--dry-run] [--confirm TARGET]
 ```
 
 | Input | Meaning | Choices | Default |

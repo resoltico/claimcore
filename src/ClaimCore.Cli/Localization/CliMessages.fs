@@ -134,6 +134,7 @@ type CliMessage =
     | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure
     | [<MessageKey("cli.text.cursorReached")>] CursorReached of cursor: string
     | [<MessageKey("cli.review.confirm")>] ReviewConfirmation
+    | [<MessageKey("cli.review.typeTarget")>] TypeConfirmationTarget of target: string
     | [<MessageKey("cli.family.recovery")>] RecoveryFamily
     | [<MessageKey("cli.family.shell")>] ShellFamily
     | [<MessageKey("cli.family.configure")>] ConfigureFamily

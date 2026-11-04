@@ -60,7 +60,11 @@ let private qualify () =
 
         let pending =
             Task.Run(fun () ->
-                verb fixture fixture.Environment [ "operation"; "settle"; operation ] 2)
+                verb
+                    fixture
+                    fixture.Environment
+                    [ "operation"; "settle"; operation; "--confirm"; operation ]
+                    2)
 
         do! waitForProvider observer
         let watch = Stopwatch.StartNew()

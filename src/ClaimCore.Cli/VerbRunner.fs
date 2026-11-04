@@ -59,7 +59,8 @@ module internal VerbRunner =
 
             let consent mode context =
                 match mode with
-                | RemoteClientMode.Automation -> true
+                | _ when prepared.Confirmation = Some(input.OperationId.ToString("D")) -> true
+                | RemoteClientMode.Automation -> false
                 | RemoteClientMode.Interactive ->
                     CliConfirmation.settlement console prepared.Language context input.OperationId
 
@@ -121,7 +122,7 @@ module internal VerbRunner =
             ExitCode = Frames.exitCode frame
         }
 
-    let private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
+    let rec private prepared (io: VerbConsole) (processor: RemoteFrameProcessor) arguments token =
         task {
             match
                 Grammar.prepare (fun () -> Guid.NewGuid().ToString("D")) arguments
@@ -140,6 +141,16 @@ module internal VerbRunner =
             | Ok(prepared, None) when prepared.DryRun ->
                 CliDiscovery.writeBytes io.Output prepared.Bytes
                 return ExitCode.value ExitCode.Success
+            | Ok(prepared, None) when
+                CliConfirmation.validate io.Review.IsInteractive prepared |> Option.isSome
+                ->
+                let issue = CliConfirmation.validate io.Review.IsInteractive prepared |> Option.get
+
+                CliDiscovery.writeText
+                    io.Errors
+                    (UsageText.render prepared.Language arguments [ issue ])
+
+                return ExitCode.value ExitCode.Usage
             | Ok(prepared, None) when prepared.All || prepared.Format = VerbFormat.Csv ->
                 return! pages io processor prepared token
             | Ok(prepared, None) when
@@ -149,18 +160,36 @@ module internal VerbRunner =
             | Ok(prepared, None) ->
                 let frame = prepared.Invocation
 
-                let! reply = processor.Exchange(frame, token)
-                processor.Deliver(render prepared frame, reply)
+                let consent =
+                    match CliConfirmation.irreversibleTarget frame, prepared.Confirmation with
+                    | Some target, None ->
+                        CliConfirmation.exactTarget io.Review prepared.Language target
+                    | _ -> true
 
-                if prepared.Format = VerbFormat.Text then
-                    do!
-                        WorkRefresh.run
-                            (fun frame token -> processor.Exchange(frame, token))
-                            (fun frame reply -> processor.Deliver(render prepared frame, reply))
-                            reply
-                            token
+                if not consent then
+                    CliDiscovery.writeText
+                        io.Output
+                        (MessageCatalogs.renderCli prepared.Language CliMessage.NotRecorded)
 
-                return reply.ExitCode
+                    return ExitCode.value ExitCode.Success
+                else
+                    return! execute processor prepared frame token
+        }
+
+    and private execute (processor: RemoteFrameProcessor) prepared frame token =
+        task {
+            let! reply = processor.Exchange(frame, token)
+            processor.Deliver(render prepared frame, reply)
+
+            if prepared.Format = VerbFormat.Text then
+                do!
+                    WorkRefresh.run
+                        (fun frame token -> processor.Exchange(frame, token))
+                        (fun frame reply -> processor.Deliver(render prepared frame, reply))
+                        reply
+                        token
+
+            return reply.ExitCode
         }
 
     let run io (processor: RemoteFrameProcessor) arguments token =
