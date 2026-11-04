@@ -124,7 +124,10 @@ let private expectedPayload vector =
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal vectors.Length 12 "All independent fact, work, reminder and control vectors"
+        Expect.equal
+            vectors.Length
+            15
+            "Independent fact, work, reminder, control and grouped authority vectors"
 
         for vector in vectors do
             let payload = expectedPayload vector
@@ -273,6 +276,31 @@ let tests =
         "ledger entry format"
         [
             testCase "both independent ledger vectors reproduce every byte" vectors
+            testCase "ADMIT root kind remains distinct from its REGISTER effect" (fun () ->
+                withVectors (fun vectors ->
+                    let vector =
+                        vectors
+                        |> List.find (fun value -> text value "name" = "ADMIT identity root")
+
+                    let entry = metadata vector
+
+                    Expect.equal
+                        (LedgerEffects.authorityOperation entry.Effects)
+                        (Some AuthorityKind.Admit)
+                        "Logical ADMIT is retained in the header"
+
+                    match entry.Subject with
+                    | RecordedTarget.Authority subject ->
+                        Expect.equal
+                            subject.Act
+                            AuthorityKind.Register
+                            "Durable effect is identity-only REGISTER"
+                    | _ -> failtest "Expected authority vector"
+
+                    Expect.equal
+                        (LedgerEntry.hash entry |> Convert.ToHexStringLower)
+                        (text vector "entryHash")
+                        "Independent oracle pins logical code40 and physical code33 separately"))
             testCase "each fixed metadata field affects the hash" allMetadataFields
             testCase "act codes have an independent append-only expectation" (fun () ->
                 let acts =

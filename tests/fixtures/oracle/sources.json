@@ -443,6 +443,97 @@
           }
         }
       }
+    },
+    {
+      "name": "ADMIT identity root",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 13,
+      "act": "REGISTER",
+      "operationId": "80000000-0000-4000-8000-000000000100",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:29.000002+00:00",
+      "businessDate": null,
+      "payloadNonce": "8383838383838383838383838383838383838383838383838383838383838383",
+      "subjectId": "80000000-0000-4000-8000-000000000100",
+      "subject": "AUTHORITY",
+      "entityRevision": null,
+      "effectIndex": 0,
+      "effectCount": 3,
+      "authorityOperation": "ADMIT",
+      "authorityValue": {
+        "kind": "AUTHORITY",
+        "format": 3,
+        "operationId": "80000000-0000-4000-8000-000000000100",
+        "targetActorId": "80000000-0000-4000-8000-000000000100",
+        "act": {
+          "kind": "REGISTER",
+          "principal": {
+            "kind": "HUMAN",
+            "issuer": "https://issuer.example/",
+            "subject": "admit-vector-person"
+          }
+        }
+      }
+    },
+    {
+      "name": "ADMIT private profile effect",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 14,
+      "act": "SET_PROFILE",
+      "operationId": "80000000-0000-4000-8000-000000000100",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:29.000002+00:00",
+      "businessDate": null,
+      "payloadNonce": "8484848484848484848484848484848484848484848484848484848484848484",
+      "subjectId": "80000000-0000-4000-8000-000000000100",
+      "subject": "AUTHORITY",
+      "entityRevision": null,
+      "effectIndex": 1,
+      "effectCount": 3,
+      "authorityOperation": "ADMIT",
+      "authorityValue": {
+        "kind": "AUTHORITY",
+        "format": 3,
+        "operationId": "80000000-0000-4000-8000-000000000100",
+        "targetActorId": "80000000-0000-4000-8000-000000000100",
+        "act": {
+          "kind": "SET_PROFILE",
+          "profile": {
+            "displayName": "Admitted vector profile",
+            "contact": "Authored contact"
+          }
+        }
+      }
+    },
+    {
+      "name": "ADMIT initial grant effect",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 15,
+      "act": "GRANT",
+      "operationId": "80000000-0000-4000-8000-000000000100",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:29.000002+00:00",
+      "businessDate": null,
+      "payloadNonce": "8585858585858585858585858585858585858585858585858585858585858585",
+      "subjectId": "80000000-0000-4000-8000-000000000100",
+      "subject": "AUTHORITY",
+      "entityRevision": null,
+      "effectIndex": 2,
+      "effectCount": 3,
+      "authorityOperation": "ADMIT",
+      "authorityValue": {
+        "kind": "AUTHORITY",
+        "format": 3,
+        "operationId": "80000000-0000-4000-8000-000000000100",
+        "targetActorId": "80000000-0000-4000-8000-000000000100",
+        "act": {
+          "kind": "GRANT",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        }
+      }
     }
   ],
   "canonicalIdentity": [
@@ -2260,6 +2351,32 @@
             "displayName": "Retained profile",
             "contact": ""
           }
+        }
+      }
+    },
+    {
+      "name": "authored ADMIT is not a durable effect",
+      "subject": "AUTHORITY",
+      "accepted": false,
+      "value": {
+        "kind": "AUTHORITY",
+        "format": 3,
+        "operationId": "80000000-0000-4000-8000-000000000100",
+        "targetActorId": "80000000-0000-4000-8000-000000000100",
+        "act": {
+          "kind": "ADMIT",
+          "profile": {
+            "displayName": "Private authored profile",
+            "contact": null
+          },
+          "grants": [
+            {
+              "role": "CASE_READER",
+              "scope": {
+                "kind": "INSTALLATION"
+              }
+            }
+          ]
         }
       }
     }

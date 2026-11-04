@@ -205,8 +205,8 @@ let private inventories () =
 
     Expect.equal
         (authorityActs "ref" |> List.map (fst >> AuthorityEffect.kind) |> Set.ofList)
-        (Set.ofList AuthorityKind.all)
-        "Authority inventory"
+        (AuthorityKind.all |> List.filter ((<>) AuthorityKind.Admit) |> Set.ofList)
+        "Durable effect inventory excludes authored-only ADMIT"
 
 let private caseProperty =
     property {

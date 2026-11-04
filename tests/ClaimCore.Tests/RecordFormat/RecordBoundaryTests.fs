@@ -221,7 +221,7 @@ let private permanentLimits () =
         vectors.RootElement.GetProperty("permanentLimits").EnumerateArray()
         |> Seq.toArray
 
-    Expect.equal entries.Length 55 "Every authored scalar boundary is discovered"
+    Expect.equal entries.Length 56 "Every authored scalar boundary is discovered"
 
     for entry in entries do
         let text name =
@@ -348,8 +348,8 @@ let private kindRoundTrips () =
 
     Expect.equal
         (acts |> List.map (fst >> AuthorityEffect.kind) |> Set.ofList)
-        (Set.ofList AuthorityKind.all)
-        "Every authority kind is independently authored"
+        (AuthorityKind.all |> List.filter ((<>) AuthorityKind.Admit) |> Set.ofList)
+        "Every durable authority effect is independently authored; ADMIT is a grouped root"
 
     for act, token in acts do
         Expect.equal
