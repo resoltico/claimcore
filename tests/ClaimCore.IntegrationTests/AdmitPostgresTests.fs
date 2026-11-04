@@ -158,7 +158,10 @@ let private duplicateHistory (database: PostgresFixture.Database) =
         let! result = Verification.verify database.OwnerSource None token
 
         match result with
-        | VerificationResult.Diverged {Finding=VerificationFinding.AuthorityFold;Sequence=Some sequence} ->
+        | VerificationResult.Diverged {
+                                          Finding = VerificationFinding.AuthorityFold
+                                          Sequence = Some sequence
+                                      } ->
             Expect.equal
                 sequence
                 (List.last rows).Sequence
