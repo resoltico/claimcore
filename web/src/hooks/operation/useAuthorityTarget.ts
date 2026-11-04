@@ -6,11 +6,26 @@ import { useCredential } from "../../session/SessionContext";
 import { useContentRoute } from "../SettingsDetourContext";
 import type { OperationModel } from "./useOperation";
 type Snapshot = { key: string; actor: ActorReviewItem; offered: ReadonlyArray<string> };
-type Intent = { epoch: string; actor: ActorReviewItem; kind: string };
+type Intent = { epoch: string; actor: ActorReviewItem; kind: string; values: FormValues };
 const targetValues = (principal: PrincipalInput): FormValues => ({
   "target.kind": principal.kind,
   "target.issuer": principal.issuer,
   "target.subject": principal.subject,
+});
+const actorValues = (
+  actor: ActorReviewItem,
+  kind: string,
+  values: FormValues = {},
+): FormValues => ({
+  ...values,
+  ...targetValues(actor.principal),
+  ...(kind === "SET_PROFILE"
+    ? {
+        "act.profile.displayName":
+          actor.actor.displayName.kind === "NAMED" ? actor.actor.displayName.value : "",
+        "act.profile.contact": actor.contact ?? "",
+      }
+    : {}),
 });
 const matches = (values: FormValues, principal: PrincipalInput) =>
   values["target.kind"] === principal.kind &&
@@ -80,18 +95,18 @@ const useActorDefault = (model: OperationModel, source: Snapshot | null, fixed: 
     }
     const kind = authorityPrimaryAction(source.offered);
     if (kind !== undefined) {
-      model.discard(false, kind, targetValues(source.actor.principal));
+      model.discard(false, kind, actorValues(source.actor, kind));
     }
   }, [source, fixed, model]);
 };
-const resetPrincipal = (
-  intent: Intent | null,
-  kind: string,
-  epoch: string,
-  available: boolean,
-  fallback: PrincipalInput | undefined,
-) =>
-  intent?.kind === kind && intent.epoch === epoch && available ? intent.actor.principal : fallback;
+const currentIntent = (intent: Intent | null, kind: string, epoch: string, available: boolean) =>
+  intent?.kind === kind && intent.epoch === epoch && available ? intent : null;
+const resetValues = (intent: Intent | null, source: Snapshot | null, kind: string): FormValues => {
+  if (intent !== null) {
+    return actorValues(intent.actor, kind, intent.values);
+  }
+  return source === null ? {} : actorValues(source.actor, kind);
+};
 const useActorConsent = (
   model: OperationModel,
   source: Snapshot | null,
@@ -100,15 +115,15 @@ const useActorConsent = (
   fixed: boolean,
 ) => {
   const [intent, setIntent] = useState<Intent | null>(null);
-  const begin = (kind: string) => {
+  const begin = (kind: string, values: FormValues = {}) => {
     if (source === null || !source.offered.includes(kind) || model.busy) {
       return;
     }
     if (retained(model)) {
-      setIntent({ epoch, actor: source.actor, kind });
+      setIntent({ epoch, actor: source.actor, kind, values });
       model.requestDiscard(kind);
     } else {
-      model.discard(false, kind, targetValues(source.actor.principal));
+      model.discard(false, kind, actorValues(source.actor, kind, values));
     }
   };
   const discard = (
@@ -116,11 +131,17 @@ const useActorConsent = (
     kind = source === null ? "ADMIT" : (authorityPrimaryAction(source.offered) ?? "ADMIT"),
   ) => {
     const fallback = fixed && source !== null ? source.actor.principal : undefined;
-    const principal = resetPrincipal(intent, kind, epoch, available, fallback);
+    const pending = currentIntent(intent, kind, epoch, available);
+    const principal = pending?.actor.principal ?? fallback;
     model.discard(
       acknowledged,
       kind,
-      principal === undefined ? undefined : targetValues(principal),
+      principal === undefined
+        ? undefined
+        : {
+            ...resetValues(pending, source, kind),
+            ...targetValues(principal),
+          },
     );
     setIntent(null);
   };

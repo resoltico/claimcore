@@ -1,4 +1,3 @@
-import { ActorIdentity } from "../../components/ActorIdentity";
 import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { AuthorityTarget } from "../../hooks/operation/useAuthorityTarget";
@@ -12,7 +11,7 @@ type Props = {
   onOpen: () => void;
   onClose: () => void;
 };
-const ActorActions = ({
+export const ActorActions = ({
   target,
   busy,
   onOpen,
@@ -27,15 +26,7 @@ const ActorActions = ({
   }
   return (
     <section aria-labelledby="actor-actions-title">
-      <h2 id="actor-actions-title">
-        {p.text("label.availableActs")}
-        {target.actor === null ? null : (
-          <>
-            {" "}
-            · <ActorIdentity actor={target.actor.actor} />
-          </>
-        )}
-      </h2>
+      <h2 id="actor-actions-title">{p.text("label.availableActs")}</h2>
       <div className="actions">
         {target.offered.map((kind) => (
           <button
@@ -72,9 +63,6 @@ export const ActorOperation = ({
   const retained = model.dirty || model.prepared !== null || model.priorUncertain;
   return (
     <>
-      {target.actor === null ? null : (
-        <ActorActions target={target} busy={model.busy} onOpen={onOpen} />
-      )}
       {!open && retained ? (
         <>
           <p role="status">{p.text("ui.actorRequestRetained")}</p>
@@ -85,6 +73,7 @@ export const ActorOperation = ({
       ) : null}
       <OperationPanel
         model={model}
+        {...(target.mode === "bound" && target.actor !== null ? { actor: target.actor.actor } : {})}
         current={null}
         offered={
           target.mode === "bound"

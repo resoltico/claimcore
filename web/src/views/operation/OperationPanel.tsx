@@ -1,3 +1,5 @@
+import type { ActorRef } from "@contracts/client";
+import { ActorIdentity } from "../../components/ActorIdentity";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
 import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
@@ -92,7 +94,11 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
     </section>
   );
 };
-type Props = Omit<OperationFormProps, "onAct"> & { disclosureAvailable?: boolean; open?: boolean };
+type Props = Omit<OperationFormProps, "onAct"> & {
+  disclosureAvailable?: boolean;
+  open?: boolean;
+  actor?: ActorRef;
+};
 type DiscardProps = {
   model: OperationModel;
   onClose?: () => void;
@@ -297,6 +303,30 @@ const useFieldSelection = (operationId: unknown) => {
   );
   return { onFieldBlur, onMount };
 };
+const OperationTarget = ({
+  model,
+  actor,
+}: {
+  model: OperationModel;
+  actor: ActorRef | undefined;
+}) => {
+  const p = usePresentation();
+  if (model.entry.subject !== "AUTHORITY") {
+    return null;
+  }
+  const review = model.review?.subject;
+  const actual = review?.kind === "AUTHORITY" ? review.target?.actor : actor;
+  if (actual !== null && actual !== undefined) {
+    return (
+      <p className="operation-target">
+        <ActorIdentity actor={actual} />
+      </p>
+    );
+  }
+  return ["ADMIT", "REGISTER"].includes(model.entry.kind) ? null : (
+    <p>{p.text("ui.selectedAccount")}</p>
+  );
+};
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true, open = true } = props;
   const p = usePresentation();
@@ -320,6 +350,7 @@ export const OperationPanel = (props: Props) => {
         <Dialog
           title={renderCatalogKey(p, entry.labelId)}
           description={renderCatalogKey(p, entry.meaningId)}
+          identity={<OperationTarget model={model} actor={props.actor} />}
           closeLabel={p.text("ui.close")}
           placement="end"
           headerEnd={

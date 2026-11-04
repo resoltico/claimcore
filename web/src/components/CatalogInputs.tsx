@@ -516,6 +516,7 @@ const CollectionInput = ({ collection, ...props }: Props & { collection: Catalog
   );
 };
 export const CatalogInputs = (props: Props) => {
+  const p = usePresentation();
   const visible = visibleOperationInputs(props.entry, props.values, props.current).filter(
     (input) =>
       !(
@@ -532,25 +533,34 @@ export const CatalogInputs = (props: Props) => {
     (input) =>
       !groups.some((group) => group !== input && bindingPath(input).startsWith(prefix(group))),
   );
+  const technical = parents.filter(
+    (input) => props.fixedTarget === true && input.path[0] === "target",
+  );
+  const renderInput = (input: CatalogInput) =>
+    input.kind.kind === "GROUP" ? (
+      <CorrectionGroup key={input.identity} input={input} {...props}>
+        {children(input)}
+      </CorrectionGroup>
+    ) : (
+      factNode(input, parents, {
+        ...props,
+        disabled:
+          props.disabled ||
+          props.fixedPaths?.includes(bindingPath(input)) === true ||
+          (props.fixedTarget === true && input.path[0] === "target"),
+      })
+    );
   return (
     <>
       {parents
-        .filter((input) => !pairedChild(input, parents, props))
-        .map((input) =>
-          input.kind.kind === "GROUP" ? (
-            <CorrectionGroup key={input.identity} input={input} {...props}>
-              {children(input)}
-            </CorrectionGroup>
-          ) : (
-            factNode(input, parents, {
-              ...props,
-              disabled:
-                props.disabled ||
-                props.fixedPaths?.includes(bindingPath(input)) === true ||
-                (props.fixedTarget === true && input.path[0] === "target"),
-            })
-          ),
-        )}
+        .filter((input) => !technical.includes(input) && !pairedChild(input, parents, props))
+        .map(renderInput)}
+      {technical.length === 0 ? null : (
+        <details>
+          <summary>{p.text("ui.technicalDetails")}</summary>
+          {technical.map(renderInput)}
+        </details>
+      )}
       {props.entry.collections
         .filter((collection) =>
           collection.branches.every(

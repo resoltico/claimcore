@@ -100,7 +100,7 @@ export const setupActorTargets = (
 };
 export const openActor = async (id = firstActor.actor.actorId) => {
   fireEvent.click(document.getElementById(`actor-grants-${id}`)!);
-  await screen.findByRole("heading", { name: "Actor grants", level: 1 });
+  await screen.findByRole("dialog");
 };
 export const authorDifferentTarget = async () => {
   fireEvent.click(await screen.findByRole("button", { name: "Add person" }));

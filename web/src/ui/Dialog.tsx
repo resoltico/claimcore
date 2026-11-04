@@ -12,6 +12,7 @@ type Props = {
   children: ReactNode;
   footer?: ReactNode;
   headerEnd?: ReactNode;
+  identity?: ReactNode;
   isOpen: boolean;
   isDismissable: boolean;
   onOpenChange: (open: boolean) => void;
@@ -49,6 +50,7 @@ export const Dialog = ({
   children,
   footer,
   headerEnd,
+  identity,
   isOpen,
   isDismissable,
   onOpenChange,
@@ -69,10 +71,11 @@ export const Dialog = ({
             <header className="ui-dialog-header">
               <div className="ui-dialog-heading">
                 <Heading slot="title" className="ui-dialog-title">
-                  {title}
+                  <bdi>{title}</bdi>
                 </Heading>
                 {headerEnd}
               </div>
+              {identity}
               {description === undefined ? null : <p>{description}</p>}
             </header>
             <div className="ui-dialog-body">{children}</div>

@@ -48,7 +48,7 @@ if (typeof window !== "undefined") {
         guardedDeparture(() => {
           window.history.replaceState(null, "", target);
           publish();
-        });
+        }, target);
       }
     } else {
       publish();

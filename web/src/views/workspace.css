@@ -73,13 +73,6 @@
   margin: 0;
 }
 
-.authority-editor {
-  min-inline-size: 0;
-  padding: var(--space-4);
-  background: var(--bg-surface);
-  border: var(--border-width) solid var(--border-control);
-  border-radius: var(--radius-md);
-}
 .actor-summary {
   display: grid;
   gap: var(--space-2);

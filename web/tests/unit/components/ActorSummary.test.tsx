@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
 import { ActorSummary } from "../../../src/components/ActorSummary";
@@ -36,3 +37,15 @@ it.each([0, 3])(
     );
   },
 );
+
+it("keeps the provided name visible while issuer, subject and account ID remain in collapsed Record details", async () => {
+  render(<ActorSummary actor={actor} />);
+  expect(screen.getByText("Authority owner")).toBeVisible();
+  for (const value of [actor.actor.actorId, actor.principal.issuer, actor.principal.subject]) {
+    expect(screen.getByText(value, { exact: true })).not.toBeVisible();
+  }
+  await userEvent.setup().click(screen.getByText("Record details", { exact: true }));
+  for (const value of [actor.actor.actorId, actor.principal.issuer, actor.principal.subject]) {
+    expect(screen.getByText(value, { exact: true })).toBeVisible();
+  }
+});
