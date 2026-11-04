@@ -231,6 +231,7 @@ let internal lifecycle fixture =
             Service.actors
                 owner
                 {
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 50

@@ -607,9 +607,6 @@
   "endpoint.operation.resolve.consequence": "This permanently marks the change as not recorded. Its change identifier cannot be used again.",
   "endpoint.operation.resolve.done": "Change settled as not recorded.",
   "endpoint.authority.requests.dismiss.done": "Access request dismissed.",
-  "field.actorNameSearch.label": "Name search",
-  "field.actorNameSearch.hint": "Find a person by part of their current saved name.",
-  "field.actorNameSearch.rule": "Use up to {maximumCharacters} characters. Capitalization does not matter.",
   "label.accountState": "Account status",
   "label.responsibleCases": "Responsible cases",
   "label.account": "Account",
@@ -640,5 +637,8 @@
   "view.AUTHORITY.label": "People and access",
   "view.OPERATIONS.label": "Operations",
   "label.requestDismissed": "Access request dismissed.",
-  "label.details": "Details"
+  "label.details": "Details",
+  "field.directorySearch.label": "Search people",
+  "field.directorySearch.hint": "Search current saved names or contact details.",
+  "field.directorySearch.rule": "Use up to {maximumCharacters} characters. Capitalization does not matter."
 }

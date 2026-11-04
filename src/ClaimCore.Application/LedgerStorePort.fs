@@ -328,7 +328,8 @@ type AuthorityHistoryPageQuery =
 
 type ActorPageQuery =
     {
-        Text: ActorNameSearchText option
+        Role: Role option
+        Text: DirectorySearchText option
         AfterActorId: ActorId option
         Limit: int
     }
@@ -421,6 +422,7 @@ type TimelinePageQuery =
 type GlobalReadFacts =
     {
         Authority: AuthorityView
+        AssignedRoles: ActorRoleSummary list
         Maintenance: RegisterMaintenance
     }
 

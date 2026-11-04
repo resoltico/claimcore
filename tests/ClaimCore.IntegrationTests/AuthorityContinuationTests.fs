@@ -26,6 +26,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.actors
                 actor
                 ({
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 1
@@ -43,6 +44,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.actors
                 actor
                 ({
+                    Role = None
                     Text = None
                     AfterCursor = first.NextCursor
                     Limit = 2
@@ -60,6 +62,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.actors
                 actor
                 ({
+                    Role = None
                     Text = None
                     AfterCursor = second.NextCursor
                     Limit = 1

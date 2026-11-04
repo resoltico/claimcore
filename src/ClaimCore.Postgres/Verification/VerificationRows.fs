@@ -229,7 +229,7 @@ module internal VerificationRows =
                     return!
                         fold
                             connection
-                            "SELECT actor_id,display_name_search FROM claimcore.actors ORDER BY actor_id"
+                            "SELECT actor_id,display_name_search,contact_search FROM claimcore.actors ORDER BY actor_id"
                             {
                                 Read =
                                     (fun reader () ->
@@ -237,10 +237,11 @@ module internal VerificationRows =
 
                                         DatabaseSession.value<System.Guid> 0 row
                                         |> DatabaseSession.admitted ActorId.create,
-                                        DatabaseSession.optional<string> 1 row)
+                                        DatabaseSession.optional<string> 1 row,
+                                        DatabaseSession.optional<string> 2 row)
                                 Append =
                                     (fun () row ->
-                                        ProjectionVerification.actorNameSearch expected row)
+                                        ProjectionVerification.actorProfileSearch expected row)
                                 Initial = ()
                                 Finding = VerificationFinding.AuthorityProfileProjection
                             }

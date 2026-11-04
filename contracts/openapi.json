@@ -3264,6 +3264,17 @@
           "text": {
             "type": "string"
           },
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
           "cursor": {
             "type": "string",
             "minLength": 1,
@@ -10430,7 +10441,7 @@
           "principal.subject",
           "profile.displayName",
           "profile.contact",
-          "actorNameSearch",
+          "directorySearch",
           "grants",
           "role",
           "limit",
@@ -13045,6 +13056,14 @@
             "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
             "minLength": 1,
             "maxLength": 2048
+          },
+          "roles": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ActorRoleSummary"
+            },
+            "minItems": 0,
+            "maxItems": 7
           }
         },
         "required": [
@@ -13061,7 +13080,8 @@
           "hasScopedCases",
           "maintenance",
           "self",
-          "issuer"
+          "issuer",
+          "roles"
         ]
       },
       "RequesterState.DISABLED": {

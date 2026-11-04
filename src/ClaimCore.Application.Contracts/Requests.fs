@@ -119,6 +119,7 @@ type ReminderGetRequest =
 /// Current profile names only; cursor and predicate bind the same admitted filter.
 type ActorListRequest =
     {
+        Role: Role option
         AfterCursor: string option
         Limit: int
         Text: string option

@@ -475,11 +475,12 @@ module RequestCodecs =
 
     let private authorityVariantsWith role scope =
         let grant =
-            record (fun role scope ->
+            (record (fun role scope ->
                 {
                     AuthoredGrant.Role = role
                     Scope = scope
                 })
+            : Fields<AuthoredGrant, _>)
             |> field WireMembers.Role _.Role role
             |> field WireMembers.Scope _.Scope scope
 
@@ -690,13 +691,17 @@ module RequestCodecs =
 
     let actorListRequest =
         let fields
-            : ReadFields<ActorListRequest, string option -> string option -> int -> ActorListRequest> =
+            : ReadFields<
+                ActorListRequest,
+                string option -> Role option -> string option -> int -> ActorListRequest
+               > =
             {
-                Inputs = [ ReadInput.ActorNameSearch ]
+                Inputs = [ ReadInput.DirectorySearch; ReadInput.ActorRole ]
                 Fields =
-                    record (fun text cursor limit ->
+                    record (fun text role cursor limit ->
                         {
                             ActorListRequest.Text = text
+                            Role = role
                             AfterCursor = cursor
                             Limit = limit
                         })
@@ -704,7 +709,10 @@ module RequestCodecs =
 
         {
             Inputs = fields.Inputs
-            Fields = fields.Fields |> optionalField "text" _.Text text
+            Fields =
+                fields.Fields
+                |> optionalField "text" _.Text text
+                |> optionalField "role" _.Role (VocabularyCodec.create Role.vocabulary)
         }
         |> pageWith Paging.MaximumActorCursorCharacters _.AfterCursor _.Limit
         |> finishRead RequestSchemas.ActorListRequest QueryEndpoint.AuthorityList

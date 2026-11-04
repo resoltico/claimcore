@@ -152,6 +152,7 @@ let private directoryBatch () =
                         Service.actors
                             owner
                             {
+                                Role = None
                                 Text = None
                                 AfterCursor = None
                                 Limit = limit

@@ -79,6 +79,17 @@ let tests =
                 | _ -> failtest "Active context required"
 
             Expect.equal
+                current.Roles
+                [
+                    {
+                        Role = Role.CaseReader
+                        Installation = true
+                        CaseCount = 0L
+                    }
+                ]
+                "Own summaries expose actual raw assignment labels without deriving roles from capabilities"
+
+            Expect.equal
                 current.Runtime.Basis
                 {
                     ObservedAt = first
@@ -190,6 +201,7 @@ let authorityPageBasis =
                     Service.actors
                         services
                         {
+                            Role = None
                             Text = None
                             AfterCursor = None
                             Limit = 50

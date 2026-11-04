@@ -14,9 +14,9 @@
     },
     {
       "endpoint": "authority.list",
-      "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"ACTORS\",\"query\":null,\"v\":3}",
-      "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJ2IjozfQ",
-      "tokenLength": 186
+      "canonicalJson": "{\"after\":\"a0000000-0000-4000-8000-000000000050\",\"installationId\":\"90000000-0000-4000-8000-000000000001\",\"kind\":\"ACTORS\",\"query\":null,\"role\":null,\"v\":4}",
+      "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJyb2xlIjpudWxsLCJ2Ijo0fQ",
+      "tokenLength": 202
     },
     {
       "endpoint": "authority.grants",
@@ -96,6 +96,11 @@
       "name": "retired actor v2 has no fallback",
       "endpoint": "authority.list",
       "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInYiOjJ9"
+    },
+    {
+      "name": "retired actor v3 has no role binding",
+      "endpoint": "authority.list",
+      "token": "eyJhZnRlciI6ImEwMDAwMDAwLTAwMDAtNDAwMC04MDAwLTAwMDAwMDAwMDA1MCIsImluc3RhbGxhdGlvbklkIjoiOTAwMDAwMDAtMDAwMC00MDAwLTgwMDAtMDAwMDAwMDAwMDAxIiwia2luZCI6IkFDVE9SUyIsInF1ZXJ5IjpudWxsLCJ2IjozfQ"
     }
   ]
 }

@@ -32,6 +32,7 @@ let private directory services =
             Service.actors
                 services
                 {
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 50
@@ -379,6 +380,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
                 Service.actors
                     services
                     {
+                        Role = None
                         Text = None
                         AfterCursor = None
                         Limit = 50

@@ -32,15 +32,15 @@ let private token (json: string) =
 let private actorNameCursorBudget () =
     let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
     let raw = String.replicate 200 "ﷺ"
-    let query = ActorNameSearchText.parse raw |> Result.defaultWith (string >> failtest)
+    let query = DirectorySearchText.parse raw |> Result.defaultWith (string >> failtest)
 
     Expect.equal
-        (ActorNameSearchText.value query).Length
+        (DirectorySearchText.value query).Length
         3600
         "Legal compatibility expansion does not enlarge the public cursor"
 
     let actor = CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000050")
-    let cursor = Cursors.encodeActors installation (Some query) actor
+    let cursor = Cursors.encodeActors installation (Some query) None actor
     Expect.isLessThanOrEqual cursor.Length 512 "Existing cursor admission budget is unchanged"
 
     let padded =
@@ -51,22 +51,28 @@ let private actorNameCursorBudget () =
 
     Expect.equal
         (document.RootElement.GetProperty("query").GetString())
-        "255d5e1b082fb1ef1012f2f7feccd62bdbd6c8286afbb33254ab7307e2ec482a"
+        "66d643546a81f50e79f93060e650f02430c27b16d51bdbb686a0b5f7178b3823"
         "Independent query-only fingerprint pins normalized filter binding"
 
     Expect.equal
-        (Cursors.decodeActors Paging.MaximumActorCursorCharacters installation (Some query) cursor)
+        (Cursors.decodeActors
+            Paging.MaximumActorCursorCharacters
+            installation
+            (Some query)
+            None
+            cursor)
         (Ok actor)
         "Expanded query cursor remains usable"
 
     let different =
-        ActorNameSearchText.parse "other" |> Result.defaultWith (string >> failtest)
+        DirectorySearchText.parse "other" |> Result.defaultWith (string >> failtest)
 
     Expect.equal
         (Cursors.decodeActors
             Paging.MaximumActorCursorCharacters
             installation
             (Some different)
+            None
             cursor)
         (Error Refusal.InvalidCursor)
         "The same position cannot change its normalized filter"
@@ -75,7 +81,8 @@ let private actorNameCursorBudget () =
         Codec.encode
             Api.authorityList.Input
             {
-                ActorListRequest.Text = Some raw
+                ActorListRequest.Role = None
+                Text = Some raw
                 AfterCursor = Some cursor
                 Limit = 50
             }
@@ -184,12 +191,14 @@ let private accepted () =
                             Paging.MaximumActorCursorCharacters
                             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                             None
+                            None
                             encoded)
                         (Ok(CaseFixtures.actorId (expected)))
                         "Independent actor position"
 
                     Cursors.encodeActors
                         (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        None
                         None
                         (CaseFixtures.actorId (expected))
                 | "authority.grants" ->
@@ -625,6 +634,7 @@ let installationBinding =
                             Cursors.decodeActors
                                 Paging.MaximumActorCursorCharacters
                                 foreign
+                                None
                                 None
                                 encoded
                             |> Result.map ignore

@@ -406,10 +406,10 @@
       }
     },
     {
-      "name": "actorNameSearch",
-      "labelId": "field.actorNameSearch.label",
-      "hintId": "field.actorNameSearch.hint",
-      "ruleId": "field.actorNameSearch.rule",
+      "name": "directorySearch",
+      "labelId": "field.directorySearch.label",
+      "hintId": "field.directorySearch.hint",
+      "ruleId": "field.directorySearch.rule",
       "scalar": {
         "kind": "TEXT",
         "format": {
@@ -8134,7 +8134,7 @@
       "inputs": [
         {
           "identity": "text",
-          "field": "actorNameSearch",
+          "field": "directorySearch",
           "path": [
             "text"
           ],
@@ -8143,9 +8143,9 @@
           },
           "adviceGroup": null,
           "branches": [],
-          "labelId": "field.actorNameSearch.label",
-          "hintId": "field.actorNameSearch.hint",
-          "ruleId": "field.actorNameSearch.rule",
+          "labelId": "field.directorySearch.label",
+          "hintId": "field.directorySearch.hint",
+          "ruleId": "field.directorySearch.rule",
           "order": 0,
           "prefill": null,
           "required": false,
@@ -8153,7 +8153,42 @@
           "allowsNull": false,
           "default": null,
           "diagnosticTargets": [
-            "actorNameSearch"
+            "directorySearch"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "role",
+          "field": "role",
+          "path": [
+            "role"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "role",
+            "options": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.role.label",
+          "hintId": "field.role.hint",
+          "ruleId": "field.role.rule",
+          "order": 1,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "role"
           ],
           "source": "AUTHORED"
         },
@@ -8171,7 +8206,7 @@
           "labelId": "field.cursor.label",
           "hintId": "field.cursor.hint",
           "ruleId": "field.cursor.rule",
-          "order": 1,
+          "order": 2,
           "prefill": null,
           "required": false,
           "wireRequired": false,
@@ -8196,7 +8231,7 @@
           "labelId": "field.limit.label",
           "hintId": "field.limit.hint",
           "ruleId": "field.limit.rule",
-          "order": 2,
+          "order": 3,
           "prefill": null,
           "required": false,
           "wireRequired": true,

@@ -36,7 +36,8 @@ let private authorityAndCursor () =
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             {
-                ActorListRequest.Text = None
+                ActorListRequest.Role = None
+                Text = None
                 AfterCursor = page.AfterCursor
                 Limit = page.Limit
             }
@@ -49,7 +50,8 @@ let private authorityAndCursor () =
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             {
-                ActorListRequest.Text = None
+                ActorListRequest.Role = None
+                Text = None
                 AfterCursor = page.AfterCursor
                 Limit = page.Limit
             }
@@ -234,6 +236,7 @@ let private context () =
             instant
             RegisterMaintenance.initial
             view
+            []
     with
     | Outcome.Succeeded {
                             Requester = RequesterState.NoRoles value
@@ -257,6 +260,7 @@ let private context () =
             instant
             RegisterMaintenance.initial
             AuthorityView.empty
+            []
     with
     | Outcome.Succeeded {
                             Requester = RequesterState.NotRegistered value
@@ -280,6 +284,7 @@ let private context () =
             instant
             RegisterMaintenance.initial
             disabled
+            []
     with
     | Outcome.Succeeded {
                             Requester = RequesterState.Disabled self
@@ -311,6 +316,7 @@ let private context () =
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
             {
+                Role = None
                 Text = None
                 AfterCursor = None
                 Limit = 50

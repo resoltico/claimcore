@@ -786,12 +786,13 @@ List actors
 Read registered actors and available authority acts.
 
 ```sh
-claimcore authority list [--text VALUE] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run]
+claimcore authority list [--text VALUE] [--role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run]
 ```
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `--text` | Name search — Use up to 200 characters. Capitalization does not matter. |  |  |
+| `--text` | Search people — Use up to 200 characters. Capitalization does not matter. |  |  |
+| `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 

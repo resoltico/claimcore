@@ -61,6 +61,14 @@ let internal contextCodec () =
                                 )
                                 |> Option.get
                             Issuer = "https://issuer.example/"
+                            Roles =
+                                [
+                                    {
+                                        Role = Role.Owner
+                                        Installation = true
+                                        CaseCount = 0L
+                                    }
+                                ]
                             Self =
                                 ClaimCore.TestSupport.Inputs.actorReference (
                                     CaseFixtures.actorId (

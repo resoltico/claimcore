@@ -18,7 +18,7 @@ module InputTarget =
         | InputTarget.PrincipalSubject -> "principal.subject"
         | InputTarget.ProfileDisplayName -> "profile.displayName"
         | InputTarget.ProfileContact -> "profile.contact"
-        | InputTarget.ActorNameSearch -> "actorNameSearch"
+        | InputTarget.DirectorySearch -> "directorySearch"
         | InputTarget.Grants -> "grants"
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"

@@ -607,9 +607,6 @@
   "endpoint.operation.resolve.consequence": "Tas neatgriezeniski atzīmē izmaiņu kā nereģistrētu. Tās izmaiņas identifikatoru nevarēs izmantot vēlreiz.",
   "endpoint.operation.resolve.done": "Izmaiņa galīgi atzīmēta kā nereģistrēta.",
   "endpoint.authority.requests.dismiss.done": "Piekļuves pieprasījums noraidīts.",
-  "field.actorNameSearch.label": "Meklēšana pēc vārda",
-  "field.actorNameSearch.hint": "Atrast personu pēc pašlaik saglabātā vārda daļas.",
-  "field.actorNameSearch.rule": "Izmantojiet ne vairāk kā {maximumCharacters} rakstzīmes. Reģistram nav nozīmes.",
   "label.accountState": "Konta statuss",
   "label.responsibleCases": "Lietas atbildībā",
   "label.account": "Konts",
@@ -640,5 +637,8 @@
   "view.AUTHORITY.label": "Cilvēki un piekļuve",
   "view.OPERATIONS.label": "Darbības",
   "label.requestDismissed": "Piekļuves pieprasījums noraidīts.",
-  "label.details": "Detaļas"
+  "label.details": "Detaļas",
+  "field.directorySearch.label": "Meklēt personas",
+  "field.directorySearch.hint": "Meklēt pašlaik saglabātos vārdos vai kontaktinformācijā.",
+  "field.directorySearch.rule": "Izmantojiet ne vairāk kā {maximumCharacters} rakstzīmes. Reģistram nav nozīmes."
 }

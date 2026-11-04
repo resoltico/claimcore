@@ -39,6 +39,7 @@ let private directory owner principal =
             Service.actors
                 owner
                 {
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 50
@@ -270,6 +271,17 @@ let internal corruptAssignment fixture =
         | {
               Requester = RequesterState.Active context
           } ->
+            Expect.equal
+                context.Roles
+                [
+                    {
+                        Role = Role.DataSteward
+                        Installation = false
+                        CaseCount = 1L
+                    }
+                ]
+                "Own assignment labels retain recognized invalid roles without granting their rights"
+
             Expect.isEmpty
                 context.Capability
                 "Assignment display does not manufacture authorization"
@@ -317,6 +329,22 @@ let internal corruptAssignment fixture =
                 }
             ]
             "Recognized invalid assignments remain reviewable rather than silently filtered"
+
+        let! filtered =
+            Service.actors
+                owner
+                {
+                    ActorListRequest.Text = None
+                    Role = Some Role.DataSteward
+                    AfterCursor = None
+                    Limit = 50
+                }
+                token
+
+        Expect.equal
+            ((successful filtered).Items |> List.map _.Principal)
+            [ service ]
+            "Typed role filter retains recognized raw assignments without granting protected rights"
 
         let! grants =
             Service.grants
@@ -368,6 +396,18 @@ let internal maximumRoles fixture =
             do! grantRole owner (1051 + index) target role GrantTarget.Installation true
 
         let! person = directory owner target
+        let! own = Service.context (core fixture target) () token
+
+        match successful own with
+        | {
+              Requester = RequesterState.Active context
+          } ->
+            Expect.equal
+                context.Roles
+                person.Roles
+                "Own context and authorized directory use the same complete ordered role summary semantics"
+        | other -> failtestf "Assigned target needs active own context: %A" other
+
         Expect.equal person.Roles.Length 7 "The complete vocabulary has at most7 per-role summaries"
 
         Expect.equal

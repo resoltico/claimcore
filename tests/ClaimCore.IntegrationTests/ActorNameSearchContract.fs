@@ -18,7 +18,8 @@ let private success =
 
 let private request text cursor limit =
     {
-        ActorListRequest.Text = text
+        ActorListRequest.Role = None
+        Text = text
         AfterCursor = cursor
         Limit = limit
     }
@@ -123,7 +124,12 @@ let internal lookup fixture =
                 ($"Domain-normalized literal matching is identical for {query}")
 
         let! privateFields = search owner "contact-only-needle"
-        Expect.isEmpty (success privateFields).Items "Contact is not a name-search side channel"
+
+        Expect.equal
+            (success privateFields).Items.Length
+            names.Length
+            "W9 text covers current saved contact details as well as names"
+
         let! subject = search owner "name-person-"
         Expect.isEmpty (success subject).Items "Principal identifiers are not searched"
         let! first = Service.actors owner (request (Some "ALICE") None 1) token
@@ -199,7 +205,170 @@ let internal lookup fixture =
         | Outcome.Rejected(Refusal.InvalidInput issues) ->
             Expect.equal
                 (InputIssues.head issues).Target
-                InputTarget.ActorNameSearch
+                InputTarget.DirectorySearch
                 "Name admission has its own semantic target"
         | other -> failtestf "Empty filter must refuse: %A" other
+    }
+
+let internal contactAndRole fixture =
+    task {
+        let token = System.Threading.CancellationToken.None
+        let! owner = bootstrap fixture
+
+        let make operation subject display contact =
+            task {
+                let principal = PrincipalKey.human "https://issuer.example/" subject |> required
+
+                let! reply =
+                    Service.execute
+                        owner
+                        (OperationInput.Authority(
+                            Inputs.authorityRequest
+                                (id operation)
+                                principal
+                                (AuthorityAct.Register
+                                    {
+                                        DisplayName = display
+                                        Contact = contact
+                                    })
+                        ))
+                        token
+
+                acceptedAuthority reply
+                return principal
+            }
+
+        let! first =
+            make 1140 "directory-contact-a" "Other person" (Some "ĀNA%_\\contact@example.invalid")
+
+        let! second =
+            make 1141 "directory-contact-b" "Āna named person" (Some "different@example.invalid")
+
+        let! third = make 1142 "directory-contact-c" "Unrelated name" None
+
+        for operation, person, role in
+            [
+                1143, first, Role.CaseReader
+                1144, second, Role.Auditor
+                1145, third, Role.CaseReader
+            ] do
+            let! granted =
+                grant
+                    owner
+                    (id operation)
+                    person
+                    {
+                        Role = role
+                        Scope = GrantTarget.Installation
+                    }
+                    true
+
+            acceptedAuthority granted
+
+        let find text role cursor limit =
+            Service.actors
+                owner
+                {
+                    ActorListRequest.Text = text
+                    Role = role
+                    AfterCursor = cursor
+                    Limit = limit
+                }
+                token
+
+        let! text = find (Some "āNA") None None 50
+
+        Expect.equal
+            ((success text).Items |> List.map _.Principal |> Set.ofList)
+            (set[first
+                 second])
+            "Text searches name OR contact in the same server predicate"
+
+        let! literal = find (Some "%_\\") None None 50
+
+        Expect.equal
+            ((success literal).Items |> List.map _.Principal)
+            [ first ]
+            "Contact wildcard characters stay literal"
+
+        let! role = find None (Some Role.CaseReader) None 50
+
+        Expect.equal
+            ((success role).Items |> List.map _.Principal |> Set.ofList)
+            (set[first
+                 third])
+            "Typed role selection uses recognized raw assignments"
+
+        let! both = find (Some "āna") (Some Role.CaseReader) None 50
+
+        Expect.equal
+            ((success both).Items |> List.map _.Principal)
+            [ first ]
+            "Typed role and literal text compose before pagination"
+
+        let! page = find None (Some Role.CaseReader) None 1
+
+        let cursor =
+            (success page).NextCursor
+            |> Option.defaultWith (fun () -> failtest "Two role rows need a continuation")
+
+        let! changed = find None (Some Role.Auditor) (Some cursor) 1
+
+        Expect.equal
+            changed
+            (Outcome.Rejected Refusal.InvalidCursor)
+            "A role cursor cannot change role"
+
+        let! omitted = find None None (Some cursor) 1
+
+        Expect.equal
+            omitted
+            (Outcome.Rejected Refusal.InvalidCursor)
+            "A role cursor cannot become an unfiltered page"
+
+        let! erased =
+            Service.execute
+                owner
+                (OperationInput.Authority(
+                    Inputs.authorityRequest (id 1146) first AuthorityAct.EraseProfile
+                ))
+                token
+
+        acceptedAuthority erased
+        let! absent = find (Some "contact@example") None None 50
+
+        Expect.isEmpty
+            (success absent).Items
+            "Erasure clears contact text and its search projection"
+
+        let! kept = find None (Some Role.CaseReader) None 50
+
+        Expect.equal
+            ((success kept).Items |> List.map _.Principal |> Set.ofList)
+            (set[first
+                 third])
+            "Profile erasure never removes assigned role facts"
+
+        let! reprofiled =
+            Service.execute
+                owner
+                (OperationInput.Authority(
+                    Inputs.authorityRequest
+                        (id 1147)
+                        first
+                        (AuthorityAct.SetProfile
+                            {
+                                DisplayName = "Replacement person"
+                                Contact = Some "NEW@EXAMPLE.INVALID"
+                            })
+                ))
+                token
+
+        acceptedAuthority reprofiled
+        let! fresh = find (Some "new@example") (Some Role.CaseReader) None 50
+
+        Expect.equal
+            ((success fresh).Items |> List.map _.Principal)
+            [ first ]
+            "Reprofile derives only the current saved contact"
     }

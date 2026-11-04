@@ -119,6 +119,7 @@ let private lifecycle (database: PostgresFixture.Database) =
             Service.actors
                 (core database.Fixture human)
                 {
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 10

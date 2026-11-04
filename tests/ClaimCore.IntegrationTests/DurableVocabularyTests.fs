@@ -48,6 +48,7 @@ let private readActors (tx: IReadTx) =
         let! _ =
             tx.ActorPage
                 {
+                    Role = None
                     Text = None
                     AfterActorId = None
                     Limit = 50
@@ -76,7 +77,7 @@ let private rawGrants database =
         TransactionPages.grants connection (CaseFixtures.actorId (id 1)) None 50 token)
 
 let private rawActors database =
-    rawRead database (fun connection -> TransactionPages.actors connection None None 50 token)
+    rawRead database (fun connection -> TransactionPages.actors connection None None None 50 token)
 
 let private rejectsUnknown mutate read raw =
     run (fun database ->

@@ -69,11 +69,56 @@ let private nameProjection (database: PostgresFixture.Database) =
 
     }
 
+let private contactProjection (database: PostgresFixture.Database) =
+    task {
+        do! ActorNameSearchContract.contactAndRole database.Fixture
+        let! before = verified database
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.actors SET contact_search='stale contact' WHERE actor_id=$1"
+                [| box (ClaimCore.TestSupport.StoreFixtures.id 1140) |]
+
+        do!
+            finding
+                ClaimCore.Application.Contracts.VerificationFinding.AuthorityProfileProjection
+                database
+
+        do! enterMaintenance database
+        let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource before token
+        Expect.isOk rebuilt "Contact lookup projection rebuilds from the current retained profile"
+        let! after = verified database
+        Expect.equal after before "Contact rebuild preserves retained proof"
+        use! connection = database.OwnerSource.OpenConnectionAsync()
+        let! _ = DatabaseSession.execute connection "SET enable_seqscan=off" [||] token
+
+        let! rows =
+            DatabaseSession.rows
+                connection
+                "EXPLAIN SELECT actor_id FROM claimcore.actors WHERE contact_search LIKE '%new@example%'"
+                [||]
+                token
+
+        let plan = rows |> List.map (DatabaseSession.value<string> 0) |> String.concat "\n"
+
+        Expect.stringContains
+            plan
+            "actors_contact"
+            "Contact literal lookup has bounded trigram index support"
+    }
+
 [<Tests>]
 let tests =
     testList
         "bounded People directory"
         [
+            testCaseAsync
+                "contact search projection corruption rebuild and index are verified"
+                (run contactProjection)
+            testCaseAsync
+                "directory contact and typed role predicates erase and reprofile together"
+                (run (scenario ActorNameSearchContract.contactAndRole))
             testCaseAsync
                 "normalized name projection divergence and rebuild preserve proof"
                 (run nameProjection)

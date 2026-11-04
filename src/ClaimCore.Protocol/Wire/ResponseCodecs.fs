@@ -370,6 +370,20 @@ module ResponseCodecs =
         |> field "actorId" fst actorId
         |> field "hasScopedCases" snd boolean
 
+    let private actorRoleSummary =
+        (record (fun role installation count ->
+            {
+                ActorRoleSummary.Role = role
+                Installation = installation
+                CaseCount = count
+            })
+        : Fields<ActorRoleSummary, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "installation" _.Installation boolean
+        |> field "caseCount" _.CaseCount (integer 0L SafeInteger.Maximum)
+        |> build
+        |> named "ActorRoleSummary"
+
     let private actorContextFields =
         (record
             (fun
@@ -381,9 +395,11 @@ module ResponseCodecs =
                 (identity, assigned)
                 maintenance
                 self
-                issuer ->
+                issuer
+                roles ->
                 {
                     ActorContext.Issuer = issuer
+                    Roles = roles
                     InstallationId = installation
                     Self = self
                     Maintenance = maintenance
@@ -407,6 +423,7 @@ module ResponseCodecs =
         |> field "maintenance" _.Maintenance registerMaintenance
         |> field "self" _.Self ActorCodecs.actorRef
         |> field "issuer" _.Issuer PrincipalCodecs.issuer
+        |> field "roles" _.Roles (list Role.all.Length actorRoleSummary)
 
     let actorContext = actorContextFields |> build |> named "ActorContext"
 
@@ -555,20 +572,6 @@ module ResponseCodecs =
         |> field "view" _.View (constant "ALL" |> map (fun () -> CaseView.All) (fun _ -> ()))
         |> build
         |> named "ActorResponsibleCases"
-
-    let private actorRoleSummary =
-        (record (fun role installation count ->
-            {
-                ActorRoleSummary.Role = role
-                Installation = installation
-                CaseCount = count
-            })
-        : Fields<ActorRoleSummary, _>)
-        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
-        |> field "installation" _.Installation boolean
-        |> field "caseCount" _.CaseCount (integer 0L SafeInteger.Maximum)
-        |> build
-        |> named "ActorRoleSummary"
 
     let actorSummary =
         let contact =

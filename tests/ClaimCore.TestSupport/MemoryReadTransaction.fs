@@ -13,6 +13,21 @@ open ClaimCore.Application.Contracts
 
 open ClaimCore.TestSupport.MemoryStoreState
 
+let private roleSummaries (state: State) id =
+    state.Grants
+    |> Seq.choose (fun (actor, role, scope) -> if actor = id then Some(role, scope) else None)
+    |> Seq.groupBy fst
+    |> Seq.map (fun (role, scopes) ->
+        let scopes = scopes |> Seq.map snd |> Seq.toList
+
+        {
+            ActorRoleSummary.Role = role
+            Installation = List.contains None scopes
+            CaseCount = scopes |> List.filter Option.isSome |> List.length |> int64
+        })
+    |> Seq.toList
+
+
 let private selected (state: State) (selection: CaseSelection) (record: StoredCase) =
     let scopedRead =
         state.Grants
@@ -217,6 +232,10 @@ type internal Reader
             Task.FromResult
                 {
                     GlobalReadFacts.Authority = authorityView state principal None
+                    AssignedRoles =
+                        (authorityView state principal None).Actor
+                        |> Option.map (fun actor -> roleSummaries state actor.ActorId)
+                        |> Option.defaultValue []
                     Maintenance = state.Maintenance
                 }
 
@@ -743,21 +762,7 @@ type internal Reader
                 if not (Map.containsKey id state.Actors) then
                     None
                 else
-                    let roles =
-                        state.Grants
-                        |> Seq.choose (fun (actor, role, scope) ->
-                            if actor = id then Some(role, scope) else None)
-                        |> Seq.groupBy fst
-                        |> Seq.map (fun (role, scopes) ->
-                            let scopes = scopes |> Seq.map snd |> Seq.toList
-
-                            {
-                                ActorRoleSummary.Role = role
-                                Installation = List.contains None scopes
-                                CaseCount =
-                                    scopes |> List.filter Option.isSome |> List.length |> int64
-                            })
-                        |> Seq.toList
+                    let roles = roleSummaries state id
 
                     Some(id, roles))
             |> Map.ofList
@@ -1022,6 +1027,7 @@ type internal Reader
             ({
                  ActorPageQuery.AfterActorId = after
                  Text = text
+                 Role = role
                  Limit = limit
              })
             =
@@ -1035,13 +1041,24 @@ type internal Reader
                     |> Option.forall (fun query ->
                         actor.Profile
                         |> Option.exists (fun profile ->
-                            ActorNameSearchText.matches
+                            DirectorySearchText.matches
                                 query
-                                (PartyName.format profile.DisplayName))))
+                                (PartyName.format profile.DisplayName)
+                            || (profile.Contact
+                                |> Option.exists (fun contact ->
+                                    DirectorySearchText.matches
+                                        query
+                                        (ContactText.format contact))))))
                 |> Seq.filter (fun actor ->
                     after
                     |> Option.forall (fun after ->
                         compareId ActorId.format actor.ActorId after > 0))
+                |> Seq.filter (fun actor ->
+                    role
+                    |> Option.forall (fun expected ->
+                        (get ()).Grants
+                        |> Seq.exists (fun (id, assigned, _) ->
+                            id = actor.ActorId && assigned = expected)))
                 |> Seq.sortWith (fun a b -> compareId ActorId.format a.ActorId b.ActorId)
                 |> Seq.toList
 

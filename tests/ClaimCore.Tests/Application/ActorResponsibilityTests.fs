@@ -69,6 +69,7 @@ let tests =
                     Service.actors
                         (core fixture viewer)
                         {
+                            Role = None
                             Text = None
                             AfterCursor = None
                             Limit = 50

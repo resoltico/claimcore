@@ -199,6 +199,7 @@ module internal Queries =
         observedAt
         (maintenance: RegisterMaintenance)
         (actor: AuthorityView)
+        (roles: ActorRoleSummary list)
         =
         let principal = services.Principal
 
@@ -207,6 +208,7 @@ module internal Queries =
 
             {
                 Issuer = issuer
+                Roles = roles |> ActorRoleSummary.ordered
                 Self = Actor.currentReference requester
                 Maintenance = maintenance
                 InstallationId = services.InstallationId
@@ -284,7 +286,8 @@ module internal Queries =
                         services
                         facts.ObservedAt
                         facts.Facts.Maintenance
-                        facts.Facts.Authority)
+                        facts.Facts.Authority
+                        facts.Facts.AssignedRoles)
                 |> readResult
         }
 

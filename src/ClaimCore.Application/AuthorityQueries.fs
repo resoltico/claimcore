@@ -19,10 +19,10 @@ module internal AuthorityQueries =
                     match request.Text with
                     | None -> Ok None
                     | Some raw ->
-                        ActorNameSearchText.parse raw
+                        DirectorySearchText.parse raw
                         |> Result.map Some
                         |> Result.mapError (fun violation ->
-                            Refusal.invalidInput (InputTarget.ActorNameSearch, violation))
+                            Refusal.invalidInput (InputTarget.DirectorySearch, violation))
 
                 text
                 |> Result.bind (fun text ->
@@ -30,7 +30,8 @@ module internal AuthorityQueries =
                         (Cursors.decodeActors
                             Paging.MaximumActorCursorCharacters
                             installation
-                            text)
+                            text
+                            request.Role)
                         request.AfterCursor
                     |> Result.map (fun after -> text, after)))
 
@@ -129,6 +130,7 @@ module internal AuthorityQueries =
                                             let! page =
                                                 tx.ActorPage
                                                     {
+                                                        Role = request.Role
                                                         Text = text
                                                         AfterActorId = after
                                                         Limit = request.Limit
@@ -156,6 +158,7 @@ module internal AuthorityQueries =
                                                                         Cursors.encodeActors
                                                                             services.InstallationId
                                                                             text
+                                                                            request.Role
                                                                     )
                                                             })
                                                     |> Result.defaultWith Outcome.Failed

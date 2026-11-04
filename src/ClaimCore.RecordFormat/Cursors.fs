@@ -379,25 +379,34 @@ module Cursors =
         text
         |> Option.map (fun value ->
             System.Text.Encoding.UTF8.GetBytes(
-                "claimcore/actor-name-query/1\n" + ActorNameSearchText.value value
+                "claimcore/directory-text-query/1\n" + DirectorySearchText.value value
             )
             |> System.Security.Cryptography.SHA256.HashData
             |> Convert.ToHexStringLower
             |> JsonValue.String)
         |> Option.defaultValue JsonValue.Null
 
-    let encodeActors installation text (after: ActorId) =
+    let encodeActors installation text role (after: ActorId) =
         encode
             installation
             [
                 "after", JsonValue.String(ActorId.format after)
                 "kind", JsonValue.String "ACTORS"
                 "query", actorQueryFingerprint text
-                "v", JsonValue.Integer 3L
+                "role",
+                (role
+                 |> Option.map (Role.token >> JsonValue.String)
+                 |> Option.defaultValue JsonValue.Null)
+                "v", JsonValue.Integer 4L
             ]
 
-    let decodeActors maximum installation text token =
+    let decodeActors maximum installation text role token =
         let expected = actorQueryFingerprint text
+
+        let expectedRole =
+            role
+            |> Option.map (Role.token >> JsonValue.String)
+            |> Option.defaultValue JsonValue.Null
 
         decode
             installation
@@ -406,7 +415,10 @@ module Cursors =
             | JsonValue.Object [ "after", JsonValue.String after
                                  "kind", JsonValue.String "ACTORS"
                                  "query", actual
-                                 "v", JsonValue.Integer 3L ] when actual = expected ->
+                                 "role", actualRole
+                                 "v", JsonValue.Integer 4L ] when
+                actual = expected && actualRole = expectedRole
+                ->
                 uuid ActorId.create after
             | _ -> None)
             token

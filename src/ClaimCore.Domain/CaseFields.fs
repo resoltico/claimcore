@@ -49,7 +49,7 @@ type InputTarget =
     | PrincipalSubject
     | ProfileDisplayName
     | ProfileContact
-    | ActorNameSearch
+    | DirectorySearch
     | Grants
     | Role
     | Limit

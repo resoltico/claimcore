@@ -126,12 +126,12 @@ module ScalarGuidance =
         | InteractionInput.Target(InputTarget.Field field) -> forField field |> Option.get
         | InteractionInput.Target InputTarget.Reason -> forReason
         | InteractionInput.Target InputTarget.Text -> forSearchText
-        | InteractionInput.Target InputTarget.ActorNameSearch ->
+        | InteractionInput.Target InputTarget.DirectorySearch ->
             message
                 key
                 [
                     "maximumCharacters",
-                    GuidanceArgument.Count ActorNameSearchText.MaximumCharacters
+                    GuidanceArgument.Count DirectorySearchText.MaximumCharacters
                 ]
         | InteractionInput.Target InputTarget.ProfileDisplayName -> forProfileName
         | InteractionInput.Target InputTarget.ProfileContact -> forProfileContact

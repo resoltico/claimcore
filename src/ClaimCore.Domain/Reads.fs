@@ -88,16 +88,16 @@ module CaseSearchText =
 
 /// Literal current-name lookup shares the established NFKC/invariant-lower search meaning.
 [<Struct>]
-type ActorNameSearchText = private ActorNameSearchText of string
+type DirectorySearchText = private DirectorySearchText of string
 
-module ActorNameSearchText =
+module DirectorySearchText =
     let MaximumCharacters = PartyName.MaximumCharacters
-    let value (ActorNameSearchText value) = value
+    let value (DirectorySearchText value) = value
 
     let parse raw =
         PartyName.parse raw
         |> Result.bind PartyName.admit
-        |> Result.map (PartyName.format >> TextSearch.normalize >> ActorNameSearchText)
+        |> Result.map (PartyName.format >> TextSearch.normalize >> DirectorySearchText)
 
     let matches query name =
         TextSearch.normalize name

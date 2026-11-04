@@ -216,7 +216,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.actors SET display_name=$2,contact=$3,display_name_search=$4 WHERE actor_id=$1"
+                        "UPDATE claimcore.actors SET display_name=$2,contact=$3,display_name_search=$4,contact_search=$5 WHERE actor_id=$1"
                         [|
                             box (ActorId.value id)
                             box (PartyName.format profile.DisplayName)
@@ -224,6 +224,10 @@ module internal Persistence =
                                 profile.Contact |> Option.map ContactText.format
                             )
                             box (TextSearch.normalize (PartyName.format profile.DisplayName))
+                            DatabaseSession.parameter (
+                                profile.Contact
+                                |> Option.map (ContactText.format >> TextSearch.normalize)
+                            )
                         |]
                         token
 

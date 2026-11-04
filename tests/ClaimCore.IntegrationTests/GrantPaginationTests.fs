@@ -123,6 +123,7 @@ let private prepare (database: PostgresFixture.Database) =
             (Service.actors
                 admin
                 ({
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 50
@@ -289,6 +290,7 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
             (Service.actors
                 admin
                 ({
+                    Role = None
                     Text = None
                     AfterCursor = cursor
                     Limit = 50

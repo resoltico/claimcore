@@ -264,6 +264,7 @@ let internal registrationIsolation fixture =
             Service.actors
                 owner
                 {
+                    Role = None
                     Text = None
                     Limit = 50
                     AfterCursor = None

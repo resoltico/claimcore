@@ -22,6 +22,9 @@ let internal tests factory =
                 (withFixture factory (fun fixture ->
                     task { let! _ = SummaryAttributionContract.lifecycle fixture in return () }))
             testCaseAsync
+                "directory text contact and typed role filters share bounded paging"
+                (withFixture factory ActorNameSearchContract.contactAndRole)
+            testCaseAsync
                 "current-name search is normalized literal bounded and cursor-bound"
                 (withFixture factory ActorNameSearchContract.lookup)
             testCaseAsync

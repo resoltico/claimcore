@@ -257,6 +257,7 @@ type internal PausedPageStore
                                     member _.ActorPage
                                         ({
                                              ActorPageQuery.AfterActorId = after
+                                             Role = role
                                              Text = text
                                              Limit = limit
                                          })
@@ -264,6 +265,7 @@ type internal PausedPageStore
                                         tx.ActorPage(
                                             {
                                                 ActorPageQuery.AfterActorId = after
+                                                Role = role
                                                 Text = text
                                                 Limit = limit
                                             }

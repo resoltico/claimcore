@@ -253,6 +253,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.actors
                 actor
                 ({
+                    Role = None
                     Text = None
                     AfterCursor = None
                     Limit = 1
