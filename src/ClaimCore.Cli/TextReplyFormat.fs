@@ -26,6 +26,14 @@ module internal TextReplyFormat =
     let number (value: int64) =
         value.ToString(CultureInfo.InvariantCulture)
 
+    let money (language: string) value =
+        let precision = Money.displayScale value
+        let format = "N" + precision.ToString(CultureInfo.InvariantCulture)
+
+        (Money.value value).ToString(format, CultureInfo.GetCultureInfo language)
+        + " "
+        + Money.currency value
+
     let boolean value = if value then "true" else "false"
 
     let instant (value: DateTimeOffset) =

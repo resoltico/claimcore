@@ -7,6 +7,7 @@
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="NarrativeValues.fs" />
+    <Compile Include="CurrencyMinorUnits.fs" />
     <Compile Include="MoneyValues.fs" />
     <Compile Include="DecimalTotal.fs" />
     <Compile Include="FieldValues.fs" />

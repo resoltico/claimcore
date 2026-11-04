@@ -567,6 +567,18 @@ module CatalogCodecs =
         |> field "characterWarnings" fst warnings
         |> field "limits" snd limits
 
+    let private currencyMinorUnit =
+        (record (fun currency scale ->
+            {
+                CurrencyMinorUnitDefinition.Currency = currency
+                MinorUnits = scale
+            })
+        : Fields<CurrencyMinorUnitDefinition, _>)
+        |> field "currency" _.Currency ResponseScalars.currency
+        |> field "minorUnits" _.MinorUnits (integer 0L 4L |> map int int64)
+        |> build
+        |> named "Presentation.CurrencyMinorUnit"
+
     let codec =
         (record
             (fun
@@ -575,6 +587,7 @@ module CatalogCodecs =
                 entries
                 roles
                 capabilities
+                moneyMinorUnits
                 version ->
                 {
                     CatalogDocument.Fields = fields
@@ -584,6 +597,7 @@ module CatalogCodecs =
                     Entries = entries
                     Roles = roles
                     Capabilities = capabilities
+                    MoneyMinorUnits = moneyMinorUnits
                     ProductVersion = version
                 })
         : Fields<CatalogDocument, _>)
@@ -592,6 +606,7 @@ module CatalogCodecs =
         |> field "entries" _.Entries (many entry)
         |> field "roles" _.Roles (many role)
         |> field "capabilities" _.Capabilities (many capability)
+        |> field "moneyMinorUnits" _.MoneyMinorUnits (many currencyMinorUnit)
         |> field "productVersion" _.ProductVersion text
         |> build
         |> named "Presentation.CatalogDocument"

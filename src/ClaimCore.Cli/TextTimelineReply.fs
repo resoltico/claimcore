@@ -14,9 +14,6 @@ module internal TextTimelineReply =
         | CaseFieldValue.Status value -> term language CaseStatus.vocabulary value
         | CaseFieldValue.Business value -> FieldValue.format value
 
-    let private money value =
-        Money.format value + " " + Currency.format (Money.currencyValue value)
-
     let private delta language key format (change: ValueChange<'value>) =
         line
             language
@@ -52,7 +49,7 @@ module internal TextTimelineReply =
                 }
             |> List.singleton
         | TimelineChange.CaseMoney value ->
-            delta language (FieldPresentation.labelId value.FieldName) money value.Change
+            delta language (FieldPresentation.labelId value.FieldName) (money language) value.Change
             |> List.singleton
         | TimelineChange.Lifecycle value ->
             delta

@@ -82,5 +82,9 @@ module Catalog =
                                 || not (Authority.humanOnlyCapability capability))
                     })
             Entries = OperationCatalog.entries
+            MoneyMinorUnits =
+                CurrencyMinorUnits.all
+                |> Map.toList
+                |> List.map (fun (code, scale) -> { Currency = code; MinorUnits = scale })
             ProductVersion = BuildIdentity.current.Version
         }

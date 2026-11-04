@@ -257,8 +257,8 @@ let tests =
                         for expected in
                             [
                                 "Timeline author"
-                                "123456789.12 EUR"
-                                "0 USD"
+                                TextReplyFormat.money language (Inputs.money "123456789.12" "EUR")
+                                TextReplyFormat.money language (Inputs.money "0" "USD")
                                 "2026-11-03"
                                 "2026-11-04"
                                 "First\\u{000A}second"

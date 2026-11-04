@@ -67,6 +67,7 @@
     <Compile Include="Domain/WorklistFilterTests.fs" />
     <Compile Include="Domain/WorklistSemanticsTests.fs" />
     <Compile Include="Domain/DecimalTotalTests.fs" />
+    <Compile Include="Domain/MoneyDisplayScaleTests.fs" />
     <Compile Include="Domain/CaseCorrectionTests.fs" />
     <Compile Include="Domain/CaseWorkAndUpdateTests.fs" />
     <Compile Include="Domain/ActorProfileTests.fs" />
@@ -178,6 +179,7 @@
     <Compile Include="Cli/NarrativeInputTests.fs" />
     <Compile Include="Cli/CaseListCommandTests.fs" />
     <Compile Include="Cli/TimelineCommandTests.fs" />
+    <Compile Include="Cli/MoneyDisplayTests.fs" />
     <Compile Include="Cli/AuthorityHistoryTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />

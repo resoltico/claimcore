@@ -228,6 +228,8 @@ type CapabilityPresentationDefinition =
         AdmittedScopes: ScopeKind list
     }
 
+type CurrencyMinorUnitDefinition = { Currency: string; MinorUnits: int }
+
 type CatalogDocument =
     {
         Fields: FieldPresentationDefinition list
@@ -238,6 +240,7 @@ type CatalogDocument =
         Roles: RolePresentationDefinition list
         Capabilities: CapabilityPresentationDefinition list
         ProductVersion: string
+        MoneyMinorUnits: CurrencyMinorUnitDefinition list
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

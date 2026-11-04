@@ -7369,5 +7369,667 @@
       ]
     }
   ],
+  "moneyMinorUnits": [
+    {
+      "currency": "AED",
+      "minorUnits": 2
+    },
+    {
+      "currency": "AFN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ALL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "AMD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "AOA",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ARS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "AUD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "AWG",
+      "minorUnits": 2
+    },
+    {
+      "currency": "AZN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BAM",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BBD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BDT",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BHD",
+      "minorUnits": 3
+    },
+    {
+      "currency": "BIF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "BMD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BND",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BOB",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BOV",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BRL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BSD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BTN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BWP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BYN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "BZD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CAD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CDF",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CHE",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CHF",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CHW",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CLF",
+      "minorUnits": 4
+    },
+    {
+      "currency": "CLP",
+      "minorUnits": 0
+    },
+    {
+      "currency": "CNY",
+      "minorUnits": 2
+    },
+    {
+      "currency": "COP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "COU",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CRC",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CUP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CVE",
+      "minorUnits": 2
+    },
+    {
+      "currency": "CZK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "DJF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "DKK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "DOP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "DZD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "EGP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ERN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ETB",
+      "minorUnits": 2
+    },
+    {
+      "currency": "EUR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "FJD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "FKP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GBP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GEL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GHS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GIP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GMD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GNF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "GTQ",
+      "minorUnits": 2
+    },
+    {
+      "currency": "GYD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "HKD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "HNL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "HTG",
+      "minorUnits": 2
+    },
+    {
+      "currency": "HUF",
+      "minorUnits": 2
+    },
+    {
+      "currency": "IDR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ILS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "INR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "IQD",
+      "minorUnits": 3
+    },
+    {
+      "currency": "IRR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ISK",
+      "minorUnits": 0
+    },
+    {
+      "currency": "JMD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "JOD",
+      "minorUnits": 3
+    },
+    {
+      "currency": "JPY",
+      "minorUnits": 0
+    },
+    {
+      "currency": "KES",
+      "minorUnits": 2
+    },
+    {
+      "currency": "KGS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "KHR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "KMF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "KPW",
+      "minorUnits": 2
+    },
+    {
+      "currency": "KRW",
+      "minorUnits": 0
+    },
+    {
+      "currency": "KWD",
+      "minorUnits": 3
+    },
+    {
+      "currency": "KYD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "KZT",
+      "minorUnits": 2
+    },
+    {
+      "currency": "LAK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "LBP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "LKR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "LRD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "LSL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "LYD",
+      "minorUnits": 3
+    },
+    {
+      "currency": "MAD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MDL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MGA",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MKD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MMK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MNT",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MOP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MRU",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MUR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MVR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MWK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MXN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MXV",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MYR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "MZN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "NAD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "NGN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "NIO",
+      "minorUnits": 2
+    },
+    {
+      "currency": "NOK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "NPR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "NZD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "OMR",
+      "minorUnits": 3
+    },
+    {
+      "currency": "PAB",
+      "minorUnits": 2
+    },
+    {
+      "currency": "PEN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "PGK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "PHP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "PKR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "PLN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "PYG",
+      "minorUnits": 0
+    },
+    {
+      "currency": "QAR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "RON",
+      "minorUnits": 2
+    },
+    {
+      "currency": "RSD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "RUB",
+      "minorUnits": 2
+    },
+    {
+      "currency": "RWF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "SAR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SBD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SCR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SDG",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SEK",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SGD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SHP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SLE",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SOS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SRD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SSP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "STN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SVC",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SYP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "SZL",
+      "minorUnits": 2
+    },
+    {
+      "currency": "THB",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TJS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TMT",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TND",
+      "minorUnits": 3
+    },
+    {
+      "currency": "TOP",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TRY",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TTD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TWD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "TZS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "UAH",
+      "minorUnits": 2
+    },
+    {
+      "currency": "UGX",
+      "minorUnits": 0
+    },
+    {
+      "currency": "USD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "USN",
+      "minorUnits": 2
+    },
+    {
+      "currency": "UYI",
+      "minorUnits": 0
+    },
+    {
+      "currency": "UYU",
+      "minorUnits": 2
+    },
+    {
+      "currency": "UYW",
+      "minorUnits": 4
+    },
+    {
+      "currency": "UZS",
+      "minorUnits": 2
+    },
+    {
+      "currency": "VED",
+      "minorUnits": 2
+    },
+    {
+      "currency": "VES",
+      "minorUnits": 2
+    },
+    {
+      "currency": "VND",
+      "minorUnits": 0
+    },
+    {
+      "currency": "VUV",
+      "minorUnits": 0
+    },
+    {
+      "currency": "WST",
+      "minorUnits": 2
+    },
+    {
+      "currency": "XAD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "XAF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "XCD",
+      "minorUnits": 2
+    },
+    {
+      "currency": "XCG",
+      "minorUnits": 2
+    },
+    {
+      "currency": "XOF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "XPF",
+      "minorUnits": 0
+    },
+    {
+      "currency": "YER",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ZAR",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ZMW",
+      "minorUnits": 2
+    },
+    {
+      "currency": "ZWG",
+      "minorUnits": 2
+    }
+  ],
   "productVersion": "0.15.0"
 }
