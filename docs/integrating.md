@@ -216,6 +216,8 @@ order is `REFERENCE`. For example:
 | `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
 | `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
 | `order` | REFERENCE, RECENT for last business-fact change first, NOTIFIED for oldest notification, or FOLLOW_UP for dated work first. |
+| `view` | A closed core case view, intersected with all other filters. |
+| `responsibleActor` | Exact responsible ActorId selection within the viewer's current case visibility. |
 | `assignment` | MINE selects factual responsibility for this actor; UNASSIGNED selects no responsible actor. Both apply within current visibility. |
 | `due` | OVERDUE, TODAY, UPCOMING, UNSCHEDULED or INACTIVE, evaluated at the returned database/business-date basis. |
 | `cursor` | Opaque continuation bound to the admitted filters and order. |
@@ -233,13 +235,18 @@ After request admission and authorization, unsupported cursor formats or invalid
 bindings are rejected with `INVALID_CURSOR`. Every page authorizes under current rights and uses one snapshot. Concurrent changes to ordering or filter
 values can move, duplicate or omit rows during traversal. `--all` is a live traversal, not a pinned snapshot export.
 
-A live summary has root `caseId`, `caseReference`, `revision`, `changedAt` and `state`. Its ACTIVE or VOIDED state
-contains `status`, `claimantName`, `insurerName`, `claimed` (`amount`/`currency`), nullable `payable`
-(`amount`/`currency`), `progress`, `incidentNotificationDate` and a current `work` view. The amount strings are canonical; an undecided case has null payable.
-An erased state contains only `kind: "ERASED"`; root reference, revision and change time remain. Listing
-requires the same `ReadCase` capability as `case.get`. Names, amounts, status and progress agree with the
-same actor's current case read. `changedAt` comes from the latest accepted case ledger/history entry;
-the page and each work view report the observation basis used for due meaning.
+Case summaries use root `caseId`, `caseReference`, `revision`, `changedAt`, `headline`, `attention`,
+`stages`, `nextAction`, `responsible` and `pendingReminders`. ACTIVE/VOIDED `state.fields` is generated
+from Domain declarations marked `Listed`; it is not a second hand-maintained business projection.
+Complete money pairs are canonical amount/currency strings; both payable members are null when absent.
+An ERASED state has no fields. Reusable `ActorRef` values expose current names or an explicit erased
+name, principal kind and availability, without issuer, subject or contact details.
+
+Pages include their authoritative `basis` and a separate nullable `exactReference` match under current
+read rights. `view` intersects every explicit filter; `responsibleActor` selects another actor's factual
+assignments within the caller's own visibility. Case cursor format 6 binds both selections. Changed
+state or authority can still move rows during live traversal. Typed stages and recommendations come
+from core policy; clients format them instead of reconstructing business state.
 
 `case.summary` accepts the same filter members, without `cursor` or `limit`. Its `counts` contain
 `total` and `lifecycle`, `status`, `progress`, `assignment` and `due` value/count arrays. `claimed` and `payable` contain
@@ -294,7 +301,7 @@ receipts have no current timing classification.
 
 The work overview ignores case page/search filters and reports accessible or Mine actionable
 cases with observation/date/zone. Missing-plan, overdue, unassigned and unavailable dimensions overlap;
-attentionCases counts their distinct union. Counts distinguish cases from reminders. Zero Pending on an
+attentionCases counts their distinct union, including due-today and ready-to-close cases. Counts distinguish cases from reminders. Zero Pending on an
 active open case is monitored attention, not a hard validity refusal. Date passage writes no ledger event.
 Case financial aggregates count each selected case exactly once, regardless of reminder cardinality.
 
@@ -320,7 +327,8 @@ use current admission. Empty partial updates, null required facts, half money an
 refuse. A correction cannot add missing groups or create a no-op revision. Revision conflicts require
 fresh intent. Chronology diagnostics identify the asserted field and carry typed counterpart context.
 
-Case-list continuations use format 6; assignee, reminder and activity continuations use format 1; other continuations use format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
+Case-list continuations use format 6; actor-directory continuations use format 3; assignee, reminder
+and activity continuations use format 1; other continuations use format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
 positions bind admitted filters and ordering. Unsupported formats are refused.
 
 ```sh
@@ -355,19 +363,64 @@ the actual paused action state. Retained accepted operations and committed nonac
 not need another append. Advice never substitutes for the execution guard, and resumption never
 implicitly retries a prepared client request.
 
+## Profiles, admission and presentation metadata
+
+REGISTER requires an authored profile; ADMIT adds the account, profile and 1–48 grants atomically.
+Durable effects are separate REGISTER, SET_PROFILE and GRANT entries in one complete operation group;
+ADMIT is its logical operation kind. Receipts and checkpoint proofs identify the final effect. Profile
+erasure clears prior SET_PROFILE payloads and salts while retaining identity, grants and accepted
+existence. Current names must not be recovered from IdP claims or stored name hashes.
+
+Work review before/proposed values and disclosed work receipts use a read projection with current
+responsible ActorRef and handling summary, keeping Domain work identity records separate. Before and
+after can name different people on the same case without overwriting a relation. Authority receipt
+`targetActor` is DISCLOSED with a current ActorRef under current authority-read rights, or WITHHELD
+with the already-known ActorId. Losing authority does not remove previously permitted own-receipt
+metadata or reveal another account's current name. No client directory scan supplies missing names.
+
+Actor-directory rows carry explicit assignment `state` and at most seven role summaries with an
+installation flag and case-grant count. This assignment state is separate from authorization and
+case-work eligibility. Optional `responsibleCases` carries a count plus an executable ALL/responsibleActor
+selection; its absence is not zero. Related authority details may include principal/contact information
+under their existing authority-read policy; a reusable ActorRef does not.
+
+Current `CaseWorkView` separates aggregate `changedAt`/`recordedBy` from required nullable
+`summaryChangedAt`/`summaryRecordedBy`. Summary metadata follows the last actual summary text change,
+not a responsibility-only update or an unchanged text reaffirmation. Clearing the summary or erasing the
+case clears both fields. Actor references reflect current profile disclosure, including profile erasure;
+ledger verification and projection rebuild derive summary attribution from the original text edit.
+
+Core presentation fields and inputs publish `labelId`, `hintId` and `ruleId`. `ruleArguments` supplies
+Domain-owned bounds for precise rules. GUI diagnostics use `diagnosticGuiMessageKeys`, with the same
+validated arguments as canonical diagnostics. Catalog entries retain their act/query `meaningId`,
+provide `consequence` and `consequenceId`, and use `doneId` for past-tense outcomes. No old meaning or
+checkbox-confirmation aliases are published for fields/inputs.
+
+`RuntimeContext` retains flat business date/zone fields and adds the authoritative `observedAt`.
+Receipt `basis` describes the current authorized observation; its `recordedAt` remains the historical
+accepted-event timestamp, including on replay and later observation. Never substitute a client clock.
+
+`case.get` advice includes `blocked`: one typed core availability refusal for every act absent from
+`acts`. Native admission, JSON Schema and generated JavaScript enforce that closed partition and the
+bounded availability-reason subset. Requested-action callouts use that reason and the offered
+recommendation. The core rechecks permission, state and version when executing; advice is not authority.
+
 ## Browser routes and presentation
 
-The browser has four authorized areas: Cases (`/cases`), Work (`/work`), Recovery (`/operations`) and
-Access (`/authority`). Canonical case links use `/cases/id/CASE-ID`; exact reference links use
-`/cases/reference/REFERENCE`. Editors append `/acts/ACT` to either selector route. `/cases/new` opens a
-case, `/operations/OPERATION-ID` selects a general receipt lookup, and `/authority/ACTOR-ID` selects an actor.
+The browser exposes Cases (`/cases`), Reminders (`/reminders`), People & access (`/people`), Authority
+history (`/authority-history`), Recovery (`/recovery`) and Settings (`/settings`) according to the current
+core context. Canonical case and exact-reference links remain `/cases/id/CASE-ID` and
+`/cases/reference/REFERENCE`; editors append `/acts/ACT`. `/cases/new` opens the case drawer within the
+worklist. `/people/ACTOR-ID` opens the person panel. `/recovery/OPERATION-ID` opens recovery for one change.
+Old `/work`, `/authority` and `/operations` routes return the localized missing page. Settings is the sole preference
+editor, also available as a dialog in the sign-in footer.
 
 Worklist query parameters carry selected view, filters, search and order; page cursors are not stored in
 the URL. Back/forward, reload and sign-in return preserve the same-origin path. Returning from case
 inspection restores the live work query, scroll position and invoking control when available; a missing
 row falls back to the area heading. Navigation state stores no business payload.
 
-The Work area lists accessible Pending reminders by due date and provides explicit state, assignment,
+The Reminders area lists accessible Pending reminders by due date and provides explicit state, assignment,
 text and inactive-work filters. Each loaded row retains its own response's timing and business-date
 basis. Loading another page does not reclassify previously loaded rows against the newer page's basis.
 Refresh starts a new observation.
@@ -377,8 +430,7 @@ reads from dispatching; a dispatched obsolete read drains under its own bounded 
 is discarded. Caller deadlines include queue time. This does not coordinate tabs or replace the server's
 [per-process admission policy](operating.md#request-admission).
 
-`/authority?tab=history` shows installation authority history; adding `?tab=history` to an actor detail
-filters by that actor. Unknown routes keep their URL and render a localized not-found page without an API
+`/authority-history` shows authority history; its actor filter selects the target whose changes are reviewed. Unknown routes keep their URL and render a localized not-found page without an API
 request. Browser history uses the installation zone and selected locale, retaining exact UTC and IDs in
 entry details. Links to authority details appear only for authority readers.
 
@@ -403,7 +455,7 @@ format version 2. Unsupported versions or invalid record shapes use defaults; un
 fall back individually. Locale date/amount controls prepare canonical wire values for preview;
 the server remains responsible for admission. Unambiguous locale amounts normalize before preview;
 ambiguous text reaches server admission as authored. Country/currency suggestions allow free entry under
-the wire grammar. The review shows canonical values before execution.
+the wire grammar. The review formats money and dates for display while preserving exact authored and admitted values for execution.
 
 ## Delivery recovery
 

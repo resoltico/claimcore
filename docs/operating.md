@@ -94,6 +94,8 @@ other pruning can make them differ. These are observations, not a pinned session
 
 ## Access review and sessions
 
+For day-to-day account admission, profiles and role changes, use [People and access](people-and-access.md).
+
 With installation OWNER or AUDITOR, list actors and inspect each selected actor's grant pages. Follow every
 continuation; an actor summary is not a complete grant inventory. Disabled actors remain reviewable. Each
 page checks current rights and uses a separate snapshot.
@@ -106,8 +108,8 @@ its ledger sequence, UTC recording time, executor, target and typed principal or
 revocation. History payloads are permanent authority records; erasing a case does not erase its grants
 or authority history. CSV export protects formula-leading cells; JSON preserves exact values.
 
-Selecting an actor starts its offered GRANT action when available, with the disclosed principal bound
-to that actor. Review the target, role and scope before confirming. Selecting another actor does not
+Selecting a person opens their detail page and offered actions, with the disclosed principal bound
+to that person. Review the target, role and scope before confirming. Selecting another actor does not
 rewrite an authored, prepared or unresolved request. Starting that actor's action requires the normal
 discard acknowledgement and creates a fresh request; declining keeps the original target and request.
 
@@ -326,7 +328,8 @@ remain in a partition cache.
 
 The browser separately bounds reads within each document and drains dispatched obsolete responses.
 That client coordination does not combine the activity of multiple tabs, CLI processes or Web hosts.
-All clients remain subject to the server limits, including HTTP 429 admission refusals.
+All clients remain subject to the server limits, including HTTP 429 admission refusals. Rate-limited
+responses include `Retry-After: 1`; this is a retry hint, not a larger authentication or admission budget.
 
 `CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
 `CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
@@ -344,6 +347,14 @@ returns a bounded transport refusal; it does not imply a permanent operation rej
 appropriate, and use [delivery recovery](integrating.md#delivery-recovery) for an uncertain mutation.
 Context reads that establish journal ownership remain fresh; permission and action-state checks always
 execute on the server.
+
+## Browser preferences
+
+Preferences use `claimcore.presentation.v3` in browser storage; v2 values are ignored without migration.
+People choose language, regional format, green/blue accent and light/dark/system mode only in Settings,
+or the same panel from the sign-in footer. The first visit negotiates supported browser languages.
+System mode follows the device preference. OS contrast preferences and forced colors remain effective.
+These presentation choices do not change business dates, amounts, authorization or stored facts.
 
 ## Published interface assets
 

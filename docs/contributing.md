@@ -232,6 +232,46 @@ matrices and CLI frames provide independent expectations. Hand-authored durable 
 [Python oracle](../tests/fixtures/oracle/generate_vectors.py) derives their bytes and hashes without calling
 the implementation. Keep those source cases independent of production codecs and validators.
 
+## Core presentation and copy
+
+[Descriptor](../src/ClaimCore.Protocol/Presentation/Descriptor.fs) owns typed business presentation:
+case headlines, attention, recommendations, change summaries and actor names come from the core.
+CLI and web adapt inputs and render these values; they must not rank actions or recreate business rules.
+Case and reminder view predicates, rows and counts use the same authorized read snapshot. Exercise
+both the memory contract and PostgreSQL implementation when changing a view.
+
+Catalog field and input metadata distinguish labels, short GUI hints and precise rules. Rules retain
+wire syntax for CLI help, documentation and information tips. GUI diagnostics use the generated GUI
+message map rather than displaying CLI syntax. Consequence and completion identities are core metadata;
+renderers must not infer them from effect names.
+
+The machine-readable [glossary](../src/ClaimCore.Protocol/Messages/Localization/glossary.json) owns the
+EN/LV/AR seed terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
+registers, banned GUI tokens and glossary alignment during generation and `--check`. Add a negative
+control when changing these checks. Latvian and Arabic linguistic changes need native-speaker review;
+record outstanding review in the PR until a reviewer has supplied it.
+
+## Theme and layout
+
+[theme/tokens.json](../web/src/theme/tokens.json) owns the DTCG color tokens and OKLCH ramp configuration.
+Run `npm --prefix web run theme` to regenerate [tokens.css](../web/src/theme/tokens.css), then
+`npm --prefix web run theme -- --check` to check it. Keep color literals in the token source and its
+generated stylesheet. Components use semantic tokens, not primitive palette references. Green and blue
+each support light and dark modes, system selection, stronger contrast and forced colors.
+
+`npm --prefix web run lint` includes [design lint](../web/scripts/design-lint.mjs): no stray color
+literals, component primitive references, viewport queries outside `ui/layout.css`, or pixel font sizes.
+Use the shared `ui/` controls and layout primitives; [breakpoints](../web/src/theme/breakpoints.ts) and
+[layout.css](../web/src/ui/layout.css) own responsive boundaries. Keep CSP-compatible control behavior
+qualified in Chromium, Firefox and WebKit.
+
+The [contrast test](../web/tests/unit/theme/contrast.test.ts) checks all four accent/mode combinations
+and includes a negative control against the retired palette. Run it with
+`npm --prefix web run test:unit -- tests/unit/theme/contrast.test.ts`. Passing that test does not replace
+keyboard, axe, forced-colors or browser qualification. Preferences belong only in SettingsPanel,
+reachable through `/settings` and the sign-in footer dialog; keep bootstrap and hydrated theme choices
+consistent without relaxing the strict CSP.
+
 ## Browser boundaries and lint
 
 [oxlint.config.ts](../web/oxlint.config.ts) composes the browser policy with

@@ -1,9 +1,32 @@
 # Glossary
 
+The machine-readable [glossary seeds](../src/ClaimCore.Protocol/Messages/Localization/glossary.json)
+are checked against core and interface catalogs by the protocol generator. Use these terms consistently;
+Latvian and Arabic wording still requires native-speaker review before release.
+
+| Concept | English | Latvian | Arabic |
+| --- | --- | --- | --- |
+| Case | case | lieta | ملف |
+| Claim | claim | prasījums | مطالبة |
+| Claimant | claimant | prasītājs | المطالب |
+| Insurer | insurer | apdrošinātājs | شركة التأمين |
+| Payment decision | payment decision | izmaksas lēmums | قرار الدفع |
+| Reminder | reminder | atgādinājums | تذكير |
+| Next action | next action | nākamā darbība | الإجراء التالي |
+| Responsible person | responsible | atbildīgais | المسؤول |
+| Owner role | owner | īpašnieks | المالك |
+| Void | void | anulēt | إبطال |
+| Erase | erase | dzēst | محو |
+
+Use ملف for an Arabic case, rather than قضية. Profiles hold authored names and optional contact details;
+identity-provider hints do not become profiles automatically. A case view is a named selection of readable
+cases. Attention explains why work needs action; a headline describes the current case state. The
+recommended act is the core's offered next action and never a stewardship default.
+
 ## Principal and actor
 
 A principal is an exact issuer and immutable human subject or service client identity. An actor is its
-registered identifier and enabled state. Current grants authorize actions on an installation or case.
+registered identifier, enabled state and optional authored profile. Current grants authorize actions on an installation or case.
 Principal kinds and roles have declared vocabularies. Identity and scope values are admitted before use;
 malformed retained identities or role spellings are integrity faults.
 

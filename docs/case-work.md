@@ -4,279 +4,190 @@ ClaimCore records a handler's assertions about a claim. It records facts, decisi
 it does not adjudicate coverage or transfer money. Start with the Cases worklist, or follow
 [getting started](getting-started.md) to record a synthetic case.
 
-## Find work in the worklist
+## Find work
 
-Choose a saved view, search, or combine lifecycle, status and progress filters. Open and undecided means
-ACTIVE + OPENED + UNDECIDED; Decided and unpaid means ACTIVE + DECIDED. Recently changed orders by the last
-business-fact change; work/reminder activity has separate revisions and timestamps. Closed and Voided select their respective status or lifecycle; All accessible clears
-the filters. My cases and Unassigned select current case responsibility. Due today and Overdue use the earliest pending reminder.
+Cases opens at **Needs attention**. Choose another standard view in the navigation: Mine, Overdue,
+Due today, No next action, Unassigned, Undecided, Decided and unpaid, Closed, Voided or All. Each view
+shows the count you can currently read. Additional filters narrow the selected view.
 
-Search finds substrings in the current reference, claimant, insurer, incident description and Handling summary. It applies Unicode compatibility
-normalization and invariant lowercase to both stored text and queries. Percent, underscore and backslash
-are literal characters. Matching follows the same rules in the browser, CLI and service.
+**Mine** follows explicit responsibility, including assigned cases that are no longer active. **Unassigned**
+means active, open cases with nobody responsible. An overdue plan still counts as a plan. A case can
+need attention for several reasons at once; the overall count counts that case once. Paid cases ready
+to close also need attention.
 
-Live rows show claimant, insurer, claimed amount/currency, any payable amount/currency,
-notification age and last-change time. The main badge prioritizes erasure, voiding and closure over
-payment progress. Erased rows show reference, erasure state and last-change time. Listing
-requires the same case-read rights as opening a case. Use Load more for another page; each page checks
-current rights and uses a separate snapshot.
+Search by reference, claimant, insurer, incident description or handling summary. Percent, underscore
+and backslash are literal text. An exact visible reference match has a direct open link even when that
+case is outside the current view. A case you cannot read is not disclosed.
 
-The browser keeps selected filters, search and order in the URL. Follow its case links to preserve exact
-references, including values that need URL escaping. The CLI supports the same filters through
-`case list`; [Integrating](integrating.md#worklist-queries-and-summary-rows) covers query and export details.
+Rows show names, amounts, the current headline, attention, responsibility and the next action. Money
+keeps meaningful fractional precision and uses the currency's normal minimum decimal places. Dates use
+your selected format. Open a row to see the case; use **Load more** for another page.
 
-Responsibility is an explicit case fact, separate from access grants. My cases selects cases whose
-responsible account is yours; Unassigned selects cases without a responsible account. Neither selection
-changes who may read or update a case. All accessible cases is the initial view. The CLI uses
-`claimcore case list --assignment MINE` or `--assignment UNASSIGNED`.
+The CLI uses the same views and filters:
 
-Next follow-up is the earliest Pending reminder date; it is derived and cannot be edited separately. Reminder dates may be past or future. Overdue, Today, Upcoming and Unscheduled
-apply only to active, open cases; closed, voided and erased cases are Inactive. Follow-up ordering puts
-dated work first and absent dates last, with stable reference ties. Page and summary
-responses each report their own [observation basis](glossary.md#observation-basis); use the installation
-business date rather than the browser clock. `--order notified` orders by the current notification
-assertion.
+```sh
+claimcore case list --view needs-attention
+claimcore case list --view mine
+claimcore reminder list --view overdue
+```
 
-`claimcore case summary` uses the same filters to count lifecycle, status and progress and to sum
-claimed and payable amounts per currency. Counts remain inside the selected filter. Voided facts
-contribute when selected. Erased cases contribute to total, lifecycle and inactive-due counts, with no
-status, progress, assignment or money. Totals are exact, with no rounding or currency conversion.
+Responsibility and access are separate. Being assigned never grants permission to read or change a
+case. Due dates use the installation's business date, shown once in the web shell. An absent or closed
+browser does not deliver alarms.
 
-Summary counts include responsibility and due dimensions inside the selected filter. Totals and the
-loaded page may come from different observations and display their own date basis. Row age uses the
-page's business date.
+`claimcore case summary` reports counts and exact totals for the same selection. Totals stay separate
+by currency, with no conversion or rounding. See [query and export details](integrating.md#worklist-queries-and-summary-rows)
+for filters, independent pages and machine formats.
 
-## Web case navigation
+## Open the case workspace
 
-The Cases queue and accepted operations open `/cases/id/CASE-ID`. These canonical links retain case
-identity independently of how its reference looks. Exact reference lookup uses
-`/cases/reference/REFERENCE` with an encoded reference segment, including UUID-shaped references.
-The two selectors remain distinct through reads, history and editing; a UUID-shaped reference is never
-inferred to be a CaseId. Task links append `/acts/ACT` to the selected route; actions use the admitted
-case identity.
+The workspace leads with the claimant, reference, insurer, incident and notification dates, and current
+headline. The tracker shows recorded Opened, Decided, Paid and Closed stages using their actual dates.
+A case may close without a decision or payment; those absent stages say **Not recorded**. Voided, erased
+and just-reinstated cases have a status panel instead. The reinstated panel remains until the next
+case-fact change; changing work or reminders does not replace it.
 
-The case workspace groups current facts, case work, decision/payment and history. Its primary action is
-chosen from the actual offered tasks; closed and voided cases do not automatically recommend reopening.
-Technical details keep copyable CaseId and revision available. Targeted edits and review preserve raw
-entry context, exact canonical values and the authored expected revision.
+The primary button is the core's offered recommendation. **Edit facts** groups the other offered fact
+actions; stewardship actions are separate. Claim, decision and payment details stay together. Next
+actions, responsibility and handling summary have their own controls. **Activity** combines fact, work
+and reminder changes, with Everything, Facts and Work filters. **Record details** holds technical
+identifiers and versions in one place.
+
+A deep link to an unavailable action keeps the workspace visible and explains the core reason with an
+offered alternative. Permission failures name an applicable role only when you can read the case.
+An unavailable case is not distinguished from one outside your access.
+
+Case links use `/cases/id/CASE-ID`; exact reference links use `/cases/reference/REFERENCE` with an encoded
+reference segment. A reference that looks like a UUID stays a reference. Task links append `/acts/ACT`.
+Follow the supplied links rather than constructing a different selector.
 
 ## Plan case work
 
-Case work has its own revision, starting at zero when OPEN is accepted. It contains responsibility and
-an optional Handling summary, independently of financial case facts. A work update sets or clears either
-value; omission preserves it. It must change an accepted value. Summary changes are allowed on active
-open or closed cases; changing responsibility requires an active open case. Service principals retain
-their permitted financial/read capabilities but cannot manage work.
+Choose a responsible person, write a Handling summary, and add the next actions from the workspace.
+Responsibility is separate from access: assigning someone never gives them permission to read or change
+the case. The picker shows eligible people by their saved names. If someone later loses access or is
+disabled, the assignment remains visible as unavailable so another handler can take over.
 
-The case-scoped candidate picker discloses only eligible human accounts' subject and ActorId in bounded
-pages. A selected account must still be enabled with both case-read and case-work rights when the write
-executes. Responsibility grants no access. Later loss of eligibility retains the assignment and reports
-it unavailable. Every reminder inherits the current case responsibility; there is no reminder assignee.
+The Handling summary describes the current handling situation. It is separate from Incident description,
+which describes what happened. Summary author and time follow the last actual text change; changing
+responsibility does not claim authorship. You can update the summary on an open or closed active case;
+changing responsibility needs an open active case.
 
-Each reminder has a stable ID, independent revision, single-line action, planned date and Pending,
-Completed or Cancelled state. Creation starts at revision one and derives the ID from the operation ID.
-Rescheduling updates the same Pending reminder. Complete and Cancel are distinct actions; terminal
-records require explicit reopening with a supplied date before another edit. Recording completion means
-when the operator marked the action, not proof of when an external event occurred.
+Each next action has its own planned date and Pending, Completed or Cancelled state. Add several when
+needed. An overdue action still counts as a plan. Planned dates can be in the past or future. These dates
+help organize work; ClaimCore does not send alarms or automatically complete actions.
 
-Create, update and reopen require an active open case. Completion and cancellation may tidy Pending
-reminders on an active closed case. Closing or voiding preserves Pending reminders as inactive;
-reopening or reinstatement reactivates their exact dates without rescheduling. Erasure clears current
-and historical work/reminder payloads while reserving accepted identities.
+Choose **Complete** when you have marked an action done, **Cancel** when it is no longer needed, or
+**Reschedule** to change its Pending action or date. The completion time records when you marked it,
+not proof of when an external event happened. Reopening a Completed or Cancelled action needs a date.
 
-**Complete and plan next** completes one Pending reminder and creates exactly one replacement in one
-atomic operation. Invalid replacement, stale revision, lost authority or parent closure changes neither.
-Ordinary completion of the last Pending reminder is valid and leaves an active open case needing a next
-action. Opening a case and subsequently planning work are explicitly separate accepted operations.
+**Complete and plan next** completes one action and creates its replacement together. If either part
+cannot be recorded, neither changes. Completing the last Pending action without a replacement is also
+valid; the case then needs a next action.
+
+Closing or voiding a case keeps its Pending actions as inactive. Reopening or reinstating brings back
+those same dates. You may complete or cancel remaining actions on a closed active case. Erasing a case
+clears its saved work and action text, including earlier versions.
 
 ## Work attention and queues
 
-An active open case needs a next action exactly when it has no Pending reminders. Overdue reminders
-remain Pending and count as a plan. Missing plan, overdue work, unassigned and unavailable assignee are
-separate overlapping conditions; a total of affected cases counts their distinct union.
+Navigation counts the work you can read. A case can need attention because it lacks a next action,
+has overdue work, lacks a responsible person, has an unavailable responsible person, or is paid and ready
+to close. A case with several reasons still counts once in Needs attention.
 
-The accessible-work overview ignores the current case page/search and includes only cases the requester
-can read. Mine follows current responsibility inside that scope. Counts identify case and reminder units
-and show database observation, installation business date and zone. Loading, failed or stale observations
-are not a fresh zero. Refresh after accepted/replayed writes, access changes, focus/resume or date passage;
-an absent or suspended client does not deliver alarms. There is no notification delivery, automatic
-completion or recurring-reminder scheduler. Date passage creates no ledger event.
+Open **Reminders** to see actions across cases. Use its standard views and filters to find Pending,
+Overdue, Due today, Upcoming, Completed or Cancelled work. Actionable views use active open cases;
+Completed and Cancelled actions remain reviewable on readable cases whose contents have not been erased.
+A case with both overdue and today actions can appear in both corresponding action queues.
 
-Open **Reminders** for the cross-case queue. It defaults to Pending reminders on active open cases,
-ordered by due date and stable ID. The state filter and **Include inactive case work** inspect bounded
-Completed, Cancelled or inactive Pending records. Queue due filters compare each reminder's retained
-date. A case with overdue and today reminders is Overdue in case-next-due filtering, while its today
-reminder remains in the Today queue. Case financial totals count each selected case once regardless of
-reminder count. Reminder search finds current action text, not prior versions.
-
-Current reminder reads label active Pending records Overdue, Today or Upcoming against that response's
-installation business date, never the client clock. Each loaded browser row retains its originating
-page's date and zone. Closed/voided parents are explicitly inactive; terminal and inactive reminders
-have no actionable timing label, while their authored date and Pending/Completed/Cancelled state remain
-visible. Date filters still compare the retained date independently of state: an explicitly selected
-Completed or inactive record can match an Overdue date filter without becoming actionable overdue work.
-Historical snapshots and receipts have no current timing classification.
+Counts and pages can change as others work. Refresh to see the latest results. Opening a case and then
+planning its work are separate changes. Financial totals count each case once, regardless of how many
+actions it has. Search in Reminders finds current action text.
 
 ## Open a case
 
-Choose **Open a case** when it is offered, then supply the reference and every registration value: incident date,
-this handler's first notification date, incident country, claimant, responsible insurer, claimed amount
-and currency. Optionally record Incident description. Review the proposed facts and confirm to record revision one. Acceptance returns to the case
-page with a notice naming the act and revision. Status begins OPENED;
-decision and payment begin unrecorded. Work begins empty at revision zero; without a Pending reminder the case immediately needs a next action.
+Choose **Open a case** and enter your reference, claimant, insurer, incident and notification dates,
+incident country, and claimed amount with its currency. Incident description is optional. Review the
+facts and choose the named confirmation to record the case.
 
-The reference is immutable printable non-space ASCII within the
-[reference format](../src/ClaimCore.Domain/Values.fs). Lookup folds ASCII letter case in one installation;
-snapshots retain the creation spelling. The stable CaseId is the accepted OPEN operation UUID; the
-reference and CaseId remain reserved after erasure. A claimant may be a person or organization; insurer
-records the handler's assertion. Incident description explains what happened; Handling summary describes the current handling situation. Neither replaces lifecycle, status or payment progress. There are no policy, coverage, reserve, banking, address or attachment fields.
-
-AMEND_REGISTRATION updates selected registration facts only while the case is open and undecided. Before ordinary
-registration editing of a decided case, clear any recorded payment and withdraw the decision, or use the applicable
-correction workflow below.
+Your reference cannot change or be reused after erasure. A claimant can be a person or organization.
+The case starts open and undecided. Responsibility, Handling summary and next actions start empty;
+add them from the workspace.
 
 ## Decide and record payment
 
-DECIDE records or replaces an unpaid decision with its date, payable amount and currency.
-WITHDRAW_DECISION removes an unpaid decision. RECORD_PAYMENT needs a recorded decision with a positive
-payable amount; it records the payment date. CLEAR_PAYMENT removes that recorded date. These acts do not
-execute or reverse a transfer.
+Choose **Decide** to record the decision date and payable amount with its currency. An unpaid decision
+can be changed or withdrawn when offered. **Record payment** needs a positive recorded decision and
+records the payment date. **Clear payment** removes that date. These actions record assertions; they do
+not transfer money or reverse a transfer. Recording payment does not automatically close the case.
 
-The progress strip distinguishes Undecided, Decided and Paid. A recorded decision or payment group always
-contains all its declared values; an unrecorded group is null, with no invented date or zero. Payment
-never closes the case automatically.
+Missing decision or payment details mean they have not been recorded. ClaimCore does not invent dates
+or zero amounts. Dates must be real and follow incident, notification, decision and payment order.
+Newly asserted event dates cannot be after the installation's business date.
 
 ## Close or reopen
 
-CLOSE changes status to CLOSED and needs no decision or payment. REOPEN changes it back to OPENED.
-Financial editing of a closed case requires reopening; correction has its separate rules. Work summary edits and Pending reminder completion/cancellation remain available. Closing leaves
-lifecycle, recorded facts and progress intact.
+Choose **Close** when handling is finished. A decision or payment is not required. Closing preserves the
+recorded facts. **Reopen** makes the case open again. Reopen before ordinary financial editing of a
+closed case; use **Correct** when its separate correction rules fit the change.
 
 ## Correct existing facts
 
-CORRECT changes existing groups atomically while preserving reference and status. An open case needs an
-existing decision; a closed case allows correction independently of payment progress. Review the current
-and proposed values before confirming.
+Choose **Correct** to change already recorded facts together. An open case needs an existing decision;
+a closed case can be corrected with or without recorded financial stages. Select only what should
+change and review the proposed differences. Unselected facts stay as they are.
 
-Registration supports KEEP or UPDATE. Decision supports KEEP, UPDATE or CLEAR; payment supports KEEP,
-complete REPLACE, REAFFIRM or CLEAR where current advice permits it. UPDATE asserts only selected facts.
-A money assertion always includes both amount and currency; the pair cannot be updated halfway.
-Omitted facts retain their accepted values under the ledger lock. Groups the actor cannot change remain
-KEEP. Interactive CLI correction defaults omitted groups to KEEP and shows the selected actions in review.
-
-A correction cannot be all-KEEP, create a no-op revision, or add a missing decision/payment. Clearing a paid
-decision also requires clearing payment. Updating a paid decision requires explicit authorized payment replacement,
-reaffirmation or clearing, even when its payable amount is unchanged. Acceptance creates one complete
-revision; refusal leaves the accepted state intact. See the
-[correction policy](../src/ClaimCore.Domain/CaseCorrection.fs) and
-[transitions](../src/ClaimCore.Domain/Transitions.fs) for the authoritative rules.
+Amount and currency always travel together. A correction cannot create a missing decision or payment.
+Clearing a paid decision also needs payment cleared. Updating a paid decision requires an explicit
+choice to replace, reaffirm or clear payment. If the complete correction is refused, nothing changes.
 
 ## Case stewardship
 
-Lifecycle is ACTIVE, VOIDED or ERASED, independently of open/closed status and payment progress.
-VOID records an entry-error reason and blocks business work while retaining facts and history.
-REINSTATE records a reason and restores ACTIVE state. Both leave business facts unchanged. Reasons use
-the same current text admission as names.
+A data steward can **Void**, **Reinstate** or **Erase** when offered. Void records an entry-error reason
+and blocks further business work while keeping the facts. Reinstate records a reason and brings the
+case back. Both preserve recorded financial details.
 
-A human DATA_STEWARD may void, reinstate or erase; CASE_HANDLER alone cannot. ERASE clears live business
-facts and the case's complete retained payload history, including searchable projections. Reference,
-revision and ledger metadata remain. Erasure is final: the reference cannot be opened again, and erased
-request content cannot replay. [Operations](operating.md#erasure-limits) explains the physical limits.
+Erase permanently clears the case's saved business contents, including earlier versions and work.
+The reference stays reserved and cannot be opened again. Read the consequence carefully and type the
+shown reference to confirm. See [erasure limits](operating.md#erasure-limits) for backups and other copies.
 
 ## Review, confirmation and delivery
 
-Available acts reflect current state and resource rights. Opening a case requires installation-scope
-registration rights; a case-scoped handling grant does not suffice. Advice and preview grant no commit
-authority: execution rechecks rights, state and expected revision against the locked current case.
+Forms show short hints; open the information tip for precise rules. Dates and amounts use your selected
+format. Changing format while editing does not reinterpret an amount you already entered. An input
+error lists every reported issue and links to the affected fields.
 
-Browser forms use the catalog's field kinds and help. Date controls provide localized segments and a
-calendar; country/currency suggestions still permit free entry. Authored amounts retain their entry display locale, so later preference changes do not reinterpret
-their meaning before preview. Canonical prefilled values retain their canonical meaning. Input refusals focus a summary listing every issue; follow its links to the affected
-controls. Amount/date entry is reviewed in canonical wire
-form before confirmation. Language, display locale and theme are separate presentation choices;
-suspicious-Unicode warnings do not rewrite authored values. Navigation is locked while a mutation is in
-flight. Follow [delivery recovery](integrating.md#delivery-recovery) if submission or reload is interrupted.
+Review shows what will change. Routine actions use one named confirmation. Stewardship actions explain
+their consequence; irreversible actions require the shown reference or change identifier. In CLI
+automation, an irreversible human command also needs a matching `--confirm` value. See the
+[CLI reference](cli.md) for exact syntax and the [integration guide](integrating.md) for machine calls.
+
+Someone may change a case while you review. A conflict keeps your draft and shows the changes you may
+read, with current author names. Compare it with the latest case before reviewing a fresh change.
+Financial facts, case work and individual reminders can change independently.
 
 ## Recover an uncertain result
 
-Open Recovery to inspect this actor's attempts in the current installation. **Check operation status** is
-read-only: accepted, final nonacceptance and unresolved are different results. Unresolved does not mean
-rejected. **Send again**, when offered in the active editor, uses the exact in-memory reviewed request.
+If ClaimCore cannot confirm whether a change was recorded, keep its identifier and open **Recovery**.
+Checking never records or blocks a change. An unresolved result does not mean it was rejected.
+**Send again**, when offered in the active editor, sends the identical reviewed request.
 
-**Settle operation permanently** is a separate confirmed write. It records nonacceptance only if the
-operation has not been accepted, permanently blocking that actor/operation pair. Do not use it merely to
-refresh status. A valid registered actor can use Recovery without case or Access roles.
+**Settle operation permanently** is a separate irreversible action. If the operation was not accepted,
+it prevents that same change identifier from being accepted later. Type the shown identifier to confirm.
+Use it only when you intend that result. A registered person can check their own delivery results even
+without case roles.
 
-Reloading or closing a tab retains committed identity-only recovery records, not the business request.
-The interface asks before discarding an undiscarded draft or in-memory retry. Follow
-[delivery recovery](integrating.md#delivery-recovery) for result meanings, storage failures and CLI steps.
+Reloading or closing a tab keeps delivery identifiers but cannot reconstruct the authored request.
+The interface asks before discarding an unsent draft or retained retry. See
+[delivery recovery](integrating.md#delivery-recovery) for detailed result meanings and CLI steps.
 
-## Business record
+## Review recorded changes
 
-The [business-field declaration](../src/ClaimCore.Domain/CaseFields.fs) owns each field's kind, group and
-searchable status. Catalog label and meaning identities select the core labels and explanations.
-Technical IDs, revisions, timestamps and advice remain separate from business facts. The view places
-complete groups under `registration`, `decision` and `payment`; null means the whole group is unrecorded.
-Current work has independently optional responsibility and Handling summary. Reminder pages are separate bounded records; next follow-up is derived from Pending reminders.
+**Activity** combines case facts, work and reminder changes. Filter Everything, Facts or Work and choose
+**Load more** when offered. Names come from current saved profiles. Profile erasure replaces the saved
+name with an anonymous account reference. Earlier values appear only when your history access allows
+them; erased or withheld contents remain hidden.
 
-## Scalars
-
-[Domain value modules](../src/ClaimCore.Domain/Values.fs) own permanent syntax; amount and currency values
-are in [MoneyValues](../src/ClaimCore.Domain/MoneyValues.fs). The
-[validation adapter](../src/ClaimCore.Domain/Validation.fs) assigns failures to input targets. Retained
-reads and verification enforce permanent format/state invariants without applying today's admission to
-retained assertions. Accepted names and dates may be reaffirmed without asserting a different value.
-
-Dates are real YYYY-MM-DD values in years 0001–9999. Recorded dates follow incident ≤ notification ≤
-decision ≤ payment. Planned reminder dates may be in the past or future. Newly asserted event dates cannot exceed the business date derived from the database
-instant and installation zone. Clearing then recording a date is a new assertion; reaffirming an unchanged
-date remains possible after a clock change.
-
-Amounts are unsigned decimal strings with at most eighteen integer and four fractional digits. There are
-no exponents, redundant leading zeroes or rounding. Views show canonical values, and operation identity
-compares equal amounts by value while retaining the authored request spelling. Currency and country check
-uppercase ASCII syntax, not ISO membership. ZZ means unknown/international country; translated names are
-presentation hints.
-
-Retained business text is nonempty, excludes NUL, unpaired surrogates and Unicode noncharacters, and obeys
-permanent byte bounds. Newly asserted names/reasons contain 1–200 Unicode scalars without surrounding
-whitespace, controls, line/paragraph separators or forbidden invisible/directional characters. Permitted
-joining/format characters remain allowed. The
-[display policy](../src/ClaimCore.Protocol/Messages/TextDisplay.fs) provides bounded warnings while keeping
-raw values intact. Search text has its own 1–100-scalar limit.
-
-## Narrative text
-
-Incident description and Handling summary are optional plain text, each admitting up to 600 Unicode
-scalars. Reminder action is required single-line text, admitting up to 200 scalars. Supplementary symbols
-count as one scalar and combining marks count separately. Absence means not recorded; supplied empty or
-whitespace-only text refuses. Partial omission preserves, explicit clear removes and supplied text sets.
-Registration-only description correction of a paid case does not demand a payment acknowledgement.
-
-Narratives permit LF paragraphs and preserve authored spelling and whitespace. Direct protocol CR refuses;
-CLI file/editor input may normalize CRLF to LF before exact review and preparation. Unsafe controls and
-directional formatting refuse; ordinary Arabic and permitted joining characters remain supported. Renderers
-show escaped plain text and paragraphs, never executable markup. Machine JSON retains exact values.
-Permanent narrative syntax has a separate 4096-byte UTF-8 bound; action text has a 1024-byte bound.
-Retained decoding does not reapply current admission.
-
-## Revisions and history
-
-Execution compares the relevant fact, work or reminder revision with locked current state. Different reminders can be edited independently; reminder edits do not invalidate a financial preview. Retained exact replay preserves the
-original acceptance without another entry, subject to
-[current disclosure](integrating.md#disclosure-and-cursors). Different content under a used operation ID
-refuses. Rejection changes no accepted state.
-
-Reference identity folds ASCII case and amount identity compares decimal value. Respelled equal values
-under the same operation ID replay the original acceptance. The ledger retains the authored request.
-Revisions and sequences obey the exact-integer bound in
-[typed positions](../src/ClaimCore.Domain/Identifiers.fs), enforced by SQL and durable decoding.
-
-Case activity orders typed fact, work and reminder events by ledger sequence. Financial history separately compares consecutive financial fact revisions and loads older changes in bounded pages.
-Expand a disclosed full receipt to inspect its facts and the core-supplied lifecycle and field changes.
-Core computes comparison context within each page's read snapshot, including the predecessor of its last
-visible entry. Loading another page is not required to obtain that comparison. Withheld or erased facts
-are not inferred; an unavailable comparison is shown as unavailable.
-
-History follows the current summary/full disclosure modes. Superseded snapshots need full-history rights;
-current case access alone does not grant them. See the [glossary](glossary.md) for project terms.
+In the CLI use `claimcore case timeline REFERENCE`, optionally with `--filter facts` or `--filter work`.
+The former human `case history` and `case activity` commands are removed. JSON and CSV exports retain
+canonical values. See [integration](integrating.md) for formats, history permissions and live traversal.
