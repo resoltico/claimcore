@@ -94,5 +94,15 @@
   "cli.review.typeTarget": "Lai apstiprinātu, ievadiet {target}: ",
   "cli.text.pageCount": "{count} rezultāti.",
   "cli.text.pageMore": "Ir vēl rezultāti — lietojiet --cursor {cursor}.",
-  "cli.text.pageMoreAll": "Ir vēl rezultāti — lietojiet --cursor {cursor} vai --all."
+  "cli.text.pageMoreAll": "Ir vēl rezultāti — lietojiet --cursor {cursor} vai --all.",
+  "cli.next.correctInput": "Izlabojiet norādītos laukus un mēģiniet vēlreiz.",
+  "cli.next.readCurrent": "Pirms atkārtotas darbības izlasiet un pārskatiet pašreizējo ierakstu.",
+  "cli.next.retrySafe": "Atkārtojiet tieši to pašu pieprasījumu.",
+  "cli.next.investigate": "Apturiet darbību un lūdziet administratoram pārbaudīt problēmu.",
+  "cli.next.chooseReference": "Izvēlieties citu atsauci.",
+  "cli.next.askAccess": "Lūdziet īpašniekam pārbaudīt jūsu piekļuvi.",
+  "cli.next.askRoles": "Lūdziet īpašniekam piešķirt lomu: {roles}.",
+  "cli.next.reviewLatest": "Izlasiet jaunāko ierakstu un pārskatiet izmaiņas pirms atkārtotas darbības.",
+  "cli.next.reviewCommand": "Izpildiet {command} un pārskatiet izmaiņas.",
+  "cli.next.conflictMore": "Vairāk izmaiņu — izpildiet {command}."
 }

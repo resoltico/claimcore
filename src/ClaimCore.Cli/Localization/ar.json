@@ -94,5 +94,15 @@
   "cli.review.typeTarget": "اكتب {target} للتأكيد: ",
   "cli.text.pageCount": "{count} من النتائج.",
   "cli.text.pageMore": "توجد نتائج أخرى — استخدم --cursor {cursor}.",
-  "cli.text.pageMoreAll": "توجد نتائج أخرى — استخدم --cursor {cursor} أو --all."
+  "cli.text.pageMoreAll": "توجد نتائج أخرى — استخدم --cursor {cursor} أو --all.",
+  "cli.next.correctInput": "صحّح الحقول المشار إليها ثم أعد المحاولة.",
+  "cli.next.readCurrent": "اقرأ السجل الحالي وراجعه قبل إعادة المحاولة.",
+  "cli.next.retrySafe": "أعد إرسال الطلب نفسه تمامًا.",
+  "cli.next.investigate": "توقف واطلب من المسؤول فحص المشكلة.",
+  "cli.next.chooseReference": "اختر مرجعًا آخر.",
+  "cli.next.askAccess": "اطلب من مالك مراجعة صلاحياتك.",
+  "cli.next.askRoles": "اطلب من مالك منحك الدور: {roles}.",
+  "cli.next.reviewLatest": "اقرأ أحدث سجل وراجع التغييرات قبل إعادة المحاولة.",
+  "cli.next.reviewCommand": "شغّل {command} وراجع التغييرات.",
+  "cli.next.conflictMore": "توجد تغييرات أخرى — شغّل {command}."
 }

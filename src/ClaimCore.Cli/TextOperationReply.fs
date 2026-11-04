@@ -218,16 +218,17 @@ module internal TextOperationReply =
         :: (correctionActions language input @ changes)
 
     let previewLines language request (reply: PreviewReply) =
-        readLines
+        readLinesFor
             language
+            (TextDiagnosticReply.reference request)
             (function
             | Previewed.Reviewed review -> reviewLines language request review
             | Previewed.AlreadyAccepted receipt -> receiptLines language "ALREADY_ACCEPTED" receipt)
             reply.Outcome
 
-    let executeLines language (reply: ExecuteReply) =
+    let executeLinesFor language request (reply: ExecuteReply) =
         let failed outcome =
-            readLines language (fun () -> []) outcome
+            readLinesFor language (TextDiagnosticReply.reference request) (fun () -> []) outcome
 
         match reply.Outcome with
         | ExecuteResult.Accepted receipt -> receiptLines language "ACCEPTED" receipt
@@ -236,6 +237,8 @@ module internal TextOperationReply =
         | ExecuteResult.Failed fault -> failed (Outcome.Failed fault)
         | ExecuteResult.OutcomeUnknown ->
             [ label language (CliMessages.key CliMessage.UncertainDelivery) ]
+
+    let executeLines language reply = executeLinesFor language None reply
 
     let resolveLines language (reply: Outcome<Resolved>) =
         readLines

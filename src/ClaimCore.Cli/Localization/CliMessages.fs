@@ -22,6 +22,16 @@ type CliMessage =
     | [<MessageKey("cli.family.work")>] WorkCommands
     | [<MessageKey("cli.family.reminder")>] ReminderCommands
     | [<MessageKey("cli.text.notRecorded")>] NotRecorded
+    | [<MessageKey("cli.next.correctInput")>] NextCorrectInput
+    | [<MessageKey("cli.next.readCurrent")>] NextReadCurrent
+    | [<MessageKey("cli.next.retrySafe")>] NextRetrySafe
+    | [<MessageKey("cli.next.investigate")>] NextInvestigate
+    | [<MessageKey("cli.next.chooseReference")>] NextChooseReference
+    | [<MessageKey("cli.next.askAccess")>] NextAskAccess
+    | [<MessageKey("cli.next.askRoles")>] NextAskRoles of roles: string
+    | [<MessageKey("cli.next.reviewLatest")>] NextReviewLatest
+    | [<MessageKey("cli.next.reviewCommand")>] NextReviewCommand of command: string
+    | [<MessageKey("cli.next.conflictMore")>] ConflictMore of command: string
     | [<MessageKey("cli.text.observed")>] Observed of
         observed: string *
         businessDate: string *

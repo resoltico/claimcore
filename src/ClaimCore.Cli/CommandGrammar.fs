@@ -84,6 +84,13 @@ module CommandGrammar =
             let path = words operation
             List.truncate path.Length arguments = path)
 
+    /// One argument spelling works in the interactive shell and the documented POSIX examples.
+    let quoteArgument (value: string) =
+        if Regex.IsMatch(value, "^[A-Za-z0-9._-]+$") then
+            value
+        else
+            "'" + value.Replace("'", "'\\''") + "'"
+
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 

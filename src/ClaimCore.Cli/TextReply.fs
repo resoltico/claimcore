@@ -20,8 +20,12 @@ module internal TextReply =
             |> render language request)
 
     let private read endpoint render =
-        presenter endpoint (fun language _ outcome ->
-            TextDiagnosticReply.readLines language (render language) outcome)
+        presenter endpoint (fun language request outcome ->
+            TextDiagnosticReply.readLinesFor
+                language
+                (TextDiagnosticReply.reference request)
+                (render language)
+                outcome)
 
     let private readPresenter endpoint render = read endpoint render |> snd
 
@@ -76,8 +80,8 @@ module internal TextReply =
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
             presenter Api.operationPreview TextOperationReply.previewLines |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
-            presenter Api.operationExecute (fun language _ reply ->
-                TextOperationReply.executeLines language reply)
+            presenter Api.operationExecute (fun language request reply ->
+                TextOperationReply.executeLinesFor language request reply)
             |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) ->
             presenter Api.operationStatus (fun language _ reply ->

@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -14,7 +15,112 @@ module internal TextDiagnosticReply =
     let diagnosticTargetIdentity target =
         ContractDiscovery.inputLabel (InteractionInput.Target target)
 
-    let refusalLines language refusal =
+    let reference request =
+        let target input =
+            match input with
+            | OperationInput.Case request -> Some request.Target
+            | OperationInput.Work request -> Some request.Target
+            | OperationInput.Reminder request -> Some request.Target
+            | OperationInput.Authority _ -> None
+
+        request
+        |> Option.bind (fun frame ->
+            [
+                Frames.value Api.operationExecute frame |> Option.bind target
+                Frames.value Api.operationPreview frame |> Option.bind target
+                Frames.value Api.caseGet frame |> Option.map _.Target
+                Frames.value Api.caseTimeline frame |> Option.map _.Target
+                Frames.value Api.caseHistory frame |> Option.map _.Target
+                Frames.value Api.caseActivity frame |> Option.map _.Target
+                Frames.value Api.reminder frame |> Option.map _.Target
+                Frames.value Api.reminders frame |> Option.bind _.Target
+                Frames.value Api.caseAssignees frame |> Option.map _.Target
+            ]
+            |> List.tryPick id)
+        |> Option.bind (function
+            | CaseSelector.Reference reference -> Some reference
+            | CaseSelector.Id _ -> None)
+
+    let private requiredRoles language required =
+        Authority.rolesFor required
+        |> List.map (term language Role.vocabulary)
+        |> List.reduce (fun first second ->
+            MessageCatalogs.render
+                language
+                "notice.alternativeRoles"
+                (Map.ofList [ "first", first; "second", second ]))
+
+    let private caseCommand verb reference =
+        CliIdentity.programName
+        + " case "
+        + verb
+        + " "
+        + CommandGrammar.quoteArgument reference
+
+    let private next language reference required action =
+        let message =
+            match action with
+            | RecommendedAction.CorrectInput -> Some CliMessage.NextCorrectInput
+            | RecommendedAction.ReadCurrent -> Some CliMessage.NextReadCurrent
+            | RecommendedAction.RetrySafe -> Some CliMessage.NextRetrySafe
+            | RecommendedAction.StopAndInvestigate -> Some CliMessage.NextInvestigate
+            | RecommendedAction.ChooseAnotherReference -> Some CliMessage.NextChooseReference
+            | RecommendedAction.AskForAccess ->
+                Some(
+                    required
+                    |> Option.map (requiredRoles language >> CliMessage.NextAskRoles)
+                    |> Option.defaultValue CliMessage.NextAskAccess
+                )
+            | RecommendedAction.ReviewLatest ->
+                Some(
+                    reference
+                    |> Option.map (
+                        caseCommand "get" >> TerminalText.data >> CliMessage.NextReviewCommand
+                    )
+                    |> Option.defaultValue CliMessage.NextReviewLatest
+                )
+            | RecommendedAction.NoneRequired -> None
+
+        message
+        |> Option.toList
+        |> List.map (fun message ->
+            line
+                language
+                (CliMessages.key CliMessage.NextLabel)
+                (MessageCatalogs.renderCli language message))
+
+    let private conflictLines language reference =
+        function
+        | Refusal.RevisionConflict conflict ->
+            match conflict.Changes with
+            | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
+            | Some(ConflictChanges.Page page) ->
+                (page.Entries
+                 |> List.collect (Descriptor.timelineEntry >> TextDescriptorValue.sections language))
+                @ (match reference, page.NextCursor with
+                   | Some reference, Some cursor ->
+                       [
+                           MessageCatalogs.renderCli
+                               language
+                               (CliMessage.ConflictMore(
+                                   TerminalText.data (
+                                       caseCommand "timeline" reference
+                                       + " --cursor "
+                                       + CommandGrammar.quoteArgument cursor
+                                   )
+                               ))
+                       ]
+                   | None, Some cursor ->
+                       [
+                           MessageCatalogs.renderCli
+                               language
+                               (CliMessage.PageMore(TerminalText.data cursor))
+                       ]
+                   | _, None -> [])
+            | None -> []
+        | _ -> []
+
+    let refusalLinesFor language reference refusal =
         let render code parameters =
             let arguments =
                 parameters
@@ -47,15 +153,7 @@ module internal TextDiagnosticReply =
                            + CalendarDate.format related.Value
                            + ")"))
             | Refusal.Access(AccessRefusal.NotAuthorized required) ->
-                let roles = Authority.rolesFor required |> List.map (term language Role.vocabulary)
-
-                let names =
-                    roles
-                    |> List.reduce (fun first second ->
-                        MessageCatalogs.render
-                            language
-                            "notice.alternativeRoles"
-                            (Map.ofList [ "first", first; "second", second ]))
+                let names = requiredRoles language required
 
                 [
                     MessageCatalogs.render
@@ -97,13 +195,19 @@ module internal TextDiagnosticReply =
                 | _ -> [ message ]
 
         messages
+        @ conflictLines language reference refusal
         @ [
             line language (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
-            line
-                language
-                (CliMessages.key CliMessage.ActionLabel)
-                (RecommendedAction.token refusal.Action)
         ]
+        @ next
+            language
+            reference
+            (match refusal with
+             | Refusal.Access(AccessRefusal.NotAuthorized required) -> Some required
+             | _ -> None)
+            refusal.Action
+
+    let refusalLines language refusal = refusalLinesFor language None refusal
 
     let faultLines language fault =
         let code = CoreFault.token fault
@@ -111,11 +215,11 @@ module internal TextDiagnosticReply =
         [
             label language (DiagnosticCode.key code)
             line language (CliMessages.key CliMessage.CodeLabel) code
-            line
-                language
-                (CliMessages.key CliMessage.ActionLabel)
-                (RecommendedAction.token fault.Action)
         ]
+        @ next language None None fault.Action
+
+    let readLinesFor language reference success outcome =
+        Outcome.fold success (refusalLinesFor language reference) (faultLines language) outcome
 
     let readLines language success outcome =
         Outcome.fold success (refusalLines language) (faultLines language) outcome

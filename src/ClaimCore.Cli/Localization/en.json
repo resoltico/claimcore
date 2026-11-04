@@ -94,5 +94,15 @@
   "cli.review.typeTarget": "Type {target} to confirm: ",
   "cli.text.pageCount": "{count} results.",
   "cli.text.pageMore": "More available — use --cursor {cursor}.",
-  "cli.text.pageMoreAll": "More available — use --cursor {cursor} or --all."
+  "cli.text.pageMoreAll": "More available — use --cursor {cursor} or --all.",
+  "cli.next.correctInput": "Correct the reported inputs and try again.",
+  "cli.next.readCurrent": "Read the current record and review it before trying again.",
+  "cli.next.retrySafe": "Retry the exact same request.",
+  "cli.next.investigate": "Stop and ask an administrator to investigate.",
+  "cli.next.chooseReference": "Choose another reference.",
+  "cli.next.askAccess": "Ask an owner to check your access.",
+  "cli.next.askRoles": "Ask an owner for the {roles} role.",
+  "cli.next.reviewLatest": "Read the latest record and review the changes before trying again.",
+  "cli.next.reviewCommand": "Run {command} and review the changes.",
+  "cli.next.conflictMore": "More changes — run {command}."
 }
