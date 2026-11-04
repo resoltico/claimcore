@@ -49,6 +49,7 @@ type CaseSummaryPage =
 
 type AssigneePage =
     {
+        Basis: WorkDateBasis
         Items: ActorRef list
         NextCursor: string option
     }

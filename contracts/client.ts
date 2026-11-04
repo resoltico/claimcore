@@ -30,7 +30,7 @@ export type ActorsReply_Outcome = ActorsReply_Outcome_SUCCEEDED | ActorsReply_Ou
 export type ActorsReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
 export type ActorsReply_Outcome_REJECTED = { readonly "kind": "REJECTED"; readonly "data": Diagnostic; };
 export type ActorsReply_Outcome_SUCCEEDED = { readonly "kind": "SUCCEEDED"; readonly "data": ActorsPage; };
-export type AssigneePage = { readonly "items": ReadonlyArray<ActorRef>; readonly "nextCursor": string | null; };
+export type AssigneePage = { readonly "basis": WorkDateBasis; readonly "items": ReadonlyArray<ActorRef>; readonly "nextCursor": string | null; };
 export type AssigneePageReply = { readonly "outcome": AssigneePageReply_Outcome; };
 export type AssigneePageReply_Outcome = AssigneePageReply_Outcome_SUCCEEDED | AssigneePageReply_Outcome_REJECTED | AssigneePageReply_Outcome_FAILED;
 export type AssigneePageReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
@@ -623,7 +623,7 @@ function check_ActorsReply_Outcome(value:unknown,draft:boolean,path:WireIssue):W
 function check_ActorsReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
 function check_ActorsReply_Outcome_REJECTED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REJECTED")],["data",false,check_Diagnostic]]))(value,draft,path); }
 function check_ActorsReply_Outcome_SUCCEEDED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("SUCCEEDED")],["data",false,check_ActorsPage]]))(value,draft,path); }
-function check_AssigneePage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["items",false,wireArray(check_ActorRef,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_AssigneePage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["basis",false,check_WorkDateBasis],["items",false,wireArray(check_ActorRef,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_AssigneePageReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_AssigneePageReply_Outcome]]))(value,draft,path); }
 function check_AssigneePageReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_AssigneePageReply_Outcome_SUCCEEDED,check_AssigneePageReply_Outcome_REJECTED,check_AssigneePageReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_AssigneePageReply_Outcome_SUCCEEDED,"REJECTED":check_AssigneePageReply_Outcome_REJECTED,"FAILED":check_AssigneePageReply_Outcome_FAILED}))(value,draft,path); }
 function check_AssigneePageReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
@@ -1183,6 +1183,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "00c613131963705ff033365106e54d9d66daec79e15cb2c36b0f510c02ca0446";
+export const consumerContractIdentity = "58e7626839ba37d14a4c28f3fd706f7d2817a0576dc7f96923598091645409e3";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

@@ -85,6 +85,7 @@ let tests =
 
                 let page: ClaimCore.Application.Contracts.AssigneePage =
                     {
+                        Basis = Inputs.workBasis
                         Items = [ reference ]
                         NextCursor = None
                     }
@@ -94,7 +95,7 @@ let tests =
 
                 Expect.equal
                     text
-                    "{\"items\":[{\"actorId\":\"12345678-1234-4234-8234-123456789abc\",\"displayName\":{\"kind\":\"NAMED\",\"value\":\"Anna Ozola\"},\"principalKind\":\"HUMAN\",\"availability\":\"AVAILABLE\"}],\"nextCursor\":null}"
+                    "{\"basis\":{\"observedAt\":\"2026-08-31T12:00:00.000000Z\",\"businessDate\":\"2026-08-31\",\"timeZone\":\"UTC\"},\"items\":[{\"actorId\":\"12345678-1234-4234-8234-123456789abc\",\"displayName\":{\"kind\":\"NAMED\",\"value\":\"Anna Ozola\"},\"principalKind\":\"HUMAN\",\"availability\":\"AVAILABLE\"}],\"nextCursor\":null}"
                     "Authored independent wire shape"
 
                 Expect.equal

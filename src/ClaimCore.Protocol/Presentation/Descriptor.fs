@@ -805,6 +805,18 @@ module Descriptor =
                 PresentedValue.Identifier(OperationId.format item.OperationId))
         ]
 
+    let assigneeColumns =
+        [
+            column
+                "actor"
+                "field.profile.displayName.label"
+                Prominence.Primary
+                false
+                PresentedValue.Actor
+            column "actorId" "input.actorId.label" Prominence.Detail false (fun actor ->
+                PresentedValue.Identifier(ActorId.format actor.ActorId))
+        ]
+
     let actorColumns =
         [
             column

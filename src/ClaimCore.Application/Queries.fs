@@ -176,7 +176,11 @@ module internal Queries =
                                                         return
                                                             Outcome.Succeeded
                                                                 {
-                                                                    AssigneePage.Items = page.Items
+                                                                    AssigneePage.Basis =
+                                                                        ServiceContext.basis
+                                                                            services
+                                                                            tx.ObservedAt
+                                                                    Items = page.Items
                                                                     NextCursor =
                                                                         page.Next
                                                                         |> Option.map (

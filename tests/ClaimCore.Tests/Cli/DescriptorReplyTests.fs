@@ -262,3 +262,69 @@ let hostReplyPresentation =
                     logout
                     (MessageCatalogs.render language "label.signedOut" Map.empty)
                     "Logout success has a human descriptor")
+
+[<Tests>]
+let assigneePresentation =
+    testCase
+        "eligible accounts put current names before technical IDs and carry one actual basis"
+        (fun () ->
+            let actor =
+                ActorRef.create
+                    (CaseFixtures.actorId (Guid.Parse "12345678-1234-4234-8234-123456789abc"))
+                    PrincipalKind.Human
+                    ActorAvailability.Available
+                    (Some(
+                        ActorProfile.parse
+                            {
+                                DisplayName = "Anna Ozola"
+                                Contact = None
+                            }
+                        |> Fixtures.accepted
+                    ))
+
+            let page: AssigneePage =
+                {
+                    Basis = Inputs.workBasis
+                    Items = [ actor ]
+                    NextCursor = Some "next-page"
+                }
+
+            let columns = ClaimCore.Protocol.Presentation.Descriptor.assigneeColumns
+
+            Expect.equal
+                (columns |> List.find (fun column -> column.Key = "actor")).Prominence
+                Prominence.Primary
+                "Names own the primary column"
+
+            Expect.equal
+                (columns |> List.find (fun column -> column.Key = "actorId")).Prominence
+                Prominence.Detail
+                "Stable IDs remain technical details"
+
+            for language in LocalizationPolicy.languages do
+                let text =
+                    TextReply.resultLines
+                        language
+                        None
+                        (FrameResult.Reply(
+                            CliReplies.ofValue Api.caseAssignees (Outcome.Succeeded page)
+                        ))
+                    |> String.concat "\n"
+
+                Expect.stringContains text "Anna Ozola" "The supplied current name is visible"
+
+                Expect.stringContains
+                    text
+                    (MessageCatalogs.renderCli language (CliMessage.PageCount "1"))
+                    "Actual bounded row count"
+
+                Expect.stringContains text "next-page" "Opaque continuation is retained"
+
+                Expect.stringContains
+                    text
+                    "2026-08-31 12:00"
+                    "Actual supplied observation is rendered"
+
+                Expect.stringContains text "UTC" "Installation zone is rendered"
+                Expect.isFalse (text.Contains "{\"") "No JSON fallback"
+                Expect.isFalse (text.Contains "field.profile") "No untranslated descriptor key")

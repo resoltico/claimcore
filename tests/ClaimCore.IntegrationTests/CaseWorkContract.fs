@@ -87,8 +87,44 @@ let internal assignmentAndDisclosure fixture =
 
             acceptedAuthority changed
 
-        let! first = candidates owner caseId None 1
+        let observations = ResizeArray<DateTimeOffset>()
+
+        let observedStore =
+            { new IStore with
+                member _.Context query = fixture.Store.Context query
+                member _.Write operation = fixture.Store.Write operation
+
+                member _.Read operation =
+                    fixture.Store.Read
+                        { operation with
+                            Work =
+                                fun tx ->
+                                    task {
+                                        observations.Add tx.ObservedAt
+                                        return! operation.Work tx
+                                    }
+                        }
+            }
+
+        let observedOwner = { owner with Store = observedStore }
+        let! first = candidates observedOwner caseId None 1
         let first = read first
+        Expect.equal observations.Count 1 "Candidate paging uses one authorized snapshot"
+
+        Expect.equal
+            first.Basis.ObservedAt
+            observations[0]
+            "Observation is the exact picker transaction instant"
+
+        Expect.equal
+            first.Basis.BusinessDate
+            (fixture.Calendar.DateAt observations[0])
+            "Business date comes from the installation calendar"
+
+        Expect.equal
+            first.Basis.TimeZoneId
+            fixture.Calendar.TimeZoneId
+            "Installation zone is retained"
 
         Expect.equal
             (first.Items |> List.map _.ActorId)

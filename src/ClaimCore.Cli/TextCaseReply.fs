@@ -37,12 +37,12 @@ module internal TextCaseReply =
                :: rows (Some group)))
 
     let assigneePage language (page: AssigneePage) =
-        (page.Items
-         |> List.map (fun account ->
-             ActorId.format account.ActorId
-             + "  "
-             + displayed language (Some(actorName language account))))
-        @ nextLines language page.NextCursor
+        let header, rows =
+            TextTable.page language (TextTable.environment ()) Descriptor.assigneeColumns page.Items
+
+        (if header = "" then [] else [ header ])
+        @ rows page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis false
 
     let offerAct language act =
         term language CaseActKind.vocabulary act

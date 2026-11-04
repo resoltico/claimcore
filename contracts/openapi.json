@@ -3593,6 +3593,9 @@
         "type": "object",
         "additionalProperties": false,
         "properties": {
+          "basis": {
+            "$ref": "#/components/schemas/WorkDateBasis"
+          },
           "items": {
             "type": "array",
             "items": {
@@ -3615,6 +3618,7 @@
           }
         },
         "required": [
+          "basis",
           "items",
           "nextCursor"
         ]
