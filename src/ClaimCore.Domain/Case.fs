@@ -225,9 +225,14 @@ module Case =
         | None -> create today command
         | Some record -> existing today command record
 
+    let actRefusal kind (record: CaseRecord) =
+        match Transitions.applicable record.State (CaseAct.probe kind) with
+        | Ok _ -> None
+        | Error refusal -> Some refusal
+
     let eligibleActs (record: CaseRecord) =
         CaseActKind.all
-        |> List.filter (CaseAct.probe >> Transitions.applicable record.State >> Result.isOk)
+        |> List.filter (fun kind -> actRefusal kind record |> Option.isNone)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

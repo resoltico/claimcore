@@ -239,24 +239,43 @@ module ResponseCodecs =
             (fun (state: RegisterMaintenance) -> state.Active, state.Generation)
         |> named "RegisterMaintenance"
 
+    let private blockedCaseAct =
+        (record (fun act reason ->
+            {
+                CaseActRefusal.Act = act
+                Reason = reason
+            })
+        : Fields<CaseActRefusal, _>)
+        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
+        |> field "reason" _.Reason DiagnosticCodecs.diagnostic
+        |> build
+        |> named "CaseActRefusal"
+
     let caseAdvice =
-        record (fun acts correction history maintenance recommended ->
-            acts, correction, history, maintenance, recommended)
+        record (fun acts correction history maintenance recommended blocked ->
+            acts, correction, history, maintenance, recommended, blocked)
         |> field
             "acts"
-            (fun (acts, _, _, _, _) -> acts)
+            (fun (acts, _, _, _, _, _) -> acts)
             (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
-        |> optionalField "correction" (fun (_, correction, _, _, _) -> correction) correctionAdvice
-        |> field "history" (fun (_, _, history, _, _) -> history) (list 2 historyDetail)
-        |> field "maintenance" (fun (_, _, _, maintenance, _) -> maintenance) registerMaintenance
+        |> optionalField
+            "correction"
+            (fun (_, correction, _, _, _, _) -> correction)
+            correctionAdvice
+        |> field "history" (fun (_, _, history, _, _, _) -> history) (list 2 historyDetail)
+        |> field "maintenance" (fun (_, _, _, maintenance, _, _) -> maintenance) registerMaintenance
         |> field
             "recommended"
-            (fun (_, _, _, _, recommended) -> recommended)
+            (fun (_, _, _, _, recommended, _) -> recommended)
             (nullable (VocabularyCodec.create CaseActKind.vocabulary))
+        |> field
+            "blocked"
+            (fun (_, _, _, _, _, blocked) -> blocked)
+            (list CaseActKind.all.Length blockedCaseAct)
         |> build
         |> mapResult
-            (fun path (acts, correction, history, maintenance, recommended) ->
-                CaseAdvice.createDuringMaintenance maintenance acts correction history
+            (fun path (acts, correction, history, maintenance, recommended, blocked) ->
+                CaseAdvice.createDuringMaintenance maintenance acts correction history blocked
                 |> Result.bind (CaseAdvice.withRecommendation recommended)
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
             (fun (advice: CaseAdvice) ->
@@ -264,7 +283,8 @@ module ResponseCodecs =
                 advice.Correction,
                 advice.History,
                 advice.Maintenance,
-                advice.Recommended)
+                advice.Recommended,
+                advice.Blocked)
         |> named "CaseAdvice"
 
     let caseView =

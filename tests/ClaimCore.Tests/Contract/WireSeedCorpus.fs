@@ -140,6 +140,12 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
             (context + ".CaseAdvice.History")
             typeof<HistoryDetail list>
             (box advice.History)
+
+        collect
+            seeds
+            (context + ".CaseAdvice.Blocked")
+            typeof<CaseActRefusal list>
+            (box advice.Blocked)
     elif FSharpType.IsTuple kind then
         Array.zip (FSharpType.GetTupleElements kind) (FSharpValue.GetTupleFields(nonNull value))
         |> Array.iteri (fun index (itemType, item) ->

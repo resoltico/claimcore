@@ -26,5 +26,6 @@ module Case =
 
     val decide: DateOnly -> CaseCommand -> CaseRecord option -> Result<CaseRecord, Refusal>
 
+    val actRefusal: CaseActKind -> CaseRecord -> CaseRefusal option
     val eligibleActs: CaseRecord -> CaseActKind list
     val correctionActions: CaseRecord -> RecordGroup -> CorrectionGroupAction list

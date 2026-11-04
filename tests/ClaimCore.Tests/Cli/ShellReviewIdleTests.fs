@@ -68,7 +68,7 @@ let private idleConfirmation () =
                                     Snapshot = CliReplyFixtures.snapshot
                                     Headline = CaseHeadline.Undecided
                                     Attention = []
-                                    Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
+                                    Advice = Inputs.caseAdvice CliReplyFixtures.snapshot.State
                                 })
                 else
                     return reviewed frame

@@ -374,8 +374,17 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                 else
                     Gen.choice [ Gen.constant None; Gen.item acts |> Gen.map Some ]
 
+            let blocked =
+                CaseActKind.all
+                |> List.filter (fun act -> not (List.contains act acts))
+                |> List.map (fun act ->
+                    {
+                        CaseActRefusal.Act = act
+                        Reason = Refusal.Access AccessRefusal.ResourceUnavailable
+                    })
+
             return
-                CaseAdvice.create acts correction history
+                CaseAdvice.create acts correction history blocked
                 |> Result.defaultWith invalidOp
                 |> CaseAdvice.duringMaintenance maintenance
                 |> CaseAdvice.withRecommendation recommended

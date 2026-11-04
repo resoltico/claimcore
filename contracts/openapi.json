@@ -4761,6 +4761,35 @@
           "kind"
         ]
       },
+      "CaseActRefusal": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "act": {
+            "enum": [
+              "OPEN",
+              "AMEND_REGISTRATION",
+              "CORRECT",
+              "DECIDE",
+              "WITHDRAW_DECISION",
+              "RECORD_PAYMENT",
+              "CLEAR_PAYMENT",
+              "CLOSE",
+              "REOPEN",
+              "VOID",
+              "REINSTATE",
+              "ERASE"
+            ]
+          },
+          "reason": {
+            "$ref": "#/components/schemas/Diagnostic"
+          }
+        },
+        "required": [
+          "act",
+          "reason"
+        ]
+      },
       "CaseActivity": {
         "type": "object",
         "additionalProperties": false,
@@ -5020,13 +5049,22 @@
                 "type": "null"
               }
             ]
+          },
+          "blocked": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/CaseActRefusal"
+            },
+            "minItems": 0,
+            "maxItems": 12
           }
         },
         "required": [
           "acts",
           "history",
           "maintenance",
-          "recommended"
+          "recommended",
+          "blocked"
         ]
       },
       "CaseFieldDifference": {

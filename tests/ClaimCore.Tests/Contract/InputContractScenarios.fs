@@ -122,7 +122,7 @@ let internal retainedText () =
                     Snapshot = snapshot
                     Headline = CaseHeadline.Undecided
                     Attention = []
-                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
+                    Advice = Inputs.caseAdvice snapshot.State
                 })
 
         |> ignore

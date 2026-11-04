@@ -98,6 +98,24 @@ let stageDisplay state =
         None
     |> Result.defaultWith invalidOp
 
+/// A complete transport fixture; policy tests assert literal reasons from the actual service.
+let caseAdvice state =
+    let headline =
+        state
+        |> CaseState.map (fun (fields: CaseFields) ->
+            fields.Status, CaseProgress.ofPayment fields.Progress)
+        |> CaseHeadline.ofState
+
+    let blocked =
+        CaseActKind.all
+        |> List.map (fun act ->
+            {
+                CaseActRefusal.Act = act
+                Reason = Refusal.Case(CaseRefusal.NotOffered headline)
+            })
+
+    CaseAdvice.create [] None [] blocked |> Result.defaultWith invalidOp
+
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
     let samples =

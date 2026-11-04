@@ -80,7 +80,7 @@ module internal CaseExecution =
             else
                 Error CoreFault.StoreIntegrityError)
 
-    let private permissionFor principal actor act (record: StoredCase option) =
+    let permissionFor principal actor act (record: StoredCase option) =
         if CaseAct.kind act = CaseActKind.Open then
             if Authority.canAct principal actor Scope.Installation act then
                 Ok()

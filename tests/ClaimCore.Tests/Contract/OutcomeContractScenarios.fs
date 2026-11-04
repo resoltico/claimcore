@@ -92,7 +92,7 @@ let internal queryCodecs () =
                         else
                             CaseHeadline.Undecided
                     Attention = []
-                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
+                    Advice = Inputs.caseAdvice view.State
                 })
 
         |> ignore

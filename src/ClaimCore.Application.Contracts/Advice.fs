@@ -57,6 +57,8 @@ type CorrectionChoices =
         Payment: CorrectionGroupAction list
     }
 
+type CaseActRefusal = { Act: CaseActKind; Reason: Refusal }
+
 type CaseAdvice =
     private
         {
@@ -65,6 +67,7 @@ type CaseAdvice =
             CorrectionChoices: CorrectionChoices option
             HistoryDetails: HistoryDetail list
             RecommendedAct: CaseActKind option
+            BlockedActs: CaseActRefusal list
         }
 
     member this.Maintenance = this.MaintenanceState
@@ -72,11 +75,29 @@ type CaseAdvice =
     member this.Correction = this.CorrectionChoices
     member this.History = this.HistoryDetails
     member this.Recommended = this.RecommendedAct
+    member this.Blocked = this.BlockedActs
 
 module CaseAdvice =
-    let create acts correction history =
+    let private availabilityReason =
+        function
+        | Refusal.Case(CaseRefusal.CaseAlreadyExists | CaseRefusal.NotOffered _)
+        | Refusal.Access _
+        | Refusal.RegisterMaintenance -> true
+        | _ -> false
+
+    let create acts correction history blocked =
         if List.contains CaseActKind.Correct acts <> Option.isSome correction then
             Error "Correction choices must be present exactly when Correct is offered."
+        elif blocked |> List.exists (fun blocked -> not (availabilityReason blocked.Reason)) then
+            Error "An unavailable act requires a permission, maintenance or state reason."
+        elif
+            (blocked |> List.map _.Act |> Set.ofList)
+            <> Set.difference (Set.ofList CaseActKind.all) (Set.ofList acts)
+            || (blocked |> List.map _.Act |> List.distinct |> List.length)
+               <> List.length blocked
+        then
+            Error
+                "Every unavailable act must have exactly one reason, and offered acts must have none."
         else
             Ok
                 {
@@ -85,6 +106,7 @@ module CaseAdvice =
                     CorrectionChoices = correction
                     HistoryDetails = history
                     RecommendedAct = None
+                    BlockedActs = blocked
                 }
 
     let withRecommendation recommended (advice: CaseAdvice) =
@@ -102,6 +124,25 @@ module CaseAdvice =
             OfferedActs = if maintenance.Active then [] else advice.Acts
             CorrectionChoices = if maintenance.Active then None else advice.Correction
             RecommendedAct = if maintenance.Active then None else advice.Recommended
+            BlockedActs =
+                if maintenance.Active then
+                    (advice.Blocked
+                     |> List.map (fun blocked ->
+                         { blocked with
+                             Reason =
+                                 match blocked.Reason with
+                                 | Refusal.Access _ as refusal -> refusal
+                                 | _ -> Refusal.RegisterMaintenance
+                         }))
+                    @ (advice.Acts
+                       |> List.distinct
+                       |> List.map (fun act ->
+                           {
+                               Act = act
+                               Reason = Refusal.RegisterMaintenance
+                           }))
+                else
+                    advice.Blocked
         }
 
     let createDuringMaintenance
@@ -109,11 +150,23 @@ module CaseAdvice =
         acts
         (correction: CorrectionChoices option)
         history
+        blocked
         =
         if maintenance.Active && (not (List.isEmpty acts) || correction.IsSome) then
             Error "Maintenance advice cannot offer register writes."
+        elif
+            maintenance.Active
+            && (blocked
+                |> List.exists (fun blocked ->
+                    match blocked.Reason with
+                    | Refusal.Access _
+                    | Refusal.RegisterMaintenance -> false
+                    | _ -> true))
+        then
+            Error "Maintenance advice requires maintenance or permission reasons."
         else
-            create acts correction history |> Result.map (duringMaintenance maintenance)
+            create acts correction history blocked
+            |> Result.map (duringMaintenance maintenance)
 
 type ActorContext =
     {

@@ -46,7 +46,7 @@ let private caseReply =
         Snapshot = current
         Headline = CaseHeadline.Undecided
         Attention = []
-        Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
+        Advice = Inputs.caseAdvice current.State
     }
 
 let private review =
