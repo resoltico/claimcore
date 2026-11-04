@@ -72,6 +72,12 @@ let internal queryCodecs () =
                     Mine = false
                     Work = Inputs.workView view.State
                     Snapshot = view
+                    Headline =
+                        if view.State = ClaimCore.Domain.CaseState.Erased then
+                            CaseHeadline.Erased
+                        else
+                            CaseHeadline.Undecided
+                    Attention = []
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
 
@@ -85,6 +91,7 @@ let internal queryCodecs () =
                 Items = []
                 NextCursor = None
                 Offers = []
+                ExactReference = None
             })
 
     |> ignore

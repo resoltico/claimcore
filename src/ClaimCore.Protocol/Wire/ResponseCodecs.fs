@@ -264,25 +264,35 @@ module ResponseCodecs =
         |> named "RegisterMaintenance"
 
     let caseAdvice =
-        record (fun acts correction history maintenance -> acts, correction, history, maintenance)
+        record (fun acts correction history maintenance recommended ->
+            acts, correction, history, maintenance, recommended)
         |> field
             "acts"
-            (fun (acts, _, _, _) -> acts)
+            (fun (acts, _, _, _, _) -> acts)
             (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
-        |> optionalField "correction" (fun (_, correction, _, _) -> correction) correctionAdvice
-        |> field "history" (fun (_, _, history, _) -> history) (list 2 historyDetail)
-        |> field "maintenance" (fun (_, _, _, maintenance) -> maintenance) registerMaintenance
+        |> optionalField "correction" (fun (_, correction, _, _, _) -> correction) correctionAdvice
+        |> field "history" (fun (_, _, history, _, _) -> history) (list 2 historyDetail)
+        |> field "maintenance" (fun (_, _, _, maintenance, _) -> maintenance) registerMaintenance
+        |> field
+            "recommended"
+            (fun (_, _, _, _, recommended) -> recommended)
+            (nullable (VocabularyCodec.create CaseActKind.vocabulary))
         |> build
         |> mapResult
-            (fun path (acts, correction, history, maintenance) ->
+            (fun path (acts, correction, history, maintenance, recommended) ->
                 CaseAdvice.createDuringMaintenance maintenance acts correction history
+                |> Result.bind (CaseAdvice.withRecommendation recommended)
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
             (fun (advice: CaseAdvice) ->
-                advice.Acts, advice.Correction, advice.History, advice.Maintenance)
+                advice.Acts,
+                advice.Correction,
+                advice.History,
+                advice.Maintenance,
+                advice.Recommended)
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun id reference revision view advice assigned work ->
+        (record (fun id reference revision view advice assigned work headline attention ->
             {
                 Snapshot =
                     {
@@ -294,6 +304,8 @@ module ResponseCodecs =
                 Advice = advice
                 Mine = assigned
                 Work = work
+                Headline = headline
+                Attention = attention
             })
         : Fields<CaseReadModel, _>)
         |> field "caseId" _.Snapshot.CaseId caseId
@@ -303,6 +315,11 @@ module ResponseCodecs =
         |> field "advice" _.Advice caseAdvice
         |> field "mine" _.Mine boolean
         |> field "work" _.Work ReadRowCodecs.workView
+        |> field "headline" _.Headline (VocabularyCodec.create CaseHeadline.vocabulary)
+        |> field
+            "attention"
+            _.Attention
+            (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
         |> build
         |> named "CaseView"
 
@@ -554,13 +571,26 @@ module ResponseCodecs =
 
     let caseSummary = ReadRowCodecs.caseSummary
 
+    let caseRef =
+        (record (fun id reference ->
+            {
+                CaseRef.CaseId = id
+                CaseReference = reference
+            })
+        : Fields<CaseRef, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.CaseReference caseReference
+        |> build
+        |> named "CaseRef"
+
     let casesPage =
-        (record (fun items next offers basis ->
+        (record (fun items next offers basis exact ->
             {
                 Basis = basis
                 Items = items
                 NextCursor = next
                 Offers = offers
+                ExactReference = exact
             })
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
@@ -570,6 +600,7 @@ module ResponseCodecs =
             (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "exactReference" _.ExactReference (nullable caseRef)
         |> build
         |> named "CasesPage"
 

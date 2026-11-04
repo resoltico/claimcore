@@ -159,13 +159,15 @@ module internal ReadRowCodecs =
         |> field "work" _.Work workView
 
     let caseSummary =
-        (record (fun id reference revision changedAt state ->
+        (record (fun id reference revision changedAt state headline attention ->
             {
                 CaseSummary.CaseId = id
                 Reference = reference
                 Revision = revision
                 ChangedAt = changedAt
                 State = state
+                Headline = headline
+                Attention = attention
             })
         : Fields<CaseSummary, _>)
         |> field "caseId" _.CaseId caseId
@@ -173,5 +175,10 @@ module internal ReadRowCodecs =
         |> field "revision" _.Revision positiveRevision
         |> field "changedAt" _.ChangedAt instant
         |> field "state" _.State (CaseStateCodecs.state "CaseSummaryState" facts)
+        |> field "headline" _.Headline (VocabularyCodec.create CaseHeadline.vocabulary)
+        |> field
+            "attention"
+            _.Attention
+            (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
         |> build
         |> named "CaseSummary"

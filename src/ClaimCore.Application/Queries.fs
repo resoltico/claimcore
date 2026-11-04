@@ -264,6 +264,9 @@ module internal Queries =
                 Reference = record.Snapshot.Reference
                 Revision = record.Snapshot.Revision
                 ChangedAt = record.Index.ChangedAt
+                Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
+                Attention =
+                    CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)
                 State =
                     CaseState.map
                         (fun (fields: CaseFields) ->
@@ -315,6 +318,40 @@ module internal Queries =
                     |> Result.map List.rev)
         }
 
+    let private exactReference (services: ServiceContext) (tx: IReadTx) text =
+        task {
+            match text |> Option.bind (CaseReference.parse >> Result.toOption) with
+            | None -> return None
+            | Some reference ->
+                let! record = tx.FindCaseByReference(CaseReference.format reference)
+
+                match record with
+                | None -> return None
+                | Some record ->
+                    let! actor =
+                        tx.Authority
+                            {
+                                Principal = services.Principal
+                                CaseId = Some record.CaseId
+                            }
+
+                    return
+                        if
+                            CaseExecution.authorize
+                                services.Principal
+                                actor
+                                Capability.ReadCase
+                                (Some record)
+                        then
+                            Some
+                                {
+                                    CaseRef.CaseId = record.CaseId
+                                    CaseReference = record.Snapshot.Reference
+                                }
+                        else
+                            None
+        }
+
     let list (services: ServiceContext) (request: CaseListRequest) token =
         let store = services.Store
         let principal = services.Principal
@@ -355,6 +392,9 @@ module internal Queries =
                                                         selection.DateBasis
                                                         page.Items
 
+                                                let! exact =
+                                                    exactReference services tx request.Filter.Text
+
                                                 return
                                                     items
                                                     |> Result.map (fun items ->
@@ -362,6 +402,7 @@ module internal Queries =
                                                             CaseSummaryPage.Basis =
                                                                 selection.DateBasis
                                                             Items = items
+                                                            ExactReference = exact
                                                             Offers =
                                                                 if maintenance.Active then
                                                                     []

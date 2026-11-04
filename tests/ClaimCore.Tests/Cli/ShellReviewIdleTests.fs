@@ -65,6 +65,8 @@ let private idleConfirmation () =
                                     Mine = false
                                     Work = Inputs.workView CliReplyFixtures.snapshot.State
                                     Snapshot = CliReplyFixtures.snapshot
+                                    Headline = CaseHeadline.Undecided
+                                    Attention = []
                                     Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
                                 })
                 else

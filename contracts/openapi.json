@@ -3958,12 +3958,36 @@
           },
           "maintenance": {
             "$ref": "#/components/schemas/RegisterMaintenance"
+          },
+          "recommended": {
+            "oneOf": [
+              {
+                "enum": [
+                  "OPEN",
+                  "AMEND_REGISTRATION",
+                  "CORRECT",
+                  "DECIDE",
+                  "WITHDRAW_DECISION",
+                  "RECORD_PAYMENT",
+                  "CLEAR_PAYMENT",
+                  "CLOSE",
+                  "REOPEN",
+                  "VOID",
+                  "REINSTATE",
+                  "ERASE"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "acts",
           "history",
-          "maintenance"
+          "maintenance",
+          "recommended"
         ]
       },
       "CaseFields": {
@@ -4478,6 +4502,25 @@
           "snapshot"
         ]
       },
+      "CaseRef": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "caseId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "caseReference": {
+            "type": "string",
+            "pattern": "^(?:[!-~]{1,80})(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 80
+          }
+        },
+        "required": [
+          "caseId",
+          "caseReference"
+        ]
+      },
       "CaseSelector": {
         "oneOf": [
           {
@@ -4648,6 +4691,31 @@
           },
           "state": {
             "$ref": "#/components/schemas/CaseSummaryState"
+          },
+          "headline": {
+            "enum": [
+              "ERASED",
+              "VOIDED",
+              "CLOSED",
+              "PAID",
+              "DECIDED",
+              "UNDECIDED"
+            ]
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OVERDUE",
+                "DUE_TODAY",
+                "NO_NEXT_ACTION",
+                "UNASSIGNED",
+                "ASSIGNEE_UNAVAILABLE",
+                "READY_TO_CLOSE"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 6
           }
         },
         "required": [
@@ -4655,7 +4723,9 @@
           "caseReference",
           "revision",
           "changedAt",
-          "state"
+          "state",
+          "headline",
+          "attention"
         ]
       },
       "CaseSummaryReply": {
@@ -5001,6 +5071,31 @@
           },
           "work": {
             "$ref": "#/components/schemas/CaseWorkView"
+          },
+          "headline": {
+            "enum": [
+              "ERASED",
+              "VOIDED",
+              "CLOSED",
+              "PAID",
+              "DECIDED",
+              "UNDECIDED"
+            ]
+          },
+          "attention": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OVERDUE",
+                "DUE_TODAY",
+                "NO_NEXT_ACTION",
+                "UNASSIGNED",
+                "ASSIGNEE_UNAVAILABLE",
+                "READY_TO_CLOSE"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 6
           }
         },
         "required": [
@@ -5010,7 +5105,9 @@
           "state",
           "advice",
           "mine",
-          "work"
+          "work",
+          "headline",
+          "attention"
         ]
       },
       "CaseWork": {
@@ -5348,13 +5445,24 @@
           },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
+          },
+          "exactReference": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/CaseRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "required": [
           "items",
           "nextCursor",
           "offers",
-          "basis"
+          "basis",
+          "exactReference"
         ]
       },
       "ChangeSummary": {

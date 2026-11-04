@@ -23,6 +23,14 @@ type CaseSummary =
         Revision: Revision
         ChangedAt: DateTimeOffset
         State: CaseState<CaseSummaryFacts>
+        Headline: CaseHeadline
+        Attention: CaseAttention list
+    }
+
+type CaseRef =
+    {
+        CaseId: CaseId
+        CaseReference: CaseReference
     }
 
 type CaseSummaryPage =
@@ -31,6 +39,7 @@ type CaseSummaryPage =
         Items: CaseSummary list
         Offers: InstallationOffer list
         NextCursor: string option
+        ExactReference: CaseRef option
     }
 
 type AssigneePage =

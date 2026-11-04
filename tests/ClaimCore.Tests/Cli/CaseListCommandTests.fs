@@ -33,6 +33,8 @@ let private row reference =
         Revision = CaseFixtures.revision 1L
         ChangedAt = moment
         State = CaseState.Active facts
+        Headline = CaseHeadline.Undecided
+        Attention = []
     }
 
 let private page items next =
@@ -41,6 +43,7 @@ let private page items next =
         Items = items
         Offers = []
         NextCursor = next
+        ExactReference = None
     }
 
 let private prepared arguments =

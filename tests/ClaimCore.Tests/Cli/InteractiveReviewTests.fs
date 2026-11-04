@@ -43,6 +43,8 @@ let private caseReply =
         Mine = false
         Work = Inputs.workView current.State
         Snapshot = current
+        Headline = CaseHeadline.Undecided
+        Attention = []
         Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
     }
 

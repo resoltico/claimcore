@@ -5,6 +5,18 @@ open ClaimCore.Application.Contracts
 
 /// Current account labels/availability are batched for the page under its read snapshot.
 module internal CaseWorkReads =
+    let facts (record: StoredCase) (work: CaseWorkView) : CaseWorkFacts =
+        {
+            State =
+                record.Snapshot.State
+                |> CaseState.map (fun fields ->
+                    fields.Status, CaseProgress.ofPayment fields.Progress)
+            Responsible =
+                work.Responsible
+                |> Option.map (fun assigned -> assigned.Account.ActorId, assigned.Available)
+            NextPendingDue = work.FollowUp
+        }
+
     let basis (services: ServiceContext) observed =
         {
             ObservedAt = observed

@@ -119,6 +119,8 @@ let internal retainedText () =
                     Mine = false
                     Work = Inputs.workView snapshot.State
                     Snapshot = snapshot
+                    Headline = CaseHeadline.Undecided
+                    Attention = []
                     Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
                 })
 

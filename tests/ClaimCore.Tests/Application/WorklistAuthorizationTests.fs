@@ -100,4 +100,68 @@ let tests =
                 (page.Items |> List.map (fun row -> CaseReference.format row.Reference))
                 [ "VISIBLE-2" ]
                 "An installation read must exclude the refused scope and retain unrelated cases"
-        | _ -> failtestf "Expected an authorized unrelated-case page, got %A" listed)
+
+            let row = List.exactlyOne page.Items
+
+            Expect.equal
+                row.Headline
+                CaseHeadline.Undecided
+                "The core headline reflects case progress"
+
+            Expect.equal
+                row.Attention
+                [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
+                "A readable open case reports independent attention reasons"
+        | _ -> failtestf "Expected an authorized unrelated-case page, got %A" listed
+
+        for query, expected in
+            [ "visible-1", None; "visible-2", Some "VISIBLE-2"; "VISIBLE", None ] do
+            let request = Inputs.caseListPage { AfterCursor = None; Limit = 1 }
+
+            let request =
+                { request with
+                    Filter =
+                        { request.Filter with
+                            Text = Some query
+                        }
+                }
+
+            match
+                Service.list service request CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+            with
+            | Outcome.Succeeded page ->
+                Expect.equal
+                    (page.ExactReference
+                     |> Option.map (fun exact -> CaseReference.format exact.CaseReference))
+                    expected
+                    "Exact matches use case-folding and the same read authorization, including corruption exclusion"
+            | result -> failtestf "Expected authorized search page, got %A" result
+
+        let target =
+            {
+                Target = CaseSelector.Reference "VISIBLE-2"
+            }
+
+        for principal, expected in
+            [ adminPrincipal, Some CaseActKind.Decide; servicePrincipal, None ] do
+            match
+                Service.get (core principal) target CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+            with
+            | Outcome.Succeeded model ->
+                Expect.equal
+                    model.Advice.Recommended
+                    expected
+                    "A recommendation requires an offered act"
+
+                Expect.equal
+                    model.Headline
+                    CaseHeadline.Undecided
+                    "Detail and listing use core headline semantics"
+
+                Expect.equal
+                    model.Attention
+                    [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
+                    "Detail and listing agree"
+            | result -> failtestf "Expected readable detail, got %A" result)

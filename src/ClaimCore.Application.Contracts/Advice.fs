@@ -72,12 +72,14 @@ type CaseAdvice =
             OfferedActs: CaseActKind list
             CorrectionChoices: CorrectionChoices option
             HistoryDetails: HistoryDetail list
+            RecommendedAct: CaseActKind option
         }
 
     member this.Maintenance = this.MaintenanceState
     member this.Acts = this.OfferedActs
     member this.Correction = this.CorrectionChoices
     member this.History = this.HistoryDetails
+    member this.Recommended = this.RecommendedAct
 
 module CaseAdvice =
     let create acts correction history =
@@ -90,6 +92,16 @@ module CaseAdvice =
                     OfferedActs = acts
                     CorrectionChoices = correction
                     HistoryDetails = history
+                    RecommendedAct = None
+                }
+
+    let withRecommendation recommended (advice: CaseAdvice) =
+        if recommended |> Option.exists (fun act -> not (List.contains act advice.Acts)) then
+            Error "The recommended act must be offered."
+        else
+            Ok
+                { advice with
+                    RecommendedAct = recommended
                 }
 
     let duringMaintenance maintenance (advice: CaseAdvice) =
@@ -97,6 +109,7 @@ module CaseAdvice =
             MaintenanceState = maintenance
             OfferedActs = if maintenance.Active then [] else advice.Acts
             CorrectionChoices = if maintenance.Active then None else advice.Correction
+            RecommendedAct = if maintenance.Active then None else advice.Recommended
         }
 
     let createDuringMaintenance
@@ -128,6 +141,8 @@ type CaseReadModel =
         Advice: CaseAdvice
         Mine: bool
         Work: CaseWorkView
+        Headline: CaseHeadline
+        Attention: CaseAttention list
     }
 
 type FieldDiff =

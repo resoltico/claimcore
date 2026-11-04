@@ -61,6 +61,13 @@ module internal Advice =
 
             let advice =
                 CaseAdvice.create acts correction (history principal actor resource)
+                |> Result.bind (
+                    CaseAdvice.withRecommendation (
+                        ClaimCore.Domain.CaseAdvice.recommended
+                            (CaseWorkReads.facts record work).State
+                            acts
+                    )
+                )
                 |> Result.defaultWith invalidOp
 
             {
@@ -81,6 +88,9 @@ module internal Advice =
                         CanCreateReminder = active && opened && permitted
                     }
                 Snapshot = record.Snapshot
+                Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
+                Attention =
+                    CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)
                 Advice = advice
                 Mine =
                     match actor.Actor, work.Responsible with
