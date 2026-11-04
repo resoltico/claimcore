@@ -39,6 +39,31 @@ let tests =
     testList
         "ADMIT collection CLI"
         [
+            testCase "actor name search is a thin catalog adapter" (fun () ->
+                let value =
+                    Grammar.prepare
+                        identity
+                        [ "authority"; "list"; "--text"; "ĀDAMS عادل"; "--limit"; "7" ]
+                    |> Fixtures.accepted
+
+                let request = Frames.value Api.authorityList value.Invocation |> Option.get
+
+                Expect.equal
+                    request.Text
+                    (Some "ĀDAMS عادل")
+                    "The CLI preserves authored search text; the core normalizes it"
+
+                Expect.equal request.Limit 7 "Normal pagination remains available"
+
+                Expect.equal
+                    (Encoding.UTF8.GetString value.Bytes)
+                    "{\"endpoint\":\"authority.list\",\"input\":{\"text\":\"ĀDAMS عادل\",\"limit\":7}}"
+                    "The wire codec defines member order"
+
+                Expect.stringContains
+                    (CommandGrammar.synopsis (CatalogOperation.Query QueryEndpoint.AuthorityList))
+                    "--text VALUE"
+                    "Help uses the actual grammar")
             testCase
                 "irreversible confirmation is a local option and never changes wire bytes"
                 (fun () ->

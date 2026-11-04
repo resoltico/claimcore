@@ -91,5 +91,8 @@
   "cli.usage.unknownOption": "Nezināma opcija: {flag}.",
   "cli.usage.unknownOptionFor": "Nezināma opcija \"{flag}\" komandai \"{command}\".",
   "cli.usage.versionOptions": "Version pieņem tikai --json.",
-  "cli.review.typeTarget": "Lai apstiprinātu, ievadiet {target}: "
+  "cli.review.typeTarget": "Lai apstiprinātu, ievadiet {target}: ",
+  "cli.text.pageCount": "{count} rezultāti.",
+  "cli.text.pageMore": "Ir vēl rezultāti — lietojiet --cursor {cursor}.",
+  "cli.text.pageMoreAll": "Ir vēl rezultāti — lietojiet --cursor {cursor} vai --all."
 }

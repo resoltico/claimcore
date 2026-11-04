@@ -106,6 +106,9 @@ type CliMessage =
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
     | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel
     | [<MessageKey("cli.text.next")>] NextLabel
+    | [<MessageKey("cli.text.pageCount")>] PageCount of count: string
+    | [<MessageKey("cli.text.pageMore")>] PageMore of cursor: string
+    | [<MessageKey("cli.text.pageMoreAll")>] PageMoreAll of cursor: string
     | [<MessageKey("cli.text.authorityHistoryEmpty")>] AuthorityHistoryEmpty
     | [<MessageKey("cli.text.accessSources")>] AccessSources of
         direct: string *

@@ -91,5 +91,8 @@
   "cli.usage.unknownOption": "Unknown option: {flag}.",
   "cli.usage.unknownOptionFor": "Unknown option \"{flag}\" for \"{command}\".",
   "cli.usage.versionOptions": "Version accepts only --json.",
-  "cli.review.typeTarget": "Type {target} to confirm: "
+  "cli.review.typeTarget": "Type {target} to confirm: ",
+  "cli.text.pageCount": "{count} results.",
+  "cli.text.pageMore": "More available — use --cursor {cursor}.",
+  "cli.text.pageMoreAll": "More available — use --cursor {cursor} or --all."
 }

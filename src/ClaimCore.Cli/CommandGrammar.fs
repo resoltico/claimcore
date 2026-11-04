@@ -49,6 +49,7 @@ module CommandGrammar =
     // fsharplint:disable-next-line CyclomaticComplexity
     let inputName =
         function
+        | InteractionInput.Target InputTarget.ActorNameSearch -> "text"
         | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
         | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
         | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"

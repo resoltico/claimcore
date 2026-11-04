@@ -20,22 +20,32 @@ module internal TextDescriptorValue =
         else
             TextReplyFormat.label language key
 
-    let render language =
-        let text value =
-            TextReplyFormat.displayed language (Some value)
+    let private codes language vocabulary =
+        function
+        | [] -> "—"
+        | tokens -> tokens |> List.map (code language vocabulary) |> String.concat ", "
 
+    let private text language value =
+        TextReplyFormat.displayed language (Some value)
+
+    // This exhaustive semantic-value table keeps every renderer case visible without a fallback.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let render language =
         function
         | PresentedValue.Money value -> TextReplyFormat.money language value
-        | PresentedValue.Date value -> TextReplyFormat.date language value |> text
-        | PresentedValue.Instant value -> TextReplyFormat.instant value |> text
-        | PresentedValue.Party value -> PartyName.format value |> text
-        | PresentedValue.Text value -> text value
+        | PresentedValue.MoneyTotal(currency, total) ->
+            TextReplyFormat.moneyTotal language currency total
+        | PresentedValue.Date value -> TextReplyFormat.date language value |> text language
+        | PresentedValue.Instant value -> TextReplyFormat.instant value |> text language
+        | PresentedValue.Party value -> PartyName.format value |> text language
+        | PresentedValue.Text value -> text language value
         | PresentedValue.Code(vocabulary, token) -> code language vocabulary token
-        | PresentedValue.Actor value -> TextReplyFormat.actorName language value |> text
+        | PresentedValue.Codes(vocabulary, tokens) -> codes language vocabulary tokens
+        | PresentedValue.Actor value -> TextReplyFormat.actorName language value |> text language
         | PresentedValue.State value -> TextReplyFormat.term language CaseHeadline.vocabulary value
         | PresentedValue.Count value -> value.ToString(CultureInfo.InvariantCulture)
-        | PresentedValue.Reference value -> CaseReference.format value |> text
-        | PresentedValue.Identifier value -> text value
+        | PresentedValue.Reference value -> CaseReference.format value |> text language
+        | PresentedValue.Identifier value -> text language value
         | PresentedValue.Absent reason -> TextReplyFormat.label language reason
 
     let entry language (entry: Entry) =

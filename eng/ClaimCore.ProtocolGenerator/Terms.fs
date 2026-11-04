@@ -1,6 +1,7 @@
 namespace ClaimCore.ProtocolGeneration
 
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -87,6 +88,8 @@ module Terms =
 
     let all =
         [
+            rendered PresentedBoolean.vocabulary
+            rendered View.vocabulary
             rendered CaseStatus.vocabulary
             rendered Lifecycle.vocabulary
             rendered Capability.vocabulary

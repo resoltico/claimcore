@@ -64,8 +64,8 @@
     <Compile Include="TimelineRows.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
+    <Compile Include="TextContextReply.fs" />
     <Compile Include="TextOperationReply.fs" />
-    <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
     <Compile Include="RecoveryCommand.fs" />
     <Compile Include="ReadPageIO.fs" />

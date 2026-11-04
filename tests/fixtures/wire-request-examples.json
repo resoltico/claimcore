@@ -2540,6 +2540,36 @@
           ]
         }
       }
+    },
+    {
+      "id": "authority-list-current-name-search",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 50,
+        "text": "ĀDAMS عادل"
+      }
+    },
+    {
+      "id": "authority-list-name-search-maximum",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 50,
+        "text": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+      }
+    },
+    {
+      "id": "authority-list-name-search-overlong",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "limit": 50,
+        "text": "NNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNNN"
+      }
     }
   ]
 }

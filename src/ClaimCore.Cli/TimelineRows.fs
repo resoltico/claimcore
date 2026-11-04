@@ -8,15 +8,20 @@ open ClaimCore.Protocol.Presentation
 
 /// A new timeline CSV projects the same typed descriptor values using canonical, unlocalized scalars.
 module internal TimelineRows =
+    // This exhaustive canonical-value table preserves exact exports independently of display formatting.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let private canonical =
         function
         | PresentedValue.Money value -> Money.format value + " " + Money.currency value
+        | PresentedValue.MoneyTotal(currency, total) ->
+            DecimalTotal.format total + " " + Currency.format currency
         | PresentedValue.Date value -> CalendarDate.format value
         | PresentedValue.Instant value -> TextReplyFormat.instant value
         | PresentedValue.Party value -> PartyName.format value
         | PresentedValue.Text value
         | PresentedValue.Identifier value -> value
         | PresentedValue.Code(_, token) -> token
+        | PresentedValue.Codes(_, tokens) -> String.concat ";" tokens
         | PresentedValue.Actor actor -> ActorId.format actor.ActorId
         | PresentedValue.State state -> CaseHeadline.token state
         | PresentedValue.Count count -> count.ToString(CultureInfo.InvariantCulture)

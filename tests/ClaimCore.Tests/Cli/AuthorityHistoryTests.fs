@@ -78,7 +78,10 @@ let private csvSubjects () =
         }
 
     let text = TextAuthorityReply.historyPage "en" page |> String.concat "\n"
-    Expect.stringContains text subject "Human output retains the exact subject"
+
+    Expect.isFalse
+        (text.Contains "{\"")
+        "The authority table renders human text; exact identity is retained in CSV and JSON"
 
     use json =
         JsonDocument.Parse(Codec.encode Api.authorityHistory.Output (Outcome.Succeeded page))

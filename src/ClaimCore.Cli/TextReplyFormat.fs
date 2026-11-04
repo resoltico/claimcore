@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System
 open System.Globalization
+open System.Numerics
 open System.Text
 open ClaimCore.Protocol
 open ClaimCore.Domain
@@ -33,6 +34,25 @@ module internal TextReplyFormat =
         (Money.value value).ToString(format, CultureInfo.GetCultureInfo language)
         + " "
         + Money.currency value
+
+    let moneyTotal (language: string) currency total =
+        let canonical = DecimalTotal.format total
+        let scale = Money.displayScaleFor currency canonical
+        let parts = canonical.Split '.'
+        let culture = CultureInfo.GetCultureInfo language
+
+        let whole =
+            BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
+
+        let fraction = if parts.Length = 1 then "" else parts[1]
+
+        whole
+        + (if scale = 0 then
+               ""
+           else
+               culture.NumberFormat.NumberDecimalSeparator + fraction.PadRight(scale, '0'))
+        + " "
+        + Currency.format currency
 
     let date (language: string) value =
         (CalendarDate.value value).ToString("d MMM yyyy", CultureInfo.GetCultureInfo language)

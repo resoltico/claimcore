@@ -20,6 +20,71 @@ let tests =
     testList
         "typed work descriptors"
         [
+            testCase
+                "an unavailable installation zone preserves an explicitly UTC instant"
+                (fun () ->
+                    let output =
+                        TextObservation.line
+                            "en"
+                            { basis with
+                                TimeZoneId = "unavailable-test-zone"
+                            }
+
+                    Expect.equal
+                        output
+                        "Observed 2026-11-04 12:00 UTC · business date 4 Nov 2026 (unavailable-test-zone)"
+                        "The supplied business zone is retained and the instant is never relabelled as that zone")
+            testCase "aggregate money preserves forty integer digits and ISO minor units" (fun () ->
+                let total raw =
+                    DecimalTotal.parse raw |> Fixtures.accepted
+
+                let currency raw = Currency.parse raw |> Fixtures.accepted
+                let large = "9999999999999999999999999999999999999999.1234"
+
+                let actual =
+                    TextDescriptorValue.render
+                        "en"
+                        (PresentedValue.MoneyTotal(currency "EUR", total large))
+
+                Expect.equal
+                    actual
+                    "9,999,999,999,999,999,999,999,999,999,999,999,999,999.1234 EUR"
+                    "No decimal narrowing or rounded digits"
+
+                for code, raw, expected in
+                    [
+                        "EUR", "0", "0.00 EUR"
+                        "JPY", "150000", "150,000 JPY"
+                        "EUR", "1234.5678", "1,234.5678 EUR"
+                        "USD", "0.01", "0.01 USD"
+                    ] do
+                    Expect.equal
+                        (TextDescriptorValue.render
+                            "en"
+                            (PresentedValue.MoneyTotal(currency code, total raw)))
+                        expected
+                        "Currency minimums retain all meaningful fractional digits"
+
+                let columns =
+                    [
+                        {
+                            EntryDefinition.Key = "total"
+                            LabelId = "label.total"
+                            Prominence = Prominence.Primary
+                            IsMoney = true
+                            Read = fun () -> PresentedValue.MoneyTotal(currency "EUR", total large)
+                        }
+                    ]
+
+                for width in [ 1; 10; 100 ] do
+                    let rendered =
+                        TextTable.rows "en" { Width = width; BoldHeader = false } columns [ () ]
+                        |> String.concat "\n"
+
+                    Expect.stringContains
+                        rendered
+                        actual
+                        "Aggregate money is never truncated, including narrow cards")
             testCase "calendar dates and country names use the explicit display language" (fun () ->
                 let date = Inputs.date "2026-11-04"
 

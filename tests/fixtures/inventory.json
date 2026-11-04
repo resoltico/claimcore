@@ -430,7 +430,7 @@
     "responsibleActorFilter",
     "grants"
   ],
-  "cliFrameCount": 62,
+  "cliFrameCount": 63,
   "readInputs": {
     "case.get": [
       "target"
@@ -462,7 +462,8 @@
     ],
     "authority.list": [
       "limit",
-      "cursor"
+      "cursor",
+      "text"
     ],
     "authority.grants": [
       "actorId",

@@ -11,15 +11,41 @@ module internal TextObservation =
         let culture = CultureInfo.GetCultureInfo language
 
         let observed =
-            TimeZoneInfo.ConvertTime(
-                basis.ObservedAt,
-                TimeZoneInfo.FindSystemTimeZoneById basis.TimeZoneId
-            )
+            try
+                TimeZoneInfo
+                    .ConvertTime(
+                        basis.ObservedAt,
+                        TimeZoneInfo.FindSystemTimeZoneById basis.TimeZoneId
+                    )
+                    .ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)
+            with
+            | :? TimeZoneNotFoundException
+            | :? InvalidTimeZoneException ->
+                basis.ObservedAt
+                    .ToUniversalTime()
+                    .ToString("yyyy-MM-dd HH:mm 'UTC'", CultureInfo.InvariantCulture)
 
         MessageCatalogs.renderCli
             language
             (CliMessage.Observed(
-                observed.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture),
+                observed,
                 basis.BusinessDate.ToString("d MMM yyyy", culture),
                 TerminalText.data basis.TimeZoneId
             ))
+
+
+    let footer language count cursor basis allowAll =
+        [
+            yield MessageCatalogs.renderCli language (CliMessage.PageCount(string count))
+            match cursor with
+            | Some cursor ->
+                yield
+                    MessageCatalogs.renderCli
+                        language
+                        (if allowAll then
+                             CliMessage.PageMoreAll(TerminalText.data cursor)
+                         else
+                             CliMessage.PageMore(TerminalText.data cursor))
+            | None -> ()
+            yield line language basis
+        ]

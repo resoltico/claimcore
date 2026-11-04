@@ -192,7 +192,8 @@ module internal TextTable =
                     [
                         truncate options.Width (TextReplyFormat.label language entry.LabelId)
                         match entry.Value with
-                        | PresentedValue.Money _ ->
+                        | PresentedValue.Money _
+                        | PresentedValue.MoneyTotal _ ->
                             TextDescriptorValue.render language entry.Value
                         | _ ->
                             truncate
@@ -208,7 +209,8 @@ module internal TextTable =
 
                     let right =
                         match value with
-                        | PresentedValue.Money _ -> true
+                        | PresentedValue.Money _
+                        | PresentedValue.MoneyTotal _ -> true
                         | _ -> false
 
                     let rendered = TextDescriptorValue.render language value

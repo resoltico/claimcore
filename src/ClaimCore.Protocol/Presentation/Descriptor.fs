@@ -8,11 +8,13 @@ open ClaimCore.Protocol
 [<RequireQualifiedAccess>]
 type PresentedValue =
     | Money of Money
+    | MoneyTotal of currency: Currency * total: DecimalTotal
     | Date of CalendarDate
     | Instant of DateTimeOffset
     | Party of PartyName
     | Text of string
     | Code of vocabulary: string * token: string
+    | Codes of vocabulary: string * tokens: string list
     | Actor of ActorRef
     | State of CaseHeadline
     | Count of int64
@@ -41,6 +43,10 @@ type EntryDefinition<'reply> =
         IsMoney: bool
         Read: 'reply -> PresentedValue
     }
+
+module PresentedBoolean =
+    let vocabulary =
+        Vocabulary.define "boolean" [ false; true ] (fun value -> if value then "TRUE" else "FALSE")
 
 module Descriptor =
     let entries definitions value =
@@ -663,4 +669,402 @@ module Descriptor =
                                     (PresentedValue.Absent "label.changesErased")
                             ]
                     }
+        ]
+
+
+    let private code vocabulary item =
+        PresentedValue.Code(Vocabulary.name vocabulary, Vocabulary.token vocabulary item)
+
+    let private codes vocabulary items =
+        PresentedValue.Codes(
+            Vocabulary.name vocabulary,
+            items |> List.map (Vocabulary.token vocabulary)
+        )
+
+    let private boolean item = code PresentedBoolean.vocabulary item
+
+    let private column key label prominence isMoney read =
+        {
+            EntryDefinition.Key = key
+            LabelId = label
+            Prominence = prominence
+            IsMoney = isMoney
+            Read = read
+        }
+
+    let private section title entries =
+        {
+            Section.TitleId = title
+            Entries = entries
+        }
+
+    let actorColumns =
+        [
+            column
+                "actor"
+                "field.profile.displayName.label"
+                Prominence.Primary
+                false
+                (fun (item: ActorReviewItem) -> PresentedValue.Actor item.Actor)
+            column "state" "label.accountState" Prominence.Primary false (fun item ->
+                code AccountState.vocabulary item.State)
+            column "roles" "field.role.label" Prominence.Secondary false (fun item ->
+                codes Role.vocabulary (item.Roles |> List.map _.Role))
+            column
+                "responsibleCases"
+                "label.responsibleCases"
+                Prominence.Secondary
+                false
+                (fun item ->
+                    optional
+                        (fun (count: ActorResponsibleCases) -> PresentedValue.Count count.Count)
+                        item.ResponsibleCases)
+            column "contact" "field.profile.contact.label" Prominence.Detail false (fun item ->
+                optional (ContactText.format >> PresentedValue.Text) item.Contact)
+            column "actorId" "input.actorId.label" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(ActorId.format item.Actor.ActorId))
+            column "principalKind" "field.principal.kind.label" Prominence.Detail false (fun item ->
+                let kind, _, _ = PrincipalKey.parts item.Principal in
+                code PrincipalKind.vocabulary kind)
+            column "issuer" "field.principal.issuer.label" Prominence.Detail false (fun item ->
+                let _, issuer, _ = PrincipalKey.parts item.Principal in
+                PresentedValue.Identifier issuer)
+            column "subject" "field.principal.subject.label" Prominence.Detail false (fun item ->
+                let _, _, subject = PrincipalKey.parts item.Principal in
+                PresentedValue.Identifier subject)
+        ]
+
+    let actor item =
+        section "label.account" (entries actorColumns item)
+        :: (item.Roles
+            |> List.map (fun role ->
+                section
+                    "field.role.label"
+                    [
+                        value
+                            "role"
+                            "field.role.label"
+                            Prominence.Primary
+                            (code Role.vocabulary role.Role)
+                        value
+                            "installation"
+                            "label.installationAccess"
+                            Prominence.Secondary
+                            (boolean role.Installation)
+                        value
+                            "cases"
+                            "label.caseAccessCount"
+                            Prominence.Secondary
+                            (PresentedValue.Count role.CaseCount)
+                    ]))
+
+    let grantColumns =
+        [
+            column "role" "field.role.label" Prominence.Primary false (fun (grant: ScopedGrant) ->
+                code Role.vocabulary grant.Role)
+            column "scope" "input.scope.label" Prominence.Primary false (fun grant ->
+                code
+                    ScopeKind.vocabulary
+                    (match grant.Scope with
+                     | GrantScope.Installation -> ScopeKind.Installation
+                     | GrantScope.Case _ -> ScopeKind.Case))
+            column "reference" "field.caseReference.label" Prominence.Primary false (fun grant ->
+                match grant.Scope with
+                | GrantScope.Case(_, reference) -> PresentedValue.Reference reference
+                | GrantScope.Installation -> absent)
+        ]
+
+    let grant item = entries grantColumns item
+
+    let authorityHistoryColumns =
+        [
+            column
+                "recordedAt"
+                "label.recordedAt"
+                Prominence.Secondary
+                false
+                (fun (item: AuthorityHistoryEntry) -> PresentedValue.Instant item.RecordedAt)
+            column "act" "label.action" Prominence.Primary false (fun item ->
+                code AuthorityKind.vocabulary (AuthorityHistoryFacts.kind item.Facts))
+            column "recordedBy" "label.recordedBy" Prominence.Primary false (fun item ->
+                PresentedValue.Actor item.RecordedBy)
+            column "target" "label.targetAccount" Prominence.Primary false (fun item ->
+                PresentedValue.Actor item.Target)
+            column "details" "label.details" Prominence.Primary false (fun item ->
+                match item.Facts with
+                | AuthorityHistoryFacts.Granted grant
+                | AuthorityHistoryFacts.Revoked grant -> code Role.vocabulary grant.Role
+                | AuthorityHistoryFacts.ProfileSet(Some profile) ->
+                    PresentedValue.Party profile.DisplayName
+                | AuthorityHistoryFacts.ProfileSet None
+                | AuthorityHistoryFacts.ProfileErased ->
+                    PresentedValue.Absent "label.changesErased"
+                | AuthorityHistoryFacts.OwnerProvisioned principal
+                | AuthorityHistoryFacts.Registered principal ->
+                    let kind, _, _ = PrincipalKey.parts principal in
+                    code PrincipalKind.vocabulary kind
+                | AuthorityHistoryFacts.Enabled -> boolean true
+                | AuthorityHistoryFacts.Disabled -> boolean false)
+            column "scope" "input.scope.label" Prominence.Secondary false (fun item ->
+                match item.Facts with
+                | AuthorityHistoryFacts.Granted grant
+                | AuthorityHistoryFacts.Revoked grant ->
+                    code
+                        ScopeKind.vocabulary
+                        (match grant.Scope with
+                         | GrantScope.Installation -> ScopeKind.Installation
+                         | GrantScope.Case _ -> ScopeKind.Case)
+                | _ -> PresentedValue.Absent "label.notApplicable")
+            column "reference" "field.caseReference.label" Prominence.Secondary false (fun item ->
+                match item.Facts with
+                | AuthorityHistoryFacts.Granted {
+                                                    Scope = GrantScope.Case(_, reference)
+                                                }
+                | AuthorityHistoryFacts.Revoked {
+                                                    Scope = GrantScope.Case(_, reference)
+                                                } -> PresentedValue.Reference reference
+                | _ -> PresentedValue.Absent "label.notApplicable")
+            column "sequence" "label.sequence" Prominence.Detail false (fun item ->
+                PresentedValue.Identifier(Sequence.format item.Sequence))
+        ]
+
+    let authorityHistory item =
+        let facts =
+            match item.Facts with
+            | AuthorityHistoryFacts.OwnerProvisioned principal
+            | AuthorityHistoryFacts.Registered principal ->
+                let kind, issuer, subject = PrincipalKey.parts principal
+
+                [
+                    value
+                        "principalKind"
+                        "field.principal.kind.label"
+                        Prominence.Detail
+                        (code PrincipalKind.vocabulary kind)
+                    value
+                        "issuer"
+                        "field.principal.issuer.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier issuer)
+                    value
+                        "subject"
+                        "field.principal.subject.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier subject)
+                ]
+            | AuthorityHistoryFacts.Granted item
+            | AuthorityHistoryFacts.Revoked item -> grant item
+            | AuthorityHistoryFacts.ProfileSet profile ->
+                [
+                    value
+                        "name"
+                        "field.profile.displayName.label"
+                        Prominence.Primary
+                        (optional
+                            (fun (profile: ActorProfile) ->
+                                PresentedValue.Party profile.DisplayName)
+                            profile)
+                    value
+                        "contact"
+                        "field.profile.contact.label"
+                        Prominence.Secondary
+                        (profile
+                         |> Option.bind _.Contact
+                         |> optional (ContactText.format >> PresentedValue.Text))
+                ]
+            | AuthorityHistoryFacts.Enabled
+            | AuthorityHistoryFacts.Disabled
+            | AuthorityHistoryFacts.ProfileErased -> []
+
+        [
+            section "label.authorityHistory" (entries authorityHistoryColumns item @ facts)
+        ]
+
+    let private claims (item: RequesterClaims) =
+        [
+            value
+                "nameHint"
+                "label.requestedName"
+                Prominence.Primary
+                (optional PresentedValue.Party item.Name)
+            value
+                "usernameHint"
+                "label.requestedUsername"
+                Prominence.Secondary
+                (optional PresentedValue.Party item.PreferredUsername)
+            value
+                "emailHint"
+                "label.requestedEmail"
+                Prominence.Secondary
+                (optional PresentedValue.Party item.Email)
+        ]
+
+    let accessRequest (item: AccessRequest) =
+        let kind, issuer, subject = PrincipalKey.parts item.Principal
+
+        [
+            section
+                "label.accessRequest"
+                (claims item.Claims
+                 @ [
+                     value
+                         "principalKind"
+                         "field.principal.kind.label"
+                         Prominence.Secondary
+                         (code PrincipalKind.vocabulary kind)
+                     value
+                         "issuer"
+                         "field.principal.issuer.label"
+                         Prominence.Detail
+                         (PresentedValue.Identifier issuer)
+                     value
+                         "subject"
+                         "field.principal.subject.label"
+                         Prominence.Detail
+                         (PresentedValue.Identifier subject)
+                     value
+                         "firstSeen"
+                         "label.firstSeen"
+                         Prominence.Secondary
+                         (PresentedValue.Instant item.FirstSeen)
+                     value
+                         "lastSeen"
+                         "label.lastSeen"
+                         Prominence.Secondary
+                         (PresentedValue.Instant item.LastSeen)
+                 ])
+        ]
+
+    let context (reply: ContextReply) =
+        let state, details =
+            match reply.Requester with
+            | RequesterState.Active item ->
+                RequesterKind.Active,
+                [
+                    value "self" "label.account" Prominence.Primary (PresentedValue.Actor item.Self)
+                    value
+                        "capabilities"
+                        "label.capabilities"
+                        Prominence.Primary
+                        (codes Capability.vocabulary item.Capability)
+                    value
+                        "views"
+                        "label.views"
+                        Prominence.Secondary
+                        (codes View.vocabulary item.View)
+                    value
+                        "issuer"
+                        "field.principal.issuer.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier item.Issuer)
+                    value
+                        "installationId"
+                        "label.installationId"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(item.InstallationId.ToString("D")))
+                    value
+                        "productVersion"
+                        "label.productVersion"
+                        Prominence.Detail
+                        (PresentedValue.Identifier item.Runtime.ProductVersion)
+                ]
+            | RequesterState.NoRoles item ->
+                RequesterKind.NoRoles,
+                [
+                    value "self" "label.account" Prominence.Primary (PresentedValue.Actor item.Self)
+                    value
+                        "installationId"
+                        "label.installationId"
+                        Prominence.Detail
+                        (PresentedValue.Identifier(item.InstallationId.ToString("D")))
+                    value
+                        "businessDate"
+                        "label.businessDate"
+                        Prominence.Secondary
+                        (PresentedValue.Date(CalendarDate.ofDate item.BusinessDate))
+                    value
+                        "timeZone"
+                        "label.timeZone"
+                        Prominence.Secondary
+                        (PresentedValue.Text item.TimeZone)
+                ]
+            | RequesterState.Disabled item ->
+                RequesterKind.Disabled,
+                [ value "self" "label.account" Prominence.Primary (PresentedValue.Actor item) ]
+            | RequesterState.NotRegistered item ->
+                RequesterKind.NotRegistered,
+                claims item.Claims
+                @ [
+                    value
+                        "issuer"
+                        "field.principal.issuer.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier item.Issuer)
+                    value
+                        "subject"
+                        "field.principal.subject.label"
+                        Prominence.Detail
+                        (PresentedValue.Identifier item.Subject)
+                ]
+
+        [
+            section
+                "label.account"
+                ([
+                    value
+                        "state"
+                        "label.accountState"
+                        Prominence.Primary
+                        (code RequesterKind.vocabulary state)
+                    value
+                        "guidance"
+                        "label.account"
+                        Prominence.Primary
+                        (PresentedValue.Absent(
+                            Vocabulary.messageKey RequesterKind.vocabulary state "meaning"
+                        ))
+                 ]
+                 @ details)
+        ]
+
+    let caseTotals (reply: CaseWorklistSummary) =
+        let group title vocabulary (items: ValueCount<'value> list) =
+            section
+                title
+                (items
+                 |> List.map (fun item ->
+                     value
+                         (Vocabulary.token vocabulary item.Value)
+                         (Vocabulary.messageKey vocabulary item.Value "label")
+                         Prominence.Primary
+                         (PresentedValue.Count item.Count)))
+
+        let totals title (items: CurrencyTotal list) =
+            section
+                title
+                (items
+                 |> List.map (fun item ->
+                     value
+                         (Currency.format item.Currency)
+                         "label.total"
+                         Prominence.Primary
+                         (PresentedValue.MoneyTotal(item.Currency, item.Amount))))
+
+        [
+            section
+                "label.cases"
+                [
+                    value
+                        "total"
+                        "label.total"
+                        Prominence.Primary
+                        (PresentedValue.Count reply.Counts.Total)
+                ]
+            group "input.assignment.label" CaseAssignment.vocabulary reply.Counts.Assignment
+            group "input.due.label" CaseDue.vocabulary reply.Counts.Due
+            group "input.lifecycle.label" Lifecycle.vocabulary reply.Counts.Lifecycles
+            group "input.status.label" CaseStatus.vocabulary reply.Counts.Statuses
+            group "input.progress.label" CaseProgress.vocabulary reply.Counts.Progress
+            totals "label.claimedTotals" reply.Claimed
+            totals "label.payableTotals" reply.Payable
         ]
