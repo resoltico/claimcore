@@ -1,4 +1,4 @@
-import { CharacterWarning } from "../../components/BusinessValue";
+import { ActorIdentity } from "../../components/ActorIdentity";
 import { navigate } from "../../routing/navigation";
 import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../hooks/operation/useOperation";
@@ -22,8 +22,7 @@ const ActorActions = ({ target, busy }: { target: AuthorityTarget; busy: boolean
         {target.actor === null ? null : (
           <>
             {" "}
-            · <bdi dir="auto">{target.actor.principal.subject}</bdi>
-            <CharacterWarning value={target.actor.principal.subject} />
+            · <ActorIdentity actor={target.actor.actor} />
           </>
         )}
       </h2>

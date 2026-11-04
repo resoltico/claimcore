@@ -1,10 +1,6 @@
 import { expect, it } from "vitest";
 import { render, screen } from "../../support/presentation-test-support";
-import {
-  ActorIdentity,
-  TechnicalActorIdentity,
-  RecordedTime,
-} from "../../../src/components/ActorIdentity";
+import { ActorIdentity, RecordedTime } from "../../../src/components/ActorIdentity";
 import { actorRefInput } from "../../support/inputs";
 import { RequesterContext } from "../../../src/hooks/useRequesterContext";
 import { context } from "../../support/service-ui.fixtures";
@@ -51,17 +47,14 @@ it.each(["AVAILABLE", "DISABLED", "NOT_ELIGIBLE"] as const)(
     expect(screen.queryByText("You")).toBeNull();
   },
 );
-it("keeps bare UUID attribution technical and permits an authority link only for authority readers", () => {
-  const id = "20000000-0000-4000-8000-000000000002";
+it("formats attribution time in the requester’s time zone and preserves its exact instant", () => {
   const view = render(
     <RequesterContext
       value={{ ...context, capabilities: ["READ_AUTHORITY"], timeZone: "Europe/Riga" }}
     >
-      <TechnicalActorIdentity actorId={id} />
       <RecordedTime value="2026-01-01T22:30:00Z" />
     </RequesterContext>,
   );
-  expect(screen.getByRole("link", { name: "20000000" })).toHaveAttribute("href", `/people/${id}`);
   expect(view.container.querySelector("time")).toHaveTextContent("2 Jan 2026, 00:30");
   expect(view.container.querySelector("time")).toHaveAttribute("title", "2026-01-01T22:30:00Z");
 });

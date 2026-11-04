@@ -58,7 +58,7 @@ const useGrantCount = (
   page: ReturnType<typeof useActorGrants>,
   onGrantCount: Props["onGrantCount"],
 ) => {
-  const actorId = page.page?.actor.actorId ?? null;
+  const actorId = page.page?.actor.actor.actorId ?? null;
   const count =
     page.page !== null && !page.loading && page.message === null && page.cursor === null
       ? page.items.length

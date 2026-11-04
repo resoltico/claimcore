@@ -67,7 +67,7 @@ it("does not offer REGISTER or manufacture mutation inputs for an actor with no 
   const preview = setupActorTargets(["REGISTER"]);
   actorRoute();
   render(<Dashboard />);
-  await screen.findByText(firstActor.principal.subject);
+  await screen.findAllByText(firstActor.principal.subject);
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   expect(screen.queryByRole("option", { name: "Register actor" })).toBeNull();
   expect(preview).not.toHaveBeenCalled();
@@ -179,7 +179,7 @@ it("ignores a late actor disclosure when a different actor is selected", async (
   render(<Dashboard />);
   await screen.findAllByRole("link", { name: / ·/u });
   await openActor();
-  await openActor(secondActor.actorId);
+  await openActor(secondActor.actor.actorId);
   await expectBoundActor(secondActor.principal.subject);
   await act(async () => {
     release(grantsFor());

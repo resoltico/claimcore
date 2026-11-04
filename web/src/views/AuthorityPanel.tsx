@@ -1,4 +1,4 @@
-import type { ActorSummary } from "@contracts/client";
+import type { ActorReviewItem } from "@contracts/client";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
 import { ActorOperation } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
@@ -20,7 +20,9 @@ import { useAuthorityDisclosure } from "../hooks/operation/useAuthorityDisclosur
 import { useOperation, type OperationModel } from "../hooks/operation/useOperation";
 import { OperationPanel, OperationDiscard } from "./operation/OperationPanel";
 const contextData = (response: ServiceResponse<"context">) =>
-  response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
+  response.outcome.kind === "SUCCEEDED" && response.outcome.data.requester.kind === "ACTIVE"
+    ? response.outcome.data.requester
+    : null;
 type Disclosure = ReturnType<typeof useAuthorityDisclosure>;
 const useAuthorityContext = (disclosure: Disclosure) => {
   const query = useEndpoint("context", {});
@@ -80,7 +82,7 @@ const SelectedActorGrants = ({
 }: {
   actorId: string | null;
   refused: (notice?: Notice) => void;
-  onActor: (actor: ActorSummary) => void;
+  onActor: (actor: ActorReviewItem) => void;
   onGrantCount: (count: KnownActorGrantCount | null) => void;
 }) =>
   actorId === null ? null : (
@@ -111,7 +113,7 @@ const AuthorityDirectory = ({
   available: boolean;
   onSelect: (id: string) => void;
   mayReadGrants: boolean;
-  onActor: (actor: ActorSummary) => void;
+  onActor: (actor: ActorReviewItem) => void;
 }) => {
   const [knownGrantCount, setKnownGrantCount] = useState<KnownActorGrantCount | null>(null);
   if (!available) {
@@ -157,7 +159,7 @@ const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) 
   );
   const { observe } = target;
   const onActor = useCallback(
-    (actor: ActorSummary) => {
+    (actor: ActorReviewItem) => {
       observe(actor, offered);
     },
     [observe, offered],

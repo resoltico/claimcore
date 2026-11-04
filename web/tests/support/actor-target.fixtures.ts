@@ -8,15 +8,22 @@ import { wireReply } from "./contract-corpus.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { navigate } from "../../src/routing/navigation";
 export const firstActor = {
-  actorId: "10000000-0000-4000-8000-000000000001",
-  profile: { displayName: "server-first", contact: null },
-  enabled: true,
+  actor: {
+    actorId: "10000000-0000-4000-8000-000000000001",
+    displayName: { kind: "NAMED" as const, value: "server-first" },
+    principalKind: "HUMAN" as const,
+    availability: "AVAILABLE" as const,
+  },
+  contact: null,
   principal: { kind: "HUMAN" as const, issuer: "https://issuer.example/", subject: "server-first" },
 };
 export const secondActor = {
   ...firstActor,
-  actorId: "10000000-0000-4000-8000-000000000002",
-  profile: { displayName: "server-second", contact: null },
+  actor: {
+    ...firstActor.actor,
+    actorId: "10000000-0000-4000-8000-000000000002",
+    displayName: { kind: "NAMED" as const, value: "server-second" },
+  },
   principal: { ...firstActor.principal, subject: "server-second" },
 };
 export const grantsFor = (actor = firstActor): ApiResult<ServiceResponse<"authority.grants">> => ({
@@ -34,7 +41,7 @@ export const setupActorTargets = (
   ],
 ) => {
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED") {
+  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.data.requester.kind !== "ACTIVE") {
     throw new Error("Context fixture absent");
   }
   mockEndpoint("context").mockResolvedValue({
@@ -45,9 +52,11 @@ export const setupActorTargets = (
       outcome: {
         kind: "SUCCEEDED",
         data: {
-          ...context.outcome.data,
-          views: ["AUTHORITY"],
-          offers: installationOffers(offered),
+          requester: {
+            ...context.outcome.data.requester,
+            views: ["AUTHORITY"],
+            offers: installationOffers(offered),
+          },
         },
       },
     },
@@ -62,7 +71,10 @@ export const setupActorTargets = (
           items: [
             {
               ...firstActor,
-              profile: { displayName: "stale-list-first", contact: null },
+              actor: {
+                ...firstActor.actor,
+                displayName: { kind: "NAMED", value: "stale-list-first" },
+              },
               principal: { ...firstActor.principal, subject: "stale-list-first" },
             },
             secondActor,
@@ -73,11 +85,13 @@ export const setupActorTargets = (
     },
   });
   mockEndpoint("authority.grants").mockImplementation((_credential, input) =>
-    Promise.resolve(grantsFor(input.actorId === firstActor.actorId ? firstActor : secondActor)),
+    Promise.resolve(
+      grantsFor(input.actorId === firstActor.actor.actorId ? firstActor : secondActor),
+    ),
   );
   return authorityPreview();
 };
-export const openActor = async (id = firstActor.actorId) => {
+export const openActor = async (id = firstActor.actor.actorId) => {
   fireEvent.click(document.getElementById(`actor-grants-${id}`)!);
   await screen.findByRole("heading", { name: "Actor grants", level: 1 });
 };
@@ -96,7 +110,7 @@ export const authorDifferentTarget = async () => {
   });
 };
 export const actorRoute = () => {
-  navigate(`/people/${firstActor.actorId}`);
+  navigate(`/people/${firstActor.actor.actorId}`);
 };
 export const listRoute = () => {
   navigate("/people");

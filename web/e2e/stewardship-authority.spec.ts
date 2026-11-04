@@ -32,7 +32,7 @@ const stewardAct = async (page: Page, label: string, reason?: string) => {
     throw new Error("Missing stewardship response.");
   }
   expect(value.outcome.kind).toBe("ACCEPTED");
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
 };
 test("browser renders void, reinstatement and live payload erasure through authoritative preview", async ({
   page,

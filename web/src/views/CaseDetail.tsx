@@ -1,14 +1,14 @@
 import type { CaseSelector, CaseView } from "@contracts/client";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
 import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
-import { CaseActivityDisclosure } from "./work/CaseActivity";
+
 import { CaseReminders } from "./work/CaseReminders";
 import { CaseFacts } from "./case/CaseFacts";
 import { CaseActions, CasePrimaryAction } from "./case/CaseActions";
@@ -18,7 +18,7 @@ import "./case.css";
 import { CopyValue } from "../components/CopyValue";
 import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
-import { CaseHistory } from "./CaseHistory";
+import { CaseTimeline } from "./case/CaseTimeline";
 import { LifecycleStatus } from "./LifecycleStatus";
 import { CaseHeadline } from "../components/CaseHeadline";
 import { CaseAttention } from "../components/CaseAttention";
@@ -53,7 +53,11 @@ const CurrentPresentation = ({
   onChanged,
   onMutationLockChange,
   disclosureAvailable,
+  timeline,
+  recordDetails,
 }: {
+  timeline: ReactNode;
+  recordDetails: ReactNode;
   current: CurrentCase;
   definition: CatalogDocument;
   onAct: (current: CurrentCase, act: ActKind) => void;
@@ -67,38 +71,60 @@ const CurrentPresentation = ({
       {disclosureAvailable ? (
         <>
           <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
-          <p className="case-claimant">
-            <bdi>{current.state.fields.registration.claimantName}</bdi>
-            <CharacterWarning value={current.state.fields.registration.claimantName} />
-          </p>
           <CaseProgress current={current} definition={definition} />
         </>
       ) : null}
-      <CaseReminders
-        current={current}
-        onChanged={onChanged}
-        onLockChange={onMutationLockChange}
-        disclosureAvailable={disclosureAvailable}
-      />
-      {disclosureAvailable ? (
-        <div className="case-workspace">
-          <CaseFacts
-            values={current.state.fields}
-            revision={current.revision}
-            fields={definition.fields}
-          />
-          <CaseActions
-            current={current}
-            onAct={(act) => {
-              onAct(current, act);
-            }}
-          />
+      <div className="case-workspace">
+        <div className="case-main-column">
+          {disclosureAvailable ? (
+            <>
+              <CaseActions
+                current={current}
+                onAct={(act) => {
+                  onAct(current, act);
+                }}
+              />
+              <CaseFacts
+                values={current.state.fields}
+                revision={current.revision}
+                fields={definition.fields}
+              />
+            </>
+          ) : null}
+          {timeline}
         </div>
-      ) : null}
+        <aside className="case-work-rail">
+          <CaseReminders
+            current={current}
+            onChanged={onChanged}
+            onLockChange={onMutationLockChange}
+            disclosureAvailable={disclosureAvailable}
+          />
+          {recordDetails}
+        </aside>
+      </div>
     </>
   );
 };
 
+const asCurrentCase = (state: CaseView | null) =>
+  state !== null && isCurrentCase(state) ? state : null;
+const CaseMeta = ({ current }: { current: CurrentCase }) => {
+  const p = usePresentation();
+  const { registration } = current.state.fields;
+  return (
+    <p className="case-meta">
+      <bdi>{registration.insurerName}</bdi> · {p.fieldLabel("incidentDate")}:{" "}
+      <time dateTime={registration.incidentDate}>{p.date(registration.incidentDate)}</time> ·{" "}
+      <bdi dir="ltr">{registration.incidentCountry}</bdi> ·{" "}
+      {p.fieldLabel("incidentNotificationDate")}:{" "}
+      <time dateTime={registration.incidentNotificationDate}>
+        {p.date(registration.incidentNotificationDate)}
+      </time>{" "}
+      · {p.age(registration.incidentNotificationDate, current.work.basis.businessDate)}
+    </p>
+  );
+};
 const CaseHeader = ({
   target,
   onBack,
@@ -109,7 +135,8 @@ const CaseHeader = ({
   const caseReference =
     state?.caseReference ??
     (target.kind === "REFERENCE" ? target.caseReference : p.text("ui.caseDetail"));
-  const label = p.fieldLabel("caseReference");
+  const current = asCurrentCase(state);
+  const claimant = current?.state.fields.registration.claimantName;
   return (
     <>
       <div className="case-back">
@@ -117,55 +144,79 @@ const CaseHeader = ({
       </div>
       <div className="section-heading case-heading">
         <div>
-          <p className="eyebrow">{p.text("ui.caseWorkspace")}</p>
-          <h1 id="case-detail-title" tabIndex={-1} aria-label={p.text("ui.caseDetail")}>
+          <p className="eyebrow">
             <bdi dir="ltr" className="identifier-value">
               {caseReference}
             </bdi>
             <CharacterWarning value={caseReference} />
+          </p>
+          <h1 id="case-detail-title" tabIndex={-1}>
+            <bdi>{claimant ?? p.text("ui.caseDetail")}</bdi>
+            <CharacterWarning value={claimant ?? null} />
           </h1>
+          {current === null ? null : <CaseMeta current={current} />}
           {state === null ? null : (
             <div className="case-header-state">
               <CaseHeadline value={state.headline} />
               <CaseAttention values={state.attention} />
-              <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
               {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
             </div>
           )}
         </div>
-        {state !== null && isCurrentCase(state) ? (
+        {current === null ? null : (
           <CasePrimaryAction
-            current={state}
+            current={current}
             onAct={(act) => {
-              onAct(state, act);
+              onAct(current, act);
             }}
           />
-        ) : null}
+        )}
       </div>
-      <p>
-        <CopyValue icon label={label} value={caseReference} />
-      </p>
-      {state === null ? null : (
-        <details className="case-technical">
-          <summary>{p.text("ui.technicalDetails")}</summary>
-          <dl>
-            <div>
-              <dt>{p.fieldLabel("caseId")}</dt>
-              <dd>
-                <bdi dir="ltr" className="identifier-value">
-                  {state.caseId}
-                </bdi>{" "}
-                <CopyValue label={p.fieldLabel("caseId")} value={state.caseId} />
-              </dd>
-            </div>
-            <div>
-              <dt>{p.text("label.revisionLabel")}</dt>
-              <dd>{p.integer(state.revision)}</dd>
-            </div>
-          </dl>
-        </details>
-      )}
     </>
+  );
+};
+
+const CaseRecordDetails = ({ state }: { state: CaseView }) => {
+  const p = usePresentation();
+  return (
+    <details className="case-technical">
+      <summary>{p.text("ui.technicalDetails")}</summary>
+      <dl>
+        <div>
+          <dt>{p.fieldLabel("caseId")}</dt>
+          <dd>
+            <bdi dir="ltr" className="identifier-value">
+              {state.caseId}
+            </bdi>
+            <CopyValue icon label={p.fieldLabel("caseId")} value={state.caseId} />
+          </dd>
+        </div>
+        <div>
+          <dt>{p.fieldLabel("caseReference")}</dt>
+          <dd>
+            <bdi dir="ltr">{state.caseReference}</bdi>
+            <CopyValue icon label={p.fieldLabel("caseReference")} value={state.caseReference} />
+          </dd>
+        </div>
+        <div>
+          <dt>{p.text("label.revisionLabel")}</dt>
+          <dd>{p.integer(state.revision)}</dd>
+        </div>
+        <div>
+          <dt>{p.term("section", "work")}</dt>
+          <dd>{p.integer(state.work.revision)}</dd>
+        </div>
+        <div>
+          <dt>{p.text("ui.shell.businessDate")}</dt>
+          <dd>
+            <time dateTime={state.work.basis.businessDate}>
+              {p.date(state.work.basis.businessDate)}
+            </time>{" "}
+            · <bdi>{state.work.basis.timeZone}</bdi>
+          </dd>
+        </div>
+      </dl>
+    </details>
   );
 };
 
@@ -187,8 +238,17 @@ const CaseDisclosure = ({
   const p = usePresentation();
   const current = useCaseDisclosure(target);
   const state = current.value;
-  const lookup = state !== null && isCurrentCase(state) ? state : null;
+  const lookup = asCurrentCase(state);
   const mounted = useRetainedCase(lookup);
+  const timeline =
+    current.historyModes.length === 0 ? null : (
+      <CaseTimeline
+        key={current.historyModes.join(":")}
+        target={target}
+        onDisclosureRefused={current.revalidate}
+      />
+    );
+  const recordDetails = state === null ? null : <CaseRecordDetails state={state} />;
   return (
     <section className="case-detail" aria-labelledby="case-detail-title">
       <CaseHeader target={target} onBack={onBack} state={state} onAct={onAct} />
@@ -207,6 +267,8 @@ const CaseDisclosure = ({
       {mounted === null ? null : (
         <CurrentPresentation
           current={mounted}
+          timeline={timeline}
+          recordDetails={recordDetails}
           disclosureAvailable={lookup !== null}
           definition={definition}
           onAct={onAct}
@@ -214,27 +276,14 @@ const CaseDisclosure = ({
           onMutationLockChange={onMutationLockChange}
         />
       )}
+      {mounted === null ? recordDetails : null}
       {state?.state.kind === "ERASED" ? (
         <p role="status">
           <bdi dir="ltr">{state.caseReference}</bdi> ·{" "}
           <bdi dir="ltr">{p.integer(state.revision)}</bdi>
         </p>
       ) : null}
-      {current.historyModes.length ? (
-        <CaseActivityDisclosure
-          target={target}
-          modes={current.historyModes}
-          onDisclosureRefused={current.revalidate}
-        />
-      ) : null}
-      {current.historyModes.length ? (
-        <CaseHistory
-          target={target}
-          fields={definition.fields}
-          modes={current.historyModes}
-          onDisclosureRefused={current.revalidate}
-        />
-      ) : null}
+      {mounted === null ? timeline : null}
     </section>
   );
 };

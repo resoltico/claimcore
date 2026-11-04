@@ -1,6 +1,6 @@
 import type { CaseSummary as Summary } from "../../src/protocol/types";
 import type {
-  ActorContext,
+  RequesterState_ACTIVE,
   ActorRef,
   CaseView,
   ListedCaseFields,
@@ -79,25 +79,32 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
     caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
   };
 }
-type ActorContextSeed = Omit<
-  ActorContext,
-  "hasScopedCases" | "actorId" | "installationId" | "maintenance"
-> &
-  Partial<Pick<ActorContext, "hasScopedCases" | "actorId" | "installationId" | "maintenance">>;
-export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
-  ...value,
-  maintenance: value.maintenance ?? initialMaintenance,
-  hasScopedCases: value.hasScopedCases ?? false,
-  actorId: value.actorId ?? inventory.cliSamples.actorId,
-  installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
-});
-
 export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
   actorId: inventory.cliSamples.actorId,
   displayName: { kind: "NAMED", value: "Named account" },
   principalKind: "HUMAN",
   availability: "AVAILABLE",
   ...value,
+});
+
+type RequesterState_ACTIVESeed = Omit<
+  RequesterState_ACTIVE,
+  "hasScopedCases" | "actorId" | "installationId" | "maintenance" | "self" | "kind"
+> &
+  Partial<
+    Pick<
+      RequesterState_ACTIVE,
+      "hasScopedCases" | "actorId" | "installationId" | "maintenance" | "self" | "kind"
+    >
+  >;
+export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T) => ({
+  ...value,
+  kind: "ACTIVE" as const,
+  self: value.self ?? actorRefInput(),
+  maintenance: value.maintenance ?? initialMaintenance,
+  hasScopedCases: value.hasScopedCases ?? false,
+  actorId: value.actorId ?? inventory.cliSamples.actorId,
+  installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
 });
 
 // Build inputs only. Expected outputs and oracle values must stay literal.

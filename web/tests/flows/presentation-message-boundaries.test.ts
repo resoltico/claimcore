@@ -48,25 +48,25 @@ it("pseudolocalizes only literal text while preserving authored argument values"
   ).toBe("⟦EXACT-A: EXACT-B⟧");
 });
 
-it("isolates technical revision holes in Arabic history summaries and preserves literal word order", () => {
+it("isolates technical revision holes in Arabic case summaries and preserves literal word order", () => {
   const reference = { exact: "A\u2069\u202E العربية" };
-  const values = { act: reference.exact, revision: "12", timestamp: "EXACT" };
+  const values = { act: reference.exact, revision: "12" };
   expect(
     renderIsolatedValue(
       { language: "en", displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
-      "ui.historySummary",
+      "ui.caseRecorded",
       values,
       reference,
       "act",
     ),
-  ).toEqual([reference, " · revision 12 · EXACT"]);
+  ).toEqual([reference, " recorded at revision 12."]);
   expect(
     renderIsolatedValue(
       { language: "ar", displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
-      "ui.historySummary",
+      "ui.caseRecorded",
       values,
       reference,
       "act",
     ),
-  ).toEqual([reference, " · المراجعة \u206812\u2069 · \u2068EXACT\u2069"]);
+  ).toEqual(["سُجّلت العملية «", reference, "» في المراجعة \u206812\u2069."]);
 });

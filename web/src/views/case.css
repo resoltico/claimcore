@@ -6,10 +6,6 @@
   font-family: var(--font-mono);
   overflow-wrap: anywhere;
 }
-.case-claimant {
-  font-size: var(--text-lg);
-  overflow-wrap: anywhere;
-}
 .case-lifecycle {
   display: flex;
   align-items: center;
@@ -156,36 +152,6 @@ button.case-action-danger {
   display: grid;
   gap: var(--space-2);
 }
-.case-history {
-  margin-block-start: var(--space-6);
-}
-.case-timeline {
-  list-style: none;
-  padding-inline-start: var(--space-4);
-  border-inline-start: var(--border-width) solid var(--border-control);
-}
-.case-timeline > li {
-  position: relative;
-  padding: var(--space-3);
-  margin-block-end: var(--space-4);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  overflow-wrap: anywhere;
-}
-.case-timeline > li::before {
-  content: "";
-  position: absolute;
-  inset-inline-start: calc(-1 * var(--space-5));
-  inset-block-start: var(--space-4);
-  inline-size: var(--space-2);
-  block-size: var(--space-2);
-  border-radius: 50%;
-  background: var(--accent-solid);
-}
-.case-timeline summary {
-  min-block-size: var(--target-primary);
-  cursor: pointer;
-}
 
 .case-fact-card .field-row {
   grid-template-columns: minmax(0, 1fr);
@@ -307,7 +273,7 @@ button.case-action-danger {
   margin: 0;
   overflow-wrap: anywhere;
 }
-.case-workspace > .case-fields {
+.case-main-column > .case-fields {
   padding: 0;
   margin: 0;
   border: 0;
@@ -323,10 +289,6 @@ button.case-action-danger {
 .case-fact-card .field-row dd {
   font-weight: 550;
 }
-.case-timeline > li {
-  border: 1px solid var(--border-control);
-  padding: var(--space-4);
-}
 
 .assignee-available,
 .assignee-unavailable {
@@ -336,4 +298,34 @@ button.case-action-danger {
 .assignee-unavailable {
   color: var(--danger-text);
   font-weight: 650;
+}
+.case-detail h1 {
+  font-family: var(--font-body);
+}
+.case-meta {
+  color: var(--text-secondary);
+  margin-block: var(--space-3);
+}
+.case-workspace {
+  align-items: start;
+  margin-block-start: var(--space-5);
+}
+.case-main-column,
+.case-work-rail {
+  min-inline-size: 0;
+  display: grid;
+  gap: var(--space-4);
+}
+.case-main-column > .case-timeline-panel {
+  margin-block-start: 0;
+}
+.case-work-rail > .case-technical {
+  padding: var(--space-4);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-sunken);
+  margin: 0;
+}
+.case-work-rail > .case-technical dl {
+  display: grid;
 }

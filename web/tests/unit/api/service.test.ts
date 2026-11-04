@@ -1,3 +1,4 @@
+import { actorRefInput } from "../../support/inputs";
 import {
   ReadableStream as NodeReadableStream,
   type ReadableStreamDefaultController as NodeController,
@@ -41,7 +42,7 @@ const receipt = {
   operationId: operation,
   position: { sequence: 1, entryHash: "a".repeat(64) },
   recordedAt: "2026-01-01T00:00:00.000000Z",
-  recordedBy: operation,
+  recordedBy: actorRefInput({ actorId: operation }),
   subject: {
     kind: "CASE",
     caseId: operation,

@@ -1,5 +1,5 @@
+import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
-import { chooseOption } from "../support/choice-entry";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -11,7 +11,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
-import { wireResponse, historyVariants } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/contract-corpus.fixtures";
 import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
@@ -102,40 +102,24 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
   });
   await user.click(getButton("Reload cases"));
 });
-const historyWithTwoReceipts = () => {
-  const { full } = historyVariants();
-  return {
-    nextCursor: "next",
-    entries: [
-      full,
-      {
-        kind: "FULL",
-        receipt: {
-          ...full.receipt,
-          operationId: "20000000-0000-4000-8000-000000000002",
-        },
-      },
+const historyWithTwoReceipts = () =>
+  timelinePage(
+    [
+      timelineEntry(),
+      timelineEntry({
+        position: { sequence: 2, entryHash: "b".repeat(64) },
+        operationId: "20000000-0000-4000-8000-000000000002",
+      }),
     ],
-  };
-};
+    "next",
+  );
 it("shows current fields, server act labels, full expandable history and retryable history pages", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   const extendedHistory = historyWithTwoReceipts();
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      entries: [],
-      nextCursor: null,
-    }),
-  );
-  fetch.mockResolvedValueOnce(response("case.history", "SUCCEEDED", extendedHistory));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      entries: [],
-      nextCursor: null,
-    }),
-  );
+  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", extendedHistory));
+  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
   const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
@@ -149,16 +133,11 @@ it("shows current fields, server act labels, full expandable history and retryab
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(current, "CLOSE");
-  await chooseOption(user, screen.getByLabelText("History detail"), "FULL");
-  const entrySummary = (await screen.findAllByText(/Open a case · revision/u))[0]!;
-  await user.click(entrySummary);
-  const entry = entrySummary.closest("details");
-  expect(entry?.querySelector(".history-attribution")).toHaveTextContent(
-    context.actorId.slice(0, 8),
-  );
-  expect(entry?.querySelector(".history-exact")).toHaveTextContent(operationId);
+  const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
+  await user.click(entry.querySelector("summary")!);
+  expect(entry).toHaveTextContent(operationId);
   expect(entry).toHaveTextContent("Exact UTC instant");
-  await user.click(getButton("Load more history"));
+  await user.click(getButton("Load 50 more"));
   await user.click(getButton("Back to cases"));
   expect(back).toHaveBeenCalledOnce();
 });

@@ -54,7 +54,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
 
   await goToView(page, "cases");
   await lookupCase(page, caseReference);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.getByText("Synthetic amended claimant").first()).toBeVisible();
 });
 

@@ -1,5 +1,6 @@
+import { actorName } from "../presentation/actorName";
+import { ActorIdentity } from "../components/ActorIdentity";
 import { followLink } from "../routing/followLink";
-import { IdentifierValue } from "../components/IdentifierValue";
 import { PageStatus } from "../components/PageStatus";
 import { useCallback } from "react";
 import type { Notice } from "../protocol/notices";
@@ -17,7 +18,7 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
     <dl className="actor-summary">
       <dt>{p.text("ui.actor")}</dt>
       <dd>
-        <IdentifierValue value={actor.actorId} />
+        <ActorIdentity actor={actor.actor} />
       </dd>
       <dt>{p.text("ui.principal")}</dt>
       <dd>
@@ -28,7 +29,7 @@ export const ActorSummary = ({ actor }: { actor: Actor }) => {
         · <bdi>{actor.principal.subject}</bdi>
       </dd>
       <dt>{p.text("label.enabled")}</dt>
-      <dd>{p.text(actor.enabled ? "ui.yes" : "ui.no")}</dd>
+      <dd>{p.text(actor.actor.availability === "DISABLED" ? "ui.no" : "ui.yes")}</dd>
     </dl>
   );
 };
@@ -77,7 +78,7 @@ const ActorSubject = ({
   mayReadGrants: boolean;
 }) => {
   const p = usePresentation();
-  const label = actor.profile === null ? actor.actorId : actor.profile.displayName;
+  const label = actorName(p, actor.actor);
   if (!mayReadGrants) {
     return (
       <bdi className="actor-subject" title={label}>
@@ -85,17 +86,17 @@ const ActorSubject = ({
       </bdi>
     );
   }
-  const href = `/people/${encodeURIComponent(actor.actorId)}`;
+  const href = `/people/${encodeURIComponent(actor.actor.actorId)}`;
   return (
     <a
       className="actor-subject row-link"
       href={href}
-      id={`actor-grants-${actor.actorId}`}
-      title={actor.actorId}
-      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${label} ${p.text(actor.enabled ? "ui.yes" : "ui.no")}`}
+      id={`actor-grants-${actor.actor.actorId}`}
+      title={label}
+      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${label} ${p.text(actor.actor.availability === "DISABLED" ? "ui.no" : "ui.yes")}`}
       onClick={(event) => {
         followLink(event, () => {
-          onSelect(actor.actorId);
+          onSelect(actor.actor.actorId);
         });
       }}
     >
@@ -120,13 +121,13 @@ const ActorRow = (props: {
         <span className="authority-cell-label" aria-hidden="true">
           {p.text("label.enabled")}:{" "}
         </span>
-        {p.text(props.actor.enabled ? "ui.yes" : "ui.no")}
+        {p.text(props.actor.actor.availability === "DISABLED" ? "ui.no" : "ui.yes")}
       </td>
       <td className="authority-grant-count">
         {props.mayReadGrants ? (
           <KnownGrantCount
             count={
-              props.knownGrantCount?.actorId === props.actor.actorId
+              props.knownGrantCount?.actorId === props.actor.actor.actorId
                 ? props.knownGrantCount.count
                 : null
             }
@@ -155,7 +156,7 @@ const AuthorityTable = ({
       </thead>
       <tbody className="authority-rows">
         {items.map((actor) => (
-          <ActorRow key={actor.actorId} actor={actor} {...props} />
+          <ActorRow key={actor.actor.actorId} actor={actor} {...props} />
         ))}
       </tbody>
     </table>

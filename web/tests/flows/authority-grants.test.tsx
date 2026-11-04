@@ -18,14 +18,18 @@ beforeEach(() => {
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";
 const actor = (actorId: string, prefix = "header") => ({
-  actorId,
+  actor: {
+    actorId,
+    displayName: { kind: "NAMED" as const, value: `${prefix}-${actorId}` },
+    principalKind: "SERVICE" as const,
+    availability: "DISABLED" as const,
+  },
+  contact: null,
   principal: {
     kind: "SERVICE" as const,
     issuer: "https://issuer.example/",
     subject: `${prefix}-${actorId}`,
   },
-  profile: { displayName: `${prefix}-${actorId}`, contact: null },
-  enabled: false,
 });
 const grants = (
   actorId: string,
@@ -65,7 +69,7 @@ const pending = <T,>() => {
 const reads = (offered = true) => {
   navigate("/people", true);
   const context = wireReply("context");
-  if (context.outcome.kind !== "SUCCEEDED") {
+  if (context.outcome.kind !== "SUCCEEDED" || context.outcome.data.requester.kind !== "ACTIVE") {
     throw new Error("Context fixture absent.");
   }
   mockEndpoint("context").mockResolvedValue({
@@ -76,9 +80,11 @@ const reads = (offered = true) => {
       outcome: {
         kind: "SUCCEEDED",
         data: {
-          ...context.outcome.data,
-          offers: installationOffers(["REGISTER"]),
-          views: offered ? ["AUTHORITY"] : [],
+          requester: {
+            ...context.outcome.data.requester,
+            offers: installationOffers(["REGISTER"]),
+            views: offered ? ["AUTHORITY"] : [],
+          },
         },
       },
     },
@@ -126,7 +132,7 @@ it("loads no grants without explicit core-offered selection and discards a late 
     }),
   );
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
-  expect(screen.getByText(`header-${second}`)).toBeVisible();
+  expect(screen.getAllByText(`header-${second}`)[0]).toBeVisible();
   expect(screen.getByRole("heading", { name: "Actor grants" })).toHaveFocus();
 });
 it("consumes the core read offer rather than inferring it from actor rows", async () => {

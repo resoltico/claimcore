@@ -31,10 +31,14 @@ test("records future planned work and scoped responsibility, then finds My cases
     },
     body: "{}",
   });
-  if (!isResponse("context", context.payload) || context.payload.outcome.kind !== "SUCCEEDED") {
+  if (
+    !isResponse("context", context.payload) ||
+    context.payload.outcome.kind !== "SUCCEEDED" ||
+    context.payload.outcome.data.requester.kind !== "ACTIVE"
+  ) {
     throw new Error("Work context unavailable");
   }
-  const { actorId, businessDate } = context.payload.outcome.data;
+  const { actorId, businessDate } = context.payload.outcome.data.requester;
   const tomorrow = new Date(`${businessDate}T12:00:00Z`);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const planned = tomorrow.toISOString().slice(0, 10);

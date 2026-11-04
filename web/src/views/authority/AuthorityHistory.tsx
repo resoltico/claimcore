@@ -4,7 +4,7 @@ import type { ServiceResponse } from "../../api/service";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import { TechnicalActorIdentity, RecordedTime } from "../../components/ActorIdentity";
+import { ActorIdentity, RecordedTime } from "../../components/ActorIdentity";
 import { casePath } from "../../routing/routes";
 import { followLink } from "../../routing/followLink";
 import { navigate } from "../../routing/navigation";
@@ -17,10 +17,26 @@ const HistoryFacts = ({ entry }: { entry: AuthorityHistoryEntry }) => {
   const p = usePresentation();
   const { act } = entry;
   if (act.kind === "REGISTER" || act.kind === "PROVISION_OWNER") {
-    return (
-      <p>
-        <bdi>{act.principal.subject}</bdi> · {p.term("principalKind", act.principal.kind)}
-      </p>
+    return <p>{p.term("principalKind", act.principal.kind)}</p>;
+  }
+  if (act.kind === "SET_PROFILE") {
+    return act.profile === null ? (
+      <p>{p.text("ui.timeline.withheld")}</p>
+    ) : (
+      <dl>
+        <dt>{p.fieldLabel("profile.displayName")}</dt>
+        <dd>
+          <bdi>{act.profile.displayName}</bdi>
+        </dd>
+        {act.profile.contact === null ? null : (
+          <>
+            <dt>{p.fieldLabel("profile.contact")}</dt>
+            <dd>
+              <bdi>{act.profile.contact}</bdi>
+            </dd>
+          </>
+        )}
+      </dl>
     );
   }
   if (act.kind !== "GRANT" && act.kind !== "REVOKE") {
@@ -62,11 +78,11 @@ const HistoryEntries = ({ items }: { items: ReadonlyArray<AuthorityHistoryEntry>
           <dl className="history-attribution">
             <dt>{p.text("ui.targetActor")}</dt>
             <dd>
-              <TechnicalActorIdentity actorId={entry.targetActorId} />
+              <ActorIdentity actor={entry.target} />
             </dd>
             <dt>{p.text("ui.recordedBy")}</dt>
             <dd>
-              <TechnicalActorIdentity actorId={entry.recordedBy} />
+              <ActorIdentity actor={entry.recordedBy} />
             </dd>
           </dl>
           <HistoryFacts entry={entry} />
@@ -79,11 +95,11 @@ const HistoryEntries = ({ items }: { items: ReadonlyArray<AuthorityHistoryEntry>
               </dd>
               <dt>{p.text("ui.targetActor")}</dt>
               <dd>
-                <bdi dir="ltr">{entry.targetActorId}</bdi>
+                <bdi dir="ltr">{entry.target.actorId}</bdi>
               </dd>
               <dt>{p.text("ui.recordedBy")}</dt>
               <dd>
-                <bdi dir="ltr">{entry.recordedBy}</bdi>
+                <bdi dir="ltr">{entry.recordedBy.actorId}</bdi>
               </dd>
             </dl>
           </details>

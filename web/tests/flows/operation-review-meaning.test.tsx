@@ -104,11 +104,13 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
       accessScope: resolvedScope,
       before: {
         enabled: true,
+        profile: null,
         access: [],
         grants: [],
       },
       after: {
         enabled: true,
+        profile: null,
         access: [],
         grants: [
           {
@@ -236,4 +238,41 @@ it("erasure review retains its act meaning and WAL/backups limitation", () => {
   expect(screen.getByRole("dialog")).toHaveTextContent(
     /WAL, backups and copies elsewhere are not erased/u,
   );
+});
+
+it("shows the core's profile values in authority review before consent", () => {
+  const input: OperationInput = {
+    kind: "AUTHORITY",
+    operationId,
+    target: principal({ subject: "profile-target" }),
+    act: {
+      kind: "SET_PROFILE",
+      profile: { displayName: "Requested name", contact: "Requested contact" },
+    },
+  };
+  const proposed: Review = {
+    subject: {
+      kind: "AUTHORITY",
+      target: null,
+      accessScope: { kind: "INSTALLATION" },
+      before: {
+        enabled: true,
+        profile: { displayName: "Recorded name", contact: "Recorded contact" },
+        access: [],
+        grants: [],
+      },
+      after: {
+        enabled: true,
+        profile: { displayName: "Core proposed name", contact: "Core proposed contact" },
+        access: [],
+        grants: [],
+      },
+    },
+  };
+  render(<OperationReview model={model(input, proposed)} />);
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByText("Recorded name", { exact: true })).toBeVisible();
+  expect(within(dialog).getByText("Core proposed name", { exact: true })).toBeVisible();
+  expect(within(dialog).getByText("Recorded contact", { exact: true })).toBeVisible();
+  expect(within(dialog).getByText("Core proposed contact", { exact: true })).toBeVisible();
 });

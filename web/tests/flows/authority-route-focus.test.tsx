@@ -18,14 +18,18 @@ it("focuses the selected actor route h1 and restores its originating control on 
     },
   });
   const actor = {
-    actorId: "00000000-0000-4000-8000-000000000001",
+    actor: {
+      actorId: "00000000-0000-4000-8000-000000000001",
+      displayName: { kind: "NAMED" as const, value: "focus-origin" },
+      principalKind: "HUMAN" as const,
+      availability: "AVAILABLE" as const,
+    },
+    contact: null,
     principal: {
       kind: "HUMAN" as const,
       issuer: "https://issuer.example/",
       subject: "focus-origin",
     },
-    profile: { displayName: "focus-origin", contact: null },
-    enabled: true,
   };
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",

@@ -38,12 +38,22 @@ const contextReply = (): Response =>
   response("context", {
     outcome: {
       kind: "SUCCEEDED",
-      data: actorContextInput({
-        ...runtime,
-        capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-        views: ["AUTHORITY", "OPERATIONS"],
-        offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-      }),
+      data: {
+        requester: actorContextInput({
+          ...runtime,
+          capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+          views: ["AUTHORITY", "OPERATIONS"],
+          offers: installationOffers([
+            "REGISTER",
+            "GRANT",
+            "REVOKE",
+            "ENABLE",
+            "DISABLE",
+            "SET_PROFILE",
+            "ERASE_PROFILE",
+          ]),
+        }),
+      },
     },
   });
 const authorityPreview = (parsed: AuthorityInput) =>
@@ -59,11 +69,13 @@ const authorityPreview = (parsed: AuthorityInput) =>
             accessScope: { kind: "INSTALLATION" },
             before: {
               enabled: false,
+              profile: null,
               access: [],
               grants: [],
             },
             after: {
               enabled: true,
+              profile: null,
               access: [],
               grants: [],
             },
@@ -124,12 +136,15 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   const control = await screen.findByRole("combobox", { name: "Authority action" });
   await user.click(control);
   await waitFor(() => {
-    expect(optionValues(control)).toHaveLength(5);
+    expect(optionValues(control)).toHaveLength(7);
   });
   await chooseOption(user, control, kind);
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
   input("target.kind", "HUMAN");
+  if (kind === "REGISTER" || kind === "SET_PROFILE") {
+    input("act.profile.displayName", "Synthetic profile name");
+  }
   if (kind === "GRANT" || kind === "REVOKE") {
     input("act.role", "CASE_READER");
   }
@@ -137,7 +152,7 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
 it.each(authorityActs)(
   "renders, reviews and submits real authority act $kind through production transport",
   async (act) => {
-    expect(authorityActs).toHaveLength(5);
+    expect(authorityActs).toHaveLength(7);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
     render(<AuthorityPanel onLockChange={vi.fn()} />);
@@ -148,11 +163,7 @@ it.each(authorityActs)(
       name: "Review changes",
     });
     const before = screen.getByRole("dialog").textContent;
-    await user.click(
-      screen.getByRole("checkbox", {
-        name: "I confirm this exact request.",
-      }),
-    );
+    await user.click(screen.getByRole("checkbox"));
     await user.click(getButton("Record changes"));
     await waitFor(() => {
       expect(calls).toHaveLength(2);
@@ -192,7 +203,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
   const control = await screen.findByRole("combobox", { name: "Authority action" });
   await user.click(control);
   await waitFor(() => {
-    expect(optionValues(control)).toHaveLength(5);
+    expect(optionValues(control)).toHaveLength(7);
   });
   await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "GRANT");
   const group = screen.getByRole("radiogroup", { name: "Role" });

@@ -1,8 +1,8 @@
 import { useLayoutEffect, useMemo, useState } from "react";
 import { subscribeReadRetries } from "../api/readRetryNotice";
 import { useCredential, useSessionContext } from "../session/SessionContext";
-import type { ActorContext } from "@contracts/client";
-export const useReadRetrying = (requester: ActorContext | null) => {
+import type { RequesterState_ACTIVE } from "@contracts/client";
+export const useReadRetrying = (requester: RequesterState_ACTIVE | null) => {
   const credential = useCredential();
   const { state: session } = useSessionContext();
   const active = session.kind === "authenticated";

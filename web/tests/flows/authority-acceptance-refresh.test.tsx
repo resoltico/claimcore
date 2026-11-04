@@ -24,7 +24,7 @@ const pending = <T,>() => {
 };
 const context = (): ApiResult<ServiceResponse<"context">> => {
   const value = wireReply("context");
-  if (value.outcome.kind !== "SUCCEEDED") {
+  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.data.requester.kind !== "ACTIVE") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -35,8 +35,10 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
       outcome: {
         ...value.outcome,
         data: {
-          ...value.outcome.data,
-          offers: installationOffers(["REGISTER", "GRANT", "DISABLE"]),
+          requester: {
+            ...value.outcome.data.requester,
+            offers: installationOffers(["REGISTER", "GRANT", "DISABLE"]),
+          },
         },
       },
     },
@@ -62,6 +64,10 @@ const author = async (subject: string) => {
     ["target.subject", subject],
   ]) {
     fireEvent.change(document.querySelector(`[name="${name}"]`)!, { target: { value } });
+  }
+  const profile = document.querySelector('[name="act.profile.displayName"]');
+  if (profile !== null) {
+    fireEvent.change(profile, { target: { value: "Synthetic registered person" } });
   }
 };
 const finish = async <T,>(read: ReturnType<typeof pending<T>>, value: T) => {

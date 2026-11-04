@@ -25,11 +25,19 @@ const responseData = (response: unknown) => {
 };
 const responseDate = (endpoint: string, data: Record<string, unknown>) => {
   if (endpoint === "context") {
-    return data["businessDate"];
+    return object(data["requester"])?.["businessDate"];
   }
   const basis =
     endpoint === "case.get" ? object(object(data["work"])?.["basis"]) : object(data["basis"]);
   return basis?.["businessDate"];
+};
+const contextOwned = (data: Record<string, unknown>, owner: Registration) => {
+  const requester = object(data["requester"]);
+  return (
+    requester?.["kind"] === "ACTIVE" &&
+    requester["installationId"] === owner.installationId &&
+    requester["actorId"] === owner.actorId
+  );
 };
 /** Capture ownership at dispatch: late replies cannot attach themselves to a newer session. */
 export const captureBusinessDateObserver = (endpoint: string, credential: string | undefined) => {
@@ -43,10 +51,7 @@ export const captureBusinessDateObserver = (endpoint: string, credential: string
     if (data === null) {
       return;
     }
-    if (
-      endpoint === "context" &&
-      (data["installationId"] !== owner.installationId || data["actorId"] !== owner.actorId)
-    ) {
+    if (endpoint === "context" && !contextOwned(data, owner)) {
       return;
     }
     const date = responseDate(endpoint, data);

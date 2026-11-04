@@ -42,14 +42,14 @@
   .field-row {
     grid-template-columns: minmax(0, 1fr);
   }
-  .case-detail > .case-workspace > .case-fields > dl > .field-row {
+  .case-main-column > .case-fields > dl > .field-row {
     grid-template-columns: minmax(0, 1fr);
   }
 }
 
 @media (width >= 64rem) {
   .case-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+    grid-template-columns: minmax(0, 2fr) minmax(16rem, 1fr);
     align-items: start;
   }
   .case-actions {
@@ -311,5 +311,10 @@
     padding: var(--space-2) var(--space-1);
     font-size: var(--text-xs);
     text-align: center;
+  }
+}
+@media (width < 64rem) {
+  .case-work-rail {
+    order: -1;
   }
 }

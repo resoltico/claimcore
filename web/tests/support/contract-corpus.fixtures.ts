@@ -86,19 +86,3 @@ export const hostCases = () => [
     value: { hostFailure: { code: "INPUT_INVALID", phase: "NOT_STARTED" } },
   },
 ];
-export const historyVariants = () => {
-  const { outcome } = wireReply("operation.execute");
-  if (outcome.kind !== "ACCEPTED" || outcome.data.subject.kind !== "CASE") {
-    throw new Error("Case receipt example absent.");
-  }
-  const receipt = { ...outcome.data, subject: outcome.data.subject };
-  const { operationId, position, recordedAt, recordedBy } = receipt;
-  const { revision, act } = receipt.subject;
-  return {
-    full: { kind: "FULL" as const, receipt },
-    summary: {
-      kind: "SUMMARY" as const,
-      change: { operationId, position, revision, act, recordedAt, recordedBy },
-    },
-  };
-};

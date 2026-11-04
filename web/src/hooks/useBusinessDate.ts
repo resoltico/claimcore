@@ -2,10 +2,10 @@ import { useEffect, useLayoutEffect, useMemo, useState } from "react";
 import { subscribeBusinessDates } from "../api/businessDateObservation";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
-import type { ActorContext } from "@contracts/client";
+import type { RequesterState_ACTIVE } from "@contracts/client";
 
 /** Focus refresh replaces polling; all dates remain server observations. */
-export const useBusinessDate = (requester: ActorContext | null) => {
+export const useBusinessDate = (requester: RequesterState_ACTIVE | null) => {
   const cache = useEndpointCache();
   const credential = useCredential();
   const { epoch } = useSessionContext().state;

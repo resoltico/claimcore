@@ -95,7 +95,7 @@ export const recordReviewed = async (
   if (outcome.kind !== "ALREADY_ACCEPTED" && outcome.kind !== "ACCEPTED") {
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.locator(".success-toast")).toContainText("revision");
   const receipt = outcome.data;
   if (receipt.subject.kind !== "CASE") {
@@ -225,7 +225,7 @@ export const completeAct = async (
   await startAct(page, label);
   const identity = await reviewDraft(page, values);
   await submit(page);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   return identity;
 };
 
@@ -233,7 +233,7 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await startOpen(page, caseReference);
   const identity = await reviewDraft(page);
   await submit(page);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("open-detail");
   await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(
     inventory.specialFields.length + inventory.groups.registration.length,

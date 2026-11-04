@@ -47,10 +47,10 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await page.keyboard.press("Space");
   await review.getByRole("button", { name: "Record changes" }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("a11y-receipt");
   await expectAccessible(page);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await chooseOption(
     page,
     page.getByRole("combobox", { name: "History detail", exact: true }),
@@ -71,7 +71,7 @@ test("keeps published login, editor, review, receipt and history accessible at n
     page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
   ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toHaveCount(0);
+  await expect(page.locator("#case-detail-title")).toHaveCount(0);
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await progress("a11y-expired-session");
   await expectAccessible(page);

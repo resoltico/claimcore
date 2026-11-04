@@ -38,13 +38,17 @@ const scopeFor = async (page: Page): Promise<RecoveryScope> => {
     headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": csrf },
     body: "{}",
   });
-  if (!isResponse("context", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+  if (
+    !isResponse("context", reply.payload) ||
+    reply.payload.outcome.kind !== "SUCCEEDED" ||
+    reply.payload.outcome.data.requester.kind !== "ACTIVE"
+  ) {
     throw new Error("Recovery scope positive control");
   }
   return {
     serviceOrigin: new URL(page.url()).origin,
-    actorId: reply.payload.outcome.data.actorId,
-    installationId: reply.payload.outcome.data.installationId,
+    actorId: reply.payload.outcome.data.requester.actorId,
+    installationId: reply.payload.outcome.data.requester.installationId,
   };
 };
 const records = (page: Page, scope: RecoveryScope) =>
@@ -541,11 +545,15 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
     const value: unknown = await (await refreshed).json();
-    if (!isResponse("context", value) || value.outcome.kind !== "SUCCEEDED") {
+    if (
+      !isResponse("context", value) ||
+      value.outcome.kind !== "SUCCEEDED" ||
+      value.outcome.data.requester.kind !== "ACTIVE"
+    ) {
       throw new Error("Workspace context refresh positive control");
     }
-    expect(value.outcome.data.actorId).toBe(scope.actorId);
-    expect(value.outcome.data.installationId).toBe(scope.installationId);
+    expect(value.outcome.data.requester.actorId).toBe(scope.actorId);
+    expect(value.outcome.data.requester.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
     await expect(

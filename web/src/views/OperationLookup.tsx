@@ -1,3 +1,4 @@
+import { actorName } from "../presentation/actorName";
 import { renderCatalogKey } from "../presentation/messages";
 import { operationEntryForInput } from "../protocol/operationCatalog";
 import { WorkReceiptView } from "./work/WorkReceiptView";
@@ -89,7 +90,7 @@ const ReceiptView = ({
                     }).labelId,
                   )
                 : p.term("act", receipt.subject.act),
-            actor: receipt.recordedBy,
+            actor: actorName(p, receipt.recordedBy),
           }}
           argument="operationId"
         />

@@ -1,4 +1,4 @@
-import { chooseOption } from "../support/choice-entry";
+import { timelinePage } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -42,24 +42,19 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
       if (typeof url !== "string" || typeof init?.body !== "string") {
         throw new Error("Missing synthetic read.");
       }
-      if (url.endsWith("case.history")) {
+      if (url.endsWith("case.timeline")) {
         const input = JSON.parse(init.body) as {
-          detail: string;
+          filter?: string;
         };
-        if (input.detail === "FULL") {
+        if (input.filter === "FACTS") {
           revoked = true;
           return Promise.resolve(
             kind === "access"
-              ? response("case.history", "REJECTED", unavailable)
+              ? response("case.timeline", "REJECTED", unavailable)
               : sessionRefusal(),
           );
         }
-        return Promise.resolve(
-          response("case.history", "SUCCEEDED", {
-            entries: [],
-            nextCursor: null,
-          }),
-        );
+        return Promise.resolve(response("case.timeline", "SUCCEEDED", timelinePage()));
       }
       return Promise.resolve(
         revoked && !retainCurrent
@@ -92,13 +87,7 @@ for (const retainCurrent of [false, true]) {
         />,
       );
       await screen.findAllByText(fields.registration.claimantName);
-      await chooseOption(
-        user,
-        screen.getByRole("combobox", {
-          name: "History detail",
-        }),
-        "FULL",
-      );
+      await user.click(screen.getByRole("button", { name: "Facts" }));
       await waitFor(() => {
         expect(revoked()).toBe(true);
         expect(document.querySelectorAll(".case-fields")).toHaveLength(retainCurrent ? 1 : 0);

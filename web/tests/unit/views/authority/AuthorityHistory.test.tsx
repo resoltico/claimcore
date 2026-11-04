@@ -9,8 +9,8 @@ import { preferenceKey } from "../../../../src/presentation/preferences";
 const owner: AuthorityHistoryEntry = {
   sequence: 31,
   recordedAt: "2026-01-01T22:30:00.000000Z",
-  recordedBy: context.actorId,
-  targetActorId: context.actorId,
+  recordedBy: context.self,
+  target: context.self,
   act: {
     kind: "PROVISION_OWNER",
     principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-owner" },
@@ -43,7 +43,7 @@ it.each([
     time: "١٢:٣٠ ص",
   },
 ])(
-  "localizes bootstrap history while ID-only DTOs retain technical attribution in $language",
+  "localizes bootstrap history and renders actor names in $language",
   async ({ language, displayLocale, label, day, time }) => {
     localStorage.setItem(
       preferenceKey,
@@ -70,7 +70,7 @@ it.each([
     );
     await screen.findByText(label, { exact: true });
     expect(screen.queryByText("PROVISION_OWNER")).toBeNull();
-    expect(screen.getAllByText(context.actorId.slice(0, 8), { exact: true })).toHaveLength(2);
+    expect(screen.getAllByText("Named account", { exact: true })).toHaveLength(2);
     const instant = view.container.querySelector("li header time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);

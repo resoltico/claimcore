@@ -107,9 +107,13 @@ test("selected authority grants use bounded core pages and survive presentation 
     throw new Error("Expected a bounded actor grant page.");
   }
   const { data } = value.outcome;
+  const name = data.actor.actor.displayName;
+  if (name.kind !== "NAMED") {
+    throw new Error("Expected the admitted grant target to have its authored name.");
+  }
   const view = page.locator('section[aria-labelledby="actor-grants-title"]');
   await expect(view.getByRole("heading")).toBeFocused();
-  await expect(view.getByText(data.actor.actorId, { exact: true })).toBeVisible();
+  await expect(view.locator(".actor-summary .actor-identity bdi")).toHaveText(name.value);
   await expect(view.locator("li")).toHaveCount(data.items.length);
   await checkPresentation(page, data.nextCursor === null, data.items.length);
   expect(grantRequests).toHaveLength(1);
@@ -122,7 +126,7 @@ test("selected authority grants use bounded core pages and survive presentation 
     await page.setViewportSize({ width, height: 900 });
     await clickActorKind(page);
     await expect(view.getByRole("heading")).toBeFocused();
-    await expect(view.getByText(data.actor.actorId, { exact: true })).toBeVisible();
+    await expect(view.locator(".actor-summary .actor-identity bdi")).toHaveText(name.value);
     await view.getByRole("button", { name: "Back to actors", exact: true }).click();
     await expect(selected).toBeFocused();
   }

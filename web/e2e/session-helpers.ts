@@ -425,11 +425,12 @@ export const installationId = async (page: Page, token: string): Promise<string>
   if (
     reply.status !== 200 ||
     !isResponse("context", reply.payload) ||
-    reply.payload.outcome.kind !== "SUCCEEDED"
+    reply.payload.outcome.kind !== "SUCCEEDED" ||
+    reply.payload.outcome.data.requester.kind !== "ACTIVE"
   ) {
     throw new Error(
       `Synthetic installation context HTTP ${reply.status} ${contextFailureCode(reply.status, reply.payload)} (context).`,
     );
   }
-  return reply.payload.outcome.data.installationId;
+  return reply.payload.outcome.data.requester.installationId;
 };

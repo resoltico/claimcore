@@ -128,7 +128,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     first.release();
     await confirmReview(page);
     await page.getByRole("button", { name: "Record changes" }).click();
-    await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+    await expect(page.locator("#case-detail-title")).toBeVisible();
     await expect(page.locator(".success-toast")).toContainText(
       "Close the case recorded at revision 2.",
     );

@@ -255,7 +255,7 @@ const ownerStewardship = async (page: Page) => {
     subject: inventory.ownerSubject,
   } as const;
   const owner = await findOwner(page, target);
-  const existing = await hasStewardship(page, owner.actorId);
+  const existing = await hasStewardship(page, owner.actor.actorId);
   const set = (active: boolean) =>
     applyAuthority(page, {
       kind: "AUTHORITY",
@@ -275,7 +275,7 @@ const ownerStewardship = async (page: Page) => {
       }
     },
     restore: async () => {
-      if (!existing && (await hasStewardship(page, owner.actorId))) {
+      if (!existing && (await hasStewardship(page, owner.actor.actorId))) {
         await set(false);
       }
     },
@@ -360,7 +360,7 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
     kind: "AUTHORITY",
     operationId: randomUUID(),
     target,
-    act: { kind: "REGISTER" },
+    act: { kind: "REGISTER", profile: { displayName: "Synthetic matrix account" } },
   });
   if (registered.subject.kind !== "AUTHORITY") {
     throw new Error("E2E_MATRIX_AUTHORITY_RECEIPT");
@@ -408,7 +408,7 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
     kind: "AUTHORITY",
     operationId: randomUUID(),
     target,
-    act: { kind: "REGISTER" },
+    act: { kind: "REGISTER", profile: { displayName: "Synthetic matrix account" } },
   });
   if (registered.subject.kind !== "AUTHORITY") {
     throw new Error("Expected the independently registered human assignee");
@@ -465,23 +465,26 @@ export const prepareDesignDataset = async (
     ({ restore } = stewardship);
     await stewardship.enable();
     const contextReply = await request(page, "context", {});
-    if (contextReply.outcome.kind !== "SUCCEEDED") {
+    if (
+      contextReply.outcome.kind !== "SUCCEEDED" ||
+      contextReply.outcome.data.requester.kind !== "ACTIVE"
+    ) {
       throw new Error("E2E_MATRIX_CONTEXT_REFUSED");
     }
     const marker = `DM-${randomUUID()}`;
-    const cases = await seedCases(page, marker, contextReply.outcome.data.businessDate);
+    const cases = await seedCases(page, marker, contextReply.outcome.data.requester.businessDate);
     restore = await setOwnerCaseWork(
       page,
-      contextReply.outcome.data.actorId,
+      contextReply.outcome.data.requester.actorId,
       cases.references.undecided,
-      contextReply.outcome.data.businessDate,
+      contextReply.outcome.data.requester.businessDate,
       restore,
     );
     await unavailableCaseWork(
       page,
       stewardship.inventory.issuer,
       cases.references.decided,
-      contextReply.outcome.data.businessDate,
+      contextReply.outcome.data.requester.businessDate,
     );
     const actorId = await registerActor(
       page,

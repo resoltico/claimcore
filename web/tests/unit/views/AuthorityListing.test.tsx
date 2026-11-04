@@ -17,10 +17,14 @@ const setup = (mayReadGrants: boolean, knownGrantCount: KnownActorGrantCount | n
         data: {
           items: [
             {
-              actorId,
+              actor: {
+                actorId,
+                displayName: { kind: "NAMED", value: displayName },
+                principalKind: "HUMAN",
+                availability: "AVAILABLE",
+              },
+              contact: null,
               principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject },
-              profile: { displayName, contact: null },
-              enabled: true,
             },
           ],
           nextCursor: null,

@@ -18,11 +18,13 @@ export const authorityPreview = () =>
                 accessScope: { kind: "INSTALLATION" },
                 before: {
                   enabled: false,
+                  profile: null,
                   access: [],
                   grants: [],
                 },
                 after: {
                   enabled: true,
+                  profile: null,
                   access: [],
                   grants: [],
                 },

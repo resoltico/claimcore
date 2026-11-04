@@ -16,7 +16,7 @@ import { pauseJsonReply, selectMode } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
 const recoverAcceptedClose = async (page: Page, operationId: string) => {
-  const accepted = page.getByRole("heading", { name: "Case detail", exact: true });
+  const accepted = page.locator("#case-detail-title");
   const check = page.getByRole("button", { name: "Check status", exact: true });
   // A canceled document navigation may also cancel Firefox's outstanding fetch.
   await accepted.or(check).waitFor({ state: "visible" });
@@ -121,12 +121,8 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
       login(signedOutPage, "Case detail"),
     ]);
     await expect(signedOutPage).toHaveURL(destination.href);
-    await expect(
-      signedOutPage.getByRole("heading", { name: "Case detail", exact: true }),
-    ).toBeVisible();
-    await expect(
-      signedOutPage.getByRole("heading", { name: "Case detail", exact: true }),
-    ).toContainText(reference);
+    await expect(signedOutPage.locator("#case-detail-title")).toBeVisible();
+    await expect(signedOutPage.locator("#case-detail-title")).toContainText(reference);
   } finally {
     await anonymous.close();
   }
@@ -156,7 +152,7 @@ test("canonical case links reload and browser back and forward preserve the case
   const destination = casePath(response.payload.outcome.data.caseId);
   await expect(page).toHaveURL((url) => url.pathname === destination);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await page.getByRole("button", { name: "Back to cases", exact: true }).click();
   await expect(page).toHaveURL(/\/cases$/u);
   await page.goBack();

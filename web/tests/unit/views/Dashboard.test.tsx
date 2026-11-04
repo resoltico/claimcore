@@ -66,14 +66,16 @@ it("chooses an advertised workspace only for the default entry route", async () 
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: actorContextInput({
-          productVersion: "0.10.0",
-          businessDate: "2026-09-09",
-          timeZone: "Etc/UTC",
-          capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-          views: ["AUTHORITY", "OPERATIONS"],
-          offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-        }),
+        data: {
+          requester: actorContextInput({
+            productVersion: "0.10.0",
+            businessDate: "2026-09-09",
+            timeZone: "Etc/UTC",
+            capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+            views: ["AUTHORITY", "OPERATIONS"],
+            offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
+          }),
+        },
       },
     },
   });
@@ -101,12 +103,14 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: actorContextInput({
-          ...context,
-          views: ["AUTHORITY"],
-          capabilities: ["READ_AUTHORITY"],
-          offers: [],
-        }),
+        data: {
+          requester: actorContextInput({
+            ...context,
+            views: ["AUTHORITY"],
+            capabilities: ["READ_AUTHORITY"],
+            offers: [],
+          }),
+        },
       },
     },
   });

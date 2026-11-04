@@ -12,6 +12,9 @@ const fixtureData = (endpoint: string, kind: string, data: unknown): unknown => 
   if (kind !== "SUCCEEDED") {
     return data;
   }
+  if (endpoint === "context") {
+    return { requester: data };
+  }
   if (endpoint === "session.logout") {
     return null;
   }

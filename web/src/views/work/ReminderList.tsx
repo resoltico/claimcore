@@ -1,3 +1,4 @@
+import { ActorIdentity } from "../../components/ActorIdentity";
 import { useCallback } from "react";
 import type {
   CaseSelector,
@@ -136,7 +137,7 @@ export const ReminderList = ({
                 {p.text("ui.markedAt")}: <bdi dir="ltr">{row.recordedAt}</bdi>
               </p>
               <p>
-                {p.text("ui.markedBy")}: <IdentifierValue value={row.recordedBy} />
+                {p.text("ui.markedBy")}: <ActorIdentity actor={row.recordedBy} />
               </p>
             </details>
           </li>

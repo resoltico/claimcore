@@ -1,5 +1,4 @@
 import type {
-  HistoryEntries,
   HostFailure,
   RequestByEndpoint,
   ResponseByEndpoint,
@@ -15,7 +14,6 @@ export type {
   OperationReview,
   Diagnostic,
 } from "@contracts/client";
-export type HistoryEntry = HistoryEntries[number];
 export type { OperationReceipt } from "@contracts/client";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;

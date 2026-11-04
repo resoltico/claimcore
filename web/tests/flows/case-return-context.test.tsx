@@ -1,3 +1,4 @@
+import { timelinePage } from "../support/timeline.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -30,7 +31,7 @@ it.each([
     const value = caseSummaryInput({
       caseId: current.caseId,
       caseReference: current.caseReference,
-      state: {kind: "ACTIVE"},
+      state: { kind: "ACTIVE" },
     });
     const page = (items: (typeof value)[]) =>
       ({
@@ -70,18 +71,13 @@ it.each([
       status: 200,
       value: { outcome: { kind: "SUCCEEDED", data: current } },
     });
-    mockEndpoint("case.history").mockResolvedValue({
+    mockEndpoint("case.timeline").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: {
         outcome: {
           kind: "SUCCEEDED",
-          data: {
-            caseId: current.caseId,
-            caseReference: current.caseReference,
-            entries: [],
-            nextCursor: null,
-          },
+          data: timelinePage(),
         },
       },
     });
@@ -92,7 +88,7 @@ it.each([
     const user = userEvent.setup();
     render(<Dashboard />);
     await user.click(await screen.findByRole("link", { name: current.caseReference }));
-    await screen.findByRole("heading", { name: "Case detail" });
+    await screen.findByRole("heading", { name: current.state.fields.registration.claimantName });
     await user.click(screen.getByRole("button", { name: "Back to cases" }));
     await waitFor(() => {
       expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");

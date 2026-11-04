@@ -1,3 +1,4 @@
+import { actorContextInput, workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -19,14 +20,18 @@ beforeEach(() => {
 });
 afterEach(() => vi.restoreAllMocks());
 const disclosedActor = {
-  actorId: "10000000-0000-4000-8000-000000000001",
+  actor: {
+    actorId: "10000000-0000-4000-8000-000000000001",
+    displayName: { kind: "NAMED", value: "synthetic-disclosed" },
+    principalKind: "SERVICE",
+    availability: "AVAILABLE",
+  },
+  contact: null,
   principal: {
     kind: "SERVICE",
     issuer: "https://issuer.example/",
     subject: "synthetic-disclosed",
   },
-  profile: { displayName: "synthetic-disclosed", contact: null },
-  enabled: true,
 } as const;
 const success = <K extends "context" | "authority.list">(
   endpoint: K,
@@ -44,14 +49,19 @@ const success = <K extends "context" | "authority.list">(
         outcome: {
           ...value.outcome,
           data: {
-            ...value.outcome.data,
-            views: ["CASES", "AUTHORITY", "OPERATIONS"],
-            offers: [
-              {
-                kind: "AUTHORITY_ACT",
-                act: "REGISTER",
-              },
-            ],
+            requester: actorContextInput({
+              productVersion: "0.15.0",
+              businessDate: workBasis.businessDate,
+              timeZone: workBasis.timeZone,
+              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+              views: ["CASES", "AUTHORITY", "OPERATIONS"],
+              offers: [
+                {
+                  kind: "AUTHORITY_ACT",
+                  act: "REGISTER",
+                },
+              ],
+            }),
           },
         },
       },
@@ -102,6 +112,7 @@ const author = async () => {
   for (const [name, value] of [
     ["target.issuer", "https://issuer.example/"],
     ["target.subject", "synthetic-authored"],
+    ["act.profile.displayName", "Synthetic registered person"],
   ]) {
     fireEvent.change(document.querySelector(`[name="${name}"]`)!, { target: { value } });
   }
@@ -115,7 +126,7 @@ const prepare = async () => {
 const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = () => {
   const response = wireReply("context");
-  if (response.outcome.kind !== "SUCCEEDED") {
+  if (response.outcome.kind !== "SUCCEEDED" || response.outcome.data.requester.kind !== "ACTIVE") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -123,7 +134,10 @@ const emptyOffers = () => {
     status: 200,
     value: {
       ...response,
-      outcome: { ...response.outcome, data: { ...response.outcome.data, offers: [] } },
+      outcome: {
+        ...response.outcome,
+        data: { requester: { ...response.outcome.data.requester, offers: [] } },
+      },
     },
   };
 };

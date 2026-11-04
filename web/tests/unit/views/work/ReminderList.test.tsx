@@ -1,3 +1,4 @@
+import { actorRefInput } from "../../../support/inputs";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
@@ -26,7 +27,7 @@ const row = (
   },
   caseReference: "TIMING-CASE",
   recordedAt: basis.observedAt,
-  recordedBy: "00000000-0000-4000-8000-000000000098",
+  recordedBy: actorRefInput({ actorId: "00000000-0000-4000-8000-000000000098" }),
   acts: [],
   active: true,
   timing,

@@ -1,3 +1,4 @@
+import { timelinePage } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
@@ -41,7 +42,7 @@ const queueDefinitionAndList = () => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: {kind: "ACTIVE"},
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -54,12 +55,7 @@ const queueDefinitionAndList = () => {
 const queueDetail = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      entries: [],
-      nextCursor: null,
-    }),
-  );
+  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
 };
 const queueAcceptedOpen = (): void => {
   const fetch = vi.mocked(globalThis.fetch);
@@ -99,7 +95,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   );
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: current.state.fields.registration.claimantName,
     }),
   ).toBeVisible();
   await user.click(getButton("Back to cases"));
@@ -131,7 +127,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   await user.click(getButton("Back to case"));
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: current.state.fields.registration.claimantName,
     }),
   ).toBeVisible();
 });
@@ -192,7 +188,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
 
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: current.state.fields.registration.claimantName,
     }),
   ).toBeVisible();
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");

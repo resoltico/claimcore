@@ -33,7 +33,7 @@ it("does not request history or acts for a missing case", async () => {
   expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
   expect(
     screen.queryByRole("heading", {
-      name: "Case history",
+      name: "Activity",
     }),
   ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
@@ -108,7 +108,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
     release = resolve;
   });
   fetch.mockResolvedValueOnce(readableCurrent());
-  fetch.mockResolvedValueOnce(response("case.history", "REJECTED", unavailable));
+  fetch.mockResolvedValueOnce(response("case.timeline", "REJECTED", unavailable));
   fetch.mockReturnValueOnce(revalidation);
   render(
     <CaseDetail
@@ -140,7 +140,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
   ).toBeVisible();
   expect(
     screen.getByRole("heading", {
-      name: "Case history",
+      name: "Activity",
     }),
   ).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");

@@ -21,14 +21,16 @@ export const stubDashboardContext = () => {
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: actorContextInput({
-          productVersion: "0.10.0",
-          businessDate: workBasis.businessDate,
-          timeZone: "Etc/UTC",
-          capabilities: ["REGISTER"],
-          views: ["CASES", "AUTHORITY", "OPERATIONS"],
-          offers: [{ kind: "OPEN" }],
-        }),
+        data: {
+          requester: actorContextInput({
+            productVersion: "0.10.0",
+            businessDate: workBasis.businessDate,
+            timeZone: "Etc/UTC",
+            capabilities: ["REGISTER"],
+            views: ["CASES", "AUTHORITY", "OPERATIONS"],
+            offers: [{ kind: "OPEN" }],
+          }),
+        },
       },
     },
   });

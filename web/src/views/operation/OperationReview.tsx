@@ -150,6 +150,22 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
         <section key={label}>
           <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
           <dl>
+            <dt>{p.fieldLabel("profile.displayName")}</dt>
+            <dd>
+              {state.profile === null ? (
+                p.text("ui.notRecorded")
+              ) : (
+                <bdi>{state.profile.displayName}</bdi>
+              )}
+            </dd>
+            <dt>{p.fieldLabel("profile.contact")}</dt>
+            <dd>
+              {state.profile?.contact === null || state.profile === null ? (
+                p.text("ui.notRecorded")
+              ) : (
+                <bdi>{state.profile.contact}</bdi>
+              )}
+            </dd>
             <dt>{p.text("label.enabled")}</dt>
             <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
           </dl>

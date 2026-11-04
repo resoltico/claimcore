@@ -11,7 +11,7 @@ import {
   useWorkspaceViews,
   WorkspaceViewsStatus,
 } from "../../../src/views/WorkspaceViews";
-import type { CaseViews, ActorContext } from "@contracts/client";
+import type { CaseViews, RequesterState_ACTIVE } from "@contracts/client";
 const result = (data: CaseViews) => ({
   kind: "outcome" as const,
   status: 200,
@@ -26,7 +26,7 @@ const Probe = () => {
     </output>
   );
 };
-const view = (requester: ActorContext | null) => (
+const view = (requester: RequesterState_ACTIVE | null) => (
   <RequesterContext value={requester}>
     <WorkspaceViewsProvider>
       <Probe />

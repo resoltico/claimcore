@@ -10,12 +10,12 @@ import { navigate } from "../../src/routing/navigation";
 import { referencePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";
 import type { CaseReceipt } from "../../src/api/service";
-import type { ActorContext } from "@contracts/client";
+import type { RequesterState_ACTIVE } from "@contracts/client";
 beforeEach(() => {
   stubViewCounts();
 });
 const audit = vi.hoisted(() => ({
-  context: null as ActorContext | null,
+  context: null as RequesterState_ACTIVE | null,
   receipt: null as CaseReceipt | null,
   callbacks: [] as ((receipt: CaseReceipt) => void)[],
 }));
@@ -28,7 +28,7 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
     value:
       endpoint !== "context" || audit.context === null
         ? null
-        : { outcome: { kind: "SUCCEEDED", data: audit.context } },
+        : { outcome: { kind: "SUCCEEDED", data: { requester: audit.context } } },
   }),
 }));
 vi.mock("../../src/views/RoutedContent", () => ({
@@ -66,7 +66,8 @@ const start = async () => {
   audit.receipt = { ...example.outcome.data, subject: example.outcome.data.subject };
   audit.context = {
     ...baseContext,
-    actorId: audit.receipt.recordedBy,
+    actorId: audit.receipt.recordedBy.actorId,
+    self: audit.receipt.recordedBy,
     views: ["CASES", "OPERATIONS"],
   };
   navigate(referencePath(audit.receipt.subject.caseReference), true);

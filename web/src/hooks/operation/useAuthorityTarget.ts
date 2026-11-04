@@ -1,12 +1,12 @@
 import { authorityPrimaryAction } from "../../operation/authorityActionPriority";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ActorSummary, PrincipalInput } from "@contracts/client";
+import type { ActorReviewItem, PrincipalInput } from "@contracts/client";
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
 import { useRoute } from "../../routing/useRoute";
 import type { OperationModel } from "./useOperation";
-type Snapshot = { key: string; actor: ActorSummary; offered: ReadonlyArray<string> };
-type Intent = { epoch: string; actor: ActorSummary; kind: string };
+type Snapshot = { key: string; actor: ActorReviewItem; offered: ReadonlyArray<string> };
+type Intent = { epoch: string; actor: ActorReviewItem; kind: string };
 const targetValues = (principal: PrincipalInput): FormValues => ({
   "target.kind": principal.kind,
   "target.issuer": principal.issuer,
@@ -21,11 +21,7 @@ const retained = (model: OperationModel) =>
 const sameSnapshot = (left: Snapshot | null, right: Snapshot) =>
   left !== null &&
   left.key === right.key &&
-  left.actor.actorId === right.actor.actorId &&
-  left.actor.enabled === right.actor.enabled &&
-  left.actor.principal.kind === right.actor.principal.kind &&
-  left.actor.principal.issuer === right.actor.principal.issuer &&
-  left.actor.principal.subject === right.actor.principal.subject &&
+  left.actor === right.actor &&
   left.offered.join(",") === right.offered.join(",");
 const useActorDisclosure = (revision: number, available: boolean) => {
   const credential = useCredential();
@@ -43,8 +39,12 @@ const useActorDisclosure = (revision: number, available: boolean) => {
   }
   const source = available && snapshot?.key === key ? snapshot : null;
   const observe = useCallback(
-    (actor: ActorSummary, offered: ReadonlyArray<string>) => {
-      if (current.current.key !== key || !current.current.available || actor.actorId !== actorId) {
+    (actor: ActorReviewItem, offered: ReadonlyArray<string>) => {
+      if (
+        current.current.key !== key ||
+        !current.current.available ||
+        actor.actor.actorId !== actorId
+      ) {
         return;
       }
       const next = { key, actor, offered: offered.filter((kind) => kind !== "REGISTER") };

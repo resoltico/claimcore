@@ -1,3 +1,4 @@
+import { ActorIdentity } from "../components/ActorIdentity";
 import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useRef, useState } from "react";
@@ -110,12 +111,15 @@ const BusinessDate = () => {
 };
 const AccountMenu = ({ locked }: { locked: boolean }) => {
   const p = usePresentation();
+  const requester = useRequesterContext();
   const { logout } = useSessionContext();
   return (
     <details className="account-menu">
       <summary title={p.text("ui.account")}>
         <Icon name="person" />
-        <span>{p.text("ui.account")}</span>
+        <span>
+          {requester === null ? p.text("ui.account") : <ActorIdentity actor={requester.self} />}
+        </span>
         <Icon name="chevron-down" />
       </summary>
       <div className="account-menu-items">

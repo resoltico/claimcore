@@ -40,13 +40,13 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .getByRole("dialog", { name: "Discard these draft changes?" })
     .getByRole("button", { name: "Discard and leave", exact: true })
     .click();
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
     "1,200.50",
   );
   await startAct(page, "Amend registration");
   await page.getByRole("button", { name: "Back to case" }).click();
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
 });
 
 test("review blocks authoring and accepted OPEN returns to the recorded case with a revision notice", async ({
@@ -64,13 +64,13 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   }
   await page.getByText("I confirm these changes.", { exact: true }).click();
   await page.getByRole("button", { name: "Record changes" }).click();
-  const detail = page.getByRole("heading", { name: "Case detail", exact: true });
+  const detail = page.locator("#case-detail-title");
   await expect(detail).toBeVisible();
   await expect(detail).toBeFocused();
   await expect(page.locator(".success-toast")).toContainText("Open a case recorded at revision 1.");
   await expect(page.locator(".operation-editor form")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();
   await expect(page.locator("section.receipt")).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.getByRole("button", { name: /^Amend registration:/u })).toBeVisible();
 });

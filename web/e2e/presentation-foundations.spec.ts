@@ -1,7 +1,20 @@
+import { isRequest } from "../src/protocol/client";
+import { writeFile } from "node:fs/promises";
+import { casePath } from "../src/routing/routes";
+import { timelineEntry, timelinePage } from "../tests/support/timeline.fixtures";
+import {
+  caseFields,
+  operationId as entryOperationId,
+} from "../tests/support/service-foundation.fixtures";
 import { caseViewsFixture, reminderViewsFixture } from "../tests/support/view-counts.fixtures";
 import { expect, test, type Page } from "@playwright/test";
-import { consumerContractIdentity } from "@contracts/client";
-import { actorContextInput, caseSummaryInput, actorRefInput } from "../tests/support/inputs";
+import { consumerContractIdentity, type RequesterState } from "@contracts/client";
+import {
+  actorContextInput,
+  caseSummaryInput,
+  actorRefInput,
+  caseViewInput,
+} from "../tests/support/inputs";
 import { contrastRatio } from "../src/theme/contrast";
 import { chooseOption } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
@@ -68,14 +81,16 @@ const observe = async (
         json: {
           outcome: {
             kind: "SUCCEEDED",
-            data: actorContextInput({
-              productVersion: "synthetic-presentation",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: ["READ_CASE", "READ_AUTHORITY"],
-              views: ["CASES", "AUTHORITY", "OPERATIONS"],
-              offers: [],
-            }),
+            data: {
+              requester: actorContextInput({
+                productVersion: "synthetic-presentation",
+                businessDate: "2026-11-04",
+                timeZone: "Etc/UTC",
+                capabilities: ["READ_CASE", "READ_AUTHORITY"],
+                views: ["CASES", "AUTHORITY", "OPERATIONS"],
+                offers: [],
+              }),
+            },
           },
         },
       }),
@@ -357,14 +372,16 @@ test("read admission retry stays non-blocking and honors the server delay under 
       json: {
         outcome: {
           kind: "SUCCEEDED",
-          data: actorContextInput({
-            productVersion: "synthetic-presentation",
-            businessDate: "2026-11-04",
-            timeZone: "Etc/UTC",
-            capabilities: [],
-            views: [],
-            offers: [],
-          }),
+          data: {
+            requester: actorContextInput({
+              productVersion: "synthetic-presentation",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+              capabilities: [],
+              views: [],
+              offers: [],
+            }),
+          },
         },
       },
     });
@@ -479,14 +496,16 @@ test("shell case creation returns to the captured core view and focus without se
       json: {
         outcome: {
           kind: "SUCCEEDED",
-          data: actorContextInput({
-            productVersion: "synthetic-presentation",
-            businessDate: "2026-11-04",
-            timeZone: "Etc/UTC",
-            capabilities: ["REGISTER"],
-            views: ["CASES"],
-            offers: [{ kind: "OPEN" }],
-          }),
+          data: {
+            requester: actorContextInput({
+              productVersion: "synthetic-presentation",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+              capabilities: ["REGISTER"],
+              views: ["CASES"],
+              offers: [{ kind: "OPEN" }],
+            }),
+          },
         },
       },
     }),
@@ -652,3 +671,289 @@ if (engine === "chromium") {
     }
   }
 }
+
+for (const language of ["en", "ar"] as const) {
+  test(`canonical timeline renders supplied money changes and names in ${language} under CSP`, async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    const clean = await observe(page, true);
+    await seed(page, {
+      language,
+      accent: language === "ar" ? "blue" : "green",
+      mode: language === "ar" ? "dark" : "light",
+    });
+    if (language === "ar") {
+      await page.setViewportSize({ width: 390, height: 844 });
+    }
+    const basis = {
+      observedAt: "2026-11-04T12:00:00.000000Z",
+      businessDate: "2026-11-04",
+      timeZone: "Etc/UTC",
+    };
+    const target = { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000001" };
+    const current = caseViewInput({
+      caseId: target.caseId,
+      caseReference: "CASE-1",
+      revision: 1,
+      advice: { acts: [], history: ["SUMMARY", "FULL"] },
+      state: { kind: "ACTIVE", fields: caseFields },
+    });
+    await page.route("**/api/case.get", (route) =>
+      route.fulfill({
+        json: {
+          outcome: { kind: "SUCCEEDED", data: { ...current, work: { ...current.work, basis } } },
+        },
+      }),
+    );
+    let reads = 0;
+    await page.route("**/api/case.timeline", (route) => {
+      reads += 1;
+      const input = route.request().postDataJSON() as { filter?: string };
+      const entry = timelineEntry({
+        recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
+        changes: {
+          kind: "DISCLOSED",
+          items: [
+            {
+              kind: "CASE_MONEY",
+              change: {
+                field: "payableAmount",
+                change: {
+                  before: { amount: "150000", currency: "JPY" },
+                  after: { amount: "1234.5678", currency: "EUR" },
+                },
+              },
+            },
+          ],
+        },
+      });
+      return route.fulfill({
+        json: {
+          outcome: {
+            kind: "SUCCEEDED",
+            data: {
+              ...timelinePage([
+                input.filter === "WORK"
+                  ? {
+                      ...entry,
+                      kind: "WORK",
+                      act: "UPDATE_WORK",
+                      changes: {
+                        kind: "DISCLOSED",
+                        items: [
+                          {
+                            kind: "HANDLING_SUMMARY",
+                            change: { before: null, after: "Core work change" },
+                          },
+                        ],
+                      },
+                    }
+                  : entry,
+              ]),
+              basis,
+            },
+          },
+        },
+      });
+    });
+    const retired: string[] = [];
+    page.on("request", (request) => {
+      if (/\/api\/case\.(?:history|activity)$/u.test(request.url())) {
+        retired.push(request.url());
+      }
+    });
+    await page.goto(casePath(target.caseId), { waitUntil: "commit" });
+    await expect(page.getByText("Timeline recorder", { exact: true })).toBeVisible();
+    const timeline = page.locator(".case-timeline-panel");
+    await expect(timeline.locator("del")).toContainText("JPY");
+    await expect(timeline.locator("ins")).toContainText("EUR");
+    expect(reads).toBe(1);
+    expect(retired).toEqual([]);
+    await expectAccessible(page);
+    await clean();
+    if (browserName === "chromium") {
+      const camera = await page.context().newCDPSession(page);
+      const capture = await camera.send("Page.captureScreenshot", {
+        format: "png",
+        captureBeyondViewport: true,
+      });
+      const path = testInfo.outputPath(`case-timeline-${language}.png`);
+      await writeFile(path, Buffer.from(capture.data, "base64"));
+      await testInfo.attach("case-timeline", { path, contentType: "image/png" });
+      await camera.detach();
+    }
+    await timeline.locator("summary").click();
+    await expect(timeline.locator("details")).toContainText(entryOperationId);
+    const filters = timeline.locator(".timeline-filters button");
+    await filters.nth(2).click();
+    await expect(timeline).toContainText("Core work change");
+    expect(reads).toBe(2);
+    await expectAccessible(page);
+    await clean();
+  });
+}
+
+for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
+  test(`caller-owned ${kind} access state does not launch resource reads under CSP`, async ({
+    page,
+  }) => {
+    const clean = await observe(page, true);
+    await seed(page);
+    let requester: RequesterState;
+    if (kind === "NOT_REGISTERED") {
+      requester = {
+        kind,
+        issuer: "https://issuer.example/",
+        subject: "own-account",
+        claims: { name: "Unused IdP hint" },
+      };
+    } else if (kind === "DISABLED") {
+      requester = { kind, self: actorRefInput({ availability: "DISABLED" }) };
+    } else {
+      requester = {
+        kind,
+        self: actorRefInput(),
+        installationId: "90000000-0000-4000-8000-000000000001",
+        businessDate: "2026-11-04",
+        timeZone: "Etc/UTC",
+      };
+    }
+    await page.route("**/api/context", (route) =>
+      route.fulfill({ json: { outcome: { kind: "SUCCEEDED", data: { requester } } } }),
+    );
+    const resources: string[] = [];
+    page.on("request", (request) => {
+      if (/\/api\/(?:case|reminder|authority)\./u.test(request.url())) {
+        resources.push(request.url());
+      }
+    });
+    await page.goto("/cases", { waitUntil: "commit" });
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+    expect(resources).toEqual([]);
+    await expect(page.getByText("Unused IdP hint")).toHaveCount(0);
+    await expectAccessible(page);
+    await clean();
+  });
+}
+
+test("same-requester access loss retains unknown bytes and a visible departure guard under CSP", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  const active = actorContextInput({
+    productVersion: "synthetic-presentation",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+    capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+    views: ["AUTHORITY", "OPERATIONS"],
+    offers: [{ kind: "AUTHORITY_ACT", act: "REGISTER" }],
+  });
+  let hasAccess = true;
+  await page.route("**/api/context", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            requester: hasAccess
+              ? active
+              : {
+                  kind: "NO_ROLES",
+                  self: active.self,
+                  installationId: active.installationId,
+                  businessDate: active.businessDate,
+                  timeZone: active.timeZone,
+                },
+          },
+        },
+      },
+    }),
+  );
+  await page.route("**/api/authority.list", (route) =>
+    route.fulfill({
+      json: { outcome: { kind: "SUCCEEDED", data: { items: [], nextCursor: null } } },
+    }),
+  );
+  await page.route("**/api/operation.preview", (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (
+      !isRequest("operation.preview", input) ||
+      input.kind !== "AUTHORITY" ||
+      input.act.kind !== "REGISTER"
+    ) {
+      throw new Error("Expected the browser's real registration preview request.");
+    }
+    return route.fulfill({
+      json: {
+        operationId: input.operationId,
+        outcome: {
+          kind: "REVIEWED",
+          data: {
+            review: {
+              subject: {
+                kind: "AUTHORITY",
+                target: null,
+                accessScope: { kind: "INSTALLATION" },
+                before: { enabled: false, profile: null, grants: [], access: [] },
+                after: {
+                  enabled: true,
+                  profile: { displayName: input.act.profile.displayName, contact: null },
+                  grants: [],
+                  access: [],
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+  });
+  const bytes: string[] = [];
+  await page.route("**/api/operation.execute", (route) => {
+    const input: unknown = route.request().postDataJSON();
+    if (!isRequest("operation.execute", input)) {
+      throw new Error("Expected a typed exact retry request.");
+    }
+    const body = route.request().postData();
+    if (body === null) {
+      throw new Error("Expected exact request bytes.");
+    }
+    bytes.push(body);
+    return route.fulfill({
+      json: { operationId: input.operationId, outcome: { kind: "OUTCOME_UNKNOWN", data: null } },
+    });
+  });
+  await page.goto("/people", { waitUntil: "commit" });
+  await page.locator('[name="target.issuer"]').fill("https://issuer.example/");
+  await page.locator('[name="target.subject"]').fill("retained-person");
+  await page.locator('[name="act.profile.displayName"]').fill("Retained person");
+  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  await page.getByRole("checkbox").check();
+  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
+  expect(bytes).toHaveLength(1);
+  hasAccess = false;
+  await page.evaluate(() => {
+    window.dispatchEvent(new Event("focus"));
+  });
+  await expect(
+    page.getByRole("heading", { name: "You don’t have access yet", exact: true }),
+  ).toBeVisible();
+  expect(bytes).toHaveLength(1);
+  await expect(page.getByRole("button", { name: "Send again", exact: true })).toHaveCount(0);
+  await page.getByRole("button", { name: "Sign out", exact: true }).click();
+  await expect(page.getByRole("dialog")).toBeVisible();
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "Keep editing", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeFocused();
+  hasAccess = true;
+  await page.getByRole("button", { name: "Check access", exact: true }).click();
+  await page.getByRole("button", { name: "Send again", exact: true }).click();
+  await expect.poll(() => bytes.length).toBe(2);
+  expect(bytes[1]).toBe(bytes[0]);
+  await expectAccessible(page);
+  await clean();
+});
