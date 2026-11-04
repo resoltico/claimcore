@@ -160,3 +160,38 @@ module Descriptor =
                 Entries = entries caseSummaryColumns row
             }
         ]
+
+    let private count key label value =
+        {
+            Entry.Key = key
+            LabelId = label
+            Prominence = Prominence.Primary
+            Value = PresentedValue.Count value
+        }
+
+    /// Counts retain known zero values and the producer's order; absence is never inferred.
+    let caseViews (reply: CaseViews) =
+        reply.Items
+        |> List.map (fun item ->
+            let token = CaseView.token item.View
+            count token ("view." + token + ".label") item.Count)
+
+    let reminderViews (reply: ReminderViews) =
+        reply.Items
+        |> List.map (fun item ->
+            let token = ReminderView.token item.View
+            count token ("view." + token + ".label") item.Count)
+
+    let workOverview (reply: WorkOverview) =
+        [
+            count "actionableCases" "label.actionableCases" reply.ActionableCases
+            count "missingPlanCases" "label.missingPlanCases" reply.MissingPlanCases
+            count "overdueCases" "label.overdueCases" reply.OverdueCases
+            count "overdueReminders" "label.overdueReminders" reply.OverdueReminders
+            count "unassignedCases" "label.unassignedCases" reply.UnassignedCases
+            count
+                "unavailableAssigneeCases"
+                "label.unavailableAssigneeCases"
+                reply.UnavailableAssigneeCases
+            count "attentionCases" "label.attentionCases" reply.AttentionCases
+        ]

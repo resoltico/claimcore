@@ -3,6 +3,7 @@ namespace ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 
 module internal TextWorkReply =
     open TextReplyFormat
@@ -84,31 +85,16 @@ module internal TextWorkReply =
 
     let caseViews language (value: CaseViews) =
         basis language value.Basis
-        @ (value.Items
-           |> List.map (fun item ->
-               line language ("view." + CaseView.token item.View + ".label") (number item.Count)))
+        @ TextDescriptorValue.entries language (Descriptor.caseViews value)
 
     let reminderViews language (value: ReminderViews) =
         basis language value.Basis
-        @ (value.Items
-           |> List.map (fun item ->
-               line
-                   language
-                   ("view." + ReminderView.token item.View + ".label")
-                   (number item.Count)))
+        @ TextDescriptorValue.entries language (Descriptor.reminderViews value)
 
     let overview language (value: WorkOverview) =
         basis language value.Basis
-        @ [
-            line language "input.mine.label" (boolean value.Mine)
-            line language "label.actionableCases" (number value.ActionableCases)
-            line language "label.missingPlanCases" (number value.MissingPlanCases)
-            line language "label.overdueCases" (number value.OverdueCases)
-            line language "label.overdueReminders" (number value.OverdueReminders)
-            line language "label.unassignedCases" (number value.UnassignedCases)
-            line language "label.unavailableAssigneeCases" (number value.UnavailableAssigneeCases)
-            line language "label.attentionCases" (number value.AttentionCases)
-        ]
+        @ [ line language "input.mine.label" (boolean value.Mine) ]
+        @ TextDescriptorValue.entries language (Descriptor.workOverview value)
 
     let activity language (page: CaseActivityPage) =
         (page.Items

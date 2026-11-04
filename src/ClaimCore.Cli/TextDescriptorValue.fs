@@ -30,3 +30,8 @@ module internal TextDescriptorValue =
         | PresentedValue.Reference value -> CaseReference.format value |> text
         | PresentedValue.Identifier value -> text value
         | PresentedValue.Absent reason -> TextReplyFormat.label language reason
+
+    let entry language (entry: Entry) =
+        TextReplyFormat.line language entry.LabelId (render language entry.Value)
+
+    let entries language values = List.map (entry language) values
