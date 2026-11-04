@@ -252,9 +252,11 @@ module internal WorkStorage =
                 return
                     rows
                     |> List.map (fun row ->
-                        caseId "case_id" row,
+                        let identity = actor "actor_id" row
+
+                        (caseId "case_id" row, identity),
                         ActorRef.create
-                            (actor "actor_id" row)
+                            identity
                             (DurableNames.tryPrincipalKind (
                                 DatabaseSession.namedValue<string> "principal_kind" row
                              )

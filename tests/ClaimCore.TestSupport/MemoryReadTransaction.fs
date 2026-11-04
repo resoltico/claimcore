@@ -300,7 +300,8 @@ type internal Reader
 
             Task.FromResult(
                 pairs
-                |> List.map (fun (caseId, actorId) -> caseId, assignedAccount state caseId actorId)
+                |> List.map (fun (caseId, actorId) ->
+                    (caseId, actorId), assignedAccount state caseId actorId)
                 |> Map.ofList
             )
 

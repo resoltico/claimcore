@@ -93,7 +93,9 @@ module internal CaseWorkReads =
                         |> Option.map _.Work
                         |> Option.defaultValue CaseWork.empty
 
-                    let responsible = accounts |> Map.tryFind record.CaseId
+                    let responsible =
+                        work.Responsible
+                        |> Option.bind (fun actor -> Map.tryFind (record.CaseId, actor) accounts)
 
                     if work.Responsible.IsSome && responsible.IsNone then
                         result <- Error CoreFault.StoreIntegrityError
