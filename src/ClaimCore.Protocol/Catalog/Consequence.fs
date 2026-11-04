@@ -29,11 +29,13 @@ module Consequence =
     let private authorityAct =
         function
         | AuthorityKind.Disable -> Consequence.Stewardship
+        | AuthorityKind.EraseProfile -> Consequence.Irreversible
         | AuthorityKind.ProvisionOwner
         | AuthorityKind.Register
         | AuthorityKind.Grant
         | AuthorityKind.Revoke
         | AuthorityKind.Enable -> Consequence.Routine
+        | AuthorityKind.SetProfile -> Consequence.Routine
 
     let ofAct =
         function

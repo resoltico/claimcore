@@ -192,7 +192,8 @@ module internal TimelineDifferences =
         | EntryContent.Case _
         | EntryContent.Authority _
         | EntryContent.Reminder _
-        | EntryContent.ErasedCase -> []
+        | EntryContent.ErasedCase
+        | EntryContent.ErasedProfile -> []
 
     let describe references current previous =
         match current with
@@ -202,4 +203,5 @@ module internal TimelineDifferences =
         | EntryContent.NonAcceptance
         | EntryContent.Authority _
         | EntryContent.Case(_, None)
-        | EntryContent.ErasedCase -> fault
+        | EntryContent.ErasedCase
+        | EntryContent.ErasedProfile -> fault

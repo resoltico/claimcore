@@ -4225,6 +4225,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -4415,6 +4416,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "IRREVERSIBLE",
       "inputs": [
         {
           "identity": "operationId",

@@ -168,7 +168,10 @@ let tests =
                     execute
                         owner
                         (OperationInput.Authority(
-                            authorityRequest (id 99210) principal AuthorityAct.Register
+                            authorityRequest
+                                (id 99210)
+                                principal
+                                (AuthorityAct.Register Inputs.actorProfile)
                         ))
 
                 let grantValue =

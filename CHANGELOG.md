@@ -2,7 +2,8 @@
 
 ## [Unreleased]
 
-- Recreate databases for ledger entry format 5 and atomic operation-effect groups; old installations are rejected without migration.
+- Recreate databases for authority format 3 and ledger entry format 5; old installations are rejected without migration.
+- Supply an authored owner display name during provisioning and a profile when registering people; identity-provider claims do not supply profile names.
 - Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
 - Regenerate clients for named ActorRefs in work and assignee reads; reusable refs omit contacts and reflect current profile erasure.
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
@@ -11,6 +12,7 @@
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
+- Set or erase actor profiles separately from identity and grants; historical names use current profiles, while erasure preserves acceptance but can prevent exact replay.
 - Case and reminder view counts share a snapshot; case timelines combine fact, work and reminder changes under current history permissions.
 - Work overview attention includes due-today and ready-to-close cases, matching core case views.
 - Case lists identify exact visible reference matches using installation case-folding and expose the next reminder identity; unavailable cases remain undisclosed.

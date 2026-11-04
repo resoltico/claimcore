@@ -1022,7 +1022,6 @@
           "data": {
             "actor": {
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "profile": null,
               "displayName": {
                 "kind": "ERASED"
               },
@@ -1464,7 +1463,6 @@
           "data": {
             "actor": {
               "actorId": "10000000-0000-4000-8000-000000000001",
-              "profile": null,
               "displayName": {
                 "kind": "ERASED"
               },
@@ -1543,19 +1541,16 @@
                   "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
-                "profile": {
-                  "displayName": "Synthetic person",
-                  "contact": "Synthetic contact"
-                },
                 "actor": {
                   "actorId": "10000000-0000-4000-8000-000000000001",
                   "displayName": {
-                    "kind": "ERASED"
+                    "kind": "NAMED",
+                    "value": "Synthetic person"
                   },
                   "principalKind": "HUMAN",
                   "availability": "DISABLED"
                 },
-                "contact": null
+                "contact": "Synthetic contact"
               },
               {
                 "principal": {
@@ -1563,7 +1558,6 @@
                   "issuer": "https://issuer.example/",
                   "subject": "x"
                 },
-                "profile": null,
                 "actor": {
                   "actorId": "10000000-0000-4000-8000-000000000001",
                   "displayName": {
@@ -4133,7 +4127,6 @@
                     "issuer": "https://issuer.example/",
                     "subject": "dormant-target"
                   },
-                  "profile": null,
                   "actor": {
                     "actorId": "10000000-0000-4000-8000-000000000002",
                     "displayName": {
@@ -10690,7 +10683,8 @@
               "maintenance": {
                 "active": false,
                 "generation": 0
-              }
+              },
+              "recommended": null
             },
             "mine": false,
             "caseId": "20000000-0000-4000-8000-000000000001",
@@ -10722,7 +10716,13 @@
               "canUpdateSummary": false,
               "canAssign": false,
               "canCreateReminder": false
-            }
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "ASSIGNEE_UNAVAILABLE",
+              "READY_TO_CLOSE"
+            ]
           }
         }
       },

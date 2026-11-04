@@ -25,6 +25,8 @@ let private acts =
         ActKind.Authority AuthorityKind.Revoke, Consequence.Routine
         ActKind.Authority AuthorityKind.Enable, Consequence.Routine
         ActKind.Authority AuthorityKind.Disable, Consequence.Stewardship
+        ActKind.Authority AuthorityKind.SetProfile, Consequence.Routine
+        ActKind.Authority AuthorityKind.EraseProfile, Consequence.Irreversible
         ActKind.Work WorkActKind.UpdateWork, Consequence.Routine
         ActKind.Reminder ReminderActKind.Create, Consequence.Routine
         ActKind.Reminder ReminderActKind.Update, Consequence.Routine

@@ -66,7 +66,8 @@ module internal TimelineQueries =
         | EntryContent.Work _
         | EntryContent.Reminder _ -> not erased
         | EntryContent.NonAcceptance
-        | EntryContent.Authority _ -> false
+        | EntryContent.Authority _
+        | EntryContent.ErasedProfile -> false
 
     let private validate (services: ServiceContext) entries =
         entries

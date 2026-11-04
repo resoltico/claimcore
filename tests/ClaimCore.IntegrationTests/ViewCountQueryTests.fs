@@ -253,7 +253,9 @@ let private qualify pair =
         do!
             execute
                 pair
-                (OperationInput.Authority(authorityRequest (id 5509) scoped AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest (id 5509) scoped (AuthorityAct.Register Inputs.actorProfile)
+                ))
 
         let! paid =
             Service.get
