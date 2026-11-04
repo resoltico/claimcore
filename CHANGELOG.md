@@ -7,6 +7,7 @@
 - Regenerate clients for named ActorRefs in work and assignee reads; reusable refs omit contacts and reflect current profile erasure.
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
 - Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
+- Regenerate case-list and CSV consumers: state.fields now comes from listed declarations; core work state replaces duplicate nested work and progress columns.
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
@@ -16,6 +17,7 @@
 - CLI adds family/verb help and --version, rejects irrelevant clear flags, names escaped usage tokens and reports declined reviews.
 - CLI language follows explicit flag, environment, profile and POSIX locale precedence; configure --show reports the effective choice and source.
 - CLI --dry-run rejects malformed writes locally with exit 2 and ordered input issues; structured refusals retain the existing frame shape with NOT_SENT delivery.
+- CLI money keeps meaningful precision and adds ISO minor units for known currencies; canonical JSON and CSV amounts stay unchanged.
 - Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.

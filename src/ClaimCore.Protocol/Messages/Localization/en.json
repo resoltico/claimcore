@@ -362,6 +362,7 @@
   "label.morePendingReminders": "+{count} more",
   "label.nextFollowUp": "Next follow-up",
   "label.noNextAction": "This actionable case has no pending next action.",
+  "label.notRecorded": "Not recorded",
   "label.observedCaseFacts": "Observed case facts at review",
   "label.overdueCases": "Cases with overdue work",
   "label.overdueReminders": "Overdue reminders",

@@ -40,7 +40,7 @@ module internal CaseListCommand =
         (page: CaseSummaryPage)
         =
         match prepared.Format with
-        | VerbFormat.Csv -> io.Output(CaseListRows.csvRows page.Items)
+        | VerbFormat.Csv -> io.Output(CaseListRows.csvRows page.Basis page.Items)
         | VerbFormat.Text -> io.Output(text (CaseListRows.textRows prepared.Language page.Items))
         | VerbFormat.Json -> io.Deliver frame response
 

@@ -16,14 +16,44 @@ let private moment = DateTimeOffset(2026, 10, 28, 12, 30, 0, TimeSpan.Zero)
 
 let private facts =
     {
-        Work = Inputs.unscheduledWork
-        Status = CaseStatus.Opened
-        ClaimantName = Inputs.name "Synthetic, \"quoted\"\r\nclaimant"
-        InsurerName = Inputs.name "Synthetic insurer"
-        Claimed = Inputs.money "1000.00" "EUR"
-        Payable = None
-        Progress = CaseProgress.Undecided
-        IncidentNotificationDate = Inputs.date "2026-08-03"
+        CaseSummaryFacts.Fields =
+            Map.ofList
+                [
+                    BusinessField.ClaimantName,
+                    Some(
+                        CaseFieldValue.Business(
+                            Admitted.Name(Inputs.name "Synthetic, \"quoted\"\r\nclaimant")
+                        )
+                    )
+                    BusinessField.InsurerName,
+                    Some(CaseFieldValue.Business(Admitted.Name(Inputs.name "Synthetic insurer")))
+                    BusinessField.ClaimedAmount,
+                    Some(
+                        CaseFieldValue.Business(
+                            Admitted.Amount(Amount.parse "1000.00" |> Fixtures.accepted)
+                        )
+                    )
+                    BusinessField.ClaimedCurrency,
+                    Some(
+                        CaseFieldValue.Business(
+                            Admitted.Currency(Currency.parse "EUR" |> Fixtures.accepted)
+                        )
+                    )
+                    BusinessField.PayableAmount, None
+                    BusinessField.PayableCurrency, None
+                ]
+    }
+
+let private parties claimant insurer =
+    { facts with
+        Fields =
+            facts.Fields
+            |> Map.add
+                BusinessField.ClaimantName
+                (Some(CaseFieldValue.Business(Admitted.Name(Inputs.name claimant))))
+            |> Map.add
+                BusinessField.InsurerName
+                (Some(CaseFieldValue.Business(Admitted.Name(Inputs.name insurer))))
     }
 
 let private row reference =
@@ -123,12 +153,7 @@ let tests =
 
                         let exported =
                             { row reference with
-                                State =
-                                    CaseState.Active
-                                        { facts with
-                                            ClaimantName = Inputs.name claimant
-                                            InsurerName = Inputs.name insurer
-                                        }
+                                State = CaseState.Active(parties claimant insurer)
                             }
 
                         let code, bytes, _, _ =
@@ -143,12 +168,12 @@ let tests =
                             "Formula-leading references are protected"
 
                         Expect.equal
-                            cells[4]
+                            cells[5]
                             ("'" + claimant)
                             "Claimant protection precedes quoting"
 
                         Expect.equal
-                            cells[5]
+                            cells[6]
                             ("'" + insurer)
                             "Insurer protection uses the same rule")
             testCase
@@ -180,12 +205,7 @@ let tests =
             testCase "JSON and text preserve formula-leading authored values" (fun () ->
                 let exported =
                     { row "=CASE" with
-                        State =
-                            CaseState.Active
-                                { facts with
-                                    ClaimantName = Inputs.name "=1+1"
-                                    InsurerName = Inputs.name "@insurer"
-                                }
+                        State = CaseState.Active(parties "=1+1" "@insurer")
                     }
 
                 for options in [ []; [ "--format"; "json" ] ] do
@@ -208,6 +228,7 @@ let tests =
                         { row "ERASED" with
                             Revision = CaseFixtures.revision 9L
                             State = CaseState.Erased
+                            Headline = CaseHeadline.Erased
                         }
 
                     let code, bytes, errors, _ =
@@ -234,24 +255,28 @@ let tests =
                             "caseReference"
                             "revision"
                             "state.kind"
-                            "state.status"
-                            "state.claimantName"
-                            "state.insurerName"
-                            "state.claimed.amount"
-                            "state.claimed.currency"
-                            "state.payable.amount"
-                            "state.payable.currency"
-                            "state.progress"
-                            "state.incidentNotificationDate"
-                            "state.work.responsible.actorId"
-                            "state.work.responsible.displayName"
-                            "state.work.followUpDate"
-                            "state.work.due"
-                            "state.work.basis.businessDate"
-                            "state.work.basis.timeZone"
+                            "headline"
+                            "attention"
+                            "state.fields.claimantName"
+                            "state.fields.insurerName"
+                            "state.fields.claimedAmount"
+                            "state.fields.claimedCurrency"
+                            "state.fields.payableAmount"
+                            "state.fields.payableCurrency"
+                            "responsible.actorId"
+                            "responsible.displayName.value"
+                            "responsible.displayName.kind"
+                            "responsible.availability"
+                            "nextAction.reminderId"
+                            "nextAction.action"
+                            "nextAction.due"
+                            "nextAction.dueState"
+                            "pendingReminders"
                             "changedAt"
+                            "basis.businessDate"
+                            "basis.timeZone"
                         ]
-                        "The independently specified wire-path header"
+                        "The independently specified generated-fact and core-state headers"
 
                     Expect.equal
                         parsed[1]
@@ -259,22 +284,26 @@ let tests =
                             "A,1"
                             "1"
                             "ACTIVE"
-                            "OPENED"
+                            "UNDECIDED"
+                            ""
                             "Synthetic, \"quoted\"\r\nclaimant"
                             "Synthetic insurer"
                             "1000"
                             "EUR"
                             ""
                             ""
-                            "UNDECIDED"
-                            "2026-08-03"
                             ""
                             ""
                             ""
-                            "UNSCHEDULED"
+                            ""
+                            ""
+                            ""
+                            ""
+                            ""
+                            "0"
+                            "2026-10-28T12:30:00.000000Z"
                             "2026-08-31"
                             "UTC"
-                            "2026-10-28T12:30:00.000000Z"
                         ]
                         "Canonical values and authored punctuation survive"
 
@@ -284,6 +313,7 @@ let tests =
                             "ERASED"
                             "9"
                             "ERASED"
+                            "ERASED"
                             ""
                             ""
                             ""
@@ -299,56 +329,69 @@ let tests =
                             ""
                             ""
                             ""
+                            "0"
                             "2026-10-28T12:30:00.000000Z"
+                            "2026-08-31"
+                            "UTC"
                         ]
                         "Erased rows carry no business values")
             testCase
                 "CSV includes explicit work facts and their authoritative date basis"
                 (fun () ->
-                    let assigned =
-                        { facts.Work with
-                            Responsible =
-                                Some
-                                    {
-                                        ActorId =
-                                            CaseFixtures.actorId (
-                                                Guid.Parse "80000000-0000-4000-8000-000000000001"
-                                            )
-                                        DisplayName =
-                                            DisplayName.Named(
-                                                PartyName.parse "=authored display name"
-                                                |> Result.defaultWith (fun _ ->
-                                                    failtest "Name fixture")
-                                            )
-                                        PrincipalKind = PrincipalKind.Human
-                                        Availability = ActorAvailability.NotEligible
-                                    }
-                            FollowUp = Some(Inputs.date "2026-08-31")
-                            Due = CaseDue.Today
+                    let actor =
+                        {
+                            ActorId =
+                                CaseFixtures.actorId (
+                                    Guid.Parse "80000000-0000-4000-8000-000000000001"
+                                )
+                            DisplayName =
+                                DisplayName.Named(
+                                    PartyName.parse "=authored display name" |> Fixtures.accepted
+                                )
+                            PrincipalKind = PrincipalKind.Human
+                            Availability = ActorAvailability.NotEligible
                         }
 
                     let item =
                         { row "WORK-CSV" with
-                            State = CaseState.Active { facts with Work = assigned }
+                            Responsible = Some actor
+                            NextAction =
+                                Some
+                                    {
+                                        ReminderId =
+                                            ReminderId.create (
+                                                Guid.Parse "80000000-0000-4000-8000-000000000002"
+                                            )
+                                            |> Option.get
+                                        Action =
+                                            ReminderAction.parse "Review evidence"
+                                            |> Fixtures.accepted
+                                        Due = Inputs.date "2026-08-31"
+                                        DueState = CaseDue.Today
+                                    }
+                            PendingReminders = 1L
                         }
 
                     let code, bytes, _, _ =
                         run [ "--format"; "csv" ] [ Outcome.Succeeded(page [ item ] None) ]
 
                     Expect.equal code 0 "The actual CLI exports a successful work page"
-                    let cells = (parseCsv bytes)[1]
+                    let parsed = parseCsv bytes
+                    let cells = List.zip parsed[0] parsed[1] |> Map.ofList
 
-                    Expect.equal
-                        (cells |> List.skip 12 |> List.take 6)
+                    for key, expected in
                         [
-                            "80000000-0000-4000-8000-000000000001"
-                            "'=authored display name"
-                            "2026-08-31"
-                            "TODAY"
-                            "2026-08-31"
-                            "UTC"
-                        ]
-                        "ID, planned date, due meaning and observation basis remain distinct"
+                            "responsible.actorId", "80000000-0000-4000-8000-000000000001"
+                            "responsible.displayName.value", "'=authored display name"
+                            "nextAction.due", "2026-08-31"
+                            "nextAction.dueState", "TODAY"
+                            "basis.businessDate", "2026-08-31"
+                            "basis.timeZone", "UTC"
+                        ] do
+                        Expect.equal
+                            (Map.find key cells)
+                            expected
+                            "Identity, canonical facts and date basis remain distinct"
 
                     Expect.stringContains
                         (Encoding.UTF8.GetString bytes)

@@ -41,41 +41,6 @@ module TimelineCodecs =
         |> build
         |> named "ReminderDifference"
 
-    let private fieldValue =
-        let business token kind =
-            variant
-                token
-                CaseFieldValue.Business
-                (function
-                | CaseFieldValue.Business value when FieldValue.kind value = kind -> Some value
-                | _ -> None)
-                (record id |> field "value" id (ResponseCodecs.scalar kind))
-
-        tagged
-            "CaseFieldValue"
-            [
-                business "DATE" FieldValueKind.CalendarDate
-                business "COUNTRY" FieldValueKind.Country
-                business "PARTY" FieldValueKind.PartyName
-                business "TEXT" FieldValueKind.IncidentDescription
-                business "AMOUNT" FieldValueKind.Amount
-                business "CURRENCY" FieldValueKind.Currency
-                variant
-                    "REFERENCE"
-                    CaseFieldValue.Reference
-                    (function
-                    | CaseFieldValue.Reference value -> Some value
-                    | _ -> None)
-                    (record id |> field "value" id caseReference)
-                variant
-                    "STATUS"
-                    CaseFieldValue.Status
-                    (function
-                    | CaseFieldValue.Status value -> Some value
-                    | _ -> None)
-                    (record id |> field "value" id (VocabularyCodec.create CaseStatus.vocabulary))
-            ]
-
     let private fieldDifference =
         (record (fun field before after ->
             {
@@ -85,8 +50,8 @@ module TimelineCodecs =
             })
         : Fields<CaseFieldDifference, _>)
         |> field "field" _.FieldName (VocabularyCodec.create BusinessField.vocabulary)
-        |> field "before" _.Before (nullable fieldValue)
-        |> field "after" _.After (nullable fieldValue)
+        |> field "before" _.Before (nullable CaseFieldCodecs.value)
+        |> field "after" _.After (nullable CaseFieldCodecs.value)
         |> build
         |> named "CaseFieldDifference"
 

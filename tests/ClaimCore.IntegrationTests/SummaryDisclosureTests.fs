@@ -104,32 +104,59 @@ let private summaries () =
                 Expect.equal row.Revision current.Snapshot.Revision "Revision disclosure agrees"
                 let summary = CaseState.fields row.State |> Option.get
                 let fields = CaseState.fields current.Snapshot.State |> Option.get
-                Expect.equal summary.Status fields.Status "Status comes from the disclosed snapshot"
 
                 Expect.equal
-                    summary.ClaimantName
-                    (Registration.claimant fields.Registration)
-                    "Claimant is already disclosed by case.get"
+                    row.Headline
+                    current.Headline
+                    "The headline is already disclosed by case.get"
+
+                let value field = Map.find field summary.Fields
 
                 Expect.equal
-                    summary.InsurerName
-                    (Registration.insurer fields.Registration)
-                    "Insurer is already disclosed by case.get"
+                    (value BusinessField.ClaimantName)
+                    (Some(
+                        CaseFieldValue.Business(
+                            Admitted.Name(Registration.claimant fields.Registration)
+                        )
+                    ))
+                    "Claimant is already disclosed"
 
                 Expect.equal
-                    summary.Claimed
-                    (Registration.claimed fields.Registration)
-                    "Claimed money is already disclosed"
+                    (value BusinessField.InsurerName)
+                    (Some(
+                        CaseFieldValue.Business(
+                            Admitted.Name(Registration.insurer fields.Registration)
+                        )
+                    ))
+                    "Insurer is already disclosed"
+
+                let claimed = Registration.claimed fields.Registration
 
                 Expect.equal
-                    summary.Payable
-                    (fields.Decision |> Option.map Decision.payable)
-                    "Payable money is already disclosed"
+                    (value BusinessField.ClaimedAmount)
+                    (Some(CaseFieldValue.Business(Admitted.Amount(Money.amount claimed))))
+                    "Claimed amount is already disclosed"
 
                 Expect.equal
-                    summary.Progress
-                    (CaseProgress.ofPayment fields.Progress)
-                    "Progress follows the disclosed groups"
+                    (value BusinessField.ClaimedCurrency)
+                    (Some(CaseFieldValue.Business(Admitted.Currency(Money.currencyValue claimed))))
+                    "Claimed currency is already disclosed"
+
+                let payable = fields.Decision |> Option.map Decision.payable
+
+                Expect.equal
+                    (value BusinessField.PayableAmount)
+                    (payable
+                     |> Option.map (Money.amount >> Admitted.Amount >> CaseFieldValue.Business))
+                    "Payable amount is already disclosed"
+
+                Expect.equal
+                    (value BusinessField.PayableCurrency)
+                    (payable
+                     |> Option.map (
+                         Money.currencyValue >> Admitted.Currency >> CaseFieldValue.Business
+                     ))
+                    "Payable currency is already disclosed"
 
                 let! history =
                     Service.history

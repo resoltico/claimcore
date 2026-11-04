@@ -120,6 +120,14 @@ type CaseFieldValue =
     | Reference of CaseReference
     | Status of CaseStatus
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseFieldValue =
+    let format =
+        function
+        | CaseFieldValue.Business value -> FieldValue.format value
+        | CaseFieldValue.Reference value -> CaseReference.format value
+        | CaseFieldValue.Status value -> CaseStatus.token value
+
 module CaseFields =
     let declarations = BusinessField.declarations
     let ofGroup = BusinessField.ofGroup
@@ -144,11 +152,13 @@ module CaseFields =
             |> Option.map (snd >> CaseFieldValue.Business)
 
     let value field fields =
-        typedValue field fields
-        |> Option.map (function
-            | CaseFieldValue.Business value -> FieldValue.format value
-            | CaseFieldValue.Reference value -> CaseReference.format value
-            | CaseFieldValue.Status value -> CaseStatus.token value)
+        typedValue field fields |> Option.map CaseFieldValue.format
+
+    let listedValues (declarations: FieldDescriptor list) fields =
+        declarations
+        |> List.filter _.Listed
+        |> List.map (fun declaration -> declaration.Field, typedValue declaration.Field fields)
+        |> Map.ofList
 
     let values fields =
         declarations |> List.map (fun row -> row.Field, value row.Field fields)

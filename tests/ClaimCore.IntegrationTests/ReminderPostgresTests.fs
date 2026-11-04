@@ -303,16 +303,24 @@ let private dates database =
             [ "synthetic-b" ]
             "A financial OPEN accepts the minimum Gregorian notification date and indexes it exactly"
 
+        let! oldestDetail =
+            Service.get
+                actor
+                {
+                    Target = CaseSelector.Id oldest.Items.Head.CaseId
+                }
+                token
+
         let firstDate =
-            oldest.Items.Head.State
+            (read oldestDetail).Snapshot.State
             |> CaseState.fields
-            |> Option.map _.IncidentNotificationDate
+            |> Option.map (fun fields -> Registration.incidentNotificationDate fields.Registration)
             |> Option.map CalendarDate.format
 
         Expect.equal
             firstDate
             (Some "0001-01-01")
-            "The financial list exposes the exact finite minimum date"
+            "The ordered case retains the exact finite minimum date"
 
         Expect.isSome
             oldest.NextCursor
@@ -710,21 +718,17 @@ let private casePageOwners database =
 
         let! positive = Service.list actor request token
 
-        let fields =
-            (read positive).Items
-            |> List.exactlyOne
-            |> _.State
-            |> CaseState.fields
-            |> Option.get
+        let item = (read positive).Items |> List.exactlyOne
+        let! detail = Service.get actor { Target = CaseSelector.Id item.CaseId } token
 
         Expect.equal
-            (fields.Work.Summary |> Option.map HandlingSummary.format)
+            ((read detail).Work.Summary |> Option.map HandlingSummary.format)
             (Some "Page work summary")
-            "The work owner is paired with its case"
+            "The work owner remains available in its detail read"
 
         Expect.equal
-            (fields.Work.PendingReminders,
-             fields.Work.NextAction |> Option.map ReminderAction.format)
+            (item.PendingReminders,
+             item.NextAction |> Option.map (fun next -> ReminderAction.format next.Action))
             (1L, Some "Current page action")
             "The page reads the independent reminder owner"
 
@@ -754,17 +758,13 @@ let private casePageOwners database =
         Expect.isOk repaired "Verified reconstruction restores the missing work owner"
         let! after = Service.list actor request token
 
-        let restored =
-            (read after).Items
-            |> List.exactlyOne
-            |> _.State
-            |> CaseState.fields
-            |> Option.get
+        let restored = (read after).Items |> List.exactlyOne
 
         Expect.equal
-            (restored.Work.Summary |> Option.map HandlingSummary.format)
-            (Some "Page work summary")
-            "The same replacement page path reads the repaired root"
+            (restored.NextAction
+             |> Option.map (fun next -> ReminderAction.format next.Action))
+            (Some "Current page action")
+            "The replacement page path reads the repaired independent work root"
 
         let! _ = verified database
         return ()

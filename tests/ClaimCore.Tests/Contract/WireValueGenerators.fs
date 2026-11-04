@@ -212,6 +212,40 @@ let private maintenanceValue =
         return RegisterMaintenance.create active generation |> Result.defaultWith invalidOp
     }
 
+let private listedScalar value =
+    let represented parse project generator =
+        generator
+        |> Gen.map (parse >> Result.defaultWith (string >> invalidOp) >> project)
+
+    match value with
+    | CaseFieldValue.Reference _ ->
+        represented CaseReference.parse CaseFieldValue.Reference reference
+    | CaseFieldValue.Status _ ->
+        Gen.item [ CaseStatus.Opened; CaseStatus.Closed ]
+        |> Gen.map CaseFieldValue.Status
+    | CaseFieldValue.Business scalar ->
+        let value =
+            match scalar with
+            | Admitted.Date _ -> represented CalendarDate.parse Admitted.Date date
+            | Admitted.Country _ -> represented CountryCode.parse Admitted.Country (uppercase 2)
+            | Admitted.Name _ -> represented PartyName.parse Admitted.Name scalarText
+            | Admitted.Description _ ->
+                represented IncidentDescription.parse Admitted.Description scalarText
+            | Admitted.Amount _ -> represented Amount.parse Admitted.Amount amount
+            | Admitted.Currency _ -> represented Currency.parse Admitted.Currency (uppercase 3)
+
+        value |> Gen.map CaseFieldValue.Business
+
+let private listedFacts (facts: CaseSummaryFacts) =
+    facts.Fields
+    |> Map.toList
+    |> List.map (fun (field, value) ->
+        match value with
+        | None -> Gen.constant (field, None)
+        | Some value -> listedScalar value |> Gen.map (fun value -> field, Some value))
+    |> sequence
+    |> Gen.map (Map.ofList >> fun fields -> { CaseSummaryFacts.Fields = fields })
+
 let rec internal fresh response source context (kind: Type) (value: obj | null) =
     match positionValue response context kind with
     | Some generator -> generator
@@ -242,6 +276,8 @@ and private freshRepresentation response source context (kind: Type) (value: obj
         freshList response source context kind
     elif kind = typeof<RegisterMaintenance> then
         maintenanceValue |> Gen.map box
+    elif kind = typeof<CaseSummaryFacts> then
+        listedFacts (unbox value) |> Gen.map box
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
 

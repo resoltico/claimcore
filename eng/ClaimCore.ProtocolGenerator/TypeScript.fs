@@ -93,6 +93,11 @@ module TypeScript =
 
     let private presentationConstants () =
         [
+            "export const listedCaseFieldNames = "
+            + JsonSerializer.Serialize(
+                CaseFields.declarations |> List.filter _.Listed |> List.map _.Key
+            )
+            + " as const;"
             "export const presentationLanguageOptions = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.languageOptions)
             + " as const;"

@@ -100,6 +100,17 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
     elif kind = typeof<PrincipalKey> then
         let input = PrincipalKey.toInput (unbox<PrincipalKey> value)
         collect seeds (context + ".Principal") typeof<PrincipalInput> (box input)
+    elif kind = typeof<CaseSummaryFacts> then
+        let facts = unbox<CaseSummaryFacts> value
+
+        for KeyValue(field, value) in facts.Fields do
+            collect seeds (context + ".listedField") typeof<BusinessField> (box field)
+
+            collect
+                seeds
+                (context + ".listedValue." + BusinessField.key field)
+                typeof<CaseFieldValue option>
+                (box value)
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
         collect seeds (context + ".CaseAdvice.Acts") typeof<CaseActKind list> (box advice.Acts)

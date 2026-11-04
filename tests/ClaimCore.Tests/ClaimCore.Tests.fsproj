@@ -135,6 +135,7 @@
     <Compile Include="Contract/InputContractScenarios.fs" />
     <Compile Include="Contract/ContractTests.fs" />
     <Compile Include="Contract/PayloadBudgetTests.fs" />
+    <Compile Include="Contract/ListedCaseFieldTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/CatalogBindingTests.fs" />

@@ -6,14 +6,7 @@ open System
 
 type CaseSummaryFacts =
     {
-        Work: CaseWorkView
-        Status: CaseStatus
-        ClaimantName: PartyName
-        InsurerName: PartyName
-        Claimed: Money
-        Payable: Money option
-        Progress: CaseProgress
-        IncidentNotificationDate: CalendarDate
+        Fields: Map<BusinessField, CaseFieldValue option>
     }
 
 type CaseNextAction =

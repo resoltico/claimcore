@@ -282,15 +282,8 @@ module internal Queries =
                     CaseState.map
                         (fun (fields: CaseFields) ->
                             {
-                                Work = work
-                                Status = fields.Status
-                                ClaimantName = Registration.claimant fields.Registration
-                                InsurerName = Registration.insurer fields.Registration
-                                Claimed = Registration.claimed fields.Registration
-                                Payable = fields.Decision |> Option.map Decision.payable
-                                Progress = CaseProgress.ofPayment fields.Progress
-                                IncidentNotificationDate =
-                                    Registration.incidentNotificationDate fields.Registration
+                                CaseSummaryFacts.Fields =
+                                    CaseFields.listedValues CaseFields.declarations fields
                             })
                         record.Snapshot.State
             })

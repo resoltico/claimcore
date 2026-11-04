@@ -387,19 +387,19 @@ let private workProfiles progressed publish (actor: ServiceContext) cases =
 
                     for row in page.Items do
                         match row.State with
-                        | CaseState.Active facts ->
+                        | CaseState.Active _ ->
                             Expect.equal
-                                facts.Work.FollowUp
+                                (row.NextAction |> Option.map _.Due)
                                 (Some followUp)
                                 "The planned date survives actual PostgreSQL reads"
 
                             Expect.equal
-                                facts.Work.Due
-                                CaseDue.Overdue
+                                (row.NextAction |> Option.map _.DueState)
+                                (Some CaseDue.Overdue)
                                 "The database observation classifies actual past follow-up"
 
                             Expect.equal
-                                (facts.Work.Responsible |> Option.map _.ActorId)
+                                (row.Responsible |> Option.map _.ActorId)
                                 (Some context.ActorId)
                                 "Mine is explicit responsibility, not grant-based visibility"
                         | _ -> failtest "Only seeded active work can match the work filter"

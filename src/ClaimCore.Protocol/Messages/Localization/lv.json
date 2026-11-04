@@ -362,6 +362,7 @@
   "label.morePendingReminders": "+{count} vēl",
   "label.nextFollowUp": "Nākamā darbība",
   "label.noNextAction": "Šai aktīvajai lietai nav gaidošas nākamās darbības.",
+  "label.notRecorded": "Nav ierakstīts",
   "label.observedCaseFacts": "Pārskatīšanas brīdī novērotie lietas fakti",
   "label.overdueCases": "Lietas ar nokavētu darbu",
   "label.overdueReminders": "Nokavētie atgādinājumi",

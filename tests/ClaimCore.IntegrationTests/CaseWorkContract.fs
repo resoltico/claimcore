@@ -1543,7 +1543,17 @@ let internal pairedPage fixture =
 
             Expect.isSome page.NextCursor "The third parent supplies a continuation"
             let first = page.Items.Head
-            let fields = CaseState.fields first.State |> Option.get
+
+            let! detail =
+                Service.get
+                    owner
+                    {
+                        Target = CaseSelector.Id first.CaseId
+                    }
+                    token
+
+            let detail = read detail
+            let work = detail.Work
 
             Expect.equal
                 first.Revision
@@ -1551,43 +1561,43 @@ let internal pairedPage fixture =
                 "A work page retains the independent fact revision"
 
             Expect.equal
-                fields.Work.Revision
+                work.Revision
                 Revision.first
-                "The same row carries its independent work revision"
+                "The detail retains its independent work revision"
 
             Expect.equal
-                (fields.Work.Summary |> Option.map HandlingSummary.format)
+                (work.Summary |> Option.map HandlingSummary.format)
                 (Some "Page-owned summary\nالعربية")
                 "The selected work owner supplies exact text"
 
             Expect.equal
-                (fields.Work.PendingReminders, fields.Work.OverdueReminders)
+                (first.PendingReminders, work.OverdueReminders)
                 (10L, 1L)
                 "Reminder counts have reminder units"
 
             Expect.equal
-                (fields.Work.NextAction |> Option.map ReminderAction.format)
+                (first.NextAction |> Option.map (fun next -> ReminderAction.format next.Action))
                 (Some "First pending action")
                 "The minimum pending date supplies the next action"
 
             Expect.equal
-                (fields.Work.FollowUp |> Option.map CalendarDate.format)
+                (first.NextAction |> Option.map (fun next -> CalendarDate.format next.Due))
                 (Some "0001-01-01")
                 "The derived date is preserved at the Gregorian boundary"
 
             Expect.equal
-                (fields.Work.Responsible
+                (first.Responsible
                  |> Option.map (fun account ->
                      account.ActorId, (account.Availability = ActorAvailability.Available)))
                 (Some(CaseFixtures.actorId (id 1), true))
                 "Assignment labels retain the case-scoped availability check"
 
-            let empty = page.Items[1] |> _.State |> CaseState.fields |> Option.get |> _.Work
+            let empty = page.Items[1]
 
             Expect.equal
-                (empty.Revision, empty.Summary, empty.PendingReminders)
-                (Revision.zero, None, 0L)
-                "The next parent keeps its genuine empty work root"
+                (empty.NextAction, empty.Responsible, empty.PendingReminders)
+                (None, None, 0L)
+                "The next parent has no invented work values"
 
             let! continued =
                 Service.list

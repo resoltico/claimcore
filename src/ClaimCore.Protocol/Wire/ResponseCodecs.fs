@@ -31,37 +31,13 @@ module ResponseCodecs =
             ]
         |> Codec.vocabulary "scope"
 
-    let scalar kind =
-        let codec =
-            match kind with
-            | FieldValueKind.CalendarDate -> date
-            | FieldValueKind.Country -> country
-            | FieldValueKind.PartyName
-            | FieldValueKind.IncidentDescription
-            | FieldValueKind.HandlingSummary -> nonempty
-            | FieldValueKind.Amount -> amount
-            | FieldValueKind.Currency -> currency
-            | FieldValueKind.ActorId
-            | FieldValueKind.PlannedDate
-            | FieldValueKind.Reference
-            | FieldValueKind.Status -> invalidArg (nameof kind) "A group contains business values."
-
-        codec
-        |> mapResult
-            (fun path raw ->
-                FieldValue.parse kind raw
-                |> Result.mapError (fun _ ->
-                    {
-                        Path = path
-                        Reason = "value outside its wire grammar"
-                    }))
-            FieldValue.format
-
     let private group group create values =
         CaseFields.ofGroup group
         |> List.filter ((<>) BusinessField.IncidentDescription)
         |> List.map (fun field ->
-            field, BusinessField.key field, scalar (BusinessField.describe field).Kind)
+            field,
+            BusinessField.key field,
+            CaseFieldCodecs.scalar (BusinessField.describe field).Kind)
         |> Codec.fieldMap
         |> mapResult
             (fun path fields ->
@@ -89,35 +65,35 @@ module ResponseCodecs =
         |> field
             "incidentDate"
             (Registration.incidentDate >> Admitted.Date)
-            (scalar FieldValueKind.CalendarDate)
+            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
         |> field
             "incidentNotificationDate"
             (Registration.incidentNotificationDate >> Admitted.Date)
-            (scalar FieldValueKind.CalendarDate)
+            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
         |> field
             "incidentCountry"
             (Registration.country >> Admitted.Country)
-            (scalar FieldValueKind.Country)
+            (CaseFieldCodecs.scalar FieldValueKind.Country)
         |> field
             "claimantName"
             (Registration.claimant >> Admitted.Name)
-            (scalar FieldValueKind.PartyName)
+            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
         |> field
             "insurerName"
             (Registration.insurer >> Admitted.Name)
-            (scalar FieldValueKind.PartyName)
+            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
         |> field
             "claimedAmount"
             (Registration.claimed >> Money.amount >> Admitted.Amount)
-            (scalar FieldValueKind.Amount)
+            (CaseFieldCodecs.scalar FieldValueKind.Amount)
         |> field
             "claimedCurrency"
             (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
-            (scalar FieldValueKind.Currency)
+            (CaseFieldCodecs.scalar FieldValueKind.Currency)
         |> field
             "incidentDescription"
             (Registration.description >> Option.map Admitted.Description)
-            (nullable (scalar FieldValueKind.IncidentDescription))
+            (nullable (CaseFieldCodecs.scalar FieldValueKind.IncidentDescription))
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values

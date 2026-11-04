@@ -362,6 +362,7 @@
   "label.morePendingReminders": "+{count} أخرى",
   "label.nextFollowUp": "المتابعة التالية",
   "label.noNextAction": "لا يوجد إجراء تال معلق لهذه القضية القابلة للعمل.",
+  "label.notRecorded": "غير مسجّل",
   "label.observedCaseFacts": "حقائق القضية المرصودة عند المراجعة",
   "label.overdueCases": "القضايا ذات العمل المتأخر",
   "label.overdueReminders": "التذكيرات المتأخرة",

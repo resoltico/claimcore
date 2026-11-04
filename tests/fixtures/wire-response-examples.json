@@ -1299,36 +1299,13 @@
                 "revision": 1,
                 "state": {
                   "kind": "ACTIVE",
-                  "status": "OPENED",
-                  "claimantName": "Synthetic claimant",
-                  "insurerName": "Synthetic insurer",
-                  "claimed": {
-                    "amount": "1000",
-                    "currency": "EUR"
-                  },
-                  "payable": null,
-                  "progress": "UNDECIDED",
-                  "incidentNotificationDate": "2026-01-01",
-                  "work": {
-                    "responsible": null,
-                    "followUpDate": null,
-                    "due": "UNSCHEDULED",
-                    "basis": {
-                      "observedAt": "2026-01-01T12:00:00.000000Z",
-                      "businessDate": "2026-01-01",
-                      "timeZone": "Etc/UTC"
-                    },
-                    "revision": 0,
-                    "changedAt": null,
-                    "recordedBy": null,
-                    "summary": null,
-                    "nextAction": null,
-                    "pendingReminders": 0,
-                    "overdueReminders": 0,
-                    "needsNextAction": true,
-                    "canUpdateSummary": false,
-                    "canAssign": false,
-                    "canCreateReminder": false
+                  "fields": {
+                    "claimantName": "Synthetic claimant",
+                    "insurerName": "Synthetic insurer",
+                    "claimedAmount": "1000",
+                    "claimedCurrency": "EUR",
+                    "payableAmount": null,
+                    "payableCurrency": null
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -1347,36 +1324,13 @@
                 "revision": 2,
                 "state": {
                   "kind": "VOIDED",
-                  "status": "CLOSED",
-                  "claimantName": "Synthetic claimant",
-                  "insurerName": "Synthetic insurer",
-                  "claimed": {
-                    "amount": "1000",
-                    "currency": "EUR"
-                  },
-                  "payable": null,
-                  "progress": "UNDECIDED",
-                  "incidentNotificationDate": "2026-01-01",
-                  "work": {
-                    "responsible": null,
-                    "followUpDate": null,
-                    "due": "INACTIVE",
-                    "basis": {
-                      "observedAt": "2026-01-01T12:00:00.000000Z",
-                      "businessDate": "2026-01-01",
-                      "timeZone": "Etc/UTC"
-                    },
-                    "revision": 0,
-                    "changedAt": null,
-                    "recordedBy": null,
-                    "summary": null,
-                    "nextAction": null,
-                    "pendingReminders": 0,
-                    "overdueReminders": 0,
-                    "needsNextAction": false,
-                    "canUpdateSummary": false,
-                    "canAssign": false,
-                    "canCreateReminder": false
+                  "fields": {
+                    "claimantName": "Synthetic claimant",
+                    "insurerName": "Synthetic insurer",
+                    "claimedAmount": "1000",
+                    "claimedCurrency": "EUR",
+                    "payableAmount": null,
+                    "payableCurrency": null
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -3506,39 +3460,13 @@
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "state": {
                   "kind": "ACTIVE",
-                  "status": "OPENED",
-                  "claimantName": "Synthetic claimant",
-                  "insurerName": "Synthetic insurer",
-                  "claimed": {
-                    "amount": "1000",
-                    "currency": "EUR"
-                  },
-                  "payable": {
-                    "amount": "750",
-                    "currency": "EUR"
-                  },
-                  "progress": "DECIDED",
-                  "incidentNotificationDate": "2026-01-01",
-                  "work": {
-                    "responsible": null,
-                    "followUpDate": null,
-                    "due": "UNSCHEDULED",
-                    "basis": {
-                      "observedAt": "2026-01-01T12:00:00.000000Z",
-                      "businessDate": "2026-01-01",
-                      "timeZone": "Etc/UTC"
-                    },
-                    "revision": 0,
-                    "changedAt": null,
-                    "recordedBy": null,
-                    "summary": null,
-                    "nextAction": null,
-                    "pendingReminders": 0,
-                    "overdueReminders": 0,
-                    "needsNextAction": true,
-                    "canUpdateSummary": false,
-                    "canAssign": false,
-                    "canCreateReminder": false
+                  "fields": {
+                    "claimantName": "Synthetic claimant",
+                    "insurerName": "Synthetic insurer",
+                    "claimedAmount": "1000",
+                    "claimedCurrency": "EUR",
+                    "payableAmount": "750",
+                    "payableCurrency": "EUR"
                   }
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001",
@@ -3557,39 +3485,13 @@
                 "changedAt": "2026-09-07T12:00:00.000000Z",
                 "state": {
                   "kind": "ACTIVE",
-                  "status": "CLOSED",
-                  "claimantName": "Synthetic claimant",
-                  "insurerName": "Synthetic insurer",
-                  "claimed": {
-                    "amount": "1000",
-                    "currency": "EUR"
-                  },
-                  "payable": {
-                    "amount": "750",
-                    "currency": "EUR"
-                  },
-                  "progress": "PAID",
-                  "incidentNotificationDate": "2026-01-01",
-                  "work": {
-                    "responsible": null,
-                    "followUpDate": null,
-                    "due": "INACTIVE",
-                    "basis": {
-                      "observedAt": "2026-01-01T12:00:00.000000Z",
-                      "businessDate": "2026-01-01",
-                      "timeZone": "Etc/UTC"
-                    },
-                    "revision": 0,
-                    "changedAt": null,
-                    "recordedBy": null,
-                    "summary": null,
-                    "nextAction": null,
-                    "pendingReminders": 0,
-                    "overdueReminders": 0,
-                    "needsNextAction": false,
-                    "canUpdateSummary": false,
-                    "canAssign": false,
-                    "canCreateReminder": false
+                  "fields": {
+                    "claimantName": "Synthetic claimant",
+                    "insurerName": "Synthetic insurer",
+                    "claimedAmount": "1000",
+                    "claimedCurrency": "EUR",
+                    "payableAmount": "750",
+                    "payableCurrency": "EUR"
                   }
                 },
                 "caseId": "20000000-0000-4000-8000-000000000001",
@@ -6398,52 +6300,13 @@
                 "revision": 1,
                 "state": {
                   "kind": "ACTIVE",
-                  "status": "OPENED",
-                  "claimantName": "Synthetic claimant",
-                  "insurerName": "Synthetic insurer",
-                  "claimed": {
-                    "amount": "1000",
-                    "currency": "EUR"
-                  },
-                  "payable": null,
-                  "progress": "UNDECIDED",
-                  "incidentNotificationDate": "2026-01-01",
-                  "work": {
-                    "responsible": {
-                      "actorId": "20000000-0000-4000-8000-000000000002",
-                      "displayName": {
-                        "kind": "NAMED",
-                        "value": "Synthetic responsible person"
-                      },
-                      "principalKind": "HUMAN",
-                      "availability": "AVAILABLE"
-                    },
-                    "followUpDate": "2026-01-02",
-                    "due": "UPCOMING",
-                    "basis": {
-                      "observedAt": "2026-01-01T12:00:00.000000Z",
-                      "businessDate": "2026-01-01",
-                      "timeZone": "Etc/UTC"
-                    },
-                    "revision": 1,
-                    "changedAt": "2026-01-01T12:00:00.000000Z",
-                    "recordedBy": {
-                      "actorId": "20000000-0000-4000-8000-000000000002",
-                      "displayName": {
-                        "kind": "NAMED",
-                        "value": "Synthetic responsible person"
-                      },
-                      "principalKind": "HUMAN",
-                      "availability": "AVAILABLE"
-                    },
-                    "summary": null,
-                    "nextAction": "Review evidence",
-                    "pendingReminders": 1,
-                    "overdueReminders": 0,
-                    "needsNextAction": false,
-                    "canUpdateSummary": false,
-                    "canAssign": false,
-                    "canCreateReminder": false
+                  "fields": {
+                    "claimantName": "Synthetic claimant",
+                    "insurerName": "Synthetic insurer",
+                    "claimedAmount": "1000",
+                    "claimedCurrency": "EUR",
+                    "payableAmount": null,
+                    "payableCurrency": null
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",
@@ -10193,52 +10056,13 @@
                 "revision": 1,
                 "state": {
                   "kind": "ACTIVE",
-                  "status": "OPENED",
-                  "claimantName": "Synthetic claimant",
-                  "insurerName": "Synthetic insurer",
-                  "claimed": {
-                    "amount": "1000",
-                    "currency": "EUR"
-                  },
-                  "payable": null,
-                  "progress": "UNDECIDED",
-                  "incidentNotificationDate": "2026-01-01",
-                  "work": {
-                    "responsible": {
-                      "actorId": "20000000-0000-4000-8000-000000000002",
-                      "displayName": {
-                        "kind": "NAMED",
-                        "value": "Synthetic responsible person"
-                      },
-                      "principalKind": "HUMAN",
-                      "availability": "AVAILABLE"
-                    },
-                    "followUpDate": "2026-01-02",
-                    "due": "UPCOMING",
-                    "basis": {
-                      "observedAt": "2026-01-01T12:00:00.000000Z",
-                      "businessDate": "2026-01-01",
-                      "timeZone": "Etc/UTC"
-                    },
-                    "revision": 1,
-                    "changedAt": "2026-01-01T12:00:00.000000Z",
-                    "recordedBy": {
-                      "actorId": "20000000-0000-4000-8000-000000000002",
-                      "displayName": {
-                        "kind": "NAMED",
-                        "value": "Synthetic responsible person"
-                      },
-                      "principalKind": "HUMAN",
-                      "availability": "AVAILABLE"
-                    },
-                    "summary": null,
-                    "nextAction": "Review evidence",
-                    "pendingReminders": 1,
-                    "overdueReminders": 0,
-                    "needsNextAction": false,
-                    "canUpdateSummary": false,
-                    "canAssign": false,
-                    "canCreateReminder": false
+                  "fields": {
+                    "claimantName": "Synthetic claimant",
+                    "insurerName": "Synthetic insurer",
+                    "claimedAmount": "1000",
+                    "claimedCurrency": "EUR",
+                    "payableAmount": null,
+                    "payableCurrency": null
                   }
                 },
                 "changedAt": "2026-09-07T12:00:00.000000Z",

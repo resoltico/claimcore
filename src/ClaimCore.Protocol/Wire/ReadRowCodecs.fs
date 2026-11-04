@@ -91,41 +91,9 @@ module internal ReadRowCodecs =
         |> build
         |> named "CaseWorkView"
 
-    let private parties =
-        (record (fun claimant insurer -> claimant, insurer): Fields<PartyName * PartyName, _>)
-        |> field "claimantName" fst partyName
-        |> field "insurerName" snd partyName
-
-    let private amounts =
-        (record (fun claimed payable -> claimed, payable): Fields<Money * Money option, _>)
-        |> field "claimed" fst money
-        |> field "payable" snd (nullable money)
-
     let private facts =
-        (record (fun status parties amounts progress notified work ->
-            let claimant, insurer = parties
-            let claimed, payable = amounts
-
-            {
-                CaseSummaryFacts.Work = work
-                Status = status
-                ClaimantName = claimant
-                InsurerName = insurer
-                Claimed = claimed
-                Payable = payable
-                Progress = progress
-                IncidentNotificationDate = notified
-            })
-        : Fields<CaseSummaryFacts, _>)
-        |> field "status" _.Status (VocabularyCodec.create CaseStatus.vocabulary)
-        |> flatten (fun value -> value.ClaimantName, value.InsurerName) parties
-        |> flatten (fun value -> value.Claimed, value.Payable) amounts
-        |> field "progress" _.Progress (VocabularyCodec.create CaseProgress.vocabulary)
-        |> field
-            "incidentNotificationDate"
-            _.IncidentNotificationDate
-            (parsed CalendarDate.parse CalendarDate.format date)
-        |> field "work" _.Work workView
+        (record (fun fields -> { CaseSummaryFacts.Fields = fields }): Fields<CaseSummaryFacts, _>)
+        |> field "fields" _.Fields (ListedCaseFieldCodecs.create CaseFields.declarations)
 
     let private caseNextAction =
         (record (fun id action due dueState ->

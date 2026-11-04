@@ -5565,63 +5565,13 @@
           "kind": {
             "const": "ACTIVE"
           },
-          "status": {
-            "enum": [
-              "OPENED",
-              "CLOSED"
-            ]
-          },
-          "claimantName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "insurerName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "claimed": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "payable": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Money"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "progress": {
-            "enum": [
-              "UNDECIDED",
-              "DECIDED",
-              "PAID"
-            ]
-          },
-          "incidentNotificationDate": {
-            "type": "string",
-            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-            "format": "date",
-            "minLength": 10,
-            "maxLength": 10
-          },
-          "work": {
-            "$ref": "#/components/schemas/CaseWorkView"
+          "fields": {
+            "$ref": "#/components/schemas/ListedCaseFields"
           }
         },
         "required": [
           "kind",
-          "status",
-          "claimantName",
-          "insurerName",
-          "claimed",
-          "payable",
-          "progress",
-          "incidentNotificationDate",
-          "work"
+          "fields"
         ]
       },
       "CaseSummaryState.ERASED": {
@@ -5643,63 +5593,13 @@
           "kind": {
             "const": "VOIDED"
           },
-          "status": {
-            "enum": [
-              "OPENED",
-              "CLOSED"
-            ]
-          },
-          "claimantName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "insurerName": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "claimed": {
-            "$ref": "#/components/schemas/Money"
-          },
-          "payable": {
-            "oneOf": [
-              {
-                "$ref": "#/components/schemas/Money"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "progress": {
-            "enum": [
-              "UNDECIDED",
-              "DECIDED",
-              "PAID"
-            ]
-          },
-          "incidentNotificationDate": {
-            "type": "string",
-            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-            "format": "date",
-            "minLength": 10,
-            "maxLength": 10
-          },
-          "work": {
-            "$ref": "#/components/schemas/CaseWorkView"
+          "fields": {
+            "$ref": "#/components/schemas/ListedCaseFields"
           }
         },
         "required": [
           "kind",
-          "status",
-          "claimantName",
-          "insurerName",
-          "claimed",
-          "payable",
-          "progress",
-          "incidentNotificationDate",
-          "work"
+          "fields"
         ]
       },
       "CaseTimelineEntry": {
@@ -8592,6 +8492,100 @@
         "required": [
           "value",
           "count"
+        ]
+      },
+      "ListedCaseFields": {
+        "oneOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "claimantName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              "insurerName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              "claimedAmount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "claimedCurrency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "payableAmount": {
+                "type": "null"
+              },
+              "payableCurrency": {
+                "type": "null"
+              }
+            },
+            "required": [
+              "claimantName",
+              "insurerName",
+              "claimedAmount",
+              "claimedCurrency",
+              "payableAmount",
+              "payableCurrency"
+            ]
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "properties": {
+              "claimantName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              "insurerName": {
+                "type": "string",
+                "minLength": 1,
+                "maxLength": 2147483647
+              },
+              "claimedAmount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "claimedCurrency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              },
+              "payableAmount": {
+                "type": "string",
+                "pattern": "^(?:(0|[1-9][0-9]{0,17})(\\.[0-9]{1,4})?)(?![\\s\\S])",
+                "minLength": 1,
+                "maxLength": 23
+              },
+              "payableCurrency": {
+                "type": "string",
+                "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
+                "minLength": 3,
+                "maxLength": 3
+              }
+            },
+            "required": [
+              "claimantName",
+              "insurerName",
+              "claimedAmount",
+              "claimedCurrency",
+              "payableAmount",
+              "payableCurrency"
+            ]
+          }
         ]
       },
       "LiveCase": {

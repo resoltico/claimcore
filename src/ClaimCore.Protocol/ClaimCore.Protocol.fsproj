@@ -16,6 +16,7 @@
     <Compile Include="Catalog/Reads.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />
+    <Compile Include="Presentation/Descriptor.fs" />
     <Compile Include="Catalog/InteractionInput.fs" />
     <Compile Include="Messages/Localization/LocalizationPolicy.fs" />
     <Compile Include="Vocabulary/DeliveryVocabulary.fs" />
@@ -31,6 +32,8 @@
     <Compile Include="Catalog/Metadata.fs" />
     <Compile Include="Catalog/Bindings.fs" />
     <Compile Include="Wire/ResponseScalars.fs" />
+    <Compile Include="Wire/CaseFieldCodecs.fs" />
+    <Compile Include="Wire/ListedCaseFieldCodecs.fs" />
     <Compile Include="Wire/DiagnosticCodecs.fs" />
     <Compile Include="Wire/PrincipalCodecs.fs" />
     <Compile Include="Wire/ActorCodecs.fs" />
