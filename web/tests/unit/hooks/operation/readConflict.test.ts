@@ -23,6 +23,8 @@ const caseValue = () =>
       recordedBy: null,
       revision: 7,
       summary: null,
+      summaryChangedAt: null,
+      summaryRecordedBy: null,
       nextAction: null,
       pendingReminders: 0,
       overdueReminders: 0,

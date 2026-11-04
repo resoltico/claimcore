@@ -106,7 +106,7 @@ it("associates payment acknowledgement with the generated mode control", async (
   expect(payment).toHaveAttribute("aria-invalid", "true");
   const description = document.getElementById("act.groups.payment.kind-error");
   expect(payment.getAttribute("aria-describedby")?.split(" ")).toEqual([
-    "act.groups.payment.kind-meaning",
+    "act.groups.payment.kind-hint",
     "act.groups.payment.kind-error",
   ]);
   expect(description).toHaveTextContent("explicit payment reaffirmation");
@@ -114,6 +114,6 @@ it("associates payment acknowledgement with the generated mode control", async (
   expect(description).toHaveTextContent("skaidri jāapstiprina");
   await chooseOption(user, payment, "CLEAR");
   expect(payment).not.toHaveAttribute("aria-invalid");
-  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
+  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-hint");
   expect(globalThis.fetch).toHaveBeenCalledOnce();
 });

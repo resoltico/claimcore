@@ -42,10 +42,12 @@ it("observes authority receipts as attributed metadata without assuming a case s
     vi.fn().mockResolvedValueOnce(response("operation.observe", "SUCCEEDED", source.data)),
   );
   render(<OperationLookup definition={definition} initialOperationId={source.data.operationId} />);
-  expect(
-    await screen.findByText(
-      `Authority act Provision owner for actor ${source.data.subject.targetActorId}.`,
-    ),
-  ).toBeVisible();
+  const target = source.data.subject.targetActor;
+  if (target.kind === "DISCLOSED") {
+    expect(await screen.findByText("Provision owner", { exact: false })).toBeVisible();
+  } else {
+    expect(await screen.findByText("Provision owner", { exact: true })).toBeVisible();
+    expect(document.querySelector(".authority-receipt > p")).not.toHaveTextContent(target.actorId);
+  }
   expect(document.querySelector(".case-fields")).toBeNull();
 });

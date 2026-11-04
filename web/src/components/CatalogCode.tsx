@@ -1,3 +1,4 @@
+import { FieldHelp } from "./FieldHelp";
 import { useMemo } from "react";
 import { ComboBox, Popover } from "react-aria-components/ComboBox";
 import { Input } from "react-aria-components/Input";
@@ -44,7 +45,6 @@ const CodeDescription = ({ field, value, error }: TypedFieldProps) => {
   return (
     <>
       <Text slot="description" className="field-description">
-        <small>{p.fieldMeaning(field.name)}</small>
         <small>{p.hint(field)}</small>
         {field.scalar.kind === "CURRENCY" ? null : <CountryHint code={value} />}
       </Text>
@@ -81,7 +81,10 @@ export const CatalogCode = (props: TypedFieldProps) => {
         }
       }}
     >
-      <Label>{p.fieldLabel(field.name)}</Label>
+      <div className="field-label-row">
+        <Label>{p.fieldLabel(field.name)}</Label>
+        <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
+      </div>
       <div className="code-input">
         <Input data-field-name={field.name} autoComplete="off" spellCheck={false} dir="ltr" />
         <Button aria-label={p.fieldLabel(field.name)}>⌄</Button>

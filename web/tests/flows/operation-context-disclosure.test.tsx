@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { response } from "../support/service-ui.fixtures";
 import { act, within } from "@testing-library/react";
@@ -75,8 +76,8 @@ it("requires an explicit warning before discarding a possibly accepted request",
   const user = userEvent.setup();
   render(editor({ onClose: close }));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   await user.click(screen.getByRole("button", { name: "Discard and leave" }));
   const dialog = screen.getByRole("dialog");

@@ -1,3 +1,4 @@
+import { reviewConfirm } from "../support/review-controls";
 import * as catalogs from "../../src/presentation/languageCatalog";
 import { changeField } from "../support/field-entry";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
@@ -59,7 +60,7 @@ it("preserves authored content, DOM selection and operation identity across lang
   expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("2026-02-28");
 });
 
-it("finishes an in-flight language load without replaying or losing review confirmation", async () => {
+it("finishes an in-flight language load without replaying or replacing the reviewed action", async () => {
   const user = userEvent.setup();
   const pending = deferredResponse();
   const languageReady = Promise.withResolvers<void>();
@@ -72,15 +73,16 @@ it("finishes an in-flight language load without replaying or losing review confi
   const original = draftAt(0);
   pending.resolve(previewReply());
   const dialog = await screen.findByRole("dialog");
-  const checkbox = within(dialog).getByRole("checkbox");
-  await user.click(checkbox);
+  const confirmation = reviewConfirm();
+  expect(confirmation).not.toBeDisabled();
   expect(within(dialog).queryByRole("radio")).toBeNull();
   await act(async () => {
     languageReady.resolve();
     await languageReady.promise;
   });
   expect(screen.getByRole("dialog")).toBe(dialog);
-  expect(checkbox).toBeChecked();
+  expect(reviewConfirm()).toBe(confirmation);
+  expect(confirmation).not.toBeDisabled();
   expect(dialog).toHaveTextContent(original.operationId);
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(draftAt(0)).toEqual(original);
@@ -130,14 +132,14 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   expect(document.body).not.toHaveTextContent("UNTRUSTED_ENGLISH_CANARY");
   expect(screen.getByRole("alert")).toHaveTextContent("Ievades kļūdu skaits: 1.");
   expect(name).toHaveAccessibleDescription(
-    "Prasījumu iesniegušās personas vārds vai uzņēmuma nosaukums.Līdz 200 rakstzīmēm. Nepieciešama netukša vērtība.",
+    "Persona vai uzņēmums, kas iesniedz prasījumu. Nepieciešama netukša vērtība.",
   );
   const alert = screen.getByRole("alert").textContent;
   await user.click(languageControl("en"));
   expect(screen.getByRole("alert").textContent).not.toBe(alert);
   expect(screen.getByRole("alert")).toHaveTextContent("Input problems: 1.");
   expect(name).toHaveAccessibleDescription(
-    "Name of the person or company making the claim.Up to 200 characters. A non-blank value is required.",
+    "The person or company making the claim. A non-blank value is required.",
   );
   expect(name).toHaveAttribute("aria-invalid", "true");
   expect(globalThis.fetch).toHaveBeenCalledOnce();

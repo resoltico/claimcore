@@ -1,3 +1,5 @@
+import { operationEntry } from "../protocol/operationCatalog";
+import { renderCatalogKey } from "../presentation/messages";
 import type { RequesterState, RequesterState_ACTIVE } from "@contracts/client";
 import type { SessionState } from "../session/useSession";
 import { AccessState } from "./AccessState";
@@ -181,10 +183,7 @@ const AcceptedToast = ({
   }
   return (
     <div className="success-toast" role="status">
-      {p.text("ui.caseRecorded", {
-        act: p.actLabel(receipt.subject.act),
-        revision: p.integer(receipt.subject.revision),
-      })}
+      {renderCatalogKey(p, operationEntry({ subject: "CASE", kind: receipt.subject.act }).doneId!)}
       {receipt.subject.act === "OPEN" ? <p>{p.text("ui.planAfterOpen")}</p> : null}
       <button type="button" onClick={close}>
         {p.text("ui.close")}

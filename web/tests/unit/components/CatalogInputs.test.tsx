@@ -148,7 +148,7 @@ it("edits admission rows independently with catalog scope and principal admissio
   const row = screen.getByRole("group", { name: "Role 2" });
   await user.click(within(row).getByRole("radio", { name: "One case" }));
   expect(within(row).getByRole("radio", { name: "Owner" })).toBeDisabled();
-  expect(within(row).getByRole("textbox", { name: /case reference/u })).toBeVisible();
+  expect(within(row).getByRole("textbox", { name: /Case reference/u })).toBeVisible();
   await user.click(screen.getByRole("radio", { name: "Service" }));
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(within(groups[0]!).getByRole("radio", { name: "Owner" })).toBeChecked();

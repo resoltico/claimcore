@@ -50,3 +50,52 @@
 .ui-dialog {
   padding-inline: min(var(--space-5), 4vw);
 }
+.ui-dialog-overlay--end {
+  place-items: stretch end;
+  padding: 0;
+  overflow: hidden;
+}
+.ui-dialog-overlay--end .ui-dialog {
+  inline-size: min(100%, 35rem);
+  block-size: 100dvh;
+  max-block-size: 100dvh;
+  border-radius: 0;
+}
+.review-consequence-stewardship {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-inline-start: var(--border-width) solid var(--warning-text);
+  padding: var(--space-3);
+}
+.review-consequence-irreversible {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-inline-start: var(--border-width) solid var(--danger-text);
+  padding: var(--space-3);
+}
+.ui-dialog-overlay--end .ui-dialog {
+  overflow: hidden;
+}
+.ui-dialog-overlay--end [role="dialog"] {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+}
+.ui-dialog-overlay--end .ui-dialog-header,
+.ui-dialog-overlay--end .ui-dialog-actions {
+  flex-shrink: 0;
+}
+.ui-dialog-overlay--end .ui-dialog-body {
+  flex: 1;
+  min-block-size: 0;
+  overflow: auto;
+  padding-block: var(--space-3);
+  scroll-padding-block: var(--space-3);
+}
+.ui-dialog-overlay--end .ui-dialog-actions {
+  margin-block-start: var(--space-3);
+  flex-wrap: wrap;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-control);
+}

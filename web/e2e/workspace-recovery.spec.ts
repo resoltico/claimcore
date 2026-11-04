@@ -50,7 +50,7 @@ test("authority input refusal preserves authored bytes and requires fresh review
     issues: [{ field: "principal.issuer", code: "TEXT_REQUIRED" }],
   });
   await expectInputRefusal(page, page.locator('[name="target.issuer"]'), "en", {
-    meaning: inputMessage("en", "field.principal.issuer.meaning"),
+    meaning: inputMessage("en", "field.principal.issuer.hint"),
     issue: "A non-blank value is required.",
   });
   await expect(page.locator("[data-error-summary]")).toBeFocused();

@@ -165,12 +165,15 @@ const AuthorityWorkspace = ({
   disclosure,
   disclosureAvailable,
   target,
+  editor,
 }: {
+  editor: AuthorityEditor;
   model: OperationModel;
   disclosure: Disclosure;
   disclosureAvailable: boolean;
   target: AuthorityTarget;
 }) => {
+  const p = usePresentation();
   const { selectedActorId, setSelectedActorId, context, offered, onActor } = useAuthorityWorkspace(
     disclosure,
     target,
@@ -178,6 +181,23 @@ const AuthorityWorkspace = ({
   return (
     <>
       <ContextStatus loading={context.loading} notice={context.message} reload={context.reload} />
+      {selectedActorId === null &&
+      context.value?.offers.some(
+        (offer) => offer.kind === "AUTHORITY_ACT" && offer.act === "ADMIT",
+      ) === true ? (
+        <button
+          type="button"
+          disabled={model.busy}
+          onClick={() => {
+            if (!model.dirty && model.prepared === null && !model.priorUncertain) {
+              editor.admit(context.value!.issuer);
+            }
+            editor.open();
+          }}
+        >
+          {p.authorityLabel("ADMIT")}
+        </button>
+      ) : null}
       <div className="authority-workspace">
         <div>
           <AuthorityDirectory
@@ -195,6 +215,9 @@ const AuthorityWorkspace = ({
             target={target}
             offered={offered}
             available={disclosureAvailable}
+            open={editor.active}
+            onOpen={editor.open}
+            onClose={editor.close}
           />
         </section>
       </div>
@@ -220,7 +243,14 @@ const AuthorityReceipt = ({ identity }: { identity: string }) => {
 };
 type RecordedAuthority = { credential: string; id: string } | null;
 type AuthorityActions = { invalidate: () => void; restore: () => void; reset: () => void } | null;
+type AuthorityEditor = {
+  active: boolean;
+  open: () => void;
+  close: () => void;
+  admit: (issuer: string) => void;
+};
 type AuthorityLayoutProps = {
+  editor: AuthorityEditor;
   model: OperationModel;
   target: AuthorityTarget;
   disclosure: Disclosure;
@@ -272,6 +302,7 @@ const AuthorityLayout = ({
   onClose,
   disclosureAvailable,
   target,
+  editor,
 }: AuthorityLayoutProps) => {
   const route = useRoute();
   const selected = route.screen === "people" && route.actorId !== "";
@@ -296,6 +327,7 @@ const AuthorityLayout = ({
           disclosure={disclosure}
           disclosureAvailable={disclosureAvailable}
           target={target}
+          editor={editor}
         />
       ) : (
         <AuthorityUnavailable
@@ -308,7 +340,7 @@ const AuthorityLayout = ({
   );
 };
 const initialAuthorityAct = productMetadata.catalog.entries.find(
-  (entry) => entry.subject === "AUTHORITY" && entry.endpoint === "operation.execute",
+  (entry) => entry.subject === "AUTHORITY" && entry.kind === "ADMIT",
 )!.kind;
 type AuthorityPanelProps = {
   onLockChange: (locked: boolean) => void;
@@ -386,12 +418,33 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
     state.disclosure.revision,
     (props.disclosureAvailable ?? true) && state.disclosure.active,
   );
-  const navigation = useOperationNavigation(target.model, undefined, "/people");
+  const route = useRoute();
+  const actorSelection = route.screen === "people" ? route.actorId : "";
+  const selection = `${actorSelection}:${state.disclosure.revision}:${props.disclosureAvailable ?? true}`;
+  const [editor, setEditor] = useState({ selection, active: false });
+  if (editor.selection !== selection) {
+    setEditor({ selection, active: false });
+  }
+  const editorOpen = editor.selection === selection && editor.active;
+  const closeEditor = useCallback(() => {
+    setEditor((prior) => ({ ...prior, active: false }));
+  }, []);
+  const navigation = useOperationNavigation(target.model, closeEditor, "/people");
   return (
     <AuthorityLayout
       {...state}
       model={target.model}
       target={target}
+      editor={{
+        active: editorOpen,
+        open: () => {
+          setEditor({ selection, active: true });
+        },
+        close: navigation.close,
+        admit: (issuer) => {
+          state.model.discard(false, "ADMIT", { "target.issuer": issuer });
+        },
+      }}
       onClose={navigation.close}
       disclosureAvailable={props.disclosureAvailable ?? true}
     />

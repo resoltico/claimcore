@@ -71,7 +71,7 @@ export const AuthorityEffects = ({
     <ol className="authority-effects">
       {effects.map((effect) => (
         <li key={JSON.stringify(effect)}>
-          <h4>{p.text(`act.${effect.kind}.label`)}</h4>
+          <h2>{p.text(`act.${effect.kind}.label`)}</h2>
           <EffectValues effect={effect} />
         </li>
       ))}

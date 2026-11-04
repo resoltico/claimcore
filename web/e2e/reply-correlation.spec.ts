@@ -30,9 +30,7 @@ for (const [authored, ascii] of [
       .getByRole("dialog")
       .getByRole("button", { name: ui("en", "ui.returnToEdit"), exact: true })
       .click();
-    await page
-      .getByLabel("Handler's case reference", { exact: true })
-      .fill(`${authored}-${suffix}`);
+    await page.getByLabel("Case reference", { exact: true }).fill(`${authored}-${suffix}`);
     let forgedReplies = 0;
     await page.route("**/api/operation.preview", async (route) => {
       const input: unknown = route.request().postDataJSON();

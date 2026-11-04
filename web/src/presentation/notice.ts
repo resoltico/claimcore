@@ -1,7 +1,11 @@
 import { capabilityRoleRequirements } from "@contracts/client";
 import { isTerm, termLabel } from "./terms";
 import type { Notice } from "../protocol/notices";
-import { diagnosticParameters as requirements, diagnosticMessageKeys } from "@contracts/messages";
+import {
+  diagnosticParameters as requirements,
+  diagnosticMessageKeys,
+  diagnosticGuiMessageKeys,
+} from "@contracts/messages";
 import { calendarDate, exactInteger } from "./format";
 import { renderCatalogKey, renderKey, translate } from "./messages";
 import type { MessageKey } from "./types";
@@ -103,7 +107,8 @@ const diagnosticText = (
       return [key, displayed];
     }),
   );
-  const message = renderKey(preferences, messageKey, parameters);
+  const displayedKey = diagnosticGuiMessageKeys[diagnostic.code];
+  const message = renderKey(preferences, displayedKey, parameters);
   if ("relatedDate" in diagnostic && diagnostic.relatedDate !== undefined) {
     const related = diagnostic.relatedDate;
     return `${message} (${renderCatalogKey(preferences, `field.${related.field}.label`)}: ${calendarDate(related.value, preferences.displayLocale)})`;

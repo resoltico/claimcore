@@ -23,6 +23,29 @@ import { contrastRatio } from "../src/theme/contrast";
 import { chooseOption } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
 
+const captureCheckpoint = async (page: Page, path: string) => {
+  await page.evaluate(() => {
+    window.scrollTo(0, 0);
+  });
+  await page.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      }),
+  );
+  const camera = await page.context().newCDPSession(page);
+  const result = await camera.send("Page.captureScreenshot", {
+    format: "png",
+    captureBeyondViewport: false,
+  });
+  await writeFile(path, Buffer.from(result.data, "base64"));
+  await camera.detach();
+};
+
 type Violation = { directive: string; blocked: string };
 type ProbeWindow = Window & { claimcorePresentationCsp?: Violation[] };
 const observe = async (
@@ -88,6 +111,7 @@ const observe = async (
             data: {
               requester: actorContextInput({
                 productVersion: "synthetic-presentation",
+                observedAt: "2026-11-04T12:00:00.000000Z",
                 businessDate: "2026-11-04",
                 timeZone: "Etc/UTC",
                 capabilities: ["READ_CASE", "READ_AUTHORITY"],
@@ -379,6 +403,7 @@ test("read admission retry stays non-blocking and honors the server delay under 
           data: {
             requester: actorContextInput({
               productVersion: "synthetic-presentation",
+              observedAt: "2026-11-04T12:00:00.000000Z",
               businessDate: "2026-11-04",
               timeZone: "Etc/UTC",
               capabilities: [],
@@ -503,6 +528,7 @@ test("shell case creation returns to the captured core view and focus without se
           data: {
             requester: actorContextInput({
               productVersion: "synthetic-presentation",
+              observedAt: "2026-11-04T12:00:00.000000Z",
               businessDate: "2026-11-04",
               timeZone: "Etc/UTC",
               capabilities: ["REGISTER"],
@@ -687,9 +713,10 @@ for (const language of ["en", "ar"] as const) {
       accent: language === "ar" ? "blue" : "green",
       mode: language === "ar" ? "dark" : "light",
     });
-    if (language === "ar") {
-      await page.setViewportSize({ width: 390, height: 844 });
-    }
+    await page.setViewportSize({
+      width: language === "ar" ? 390 : 1440,
+      height: language === "ar" ? 844 : 1000,
+    });
     const basis = {
       observedAt: "2026-11-04T12:00:00.000000Z",
       businessDate: "2026-11-04",
@@ -792,6 +819,13 @@ for (const language of ["en", "ar"] as const) {
     await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => reads).toBe(3);
 
+    await page.setViewportSize({
+      width: language === "ar" ? 390 : 1440,
+      height: language === "ar" ? 844 : 1000,
+    });
+    await expect(timeline).toContainText("Core work change");
+    await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => reads).toBe(4);
     await expectAccessible(page);
     await clean();
     if (browserName === "chromium") {
@@ -812,7 +846,7 @@ for (const language of ["en", "ar"] as const) {
       const camera = await page.context().newCDPSession(page);
       const capture = await camera.send("Page.captureScreenshot", {
         format: "png",
-        captureBeyondViewport: true,
+        captureBeyondViewport: false,
       });
       const path = testInfo.outputPath(`case-timeline-${language}.png`);
       await writeFile(path, Buffer.from(capture.data, "base64"));
@@ -873,6 +907,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await seed(page);
   const active = actorContextInput({
     productVersion: "synthetic-presentation",
+    observedAt: "2026-11-04T12:00:00.000000Z",
     businessDate: "2026-11-04",
     timeZone: "Etc/UTC",
     capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
@@ -960,8 +995,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.locator('[name="target.subject"]').fill("retained-person");
   await page.locator('[name="act.profile.displayName"]').fill("Retained person");
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
-  await page.getByRole("checkbox").check();
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await page.locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   expect(bytes).toHaveLength(1);
   hasAccess = false;
@@ -1153,9 +1187,11 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
 
 test("atomic admission edits independent grant rows and reviews every core effect under CSP", async ({
   page,
-}) => {
+  browserName,
+}, testInfo) => {
   const clean = await observe(page, true);
-  await seed(page);
+  await seed(page, { language: "en", mode: "light", accent: "green" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
@@ -1164,6 +1200,7 @@ test("atomic admission edits independent grant rows and reviews every core effec
           data: {
             requester: actorContextInput({
               productVersion: "synthetic-presentation",
+              observedAt: "2026-11-04T12:00:00.000000Z",
               businessDate: "2026-11-04",
               timeZone: "Etc/UTC",
               capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
@@ -1252,8 +1289,8 @@ test("atomic admission edits independent grant rows and reviews every core effec
     return route.fulfill({ json: reply });
   });
   await page.goto("/people", { waitUntil: "commit" });
-  await chooseOption(page, page.getByRole("combobox", { name: "Authority action" }), "ADMIT");
-  await page.locator('[name="target.issuer"]').fill("https://identity.invalid/");
+  await page.getByRole("button", { name: "Add person", exact: true }).click();
+  await expect(page.locator('[name="target.issuer"]')).toBeDisabled();
   await page.locator('[name="target.subject"]').fill("admission-person");
   await page.locator('[name="act.profile.displayName"]').fill("Admission person");
   await page.getByRole("radio", { name: "Owner", exact: true }).check();
@@ -1261,7 +1298,7 @@ test("atomic admission edits independent grant rows and reviews every core effec
   const second = page.getByRole("group", { name: "Role 2", exact: true });
   await second.getByRole("radio", { name: "Case reader", exact: true }).check();
   await second.getByRole("radio", { name: "One case", exact: true }).check();
-  await second.getByRole("textbox", { name: /case reference/u }).fill("SYNTHETIC-1");
+  await second.getByRole("textbox", { name: /Case reference/u }).fill("SYNTHETIC-1");
   await expectAccessible(page);
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   const review = page.getByRole("dialog");
@@ -1271,6 +1308,12 @@ test("atomic admission edits independent grant rows and reviews every core effec
   expect(writes).toBe(0);
   await expectAccessible(page);
   await clean();
+  if (browserName === "chromium") {
+    await captureCheckpoint(
+      page,
+      testInfo.outputPath("review-admission-en-desktop-green-light.png"),
+    );
+  }
 });
 
 test("case panels follow compact reading order while a work draft survives responsive reflow", async ({
@@ -1347,9 +1390,11 @@ test("case panels follow compact reading order while a work draft survives respo
 
 test("People uses core roles and state without row reads and forwards known-zero responsibility", async ({
   page,
-}) => {
+  browserName,
+}, testInfo) => {
   const clean = await observe(page, true);
-  await seed(page);
+  await seed(page, { language: "en", mode: "light", accent: "green" });
+  await page.setViewportSize({ width: 1440, height: 1000 });
   const actorId = "10000000-0000-4000-8000-000000000001";
   const items = [
     {
@@ -1450,6 +1495,10 @@ test("People uses core roles and state without row reads and forwards known-zero
   ).toHaveAttribute("href", `/cases?view=ALL&responsibleActor=${actorId}`);
   expect(grants).toBe(1);
   await expectAccessible(page);
+  await clean();
+  if (browserName === "chromium") {
+    await captureCheckpoint(page, testInfo.outputPath("people-en-desktop-green-light.png"));
+  }
   await profile.getByRole("link", { name: "Matching cases: 0", exact: true }).click();
   await expect.poll(() => listInputs.length).toBe(1);
   await expect.poll(() => summaryInputs.length).toBe(1);

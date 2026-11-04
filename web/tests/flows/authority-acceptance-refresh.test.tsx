@@ -1,3 +1,8 @@
+import {
+  reviewConfirm,
+  queryReviewConfirm,
+  waitForReviewConfirm,
+} from "../support/review-controls";
 import userEvent from "@testing-library/user-event";
 import { chooseOption, optionValues } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
@@ -102,15 +107,15 @@ it.each(["context", "listing"] as const)(
     await author("synthetic-first");
     chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-    fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    await waitForReviewConfirm();
+    fireEvent.click(reviewConfirm());
     await waitFor(() => {
       expect(execute).toHaveBeenCalledOnce();
     });
     const [prepared] = execute.mock.calls[0]!;
     expect(prepared.input.act).toEqual({ kind: "DISABLE" });
     await finish(execution, acceptance(prepared));
-    expect(screen.queryByRole("button", { name: "Record changes" })).toBeNull();
+    expect(queryReviewConfirm()).toBeNull();
     if (first === "listing") {
       await finish(listingRead, listing());
       expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
@@ -175,8 +180,8 @@ it.each(["transport", "host", "core"] as const)(
     await author("synthetic-first");
     chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-    fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    await waitForReviewConfirm();
+    fireEvent.click(reviewConfirm());
     expect(await screen.findByRole("alert")).toBeVisible();
     expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     expect(reads).toHaveBeenCalledTimes(2);
@@ -213,8 +218,8 @@ it("context reload preserves an uncertain prepared authority request and exact r
   await author("synthetic-pending");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  fireEvent.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   const [prepared] = execute.mock.calls[0]!;
   await finish(oldListing, {

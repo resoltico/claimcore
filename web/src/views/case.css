@@ -312,30 +312,7 @@ button.case-action-danger {
   background: var(--bg-sunken);
   margin: 0;
 }
-.field-help {
-  display: inline-block;
-  position: relative;
-  font-size: var(--text-sm);
-}
-.field-help summary {
-  cursor: help;
-  display: inline-grid;
-  place-items: center;
-  min-inline-size: var(--target-minimum);
-  min-block-size: var(--target-minimum);
-}
-.field-help[open] p {
-  position: absolute;
-  inset-inline-start: 0;
-  z-index: 2;
-  inline-size: min(18rem, 60vw);
-  padding: var(--space-3);
-  border: var(--border-width) solid var(--border-control);
-  border-radius: var(--radius-sm);
-  background: var(--bg-surface);
-  color: var(--text-primary);
-  box-shadow: var(--shadow-2);
-}
+
 .case-header-actions {
   display: flex;
   flex: 0 1 auto;
@@ -377,6 +354,10 @@ button.case-action-danger {
   align-items: start;
 }
 .case-reminder-counts {
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+.case-summary-attribution {
   color: var(--text-secondary);
   font-size: var(--text-sm);
 }

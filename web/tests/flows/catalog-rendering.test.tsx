@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { caseViewInput } from "../support/inputs";
 import { inventory } from "../support/inventory";
 import { createPresenter } from "../../src/presentation/presenter";
@@ -265,12 +266,14 @@ it.each(acts)(
     if (act.kind === "CORRECT") {
       expect(dialog).toHaveTextContent("Synthetic correction");
     }
-    await user.click(
-      screen.getByRole("checkbox", {
-        name: "I confirm these changes.",
-      }),
-    );
-    await user.click(getButton("Record changes"));
+    await waitForReviewConfirm();
+    if (act.kind === "ERASE") {
+      await user.type(
+        screen.getByRole("textbox", { name: "Case reference (exact)" }),
+        caseFields.caseReference,
+      );
+    }
+    await user.click(reviewConfirm());
     await screen.findByRole("heading", {
       name: "Recorded change",
     });

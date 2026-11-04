@@ -1,3 +1,4 @@
+import { Button } from "../../ui/Button";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useState } from "react";
 import { Dialog } from "../../ui/Dialog";
@@ -61,6 +62,56 @@ const RecoveryRows = ({
     </>
   );
 };
+const SettlementConfirmation = ({
+  operationId,
+  busy,
+  paused,
+  onConfirm,
+  onCancel,
+}: {
+  operationId: string;
+  busy: boolean;
+  paused: boolean;
+  onConfirm: () => void;
+  onCancel: () => void;
+}) => {
+  const p = usePresentation();
+  const [typed, setTyped] = useState("");
+  const ready = typed === operationId && !busy && !paused;
+  return (
+    <>
+      <div className="text-field irreversible-confirmation">
+        <label htmlFor="settlement-confirmation">{p.text("ui.exactOperationId")}</label>
+        <input
+          id="settlement-confirmation"
+          type="text"
+          autoComplete="off"
+          spellCheck={false}
+          dir="ltr"
+          value={typed}
+          onChange={(event) => {
+            setTyped(event.target.value);
+          }}
+          disabled={busy}
+        />
+      </div>
+      <Button variant="secondary" onPress={onCancel}>
+        {p.text("ui.keepChecking")}
+      </Button>
+      <Button
+        variant="danger"
+        isDisabled={!ready}
+        onPress={() => {
+          if (ready) {
+            onConfirm();
+          }
+        }}
+      >
+        {p.text("ui.confirmSettlement")}
+      </Button>
+    </>
+  );
+};
 export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean }) => {
   const p = usePresentation();
   const { operations, busy, notice, owner, settle } = useRecovery();
@@ -78,7 +129,7 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
     setPending(null);
   };
   const confirmSettlement = () => {
-    if (selected !== null && !paused) {
+    if (selected !== null && !paused && busy === null) {
       setPending(null);
       void settle(selected.record, selected.owner);
     }
@@ -122,17 +173,21 @@ export const UnresolvedNotice = ({ showEmpty = false }: { showEmpty?: boolean })
             <p>
               {renderCatalogKey(
                 p,
-                operationEntry({ subject: "OPERATION", kind: "operation.resolve" }).confirmationId!,
+                operationEntry({ subject: "OPERATION", kind: "operation.resolve" }).consequenceId!,
               )}
             </p>
           </>
         )}
-        <button type="button" className="secondary-button" onClick={cancelSettlement}>
-          {p.text("ui.keepChecking")}
-        </button>
-        <button type="button" disabled={paused} onClick={confirmSettlement}>
-          {p.text("ui.confirmSettlement")}
-        </button>
+        {selected === null ? null : (
+          <SettlementConfirmation
+            key={selected.record.attemptId}
+            operationId={selected.record.operationId}
+            busy={busy !== null}
+            paused={paused}
+            onConfirm={confirmSettlement}
+            onCancel={cancelSettlement}
+          />
+        )}
       </Dialog>
     </section>
   );

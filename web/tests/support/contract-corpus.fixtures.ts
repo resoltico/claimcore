@@ -1,4 +1,3 @@
-import { positiveValue } from "./inputs";
 import { transportResponse } from "./transport-response.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -30,7 +29,7 @@ export const corpusCases = (): CorpusCase[] =>
       endpoint: String(row["endpoint"]) as EndpointId,
       direction,
       valid: row["valid"] === true,
-      value: row["valid"] === true ? positiveValue(row["value"]) : row["value"],
+      value: row["value"],
     }));
   });
 const hasScope = (value: unknown, endpoint: EndpointId, subject: string): boolean => {

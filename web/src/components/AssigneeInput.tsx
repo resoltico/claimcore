@@ -1,3 +1,4 @@
+import { FieldHelp } from "./FieldHelp";
 import { ActorIdentity } from "./ActorIdentity";
 import { useMemo, useState } from "react";
 import { useEndpoint } from "../hooks/useEndpoint";
@@ -5,7 +6,6 @@ import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
-import { IdentifierValue } from "./IdentifierValue";
 import type { AssigneePage, AssigneePageReply } from "@contracts/client";
 import type { CurrentCase } from "../protocol/types";
 import type { TypedFieldProps } from "./CatalogDate";
@@ -29,7 +29,7 @@ const AssigneeChoices = ({ page, ...props }: TypedFieldProps & { page: AssigneeP
                 props.onChange(account.actorId);
               }}
             />
-            <ActorIdentity actor={account} /> <IdentifierValue value={account.actorId} />
+            <ActorIdentity actor={account} />
           </label>
         </li>
       ))}
@@ -42,8 +42,7 @@ const SelectedAssignee = ({ current, value }: Pick<Props, "current" | "value">) 
   return value === "" ? null : (
     <p>
       {p.text("ui.selectedAccount")}:{" "}
-      {selected?.actorId === value ? <ActorIdentity actor={selected} /> : null}{" "}
-      <IdentifierValue value={value} />
+      {selected?.actorId === value ? <ActorIdentity actor={selected} /> : null}
     </p>
   );
 };
@@ -82,7 +81,8 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
   return (
     <fieldset id={`field-${props.inputName}`} className="assignee-input" disabled={props.disabled}>
       <legend>{p.fieldLabel(props.field.name)}</legend>
-      <p>{p.fieldMeaning(props.field.name)}</p>
+      <FieldHelp label={p.fieldLabel(props.field.name)} ruleId={props.field.ruleId} />
+      <p>{p.hint(props.field)}</p>
       <SelectedAssignee current={current} value={props.value} />
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {result.message === null ? null : (

@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
@@ -166,25 +167,21 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueDetail();
   renderDashboard();
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
-  await screen.findByLabelText("Handler's case reference");
+  await screen.findByLabelText("Case reference");
   const fill = (label: string, value: string): void => {
     changeField(label, value);
   };
-  fill("Handler's case reference", "CASE-1");
+  fill("Case reference", "CASE-1");
   fill("Incident date", "2026-09-01");
-  fill("Incident notification date (FNOL)", "2026-09-02");
-  fill("Country of incident (ISO alpha-2 code)", "LV");
+  fill("Notified date", "2026-09-02");
+  fill("Country", "LV");
   fill("Claimant name", "Synthetic claimant");
   fill("Responsible insurer", "Synthetic insurer");
   fill("Amount claimed", "12.34");
   fill("Currency of claimed amount", "EUR");
   await user.click(getButton("Review changes"));
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
 
   expect(
     await screen.findByRole("heading", {

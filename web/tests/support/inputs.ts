@@ -30,6 +30,8 @@ const unscheduledWork: CaseWorkView = {
   recordedBy: null,
   revision: 0,
   summary: null,
+  summaryChangedAt: null,
+  summaryRecordedBy: null,
   nextAction: null,
   pendingReminders: 0,
   overdueReminders: 0,
@@ -117,16 +119,32 @@ export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
 
 type RequesterState_ACTIVESeed = Omit<
   RequesterState_ACTIVE,
-  "hasScopedCases" | "actorId" | "installationId" | "maintenance" | "self" | "kind"
+  | "hasScopedCases"
+  | "actorId"
+  | "installationId"
+  | "maintenance"
+  | "self"
+  | "kind"
+  | "observedAt"
+  | "issuer"
 > &
   Partial<
     Pick<
       RequesterState_ACTIVE,
-      "hasScopedCases" | "actorId" | "installationId" | "maintenance" | "self" | "kind"
+      | "hasScopedCases"
+      | "actorId"
+      | "installationId"
+      | "maintenance"
+      | "self"
+      | "kind"
+      | "observedAt"
+      | "issuer"
     >
   >;
 export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T) => ({
   ...value,
+  observedAt: value.observedAt ?? `${value.businessDate}T12:00:00.000000Z`,
+  issuer: value.issuer ?? "https://issuer.example/",
   kind: "ACTIVE" as const,
   self: value.self ?? actorRefInput(),
   maintenance: value.maintenance ?? initialMaintenance,
@@ -272,10 +290,37 @@ const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
   return null;
 };
 const adviceActs = (value: unknown) => (Array.isArray(value) ? value.filter(isCaseAct) : []);
-const completeRead = (completed: Record<string, unknown>): unknown => {
+const completeObservation = (
+  completed: Record<string, unknown>,
+): Record<string, unknown> | null => {
+  if (
+    Object.hasOwn(completed, "productVersion") &&
+    Object.hasOwn(completed, "businessDate") &&
+    Object.hasOwn(completed, "timeZone") &&
+    !Object.hasOwn(completed, "capabilities")
+  ) {
+    return { observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`, ...completed };
+  }
+  if (
+    !Object.hasOwn(completed, "detail") &&
+    ["operationId", "recordedAt", "recordedBy", "subject"].every((key) =>
+      Object.hasOwn(completed, key),
+    )
+  ) {
+    return { basis: workBasis, ...completed };
+  }
+  return null;
+};
+const completeAdvice = (completed: Record<string, unknown>): Record<string, unknown> | null => {
   if (isAdviceOrContext(completed)) {
     return {
       maintenance: initialMaintenance,
+      ...(Object.hasOwn(completed, "capabilities")
+        ? {
+            observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`,
+            issuer: "https://issuer.example/",
+          }
+        : {}),
       ...(Object.hasOwn(completed, "acts")
         ? {
             recommended: null,
@@ -284,6 +329,17 @@ const completeRead = (completed: Record<string, unknown>): unknown => {
         : {}),
       ...completed,
     };
+  }
+  return null;
+};
+const completeRead = (completed: Record<string, unknown>): unknown => {
+  const observed = completeObservation(completed);
+  if (observed !== null) {
+    return observed;
+  }
+  const advice = completeAdvice(completed);
+  if (advice !== null) {
+    return advice;
   }
   const authority = completeAuthorityRead(completed);
   if (authority !== null) {

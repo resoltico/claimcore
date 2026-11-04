@@ -44,7 +44,7 @@ test("updates visible detail and expanded history immediately with independent f
     ).toBeVisible();
 
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.continueCase"), exact: true }),
+      page.getByRole("heading", { name: ui(language, "ui.moreCaseActions"), exact: true }),
     ).toBeVisible();
     await expect(history).toHaveAttribute("open", "");
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);

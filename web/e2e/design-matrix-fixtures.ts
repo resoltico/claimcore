@@ -375,7 +375,9 @@ const registerActor = async (page: Page, issuer: string, reference: string) => {
       scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
     },
   });
-  return registered.subject.targetActorId;
+  return registered.subject.targetActor.kind === "DISCLOSED"
+    ? registered.subject.targetActor.actor.actorId
+    : registered.subject.targetActor.actorId;
 };
 const setOwnerCaseWork = async (
   page: Page,
@@ -413,7 +415,10 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
   if (registered.subject.kind !== "AUTHORITY") {
     throw new Error("Expected the independently registered human assignee");
   }
-  const actorId = registered.subject.targetActorId;
+  const actorId =
+    registered.subject.targetActor.kind === "DISCLOSED"
+      ? registered.subject.targetActor.actor.actorId
+      : registered.subject.targetActor.actorId;
   await applyAuthority(page, {
     kind: "AUTHORITY",
     operationId: randomUUID(),

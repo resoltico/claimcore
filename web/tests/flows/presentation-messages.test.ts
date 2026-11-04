@@ -144,11 +144,17 @@ it("refuses reference message parts with missing, wrong-role or foreign holes", 
   };
   const fallback = [renderKey(preferences, "notice.unknownDiagnostic")];
   const reference = { exact: "Synthetic reference" };
-  expect(renderIsolatedValue(preferences, "ui.caseRecorded", {}, reference, "act")).toEqual(
+  expect(renderIsolatedValue(preferences, "ui.reference", {}, reference, "label")).toEqual(
     fallback,
   );
   expect(
-    renderIsolatedValue(preferences, "ui.caseRecorded", { act: 1, revision: 1 }, reference, "act"),
+    renderIsolatedValue(
+      preferences,
+      "ui.reference",
+      { label: 1, reference: 1 },
+      reference,
+      "label",
+    ),
   ).toEqual(fallback);
   expect(
     renderIsolatedValue(

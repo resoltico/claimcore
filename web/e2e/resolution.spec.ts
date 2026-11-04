@@ -19,7 +19,7 @@ const loseAcceptedClose = async (page: Page) => {
   await confirmReview(page);
   const pending = await pauseJsonReply(page, "operation.execute", true);
   try {
-    await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
+    await page.locator("button[data-confirm-operation]").click();
     const { reply } = await pending.ready;
     if (reply.outcome.kind !== "ACCEPTED") {
       throw new Error("Expected real accepted close");
@@ -110,7 +110,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
       throw new DOMException("Storage denied", "QuotaExceededError");
     };
   });
-  await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
+  await page.locator("button[data-confirm-operation]").click();
   await expect(page.getByText(ui("en", "ui.recoveryUnavailable"), { exact: true })).toBeVisible();
   expect(executions).toBe(0);
   const current = await browserRequest(page, "/api/case.get", {
@@ -138,7 +138,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   const accepted = page.waitForResponse((response) =>
     response.url().endsWith("/api/operation.execute"),
   );
-  await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
+  await page.locator("button[data-confirm-operation]").click();
   const acceptedResponse = await accepted;
   expect(acceptedResponse.request().postDataBuffer()).toEqual(reviewedBytes);
   const reply: unknown = await acceptedResponse.json();

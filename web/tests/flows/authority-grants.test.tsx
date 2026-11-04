@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
@@ -214,7 +215,7 @@ const prepare = async () => {
   await authorTarget();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox"));
+  await waitForReviewConfirm();
 };
 const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =>
   kind === "access"
@@ -247,7 +248,7 @@ it.each(["session", "access"])(
     });
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    fireEvent.click(reviewConfirm());
     await screen.findByRole("button", { name: "Send again" });
     const original = execute.mock.calls[0]?.[0];
     fireEvent.click(screen.getAllByRole("link", { name: / ·/u })[0]!);
@@ -301,7 +302,7 @@ it("ignores an in-flight grant page after an accepted authority mutation resets 
     expect(request).toHaveBeenCalledTimes(1);
   });
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  fireEvent.click(reviewConfirm());
   await waitFor(() => {
     expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
   });

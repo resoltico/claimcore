@@ -183,12 +183,38 @@ const CaseHeader = ({
   );
 };
 
+const SummaryRecordDetails = ({ state }: { state: CaseView }) => {
+  const p = usePresentation();
+  const { summary, summaryChangedAt, summaryRecordedBy } = state.work;
+  if (summary === null || summaryChangedAt === null || summaryRecordedBy === null) {
+    return null;
+  }
+  return (
+    <div>
+      <dt>{p.fieldLabel("handlingSummary")}</dt>
+      <dd>
+        <p>
+          {p.text("ui.exactUtc")}:{" "}
+          <time dateTime={summaryChangedAt}>
+            <bdi dir="ltr">{summaryChangedAt}</bdi>
+          </time>
+          <CopyValue icon label={p.text("ui.exactUtc")} value={summaryChangedAt} />
+        </p>
+        <p>
+          {p.text("input.actorId.label")}: <bdi dir="ltr">{summaryRecordedBy.actorId}</bdi>
+          <CopyValue icon label={p.text("input.actorId.label")} value={summaryRecordedBy.actorId} />
+        </p>
+      </dd>
+    </div>
+  );
+};
 const CaseRecordDetails = ({ state }: { state: CaseView }) => {
   const p = usePresentation();
   return (
     <details className="case-technical" data-record-details>
       <summary>{p.text("ui.technicalDetails")}</summary>
       <dl>
+        <SummaryRecordDetails state={state} />
         <div>
           <dt>{p.fieldLabel("caseId")}</dt>
           <dd>

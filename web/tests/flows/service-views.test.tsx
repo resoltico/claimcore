@@ -94,7 +94,7 @@ it("lists, reloads, pages and selects cases through typed list outcomes", async 
   await user.click(screen.getByText("Open by exact reference", { selector: "summary" }));
   await user.click(getButton("Open by exact reference"));
   expect(select).toHaveBeenCalledTimes(1);
-  await user.type(screen.getByLabelText("Handler's case reference (exact)"), "CASE-9");
+  await user.type(screen.getByLabelText("Case reference (exact)"), "CASE-9");
   await user.click(getButton("Open by exact reference"));
   expect(select).toHaveBeenCalledWith({
     kind: "ID",

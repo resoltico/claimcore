@@ -140,6 +140,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
               ],
               context: {
                 productVersion: "test",
+                observedAt: basis.observedAt,
                 businessDate: basis.businessDate,
                 timeZone: basis.timeZone,
               },

@@ -1,3 +1,4 @@
+import { FieldHelp } from "./FieldHelp";
 import { parseDate } from "@internationalized/date";
 import { DateField, DateInput, DateSegment } from "react-aria-components/DateField";
 import { Calendar, CalendarGrid, CalendarCell } from "react-aria-components/Calendar";
@@ -71,12 +72,14 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
       isInvalid={error !== undefined}
       validationBehavior="aria"
     >
-      <Label>{p.fieldLabel(field.name)}</Label>
+      <div className="field-label-row">
+        <Label>{p.fieldLabel(field.name)}</Label>
+        <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
+      </div>
       <DateInput aria-invalid={error !== undefined || undefined}>
         {(segment) => <DateSegment segment={segment} />}
       </DateInput>
       <Text slot="description" className="field-description">
-        <small>{p.fieldMeaning(field.name)}</small>
         <small>{p.hint(field)}</small>
       </Text>
       {error === undefined ? null : <FieldError>{p.notice(error)}</FieldError>}

@@ -87,13 +87,13 @@ it("formats only read-only scalar displays and leaves technical text and currenc
 it("uses stable metadata identity rather than supplied English labels as catalog authority", () => {
   const p = createPresenter(defaults);
   expect(p.fieldLabel("claimantName")).toBe("Claimant name");
-  expect(p.fieldMeaning("claimantName")).not.toBe("");
+  expect(p.fieldHint("claimantName")).not.toBe("");
   expect(p.actLabel("CLOSE")).toBe("Close the case");
   expect(p.actMeaning("CLOSE")).not.toBe("");
   expect(p.groupLabel("registration")).not.toBe("");
-  expect(p.groupMeaning("registration")).not.toBe("");
+  expect(p.groupHint("registration")).not.toBe("");
   expect(p.fieldLabel("FUTURE_TECHNICAL_FIELD")).toBe("FUTURE_TECHNICAL_FIELD");
-  expect(p.fieldMeaning("FUTURE_TECHNICAL_FIELD")).toBe("");
+  expect(p.fieldHint("FUTURE_TECHNICAL_FIELD")).toBe("");
   expect(p.term("act", "CLOSE")).toBe(p.actLabel("CLOSE"));
   expect(isTerm("act", "opaque-identifier")).toBe(false);
   expect(p.integer("42")).toBe("42");

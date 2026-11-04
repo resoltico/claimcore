@@ -69,6 +69,7 @@ it("chooses an advertised workspace only for the default entry route", async () 
         data: {
           requester: actorContextInput({
             productVersion: "0.10.0",
+            observedAt: "2026-09-09T12:00:00.000000Z",
             businessDate: "2026-09-09",
             timeZone: "Etc/UTC",
             capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],

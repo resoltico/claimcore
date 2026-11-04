@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -113,12 +114,8 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
   });
   expect(document.body).toHaveTextContent(currentCanary);
   expect(document.body).toHaveTextContent(reviewCanary);
-  await user.click(
-    screen.getByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await findButton("Send again");
   return user;
 };

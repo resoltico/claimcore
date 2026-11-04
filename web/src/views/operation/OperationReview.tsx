@@ -1,3 +1,5 @@
+import { Button } from "../../ui/Button";
+import { useId, useState, type ReactNode } from "react";
 import { AuthorityEffects } from "../../components/AuthorityEffects";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
 import { WorkReviewValues, ReminderReviewValues } from "../work/WorkReviewValues";
@@ -148,52 +150,56 @@ const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
         ) : null}
       </p>
       <AuthorityEffects effects={review.effects} />
-      {states.map(([label, state]) => (
-        <section key={label}>
-          <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
-          <dl>
-            <dt>{p.fieldLabel("profile.displayName")}</dt>
-            <dd>
-              {state.profile === null ? (
-                p.text("ui.notRecorded")
-              ) : (
-                <bdi>{state.profile.displayName}</bdi>
-              )}
-            </dd>
-            <dt>{p.fieldLabel("profile.contact")}</dt>
-            <dd>
-              {state.profile?.contact === null || state.profile === null ? (
-                p.text("ui.notRecorded")
-              ) : (
-                <bdi>{state.profile.contact}</bdi>
-              )}
-            </dd>
-            <dt>{p.text("label.enabled")}</dt>
-            <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
-          </dl>
-          <h5>{p.text("ui.actorGrants")}</h5>
-          <ReviewGrants grants={state.grants} />
-          <h5>{p.text("ui.effectiveAccess")}</h5>
-          <dl>
-            {state.access.map((access) => (
-              <div key={access.capability}>
-                <dt>{p.term("capability", access.capability)}</dt>
-                <dd>
-                  <p>{p.text(access.effective ? "ui.effective" : "ui.dormant")}</p>
-                  <p>
-                    {p.text("ui.directRoles")}:{" "}
-                    {access.directRoles.map((role) => p.term("role", role)).join(", ") || "—"}
-                  </p>
-                  <p>
-                    {p.text("ui.inheritedRoles")}:{" "}
-                    {access.installationRoles.map((role) => p.term("role", role)).join(", ") || "—"}
-                  </p>
-                </dd>
-              </div>
-            ))}
-          </dl>
-        </section>
-      ))}
+      <details className="authority-access-details">
+        <summary>{p.text("ui.effectiveAccess")}</summary>
+        {states.map(([label, state]) => (
+          <section key={label}>
+            <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
+            <dl>
+              <dt>{p.fieldLabel("profile.displayName")}</dt>
+              <dd>
+                {state.profile === null ? (
+                  p.text("ui.notRecorded")
+                ) : (
+                  <bdi>{state.profile.displayName}</bdi>
+                )}
+              </dd>
+              <dt>{p.fieldLabel("profile.contact")}</dt>
+              <dd>
+                {state.profile?.contact === null || state.profile === null ? (
+                  p.text("ui.notRecorded")
+                ) : (
+                  <bdi>{state.profile.contact}</bdi>
+                )}
+              </dd>
+              <dt>{p.text("label.enabled")}</dt>
+              <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
+            </dl>
+            <h5>{p.text("ui.actorGrants")}</h5>
+            <ReviewGrants grants={state.grants} />
+            <h5>{p.text("ui.effectiveAccess")}</h5>
+            <dl>
+              {state.access.map((access) => (
+                <div key={access.capability}>
+                  <dt>{p.term("capability", access.capability)}</dt>
+                  <dd>
+                    <p>{p.text(access.effective ? "ui.effective" : "ui.dormant")}</p>
+                    <p>
+                      {p.text("ui.directRoles")}:{" "}
+                      {access.directRoles.map((role) => p.term("role", role)).join(", ") || "—"}
+                    </p>
+                    <p>
+                      {p.text("ui.inheritedRoles")}:{" "}
+                      {access.installationRoles.map((role) => p.term("role", role)).join(", ") ||
+                        "—"}
+                    </p>
+                  </dd>
+                </div>
+              ))}
+            </dl>
+          </section>
+        ))}
+      </details>
     </>
   );
 };
@@ -296,17 +302,54 @@ const CorrectionIntent = ({
     </dl>
   );
 };
-const ReviewConfirmation = ({
-  model,
-  confirmationId,
-  paused,
-}: {
-  model: ReviewModel;
-  confirmationId: string;
-  paused: boolean;
-}) => {
+const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
   const p = usePresentation();
-
+  if (review.kind === "AUTHORITY" || review.before === null) {
+    return null;
+  }
+  return (
+    <p className="review-basis">
+      {p.text("ui.review.basis", {
+        revision: p.integer(review.before.revision),
+        when: p.recordedTime(review.context.observedAt, review.context.timeZone),
+      })}
+    </p>
+  );
+};
+const useReviewChallenge = (model: ReviewModel) => {
+  const operationId = model.prepared?.input.operationId ?? null;
+  const { review } = model;
+  const [challenge, setChallenge] = useState<{
+    operationId: string | null;
+    review: Review | null;
+    text: string;
+  }>({ operationId, review, text: "" });
+  const changed =
+    challenge.operationId !== operationId || (review !== null && challenge.review !== review);
+  if (changed) {
+    setChallenge({ operationId, review, text: "" });
+  }
+  const typed = changed ? "" : challenge.text;
+  return { typed, setChallenge, operationId, review };
+};
+const useReviewControls = (model: ReviewModel, paused: boolean) => {
+  const p = usePresentation();
+  const id = useId();
+  const { typed, setChallenge, operationId, review } = useReviewChallenge(model);
+  if (model.prepared === null || review === null) {
+    return null;
+  }
+  const act = operationEntryForInput(model.prepared.input);
+  const expected =
+    model.prepared.input.kind === "CASE"
+      ? { kind: "REFERENCE", value: reviewReference(review.subject) }
+      : { kind: "OPERATION", value: model.prepared.input.operationId };
+  const irreversible = act.consequence === "IRREVERSIBLE";
+  const ready = !irreversible || typed === expected.value;
+  const label =
+    expected.kind === "REFERENCE"
+      ? p.text("ui.exactCaseReference", { label: p.fieldLabel("caseReference") })
+      : p.text("ui.exactOperationId");
   const submitText = () => {
     if (model.phase === "PREPARING") {
       return p.text("ui.preparingRecovery");
@@ -314,73 +357,120 @@ const ReviewConfirmation = ({
     if (model.phase === "SUBMITTING") {
       return p.text("ui.submitting");
     }
-    return p.text("ui.submitExact");
+    return renderCatalogKey(p, act.labelId);
   };
-  return (
-    <>
-      {" "}
-      <label>
-        <input
-          type="checkbox"
-          checked={model.confirmed}
-          disabled={model.busy}
-          onChange={(event) => {
-            model.confirm(event.target.checked);
-          }}
-        />
-        {renderCatalogKey(p, confirmationId)}
-      </label>
-      <button
-        className="primary"
-        type="button"
-        disabled={!model.confirmed || model.busy || paused}
-        onClick={() => void model.execute()}
+  return {
+    body: (
+      <>
+        {act.consequenceId === null ? null : (
+          <p className={`review-consequence review-consequence-${act.consequence.toLowerCase()}`}>
+            {renderCatalogKey(p, act.consequenceId)}
+          </p>
+        )}
+        {irreversible ? (
+          <div className="text-field irreversible-confirmation">
+            <p>
+              <bdi dir="ltr">{expected.value}</bdi>
+            </p>
+            <label htmlFor={id}>{label}</label>
+            <input
+              id={id}
+              type="text"
+              autoComplete="off"
+              spellCheck={false}
+              dir="ltr"
+              value={typed}
+              disabled={model.busy}
+              onChange={(event) => {
+                setChallenge({ operationId, review, text: event.target.value });
+                model.confirm(event.target.value === expected.value);
+              }}
+            />
+          </div>
+        ) : null}
+      </>
+    ),
+    action: (
+      <Button
+        variant={irreversible ? "danger" : "primary"}
+        data-confirm-operation
+        isDisabled={!ready || model.busy || paused}
+        onPress={() => {
+          if (ready && !paused && !model.busy) {
+            model.confirm(true);
+            void model.execute();
+          }
+        }}
       >
         {submitText()}
-      </button>
-    </>
-  );
+      </Button>
+    ),
+  };
 };
+const reviewOpen = (phase: ReviewModel["phase"]) =>
+  phase === "REVIEWING" || phase === "PREPARING" || phase === "SUBMITTING";
 export const OperationReview = ({
   model,
   paused = false,
+  children,
 }: {
   model: ReviewModel;
   paused?: boolean;
+  children?: (parts: { body: ReactNode; actions: ReactNode } | null) => ReactNode;
 }) => {
   const p = usePresentation();
   const requester = useRequesterContext();
   const stopped = paused || requester?.maintenance.active === true;
-  if (model.review === null || model.prepared === null) {
-    return null;
+  const controls = useReviewControls(model, stopped);
+  if (model.review === null || model.prepared === null || controls === null) {
+    return children?.(null) ?? null;
   }
   const { input } = model.prepared;
   const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
   const act = operationEntryForInput(input);
+  const body = (
+    <>
+      {children === undefined ? (
+        <>
+          <h3>{renderCatalogKey(p, act.labelId)}</h3>
+          <p>{renderCatalogKey(p, act.meaningId)}</p>
+        </>
+      ) : null}
+      <ReviewIntent input={input} review={model.review.subject} />
+      <ReviewBody review={model.review.subject} />
+      <CorrectionIntent input={input} review={model.review.subject} />
+      <ReviewBasis review={model.review.subject} />
+      <details className="review-request">
+        <summary>{p.text("ui.technicalDetails")}</summary>
+        <ProtocolSummary value={display} entry={act} />
+      </details>
+      <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
+      {controls.body}
+    </>
+  );
+  const actions = (
+    <>
+      <Button variant="secondary" isDisabled={model.busy} onPress={model.returnToEdit}>
+        {p.text("ui.returnToEdit")}
+      </Button>
+      {controls.action}
+    </>
+  );
+  if (children !== undefined) {
+    return children({ body, actions });
+  }
   return (
     <Dialog
       title={p.text("label.reviewTitle")}
+      placement="end"
       closeLabel={p.text("ui.returnToEdit")}
       description={p.text("ui.reviewDescription")}
-      isOpen={
-        model.phase === "REVIEWING" || model.phase === "PREPARING" || model.phase === "SUBMITTING"
-      }
+      isOpen={reviewOpen(model.phase)}
       isDismissable={!model.busy}
       onOpenChange={model.returnToEdit}
+      footer={actions}
     >
-      <>
-        <h3>{renderCatalogKey(p, act.labelId)}</h3>
-        <p>{act.meaningId === null ? null : renderCatalogKey(p, act.meaningId)}</p>
-        <ReviewIntent input={input} review={model.review.subject} />
-        <ReviewBody review={model.review.subject} />
-        <CorrectionIntent input={input} review={model.review.subject} />
-        <details className="review-request">
-          <summary>{p.text("ui.technicalDetails")}</summary>
-          <ProtocolSummary value={display} entry={act} />
-        </details>
-        <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
-        <ReviewConfirmation model={model} confirmationId={act.confirmationId!} paused={stopped} />
-      </>
+      {body}
     </Dialog>
   );
 };

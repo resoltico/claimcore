@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
@@ -50,16 +51,8 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
       name: "Review changes",
     }),
   );
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   const heading = await screen.findByRole("heading", {
     name: "Recorded change",
   });
@@ -113,16 +106,8 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
       name: "Review changes",
     });
     expectAuthoringDisabled();
-    await user.click(
-      screen.getByRole("checkbox", {
-        name: "I confirm these changes.",
-      }),
-    );
-    await user.click(
-      screen.getByRole("button", {
-        name: "Record changes",
-      }),
-    );
+    await waitForReviewConfirm();
+    await user.click(reviewConfirm());
     expectAuthoringDisabled();
     expect(
       screen.getByRole("button", {

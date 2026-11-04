@@ -11,7 +11,7 @@ test("rotates a exposed OPEN identity when only its target reference changes", a
   const first = await reviewDraft(page);
   await page.getByRole("button", { name: "Return to editing" }).click();
   await expect(page.getByRole("dialog", { name: "Review changes" })).not.toBeVisible();
-  await page.getByLabel("Handler's case reference", { exact: true }).fill(`SECOND-${randomUUID()}`);
+  await page.getByLabel("Case reference", { exact: true }).fill(`SECOND-${randomUUID()}`);
   const second = await reviewDraft(page);
   expect(second.operationId).not.toBe(first.operationId);
 });

@@ -1,3 +1,4 @@
+import { FieldHelp } from "./FieldHelp";
 import { AssigneeInput } from "./AssigneeInput";
 import { roleAdmitted } from "../operation/roleAvailability";
 import { CorrectionInputs } from "./CorrectionInputs";
@@ -32,6 +33,7 @@ type Props = {
   current: CurrentCase | null;
   disabled: boolean;
   fixedTarget?: boolean;
+  fixedPaths?: ReadonlyArray<string>;
   namePrefix?: string;
   roleContext?: { principalKind: string; scope: string };
   fieldErrors: Readonly<Record<string, Notice>>;
@@ -55,7 +57,7 @@ const inputError = (input: CatalogInput, props: Props) =>
   props.fieldErrors[bindingPath(input)] ?? null;
 const descriptionIds = (input: CatalogInput, error: Notice | null) =>
   [
-    input.meaningId === null ? null : `${input.identity}-meaning`,
+    input.hintId === null ? null : `${input.identity}-hint`,
     error === null ? null : `${input.identity}-error`,
   ]
     .filter((id) => id !== null)
@@ -64,8 +66,8 @@ const InputDescription = ({ input, error }: { input: CatalogInput; error: Notice
   const p = usePresentation();
   return (
     <>
-      {input.meaningId === null ? null : (
-        <small id={`${input.identity}-meaning`}>{renderCatalogKey(p, input.meaningId)}</small>
+      {input.hintId === null ? null : (
+        <small id={`${input.identity}-hint`}>{renderCatalogKey(p, input.hintId)}</small>
       )}
       {error === null ? null : (
         <small id={`${input.identity}-error`}>
@@ -165,6 +167,7 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   return (
     <fieldset className={group ? "correction-card" : "choice-card"}>
       <legend>{label}</legend>
+      <FieldHelp label={label} ruleId={input.ruleId} />
       <div
         role="radiogroup"
         className={options.length <= 4 ? "segmented-choice" : "radio-choice"}
@@ -226,7 +229,10 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   }
   return (
     <div className="text-field">
-      <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
+      <div className="field-label-row">
+        <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
+        <FieldHelp label={renderCatalogKey(p, input.labelId)} ruleId={input.ruleId} />
+      </div>
       <input
         id={input.identity}
         name={`${props.namePrefix ?? ""}${path}`}
@@ -447,6 +453,8 @@ const CollectionInput = ({ collection, ...props }: Props & { collection: Catalog
       aria-describedby={error === undefined ? undefined : `${collection.identity}-error`}
     >
       <legend>{renderCatalogKey(p, collection.labelId)}</legend>
+      <FieldHelp label={renderCatalogKey(p, collection.labelId)} ruleId={collection.ruleId} />
+      {collection.hintId === null ? null : <p>{renderCatalogKey(p, collection.hintId)}</p>}
       {rows.map(({ key, values: row }, index) => (
         <fieldset key={key}>
           <legend>{p.text("ui.grantNumber", { number: p.integer(String(index + 1)) })}</legend>
@@ -537,7 +545,9 @@ export const CatalogInputs = (props: Props) => {
             factNode(input, parents, {
               ...props,
               disabled:
-                props.disabled || (props.fixedTarget === true && input.path[0] === "target"),
+                props.disabled ||
+                props.fixedPaths?.includes(bindingPath(input)) === true ||
+                (props.fixedTarget === true && input.path[0] === "target"),
             })
           ),
         )}

@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
@@ -86,12 +87,8 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     claimantName: "Synthetic A",
   });
   await user.click(getButton("Review changes"));
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
   selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
@@ -102,7 +99,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(getButton("Review changes"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Input problems: 1.");
   expect(claimant).toHaveAccessibleDescription(
-    "Name of the person or company making the claim.Up to 200 characters. A non-blank value is required.",
+    "The person or company making the claim. A non-blank value is required.",
   );
   expect(claimant).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);

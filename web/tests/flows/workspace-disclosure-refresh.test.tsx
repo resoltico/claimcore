@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { workBasis, actorContextInput } from "../support/inputs";
@@ -72,8 +73,8 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
     await user.type(document.querySelector<HTMLInputElement>(`[name="${name}"]`)!, value!);
   }
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(await screen.findByRole("checkbox"));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
 };
 const authorityReads = () => {

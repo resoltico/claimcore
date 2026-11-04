@@ -2,7 +2,7 @@ import { isTerm, termLabel } from "./terms";
 import type { Terms } from "@contracts/messages";
 import { languageDirection } from "./preferences";
 import { productMetadata } from "../protocol/productMetadata";
-import { correctionTargets, fieldGuidance } from "@contracts/messages";
+import { correctionTargets, ruleArguments } from "@contracts/messages";
 import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import {
@@ -19,7 +19,12 @@ import { renderNotice } from "./notice";
 import type { Preferences } from "./preferences";
 import type { MessageKey, Values } from "./types";
 
-type CatalogText = Readonly<{ labelId: string; meaningId?: string | null }>;
+type CatalogText = Readonly<{
+  labelId: string;
+  hintId?: string | null;
+  ruleId?: string | null;
+  meaningId?: string | null;
+}>;
 export type PresentationDefinitions = Readonly<{
   fields: ReadonlyArray<CatalogText & { name: string }>;
   inputFields: ReadonlyArray<CatalogText & { name: string }>;
@@ -33,11 +38,22 @@ export type PresentationDefinitions = Readonly<{
     }
   >;
 }>;
+const rule = (preferences: Preferences, key: string): string => {
+  const declared: Readonly<Record<string, Readonly<Record<string, string | number>>>> =
+    ruleArguments;
+  const values = Object.fromEntries(
+    Object.entries(declared[key] ?? {}).map(([name, value]) => [
+      name,
+      typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
+    ]),
+  );
+  return renderCatalogKey(preferences, key, values);
+};
 const metadata = (
   preferences: Preferences,
   owner: "field" | "act" | "group" | "authority",
   name: string,
-  part: "label" | "meaning",
+  part: "label" | "hint" | "rule" | "meaning",
   definitions: PresentationDefinitions,
 ): string => {
   let definition: CatalogText | undefined;
@@ -66,11 +82,11 @@ const metadata = (
         );
       break;
   }
-  const identity = part === "label" ? definition?.labelId : definition?.meaningId;
+  const identity = definition?.[`${part}Id`];
   if (identity === undefined || identity === null) {
     return part === "label" ? name : "";
   }
-  return renderCatalogKey(preferences, identity);
+  return part === "rule" ? rule(preferences, identity) : renderCatalogKey(preferences, identity);
 };
 const fieldValueText = (
   preferences: Preferences,
@@ -87,34 +103,6 @@ const fieldValueText = (
 const correctionTargetGroup = (name: string): string | null => {
   const targets: Readonly<Record<string, string>> = correctionTargets;
   return Object.hasOwn(targets, name) ? targets[name]! : null;
-};
-const isGuidanceField = (name: string): name is keyof typeof fieldGuidance =>
-  Object.hasOwn(fieldGuidance, name);
-const hint = (preferences: Preferences, field: FieldCatalogEntry): string => {
-  if (field.scalar.kind === "AMOUNT") {
-    return translate(preferences, "ui.amountEntryHint", {
-      maximumFractionDigits: exactInteger(
-        String(field.scalar.maximumFractionalDigits),
-        preferences.displayLocale,
-      ),
-    });
-  }
-  if (field.scalar.kind === "CALENDAR_DATE") {
-    return translate(preferences, "ui.dateEntryHint");
-  }
-  if (isGuidanceField(field.name)) {
-    const guidance = fieldGuidance[field.name];
-    const values = Object.fromEntries(
-      Object.entries(guidance.arguments).map(([name, value]: [string, string | number]) => [
-        name,
-        typeof value === "number" ? exactInteger(String(value), preferences.displayLocale) : value,
-      ]),
-    );
-    return renderCatalogKey(preferences, guidance.key, values);
-  }
-  return field.scalar.kind === "CASE_STATUS"
-    ? field.scalar.allowedValues.map((value) => termLabel(preferences, "status", value)).join(", ")
-    : "";
 };
 export const createPresenter = (
   preferences: Preferences,
@@ -133,17 +121,21 @@ export const createPresenter = (
       : `${metadata(preferences, "group", group, "label", definitions)} · ${translate(preferences, "label.action")}`;
   },
   fieldLabel: (name: string) => metadata(preferences, "field", name, "label", definitions),
-  fieldMeaning: (name: string) => metadata(preferences, "field", name, "meaning", definitions),
+  fieldHint: (name: string) => metadata(preferences, "field", name, "hint", definitions),
+  fieldRule: (name: string) => metadata(preferences, "field", name, "rule", definitions),
   authorityLabel: (name: string) => metadata(preferences, "authority", name, "label", definitions),
   authorityMeaning: (name: string) =>
     metadata(preferences, "authority", name, "meaning", definitions),
   actMeaning: (name: string) => metadata(preferences, "act", name, "meaning", definitions),
   groupLabel: (name: string) => metadata(preferences, "group", name, "label", definitions),
-  groupMeaning: (name: string) => metadata(preferences, "group", name, "meaning", definitions),
+  groupHint: (name: string) => metadata(preferences, "group", name, "hint", definitions),
+  groupRule: (name: string) => metadata(preferences, "group", name, "rule", definitions),
   actLabel: (name: string) => metadata(preferences, "act", name, "label", definitions),
   term: <V extends keyof Terms>(vocabulary: V, value: Terms[V]) =>
     termLabel(preferences, vocabulary, value),
-  hint: (field: FieldCatalogEntry) => hint(preferences, field),
+  hint: (field: FieldCatalogEntry) =>
+    field.hintId === null ? "" : renderCatalogKey(preferences, field.hintId),
+  rule: (key: string) => rule(preferences, key),
   integer: (value: string | number) => exactInteger(String(value), preferences.displayLocale),
   amount: (value: string, currency?: string) =>
     exactAmount(value, preferences.displayLocale, currency),

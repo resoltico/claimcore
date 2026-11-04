@@ -229,7 +229,7 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
     name: "Open by exact reference",
   });
   expect(find).toBeDisabled();
-  await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
+  await user.type(screen.getByLabelText("Case reference (exact)"), " REF ");
   await user.click(find);
   expect(selected).toHaveBeenCalledWith({ kind: "REFERENCE", caseReference: " REF " });
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);

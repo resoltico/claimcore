@@ -1,3 +1,4 @@
+import { RelativeTime } from "../../ui/RelativeTime";
 import { ActorIdentity } from "../../components/ActorIdentity";
 import type { CaseWorkView } from "@contracts/client";
 import { CharacterWarning } from "../../components/BusinessValue";
@@ -50,6 +51,14 @@ export const CaseWork = ({ value, onUpdate }: { value: CaseWorkView; onUpdate?: 
           </bdi>
           <CharacterWarning value={value.summary} allowLineFeed />
         </p>
+        {value.summary === null ||
+        value.summaryChangedAt === null ||
+        value.summaryRecordedBy === null ? null : (
+          <p className="case-summary-attribution">
+            <ActorIdentity actor={value.summaryRecordedBy} /> ·{" "}
+            <RelativeTime value={value.summaryChangedAt} observedAt={value.basis.observedAt} />
+          </p>
+        )}
       </section>
     </>
   );

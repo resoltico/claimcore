@@ -46,12 +46,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       inputMessage(language, "field.principal.issuer.label"),
     );
     await expect(issuer).toHaveAccessibleDescription(
-      `${inputMessage(language, "field.principal.issuer.meaning")} ${inputMessage(language, "diagnostic.PRINCIPAL_FORMAT")}`,
+      `${inputMessage(language, "field.principal.issuer.hint")} ${inputMessage(language, "diagnostic.PRINCIPAL_FORMAT")}`,
     );
     await issuer.fill(source.issuer);
     await expect(issuer).not.toHaveAttribute("aria-invalid");
     await expect(issuer).toHaveAccessibleDescription(
-      inputMessage(language, "field.principal.issuer.meaning"),
+      inputMessage(language, "field.principal.issuer.hint"),
     );
     await issuer.press("Tab");
     await expect(subject).toBeFocused();
@@ -61,12 +61,12 @@ for (const language of ["en", "lv", "ar"] as const) {
       inputMessage(language, "field.principal.subject.label"),
     );
     await expect(subject).toHaveAccessibleDescription(
-      `${inputMessage(language, "field.principal.subject.meaning")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
+      `${inputMessage(language, "field.principal.subject.hint")} ${inputMessage(language, "diagnostic.TEXT_REQUIRED")}`,
     );
     await subject.fill(source.ownerSubject);
     await expect(subject).not.toHaveAttribute("aria-invalid");
     await expect(subject).toHaveAccessibleDescription(
-      inputMessage(language, "field.principal.subject.meaning"),
+      inputMessage(language, "field.principal.subject.hint"),
     );
   });
   test(`case-scoped grant and revoke references retain shared hints and refusal focus in ${language}`, async ({
@@ -107,7 +107,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         ),
       );
       await expect(page.locator(".field-description")).toContainText(
-        inputMessage(language, "field.caseReference.meaning"),
+        inputMessage(language, "field.caseReference.hint"),
       );
       await reference.fill("Synthetic reference");
       await expect(reference).not.toHaveAttribute("aria-invalid");

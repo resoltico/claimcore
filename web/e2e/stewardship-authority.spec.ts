@@ -16,7 +16,7 @@ import { recoveryRecords } from "./recovery-storage";
 const stewardAct = async (page: Page, label: string, reason?: string) => {
   await startAct(page, label);
   if (reason !== undefined) {
-    await page.getByLabel("Stewardship reason", { exact: true }).fill(reason);
+    await page.getByLabel("Reason", { exact: true }).fill(reason);
   }
   if (label === "Erase case payload") {
     await expect(page.getByText(/WAL, backups and copies elsewhere are not erased/u)).toBeVisible();

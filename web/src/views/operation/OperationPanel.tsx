@@ -1,27 +1,17 @@
+import { Button } from "../../ui/Button";
+import { operationEntry } from "../../protocol/operationCatalog";
+import { renderCatalogKey } from "../../presentation/messages";
 import { ConflictChanges } from "./ConflictChanges";
 import { resourceUnavailableDiagnostic } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useId, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { CopyValue } from "../../components/CopyValue";
 import { Dialog } from "../../ui/Dialog";
-import { OperationForm, type OperationFormProps } from "./OperationForm";
+import { OperationForm, OperationFormActions, type OperationFormProps } from "./OperationForm";
 import { OperationReview } from "./OperationReview";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-type Discard = {
-  model: OperationModel;
-  onDiscard: () => void;
-  hidden: boolean;
-};
-const DiscardButton = ({ model, onDiscard, hidden }: Discard) => {
-  const p = usePresentation();
-  return (
-    <button type="button" hidden={hidden} disabled={model.busy} onClick={onDiscard}>
-      {p.text("ui.discardAndLeave")}
-    </button>
-  );
-};
 const pendingMetadata = (model: OperationModel): ReadonlyArray<readonly [string, string]> => {
   const input = model.prepared?.input;
   if (input === undefined) {
@@ -100,7 +90,7 @@ const UnknownOperation = ({ model }: { model: OperationModel }) => {
     </section>
   );
 };
-type Props = Omit<OperationFormProps, "onAct"> & { disclosureAvailable?: boolean };
+type Props = Omit<OperationFormProps, "onAct"> & { disclosureAvailable?: boolean; open?: boolean };
 type DiscardProps = {
   model: OperationModel;
   onClose?: () => void;
@@ -194,8 +184,35 @@ const UnavailableDisclosure = ({
     </section>
   );
 };
-const EditableOperation = (props: Props) => {
-  const { model, onClose } = props;
+const requestClose = (model: OperationModel, onClose: Props["onClose"]) => {
+  if (model.busy) {
+    return;
+  }
+  if (model.dirty || model.prepared !== null || model.priorUncertain) {
+    model.requestDiscard("LEAVE");
+  } else {
+    onClose?.();
+  }
+};
+const usePreviewReturnFocus = (model: OperationModel) => {
+  const preview = useRef<HTMLButtonElement>(null);
+  const previous = useRef(model.phase);
+  useEffect(() => {
+    if (
+      previous.current === "REVIEWING" &&
+      model.phase === "EDITING" &&
+      model.notice === null &&
+      preview.current?.isConnected === true &&
+      !preview.current.disabled
+    ) {
+      preview.current.focus();
+    }
+    previous.current = model.phase;
+  }, [model.phase, model.notice]);
+  return preview;
+};
+const EnterOperation = (props: Props) => {
+  const { model } = props;
   const requestChange = (kind: string) => {
     if (model.dirty || model.prepared !== null) {
       model.requestDiscard(kind);
@@ -203,51 +220,28 @@ const EditableOperation = (props: Props) => {
       model.discard(false, kind);
     }
   };
-  const leave = () => {
-    if (model.dirty || model.prepared !== null) {
-      model.requestDiscard("LEAVE");
-    } else {
-      onClose?.();
-    }
-  };
   return (
     <>
-      <OperationForm
-        {...props}
-        {...(onClose === undefined
-          ? {}
-          : {
-              onClose: leave,
-            })}
-        onAct={requestChange}
-      />
-      <OperationReview model={model} paused={props.current?.advice.maintenance.active === true} />
+      {model.conflict === null ? null : (
+        <ConflictChanges key={model.conflict.identity.id} model={model} snapshot={model.conflict} />
+      )}
+      <OperationForm {...props} onAct={requestChange} />
     </>
   );
 };
-
-export const OperationPanel = (props: Props) => {
+const OperationSurface = ({
+  props,
+  review,
+}: {
+  props: Props;
+  review: { body: ReactNode; actions: ReactNode } | null;
+}) => {
   const { model, disclosureAvailable = true } = props;
-  const p = usePresentation();
-  if (!model.ownerVerified) {
-    return <UnavailableDisclosure model={model} available={false} />;
-  }
-  if (model.phase === "ACCEPTED") {
-    return (
-      <button
-        type="button"
-        onClick={() => {
-          model.discard();
-        }}
-      >
-        {p.text("ui.startAnotherOperation")}
-      </button>
-    );
-  }
   if (model.priorUncertain) {
     return <UnknownOperation model={model} />;
   }
   if (
+    !model.ownerVerified ||
     !disclosureAvailable ||
     model.disclosureRefused ||
     model.contextChanged ||
@@ -255,34 +249,65 @@ export const OperationPanel = (props: Props) => {
   ) {
     return <UnavailableDisclosure model={model} available={disclosureAvailable} />;
   }
+  return review === null ? <EnterOperation {...props} /> : review.body;
+};
+export const OperationPanel = (props: Props) => {
+  const { model, disclosureAvailable = true, open = true } = props;
+  const p = usePresentation();
+  const formId = useId();
+  const preview = usePreviewReturnFocus(model);
+  const entry = operationEntry(model.entry);
+  const close = () => {
+    requestClose(model, props.onClose);
+  };
   return (
-    <>
-      {model.conflict === null ? null : (
-        <ConflictChanges key={model.conflict.identity.id} model={model} snapshot={model.conflict} />
+    <OperationReview
+      model={model}
+      paused={
+        props.current?.advice.maintenance.active === true ||
+        !props.offered.includes(model.entry.kind)
+      }
+    >
+      {(review) => (
+        <Dialog
+          title={renderCatalogKey(p, entry.labelId)}
+          description={renderCatalogKey(p, entry.meaningId)}
+          closeLabel={p.text("ui.close")}
+          placement="end"
+          isOpen={
+            open &&
+            model.pendingDiscard === null &&
+            disclosureAvailable &&
+            model.ownerVerified &&
+            model.phase !== "ACCEPTED"
+          }
+          isDismissable={!model.busy}
+          onOpenChange={(next) => {
+            if (!next) {
+              close();
+            }
+          }}
+          footer={
+            review?.actions ??
+            (model.priorUncertain ? (
+              <Button variant="secondary" isDisabled={model.busy} onPress={close}>
+                {p.text("ui.close")}
+              </Button>
+            ) : (
+              <OperationFormActions {...props} formId={formId} preview={preview} onClose={close} />
+            ))
+          }
+        >
+          <OperationSurface props={{ ...props, formId }} review={review} />
+        </Dialog>
       )}
-      <EditableOperation {...props} />
-    </>
+    </OperationReview>
   );
 };
 /** Mutation consent stays mounted when independently authorized read panes are replaced. */
 export const OperationDiscard = (props: DiscardProps) => {
   const { model } = props;
-  const show =
-    model.priorUncertain ||
-    model.disclosureRefused ||
-    model.contextChanged ||
-    !model.disclosureCurrent ||
-    model.dirty;
   return (
-    <>
-      <DiscardButton
-        model={model}
-        hidden={!show}
-        onDiscard={() => {
-          model.requestDiscard("LEAVE");
-        }}
-      />
-      <DiscardDialog {...props} pending={model.pendingDiscard} setPending={model.requestDiscard} />
-    </>
+    <DiscardDialog {...props} pending={model.pendingDiscard} setPending={model.requestDiscard} />
   );
 };

@@ -1,7 +1,8 @@
+import { Button } from "../../ui/Button";
 import { Select } from "../../ui/Select";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { OperationErrors } from "./OperationErrors";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, type RefObject } from "react";
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { CatalogInputs } from "../../components/CatalogInputs";
 import { usePresentation } from "../../presentation/context";
@@ -13,9 +14,11 @@ export type OperationFormProps = {
   model: OperationModel;
   current: CurrentCase | null;
   fixedTarget?: boolean;
+  fixedPaths?: ReadonlyArray<string>;
   offered: ReadonlyArray<string>;
   onAct: (kind: string) => void;
   onClose?: () => void;
+  formId?: string;
 };
 const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
@@ -30,7 +33,13 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
     />
   );
 };
-const OperationInputs = ({ model, current, offered, fixedTarget }: OperationFormProps) => {
+const OperationInputs = ({
+  model,
+  current,
+  offered,
+  fixedTarget,
+  fixedPaths,
+}: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(model.entry.kind);
   const act = operationEntry(model.entry);
@@ -57,6 +66,7 @@ const OperationInputs = ({ model, current, offered, fixedTarget }: OperationForm
           current={current}
           values={model.values}
           {...(fixedTarget === undefined ? {} : { fixedTarget })}
+          {...(fixedPaths === undefined ? {} : { fixedPaths })}
           disabled={model.busy || model.revalidating || model.phase === "REVIEWING" || !allowed}
           fieldErrors={model.fieldErrors}
           onChange={model.edit}
@@ -66,27 +76,8 @@ const OperationInputs = ({ model, current, offered, fixedTarget }: OperationForm
     </>
   );
 };
-const useReviewReturnFocus = (model: OperationModel) => {
-  const preview = useRef<HTMLButtonElement>(null);
-  const previousPhase = useRef(model.phase);
-  useEffect(() => {
-    if (
-      previousPhase.current === "REVIEWING" &&
-      model.phase === "EDITING" &&
-      model.notice === null &&
-      preview.current?.isConnected === true &&
-      !preview.current.disabled
-    ) {
-      preview.current.focus();
-    }
-    previousPhase.current = model.phase;
-  }, [model.phase, model.notice]);
-  return preview;
-};
 export const OperationForm = (props: OperationFormProps) => {
-  const { model, current, offered, onClose } = props;
-  const p = usePresentation();
-  const preview = useReviewReturnFocus(model);
+  const { model, current, offered } = props;
   const form = useRef<HTMLFormElement>(null);
   useEffect(() => {
     if (model.notice === null) {
@@ -101,6 +92,7 @@ export const OperationForm = (props: OperationFormProps) => {
   return (
     <form
       className="operation-form-card"
+      id={props.formId}
       ref={form}
       onSubmit={(event) => {
         event.preventDefault();
@@ -112,22 +104,40 @@ export const OperationForm = (props: OperationFormProps) => {
       <OperationErrors model={model} />
       <ActPicker {...props} />
       <OperationInputs {...props} />
-      <div className="actions">
-        {model.conflict === null ? (
-          <button
-            ref={preview}
-            type="submit"
-            disabled={model.busy || model.revalidating || model.phase === "REVIEWING" || !allowed}
-          >
-            {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "label.reviewTitle")}
-          </button>
-        ) : null}
-        {onClose === undefined ? null : (
-          <button type="button" disabled={model.busy} onClick={onClose}>
-            {p.text(current === null ? "ui.backToCases" : "ui.backToCase")}
-          </button>
-        )}
-      </div>
     </form>
+  );
+};
+
+export const OperationFormActions = ({
+  model,
+  current,
+  offered,
+  onClose,
+  formId,
+  preview,
+}: Omit<OperationFormProps, "onAct"> & { preview: RefObject<HTMLButtonElement | null> }) => {
+  const p = usePresentation();
+  const paused =
+    useRequesterContext()?.maintenance.active === true ||
+    current?.advice.maintenance.active === true;
+  const allowed = offered.includes(model.entry.kind) && !paused;
+  return (
+    <>
+      {onClose === undefined ? null : (
+        <Button variant="secondary" isDisabled={model.busy} onPress={onClose}>
+          {p.text("ui.close")}
+        </Button>
+      )}
+      {model.conflict === null ? (
+        <Button
+          ref={preview}
+          type="submit"
+          {...(formId === undefined ? {} : { form: formId })}
+          isDisabled={model.busy || model.revalidating || !allowed}
+        >
+          {p.text(model.phase === "PREVIEWING" ? "ui.previewing" : "label.reviewTitle")}
+        </Button>
+      ) : null}
+    </>
   );
 };

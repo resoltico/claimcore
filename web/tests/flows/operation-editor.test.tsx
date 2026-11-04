@@ -1,16 +1,16 @@
+import {
+  reviewConfirm,
+  queryReviewConfirm,
+  waitForReviewConfirm,
+} from "../support/review-controls";
 import { beforeEach, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import {
-  editor,
-  previewReply,
-  deferredResponse,
-  languageControl,
-} from "../support/presentation-state.fixtures";
+import { editor, previewReply, deferredResponse } from "../support/presentation-state.fixtures";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 import { response, operationId } from "../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
-it("returns focus to preview after presentation controls were used during pending review", async () => {
+it("returns focus to the drawer review action after returning to editing", async () => {
   const pending = deferredResponse();
   vi.mocked(fetch).mockReturnValueOnce(pending.promise);
   render(editor());
@@ -18,18 +18,18 @@ it("returns focus to preview after presentation controls were used during pendin
   const preview = screen.getByRole("button", { name: "Review changes" });
   await user.click(preview);
   expect(preview).toBeDisabled();
-  await user.click(languageControl("en"));
+  expect(screen.queryByRole("radio", { name: /English/u })).toBeNull();
   pending.resolve(previewReply());
   await user.click(await screen.findByRole("button", { name: "Return to editing" }));
   await waitFor(() => {
-    expect(document.activeElement).toBe(preview);
+    expect(screen.getByRole("button", { name: "Review changes" })).toHaveFocus();
   });
 });
 const reviewAndConfirm = async () => {
   const user = userEvent.setup();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   return user;
 };
 it("reviews before execution and sends the exact reviewed request", async () => {
@@ -80,8 +80,8 @@ it("readonly preview failure stays editable and cannot submit", async () => {
   render(editor());
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("alert");
-  expect(screen.getByRole("button", { name: "Back to case" })).not.toBeDisabled();
-  expect(screen.queryByRole("button", { name: "Record changes" })).toBeNull();
+  expect(screen.getByRole("button", { name: "Close" })).not.toBeDisabled();
+  expect(queryReviewConfirm()).toBeNull();
 });
 it("an invalid input rejection focuses and labels the exact authoring field", async () => {
   vi.mocked(fetch).mockResolvedValueOnce(
@@ -93,7 +93,7 @@ it("an invalid input rejection focuses and labels the exact authoring field", as
   );
   render(editor({ current: null, initialAct: "OPEN" }));
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
-  const input = screen.getByLabelText("Handler's case reference", { exact: true });
+  const input = screen.getByLabelText("Case reference", { exact: true });
   await waitFor(() => {
     expect(screen.getByRole("alert")).toHaveFocus();
   });

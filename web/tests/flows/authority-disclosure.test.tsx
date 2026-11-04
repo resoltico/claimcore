@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { actorContextInput, workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
@@ -123,7 +124,7 @@ const prepare = async () => {
   await author();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox"));
+  await waitForReviewConfirm();
 };
 const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = () => {
@@ -161,7 +162,7 @@ it.each([false, true])(
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await screen.findByText(listPrincipal());
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    fireEvent.click(reviewConfirm());
     await waitFor(() => {
       expect(context).toHaveBeenCalledTimes(2);
     });
@@ -201,7 +202,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
     .mockResolvedValue(unavailable());
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  fireEvent.click(reviewConfirm());
   fireEvent.click(await screen.findByRole("button", { name: "Send again" }));
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
@@ -239,7 +240,7 @@ const revalidatingReads = async () => {
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await screen.findByText(listPrincipal());
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  fireEvent.click(reviewConfirm());
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
   });
@@ -310,7 +311,7 @@ const loseManagement = async (
       listing.mockResolvedValue(refused());
       await user.click(screen.getByRole("button", { name: "Reload actors" }));
     } else {
-      await user.click(screen.getByRole("button", { name: "Record changes" }));
+      await user.click(reviewConfirm());
     }
   } else {
     await author();
@@ -429,7 +430,7 @@ it.each(["lost", "unknown"] as const)(
     const execute = authorityRecoveryDelivery(first);
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    fireEvent.click(reviewConfirm());
     const retry = await screen.findByRole("button", { name: "Send again" });
     expect(screen.getByRole("alert")).toBeVisible();
     const [pending] = execute.mock.calls[0]!;

@@ -25,6 +25,7 @@ export const review: OperationReview = {
     changes: [],
     context: {
       productVersion: "0.1.0",
+      observedAt: "2026-09-09T12:00:00.000000Z",
       businessDate: "2026-09-09",
       timeZone: "Etc/UTC",
     },

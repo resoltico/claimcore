@@ -1,3 +1,4 @@
+import { reviewConfirm } from "../support/review-controls";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
@@ -88,7 +89,7 @@ it.each([
     if (reason !== null) {
       await user.type(
         screen.getByRole("textbox", {
-          name: "Stewardship reason",
+          name: "Reason",
         }),
         reason,
       );
@@ -102,9 +103,18 @@ it.each([
     expect(dialog).toHaveTextContent(`Before: ${stateLabels[before]}`);
     expect(dialog).toHaveTextContent(`After: ${stateLabels[after]}`);
     if (act === "ERASE") {
-      expect(dialog).toHaveTextContent("WAL, backups and copies elsewhere are not erased.");
+      expect(dialog).toHaveTextContent("Copies held elsewhere remain.");
     }
-    expect(getButton("Record changes")).toBeDisabled();
+    if (act === "ERASE") {
+      expect(reviewConfirm()).toBeDisabled();
+      const confirmation = screen.getByRole("textbox", { name: "Case reference (exact)" });
+      await user.type(confirmation, fields.caseReference.toLowerCase());
+      expect(reviewConfirm()).toBeDisabled();
+      await user.clear(confirmation);
+      await user.type(confirmation, fields.caseReference);
+    }
+    expect(reviewConfirm()).not.toBeDisabled();
+    expect(screen.queryByRole("checkbox")).toBeNull();
     expect(vi.mocked(fetch)).toHaveBeenCalledOnce();
   },
 );

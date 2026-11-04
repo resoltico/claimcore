@@ -33,7 +33,7 @@ const prepareRegistration = async (page: Page, issuer: string, subject: string) 
 };
 const uncertainRegistration = async (page: Page) => {
   const pending = await pauseJsonReply(page, "operation.execute", true);
-  await page.getByRole("button", { name: ui("en", "ui.submitExact"), exact: true }).click();
+  await page.locator("button[data-confirm-operation]").click();
   const captured = await pending.ready;
   expect(captured.reply.outcome.kind).toBe("ACCEPTED");
   pending.release();

@@ -41,7 +41,7 @@ it("resolves business meaning through catalog message identities", () => {
   const p = createPresenter(defaults);
   for (const field of catalog.fields) {
     expect(p.fieldLabel(field.name)).toBe(renderCatalogKey(defaults, field.labelId));
-    expect(p.fieldMeaning(field.name)).toBe(renderCatalogKey(defaults, field.meaningId));
+    expect(p.fieldHint(field.name)).toBe(renderCatalogKey(defaults, field.hintId));
   }
   for (const entry of catalog.entries.filter(
     (item) => item.subject === "CASE" && item.endpoint === "operation.execute",
@@ -54,8 +54,8 @@ it("resolves business meaning through catalog message identities", () => {
       expect(p.groupLabel(input.diagnosticTargets[0]!)).toBe(
         renderCatalogKey(defaults, input.labelId),
       );
-      expect(p.groupMeaning(input.diagnosticTargets[0]!)).toBe(
-        renderCatalogKey(defaults, input.meaningId!),
+      expect(p.groupHint(input.diagnosticTargets[0]!)).toBe(
+        renderCatalogKey(defaults, input.hintId!),
       );
     }
   }

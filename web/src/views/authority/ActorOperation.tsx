@@ -1,5 +1,4 @@
 import { ActorIdentity } from "../../components/ActorIdentity";
-import { navigate } from "../../routing/navigation";
 import { usePresentation } from "../../presentation/context";
 import type { OperationModel } from "../../hooks/operation/useOperation";
 import type { AuthorityTarget } from "../../hooks/operation/useAuthorityTarget";
@@ -9,8 +8,19 @@ type Props = {
   target: AuthorityTarget;
   offered: ReadonlyArray<string>;
   available: boolean;
+  open: boolean;
+  onOpen: () => void;
+  onClose: () => void;
 };
-const ActorActions = ({ target, busy }: { target: AuthorityTarget; busy: boolean }) => {
+const ActorActions = ({
+  target,
+  busy,
+  onOpen,
+}: {
+  target: AuthorityTarget;
+  busy: boolean;
+  onOpen: () => void;
+}) => {
   const p = usePresentation();
   if (target.offered.length === 0) {
     return null;
@@ -39,6 +49,7 @@ const ActorActions = ({ target, busy }: { target: AuthorityTarget; busy: boolean
             })}
             onClick={() => {
               target.begin(kind);
+              onOpen();
             }}
           >
             {p.authorityLabel(kind)}
@@ -48,54 +59,44 @@ const ActorActions = ({ target, busy }: { target: AuthorityTarget; busy: boolean
     </section>
   );
 };
-const RetainedActorOperation = ({ model, target, available, offered }: Props) => {
+export const ActorOperation = ({
+  model,
+  target,
+  offered,
+  available,
+  open,
+  onOpen,
+  onClose,
+}: Props) => {
   const p = usePresentation();
+  const retained = model.dirty || model.prepared !== null || model.priorUncertain;
   return (
     <>
-      <p role="status">{p.text("ui.actorRequestRetained")}</p>
-      <button
-        type="button"
-        onClick={() => {
-          navigate("/people");
-        }}
-      >
-        {p.text("ui.continueAuthorityRequest")}
-      </button>
+      {target.actor === null ? null : (
+        <ActorActions target={target} busy={model.busy} onOpen={onOpen} />
+      )}
+      {!open && retained ? (
+        <>
+          <p role="status">{p.text("ui.actorRequestRetained")}</p>
+          <button type="button" onClick={onOpen}>
+            {p.text("ui.continueAuthorityRequest")}
+          </button>
+        </>
+      ) : null}
       <OperationPanel
         model={model}
         current={null}
-        offered={offered}
+        offered={
+          target.mode === "bound"
+            ? target.offered
+            : offered.filter((kind) => model.entry.kind !== "ADMIT" || kind === "ADMIT")
+        }
+        fixedTarget={target.mode === "bound"}
+        fixedPaths={model.entry.kind === "ADMIT" ? ["target.issuer"] : []}
         disclosureAvailable={available}
+        open={open}
+        onClose={onClose}
       />
-      <ActorActions target={target} busy={model.busy} />
     </>
-  );
-};
-
-export const ActorOperation = ({ model, target, offered, available }: Props) => {
-  const p = usePresentation();
-  if (!available || target.mode === "list" || target.mode === "bound") {
-    return (
-      <>
-        {available && target.mode === "bound" ? (
-          <h2>{p.authorityLabel(model.entry.kind)}</h2>
-        ) : null}
-        <OperationPanel
-          model={model}
-          current={null}
-          offered={
-            target.mode === "bound" ? offered.filter((kind) => kind !== "REGISTER") : offered
-          }
-          fixedTarget={target.mode === "bound"}
-          disclosureAvailable={available}
-        />
-      </>
-    );
-  }
-  if (target.mode === "unbound") {
-    return null;
-  }
-  return (
-    <RetainedActorOperation model={model} target={target} available={available} offered={offered} />
   );
 };

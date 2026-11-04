@@ -1,4 +1,4 @@
-import { Icon } from "../ui/icons";
+import { FieldHelp } from "./FieldHelp";
 import { CountryValue } from "./CountryValue";
 import type { CaseFields, CatalogDocument } from "../api/service";
 import { caseFieldValue } from "../protocol/caseFields";
@@ -30,14 +30,7 @@ export const CaseFactRows = ({
             <div className="field-row" data-field-name={field.name} key={field.name}>
               <dt>
                 {p.fieldLabel(field.name)}{" "}
-                <details className="field-help">
-                  <summary
-                    aria-label={`${p.text("ui.explainFields")}: ${p.fieldLabel(field.name)}`}
-                  >
-                    <Icon name="info" />
-                  </summary>
-                  <p>{p.hint(field)}</p>
-                </details>
+                <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
               </dt>
               <dd>
                 {value !== null && countryField(field) ? (
@@ -51,9 +44,7 @@ export const CaseFactRows = ({
                 )}
                 {currency === undefined ? null : <bdi dir="ltr">{currency}</bdi>}
 
-                {explain ? (
-                  <small className="field-description">{p.fieldMeaning(field.name)}</small>
-                ) : null}
+                {explain ? <small className="field-description">{p.hint(field)}</small> : null}
               </dd>
             </div>
           );

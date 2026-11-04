@@ -168,6 +168,7 @@ button:disabled {
   font-weight: 700;
 }
 
+.shell-search input,
 .text-field input,
 .text-field textarea,
 .work-queue input[type="search"],
@@ -185,6 +186,7 @@ button:disabled {
   padding: var(--space-2);
   color: var(--text-primary);
   background: var(--bg-surface);
+  min-block-size: var(--target-primary);
 }
 
 .login-card {

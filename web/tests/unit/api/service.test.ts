@@ -41,6 +41,11 @@ import { prepareRequest } from "../../../src/protocol/preparedRequest";
 const operation = "10000000-0000-4000-8000-000000000001";
 const installation = "90000000-0000-4000-8000-000000000001";
 const receipt = {
+  basis: {
+    observedAt: "2026-11-04T12:00:00.000000Z",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+  },
   operationId: operation,
   position: { sequence: 1, entryHash: "a".repeat(64) },
   recordedAt: "2026-01-01T00:00:00.000000Z",

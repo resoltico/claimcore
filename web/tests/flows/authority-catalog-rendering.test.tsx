@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { chooseOption, optionValues } from "../support/choice-entry";
 import { actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
@@ -184,8 +185,14 @@ it.each(authorityActs)(
       name: "Review changes",
     });
     const before = screen.getByRole("dialog").textContent;
-    await user.click(screen.getByRole("checkbox"));
-    await user.click(getButton("Record changes"));
+    await waitForReviewConfirm();
+    if (act.kind === "ERASE_PROFILE") {
+      await user.type(
+        screen.getByRole("textbox", { name: "Exact operation ID" }),
+        calls[0]!.input.operationId,
+      );
+    }
+    await user.click(reviewConfirm());
     await waitFor(() => {
       expect(calls).toHaveLength(2);
       expect(calls[1]!.bytes).toBe(calls[0]!.bytes);

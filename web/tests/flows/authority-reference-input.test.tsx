@@ -21,7 +21,7 @@ const arField = { ...coreCatalogs.ar, ...arChrome };
 const locales = [
   {
     language: "en",
-    label: "Handler's case reference",
+    label: "Case reference",
     field: enField,
     ui: enField,
     authority: enField,
@@ -104,11 +104,7 @@ const authorCaseGrant = async (user: ReturnType<typeof userEvent.setup>, locale:
   return reference;
 };
 const expectReferenceDescription = (reference: HTMLElement, locale: Locale, invalid: boolean) => {
-  const meaning = locale.field["field.caseReference.meaning"];
-  const hint = locale.ui["scalar.reference.guidance"].replace(
-    "{maximumCharacters}",
-    locale.language === "ar" ? "\u206880\u2069" : "80",
-  );
+  const hint = locale.field["field.caseReference.hint"];
   const description = reference
     .getAttribute("aria-describedby")!
     .split(" ")
@@ -117,11 +113,10 @@ const expectReferenceDescription = (reference: HTMLElement, locale: Locale, inva
       expect(node).not.toBeNull();
       return node!.textContent;
     });
-  expect(description.join(" ")).toContain(meaning);
   expect(description.join(" ")).toContain(hint);
   const expected = invalid
-    ? `${meaning}${hint} ${locale.diagnostic["diagnostic.REFERENCE_FORMAT"]}`
-    : `${meaning}${hint}`;
+    ? `${hint} ${locale.diagnostic["diagnostic.REFERENCE_FORMAT.gui"]}`
+    : hint;
   expect(reference).toHaveAccessibleDescription(expected);
   expect(reference).toHaveAccessibleName(locale.label);
 };

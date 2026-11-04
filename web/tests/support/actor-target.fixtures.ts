@@ -36,6 +36,7 @@ export const grantsFor = (actor = firstActor): ApiResult<ServiceResponse<"author
 export const setupActorTargets = (
   offered: Parameters<typeof installationOffers>[0] = [
     "REGISTER",
+    "ADMIT",
     "GRANT",
     "REVOKE",
     "ENABLE",
@@ -98,15 +99,20 @@ export const openActor = async (id = firstActor.actor.actorId) => {
   await screen.findByRole("heading", { name: "Actor grants", level: 1 });
 };
 export const authorDifferentTarget = async () => {
-  fireEvent.change(await screen.findByRole("combobox", { name: "Authority action" }), {
-    target: { value: "GRANT" },
-  });
+  fireEvent.click(await screen.findByRole("button", { name: "Add person" }));
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
   });
-  fireEvent.change(document.querySelector('[name="target.issuer"]')!, {
-    target: { value: "https://issuer.example/" },
+  fireEvent.change(document.querySelector('[name="act.profile.displayName"]')!, {
+    target: { value: "Authored account" },
   });
+  const role =
+    document.querySelector<HTMLInputElement>('[name^="grants.row-"][value="CASE_READER"]') ??
+    document.querySelector<HTMLInputElement>('[value="CASE_READER"]');
+  if (role === null) {
+    throw new Error("Admission role required");
+  }
+  fireEvent.click(role);
   fireEvent.change(document.querySelector('[name="target.subject"]')!, {
     target: { value: "authored-other" },
   });

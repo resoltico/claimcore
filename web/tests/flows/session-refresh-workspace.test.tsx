@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { preview as preparedPreview } from "../support/operation-hook.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -113,8 +114,8 @@ it("masks frozen uncertain metadata until the original owner is verified and the
   await screen.findByRole("textbox", { name: "Claimant name" });
   fillRegistrationInputs({ caseReference: "UNCERTAIN_OWNER_CANARY" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   expect(document.body).toHaveTextContent("UNCERTAIN_OWNER_CANARY");
   const [firstExecution] = execute.mock.calls;

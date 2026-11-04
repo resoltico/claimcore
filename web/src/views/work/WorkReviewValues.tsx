@@ -2,6 +2,7 @@ import { ObservedCaseFacts } from "./ObservedCaseFacts";
 import type { OperationReview, Reminder } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { CharacterWarning } from "../../components/BusinessValue";
+import { ActorIdentity } from "../../components/ActorIdentity";
 import { IdentifierValue } from "../../components/IdentifierValue";
 
 type WorkReview = Extract<OperationReview["subject"], { kind: "WORK" }>;
@@ -25,18 +26,18 @@ export const WorkReviewValues = ({ review }: { review: WorkReview }) => {
               <dt>{p.fieldLabel("handlingSummary")}</dt>
               <dd>
                 <bdi dir="auto" className="plain-text-value">
-                  {snapshot.work.handlingSummary ?? p.text("ui.notRecorded")}
+                  {snapshot.handlingSummary ?? p.text("ui.notRecorded")}
                 </bdi>
-                <CharacterWarning value={snapshot.work.handlingSummary} allowLineFeed />
+                <CharacterWarning value={snapshot.handlingSummary} allowLineFeed />
               </dd>
             </div>
             <div>
               <dt>{p.fieldLabel("responsibleActor")}</dt>
               <dd>
-                {snapshot.work.responsibleActor === null ? (
+                {snapshot.responsible === null ? (
                   p.text("ui.notRecorded")
                 ) : (
-                  <IdentifierValue value={snapshot.work.responsibleActor} />
+                  <ActorIdentity actor={snapshot.responsible} />
                 )}
               </dd>
             </div>

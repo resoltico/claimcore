@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import userEvent from "@testing-library/user-event";
 import { chooseOption } from "../support/choice-entry";
@@ -23,10 +24,15 @@ beforeEach(() => {
   stubViewCounts();
 });
 const grantToSelected = async () => {
-  fireEvent.click(await screen.findByRole("button", { name: /Grant role: Grant a role/u }));
+  fireEvent.click(await screen.findByRole("button", { name: /Grant role:/u }));
   await screen.findByRole("dialog", { name: "Discard these draft changes?" });
 };
 const expectBoundActor = async (subject = firstActor.principal.subject) => {
+  if (document.querySelector('[name="target.subject"]') === null) {
+    expect(screen.queryByRole("dialog")).toBeNull();
+    const actions = await screen.findAllByRole("button", { name: /^(?:Grant|Revoke) role:/u });
+    fireEvent.click(actions[0]!);
+  }
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).toHaveValue(subject);
   });
@@ -80,7 +86,7 @@ it("declining retarget consent retains the authored principal and returns to its
   await openActor();
   await grantToSelected();
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
-  fireEvent.click(screen.getByRole("button", { name: "Continue current request" }));
+  expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
   expect(document.querySelector('[name="target.subject"]')).toHaveValue("authored-other");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -96,7 +102,7 @@ it("explicit retarget consent creates a fresh request for the disclosed actor", 
   await authorDifferentTarget();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("checkbox", { name: "I confirm this exact request." });
+  await waitForReviewConfirm();
   const [previous] = preview.mock.calls[0]!;
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
   await openActor();
@@ -123,8 +129,8 @@ it("declining an uncertain request retarget preserves the exact request and retr
   await authorDifferentTarget();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  fireEvent.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   const [original] = execute.mock.calls[0]!;
   await openActor();
@@ -147,7 +153,7 @@ it("changing acts retains the bound actor identity after discard consent", async
   await expectBoundActor();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("checkbox", { name: "I confirm this exact request." });
+  await waitForReviewConfirm();
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
   await chooseOption(
     userEvent.setup(),

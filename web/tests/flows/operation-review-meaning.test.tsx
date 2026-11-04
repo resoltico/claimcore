@@ -219,7 +219,7 @@ it.each(localized)(
     }
   },
 );
-it("erasure review retains its act meaning and WAL/backups limitation", () => {
+it("erasure review retains its act meaning and external-copy limitation", () => {
   render(
     <OperationReview
       model={model(
@@ -236,9 +236,7 @@ it("erasure review retains its act meaning and WAL/backups limitation", () => {
       )}
     />,
   );
-  expect(screen.getByRole("dialog")).toHaveTextContent(
-    /WAL, backups and copies elsewhere are not erased/u,
-  );
+  expect(screen.getByRole("dialog")).toHaveTextContent(/Copies held elsewhere remain/u);
 });
 
 it("shows the core's profile values in authority review before consent", () => {

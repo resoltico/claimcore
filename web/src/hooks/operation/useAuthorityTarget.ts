@@ -47,7 +47,11 @@ const useActorDisclosure = (revision: number, available: boolean) => {
       ) {
         return;
       }
-      const next = { key, actor, offered: offered.filter((kind) => kind !== "REGISTER") };
+      const next = {
+        key,
+        actor,
+        offered: offered.filter((kind) => kind !== "REGISTER" && kind !== "ADMIT"),
+      };
       setSnapshot((prior) => (sameSnapshot(prior, next) ? prior : next));
     },
     [key, actorId],
@@ -70,7 +74,7 @@ const useActorDefault = (model: OperationModel, source: Snapshot | null, fixed: 
     if (source === null) {
       if (model.phase !== "ACCEPTED" && seeded.current === id) {
         seeded.current = null;
-        model.discard(false, "REGISTER");
+        model.discard(false, "ADMIT");
       }
       return;
     }
@@ -109,7 +113,7 @@ const useActorConsent = (
   };
   const discard = (
     acknowledged = false,
-    kind = source === null ? "REGISTER" : (authorityPrimaryAction(source.offered) ?? "REGISTER"),
+    kind = source === null ? "ADMIT" : (authorityPrimaryAction(source.offered) ?? "ADMIT"),
   ) => {
     const fallback = fixed && source !== null ? source.actor.principal : undefined;
     const principal = resetPrincipal(intent, kind, epoch, available, fallback);
@@ -143,7 +147,8 @@ export const useAuthorityTarget = (model: OperationModel, revision: number, avai
   const fixed =
     source !== null &&
     matches(model.values, source.actor.principal) &&
-    model.entry.kind !== "REGISTER";
+    model.entry.kind !== "REGISTER" &&
+    model.entry.kind !== "ADMIT";
   useActorDefault(model, source, fixed);
   const consent = useActorConsent(model, source, epoch, available, fixed);
   return {

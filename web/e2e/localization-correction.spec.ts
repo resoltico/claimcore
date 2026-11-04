@@ -69,9 +69,7 @@ const expectReviewedClaimantWarning = async (page: Page, language: "en" | "lv" |
   await expectClaimantWarning(field, language);
 };
 const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" | "ar") => {
-  const field = page
-    .getByRole("region", { name: ui(language, "ui.currentCase"), exact: true })
-    .locator('.field-row[data-field-name="claimantName"]');
+  const field = page.locator(".case-detail").locator('.field-row[data-field-name="claimantName"]');
   await expectClaimantWarning(field, language);
 };
 const preserveChoice = async (page: Page, modes: Modes) => {
@@ -87,7 +85,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
       await expect(control.locator(`input[value="${modes[group]}"]`)).toBeChecked();
       await expect(control).toHaveAccessibleName(ui(language, "label.action"));
       await expect(control).toHaveAccessibleDescription(
-        inputMessage(language, `group.${group}.meaning`),
+        inputMessage(language, `group.${group}.hint`),
       );
     }
     if (modes.registration === "UPDATE") {
@@ -128,7 +126,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
     await expect(description).toContainText(text);
     await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
     await expect(payment).toHaveAccessibleDescription(
-      `${inputMessage(language, "group.payment.meaning")} ${inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
+      `${inputMessage(language, "group.payment.hint")} ${inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
     );
     await expect(payment).toHaveAttribute("aria-invalid", "true");
   }
@@ -173,9 +171,7 @@ for (const status of ["CLOSED"] as const) {
           const recorded = page.waitForResponse(
             (response) => new URL(response.url()).pathname === "/api/operation.execute",
           );
-          await page
-            .getByRole("button", { name: ui(language, "ui.submitExact"), exact: true })
-            .click();
+          await page.locator("button[data-confirm-operation]").click();
           expect((await recorded).status()).toBe(200);
           await expect(page.locator("#case-detail-title")).toBeVisible();
           await expect(page.locator(".success-toast")).toBeVisible();

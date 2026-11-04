@@ -42,7 +42,7 @@ it.each(["en", "lv", "ar"] as const)(
     for (const field of ["issuer", "subject"] as const) {
       const name = catalogs[language][`field.principal.${field}.label`];
       const input = screen.getByRole("textbox", { name });
-      const meaning = catalogs[language][`field.principal.${field}.meaning`];
+      const meaning = catalogs[language][`field.principal.${field}.hint`];
       expect(input).toHaveAccessibleDescription(meaning);
       view.rerender(
         <CatalogInputs {...props} fieldErrors={{ [`target.${field}`]: error(field) }} />,
@@ -81,7 +81,7 @@ it.each(["en", "lv", "ar"] as const)(
       const group = screen.getByRole("group", { name: catalogs[language][`group.${name}.label`] });
       const select = group.querySelector<HTMLElement>('[role="radiogroup"]')!;
       expect(select).toHaveAccessibleName(catalogs[language]["label.action"]);
-      expect(select).toHaveAccessibleDescription(catalogs[language][`group.${name}.meaning`]);
+      expect(select).toHaveAccessibleDescription(catalogs[language][`group.${name}.hint`]);
       expect(select).not.toHaveAttribute("aria-invalid");
       expect(select.querySelector('input[value="KEEP"]')).toBeChecked();
     }

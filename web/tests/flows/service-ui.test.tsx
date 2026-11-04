@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -51,11 +52,9 @@ describe("catalog rendering", () => {
     const descriptionId = input.getAttribute("aria-describedby");
     expect(descriptionId).not.toBeNull();
     expect(document.getElementById(descriptionId?.split(" ").at(-1) ?? "")).toHaveTextContent(
-      createPresenter(defaults).fieldMeaning(incident.name),
+      createPresenter(defaults).fieldHint(incident.name),
     );
-    expect(screen.getAllByText(createPresenter(defaults).fieldMeaning(incident.name))).toHaveLength(
-      1,
-    );
+    expect(screen.getAllByText(createPresenter(defaults).fieldHint(incident.name))).toHaveLength(1);
     expect(screen.getByText("CASE-1")).toBeVisible();
   });
 });
@@ -115,12 +114,8 @@ const acceptsOperation = async (): Promise<void> => {
       name: "Review changes",
     }),
   ).toBeVisible();
-  await user.click(
-    screen.getByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   expect(
     await screen.findByRole("heading", {
       name: "Recorded change",
