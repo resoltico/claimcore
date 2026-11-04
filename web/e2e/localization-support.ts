@@ -111,7 +111,7 @@ export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<v
   const visit = await openPreferences(page);
   const control = page.locator('.settings-panel [role="combobox"][id$="-format"]');
   await chooseOption(page, control, locale);
-  await expect(control).toHaveValue(locale);
+  await expect(control).toHaveAttribute("value", locale);
   await closePreferences(page, visit);
 };
 export const selectMode = async (page: Page, mode: Preferences["mode"]): Promise<void> => {
@@ -136,7 +136,8 @@ export const expectPreferences = async (
     ).toBeChecked();
   }
   if (expected.displayLocale !== undefined) {
-    await expect(page.locator('.settings-panel [role="combobox"][id$="-format"]')).toHaveValue(
+    await expect(page.locator('.settings-panel [role="combobox"][id$="-format"]')).toHaveAttribute(
+      "value",
       expected.displayLocale,
     );
   }

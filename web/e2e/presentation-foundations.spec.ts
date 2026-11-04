@@ -84,6 +84,9 @@ const seed = async (
   } = {},
 ) => {
   await page.addInitScript((selected) => {
+    if (localStorage.getItem("claimcore.presentation.v3") !== null) {
+      return;
+    }
     localStorage.setItem(
       "claimcore.presentation.v3",
       JSON.stringify({
@@ -103,15 +106,26 @@ const signInSettings = async (page: Page) => {
   await page.locator(".login-footer button").click();
   await expect(page.getByRole("dialog")).toBeVisible();
 };
-const hexColor = (rgb: string) => {
-  const components = /^rgb\((\d+), (\d+), (\d+)\)$/u.exec(rgb);
+const hexColor = (rgb: string, background?: string): string => {
+  const components = /^rgba?\((\d+), (\d+), (\d+)(?:, ([\d.]+))?\)$/u.exec(rgb);
   if (components === null) {
     throw new Error("E2E_UNEXPECTED_COMPUTED_COLOR");
   }
-  return `#${components
-    .slice(1)
-    .map((component) => Number(component).toString(16).padStart(2, "0"))
-    .join("")}`;
+  const alpha = Number(components[4] ?? 1);
+  const channels = components.slice(1, 4).map(Number);
+  if (alpha < 1) {
+    if (background === undefined) {
+      throw new Error("E2E_OPAQUE_BACKGROUND_REQUIRED");
+    }
+    const base = hexColor(background);
+    channels.forEach((channel, index) => {
+      channels[index] = Math.round(
+        channel * alpha +
+          Number.parseInt(base.slice(1 + index * 2, 3 + index * 2), 16) * (1 - alpha),
+      );
+    });
+  }
+  return `#${channels.map((channel) => channel.toString(16).padStart(2, "0")).join("")}`;
 };
 
 test("keeps presentation controls in Settings and applies persisted choices without API work", async ({
@@ -151,7 +165,7 @@ test("keeps presentation controls in Settings and applies persisted choices with
   await expect(trigger).toBeFocused();
   await page.reload();
   await page.locator(".login-footer button").click();
-  await expect(page.locator('.settings-panel [role="combobox"]')).toHaveValue("en-US");
+  await expect(page.locator('.settings-panel [role="combobox"]')).toHaveAttribute("value", "en-US");
   await expect(page.locator('.settings-panel input[value="blue"]')).toBeChecked();
   await expect(page.locator('.settings-panel input[value="dark"]')).toBeChecked();
   expect(requests).toEqual([]);
@@ -172,12 +186,12 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await page.keyboard.type("Deutsch");
   await expect(page.getByRole("option", { name: "Deutsch — Deutschland" })).toBeFocused();
   await page.keyboard.press("Enter");
-  await expect(picker).toHaveValue("de-DE");
+  await expect(picker).toHaveAttribute("value", "de-DE");
   await expect(picker).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await page.keyboard.press("Home");
   await page.keyboard.press("Escape");
-  await expect(picker).toHaveValue("de-DE");
+  await expect(picker).toHaveAttribute("value", "de-DE");
   await expect(picker).toBeFocused();
   await clean();
 });
@@ -261,6 +275,8 @@ if (engine === "chromium") {
         await picker.focus();
         await page.keyboard.press("ArrowDown");
         await page.keyboard.press("Escape");
+        await expect(picker).toBeFocused();
+        await expect(picker).toHaveCSS("outline-width", "2px");
         const forced = await picker.evaluate((element) => {
           const style = getComputedStyle(element);
           return {
@@ -277,7 +293,7 @@ if (engine === "chromium") {
           contrastRatio(hexColor(forced.border), hexColor(forced.background)),
         ).toBeGreaterThanOrEqual(3);
         expect(
-          contrastRatio(hexColor(forced.focus), hexColor(forced.background)),
+          contrastRatio(hexColor(forced.focus, forced.background), hexColor(forced.background)),
         ).toBeGreaterThanOrEqual(3);
         await clean();
       });

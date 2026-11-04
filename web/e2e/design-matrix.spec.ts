@@ -101,11 +101,9 @@ const expandedFilters = async (run: Run) => {
     await summary.click();
   }
   await expect(run.page.locator(".worklist-filters input:checked")).toHaveCount(3);
-  await expect(
-    run.page
-      .locator(".worklist-filters select")
-      .filter({ has: run.page.locator('option[value="RECENT"]') }),
-  ).toHaveValue("RECENT");
+  await expect(run.page.locator('.worklist-filters [role="combobox"][value="RECENT"]')).toHaveCount(
+    1,
+  );
   await recordFrame(run, "cases-filter-panel");
   if (compact) {
     await run.page.keyboard.press("Escape");

@@ -153,7 +153,7 @@ const assertReadResponse = async (page: Page, reply: Response, route: MatrixRout
     await expect(page.locator('[name="target.issuer"]')).toHaveValue(principal.issuer);
     await expect(page.locator(`[name="target.kind"][value="${principal.kind}"]`)).toBeChecked();
     await expect(page.locator('[name="target.subject"]')).toBeDisabled();
-    await expect(page.locator("#act-picker")).toHaveValue("GRANT");
+    await expect(page.locator("#act-picker")).toHaveAttribute("value", "GRANT");
   }
   if (route.expectedInput !== undefined) {
     expect(reply.request().postDataJSON()).toEqual(route.expectedInput);
