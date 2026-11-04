@@ -496,8 +496,15 @@ type internal Reader
                     UnassignedCases = count (fun (_, _, unassigned, _) -> unassigned)
                     UnavailableAssigneeCases = count (fun (_, _, _, unavailable) -> unavailable)
                     AttentionCases =
-                        count (fun (missing, overdue, unassigned, unavailable) ->
-                            missing || overdue > 0 || unassigned || unavailable)
+                        rows
+                        |> List.filter (fun parent ->
+                            CaseView.matches
+                                selection.DateBasis.BusinessDate
+                                selection.ActorId
+                                CaseView.NeedsAttention
+                                (viewFacts state parent))
+                        |> List.length
+                        |> int64
                 }
 
         member _.ActivityPage query =

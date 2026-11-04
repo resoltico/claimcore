@@ -744,6 +744,38 @@ module RequestCodecs =
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.HistoryRequest QueryEndpoint.CaseHistory
 
+    let timelineRequest =
+        let fields =
+            (read (fun target filter cursor limit ->
+                {
+                    CaseTimelineRequest.Target = target
+                    Filter = filter
+                    AfterCursor = cursor
+                    Limit = defaultArg limit Paging.DefaultPageSize
+                })
+            : ReadFields<CaseTimelineRequest, _>)
+            |> caseOperand _.Target
+
+        {
+            Inputs = fields.Inputs @ [ ReadInput.TimelineFilter; ReadInput.Page ]
+            Fields =
+                fields.Fields
+                |> optionalField
+                    "filter"
+                    _.Filter
+                    (VocabularyCodec.create TimelineFilter.vocabulary)
+                |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+                |> optionalField
+                    "limit"
+                    (fun request ->
+                        if request.Limit = Paging.DefaultPageSize then
+                            None
+                        else
+                            Some request.Limit)
+                    (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+        }
+        |> finishRead "CaseTimelineRequest" QueryEndpoint.CaseTimeline
+
     let observeRequest =
         (read (fun operation ->
             {

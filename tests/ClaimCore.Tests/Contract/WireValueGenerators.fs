@@ -61,6 +61,7 @@ let internal listBounds (path: string) =
                 "CaseSummary.Attention", 6
                 "AdvisoryReview.Changes", Inventory.fieldCount
                 "HistoryDifference.Fields", Inventory.fieldCount
+                "Disclosed.Item", Inventory.fieldCount + 1
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50
@@ -148,6 +149,11 @@ let private scalarDomainValue (kind: Type) =
         Some(uppercase 2 |> Gen.map (CaseFixtures.country >> box))
     elif kind = typeof<PartyName> then
         Some(scalarText |> Gen.map (CaseFixtures.name >> box))
+    elif kind = typeof<ContactText> then
+        Some(
+            scalarText
+            |> Gen.map (ContactText.parse >> Result.defaultWith (string >> invalidOp) >> box)
+        )
     elif kind = typeof<EntryHash> then
         Some(
             gen {

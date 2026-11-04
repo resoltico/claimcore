@@ -1,0 +1,308 @@
+namespace ClaimCore.Protocol
+
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+open ClaimCore.Json
+
+module TimelineCodecs =
+    open Codec
+    open ResponseScalars
+
+    let private valueChange name value =
+        (record (fun before after ->
+            {
+                ValueChange.Before = before
+                After = after
+            })
+        : Fields<ValueChange<_>, _>)
+        |> field "before" _.Before (nullable value)
+        |> field "after" _.After (nullable value)
+        |> build
+        |> named name
+
+    let private reminderDifference =
+        (record (fun id action due state ->
+            {
+                ReminderDifference.ReminderId = id
+                Action = action
+                Due = due
+                State = state
+            })
+        : Fields<ReminderDifference, _>)
+        |> field "reminderId" _.ReminderId reminderId
+        |> field "action" _.Action (nullable (valueChange "ReminderActionChange" reminderAction))
+        |> field "due" _.Due (nullable (valueChange "ReminderDueChange" calendarDate))
+        |> field
+            "state"
+            _.State
+            (nullable (
+                valueChange "ReminderStateChange" (VocabularyCodec.create ReminderState.vocabulary)
+            ))
+        |> build
+        |> named "ReminderDifference"
+
+    let private fieldValue =
+        let business token kind =
+            variant
+                token
+                CaseFieldValue.Business
+                (function
+                | CaseFieldValue.Business value when FieldValue.kind value = kind -> Some value
+                | _ -> None)
+                (record id |> field "value" id (ResponseCodecs.scalar kind))
+
+        tagged
+            "CaseFieldValue"
+            [
+                business "DATE" FieldValueKind.CalendarDate
+                business "COUNTRY" FieldValueKind.Country
+                business "PARTY" FieldValueKind.PartyName
+                business "TEXT" FieldValueKind.IncidentDescription
+                business "AMOUNT" FieldValueKind.Amount
+                business "CURRENCY" FieldValueKind.Currency
+                variant
+                    "REFERENCE"
+                    CaseFieldValue.Reference
+                    (function
+                    | CaseFieldValue.Reference value -> Some value
+                    | _ -> None)
+                    (record id |> field "value" id caseReference)
+                variant
+                    "STATUS"
+                    CaseFieldValue.Status
+                    (function
+                    | CaseFieldValue.Status value -> Some value
+                    | _ -> None)
+                    (record id |> field "value" id (VocabularyCodec.create CaseStatus.vocabulary))
+            ]
+
+    let private fieldDifference =
+        (record (fun field before after ->
+            {
+                CaseFieldDifference.FieldName = field
+                Before = before
+                After = after
+            })
+        : Fields<CaseFieldDifference, _>)
+        |> field "field" _.FieldName (VocabularyCodec.create BusinessField.vocabulary)
+        |> field "before" _.Before (nullable fieldValue)
+        |> field "after" _.After (nullable fieldValue)
+        |> build
+        |> named "CaseFieldDifference"
+
+    let private moneyDifference =
+        (record (fun field change ->
+            {
+                CaseMoneyDifference.FieldName = field
+                Change = change
+            })
+        : Fields<CaseMoneyDifference, _>)
+        |> field
+            "field"
+            _.FieldName
+            (VocabularyCodec.select
+                (fun field ->
+                    (BusinessField.describe field).Kind = FieldValueKind.Amount
+                    && (BusinessField.describe field).Pairs.IsSome)
+                BusinessField.vocabulary)
+        |> field "change" _.Change (valueChange "MoneyChange" ResponseScalars.money)
+        |> build
+        |> named "CaseMoneyDifference"
+
+    let private change =
+        tagged
+            "TimelineChange"
+            [
+                variant
+                    "CASE_FIELD"
+                    TimelineChange.CaseField
+                    (function
+                    | TimelineChange.CaseField value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id fieldDifference)
+                variant
+                    "CASE_MONEY"
+                    TimelineChange.CaseMoney
+                    (function
+                    | TimelineChange.CaseMoney value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id moneyDifference)
+                variant
+                    "LIFECYCLE"
+                    TimelineChange.Lifecycle
+                    (function
+                    | TimelineChange.Lifecycle value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id ResponseCodecs.lifecycleChange)
+                variant
+                    "RESPONSIBILITY"
+                    TimelineChange.Responsibility
+                    (function
+                    | TimelineChange.Responsibility value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> field "change" id (valueChange "ResponsibilityChange" ActorCodecs.actorRef))
+                variant
+                    "HANDLING_SUMMARY"
+                    TimelineChange.HandlingSummary
+                    (function
+                    | TimelineChange.HandlingSummary value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> field "change" id (valueChange "HandlingSummaryChange" handlingSummary))
+                variant
+                    "REMINDER"
+                    TimelineChange.Reminder
+                    (function
+                    | TimelineChange.Reminder value -> Some value
+                    | _ -> None)
+                    (record id |> field "change" id reminderDifference)
+            ]
+
+    let private changes =
+        tagged
+            "TimelineChanges"
+            [
+                variant
+                    "DISCLOSED"
+                    TimelineChanges.Disclosed
+                    (function
+                    | TimelineChanges.Disclosed value -> Some value
+                    | _ -> None)
+                    (record id
+                     |> field "items" id (list (CaseFields.declarations.Length + 1) change))
+                unitVariant "WITHHELD" TimelineChanges.Withheld
+                unitVariant "ERASED" TimelineChanges.Erased
+            ]
+
+    let private entry operation position at author changes subject =
+        {
+            CaseTimelineEntry.OperationId = operation
+            Position = position
+            Subject = subject
+            RecordedAt = at
+            RecordedBy = author
+            Changes = changes
+        }
+
+    let private metadata (fields: Fields<CaseTimelineEntry, _>) =
+        fields
+        |> field "operationId" _.OperationId operationId
+        |> field "position" _.Position ResponseCodecs.position
+        |> field "recordedAt" _.RecordedAt instant
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "changes" _.Changes changes
+
+    let private caseParts (entry: CaseTimelineEntry) =
+        match entry.Subject with
+        | TimelineSubject.CaseFact(revision, act) -> revision, act
+        | _ -> invalidArg (nameof entry) "Use a case-fact timeline entry."
+
+    let private workParts (entry: CaseTimelineEntry) =
+        match entry.Subject with
+        | TimelineSubject.Work(revision, act) -> revision, act
+        | _ -> invalidArg (nameof entry) "Use a work timeline entry."
+
+    let private reminderParts (entry: CaseTimelineEntry) =
+        match entry.Subject with
+        | TimelineSubject.Reminder(act, id, revision, next) -> act, id, revision, next
+        | _ -> invalidArg (nameof entry) "Use a reminder timeline entry."
+
+    let private caseFields =
+        (record (fun operation position at author changes revision act ->
+            entry operation position at author changes (TimelineSubject.CaseFact(revision, act)))
+        : Fields<CaseTimelineEntry, _>)
+        |> metadata
+        |> field "revision" (caseParts >> fst) positiveRevision
+        |> field "act" (caseParts >> snd) (VocabularyCodec.create CaseActKind.vocabulary)
+
+    let private workFields =
+        (record (fun operation position at author changes revision act ->
+            entry operation position at author changes (TimelineSubject.Work(revision, act)))
+        : Fields<CaseTimelineEntry, _>)
+        |> metadata
+        |> field "revision" (workParts >> fst) positiveRevision
+        |> field "act" (workParts >> snd) (VocabularyCodec.create WorkActKind.vocabulary)
+
+    let private reminderVersion =
+        record (fun id revision -> id, revision)
+        |> field "reminderId" fst reminderId
+        |> field "revision" snd positiveRevision
+        |> build
+        |> named "TimelineReminderVersion"
+
+    let private reminderFields =
+        (record (fun operation position at author changes act id revision next ->
+            entry
+                operation
+                position
+                at
+                author
+                changes
+                (TimelineSubject.Reminder(act, id, revision, next)))
+        : Fields<CaseTimelineEntry, _>)
+        |> metadata
+        |> field
+            "act"
+            (fun value -> let (act, _, _, _) = reminderParts value in act)
+            (VocabularyCodec.create ReminderActKind.vocabulary)
+        |> field
+            "reminderId"
+            (fun value -> let (_, id, _, _) = reminderParts value in id)
+            reminderId
+        |> field
+            "revision"
+            (fun value -> let (_, _, revision, _) = reminderParts value in revision)
+            positiveRevision
+        |> field
+            "next"
+            (fun value -> let (_, _, _, next) = reminderParts value in next)
+            (nullable reminderVersion)
+
+    let timelineEntry =
+        tagged
+            "CaseTimelineEntry"
+            [
+                variant
+                    "CASE_FACT"
+                    id
+                    (fun (entry: CaseTimelineEntry) ->
+                        match entry.Subject with
+                        | TimelineSubject.CaseFact _ -> Some entry
+                        | _ -> None)
+                    caseFields
+                variant
+                    "WORK"
+                    id
+                    (fun (entry: CaseTimelineEntry) ->
+                        match entry.Subject with
+                        | TimelineSubject.Work _ -> Some entry
+                        | _ -> None)
+                    workFields
+                variant
+                    "REMINDER"
+                    id
+                    (fun (entry: CaseTimelineEntry) ->
+                        match entry.Subject with
+                        | TimelineSubject.Reminder _ -> Some entry
+                        | _ -> None)
+                    reminderFields
+            ]
+
+    let page =
+        (record (fun basis parent reference items next ->
+            {
+                CaseTimelinePage.Basis = basis
+                CaseId = parent
+                Reference = reference
+                Items = items
+                NextCursor = next
+            })
+        : Fields<CaseTimelinePage, _>)
+        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.Reference caseReference
+        |> field "items" _.Items (list Paging.MaximumPageSize timelineEntry)
+        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+        |> build
+        |> named "CaseTimelinePage"

@@ -49,8 +49,17 @@ let internal recordContext (kind: Type) (field: Reflection.PropertyInfo) =
 let internal unionContext (kind: Type) (case: UnionCaseInfo) (field: Reflection.PropertyInfo) =
     kind.Name + "." + case.Name + "." + field.Name
 
-// Opaque groups expose their field keys through named accessors. Those keys are part of
-// admitted seed structure even before a diagnostic example mentions the field as a value.
+let private retainedValues (kind: Type) value =
+    if kind = typeof<Registration> then
+        Registration.values (unbox value)
+    elif kind = typeof<Decision> then
+        Decision.values (unbox value)
+    elif kind = typeof<Payment> then
+        Payment.values (unbox value)
+    else
+        []
+
+// Named accessors preserve the actual typed scalar alternatives hidden by opaque group representations.
 let private groupFields (kind: Type) value =
     if kind = typeof<RegistrationInput> then
         RegistrationInput.values (unbox value) |> List.map fst
@@ -58,14 +67,8 @@ let private groupFields (kind: Type) value =
         DecisionInput.values (unbox value) |> List.map fst
     elif kind = typeof<PaymentInput> then
         PaymentInput.values (unbox value) |> List.map fst
-    elif kind = typeof<Registration> then
-        Registration.values (unbox value) |> List.map fst
-    elif kind = typeof<Decision> then
-        Decision.values (unbox value) |> List.map fst
-    elif kind = typeof<Payment> then
-        Payment.values (unbox value) |> List.map fst
     else
-        []
+        retainedValues kind value |> List.map fst
 
 let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null) =
     add seeds.Values kind value
@@ -73,6 +76,13 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
 
     for field in groupFields kind value do
         collect seeds (context + ".groupField") typeof<BusinessField> (box field)
+
+    for field, scalar in retainedValues kind value do
+        collect
+            seeds
+            (context + ".groupValue." + BusinessField.key field)
+            typeof<Admitted>
+            (box scalar)
 
     if kind = typeof<string> then
         add seeds.Tokens context (unbox<string> value)

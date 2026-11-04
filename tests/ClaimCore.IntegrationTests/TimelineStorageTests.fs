@@ -222,8 +222,8 @@ let tests =
                             TimelineChange.CaseField
                                 {
                                     FieldName = BusinessField.Status
-                                    Before = Some "CLOSED"
-                                    After = Some "OPENED"
+                                    Before = Some(CaseFieldValue.Status CaseStatus.Closed)
+                                    After = Some(CaseFieldValue.Status CaseStatus.Opened)
                                 }
                         ]
                         "Case status differences come from the immediate case predecessor"

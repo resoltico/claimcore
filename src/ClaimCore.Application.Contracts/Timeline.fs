@@ -8,6 +8,7 @@ type TimelineFilter =
     | Facts
     | Work
 
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module TimelineFilter =
     let vocabulary =
         Vocabulary.ofUnion<TimelineFilter> "timelineFilter" TokenCasing.ScreamingSnake None
@@ -36,9 +37,23 @@ type ReminderDifference =
         State: ValueChange<ReminderState> option
     }
 
+type CaseFieldDifference =
+    {
+        FieldName: BusinessField
+        Before: CaseFieldValue option
+        After: CaseFieldValue option
+    }
+
+type CaseMoneyDifference =
+    {
+        FieldName: BusinessField
+        Change: ValueChange<Money>
+    }
+
 [<RequireQualifiedAccess>]
 type TimelineChange =
-    | CaseField of FieldDiff
+    | CaseField of CaseFieldDifference
+    | CaseMoney of CaseMoneyDifference
     | Lifecycle of LifecycleChange
     | Responsibility of ValueChange<ActorRef>
     | HandlingSummary of ValueChange<HandlingSummary>
@@ -68,6 +83,7 @@ type CaseTimelineEntry =
 
 type CaseTimelinePage =
     {
+        Basis: WorkDateBasis
         CaseId: CaseId
         Reference: CaseReference
         Items: CaseTimelineEntry list

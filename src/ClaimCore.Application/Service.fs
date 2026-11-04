@@ -242,6 +242,7 @@ module Service =
     let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
+    let timeline = TimelineQueries.read
     let history = Queries.history
 
     let observe services (input: OperationLookup) ct =

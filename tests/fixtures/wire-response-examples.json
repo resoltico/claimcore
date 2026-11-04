@@ -6889,6 +6889,3415 @@
           }
         }
       }
+    },
+    {
+      "name": "case.timeline-mixed-changes",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "status",
+                        "before": null,
+                        "after": {
+                          "kind": "STATUS",
+                          "value": "OPENED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "caseReference",
+                        "before": null,
+                        "after": {
+                          "kind": "REFERENCE",
+                          "value": "CASE-001"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "claimantName",
+                        "before": null,
+                        "after": {
+                          "kind": "PARTY",
+                          "value": "Synthetic claimant"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "incidentDate",
+                        "before": null,
+                        "after": {
+                          "kind": "DATE",
+                          "value": "2026-01-01"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "incidentCountry",
+                        "before": null,
+                        "after": {
+                          "kind": "COUNTRY",
+                          "value": "LV"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "incidentDescription",
+                        "before": null,
+                        "after": {
+                          "kind": "TEXT",
+                          "value": "Two paragraphs\nSecond paragraph"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-withheld",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "WITHHELD"
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-erased",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "ERASED"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "ERASED"
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-denied",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "REJECTED",
+          "data": {
+            "code": "RESOURCE_UNAVAILABLE",
+            "action": "ASK_FOR_ACCESS"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-store-unavailable",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "FAILED",
+          "data": {
+            "code": "CORE_STORE_UNAVAILABLE",
+            "action": "RETRY_SAFE"
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-contact-on-actor-ref",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE",
+                  "contact": "Not allowed on reusable refs"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-over-budget",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ]
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case-list-next-action-cannot-be-unscheduled",
+      "endpoint": "case.list",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "caseReference": "CASE-001",
+                "revision": 1,
+                "state": {
+                  "kind": "ACTIVE",
+                  "status": "OPENED",
+                  "claimantName": "Synthetic claimant",
+                  "insurerName": "Synthetic insurer",
+                  "claimed": {
+                    "amount": "1000",
+                    "currency": "EUR"
+                  },
+                  "payable": null,
+                  "progress": "UNDECIDED",
+                  "incidentNotificationDate": "2026-01-01",
+                  "work": {
+                    "responsible": {
+                      "actorId": "20000000-0000-4000-8000-000000000002",
+                      "displayName": {
+                        "kind": "NAMED",
+                        "value": "Synthetic responsible person"
+                      },
+                      "principalKind": "HUMAN",
+                      "availability": "AVAILABLE"
+                    },
+                    "followUpDate": "2026-01-02",
+                    "due": "UPCOMING",
+                    "basis": {
+                      "observedAt": "2026-01-01T12:00:00.000000Z",
+                      "businessDate": "2026-01-01",
+                      "timeZone": "Etc/UTC"
+                    },
+                    "revision": 1,
+                    "changedAt": "2026-01-01T12:00:00.000000Z",
+                    "recordedBy": {
+                      "actorId": "20000000-0000-4000-8000-000000000002",
+                      "displayName": {
+                        "kind": "NAMED",
+                        "value": "Synthetic responsible person"
+                      },
+                      "principalKind": "HUMAN",
+                      "availability": "AVAILABLE"
+                    },
+                    "summary": null,
+                    "nextAction": "Review evidence",
+                    "pendingReminders": 1,
+                    "overdueReminders": 0,
+                    "needsNextAction": false,
+                    "canUpdateSummary": false,
+                    "canAssign": false,
+                    "canCreateReminder": false
+                  }
+                },
+                "changedAt": "2026-09-07T12:00:00.000000Z",
+                "caseId": "20000000-0000-4000-8000-000000000001",
+                "headline": "UNDECIDED",
+                "attention": [],
+                "nextAction": {
+                  "reminderId": "20000000-0000-4000-8000-000000000003",
+                  "action": "Review evidence",
+                  "due": "2026-01-02",
+                  "dueState": "UNSCHEDULED"
+                },
+                "responsible": {
+                  "actorId": "20000000-0000-4000-8000-000000000002",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic responsible person"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "pendingReminders": 1
+              }
+            ],
+            "nextCursor": "x",
+            "offers": [
+              {
+                "kind": "OPEN"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REGISTER"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "ENABLE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "GRANT"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "REVOKE"
+              },
+              {
+                "kind": "AUTHORITY_ACT",
+                "act": "DISABLE"
+              }
+            ],
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "exactReference": null
+          }
+        }
+      }
     }
   ]
 }

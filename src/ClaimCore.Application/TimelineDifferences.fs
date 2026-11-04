@@ -26,6 +26,46 @@ module internal TimelineDifferences =
         | None -> Ok None
         | Some id -> actor references id |> Result.map Some
 
+    let private money amount currency fields =
+        fields
+        |> Option.bind (fun fields ->
+            match CaseFields.typedValue amount fields, CaseFields.typedValue currency fields with
+            | Some(CaseFieldValue.Business(Admitted.Amount value)),
+              Some(CaseFieldValue.Business(Admitted.Currency code)) ->
+                Some(Money.create value code)
+            | None, None -> None
+            | _ -> invalidOp "Declared money pairs require a complete amount and currency.")
+
+    let private caseFields before after =
+        let paired = CaseFields.declarations |> List.choose _.Pairs |> Set.ofList
+
+        CaseFields.declarations
+        |> List.choose (fun field ->
+            if Set.contains field.Field paired then
+                None
+            else
+                match field.Pairs with
+                | Some currency ->
+                    change (money field.Field currency before) (money field.Field currency after)
+                    |> Option.map (fun value ->
+                        TimelineChange.CaseMoney
+                            {
+                                FieldName = field.Field
+                                Change = value
+                            })
+                | None ->
+                    let prior = before |> Option.bind (CaseFields.typedValue field.Field)
+                    let next = after |> Option.bind (CaseFields.typedValue field.Field)
+
+                    change prior next
+                    |> Option.map (fun _ ->
+                        TimelineChange.CaseField
+                            {
+                                FieldName = field.Field
+                                Before = prior
+                                After = next
+                            }))
+
     let private caseFacts request after previous =
         let before =
             match previous with
@@ -45,13 +85,18 @@ module internal TimelineDifferences =
 
                     let difference = CaseChanges.compared before live
 
+                    let fields =
+                        function
+                        | LiveCase.Active fields
+                        | LiveCase.Voided fields -> fields
+
                     Ok
                         [
                             yield!
                                 difference.Lifecycle
                                 |> Option.map TimelineChange.Lifecycle
                                 |> Option.toList
-                            yield! difference.Fields |> List.map TimelineChange.CaseField
+                            yield! caseFields (before |> Option.map fields) (Some(fields live))
                         ]
             | _ -> fault)
 

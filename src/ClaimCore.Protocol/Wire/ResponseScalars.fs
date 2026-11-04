@@ -88,6 +88,13 @@ module ResponseScalars =
     let handlingSummary = parsed HandlingSummary.parse HandlingSummary.format nonempty
     let reminderAction = parsed ReminderAction.parse ReminderAction.format nonempty
 
+    let money =
+        (record Money.create: Fields<Money, _>)
+        |> field "amount" Money.amount (parsed Amount.parse Amount.format amount)
+        |> field "currency" Money.currencyValue (parsed Currency.parse Currency.format currency)
+        |> build
+        |> named "Money"
+
 
 
     let fixedField name token (fields: Fields<'Whole, 'Ctor>) : Fields<'Whole, 'Ctor> =

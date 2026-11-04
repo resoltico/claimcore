@@ -141,6 +141,28 @@ let private qualify pair =
                     CaseView.All, 13L
                 ]
         // The paid case has an available assignee and an upcoming plan: READY_TO_CLOSE alone keeps it in attention.
+        let! overview = Service.workOverview pair.Postgres { Mine = false } token
+        let overview = read overview
+        pair.Clock.ObservedAt <- overview.Basis.ObservedAt
+        let! memoryOverview = Service.workOverview pair.Memory { Mine = false } token
+
+        Expect.equal
+            (read memoryOverview)
+            overview
+            "Overview shares the same snapshot semantics in both stores"
+
+        Expect.equal
+            overview.AttentionCases
+            3L
+            "The CLI overview includes ready-to-close attention just like case.views"
+
+        let! mine = Service.workOverview pair.Postgres { Mine = true } token
+
+        Expect.equal
+            (read mine).AttentionCases
+            1L
+            "The assigned paid case needs attention despite an available person and future plan"
+
         do!
             reminders
                 pair
@@ -153,6 +175,29 @@ let private qualify pair =
                     ReminderView.Completed, 0L
                     ReminderView.Cancelled, 0L
                 ]
+
+        do!
+            execute
+                pair
+                (OperationInput.Work
+                    {
+                        OperationId = id 5520
+                        Target = CaseSelector.Reference "mix-04"
+                        ExpectedRevision = 0L
+                        Act =
+                            WorkAct.UpdateWork
+                                {
+                                    Responsible = WorkValue.Set(ActorId.format context.ActorId)
+                                    Summary = WorkValue.Keep
+                                }
+                    })
+
+        let! dueTodayMine = Service.workOverview pair.Postgres { Mine = true } token
+
+        Expect.equal
+            (read dueTodayMine).AttentionCases
+            2L
+            "A due-today-only case also contributes independently of overdue work"
 
         do!
             execute

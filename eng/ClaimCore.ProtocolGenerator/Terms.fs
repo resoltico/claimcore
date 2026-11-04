@@ -3,6 +3,7 @@ namespace ClaimCore.ProtocolGeneration
 open ClaimCore.Protocol
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 type TermVocabulary =
     {
@@ -111,6 +112,16 @@ module Terms =
             rendered CaseProgress.vocabulary
             rendered CaseHeadline.vocabulary
             rendered CaseAttention.vocabulary
+            rendered TimelineFilter.vocabulary
+            {
+                Name = "timelineKind"
+                Labels =
+                    [
+                        "CASE_FACT", "timelineKind.CASE_FACT.label"
+                        "WORK", "timelineKind.WORK.label"
+                        "REMINDER", "timelineKind.REMINDER.label"
+                    ]
+            }
             rendered ActSubject.vocabulary
             fieldTerms
             rendered RecordGroup.vocabulary

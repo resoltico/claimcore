@@ -457,3 +457,26 @@ module Cursors =
                 Sequence.create before
             | _ -> None)
             token
+
+    let encodeTimeline installation scope sequence =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_TIMELINE"
+                "v", JsonValue.Integer 1L
+                "scope", JsonValue.String scope
+                "before", JsonValue.Integer(Sequence.value sequence)
+            ]
+
+    let decodeTimeline installation scope token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "before", JsonValue.Integer before
+                                 "kind", JsonValue.String "CASE_TIMELINE"
+                                 "scope", JsonValue.String expected
+                                 "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
+                Sequence.create before
+            | _ -> None)
+            token

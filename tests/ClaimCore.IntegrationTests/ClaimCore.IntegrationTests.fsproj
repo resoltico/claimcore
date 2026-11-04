@@ -44,6 +44,7 @@
     <Compile Include="WorklistCursorPrecisionTests.fs" />
     <Compile Include="ApplicationFixtures.fs" />
     <Compile Include="TimelineStorageTests.fs" />
+    <Compile Include="TimelineQueryTests.fs" />
     <Compile Include="PaginationScenarios.fs" />
     <Compile Include="PositionPaginationTests.fs" />
     <Compile Include="AuthorityContinuationTests.fs" />

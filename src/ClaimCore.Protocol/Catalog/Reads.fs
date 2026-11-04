@@ -15,6 +15,7 @@ type ReadInput =
     | Reminders
     | Mine
     | ReminderIdentity
+    | TimelineFilter
 
 type ReadDeclaration =
     {
@@ -26,6 +27,10 @@ type ReadDeclaration =
 module ReadCatalog =
     let declarations =
         [
+            {
+                Endpoint = QueryEndpoint.CaseTimeline
+                Inputs = [ ReadInput.CaseOperand; ReadInput.TimelineFilter; ReadInput.Page ]
+            }
             {
                 Endpoint = QueryEndpoint.ReminderGet
                 Inputs = [ ReadInput.CaseOperand; ReadInput.ReminderIdentity ]

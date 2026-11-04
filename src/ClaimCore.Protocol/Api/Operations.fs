@@ -18,6 +18,7 @@ type QueryEndpoint =
     | CaseSummary
     | CaseHistory
     | CaseActivity
+    | CaseTimeline
     | ReminderList
     | ReminderGet
     | WorkOverview
@@ -52,6 +53,7 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
                 (ActorEndpoint.Query QueryEndpoint.CaseHistory)
                 (ActorEndpoint.Query QueryEndpoint.CaseActivity)
+                (ActorEndpoint.Query QueryEndpoint.CaseTimeline)
                 (ActorEndpoint.Query QueryEndpoint.ReminderList)
                 (ActorEndpoint.Query QueryEndpoint.ReminderGet)
                 (ActorEndpoint.Query QueryEndpoint.WorkOverview)
@@ -74,6 +76,7 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
              | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
              | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> "case.activity"
+             | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> "case.timeline"
              | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> "reminder.list"
              | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> "reminder.get"
              | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> "work.overview"

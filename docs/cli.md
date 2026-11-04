@@ -508,6 +508,23 @@ claimcore reminder complete-and-plan-next [--operation-id VALUE] CASE-REFERENCE 
 | `--action` | Action — The planned action in plain text, up to 200 Unicode scalar values on one line. |  |  |
 | `--due` | Due date — A planned Gregorian calendar date. Past and future dates are valid. This is not an exact-time alarm. |  |  |
 
+## case timeline
+
+Case timeline
+
+Read case facts, work and reminder changes with the access you have now.
+
+```sh
+claimcore case timeline CASE-REFERENCE [--filter facts|work] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run] [--all]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--filter` | Timeline entries — Show case facts or work and reminders. Leave unset to show both. | facts, work |  |
+| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
+| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
+
 ## reminder get
 
 Show reminder

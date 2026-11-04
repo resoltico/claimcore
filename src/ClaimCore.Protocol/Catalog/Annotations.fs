@@ -277,12 +277,16 @@ module CatalogAnnotations =
                     RequestSchemas.CaseListRequest
                     RequestSchemas.HistoryRequest
                     "CaseActivityRequest"
+                    "CaseTimelineRequest"
                     "ReminderListRequest"
                     RequestSchemas.GrantsRequest
                     RequestSchemas.AuthorityHistoryRequest
                 ] do
                 yield (owner, WireMembers.Cursor), constant (target InputTarget.Cursor)
                 yield (owner, WireMembers.Limit), limit
+            yield
+                ("CaseTimelineRequest", "filter"),
+                constant (annotation InteractionInput.TimelineFilter)
             for owner in [ RequestSchemas.CaseListRequest; RequestSchemas.CaseSummaryRequest ] do
                 for name, input in
                     [

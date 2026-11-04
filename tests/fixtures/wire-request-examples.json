@@ -2249,6 +2249,73 @@
         "state": "PENDING",
         "limit": 5
       }
+    },
+    {
+      "id": "case.timeline-default",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        }
+      }
+    },
+    {
+      "id": "case.timeline-facts",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "filter": "FACTS",
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.timeline-work",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "filter": "WORK",
+        "limit": 2
+      }
+    },
+    {
+      "id": "case.timeline-unknown-filter",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "filter": "OTHER",
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.timeline-over-budget",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "limit": 51
+      }
     }
   ]
 }

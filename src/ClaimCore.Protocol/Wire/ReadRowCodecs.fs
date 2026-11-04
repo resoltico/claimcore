@@ -91,13 +91,6 @@ module internal ReadRowCodecs =
         |> build
         |> named "CaseWorkView"
 
-    let private money =
-        (record Money.create: Fields<Money, _>)
-        |> field "amount" Money.amount (parsed Amount.parse Amount.format amount)
-        |> field "currency" Money.currencyValue (parsed Currency.parse Currency.format currency)
-        |> build
-        |> named "SummaryMoney"
-
     let private parties =
         (record (fun claimant insurer -> claimant, insurer): Fields<PartyName * PartyName, _>)
         |> field "claimantName" fst partyName
@@ -146,7 +139,10 @@ module internal ReadRowCodecs =
         |> field "reminderId" _.ReminderId reminderId
         |> field "action" _.Action reminderAction
         |> field "due" _.Due calendarDate
-        |> field "dueState" _.DueState (VocabularyCodec.create CaseDue.vocabulary)
+        |> field
+            "dueState"
+            _.DueState
+            (VocabularyCodec.select ((<>) CaseDue.Unscheduled) CaseDue.vocabulary)
         |> build
         |> named "CaseNextAction"
 

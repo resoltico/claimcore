@@ -276,6 +276,13 @@ module Api =
                 "HistoryReply"
                 (ResponseCodecs.historyPageFor ReceiptCodecs.caseReceipt))
 
+    let caseTimeline =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline))
+            HttpMethod.Post
+            RequestCodecs.timelineRequest
+            (ReplyCodecs.readReply "CaseTimelineReply" TimelineCodecs.page)
+
     let reminders =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList))
@@ -419,6 +426,7 @@ module Api =
         | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> EndpointDefinition.create reminder
         | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> EndpointDefinition.create workOverview
         | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> EndpointDefinition.create caseActivity
+        | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> EndpointDefinition.create caseTimeline
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
         | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->

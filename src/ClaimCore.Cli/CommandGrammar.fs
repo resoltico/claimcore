@@ -44,6 +44,7 @@ module CommandGrammar =
         | InteractionInput.Target InputTarget.ReminderAction -> "action"
         | InteractionInput.Target InputTarget.ReminderDueDate -> "due"
         | InteractionInput.Detail -> "full"
+        | InteractionInput.TimelineFilter -> "filter"
         | input -> InteractionInput.key input
 
     let words (entry: CatalogOperation) =
@@ -119,6 +120,7 @@ module CommandGrammar =
                 ActorEndpoint.Query QueryEndpoint.ReminderList
                 ActorEndpoint.Query QueryEndpoint.CaseActivity
                 ActorEndpoint.Query QueryEndpoint.CaseHistory
+                ActorEndpoint.Query QueryEndpoint.CaseTimeline
             ]
 
     let formats (operation: CatalogOperation) =

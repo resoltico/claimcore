@@ -51,3 +51,5 @@ case views	{"endpoint":"case.views","input":{}}
 reminder views	{"endpoint":"reminder.views","input":{}}
 case list --view needs-attention --limit 5	{"endpoint":"case.list","input":{"limit":5,"view":"NEEDS_ATTENTION"}}
 reminder list --view completed --limit 5	{"endpoint":"reminder.list","input":{"view":"COMPLETED","limit":5}}
+case timeline CASE-001 --filter facts --limit 1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"CASE-001"},"filter":"FACTS","limit":1}}
+case timeline CASE-001 --filter work --limit 2	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"CASE-001"},"filter":"WORK","limit":2}}

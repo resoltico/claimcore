@@ -31,7 +31,7 @@ module ResponseCodecs =
             ]
         |> Codec.vocabulary "scope"
 
-    let private scalar kind =
+    let scalar kind =
         let codec =
             match kind with
             | FieldValueKind.CalendarDate -> date
@@ -459,26 +459,27 @@ module ResponseCodecs =
             | HistoryEntry.SummaryEntry value -> value
             | _ -> invalidArg "entry" "Expected summary history.")
 
-    let historyDifference =
-        let lifecycle =
-            (record (fun before after ->
-                {
-                    LifecycleChange.Before = before
-                    After = after
-                })
-            : Fields<LifecycleChange, _>)
-            |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
-            |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
-            |> build
-            |> named "LifecycleChange"
+    let lifecycleChange =
+        (record (fun before after ->
+            {
+                LifecycleChange.Before = before
+                After = after
+            })
+        : Fields<LifecycleChange, _>)
+        |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
+        |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
+        |> build
+        |> named "LifecycleChange"
 
+
+    let historyDifference =
         (record (fun lifecycle fields ->
             {
                 HistoryDifference.Lifecycle = lifecycle
                 Fields = fields
             })
         : Fields<HistoryDifference, _>)
-        |> field "lifecycle" _.Lifecycle (nullable lifecycle)
+        |> field "lifecycle" _.Lifecycle (nullable lifecycleChange)
         |> field "fields" _.Fields (list CaseFields.declarations.Length fieldChange)
         |> build
         |> named "HistoryDifference"
