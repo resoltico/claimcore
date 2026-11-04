@@ -103,7 +103,7 @@ module internal VerbRunner =
                 output
                     Api.operationPreview
                     {
-                        ClaimCore.Application.Contracts.PreviewReply.OperationId =
+                        ClaimCore.Protocol.PresentedPreviewReply.OperationId =
                             ClaimCore.Application.Contracts.OperationInput.operationId input
                         Outcome = ClaimCore.Application.Contracts.Outcome.Rejected refusal
                     }

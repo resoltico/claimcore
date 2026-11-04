@@ -27,32 +27,35 @@ module internal TextReplyFormat =
     let number (value: int64) =
         value.ToString(CultureInfo.InvariantCulture)
 
-    let money (language: string) value =
-        let precision = Money.displayScale value
-        let format = "N" + precision.ToString(CultureInfo.InvariantCulture)
-
-        (Money.value value).ToString(format, CultureInfo.GetCultureInfo language)
-        + " "
-        + Money.currency value
-
-    let moneyTotal (language: string) currency total =
-        let canonical = DecimalTotal.format total
-        let scale = DecimalTotal.displayScale currency total
-        let parts = canonical.Split '.'
+    let private exactMoney (language: string) canonical code scale =
+        let parts = (canonical: string).Split '.'
         let culture = CultureInfo.GetCultureInfo language
 
         let whole =
             BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
 
         let fraction = if parts.Length = 1 then "" else parts[1]
+        let padded = fraction.PadRight(scale, '0')
 
         whole
-        + (if scale = 0 then
+        + (if padded = "" then
                ""
            else
-               culture.NumberFormat.NumberDecimalSeparator + fraction.PadRight(scale, '0'))
+               culture.NumberFormat.NumberDecimalSeparator + padded)
         + " "
-        + Currency.format currency
+        + code
+
+    let moneyWithScale language value scale =
+        exactMoney language (Money.format value) (Money.currency value) scale
+
+    let money language value =
+        moneyWithScale language value (Money.displayScale value)
+
+    let moneyTotalWithScale language currency total scale =
+        exactMoney language (DecimalTotal.format total) (Currency.format currency) scale
+
+    let moneyTotal language currency total =
+        moneyTotalWithScale language currency total (DecimalTotal.displayScale currency total)
 
     let date (language: string) value =
         (CalendarDate.value value).ToString("d MMM yyyy", CultureInfo.GetCultureInfo language)

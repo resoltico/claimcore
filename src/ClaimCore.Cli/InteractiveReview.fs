@@ -169,7 +169,7 @@ module internal InteractiveReview =
 
             match unpack Api.operationPreview response with
             | Some {
-                       Outcome = Outcome.Succeeded(Previewed.Reviewed _)
+                       Outcome = Outcome.Succeeded(PresentedPreviewed.Reviewed _)
                    } when not draft.PreviewOnly ->
                 let consent =
                     match draft.Act with

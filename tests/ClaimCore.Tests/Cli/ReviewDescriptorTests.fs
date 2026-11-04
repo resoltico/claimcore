@@ -31,16 +31,15 @@ let kindGoldens =
         (fun () ->
             let rows =
                 [
-                    PresentedValue.Money(
+                    PresentedValue.money (
                         Money.create
                             (Amount.parse "100" |> Fixtures.accepted)
                             (Currency.parse "EUR" |> Fixtures.accepted)
                     ),
                     [ "100.00 EUR"; "100,00 EUR"; "100.00 EUR" ]
-                    PresentedValue.MoneyTotal(
-                        Currency.parse "USD" |> Fixtures.accepted,
-                        DecimalTotal.parse "0" |> Fixtures.accepted
-                    ),
+                    PresentedValue.moneyTotal
+                        (Currency.parse "USD" |> Fixtures.accepted)
+                        (DecimalTotal.parse "0" |> Fixtures.accepted),
                     [ "0.00 USD"; "0,00 USD"; "0.00 USD" ]
                     PresentedValue.Date(Inputs.date "2026-11-04"),
                     [ "4 Nov 2026"; "4 nov. 2026"; "4 نوفمبر 2026" ]
@@ -182,7 +181,11 @@ let reviews =
                         {
                             Before = Some before
                             Proposed = proposed
-                            Changes = []
+                            Changes =
+                                ClaimCore.Application.CaseChanges.review
+                                    (CaseAct.Bare BareAct.Close)
+                                    (Some before)
+                                    proposed
                             Context = context
                         }
 

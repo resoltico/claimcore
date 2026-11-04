@@ -208,7 +208,7 @@ type AdvisoryReview =
     {
         Before: CaseSnapshot option
         Proposed: CaseSnapshot
-        Changes: FieldDiff list
+        Changes: CaseReviewChanges
         Context: RuntimeContext
     }
 

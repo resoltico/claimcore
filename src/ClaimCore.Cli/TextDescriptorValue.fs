@@ -32,9 +32,14 @@ module internal TextDescriptorValue =
     // fsharplint:disable-next-line CyclomaticComplexity
     let render language =
         function
-        | PresentedValue.Money value -> TextReplyFormat.money language value
-        | PresentedValue.MoneyTotal(currency, total) ->
-            TextReplyFormat.moneyTotal language currency total
+        | PresentedValue.Money value ->
+            TextReplyFormat.moneyWithScale language value.Value value.DisplayScale
+        | PresentedValue.MoneyTotal value ->
+            TextReplyFormat.moneyTotalWithScale
+                language
+                value.Currency
+                value.Value
+                value.DisplayScale
         | PresentedValue.Date value -> TextReplyFormat.date language value |> text language
         | PresentedValue.Instant value -> TextReplyFormat.instant value |> text language
         | PresentedValue.Party value -> PartyName.format value |> text language

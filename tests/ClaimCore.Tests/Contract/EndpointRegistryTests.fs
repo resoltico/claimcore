@@ -168,10 +168,11 @@ let private mutationReplies () =
         ] do
         roundTrip
             ReplyCodecs.preview
-            {
-                PreviewReply.OperationId = id
-                Outcome = outcome
-            }
+            (PresentedPreviewReply.ofCore
+                {
+                    PreviewReply.OperationId = id
+                    Outcome = outcome
+                })
 
     for outcome in
         [

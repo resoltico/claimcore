@@ -5,79 +5,6 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 
-[<RequireQualifiedAccess>]
-type PresentedValue =
-    | Money of Money
-    | MoneyTotal of currency: Currency * total: DecimalTotal
-    | Date of CalendarDate
-    | Instant of DateTimeOffset
-    | Party of PartyName
-    | Text of string
-    | Narrative of string
-    | Message of messageId: string
-    | Code of vocabulary: string * token: string
-    | Codes of vocabulary: string * tokens: string list
-    | Actor of ActorRef
-    | State of CaseHeadline
-    | Count of int64
-    | Reference of CaseReference
-    | Identifier of string
-    | Absent of reasonId: string
-
-type Entry =
-    {
-        Key: string
-        LabelId: string
-        Prominence: Prominence
-        Value: PresentedValue
-    }
-
-type Section =
-    { TitleId: string; Entries: Entry list }
-
-/// Column metadata is independent of values, so empty pages and absent facts retain stable headers.
-[<NoEquality; NoComparison>]
-type EntryDefinition<'reply> =
-    {
-        Key: string
-        LabelId: string
-        Prominence: Prominence
-        IsMoney: bool
-        Read: 'reply -> PresentedValue
-    }
-
-type PresentedChange =
-    {
-        Key: string
-        LabelId: string
-        Before: PresentedValue
-        After: PresentedValue
-    }
-
-type ReviewDescription =
-    {
-        Changes: PresentedChange list
-        Unchanged: Entry list
-        Effects: Section list
-        Basis: WorkDateBasis
-    }
-
-[<RequireQualifiedAccess>]
-type PresentedBoolean =
-    | False
-    | True
-
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module PresentedBoolean =
-    let vocabulary =
-        Vocabulary.ofUnion<PresentedBoolean> "boolean" TokenCasing.ScreamingSnake None
-
-    let ofBool value =
-        if value then
-            PresentedBoolean.True
-        else
-            PresentedBoolean.False
-
 module Descriptor =
     let entries (definitions: EntryDefinition<'reply> list) value =
         definitions
@@ -129,7 +56,7 @@ module Descriptor =
                             match value field.Field, value currency with
                             | Some(CaseFieldValue.Business(Admitted.Amount amount)),
                               Some(CaseFieldValue.Business(Admitted.Currency code)) ->
-                                PresentedValue.Money(Money.create amount code)
+                                PresentedValue.money (Money.create amount code)
                             | None, None -> absent
                             | _ -> invalidOp "A presented money pair must be complete."
                         | None ->
@@ -279,7 +206,7 @@ module Descriptor =
                                     "amount"
                                     "label.stageAmount"
                                     Prominence.Primary
-                                    (optional PresentedValue.Money step.Amount)
+                                    (optional PresentedValue.money step.Amount)
                             ]
                     }))
         | CaseStageDisplay.Voided ->
@@ -657,7 +584,7 @@ module Descriptor =
                 difference
                     (BusinessField.key change.FieldName)
                     (FieldPresentation.labelId change.FieldName)
-                    PresentedValue.Money
+                    PresentedValue.money
                     change.Change
             ]
         | TimelineChange.Lifecycle change ->
@@ -1188,7 +1115,7 @@ module Descriptor =
                          (Currency.format item.Currency)
                          "label.total"
                          Prominence.Primary
-                         (PresentedValue.MoneyTotal(item.Currency, item.Amount))))
+                         (PresentedValue.moneyTotal item.Currency item.Amount)))
 
         [
             section
@@ -1213,21 +1140,94 @@ module Descriptor =
     let private flatten sections =
         sections |> List.collect (fun (section: Section) -> section.Entries)
 
-    let private snapshotEntries (snapshot: CaseSnapshot) =
-        [
-            value
-                "lifecycle"
-                "input.lifecycle.label"
-                Prominence.Primary
-                (code Lifecycle.vocabulary (CaseState.lifecycle snapshot.State))
-            value
-                "status"
-                "field.status.label"
-                Prominence.Primary
-                (CaseState.fields snapshot.State
-                 |> optional (fun fields -> code CaseStatus.vocabulary fields.Status))
-        ]
-        @ (caseFacts snapshot |> flatten)
+    let private caseReviewPresentation (review: AdvisoryReview) =
+        let declarations =
+            CaseFields.declarations
+            |> List.filter (fun field -> field.Section <> Some CaseSection.Work)
+
+        let snapshotValues (snapshot: CaseSnapshot option) =
+            declarations
+            |> List.map (fun field ->
+                field.Field,
+                (match snapshot with
+                 | Some snapshot when field.Field = BusinessField.CaseReference ->
+                     Some(CaseFieldValue.Reference snapshot.Reference)
+                 | Some snapshot ->
+                     CaseState.fields snapshot.State
+                     |> Option.bind (CaseFields.typedValue field.Field)
+                 | None -> None))
+            |> Map.ofList
+
+        let sides get snapshot =
+            review.Changes.Fields
+            |> List.fold
+                (fun values change -> Map.add change.FieldName (get change) values)
+                (snapshotValues snapshot)
+
+        let definitions = fields declarations (fun values -> Some values)
+        let before = entries definitions (sides _.Before review.Before)
+        let after = entries definitions (sides _.After (Some review.Proposed))
+
+        let changedKeys =
+            review.Changes.Fields
+            |> List.map (fun change ->
+                declarations
+                |> List.tryFind (fun field -> field.Pairs = Some change.FieldName)
+                |> Option.map _.Field
+                |> Option.defaultValue change.FieldName
+                |> BusinessField.key)
+            |> Set.ofList
+
+        let erased = CaseState.lifecycle review.Proposed.State = Lifecycle.Erased
+
+        let changed =
+            List.zip before after
+            |> List.choose (fun (before, after) ->
+                if Set.contains after.Key changedKeys then
+                    Some
+                        {
+                            PresentedChange.Key = after.Key
+                            LabelId = after.LabelId
+                            Before = before.Value
+                            After =
+                                if erased && after.Value = absent then
+                                    PresentedValue.Absent "lifecycle.ERASED.label"
+                                else
+                                    after.Value
+                        }
+                else
+                    None)
+
+        let lifecycle =
+            review.Changes.Lifecycle
+            |> Option.toList
+            |> List.map (fun change ->
+                {
+                    PresentedChange.Key = "lifecycle"
+                    LabelId = "input.lifecycle.label"
+                    Before = optional (code Lifecycle.vocabulary) change.Before
+                    After = code Lifecycle.vocabulary change.After
+                })
+
+        let unchanged =
+            if review.Before.IsNone || erased then
+                []
+            else
+                (after |> List.filter (fun entry -> not (Set.contains entry.Key changedKeys)))
+                @ (if review.Changes.Lifecycle.IsNone then
+                       [
+                           value
+                               "lifecycle"
+                               "input.lifecycle.label"
+                               Prominence.Primary
+                               (code
+                                   Lifecycle.vocabulary
+                                   (CaseState.lifecycle review.Proposed.State))
+                       ]
+                   else
+                       [])
+
+        lifecycle @ changed, unchanged
 
     let private workEntries (snapshot: CaseWorkReadModel) =
         [
@@ -1411,17 +1411,7 @@ module Descriptor =
     let private reviewValues =
         function
         | OperationReview.Case review ->
-            let missing =
-                if CaseState.lifecycle review.Proposed.State = Lifecycle.Erased then
-                    PresentedValue.Absent "lifecycle.ERASED.label"
-                else
-                    absent
-
-            let changed, unchanged =
-                changes
-                    missing
-                    (review.Before |> Option.map snapshotEntries |> Option.defaultValue [])
-                    (snapshotEntries review.Proposed)
+            let changed, unchanged = caseReviewPresentation review
 
             {
                 Changes = changed
@@ -1473,83 +1463,91 @@ module Descriptor =
                 Basis = review.Basis
             }
 
+    let private authoredDetails input =
+        match input with
+        | Some input ->
+            let kind =
+                match input with
+                | OperationInput.Case item -> ActKind.Case(CaseAct.kind item.Act)
+                | OperationInput.Authority item -> ActKind.Authority(AuthorityAct.kind item.Act)
+                | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
+                | OperationInput.Reminder item ->
+                    ActKind.Reminder(AuthoredReminderAct.kind item.Act)
+
+            let consequence =
+                match Consequence.ofAct kind with
+                | Consequence.Routine -> []
+                | Consequence.Stewardship
+                | Consequence.Irreversible ->
+                    [ Vocabulary.messageKey ActKind.vocabulary kind "consequence" ]
+                    |> List.map (fun key ->
+                        section
+                            "label.effect"
+                            [
+                                value
+                                    "consequence"
+                                    "label.effect"
+                                    Prominence.Primary
+                                    (PresentedValue.Message key)
+                            ])
+
+            let intent =
+                match input with
+                | OperationInput.Case {
+                                          Act = CaseAct.Void reason | CaseAct.Reinstate reason
+                                      } ->
+                    [
+                        section
+                            "label.details"
+                            [
+                                value
+                                    "reason"
+                                    "field.reason.label"
+                                    Prominence.Primary
+                                    (PresentedValue.Text reason)
+                            ]
+                    ]
+                | OperationInput.Case {
+                                          Act = CaseAct.Correct { Payment = PaymentChange.Reaffirm }
+                                      } ->
+                    [
+                        section
+                            (Vocabulary.messageKey
+                                RecordGroup.vocabulary
+                                RecordGroup.Payment
+                                "label")
+                            [
+                                value
+                                    "intent"
+                                    "label.action"
+                                    Prominence.Primary
+                                    (code
+                                        CorrectionGroupAction.vocabulary
+                                        CorrectionGroupAction.Reaffirm)
+                            ]
+                    ]
+                | _ -> []
+
+            consequence @ intent
+        | None -> []
+
     let operationReview input review =
         let described = reviewValues review
 
-        let details =
-            match input with
-            | Some input ->
-                let kind =
-                    match input with
-                    | OperationInput.Case item -> ActKind.Case(CaseAct.kind item.Act)
-                    | OperationInput.Authority item -> ActKind.Authority(AuthorityAct.kind item.Act)
-                    | OperationInput.Work _ -> ActKind.Work WorkActKind.UpdateWork
-                    | OperationInput.Reminder item ->
-                        ActKind.Reminder(AuthoredReminderAct.kind item.Act)
-
-                let consequence =
-                    match Consequence.ofAct kind with
-                    | Consequence.Routine -> []
-                    | Consequence.Stewardship
-                    | Consequence.Irreversible ->
-                        OperationCatalog.consequenceId (CatalogOperation.Act kind)
-                        |> Option.toList
-                        |> List.map (fun key ->
-                            section
-                                "label.effect"
-                                [
-                                    value
-                                        "consequence"
-                                        "label.effect"
-                                        Prominence.Primary
-                                        (PresentedValue.Message key)
-                                ])
-
-                let intent =
-                    match input with
-                    | OperationInput.Case {
-                                              Act = CaseAct.Void reason | CaseAct.Reinstate reason
-                                          } ->
-                        [
-                            section
-                                "label.details"
-                                [
-                                    value
-                                        "reason"
-                                        "field.reason.label"
-                                        Prominence.Primary
-                                        (PresentedValue.Text reason)
-                                ]
-                        ]
-                    | OperationInput.Case {
-                                              Act = CaseAct.Correct {
-                                                                        Payment = PaymentChange.Reaffirm
-                                                                    }
-                                          } ->
-                        [
-                            section
-                                (Vocabulary.messageKey
-                                    RecordGroup.vocabulary
-                                    RecordGroup.Payment
-                                    "label")
-                                [
-                                    value
-                                        "intent"
-                                        "label.action"
-                                        Prominence.Primary
-                                        (code
-                                            CorrectionGroupAction.vocabulary
-                                            CorrectionGroupAction.Reaffirm)
-                                ]
-                        ]
-                    | _ -> []
-
-                consequence @ intent
-            | None -> []
-
         { described with
-            Effects = details @ described.Effects
+            Effects = authoredDetails input @ described.Effects
         }
+
+    /// Clients render the supplied presentation; only disclosed effect/context metadata is projected here.
+    let presentedReviewDetails input (review: PresentedReview) =
+        let effects, basis =
+            match review.Subject with
+            | PresentedReviewSubject.Case value -> [], value.Context.Basis
+            | PresentedReviewSubject.Work value -> [], value.Context.Basis
+            | PresentedReviewSubject.Reminder value -> [], value.Context.Basis
+            | PresentedReviewSubject.Authority value -> authorityEffects value.Effects, value.Basis
+
+        authoredDetails input @ effects, basis
 
     let private receiptHeader reference act =
         section

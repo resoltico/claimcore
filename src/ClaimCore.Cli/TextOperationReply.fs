@@ -33,8 +33,23 @@ module internal TextOperationReply =
             Frames.value Api.operationExecute invocation
             |> Option.orElseWith (fun () -> Frames.value Api.operationPreview invocation))
 
-    let private reviewIdentity language input review =
+    let private authorityTarget language input (review: AuthorityReview) =
+        match review.Target, review.After.Profile with
+        | Some target, _ -> displayed language (Some(actorName language target.Actor))
+        | None, Some profile -> displayed language (Some(PartyName.format profile.DisplayName))
+        | None, None ->
+            match input with
+            | Some(OperationInput.Authority value) ->
+                String.concat
+                    " "
+                    [
+                        principalKind language value.Target.Kind
+                        TerminalText.data value.Target.Issuer
+                        displayed language (Some value.Target.Subject)
+                    ]
+            | _ -> "—"
 
+    let private reviewIdentity language input target =
         let act =
             input
             |> Option.map (function
@@ -48,32 +63,25 @@ module internal TextOperationReply =
                     term language AuthorityKind.vocabulary (AuthorityAct.kind value.Act))
             |> Option.defaultValue "—"
 
-        let target =
-            match review with
-            | OperationReview.Case value ->
-                TerminalText.data (CaseReference.format value.Proposed.Reference)
-            | OperationReview.Work value -> TerminalText.data (CaseReference.format value.Reference)
-            | OperationReview.Reminder value ->
-                TerminalText.data (CaseReference.format value.Reference)
-            | OperationReview.Authority value ->
-                let principal =
-                    match input with
-                    | Some(OperationInput.Authority value) ->
-                        Some(value.Target.Kind, value.Target.Issuer, value.Target.Subject)
-                    | _ -> value.Target |> Option.map (_.Principal >> PrincipalKey.parts)
-
-                match principal with
-                | Some(kind, issuer, subject) ->
-                    String.concat
-                        " "
-                        [
-                            principalKind language kind
-                            TerminalText.data issuer
-                            displayed language (Some subject)
-                        ]
-                | None -> "— — —"
-
         act + " " + target
+
+    let private coreTarget language input =
+        function
+        | OperationReview.Case value ->
+            TerminalText.data (CaseReference.format value.Proposed.Reference)
+        | OperationReview.Work value -> TerminalText.data (CaseReference.format value.Reference)
+        | OperationReview.Reminder value -> TerminalText.data (CaseReference.format value.Reference)
+        | OperationReview.Authority value -> authorityTarget language input value
+
+    let private presentedTarget language input =
+        function
+        | PresentedReviewSubject.Case value ->
+            TerminalText.data (CaseReference.format value.Proposed.Reference)
+        | PresentedReviewSubject.Work value ->
+            TerminalText.data (CaseReference.format value.Reference)
+        | PresentedReviewSubject.Reminder value ->
+            TerminalText.data (CaseReference.format value.Reference)
+        | PresentedReviewSubject.Authority value -> authorityTarget language input value
 
     let reviewLines language request review =
         let description = Descriptor.operationReview (requestInput request) review
@@ -82,7 +90,10 @@ module internal TextOperationReply =
             line
                 language
                 (CliMessages.key CliMessage.ReviewTitle)
-                (reviewIdentity language (requestInput request) review)
+                (reviewIdentity
+                    language
+                    (requestInput request)
+                    (coreTarget language (requestInput request) review))
         ]
         @ (description.Changes
            |> List.map (fun change ->
@@ -107,13 +118,46 @@ module internal TextOperationReply =
         @ TextDescriptorValue.sections language description.Effects
         @ [ TextObservation.line language description.Basis ]
 
-    let previewLines language request (reply: PreviewReply) =
+    let private presentedReviewLines language request (review: PresentedReview) =
+        let input = requestInput request
+        let effects, basis = Descriptor.presentedReviewDetails input review
+
+        [
+            line
+                language
+                (CliMessages.key CliMessage.ReviewTitle)
+                (reviewIdentity language input (presentedTarget language input review.Subject))
+        ]
+        @ (review.Presentation.Changes
+           |> List.map (fun change ->
+               line
+                   language
+                   change.LabelId
+                   (TextDescriptorValue.render language change.Before
+                    + " → "
+                    + TextDescriptorValue.render language change.After)))
+        @ [
+            line
+                language
+                "label.unchanged"
+                (if review.Presentation.Unchanged.IsEmpty then
+                     "—"
+                 else
+                     review.Presentation.Unchanged
+                     |> List.map (fun entry -> label language entry.LabelId)
+                     |> List.distinct
+                     |> String.concat ", ")
+        ]
+        @ TextDescriptorValue.sections language effects
+        @ [ TextObservation.line language basis ]
+
+    let previewLines language request (reply: PresentedPreviewReply) =
         readLinesFor
             language
             (TextDiagnosticReply.reference request)
             (function
-            | Previewed.Reviewed review -> reviewLines language request review
-            | Previewed.AlreadyAccepted receipt -> receiptLines language true receipt)
+            | PresentedPreviewed.Reviewed review -> presentedReviewLines language request review
+            | PresentedPreviewed.AlreadyAccepted receipt -> receiptLines language true receipt)
             reply.Outcome
 
     let executeLinesFor language request (reply: ExecuteReply) =

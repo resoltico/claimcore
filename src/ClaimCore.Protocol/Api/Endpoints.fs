@@ -323,7 +323,7 @@ module Api =
             Unavailable =
                 fun input ->
                     {
-                        PreviewReply.OperationId = OperationInput.operationId input
+                        PresentedPreviewReply.OperationId = OperationInput.operationId input
                         Outcome = Outcome.Failed CoreFault.StoreUnavailable
                     }
         }

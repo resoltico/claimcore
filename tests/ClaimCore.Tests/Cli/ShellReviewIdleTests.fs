@@ -25,7 +25,7 @@ let private reviewed frame =
             {
                 Before = Some current
                 Proposed = current
-                Changes = []
+                Changes = { Lifecycle = None; Fields = [] }
                 Context =
                     {
                         ProductVersion = "synthetic"
@@ -41,10 +41,11 @@ let private reviewed frame =
     response
         frame
         Api.operationPreview
-        {
-            OperationId = Frames.operationId frame |> Option.get
-            Outcome = Outcome.Succeeded(Previewed.Reviewed review)
-        }
+        (PresentedPreviewReply.ofCore
+            {
+                OperationId = Frames.operationId frame |> Option.get
+                Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+            })
 
 let private idleConfirmation () =
     task {

@@ -252,7 +252,7 @@ let internal previewCodecs () =
         {
             Before = None
             Proposed = Case.snapshot (opened ())
-            Changes = []
+            Changes = { Lifecycle = None; Fields = [] }
             Context =
                 {
                     ProductVersion = "0.10.0"
@@ -278,7 +278,9 @@ let internal previewCodecs () =
             )
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
-        admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
+        admitted
+            Api.operationPreview.Output
+            (PresentedPreviewReply.ofCore { OperationId = id; Outcome = value })
         |> ignore
 
 let internal diagnostics () =

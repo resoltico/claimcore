@@ -12,9 +12,9 @@ module internal TimelineRows =
     // fsharplint:disable-next-line CyclomaticComplexity
     let private canonical =
         function
-        | PresentedValue.Money value -> Money.format value + " " + Money.currency value
-        | PresentedValue.MoneyTotal(currency, total) ->
-            DecimalTotal.format total + " " + Currency.format currency
+        | PresentedValue.Money value -> Money.format value.Value + " " + Money.currency value.Value
+        | PresentedValue.MoneyTotal value ->
+            DecimalTotal.format value.Value + " " + Currency.format value.Currency
         | PresentedValue.Date value -> CalendarDate.format value
         | PresentedValue.Instant value -> TextReplyFormat.instant value
         | PresentedValue.Party value -> PartyName.format value

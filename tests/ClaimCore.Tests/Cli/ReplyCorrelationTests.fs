@@ -47,11 +47,13 @@ let private body invocation =
                 Outcome = ExecuteResult.Accepted accepted
             }
     | "operation.preview" ->
-        Api.operationPreview.Output.Write
-            {
-                PreviewReply.OperationId = operation
-                Outcome = Outcome.Succeeded(Previewed.AlreadyAccepted accepted)
-            }
+        Api.operationPreview.Output.Write(
+            PresentedPreviewReply.ofCore
+                {
+                    PreviewReply.OperationId = operation
+                    Outcome = Outcome.Succeeded(Previewed.AlreadyAccepted accepted)
+                }
+        )
     | "operation.observe" ->
         Api.operationObserve.Output.Write
             {

@@ -408,7 +408,11 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
             Result =
-                FrameResult.Reply(ClaimCore.Tests.CliReplies.ofValue Api.operationPreview response)
+                FrameResult.Reply(
+                    ClaimCore.Tests.CliReplies.ofValue
+                        Api.operationPreview
+                        (PresentedPreviewReply.ofCore response)
+                )
         }
 
     frame

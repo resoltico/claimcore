@@ -185,10 +185,11 @@ type Stub() =
 
                 this.Invoke
                     "operation.preview"
-                    {
-                        PreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = outcome
-                    })
+                    (PresentedPreviewReply.ofCore
+                        {
+                            PreviewReply.OperationId = OperationInput.operationId input
+                            Outcome = outcome
+                        }))
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             Route.bind Api.operationExecute (fun _ input token ->
                 task {

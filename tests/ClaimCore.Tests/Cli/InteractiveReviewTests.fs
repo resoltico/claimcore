@@ -64,13 +64,17 @@ let private review =
                             })
                 }
             Changes =
-                [
-                    {
-                        FieldName = BusinessField.Status
-                        Before = Some "OPENED"
-                        After = Some "CLOSED"
-                    }
-                ]
+                {
+                    Lifecycle = None
+                    Fields =
+                        [
+                            {
+                                FieldName = BusinessField.Status
+                                Before = Some(CaseFieldValue.Status CaseStatus.Opened)
+                                After = Some(CaseFieldValue.Status CaseStatus.Closed)
+                            }
+                        ]
+                }
             Context =
                 {
                     ProductVersion = "synthetic"
@@ -118,16 +122,17 @@ let private harness language answer scenario =
                 response
                     frame
                     Api.operationPreview.Output
-                    {
-                        OperationId = operationId ()
-                        Outcome =
-                            if scenario = Scenario.PreviewRefused then
-                                Outcome.Rejected(
-                                    Refusal.Access(AccessRefusal.NotAuthorized Capability.Close)
-                                )
-                            else
-                                Outcome.Succeeded(Previewed.Reviewed review)
-                    }
+                    (PresentedPreviewReply.ofCore
+                        {
+                            OperationId = operationId ()
+                            Outcome =
+                                if scenario = Scenario.PreviewRefused then
+                                    Outcome.Rejected(
+                                        Refusal.Access(AccessRefusal.NotAuthorized Capability.Close)
+                                    )
+                                else
+                                    Outcome.Succeeded(Previewed.Reviewed review)
+                        })
             | "operation.execute" ->
                 let receipt =
                     { CliReplyFixtures.receipt with

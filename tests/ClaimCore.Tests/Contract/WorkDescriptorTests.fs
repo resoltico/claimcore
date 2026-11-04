@@ -44,7 +44,7 @@ let tests =
                 let actual =
                     TextDescriptorValue.render
                         "en"
-                        (PresentedValue.MoneyTotal(currency "EUR", total large))
+                        (PresentedValue.moneyTotal (currency "EUR") (total large))
 
                 Expect.equal
                     actual
@@ -61,7 +61,7 @@ let tests =
                     Expect.equal
                         (TextDescriptorValue.render
                             "en"
-                            (PresentedValue.MoneyTotal(currency code, total raw)))
+                            (PresentedValue.moneyTotal (currency code) (total raw)))
                         expected
                         "Currency minimums retain all meaningful fractional digits"
 
@@ -72,7 +72,8 @@ let tests =
                             LabelId = "label.total"
                             Prominence = Prominence.Primary
                             IsMoney = true
-                            Read = fun () -> PresentedValue.MoneyTotal(currency "EUR", total large)
+                            Read =
+                                fun () -> PresentedValue.moneyTotal (currency "EUR") (total large)
                         }
                     ]
 

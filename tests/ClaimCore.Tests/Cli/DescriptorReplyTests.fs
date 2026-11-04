@@ -54,7 +54,7 @@ let private authorityReview () =
                 )
         }
 
-    CliReplies.ofValue Api.operationPreview reply
+    CliReplies.ofValue Api.operationPreview (PresentedPreviewReply.ofCore reply)
 
 let rec private unknownAuthority =
     function

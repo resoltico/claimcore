@@ -547,17 +547,15 @@ module ResponseCodecs =
     let fieldChange = LedgerCodecs.fieldChange
 
     let reviewFields =
-        (record (fun before proposed changes context ->
+        (record (fun before proposed context ->
             {
-                Before = before
+                PresentedCaseReview.Before = before
                 Proposed = proposed
-                Changes = changes
                 Context = context
             })
-        : Fields<AdvisoryReview, _>)
+        : Fields<PresentedCaseReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
-        |> field "changes" _.Changes (list CaseFields.declarations.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
     let private actorResponsibleCases =

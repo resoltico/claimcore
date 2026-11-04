@@ -36,6 +36,13 @@ type CaseFieldDifference =
         After: CaseFieldValue option
     }
 
+/// Typed review facts retain their authoritative values independently of presentation snapshots.
+type CaseReviewChanges =
+    {
+        Lifecycle: LifecycleChange option
+        Fields: CaseFieldDifference list
+    }
+
 type CaseMoneyDifference =
     {
         FieldName: BusinessField

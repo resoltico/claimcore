@@ -60,7 +60,7 @@ let tests =
                         "en"
                         (options 50 false)
                         columns
-                        [ [ PresentedValue.Money(Inputs.money "1" "EUR") ] ]
+                        [ [ PresentedValue.money (Inputs.money "1" "EUR") ] ]
 
                 Expect.equal
                     rows
@@ -77,7 +77,7 @@ let tests =
                     "An unrelated text value is not misclassified as money")
             testCase "monetary precision is never truncated when a table cannot fit" (fun () ->
                 let columns = [ column "money" "field.claimedAmount.label" Prominence.Primary 0 ]
-                let value = PresentedValue.Money(Inputs.money "999999999999999999.9999" "EUR")
+                let value = PresentedValue.money (Inputs.money "999999999999999999.9999" "EUR")
                 let output = TextTable.rows "en" (options 5 false) columns [ [ value ] ]
 
                 Expect.equal

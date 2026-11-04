@@ -52,7 +52,11 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
             Route.bind Api.authorityRequestsDismiss Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
-            Route.bind Api.operationPreview Service.preview
+            Route.bind Api.operationPreview (fun services input token ->
+                task {
+                    let! reply = Service.preview services input token in
+                    return PresentedPreviewReply.ofCore reply
+                })
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.bind Api.operationExecute Service.execute
         | ActorEndpoint.Query QueryEndpoint.Status -> Route.bind Api.operationStatus Service.status
