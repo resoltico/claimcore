@@ -511,5 +511,15 @@
   "accountState.NO_ROLES.label": "No roles assigned",
   "accountState.NO_ROLES.meaning": "The account is registered and enabled but has no assigned roles.",
   "accountState.DISABLED.label": "Disabled",
-  "accountState.DISABLED.meaning": "The account is disabled. Assigned roles remain visible for authority review."
+  "accountState.DISABLED.meaning": "The account is disabled. Assigned roles remain visible for authority review.",
+  "label.attention": "Attention",
+  "label.recommendedNext": "Recommended next",
+  "label.notApplicable": "Not applicable",
+  "label.recordedAt": "Recorded at",
+  "label.recordedBy": "Recorded by",
+  "label.reminder": "Reminder",
+  "label.before": "Before",
+  "label.after": "After",
+  "label.changes": "Changes",
+  "label.unchanged": "Unchanged"
 }

@@ -511,5 +511,15 @@
   "accountState.NO_ROLES.label": "لم يتم تعيين أدوار",
   "accountState.NO_ROLES.meaning": "الحساب مسجّل ومفعّل ولكن لم يتم تعيين أدوار له.",
   "accountState.DISABLED.label": "معطّل",
-  "accountState.DISABLED.meaning": "الحساب معطّل. تظل الأدوار المعيّنة مرئية لمراجعة الصلاحيات."
+  "accountState.DISABLED.meaning": "الحساب معطّل. تظل الأدوار المعيّنة مرئية لمراجعة الصلاحيات.",
+  "label.attention": "يحتاج إلى الانتباه",
+  "label.recommendedNext": "الإجراء التالي المقترح",
+  "label.notApplicable": "لا ينطبق",
+  "label.recordedAt": "وقت التسجيل",
+  "label.recordedBy": "سجّله",
+  "label.reminder": "تذكير",
+  "label.before": "قبل",
+  "label.after": "بعد",
+  "label.changes": "التغييرات",
+  "label.unchanged": "دون تغيير"
 }

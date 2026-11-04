@@ -511,5 +511,15 @@
   "accountState.NO_ROLES.label": "Nav piešķirtu lomu",
   "accountState.NO_ROLES.meaning": "Konts ir reģistrēts un iespējots, bet tam nav piešķirtu lomu.",
   "accountState.DISABLED.label": "Atspējots",
-  "accountState.DISABLED.meaning": "Konts ir atspējots. Piešķirtās lomas paliek redzamas pilnvaru pārskatīšanai."
+  "accountState.DISABLED.meaning": "Konts ir atspējots. Piešķirtās lomas paliek redzamas pilnvaru pārskatīšanai.",
+  "label.attention": "Jāpievērš uzmanība",
+  "label.recommendedNext": "Ieteicamā nākamā darbība",
+  "label.notApplicable": "Nav piemērojams",
+  "label.recordedAt": "Reģistrēts",
+  "label.recordedBy": "Reģistrēja",
+  "label.reminder": "Atgādinājums",
+  "label.before": "Pirms",
+  "label.after": "Pēc",
+  "label.changes": "Izmaiņas",
+  "label.unchanged": "Bez izmaiņām"
 }
