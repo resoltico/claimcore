@@ -104,6 +104,7 @@ module OperationCatalog =
                 Family = family
                 AffectedSections = sections
                 Effect = effect
+                Consequence = CatalogOperation.consequence operation
                 LabelId = labelId operation
                 MeaningId = meaningId operation
                 ConfirmationId = confirmationId operation

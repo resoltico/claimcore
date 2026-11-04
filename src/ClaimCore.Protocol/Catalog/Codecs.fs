@@ -414,6 +414,7 @@ module CatalogCodecs =
             Family: ActFamily option
             AffectedSections: CaseSection list
             Effect: InteractionEffect
+            Consequence: Consequence
             Inputs: CatalogInput list
             Constants: BindingAssignment list
         }
@@ -430,6 +431,7 @@ module CatalogCodecs =
                 family
                 sections
                 effect
+                consequence
                 inputs
                 constants ->
                 {
@@ -442,6 +444,7 @@ module CatalogCodecs =
                     Family = family
                     AffectedSections = sections
                     Effect = effect
+                    Consequence = consequence
                     Inputs = inputs
                     Constants = constants
                 })
@@ -457,6 +460,7 @@ module CatalogCodecs =
             _.AffectedSections
             (many (VocabularyCodec.create CaseSection.vocabulary))
         |> field "effect" _.Effect (VocabularyCodec.create InteractionEffect.vocabulary)
+        |> field "consequence" _.Consequence (VocabularyCodec.create Consequence.vocabulary)
         |> field "inputs" _.Inputs (many binding)
         |> field "constants" _.Constants (many assignment)
         |> build
@@ -478,6 +482,7 @@ module CatalogCodecs =
                 | Some operation when
                     ActorEndpoint.token operation.Endpoint = wire.Endpoint
                     && operation.Subject = wire.Subject
+                    && wire.Consequence = CatalogOperation.consequence operation
                     && (wire.Family, wire.AffectedSections, wire.Effect) =
                         CatalogOperation.interaction operation
                     ->
@@ -490,6 +495,7 @@ module CatalogCodecs =
                             Family = wire.Family
                             AffectedSections = wire.AffectedSections
                             Effect = wire.Effect
+                            Consequence = wire.Consequence
                             Inputs = wire.Inputs
                             Constants = wire.Constants
                         }
@@ -510,6 +516,7 @@ module CatalogCodecs =
                     Family = value.Family
                     AffectedSections = value.AffectedSections
                     Effect = value.Effect
+                    Consequence = value.Consequence
                     Inputs = value.Inputs
                     Constants = value.Constants
                 })

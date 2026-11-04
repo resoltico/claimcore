@@ -161,6 +161,11 @@ module CatalogOperation =
             None, [], InteractionEffect.FinalNonAcceptance
         | _ -> None, [], InteractionEffect.Read
 
+    let consequence =
+        function
+        | CatalogOperation.Act act -> Consequence.ofAct act
+        | CatalogOperation.Query query -> Consequence.ofQuery query
+
 
 type CatalogEntry =
     {
@@ -170,6 +175,7 @@ type CatalogEntry =
         Family: ActFamily option
         AffectedSections: CaseSection list
         Effect: InteractionEffect
+        Consequence: Consequence
         Kind: CatalogOperation
         Inputs: CatalogInput list
         Constants: BindingAssignment list

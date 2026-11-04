@@ -142,6 +142,7 @@
     <Compile Include="Contract/CatalogBindingTests.fs" />
     <Compile Include="Contract/WorkProtocolTests.fs" />
     <Compile Include="Contract/OperationCatalogTests.fs" />
+    <Compile Include="Contract/ConsequenceTests.fs" />
     <Compile Include="Cli/RemoteClientTests.fs" />
     <Compile Include="Cli/RemoteTlsTests.fs" />
     <Compile Include="Cli/TokenLifetimeTests.fs" />

@@ -13,6 +13,7 @@
     <Compile Include="Presentation/ReplyPresentation.fs" />
     <Compile Include="Presentation/OutcomePresentation.fs" />
     <Compile Include="Api/Operations.fs" />
+    <Compile Include="Catalog/Consequence.fs" />
     <Compile Include="Catalog/Reads.fs" />
     <Compile Include="Vocabulary/VocabularyCodec.fs" />
     <Compile Include="Catalog/FieldPresentation.fs" />

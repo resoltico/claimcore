@@ -588,6 +588,7 @@
         "registration"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -902,6 +903,7 @@
         "registration"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -1259,6 +1261,7 @@
         "payment"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -1975,6 +1978,7 @@
         "decision"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2183,6 +2187,7 @@
         "decision"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2304,6 +2309,7 @@
         "payment"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2451,6 +2457,7 @@
         "payment"
       ],
       "effect": "RECORD_FACTS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2570,6 +2577,7 @@
       "family": "BUSINESS",
       "affectedSections": [],
       "effect": "CHANGE_STATUS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2689,6 +2697,7 @@
       "family": "BUSINESS",
       "affectedSections": [],
       "effect": "CHANGE_STATUS",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -2808,6 +2817,7 @@
       "family": "STEWARDSHIP",
       "affectedSections": [],
       "effect": "CHANGE_LIFECYCLE",
+      "consequence": "STEWARDSHIP",
       "inputs": [
         {
           "identity": "operationId",
@@ -2952,6 +2962,7 @@
       "family": "STEWARDSHIP",
       "affectedSections": [],
       "effect": "CHANGE_LIFECYCLE",
+      "consequence": "STEWARDSHIP",
       "inputs": [
         {
           "identity": "operationId",
@@ -3101,6 +3112,7 @@
         "work"
       ],
       "effect": "ERASE_PAYLOAD",
+      "consequence": "IRREVERSIBLE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3220,6 +3232,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3410,6 +3423,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3671,6 +3685,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -3932,6 +3947,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -4070,6 +4086,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "CHANGE_AUTHORITY",
+      "consequence": "STEWARDSHIP",
       "inputs": [
         {
           "identity": "operationId",
@@ -4538,6 +4555,7 @@
         "work"
       ],
       "effect": "CHANGE_WORK",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -4762,6 +4780,7 @@
         "work"
       ],
       "effect": "CHANGE_REMINDER",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -4909,6 +4928,7 @@
         "work"
       ],
       "effect": "CHANGE_REMINDER",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -5106,6 +5126,7 @@
         "work"
       ],
       "effect": "CHANGE_REMINDER",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -5253,6 +5274,7 @@
         "work"
       ],
       "effect": "CHANGE_REMINDER",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -5400,6 +5422,7 @@
         "work"
       ],
       "effect": "CHANGE_REMINDER",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -5572,6 +5595,7 @@
         "work"
       ],
       "effect": "CHANGE_REMINDER",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -5767,6 +5791,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -5894,6 +5919,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -5970,6 +5996,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -6097,6 +6124,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -6358,6 +6386,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [],
       "constants": []
     },
@@ -6371,6 +6400,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [],
       "constants": []
     },
@@ -6384,6 +6414,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "mine",
@@ -6420,6 +6451,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -6520,6 +6552,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -6572,6 +6605,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "cursor",
@@ -6863,6 +6897,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "lifecycle",
@@ -7106,6 +7141,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "target.caseReference",
@@ -7233,6 +7269,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -7271,6 +7308,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "operationId",
@@ -7309,6 +7347,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "FINAL_NON_ACCEPTANCE",
+      "consequence": "IRREVERSIBLE",
       "inputs": [
         {
           "identity": "operationId",
@@ -7347,6 +7386,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "cursor",
@@ -7409,6 +7449,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "actorId",
@@ -7493,6 +7534,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [
         {
           "identity": "actorId",
@@ -7577,6 +7619,7 @@
       "family": null,
       "affectedSections": [],
       "effect": "READ",
+      "consequence": "ROUTINE",
       "inputs": [],
       "constants": []
     }
