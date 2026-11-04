@@ -7555,7 +7555,7 @@
         "additionalProperties": false,
         "properties": {
           "actor": {
-            "$ref": "#/components/schemas/ActorRef"
+            "$ref": "#/components/schemas/ActorReviewItem"
           },
           "items": {
             "type": "array",

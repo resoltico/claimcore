@@ -509,7 +509,7 @@ module ResponseCodecs =
                 NextCursor = v2
             })
         : Fields<AuthorityGrantPage, _>)
-        |> field "actor" _.Actor ActorCodecs.actorRef
+        |> field "actor" _.Actor actorSummary
         |> field "items" _.Items (list 50 authorityGrant)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

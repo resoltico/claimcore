@@ -307,8 +307,22 @@ let private traversal (database: PostgresFixture.Database) =
         let first = page first
         Expect.equal first.Items.Length 50 "Target grants do not expand actor rows"
 
+        Expect.equal
+            first.Actor.Actor.ActorId
+            targetId
+            "The related header retains the resolved actor identity"
+
+        Expect.equal
+            first.Actor.Principal
+            (PrincipalKey.service "https://issuer.example/" "grant-target"
+             |> Result.defaultWith (string >> failtest))
+            "The same snapshot supplies the stored principal for profile edits"
+
+        Expect.isNone first.Actor.Contact "A target without an authored contact reports absence"
+
+
         Expect.isFalse
-            (first.Actor.Availability = ActorAvailability.Available)
+            (first.Actor.Actor.Availability = ActorAvailability.Available)
             "Disabled target header is reviewable"
 
         let! last =
@@ -448,7 +462,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
         let prior = page prior
 
         Expect.isFalse
-            (prior.Actor.Availability = ActorAvailability.Available)
+            (prior.Actor.Actor.Availability = ActorAvailability.Available)
             "Target header comes from pre-change snapshot"
 
         Expect.contains
@@ -463,7 +477,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
         let fresh = page fresh
 
         Expect.isTrue
-            (fresh.Actor.Availability = ActorAvailability.Available)
+            (fresh.Actor.Actor.Availability = ActorAvailability.Available)
             "Fresh page observes enabled target"
 
         Expect.isFalse

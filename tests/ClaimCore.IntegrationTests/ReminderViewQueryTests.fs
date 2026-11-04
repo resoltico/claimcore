@@ -79,7 +79,11 @@ let private walk pair request expected =
 let private qualify pair =
     task {
         let! context = Service.context pair.Postgres () token
-        let context = read context
+
+        let context =
+            match (read context).Requester with
+            | RequesterState.Active active -> active
+            | state -> failtestf "Fixture requires an active requester: %A" state
 
         for number, reference, offset, action in
             [

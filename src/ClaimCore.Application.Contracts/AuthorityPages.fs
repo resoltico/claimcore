@@ -29,7 +29,7 @@ type ActorReviewPage =
 
 type AuthorityGrantPage =
     {
-        Actor: ActorRef
+        Actor: ActorReviewItem
         Items: ScopedGrant list
         NextCursor: string option
     }

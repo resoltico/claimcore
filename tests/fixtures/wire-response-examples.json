@@ -1024,12 +1024,20 @@
           "kind": "SUCCEEDED",
           "data": {
             "actor": {
-              "actorId": "10000000-0000-4000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
+              "actor": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "DISABLED"
               },
-              "principalKind": "HUMAN",
-              "availability": "DISABLED"
+              "principal": {
+                "kind": "HUMAN",
+                "issuer": "https://issuer.example/",
+                "subject": "synthetic-grant-target"
+              },
+              "contact": null
             },
             "items": [],
             "nextCursor": "x"
@@ -1468,12 +1476,20 @@
           "kind": "SUCCEEDED",
           "data": {
             "actor": {
-              "actorId": "10000000-0000-4000-8000-000000000001",
-              "displayName": {
-                "kind": "ERASED"
+              "actor": {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "ERASED"
+                },
+                "principalKind": "HUMAN",
+                "availability": "DISABLED"
               },
-              "principalKind": "HUMAN",
-              "availability": "DISABLED"
+              "principal": {
+                "kind": "HUMAN",
+                "issuer": "https://issuer.example/",
+                "subject": "synthetic-grant-target"
+              },
+              "contact": null
             },
             "items": [
               {

@@ -43,7 +43,8 @@ module internal TextAuthorityReply =
         @ nextLines language page.NextCursor
 
     let grantPage language (page: AuthorityGrantPage) =
-        (page.Items |> List.map (grantRow language))
+        [ displayed language (Some(actorName language page.Actor.Actor)) ]
+        @ (page.Items |> List.map (grantRow language))
         @ nextLines language page.NextCursor
 
     let historyPage language (page: AuthorityHistoryPage) =

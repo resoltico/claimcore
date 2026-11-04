@@ -192,7 +192,7 @@ export type FieldChange = { readonly "field": "incidentDate" | "incidentNotifica
 export type GrantScope = GrantScope_INSTALLATION | GrantScope_CASE;
 export type GrantScope_CASE = { readonly "kind": "CASE"; readonly "caseId": Uuid; readonly "caseReference": string; };
 export type GrantScope_INSTALLATION = { readonly "kind": "INSTALLATION"; };
-export type GrantsPage = { readonly "actor": ActorRef; readonly "items": ReadonlyArray<AuthorityGrant>; readonly "nextCursor": string | null; };
+export type GrantsPage = { readonly "actor": ActorReviewItem; readonly "items": ReadonlyArray<AuthorityGrant>; readonly "nextCursor": string | null; };
 export type GrantsReply = { readonly "outcome": GrantsReply_Outcome; };
 export type GrantsReply_Outcome = GrantsReply_Outcome_SUCCEEDED | GrantsReply_Outcome_REJECTED | GrantsReply_Outcome_FAILED;
 export type GrantsReply_Outcome_FAILED = { readonly "kind": "FAILED"; readonly "data": Fault; };
@@ -682,7 +682,7 @@ function check_FieldChange(value:unknown,draft:boolean,path:WireIssue):WireIssue
 function check_GrantScope(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_GrantScope_INSTALLATION,check_GrantScope_CASE],"kind",{"INSTALLATION":check_GrantScope_INSTALLATION,"CASE":check_GrantScope_CASE}))(value,draft,path); }
 function check_GrantScope_CASE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CASE")],["caseId",false,check_Uuid],["caseReference",false,wireString(1,80,/^(?:[!-~]{1,80})(?![\s\S])/u,null)]]))(value,draft,path); }
 function check_GrantScope_INSTALLATION(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("INSTALLATION")]]))(value,draft,path); }
-function check_GrantsPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["actor",false,check_ActorRef],["items",false,wireArray(check_AuthorityGrant,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
+function check_GrantsPage(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["actor",false,check_ActorReviewItem],["items",false,wireArray(check_AuthorityGrant,0,50)],["nextCursor",false,wireUnion([wireString(1,512,null,null),wireNull],null,{})]]))(value,draft,path); }
 function check_GrantsReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_GrantsReply_Outcome]]))(value,draft,path); }
 function check_GrantsReply_Outcome(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_GrantsReply_Outcome_SUCCEEDED,check_GrantsReply_Outcome_REJECTED,check_GrantsReply_Outcome_FAILED],"kind",{"SUCCEEDED":check_GrantsReply_Outcome_SUCCEEDED,"REJECTED":check_GrantsReply_Outcome_REJECTED,"FAILED":check_GrantsReply_Outcome_FAILED}))(value,draft,path); }
 function check_GrantsReply_Outcome_FAILED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("FAILED")],["data",false,check_Fault]]))(value,draft,path); }
@@ -986,6 +986,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "d97418ad883386180270bd99d4c7f66cde7505c062d7a485fb7192eab4f0baa8";
+export const consumerContractIdentity = "fde2d942640b1380bf3b58613fe4fa2135557bdb26db816e18c12652b5d666e5";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

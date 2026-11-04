@@ -157,7 +157,7 @@ module internal AuthorityQueries =
                                                         Outcome.Succeeded
                                                             {
                                                                 AuthorityGrantPage.Actor =
-                                                                    Actor.currentReference target
+                                                                    ActorReviewItem.ofActor target
                                                                 Items = page.Items
                                                                 NextCursor =
                                                                     page.Next
