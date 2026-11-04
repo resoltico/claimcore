@@ -36,7 +36,12 @@ module internal TextTable =
         if atom.StartsWith("\\", StringComparison.Ordinal) then
             atom.Length
         else
-            1
+            let cells = Wcwidth.UnicodeCalculator.GetWidth(atom)
+
+            if cells < 0 then
+                invalidOp "Terminal data must be escaped before table layout."
+
+            cells
 
     let width text = atoms text |> List.sumBy atomWidth
 

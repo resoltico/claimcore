@@ -145,3 +145,74 @@ let tests =
                     (output |> List.forall (fun line -> TextTable.width line <= 5))
                     "Every line respects the narrow width")
         ]
+
+
+[<Tests>]
+let terminalCells =
+    testList
+        "terminal cell width"
+        [
+            testCase
+                "CJK emoji and combining clusters use independently known cell counts"
+                (fun () ->
+                    for text, expected in
+                        [
+                            "山田太郎🚗", 10
+                            "山", 2
+                            "🚗", 2
+                            "👩‍👩‍👦", 2
+                            "👍🏽", 2
+                            "🇱🇻", 2
+                            "1️⃣", 2
+                            "ā", 1
+                            "عادل", 4
+                        ] do
+                        Expect.equal
+                            (TextTable.width text)
+                            expected
+                            "Cell counts are literal expectations, not self-measurement")
+            testCase "wide clusters and escaped controls remain atomic under clipping" (fun () ->
+                Expect.equal
+                    (TextTable.truncate 5 "山田太郎🚗")
+                    "山田…"
+                    "Two wide glyphs plus one cell ellipsis"
+
+                Expect.equal (TextTable.truncate 3 "👩‍👩‍👦AB") "👩‍👩‍👦…" "A family emoji cannot split at ZWJ"
+
+                Expect.equal
+                    (TextTable.truncate 2 "āBC")
+                    "ā…"
+                    "Combining marks stay with their base"
+
+                let escaped = TerminalText.data @"山\u{001B}🚗"
+
+                Expect.equal
+                    (TextTable.truncate 5 escaped)
+                    ("山" + @"\\" + "…")
+                    "Literal escape-like text keeps its doubled backslash atom"
+
+                Expect.equal
+                    (TextTable.truncate 9 (TerminalText.data (string (char 0x1B) + "AB")))
+                    (@"\u{001B}" + "…")
+                    "A data escape is one indivisible layout atom")
+            testCase
+                "mixed wide and narrow names align the next column in every language"
+                (fun () ->
+                    let columns =
+                        [
+                            column "name" "label.before" Prominence.Primary 0
+                            column "next" "label.after" Prominence.Primary 1
+                        ]
+
+                    let rows =
+                        [
+                            [ PresentedValue.Text "山田太郎🚗"; PresentedValue.Text "END" ]
+                            [ PresentedValue.Text "Ann"; PresentedValue.Text "END" ]
+                        ]
+
+                    for language in [ "en"; "lv"; "ar" ] do
+                        Expect.equal
+                            (TextTable.rows language (options 100 false) columns rows)
+                            [ "山田太…   END"; "Ann       END" ]
+                            "Literal rows place END at terminal cell eleven for both names")
+        ]
