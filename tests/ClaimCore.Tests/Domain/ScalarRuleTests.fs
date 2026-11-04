@@ -23,6 +23,53 @@ type private GrammarScenario =
 
 let private scalar name = FieldPresentation.descriptor name
 
+[<Tests>]
+let listPresentation =
+    testCase "core declarations own the listed facts and monetary prominence" (fun () ->
+        Expect.equal
+            (BusinessField.declarations
+             |> List.filter _.Listed
+             |> List.map _.Field
+             |> Set.ofList)
+            (Set.ofList
+                [
+                    BusinessField.ClaimantName
+                    BusinessField.InsurerName
+                    BusinessField.ClaimedAmount
+                    BusinessField.ClaimedCurrency
+                    BusinessField.PayableAmount
+                    BusinessField.PayableCurrency
+                ])
+            "The adopted list contains parties and both complete money pairs"
+
+        for amount, currency in
+            [
+                BusinessField.ClaimedAmount, BusinessField.ClaimedCurrency
+                BusinessField.PayableAmount, BusinessField.PayableCurrency
+            ] do
+            let amount = BusinessField.describe amount
+            let currency = BusinessField.describe currency
+
+            Expect.equal
+                amount.Prominence
+                Prominence.Primary
+                "Money remains visible before optional context"
+
+            Expect.equal
+                currency.Prominence
+                amount.Prominence
+                "Width reduction cannot orphan the currency"
+
+        Expect.equal
+            (BusinessField.describe BusinessField.InsurerName).Prominence
+            Prominence.Secondary
+            "Insurer is supplementary list context"
+
+        Expect.equal
+            (BusinessField.describe BusinessField.IncidentDescription).Prominence
+            Prominence.Detail
+            "Narrative remains available in details")
+
 let private expectText name maximum =
     match scalar name with
     | ScalarRule.Text constraints ->

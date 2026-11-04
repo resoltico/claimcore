@@ -57,6 +57,17 @@ type InputTarget =
     | ExpectedWorkRevision
     | ExpectedReminderRevision
 
+[<RequireQualifiedAccess>]
+type Prominence =
+    | Primary
+    | Secondary
+    | Detail
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module Prominence =
+    let vocabulary =
+        Vocabulary.ofUnion<Prominence> "prominence" TokenCasing.ScreamingSnake None
+
 [<NoEquality; NoComparison>]
 type FieldDescriptor =
     {
@@ -69,6 +80,8 @@ type FieldDescriptor =
         IsAuthored: bool
         Searchable: bool
         Pairs: BusinessField option
+        Prominence: Prominence
+        Listed: bool
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -108,6 +121,8 @@ module BusinessField =
             IsAuthored = field <> BusinessField.Status
             Searchable = searchable
             Pairs = pairs
+            Prominence = Prominence.Detail
+            Listed = false
         }
     // One exhaustive table owns field structure, searchability and amount/currency relationships.
     // fsharplint:disable-next-line CyclomaticComplexity
@@ -116,7 +131,14 @@ module BusinessField =
         | BusinessField.IncidentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
         | BusinessField.IncidentNotificationDate ->
-            descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Registration) false None
+            { descriptor
+                  field
+                  FieldValueKind.CalendarDate
+                  (Some RecordGroup.Registration)
+                  false
+                  None with
+                Prominence = Prominence.Secondary
+            }
         | BusinessField.IncidentDescription ->
             { descriptor
                   field
@@ -129,30 +151,51 @@ module BusinessField =
         | BusinessField.IncidentCountry ->
             descriptor field FieldValueKind.Country (Some RecordGroup.Registration) false None
         | BusinessField.ClaimantName ->
-            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) true None
+            { descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) true None with
+                Prominence = Prominence.Primary
+                Listed = true
+            }
         | BusinessField.InsurerName ->
-            descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) true None
+            { descriptor field FieldValueKind.PartyName (Some RecordGroup.Registration) true None with
+                Prominence = Prominence.Secondary
+                Listed = true
+            }
         | BusinessField.ClaimedAmount ->
-            descriptor
-                field
-                FieldValueKind.Amount
-                (Some RecordGroup.Registration)
-                false
-                (Some BusinessField.ClaimedCurrency)
+            { descriptor
+                  field
+                  FieldValueKind.Amount
+                  (Some RecordGroup.Registration)
+                  false
+                  (Some BusinessField.ClaimedCurrency) with
+                Prominence = Prominence.Primary
+                Listed = true
+            }
         | BusinessField.ClaimedCurrency ->
-            descriptor field FieldValueKind.Currency (Some RecordGroup.Registration) false None
-        | BusinessField.CaseReference -> descriptor field FieldValueKind.Reference None true None
+            { descriptor field FieldValueKind.Currency (Some RecordGroup.Registration) false None with
+                Prominence = Prominence.Primary
+                Listed = true
+            }
+        | BusinessField.CaseReference ->
+            { descriptor field FieldValueKind.Reference None true None with
+                Prominence = Prominence.Primary
+            }
         | BusinessField.PaymentDecisionDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Decision) false None
         | BusinessField.PayableAmount ->
-            descriptor
-                field
-                FieldValueKind.Amount
-                (Some RecordGroup.Decision)
-                false
-                (Some BusinessField.PayableCurrency)
+            { descriptor
+                  field
+                  FieldValueKind.Amount
+                  (Some RecordGroup.Decision)
+                  false
+                  (Some BusinessField.PayableCurrency) with
+                Prominence = Prominence.Primary
+                Listed = true
+            }
         | BusinessField.PayableCurrency ->
-            descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) false None
+            { descriptor field FieldValueKind.Currency (Some RecordGroup.Decision) false None with
+                Prominence = Prominence.Primary
+                Listed = true
+            }
         | BusinessField.PaymentDate ->
             descriptor field FieldValueKind.CalendarDate (Some RecordGroup.Payment) false None
         | BusinessField.Status -> descriptor field FieldValueKind.Status None false None

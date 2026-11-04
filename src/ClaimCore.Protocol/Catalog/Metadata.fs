@@ -189,6 +189,8 @@ type FieldPresentationDefinition =
         MeaningId: string
         Scalar: ScalarRule
         AllowsAbsence: bool
+        Prominence: Prominence
+        Listed: bool
     }
 
 type InputPresentationDefinition =

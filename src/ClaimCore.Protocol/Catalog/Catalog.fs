@@ -18,6 +18,8 @@ module Catalog =
                         MeaningId = FieldPresentation.meaningId row.Field
                         Scalar = FieldPresentation.descriptor row.Field
                         AllowsAbsence = row.AllowsAbsence
+                        Prominence = row.Prominence
+                        Listed = row.Listed
                     })
             InputFields =
                 InteractionInput.technical

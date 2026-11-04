@@ -13,7 +13,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "incidentNotificationDate",
@@ -28,7 +30,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "SECONDARY",
+      "listed": false
     },
     {
       "name": "incidentCountry",
@@ -46,7 +50,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "incidentDescription",
@@ -61,7 +67,9 @@
       "allowsAbsence": true,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "claimantName",
@@ -78,7 +86,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "PRIMARY",
+      "listed": true
     },
     {
       "name": "insurerName",
@@ -95,7 +105,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "SECONDARY",
+      "listed": true
     },
     {
       "name": "claimedAmount",
@@ -117,7 +129,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": "claimedCurrency"
+      "pairs": "claimedCurrency",
+      "prominence": "PRIMARY",
+      "listed": true
     },
     {
       "name": "claimedCurrency",
@@ -138,7 +152,9 @@
       "allowsAbsence": false,
       "group": "registration",
       "section": "registration",
-      "pairs": null
+      "pairs": null,
+      "prominence": "PRIMARY",
+      "listed": true
     },
     {
       "name": "caseReference",
@@ -155,7 +171,9 @@
       "allowsAbsence": false,
       "group": null,
       "section": null,
-      "pairs": null
+      "pairs": null,
+      "prominence": "PRIMARY",
+      "listed": false
     },
     {
       "name": "paymentDecisionDate",
@@ -170,7 +188,9 @@
       "allowsAbsence": true,
       "group": "decision",
       "section": "decision",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "payableAmount",
@@ -192,7 +212,9 @@
       "allowsAbsence": true,
       "group": "decision",
       "section": "decision",
-      "pairs": "payableCurrency"
+      "pairs": "payableCurrency",
+      "prominence": "PRIMARY",
+      "listed": true
     },
     {
       "name": "payableCurrency",
@@ -213,7 +235,9 @@
       "allowsAbsence": true,
       "group": "decision",
       "section": "decision",
-      "pairs": null
+      "pairs": null,
+      "prominence": "PRIMARY",
+      "listed": true
     },
     {
       "name": "paymentDate",
@@ -228,7 +252,9 @@
       "allowsAbsence": true,
       "group": "payment",
       "section": "payment",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "status",
@@ -244,7 +270,9 @@
       "allowsAbsence": false,
       "group": null,
       "section": null,
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "responsibleActor",
@@ -261,7 +289,9 @@
       "allowsAbsence": true,
       "group": null,
       "section": "work",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     },
     {
       "name": "handlingSummary",
@@ -276,7 +306,9 @@
       "allowsAbsence": true,
       "group": null,
       "section": "work",
-      "pairs": null
+      "pairs": null,
+      "prominence": "DETAIL",
+      "listed": false
     }
   ],
   "inputFields": [
