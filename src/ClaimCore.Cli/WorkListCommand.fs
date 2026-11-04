@@ -133,29 +133,16 @@ module internal WorkListCommand =
                 (fun page -> reminderRows page.Items)
                 request
                 token
-        elif (Frames.endpoint initial).Id = Api.caseActivity.Id then
-            let request = Frames.value Api.caseActivity initial |> Option.get
-
-            runPages
-                io
-                prepared
-                Api.caseActivity
-                (fun (request: CaseActivityRequest) -> request.AfterCursor)
-                (fun cursor request -> { request with AfterCursor = cursor })
-                (fun (page: CaseActivityPage) -> page.NextCursor)
-                (fun _ -> Array.empty<byte>)
-                request
-                token
         else
-            let request = Frames.value Api.caseHistory initial |> Option.get
+            let request = Frames.value Api.caseTimeline initial |> Option.get
 
             runPages
                 io
                 prepared
-                Api.caseHistory
-                (fun (request: HistoryRequest) -> request.AfterCursor)
+                Api.caseTimeline
+                (fun (request: CaseTimelineRequest) -> request.AfterCursor)
                 (fun cursor request -> { request with AfterCursor = cursor })
-                (fun (page: HistoryResultPage) -> page.NextCursor)
-                (fun _ -> Array.empty<byte>)
+                (fun (page: CaseTimelinePage) -> page.NextCursor)
+                (fun _ -> invalidOp "Only text and JSON timeline pages are admitted.")
                 request
                 token

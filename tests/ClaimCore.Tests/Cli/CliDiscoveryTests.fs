@@ -49,7 +49,7 @@ let tests =
             testCase
                 "every verb has help, contextual unknown options and visible extra tokens"
                 (fun () ->
-                    for operation in OperationCatalog.all do
+                    for operation in CommandGrammar.operations do
                         let words = CommandGrammar.words operation
 
                         for arguments in
@@ -138,7 +138,7 @@ let tests =
                 "creation cannot clear absent facts and update can still clear optional text"
                 (fun () ->
                     let operation kind =
-                        OperationCatalog.all
+                        CommandGrammar.operations
                         |> List.find (fun operation ->
                             operation.SelectedAct = Some(ActKind.Case kind))
 

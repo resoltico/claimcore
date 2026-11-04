@@ -31,7 +31,7 @@ let private cliStrictness () =
 
     let captures = capturedArguments ()
 
-    for operation in OperationCatalog.all do
+    for operation in CommandGrammar.operations do
         let words = CommandGrammar.words operation
 
         Expect.isTrue
@@ -55,7 +55,7 @@ let private cliStrictness () =
         Expect.isTrue (admit arguments) "The strictness control starts with valid syntax"
 
     let declared =
-        OperationCatalog.all
+        CommandGrammar.operations
         |> List.collect (fun operation ->
             CommandGrammar.derive operation
             |> fst

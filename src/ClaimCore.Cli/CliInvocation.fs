@@ -83,7 +83,7 @@ module CliInvocations =
 
     let private commandHelp (words: string list) language =
         let matches =
-            OperationCatalog.all
+            CommandGrammar.operations
             |> List.filter (fun entry ->
                 List.truncate words.Length (CommandGrammar.words entry) = words)
 
@@ -107,7 +107,7 @@ module CliInvocations =
         match operands with
         | [] -> Ok CliDescription.Summary
         | words when
-            OperationCatalog.all
+            CommandGrammar.operations
             |> List.exists (fun entry -> CommandGrammar.words entry = words)
             ->
             Ok(CliDescription.Operation words)
@@ -214,13 +214,13 @@ module CliInvocations =
                 not (word.StartsWith("-", System.StringComparison.Ordinal)))
 
         let family =
-            OperationCatalog.all
+            CommandGrammar.operations
             |> List.exists (fun entry ->
                 let words = CommandGrammar.words entry
                 not commandPath.IsEmpty && List.truncate commandPath.Length words = commandPath)
 
         let complete =
-            OperationCatalog.all
+            CommandGrammar.operations
             |> List.exists (fun operation -> CommandGrammar.words operation = commandPath)
 
         family && (helpRequested || commandPath.Length = 1 && not complete)

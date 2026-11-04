@@ -128,15 +128,23 @@ let grammarTests =
         [ testCase "preparation is exact and malformed flags fail" verbPreparation ]
 
 let private nonLedgerVerbExamples =
-    OperationCatalog.all
+    CommandGrammar.operations
     |> List.filter (fun operation -> operation.SelectedAct.IsNone)
     |> List.map (fun operation ->
         ClaimCore.Tests.CliExamples.queryArguments operation,
         ActorEndpoint.token operation.Endpoint)
 
 let private assertNonLedgerVerbCoverage registry mapped =
-    // Session routes are browser transport; preview is selected by a mutation verb option.
-    let excluded = Set.ofList [ "session"; "session.logout"; "operation.preview" ]
+    // Session routes are browser transport; preview is selected by an act option. Retired human history/activity verbs remain explicit API calls.
+    let excluded =
+        Set.ofList
+            [
+                "session"
+                "session.logout"
+                "operation.preview"
+                "case.history"
+                "case.activity"
+            ]
 
     let eligible =
         registry

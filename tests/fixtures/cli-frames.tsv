@@ -21,8 +21,6 @@ authority disable --principal-kind HUMAN --issuer https://id.example --subject u
 case get R-1	{"endpoint":"case.get","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"}}}
 case list	{"endpoint":"case.list","input":{"limit":50}}
 case list --limit 5 --cursor abc	{"endpoint":"case.list","input":{"cursor":"abc","limit":5}}
-case history R-1 --full	{"endpoint":"case.history","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"detail":"FULL","limit":50}}
-case history R-1	{"endpoint":"case.history","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"detail":"SUMMARY","limit":50}}
 operation observe 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.observe","input":{"operationId":"11111111-2222-4333-8444-555555555555"}}
 operation settle 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.resolve","input":{"operationId":"11111111-2222-4333-8444-555555555555"}}
 authority list	{"endpoint":"authority.list","input":{"limit":50}}
@@ -45,7 +43,6 @@ reminder reopen R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expecte
 reminder complete-and-plan-next R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-31 --operation-id 11111111-2222-4333-8444-555555555555	{"endpoint":"operation.execute","input":{"kind":"REMINDER","operationId":"11111111-2222-4333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"R-1"},"act":{"kind":"COMPLETE_AND_PLAN_NEXT","reminderId":"10000000-0000-4000-8000-000000000007","expectedRevision":3,"action":"Review","dueDate":"2027-12-31"}}}
 work overview --mine true	{"endpoint":"work.overview","input":{"mine":true}}
 reminder list --limit 5 --due overdue --assignment mine	{"endpoint":"reminder.list","input":{"due":"OVERDUE","assignment":"MINE","limit":5}}
-case activity R-1 --limit 5 --full	{"endpoint":"case.activity","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"detail":"FULL","limit":5}}
 reminder get R-1 --reminder-id 10000000-0000-4000-8000-000000000007	{"endpoint":"reminder.get","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"reminderId":"10000000-0000-4000-8000-000000000007"}}
 case views	{"endpoint":"case.views","input":{}}
 reminder views	{"endpoint":"reminder.views","input":{}}
@@ -53,3 +50,6 @@ case list --view needs-attention --limit 5	{"endpoint":"case.list","input":{"lim
 reminder list --view completed --limit 5	{"endpoint":"reminder.list","input":{"view":"COMPLETED","limit":5}}
 case timeline CASE-001 --filter facts --limit 1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"CASE-001"},"filter":"FACTS","limit":1}}
 case timeline CASE-001 --filter work --limit 2	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"CASE-001"},"filter":"WORK","limit":2}}
+case timeline R-1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"}}}
+case timeline R-1 --filter facts --limit 5 --all	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"filter":"FACTS","limit":5}}
+case timeline R-1 --filter work --cursor abc --limit 1	{"endpoint":"case.timeline","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"filter":"WORK","cursor":"abc","limit":1}}

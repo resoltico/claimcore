@@ -177,6 +177,7 @@
     <Compile Include="Cli/WorklistGrammarTests.fs" />
     <Compile Include="Cli/NarrativeInputTests.fs" />
     <Compile Include="Cli/CaseListCommandTests.fs" />
+    <Compile Include="Cli/TimelineCommandTests.fs" />
     <Compile Include="Cli/AuthorityHistoryTests.fs" />
     <Compile Include="Cli/CliCatalogTests.fs" />
     <Compile Include="Cli/CliDiagnosticTextTests.fs" />

@@ -43,11 +43,7 @@ module internal VerbRunner =
 
         if (Frames.endpoint frame).Id = Api.authorityHistory.Id then
             AuthorityHistoryCommand.run pageIO prepared token
-        elif
-            List.contains
-                (Frames.endpoint frame).Id
-                [ Api.reminders.Id; Api.caseActivity.Id; Api.caseHistory.Id ]
-        then
+        elif List.contains (Frames.endpoint frame).Id [ Api.reminders.Id; Api.caseTimeline.Id ] then
             WorkListCommand.run pageIO prepared token
         else
             CaseListCommand.run pageIO prepared token

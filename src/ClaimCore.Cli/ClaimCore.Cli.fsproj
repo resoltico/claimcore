@@ -56,6 +56,7 @@
     <Compile Include="CaseListRows.fs" />
     <Compile Include="AuthorityHistoryRows.fs" />
     <Compile Include="TextWorkReply.fs" />
+    <Compile Include="TextTimelineReply.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
     <Compile Include="TextOperationReply.fs" />

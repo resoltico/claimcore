@@ -29,6 +29,19 @@ type CatalogDerivedInput =
     }
 
 module CommandGrammar =
+    /// The human command surface is narrower than the explicit protocol call surface.
+    let operations =
+        OperationCatalog.all
+        |> List.filter (fun operation ->
+            not (
+                List.contains
+                    operation.Endpoint
+                    [
+                        ActorEndpoint.Query QueryEndpoint.CaseHistory
+                        ActorEndpoint.Query QueryEndpoint.CaseActivity
+                    ]
+            ))
+
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
 
@@ -59,7 +72,7 @@ module CommandGrammar =
 
     /// Prefer the complete command when one command is also a prefix of another.
     let tryOperation arguments =
-        OperationCatalog.all
+        operations
         |> List.sortByDescending (words >> List.length)
         |> List.tryFind (fun operation ->
             let path = words operation
@@ -109,8 +122,7 @@ module CommandGrammar =
 
         inputs |> List.map grammar, constants
 
-    let families =
-        OperationCatalog.all |> List.map (words >> List.head) |> List.distinct
+    let families = operations |> List.map (words >> List.head) |> List.distinct
 
     let supportsAll (operation: CatalogOperation) =
         List.contains
@@ -118,8 +130,6 @@ module CommandGrammar =
             [
                 ActorEndpoint.Query QueryEndpoint.CaseList
                 ActorEndpoint.Query QueryEndpoint.ReminderList
-                ActorEndpoint.Query QueryEndpoint.CaseActivity
-                ActorEndpoint.Query QueryEndpoint.CaseHistory
                 ActorEndpoint.Query QueryEndpoint.CaseTimeline
             ]
 
@@ -149,12 +159,10 @@ module CommandGrammar =
         ]
 
     let globalFlags =
-        OperationCatalog.all
-        |> List.collect (globalOptions >> List.map fst)
-        |> List.distinct
+        operations |> List.collect (globalOptions >> List.map fst) |> List.distinct
 
     let globalSwitches =
-        OperationCatalog.all
+        operations
         |> List.collect (
             globalOptions
             >> List.choose (fun (flag, value) -> if value = "" then Some flag else None)

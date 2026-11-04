@@ -9,7 +9,7 @@ Use `--dry-run` to print the prepared JSON frame without authentication. This ch
 Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling.
 
 Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches current claimant, responsible insurer, case reference, incident description and handling summary; `--assignment mine|unassigned` selects responsibility within current access; `--due` selects actionable due state using the returned business-date basis; `--order reference|recent|notified|follow-up` selects the page order. Cursors bind all filters and order.
-`case list --format csv`, `reminder list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all`, `case history --all`, `case activity --all` and `reminder list --all` follow continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Case-list text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
+`case list --format csv`, `reminder list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all`, `case timeline --all` and `reminder list --all` follow continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Case-list text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached.
 CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 When stdin and stdout are terminals and text output is selected, omitting the relevant `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action.
 
@@ -540,23 +540,6 @@ claimcore reminder get CASE-REFERENCE --reminder-id VALUE [--format text|json] [
 | `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
 
-## case activity
-
-Case activity
-
-Typed fact, work and reminder events in ledger order. Earlier payloads require full history access.
-
-```sh
-claimcore case activity CASE-REFERENCE [--full] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run] [--all]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--full` | Full history — Include accepted snapshots when full history is visible to the actor. |  | SUMMARY |
-| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
-| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
-
 ## reminder list
 
 Reminder queue
@@ -692,23 +675,6 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |
-
-## case history
-
-Read case history
-
-Read accepted history for one case, within current disclosure permissions.
-
-```sh
-claimcore case history CASE-REFERENCE [--full] [--cursor VALUE] [--limit N] [--format text|json] [--language en|lv|ar] [--dry-run] [--all]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--full` | Full history — Include accepted snapshots when full history is visible to the actor. |  | SUMMARY |
-| `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
-| `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 
 ## operation observe
 

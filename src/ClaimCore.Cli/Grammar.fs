@@ -291,7 +291,7 @@ module Grammar =
                         value,
                         suggestions
                             value
-                            ((Catalog.document.Entries |> List.map OperationCatalog.operation)
+                            (CommandGrammar.operations
                              |> List.map (CommandGrammar.words >> String.concat " "))
                     )
                 ]

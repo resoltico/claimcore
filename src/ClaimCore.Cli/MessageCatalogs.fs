@@ -132,9 +132,9 @@ module internal MessageCatalogs =
         | HelpTopic.Configure -> renderCli language CliMessage.HelpConfigure
         | HelpTopic.Overview -> overview language
         | HelpTopic.Verbs ->
-            Catalog.document.Entries
-            |> List.map (fun entry ->
-                CliIdentity.programName + " " + CommandGrammar.synopsis entry.Kind)
+            CommandGrammar.operations
+            |> List.map (fun operation ->
+                CliIdentity.programName + " " + CommandGrammar.synopsis operation)
             |> String.concat "\n"
             |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 

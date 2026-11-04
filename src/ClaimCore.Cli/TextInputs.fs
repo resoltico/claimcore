@@ -152,11 +152,7 @@ module internal TextInputs =
     let expand interactive arguments =
         let language = CliInvocations.usageLanguage arguments
 
-        let operation =
-            OperationCatalog.all
-            |> List.tryFind (fun operation ->
-                let words = CommandGrammar.words operation
-                words = List.truncate words.Length arguments)
+        let operation = CommandGrammar.tryOperation arguments
 
         match operation with
         | None -> Ok arguments

@@ -119,7 +119,7 @@ module CliDocumentation =
             "Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling."
             ""
             "Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches current claimant, responsible insurer, case reference, incident description and handling summary; `--assignment mine|unassigned` selects responsibility within current access; `--due` selects actionable due state using the returned business-date basis; `--order reference|recent|notified|follow-up` selects the page order. Cursors bind all filters and order."
-            "`case list --format csv`, `reminder list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all`, `case history --all`, `case activity --all` and `reminder list --all` follow continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Case-list text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached."
+            "`case list --format csv`, `reminder list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all`, `case timeline --all` and `reminder list --all` follow continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Case-list text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached."
             "CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values."
             "When stdin and stdout are terminals and text output is selected, omitting the relevant `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action."
             ""
@@ -175,7 +175,7 @@ module CliDocumentation =
                     + supported (List.contains code ClaimCore.Database.Command.supportedExitCodes)
                     + " |")
             ""
-            yield! OperationCatalog.all |> List.collect describe
+            yield! CommandGrammar.operations |> List.collect describe
         ]
         |> String.concat "\n"
         |> fun text -> Encoding.UTF8.GetBytes(text + "\n")

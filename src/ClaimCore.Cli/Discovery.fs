@@ -21,11 +21,16 @@ module Discovery =
             }
 
 
+    let private entries =
+        Catalog.document.Entries
+        |> List.filter (fun entry ->
+            List.contains (OperationCatalog.operation entry) CommandGrammar.operations)
+
     let private selected =
         function
-        | CliDescription.Summary -> Some Catalog.document.Entries
+        | CliDescription.Summary -> Some entries
         | CliDescription.Operation words ->
-            Catalog.document.Entries
+            entries
             |> List.tryFind (fun entry ->
                 CommandGrammar.words (OperationCatalog.operation entry) = words)
             |> Option.map List.singleton
@@ -107,7 +112,7 @@ module Discovery =
 
     let commandHelp language (words: string list) =
         let matches =
-            OperationCatalog.all
+            CommandGrammar.operations
             |> List.filter (fun operation ->
                 List.truncate words.Length (CommandGrammar.words operation) = words)
 
