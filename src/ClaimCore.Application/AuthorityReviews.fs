@@ -16,16 +16,52 @@ module internal AuthorityReviews =
                 Access = []
             }
 
+        let scopeView =
+            function
+            | Scope.Installation -> GrantScope.Installation
+            | Scope.Case id ->
+                view.TargetCases
+                |> Map.values
+                |> Seq.tryFind (fun record -> record.CaseId = id)
+                |> Option.map (fun record -> GrantScope.Case(id, record.Snapshot.Reference))
+                |> Option.defaultWith (fun () ->
+                    invalidOp "A scoped authority proposal requires its case.")
+
+        let grantView (value: Grant<Scope>) : ScopedGrant =
+            {
+                Role = value.Role
+                Scope = scopeView value.Scope
+            }
+
+        let effects =
+            match proposal.Change with
+            | AuthorityChange.Registered profile ->
+                [
+                    AuthorityReviewEffect.Register proposal.Principal
+                    AuthorityReviewEffect.SetProfile profile
+                ]
+            | AuthorityChange.OwnerProvisioned profile ->
+                [
+                    AuthorityReviewEffect.ProvisionOwner proposal.Principal
+                    AuthorityReviewEffect.SetProfile profile
+                ]
+            | AuthorityChange.Admitted(profile, grants) ->
+                AuthorityReviewEffect.Register proposal.Principal
+                :: AuthorityReviewEffect.SetProfile profile
+                :: (grants |> List.map (grantView >> AuthorityReviewEffect.Grant))
+            | AuthorityChange.ProfileSet profile -> [ AuthorityReviewEffect.SetProfile profile ]
+            | AuthorityChange.ProfileErased -> [ AuthorityReviewEffect.EraseProfile ]
+            | AuthorityChange.Enabled -> [ AuthorityReviewEffect.Enable ]
+            | AuthorityChange.Disabled -> [ AuthorityReviewEffect.Disable ]
+            | AuthorityChange.Granted(role, scope) ->
+                [ AuthorityReviewEffect.Grant(grantView { Role = role; Scope = scope }) ]
+            | AuthorityChange.Revoked(role, scope) ->
+                [ AuthorityReviewEffect.Revoke(grantView { Role = role; Scope = scope }) ]
+
         let resource, scope =
             match proposal.Change with
             | AuthorityChange.Granted(_, Scope.Case id)
-            | AuthorityChange.Revoked(_, Scope.Case id) ->
-                let record =
-                    view.TargetCase
-                    |> Option.defaultWith (fun () ->
-                        invalidOp "A scoped authority proposal requires its case.")
-
-                Scope.Case id, GrantScope.Case(id, record.Snapshot.Reference)
+            | AuthorityChange.Revoked(_, Scope.Case id) -> Scope.Case id, scopeView (Scope.Case id)
             | _ -> Scope.Installation, GrantScope.Installation
 
         let before, after =
@@ -48,6 +84,13 @@ module internal AuthorityReviews =
                                 Scope = GrantScope.Installation
                             }
                         ]
+                }
+            | AuthorityChange.Admitted(profile, grants) ->
+                before,
+                { before with
+                    Enabled = true
+                    Profile = Some profile
+                    Grants = List.map grantView grants
                 }
             | AuthorityChange.ProfileSet profile -> before, { before with Profile = Some profile }
             | AuthorityChange.ProfileErased -> before, { before with Profile = None }
@@ -93,6 +136,20 @@ module internal AuthorityReviews =
                         ]
                     | _ -> []
 
+                AuthorityView.ofActor (
+                    Some
+                        {
+                            Actor =
+                                {
+                                    ActorId = proposal.TargetActorId
+                                    Principal = proposal.Principal
+                                    Enabled = true
+                                    Profile = Some profile
+                                }
+                            Grants = grants
+                        }
+                )
+            | AuthorityChange.Admitted(profile, grants) ->
                 AuthorityView.ofActor (
                     Some
                         {
@@ -153,6 +210,7 @@ module internal AuthorityReviews =
             |> Option.defaultValue []
 
         {
+            Effects = effects
             Target = view.Target.Actor |> Option.map ActorReviewItem.ofActor
             AccessScope = scope
             Before =

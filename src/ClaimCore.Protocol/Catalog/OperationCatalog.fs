@@ -96,7 +96,7 @@ module OperationCatalog =
     let entries =
         all
         |> List.map (fun operation ->
-            let inputs, constants = derive operation
+            let bindings = derive operation
             let family, sections, effect = CatalogOperation.interaction operation
 
             {
@@ -108,8 +108,9 @@ module OperationCatalog =
                 LabelId = labelId operation
                 MeaningId = meaningId operation
                 ConfirmationId = confirmationId operation
-                Inputs = inputs |> List.map _.Binding
-                Constants = constants
+                Inputs = bindings.Inputs |> List.map _.Binding
+                Collections = bindings.Collections |> List.map _.Binding
+                Constants = bindings.Constants
             })
 
     let operation (entry: CatalogEntry) = entry.Kind

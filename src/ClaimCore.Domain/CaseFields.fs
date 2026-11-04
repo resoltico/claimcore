@@ -49,6 +49,7 @@ type InputTarget =
     | PrincipalSubject
     | ProfileDisplayName
     | ProfileContact
+    | Grants
     | Role
     | Limit
     | Cursor

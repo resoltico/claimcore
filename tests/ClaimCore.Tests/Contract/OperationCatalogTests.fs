@@ -184,7 +184,7 @@ let tests =
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
                 let operation = find [ "case"; "decide" ]
-                let inputs, _ = OperationCatalog.derive operation
+                let inputs = (OperationCatalog.derive operation).Inputs
 
                 let check (inputs: OperationInputDefinition list) =
                     let date =
@@ -214,7 +214,8 @@ let tests =
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
                     let operation = find [ "case"; "open" ]
-                    let inputs, constants = OperationCatalog.derive operation
+                    let bindings = OperationCatalog.derive operation
+                    let inputs, constants = bindings.Inputs, bindings.Constants
 
                     let check
                         (inputs: OperationInputDefinition list)

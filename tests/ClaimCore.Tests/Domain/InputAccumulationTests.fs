@@ -84,12 +84,13 @@ let private targets =
     | Error _ -> failtest "Permanent field parsing cannot produce a state refusal"
 
 let private catalogRank target =
-    let inputs, _ =
+    let inputs =
         ClaimCore.Protocol.OperationCatalog.derive (
             ClaimCore.Protocol.CatalogOperation.Act(
                 ClaimCore.Protocol.ActKind.Case CaseActKind.AmendRegistration
             )
         )
+        |> fun bindings -> bindings.Inputs
 
     let token = InputTarget.token target
 
@@ -199,12 +200,13 @@ let phase2 =
                 ClaimCore.Protocol.DiagnosticCodecs.MaximumInputIssues
                 "The worst phase-two field checks fit the bounded issue envelope"
 
-            let inputs, _ =
+            let inputs =
                 ClaimCore.Protocol.OperationCatalog.derive (
                     ClaimCore.Protocol.CatalogOperation.Act(
                         ClaimCore.Protocol.ActKind.Case CaseActKind.Correct
                     )
                 )
+                |> fun bindings -> bindings.Inputs
 
             let ranks =
                 actual

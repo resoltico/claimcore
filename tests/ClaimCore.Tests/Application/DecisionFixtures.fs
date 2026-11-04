@@ -198,7 +198,7 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
                 Actor = caller
                 ExistingOperation = existing
                 Target = target
-                TargetCase = None
+                TargetCases = Map.empty
                 EnabledHumanOwners = Some 2
                 ActorCount = Some 2
             }

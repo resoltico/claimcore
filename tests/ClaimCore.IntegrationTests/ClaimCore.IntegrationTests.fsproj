@@ -20,6 +20,7 @@
     <Compile Include="WorklistTriageContract.fs" />
     <Compile Include="CaseSelectorContract.fs" />
     <Compile Include="ActorProfilesContract.fs" />
+    <Compile Include="AdmitContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
     <Compile Include="NamedRowTests.fs" />
@@ -28,6 +29,7 @@
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
     <Compile Include="ActorProfilesPostgresTests.fs" />
+    <Compile Include="AdmitPostgresTests.fs" />
     <Compile Include="RequesterContextTests.fs" />
     <Compile Include="LedgerGroupingTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />

@@ -89,7 +89,7 @@ let private receipt =
         OperationId = (CaseFixtures.operationId (id))
         Position =
             {
-                Sequence = CaseFixtures.sequence 1L
+                Sequence = CaseFixtures.sequence 2L
                 EntryHash =
                     (String.replicate 64 "a"
                      |> System.Convert.FromHexString
@@ -103,12 +103,36 @@ let private receipt =
                 {
                     TargetActorId = (CaseFixtures.actorId (id))
                     Act = AuthorityKind.Register
+                    Effects =
+                        [
+                            {
+                                AuthorityReceiptEffect.Act = AuthorityKind.Register
+                                Position =
+                                    LedgerPosition.create
+                                        (CaseFixtures.sequence 1L)
+                                        (String.replicate 64 "a"
+                                         |> Convert.FromHexString
+                                         |> EntryHash.ofBytes
+                                         |> Option.get)
+                            }
+                            {
+                                AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                                Position =
+                                    LedgerPosition.create
+                                        (CaseFixtures.sequence 2L)
+                                        (String.replicate 64 "a"
+                                         |> Convert.FromHexString
+                                         |> EntryHash.ofBytes
+                                         |> Option.get)
+                            }
+                        ]
                 }
     }
 
 let private authorityReview =
     OperationReview.Authority
         {
+            Effects = [ AuthorityReviewEffect.Enable ]
             Target = None
             AccessScope = GrantScope.Installation
             Before =

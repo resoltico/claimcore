@@ -21,6 +21,7 @@ let private acts =
         ActKind.Case CaseActKind.Erase, Consequence.Irreversible
         ActKind.Authority AuthorityKind.ProvisionOwner, Consequence.Routine
         ActKind.Authority AuthorityKind.Register, Consequence.Routine
+        ActKind.Authority AuthorityKind.Admit, Consequence.Routine
         ActKind.Authority AuthorityKind.Grant, Consequence.Routine
         ActKind.Authority AuthorityKind.Revoke, Consequence.Routine
         ActKind.Authority AuthorityKind.Enable, Consequence.Routine

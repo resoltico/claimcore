@@ -249,7 +249,7 @@ let internal authority (database: PostgresFixture.Database) =
             authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords None (CaseFixtures.actorId (id 1))
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 1))
             |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")

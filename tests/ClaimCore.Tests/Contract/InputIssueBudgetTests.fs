@@ -10,7 +10,14 @@ let tests =
         (fun () ->
             let maximum =
                 OperationCatalog.mutations
-                |> List.map (OperationCatalog.derive >> fst >> List.length)
+                |> List.map (
+                    OperationCatalog.derive
+                    >> fun bindings ->
+                        bindings.Inputs.Length
+                        + (bindings.Collections
+                           |> List.sumBy (fun value ->
+                               1 + value.Binding.MaximumItems * value.Binding.RowInputs.Length))
+                )
                 |> List.max
 
             Expect.equal

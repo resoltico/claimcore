@@ -18,6 +18,14 @@ let private authorityReview () =
                     Previewed.Reviewed(
                         OperationReview.Authority
                             {
+                                Effects =
+                                    [
+                                        AuthorityReviewEffect.Grant
+                                            {
+                                                Role = Role.CaseReader
+                                                Scope = GrantScope.Installation
+                                            }
+                                    ]
                                 Target = None
                                 AccessScope = GrantScope.Installation
                                 Before =

@@ -284,7 +284,7 @@ let private meaninglessScope () =
     let facts: AuthorityFacts =
         {
             TargetActor = Some target
-            TargetCaseId = Some caseId
+            TargetCases = Map.ofList [ GrantTarget.CaseId caseId, caseId ]
             EnabledHumanOwners = Some 2
             ActorCount = Some 2
             Requester = worker
@@ -412,7 +412,7 @@ let private accessExplanation () =
                                 }
                             ]
                     }
-            TargetCaseId = Some caseId
+            TargetCases = Map.ofList [ GrantTarget.CaseId caseId, caseId ]
             EnabledHumanOwners = Some 2
             ActorCount = Some 3
             Requester = worker

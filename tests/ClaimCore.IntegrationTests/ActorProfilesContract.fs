@@ -303,7 +303,7 @@ let internal atomicWrites fixture =
                                         (Authority.factsNeeded command.Act)
                                         command.OperationId
                                         command.Target
-                                        None
+                                        []
 
                                 match
                                     AuthorityExecution.execute

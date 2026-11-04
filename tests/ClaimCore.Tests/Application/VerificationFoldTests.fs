@@ -212,6 +212,7 @@ let private ledgerChecks =
                                 Root = entry
                                 NextIndex = 1
                                 Nonces = []
+                                Grants = Set.empty
                             }
                 }
             |> unitResult

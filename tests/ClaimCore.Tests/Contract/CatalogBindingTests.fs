@@ -31,8 +31,8 @@ let tests =
         "catalog schema derivation controls"
         [
             testCase "a named scalar derives its path kind and wire-required state" (fun () ->
-                let inputs, constants =
-                    Bindings.bind (Map.ofList [ memberKey, annotation ]) (nodes ())
+                let bindings = Bindings.bind (Map.ofList [ memberKey, annotation ]) (nodes ())
+                let inputs, constants = bindings.Inputs, bindings.Constants
 
                 Expect.isEmpty constants "An authored scalar creates no constant"
                 Expect.hasLength inputs 1 "One schema leaf creates one binding"
@@ -166,7 +166,7 @@ let tests =
                         Default = Some(BindingValue.Text "default")
                     }
 
-                let inputs, _ = Bindings.bind (Map.ofList [ memberKey, defaulted ]) nodes
+                let inputs = (Bindings.bind (Map.ofList [ memberKey, defaulted ]) nodes).Inputs
                 Expect.isFalse inputs.Head.Binding.Required "An interface can supply the default"
 
                 match nodes.Head with

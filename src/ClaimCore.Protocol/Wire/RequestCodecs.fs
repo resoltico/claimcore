@@ -483,7 +483,29 @@ module RequestCodecs =
             |> field WireMembers.Role _.Role role
             |> field WireMembers.Scope _.Scope scope
 
+        let grantRow = grant |> build |> named "AuthorityGrantInput"
+
+        let grants =
+            Codec.list AuthorityAdmission.MaximumGrants grantRow
+            |> constrained
+                (Schema.Array(grantRow.Schema, 1, AuthorityAdmission.MaximumGrants))
+                (List.isEmpty >> not)
+
         [
+            variant
+                (AuthorityKind.token AuthorityKind.Admit)
+                AuthorityAct.Admit
+                (function
+                | AuthorityAct.Admit value -> Some value
+                | _ -> None)
+                ((record (fun profile grants ->
+                    {
+                        AuthorityAdmission.Profile = profile
+                        Grants = grants
+                    })
+                 : Fields<AuthorityAdmission<AuthoredGrant, ActorProfileInput>, _>)
+                 |> field "profile" _.Profile actorProfileInput
+                 |> field "grants" _.Grants grants)
             variant
                 (AuthorityKind.token AuthorityKind.Register)
                 AuthorityAct.Register

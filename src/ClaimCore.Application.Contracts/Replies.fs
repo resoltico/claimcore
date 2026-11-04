@@ -13,8 +13,20 @@ type AuthorityState =
         Access: CapabilityAccess list
     }
 
+[<RequireQualifiedAccess>]
+type AuthorityReviewEffect =
+    | Register of PrincipalKey
+    | ProvisionOwner of PrincipalKey
+    | SetProfile of ActorProfile
+    | EraseProfile
+    | Grant of ScopedGrant
+    | Revoke of ScopedGrant
+    | Enable
+    | Disable
+
 type AuthorityReview =
     {
+        Effects: AuthorityReviewEffect list
         Target: ActorReviewItem option
         AccessScope: GrantScope
         Before: AuthorityState

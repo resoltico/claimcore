@@ -54,12 +54,29 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
     }
 
 let internal authority =
+    let effects =
+        [
+            {
+                AuthorityReceiptEffect.Act = AuthorityKind.Register
+                Position = receipt.Position
+            }
+            {
+                AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                Position =
+                    LedgerPosition.create
+                        (Sequence.create 2L |> Option.get)
+                        receipt.Position.EntryHash
+            }
+        ]
+
     { receipt with
+        Position = (List.last effects).Position
         Subject =
-            ClaimCore.Application.Contracts.ReceiptSubject.Authority
+            ReceiptSubject.Authority
                 {
-                    TargetActorId = (CaseFixtures.actorId (id))
+                    TargetActorId = CaseFixtures.actorId id
                     Act = AuthorityKind.Register
+                    Effects = effects
                 }
     }
 

@@ -3656,6 +3656,9 @@
       "AuthorityAct": {
         "oneOf": [
           {
+            "$ref": "#/components/schemas/AuthorityAct.ADMIT"
+          },
+          {
             "$ref": "#/components/schemas/AuthorityAct.REGISTER"
           },
           {
@@ -3680,6 +3683,7 @@
         "discriminator": {
           "propertyName": "kind",
           "mapping": {
+            "ADMIT": "#/components/schemas/AuthorityAct.ADMIT",
             "REGISTER": "#/components/schemas/AuthorityAct.REGISTER",
             "SET_PROFILE": "#/components/schemas/AuthorityAct.SET_PROFILE",
             "ERASE_PROFILE": "#/components/schemas/AuthorityAct.ERASE_PROFILE",
@@ -3689,6 +3693,31 @@
             "DISABLE": "#/components/schemas/AuthorityAct.DISABLE"
           }
         }
+      },
+      "AuthorityAct.ADMIT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ADMIT"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ActorProfileInput"
+          },
+          "grants": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthorityGrantInput"
+            },
+            "minItems": 1,
+            "maxItems": 48
+          }
+        },
+        "required": [
+          "kind",
+          "profile",
+          "grants"
+        ]
       },
       "AuthorityAct.DISABLE": {
         "type": "object",
@@ -3831,6 +3860,30 @@
           },
           "scope": {
             "$ref": "#/components/schemas/GrantScope"
+          }
+        },
+        "required": [
+          "role",
+          "scope"
+        ]
+      },
+      "AuthorityGrantInput": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "role": {
+            "enum": [
+              "OWNER",
+              "CASE_READER",
+              "CASE_REGISTRAR",
+              "CASE_HANDLER",
+              "PAYMENT_RECORDER",
+              "DATA_STEWARD",
+              "AUDITOR"
+            ]
+          },
+          "scope": {
+            "$ref": "#/components/schemas/Scope"
           }
         },
         "required": [
@@ -4193,6 +4246,189 @@
           "limit"
         ]
       },
+      "AuthorityReceiptEffect": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "act": {
+            "enum": [
+              "PROVISION_OWNER",
+              "REGISTER",
+              "GRANT",
+              "REVOKE",
+              "ENABLE",
+              "DISABLE",
+              "SET_PROFILE",
+              "ERASE_PROFILE",
+              "ADMIT"
+            ]
+          },
+          "position": {
+            "$ref": "#/components/schemas/Position"
+          }
+        },
+        "required": [
+          "act",
+          "position"
+        ]
+      },
+      "AuthorityReviewEffect": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.REGISTER"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.PROVISION_OWNER"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.SET_PROFILE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.GRANT"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.REVOKE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.ERASE_PROFILE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.ENABLE"
+          },
+          {
+            "$ref": "#/components/schemas/AuthorityReviewEffect.DISABLE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "REGISTER": "#/components/schemas/AuthorityReviewEffect.REGISTER",
+            "PROVISION_OWNER": "#/components/schemas/AuthorityReviewEffect.PROVISION_OWNER",
+            "SET_PROFILE": "#/components/schemas/AuthorityReviewEffect.SET_PROFILE",
+            "GRANT": "#/components/schemas/AuthorityReviewEffect.GRANT",
+            "REVOKE": "#/components/schemas/AuthorityReviewEffect.REVOKE",
+            "ERASE_PROFILE": "#/components/schemas/AuthorityReviewEffect.ERASE_PROFILE",
+            "ENABLE": "#/components/schemas/AuthorityReviewEffect.ENABLE",
+            "DISABLE": "#/components/schemas/AuthorityReviewEffect.DISABLE"
+          }
+        }
+      },
+      "AuthorityReviewEffect.DISABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISABLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityReviewEffect.ENABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ENABLE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityReviewEffect.ERASE_PROFILE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ERASE_PROFILE"
+          }
+        },
+        "required": [
+          "kind"
+        ]
+      },
+      "AuthorityReviewEffect.GRANT": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "GRANT"
+          },
+          "grant": {
+            "$ref": "#/components/schemas/AuthorityGrant"
+          }
+        },
+        "required": [
+          "kind",
+          "grant"
+        ]
+      },
+      "AuthorityReviewEffect.PROVISION_OWNER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PROVISION_OWNER"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          }
+        },
+        "required": [
+          "kind",
+          "principal"
+        ]
+      },
+      "AuthorityReviewEffect.REGISTER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REGISTER"
+          },
+          "principal": {
+            "$ref": "#/components/schemas/Principal"
+          }
+        },
+        "required": [
+          "kind",
+          "principal"
+        ]
+      },
+      "AuthorityReviewEffect.REVOKE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REVOKE"
+          },
+          "grant": {
+            "$ref": "#/components/schemas/AuthorityGrant"
+          }
+        },
+        "required": [
+          "kind",
+          "grant"
+        ]
+      },
+      "AuthorityReviewEffect.SET_PROFILE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "SET_PROFILE"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ActorProfile"
+          }
+        },
+        "required": [
+          "kind",
+          "profile"
+        ]
+      },
       "AuthorityState": {
         "type": "object",
         "additionalProperties": false,
@@ -4216,7 +4452,7 @@
               "$ref": "#/components/schemas/AuthorityGrant"
             },
             "minItems": 0,
-            "maxItems": 1
+            "maxItems": 48
           },
           "access": {
             "type": "array",
@@ -7169,7 +7405,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 8
+            "maxItems": 9
           },
           "basis": {
             "$ref": "#/components/schemas/WorkDateBasis"
@@ -7783,7 +8019,7 @@
               "$ref": "#/components/schemas/InputIssue"
             },
             "minItems": 1,
-            "maxItems": 18
+            "maxItems": 151
           }
         },
         "required": [
@@ -9020,6 +9256,9 @@
             "$ref": "#/components/schemas/InputIssue.DECIMAL_FORMAT"
           },
           {
+            "$ref": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE"
+          },
+          {
             "$ref": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         ],
@@ -9043,10 +9282,12 @@
             "CURRENCY_FORMAT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "OPERATION_ID_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "EXPECTED_REVISION_RANGE": "#/components/schemas/InputIssue.TEXT_REQUIRED",
+            "DUPLICATE_GRANT": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PAYMENT_CLEAR_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "#/components/schemas/InputIssue.TEXT_REQUIRED",
             "TOO_LONG": "#/components/schemas/InputIssue.TOO_LONG",
             "DECIMAL_FORMAT": "#/components/schemas/InputIssue.DECIMAL_FORMAT",
+            "GRANT_COUNT_RANGE": "#/components/schemas/InputIssue.GRANT_COUNT_RANGE",
             "PAGE_LIMIT_RANGE": "#/components/schemas/InputIssue.PAGE_LIMIT_RANGE"
           }
         }
@@ -9080,6 +9321,31 @@
           "field",
           "maximumIntegerDigits",
           "maximumFractionalDigits"
+        ]
+      },
+      "InputIssue.GRANT_COUNT_RANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "code": {
+            "const": "GRANT_COUNT_RANGE"
+          },
+          "field": {
+            "$ref": "#/components/schemas/InputTarget"
+          },
+          "relatedDate": {
+            "$ref": "#/components/schemas/RelatedDate"
+          },
+          "maximumGrants": {
+            "type": "integer",
+            "minimum": 1,
+            "maximum": 2147483647
+          }
+        },
+        "required": [
+          "code",
+          "field",
+          "maximumGrants"
         ]
       },
       "InputIssue.PAGE_LIMIT_RANGE": {
@@ -9130,6 +9396,7 @@
               "CURRENCY_FORMAT",
               "OPERATION_ID_REQUIRED",
               "EXPECTED_REVISION_RANGE",
+              "DUPLICATE_GRANT",
               "PAYMENT_CLEAR_REQUIRED",
               "PAYMENT_ACKNOWLEDGEMENT_REQUIRED"
             ]
@@ -9197,6 +9464,7 @@
           "principal.subject",
           "profile.displayName",
           "profile.contact",
+          "grants",
           "role",
           "limit",
           "cursor",
@@ -9240,7 +9508,8 @@
               "ENABLE",
               "DISABLE",
               "SET_PROFILE",
-              "ERASE_PROFILE"
+              "ERASE_PROFILE",
+              "ADMIT"
             ]
           }
         },
@@ -10263,14 +10532,24 @@
               "ENABLE",
               "DISABLE",
               "SET_PROFILE",
-              "ERASE_PROFILE"
+              "ERASE_PROFILE",
+              "ADMIT"
             ]
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthorityReceiptEffect"
+            },
+            "minItems": 0,
+            "maxItems": 50
           }
         },
         "required": [
           "kind",
           "targetActorId",
-          "act"
+          "act",
+          "effects"
         ]
       },
       "ReceiptSubject.CASE": {
@@ -11788,7 +12067,7 @@
               "$ref": "#/components/schemas/InstallationOffer"
             },
             "minItems": 0,
-            "maxItems": 8
+            "maxItems": 9
           },
           "actorId": {
             "$ref": "#/components/schemas/Uuid"
@@ -12136,6 +12415,14 @@
           },
           "after": {
             "$ref": "#/components/schemas/AuthorityState"
+          },
+          "effects": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AuthorityReviewEffect"
+            },
+            "minItems": 0,
+            "maxItems": 50
           }
         },
         "required": [
@@ -12143,7 +12430,8 @@
           "target",
           "accessScope",
           "before",
-          "after"
+          "after",
+          "effects"
         ]
       },
       "ReviewSubject.CASE": {

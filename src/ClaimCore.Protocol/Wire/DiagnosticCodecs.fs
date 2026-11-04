@@ -49,6 +49,13 @@ module DiagnosticCodecs =
                  |> field "maximumIntegerDigits" fst (count 1L)
                  |> field "maximumFractionalDigits" snd (count 0L))
             variant
+                (codeName (nameof Violation.GrantCountRange))
+                Violation.GrantCountRange
+                (function
+                | Violation.GrantCountRange value -> Some value
+                | _ -> None)
+                (record id |> field "maximumGrants" id (count 1L))
+            variant
                 (codeName (nameof Violation.PageLimitRange))
                 Violation.PageLimitRange
                 (function
@@ -76,10 +83,7 @@ module DiagnosticCodecs =
                     ]
 
             Bindings.walk definitions selection RequestCodecs.operationInput.Schema
-            |> List.choose (function
-                | BindingNode.Input input -> Some input
-                | _ -> None)
-            |> List.length
+            |> Bindings.inputWidth
 
         let caseWidths =
             CaseActKind.all

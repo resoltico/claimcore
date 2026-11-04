@@ -21,11 +21,23 @@ type CaseReceipt =
         Snapshot: SnapshotDisclosure
     }
 
+type AuthorityReceiptEffect =
+    {
+        Act: AuthorityKind
+        Position: LedgerPosition
+    }
+
 type AuthorityReceipt =
     {
+        Effects: AuthorityReceiptEffect list
         TargetActorId: ActorId
         Act: AuthorityKind
     }
+
+/// Historical receipt bounds follow the retained operation format, not current authoring admission.
+module AuthorityReceipt =
+    [<Literal>]
+    let MaximumEffects = 50
 
 [<RequireQualifiedAccess>]
 type WorkDisclosure =

@@ -742,7 +742,21 @@ module LedgerEntries =
                 reminderReceipt principal actor parent reminders subject content
             | EntryTarget.Authority(target, act),
               (EntryContent.Authority _ | EntryContent.ErasedProfile),
-              _ -> Ok(ReceiptSubject.Authority { TargetActorId = target; Act = act })
+              _ ->
+                Ok(
+                    ReceiptSubject.Authority
+                        {
+                            TargetActorId = target
+                            Act = act
+                            Effects =
+                                [
+                                    {
+                                        AuthorityReceiptEffect.Act = act
+                                        Position = position entry.Sequence entry.EntryHash
+                                    }
+                                ]
+                        }
+                )
             | _ -> Error CoreFault.StoreIntegrityError
 
         subject
@@ -773,7 +787,25 @@ module LedgerEntries =
                     receipt.Subject, LedgerEffects.authorityOperation operation.Stored.Root.Effects
                 with
                 | ReceiptSubject.Authority authority, Some kind ->
-                    ReceiptSubject.Authority { authority with Act = kind }
+                    ReceiptSubject.Authority
+                        { authority with
+                            Act = kind
+                            Effects =
+                                operation.ValidatedEntries
+                                |> List.map (fun validated ->
+                                    match validated.Entry.Subject with
+                                    | EntryTarget.Authority(_, act) ->
+                                        {
+                                            AuthorityReceiptEffect.Act = act
+                                            Position =
+                                                position
+                                                    validated.Entry.Sequence
+                                                    validated.Entry.EntryHash
+                                        }
+                                    | _ ->
+                                        invalidOp
+                                            "A validated authority group contains only authority effects.")
+                        }
                 | subject, _ -> subject
 
             { receipt with

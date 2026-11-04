@@ -72,7 +72,8 @@ let private authorityProperty =
                 let hasGrant =
                     match act with
                     | AuthorityAct.Grant _
-                    | AuthorityAct.Revoke _ -> true
+                    | AuthorityAct.Revoke _
+                    | AuthorityAct.Admit _ -> true
                     | _ -> false
 
                 restored = act

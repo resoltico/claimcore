@@ -118,14 +118,62 @@ module ReplyCodecs =
         : Fields<AuthorityState, _>)
         |> field "profile" _.Profile (nullable ActorCodecs.profile)
         |> field "enabled" _.Enabled boolean
-        |> field "grants" _.Grants (list 1 ResponseCodecs.authorityGrant)
+        |> field
+            "grants"
+            _.Grants
+            (list AuthorityAdmission.MaximumGrants ResponseCodecs.authorityGrant)
         |> field "access" _.Access (list Capability.all.Length capabilityAccess)
         |> build
         |> named "AuthorityState"
 
+    let private authorityReviewEffect =
+        tagged
+            "AuthorityReviewEffect"
+            [
+                variant
+                    "REGISTER"
+                    AuthorityReviewEffect.Register
+                    (function
+                    | AuthorityReviewEffect.Register value -> Some value
+                    | _ -> None)
+                    (record id |> field "principal" id PrincipalCodecs.key)
+                variant
+                    "PROVISION_OWNER"
+                    AuthorityReviewEffect.ProvisionOwner
+                    (function
+                    | AuthorityReviewEffect.ProvisionOwner value -> Some value
+                    | _ -> None)
+                    (record id |> field "principal" id PrincipalCodecs.key)
+                variant
+                    "SET_PROFILE"
+                    AuthorityReviewEffect.SetProfile
+                    (function
+                    | AuthorityReviewEffect.SetProfile value -> Some value
+                    | _ -> None)
+                    (record id |> field "profile" id ActorCodecs.profile)
+                variant
+                    "GRANT"
+                    AuthorityReviewEffect.Grant
+                    (function
+                    | AuthorityReviewEffect.Grant value -> Some value
+                    | _ -> None)
+                    (record id |> field "grant" id ResponseCodecs.authorityGrant)
+                variant
+                    "REVOKE"
+                    AuthorityReviewEffect.Revoke
+                    (function
+                    | AuthorityReviewEffect.Revoke value -> Some value
+                    | _ -> None)
+                    (record id |> field "grant" id ResponseCodecs.authorityGrant)
+                unitVariant "ERASE_PROFILE" AuthorityReviewEffect.EraseProfile
+                unitVariant "ENABLE" AuthorityReviewEffect.Enable
+                unitVariant "DISABLE" AuthorityReviewEffect.Disable
+            ]
+
     let private authorityReviewFields =
-        (record (fun target scope before after ->
+        (record (fun target scope before after effects ->
             {
+                Effects = effects
                 Target = target
                 AccessScope = scope
                 Before = before
@@ -136,6 +184,10 @@ module ReplyCodecs =
         |> field "accessScope" _.AccessScope ResponseCodecs.grantScope
         |> field "before" _.Before authorityState
         |> field "after" _.After authorityState
+        |> field
+            "effects"
+            _.Effects
+            (list (AuthorityAdmission.MaximumGrants + 2) authorityReviewEffect)
 
     let private workReviewFields =
         (record (fun parent reference before proposed context ->

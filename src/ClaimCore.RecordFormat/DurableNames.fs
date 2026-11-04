@@ -31,6 +31,7 @@ module DurableNames =
         | AuthorityKind.Disable -> "DISABLE"
         | AuthorityKind.SetProfile -> "SET_PROFILE"
         | AuthorityKind.EraseProfile -> "ERASE_PROFILE"
+        | AuthorityKind.Admit -> "ADMIT"
 
     let progress =
         function
@@ -165,6 +166,7 @@ module DurableNames =
         | InputTarget.PrincipalSubject -> "principal.subject"
         | InputTarget.ProfileDisplayName -> "profile.displayName"
         | InputTarget.ProfileContact -> "profile.contact"
+        | InputTarget.Grants -> "grants"
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
@@ -201,6 +203,7 @@ module DurableNames =
             AuthorityKind.Disable
             AuthorityKind.SetProfile
             AuthorityKind.EraseProfile
+            AuthorityKind.Admit
         ]
 
     let tryCaseAct token =

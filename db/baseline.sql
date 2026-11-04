@@ -89,7 +89,8 @@ CREATE TABLE claimcore.ledger (
         (subject_kind = 'AUTHORITY' AND authority_operation IS NOT NULL AND authority_operation ~ '^[A-Z][A-Z_]{0,39}$'
          AND ((authority_operation IN ('REGISTER','PROVISION_OWNER') AND effect_count=2
                AND ((effect_index=0 AND act=authority_operation) OR (effect_index=1 AND act='SET_PROFILE')))
-              OR (authority_operation NOT IN ('REGISTER','PROVISION_OWNER') AND effect_count=1 AND effect_index=0 AND act=authority_operation)))
+              OR (authority_operation='ADMIT' AND effect_count BETWEEN 3 AND 50 AND ((effect_index=0 AND act='REGISTER') OR (effect_index=1 AND act='SET_PROFILE') OR (effect_index>=2 AND act='GRANT')))
+              OR (authority_operation NOT IN ('REGISTER','PROVISION_OWNER','ADMIT') AND effect_count=1 AND effect_index=0 AND act=authority_operation)))
         OR (subject_kind <> 'AUTHORITY' AND effect_index=0 AND effect_count=1 AND authority_operation IS NULL)
     ),
     actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
@@ -165,6 +166,15 @@ BEGIN
         RAISE EXCEPTION 'profile payload has no later erasure' USING ERRCODE='CC004';
     END IF;
     IF NEW.subject_kind = 'CONTROL' OR NEW.effect_count = 1 THEN RETURN NULL; END IF;
+    -- Deferred INSERT events retain the original nonce even if this transaction later erases its profile.
+    IF NEW.payload_nonce IS NOT NULL AND EXISTS(
+        SELECT 1 FROM claimcore.ledger sibling WHERE sibling.operation_id=NEW.operation_id
+          AND sibling.subject_kind<>'CONTROL' AND sibling.sequence<>NEW.sequence
+          AND sibling.payload_nonce=NEW.payload_nonce
+    ) THEN
+        RAISE EXCEPTION 'operation effects reuse a payload nonce' USING ERRCODE='CC004';
+    END IF;
+
     SELECT * INTO root FROM claimcore.ledger
       WHERE operation_id = NEW.operation_id AND subject_kind <> 'CONTROL' AND effect_index = 0;
     IF NOT FOUND THEN

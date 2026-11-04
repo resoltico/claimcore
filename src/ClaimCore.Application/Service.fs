@@ -197,7 +197,7 @@ module Service =
                                     (Authority.factsNeeded admitted.Act)
                                     admitted.OperationId
                                     admitted.Target
-                                    (AuthorityRequests.targetCase admitted)
+                                    (AuthorityRequests.targetCases admitted)
                         CancellationToken = ct
                     })
             (AuthorityExecution.review services)

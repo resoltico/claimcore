@@ -14,35 +14,27 @@ module internal AuthorityExecution =
         then
             Error CoreFault.StoreIntegrityError
         else
-            match command.Act, view.TargetCase with
-            | AuthorityAct.Grant {
-                                     Role = _
-                                     Scope = GrantTarget.CaseReference reference
-                                 },
-              Some record
-            | AuthorityAct.Revoke {
-                                      Role = _
-                                      Scope = GrantTarget.CaseReference reference
-                                  },
-              Some record ->
-                CaseExecution.current installationId record
-                |> Result.bind (fun _ ->
-                    if
-                        CaseReference.identity record.Snapshot.Reference =
-                            CaseReference.key reference
-                    then
-                        Ok()
-                    else
-                        Error CoreFault.StoreIntegrityError)
-            | AuthorityAct.Grant { Scope = GrantTarget.CaseId id }, Some record
-            | AuthorityAct.Revoke { Scope = GrantTarget.CaseId id }, Some record ->
-                CaseExecution.current installationId record
-                |> Result.bind (fun _ ->
-                    if record.CaseId = id then
-                        Ok()
-                    else
-                        Error CoreFault.StoreIntegrityError)
-            | _ -> Ok()
+            view.TargetCases
+            |> Map.toList
+            |> List.fold
+                (fun result (target, record) ->
+                    result
+                    |> Result.bind (fun () ->
+                        CaseExecution.current installationId record
+                        |> Result.bind (fun _ ->
+                            let matches =
+                                match target with
+                                | GrantTarget.CaseReference reference ->
+                                    CaseReference.identity record.Snapshot.Reference =
+                                        CaseReference.key reference
+                                | GrantTarget.CaseId id -> record.CaseId = id
+                                | GrantTarget.Installation -> false
+
+                            if matches then
+                                Ok()
+                            else
+                                Error CoreFault.StoreIntegrityError)))
+                (Ok())
 
     let private domainFacts (view: AuthorityExecutionFacts) : AuthorityFacts =
         let target =
@@ -72,7 +64,7 @@ module internal AuthorityExecution =
 
         {
             TargetActor = target
-            TargetCaseId = view.TargetCase |> Option.map _.CaseId
+            TargetCases = view.TargetCases |> Map.map (fun _ record -> record.CaseId)
             EnabledHumanOwners = view.EnabledHumanOwners
             ActorCount = view.ActorCount
             Requester = view.Actor
@@ -86,6 +78,7 @@ module internal AuthorityExecution =
     let private targetId (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
         match command.Act with
         | AuthorityAct.Register _
+        | AuthorityAct.Admit _
         | AuthorityAct.ProvisionOwner _ -> Ok(ActorId.ofOperationId command.OperationId)
         | _ ->
             view.Target.Actor
@@ -115,7 +108,7 @@ module internal AuthorityExecution =
                 targetId command view
                 |> Result.bind (fun id ->
                     AuthorityRequests.toRecords
-                        (view.TargetCase |> Option.map _.Snapshot)
+                        (view.TargetCases |> Map.map (fun _ record -> record.Snapshot))
                         id
                         command)
                 |> Result.map Verdict.Proceed
@@ -360,7 +353,7 @@ module internal AuthorityExecution =
                                     (Authority.factsNeeded command.Act)
                                     command.OperationId
                                     command.Target
-                                    (AuthorityRequests.targetCase command)
+                                    (AuthorityRequests.targetCases command)
 
                             let! fenced =
                                 ExecutionFacts.fenced
@@ -405,7 +398,7 @@ module internal AuthorityExecution =
                                         (Authority.factsNeeded command.Act)
                                         command.OperationId
                                         command.Target
-                                        None
+                                        []
 
                                 let! fenced =
                                     ExecutionFacts.fenced

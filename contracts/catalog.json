@@ -382,6 +382,12 @@
       }
     },
     {
+      "name": "grants",
+      "labelId": "field.grants.label",
+      "meaningId": "field.grants.meaning",
+      "scalar": null
+    },
+    {
       "name": "role",
       "labelId": "field.role.label",
       "meaningId": "field.role.meaning",
@@ -856,6 +862,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -1221,6 +1228,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -1940,6 +1948,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2149,6 +2158,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2271,6 +2281,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2419,6 +2430,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2541,6 +2553,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2661,6 +2674,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2781,6 +2795,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -2926,6 +2941,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -3071,6 +3087,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -3196,6 +3213,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -3397,6 +3415,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -3638,6 +3657,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -3900,6 +3920,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -4060,6 +4081,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -4199,6 +4221,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -4390,6 +4413,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -4529,6 +4553,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -4545,6 +4570,335 @@
             "kind"
           ],
           "value": "ERASE_PROFILE",
+          "branches": [],
+          "vocabulary": "act",
+          "requiresParent": false
+        }
+      ]
+    },
+    {
+      "endpoint": "operation.execute",
+      "subject": "AUTHORITY",
+      "kind": "ADMIT",
+      "labelId": "act.ADMIT.label",
+      "meaningId": "act.ADMIT.meaning",
+      "confirmationId": "act.ADMIT.confirmation",
+      "family": null,
+      "affectedSections": [],
+      "effect": "CHANGE_AUTHORITY",
+      "consequence": "ROUTINE",
+      "inputs": [
+        {
+          "identity": "operationId",
+          "field": null,
+          "path": [
+            "operationId"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.operationId.label",
+          "meaningId": "field.operationId.meaning",
+          "order": 0,
+          "prefill": null,
+          "required": false,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "operationId"
+          ],
+          "source": "OPERATION_IDENTITY"
+        },
+        {
+          "identity": "target.kind",
+          "field": null,
+          "path": [
+            "target",
+            "kind"
+          ],
+          "kind": {
+            "kind": "CHOICE",
+            "vocabulary": "principalKind",
+            "options": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.kind.label",
+          "meaningId": "field.principal.kind.meaning",
+          "order": 1,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.kind"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.issuer",
+          "field": null,
+          "path": [
+            "target",
+            "issuer"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.issuer.label",
+          "meaningId": "field.principal.issuer.meaning",
+          "order": 2,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.issuer"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "target.subject",
+          "field": null,
+          "path": [
+            "target",
+            "subject"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.principal.subject.label",
+          "meaningId": "field.principal.subject.meaning",
+          "order": 3,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "principal.subject"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.profile.displayName",
+          "field": null,
+          "path": [
+            "act",
+            "profile",
+            "displayName"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.profile.displayName.label",
+          "meaningId": "field.profile.displayName.meaning",
+          "order": 4,
+          "prefill": null,
+          "required": true,
+          "wireRequired": true,
+          "allowsNull": false,
+          "default": null,
+          "diagnosticTargets": [
+            "profile.displayName"
+          ],
+          "source": "AUTHORED"
+        },
+        {
+          "identity": "act.profile.contact",
+          "field": null,
+          "path": [
+            "act",
+            "profile",
+            "contact"
+          ],
+          "kind": {
+            "kind": "TEXT"
+          },
+          "adviceGroup": null,
+          "branches": [],
+          "labelId": "field.profile.contact.label",
+          "meaningId": "field.profile.contact.meaning",
+          "order": 5,
+          "prefill": null,
+          "required": false,
+          "wireRequired": false,
+          "allowsNull": true,
+          "default": null,
+          "diagnosticTargets": [
+            "profile.contact"
+          ],
+          "source": "AUTHORED"
+        }
+      ],
+      "collections": [
+        {
+          "identity": "act.grants",
+          "field": "grants",
+          "path": [
+            "act",
+            "grants"
+          ],
+          "branches": [],
+          "labelId": "field.grants.label",
+          "meaningId": "field.grants.meaning",
+          "order": 0,
+          "required": true,
+          "minimumItems": 1,
+          "maximumItems": 48,
+          "rowInputs": [
+            {
+              "identity": "role",
+              "field": "role",
+              "path": [
+                "role"
+              ],
+              "kind": {
+                "kind": "CHOICE",
+                "vocabulary": "role",
+                "options": [
+                  "OWNER",
+                  "CASE_READER",
+                  "CASE_REGISTRAR",
+                  "CASE_HANDLER",
+                  "PAYMENT_RECORDER",
+                  "DATA_STEWARD",
+                  "AUDITOR"
+                ]
+              },
+              "adviceGroup": null,
+              "branches": [],
+              "labelId": "field.role.label",
+              "meaningId": "field.role.meaning",
+              "order": 0,
+              "prefill": null,
+              "required": true,
+              "wireRequired": true,
+              "allowsNull": false,
+              "default": null,
+              "diagnosticTargets": [
+                "role"
+              ],
+              "source": "AUTHORED"
+            },
+            {
+              "identity": "scope.kind",
+              "field": null,
+              "path": [
+                "scope",
+                "kind"
+              ],
+              "kind": {
+                "kind": "GROUP",
+                "vocabulary": "scope",
+                "options": [
+                  "INSTALLATION",
+                  "CASE"
+                ]
+              },
+              "adviceGroup": null,
+              "branches": [],
+              "labelId": "input.scope.label",
+              "meaningId": "input.scope.meaning",
+              "order": 1,
+              "prefill": null,
+              "required": false,
+              "wireRequired": true,
+              "allowsNull": false,
+              "default": "INSTALLATION",
+              "diagnosticTargets": [],
+              "source": "AUTHORED"
+            },
+            {
+              "identity": "scope.target.caseReference",
+              "field": "caseReference",
+              "path": [
+                "scope",
+                "target",
+                "caseReference"
+              ],
+              "kind": {
+                "kind": "TEXT"
+              },
+              "adviceGroup": null,
+              "branches": [
+                {
+                  "path": [
+                    "scope",
+                    "kind"
+                  ],
+                  "value": "CASE"
+                }
+              ],
+              "labelId": "field.caseReference.label",
+              "meaningId": "field.caseReference.meaning",
+              "order": 2,
+              "prefill": [
+                "caseReference"
+              ],
+              "required": true,
+              "wireRequired": true,
+              "allowsNull": false,
+              "default": null,
+              "diagnosticTargets": [
+                "caseReference"
+              ],
+              "source": "AUTHORED"
+            }
+          ],
+          "rowConstants": [
+            {
+              "path": [
+                "scope",
+                "target",
+                "kind"
+              ],
+              "value": "REFERENCE",
+              "branches": [
+                {
+                  "path": [
+                    "scope",
+                    "kind"
+                  ],
+                  "value": "CASE"
+                }
+              ],
+              "vocabulary": "caseSelector",
+              "requiresParent": false
+            }
+          ]
+        }
+      ],
+      "constants": [
+        {
+          "path": [
+            "kind"
+          ],
+          "value": "AUTHORITY",
+          "branches": [],
+          "vocabulary": "subject",
+          "requiresParent": false
+        },
+        {
+          "path": [
+            "act",
+            "kind"
+          ],
+          "value": "ADMIT",
           "branches": [],
           "vocabulary": "act",
           "requiresParent": false
@@ -4744,6 +5098,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -4892,6 +5247,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5090,6 +5446,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5238,6 +5595,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5386,6 +5744,7 @@
           "source": "EXPECTED_REVISION"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5559,6 +5918,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5757,6 +6117,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5904,6 +6265,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -5981,6 +6343,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -6109,6 +6472,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -6371,6 +6735,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -6396,6 +6761,7 @@
       "effect": "READ",
       "consequence": "ROUTINE",
       "inputs": [],
+      "collections": [],
       "constants": []
     },
     {
@@ -6410,6 +6776,7 @@
       "effect": "READ",
       "consequence": "ROUTINE",
       "inputs": [],
+      "collections": [],
       "constants": []
     },
     {
@@ -6447,6 +6814,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -6537,6 +6905,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -6590,6 +6959,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -6915,6 +7285,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7181,6 +7552,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7298,6 +7670,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": [
         {
           "path": [
@@ -7348,6 +7721,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7387,6 +7761,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7426,6 +7801,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7489,6 +7865,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7574,6 +7951,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7659,6 +8037,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7722,6 +8101,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7814,6 +8194,7 @@
           "source": "AUTHORED"
         }
       ],
+      "collections": [],
       "constants": []
     },
     {
@@ -7828,6 +8209,7 @@
       "effect": "READ",
       "consequence": "ROUTINE",
       "inputs": [],
+      "collections": [],
       "constants": []
     }
   ],

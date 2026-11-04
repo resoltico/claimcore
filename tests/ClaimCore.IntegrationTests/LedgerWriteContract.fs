@@ -38,7 +38,7 @@ let internal genesis fixture =
                                         ))
                                         ((CaseFixtures.operationId (id 1)))
                                         fixture.Owner
-                                        None
+                                        []
 
                                 Expect.equal
                                     tx.Head.Sequence

@@ -20,6 +20,7 @@ type AuthorityCommand =
 [<RequireQualifiedAccess>]
 type AuthorityChange =
     | Registered of ActorProfile
+    | Admitted of ActorProfile * Grant<Scope> list
     | OwnerProvisioned of ActorProfile
     | Granted of Role * Scope
     | Revoked of Role * Scope
@@ -36,7 +37,7 @@ type AuthorityFact =
 type AuthorityFacts =
     {
         TargetActor: ActorAuthority option
-        TargetCaseId: CaseId option
+        TargetCases: Map<GrantTarget, CaseId>
         EnabledHumanOwners: int option
         ActorCount: int option
         Requester: AuthorityView
@@ -286,18 +287,37 @@ module Authority =
         |> Option.defaultWith (fun () ->
             InputValidation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
-    let private scopeReference =
+    let private grantCount =
         function
-        | AuthorityAct.Grant {
-                                 Scope = GrantTarget.CaseReference reference
-                             }
-        | AuthorityAct.Revoke {
-                                  Scope = GrantTarget.CaseReference reference
-                              } ->
-            CaseReference.parse reference
-            |> Result.map ignore
-            |> Result.mapError (fun violation ->
-                Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
+        | AuthorityAct.Admit admission when
+            admission.Grants.IsEmpty
+            || admission.Grants.Length > AuthorityAdmission.MaximumGrants
+            ->
+            InputValidation.invalid
+                InputTarget.Grants
+                (Violation.GrantCountRange AuthorityAdmission.MaximumGrants)
+        | _ -> Ok()
+
+    let private scopeReference act =
+        let grant (value: AuthoredGrant) =
+            match value.Scope with
+            | GrantTarget.CaseReference reference ->
+                CaseReference.parse reference
+                |> Result.map ignore
+                |> Result.mapError (fun violation ->
+                    Refusal.invalidInput (InputTarget.Field BusinessField.CaseReference, violation))
+            | _ -> Ok()
+
+        match act with
+        | AuthorityAct.Grant value
+        | AuthorityAct.Revoke value -> grant value
+        | AuthorityAct.Admit admission when
+            admission.Grants.Length <= AuthorityAdmission.MaximumGrants
+            ->
+            admission.Grants
+            |> List.fold
+                (fun state value -> Admission.map2 (fun () () -> ()) state (grant value))
+                (Ok())
         | _ -> Ok()
 
     let private admitProfile input =
@@ -341,6 +361,7 @@ module Authority =
                     })
                 identity
                 action
+            |> fun result -> Admission.map2 (fun value () -> value) result (grantCount act)
             |> fun result -> Admission.map2 (fun value () -> value) result (scopeReference act)
 
     let provision operationId target profile =
@@ -365,19 +386,25 @@ module Authority =
             actor.Grants
 
     let private grantScope (facts: AuthorityFacts) target =
-        match target, facts.TargetCaseId with
-        | GrantTarget.Installation, _ -> Ok Scope.Installation
-        | GrantTarget.CaseReference _, Some id -> Ok(Scope.Case id)
-        | GrantTarget.CaseId requested, Some id when requested = id -> Ok(Scope.Case id)
-        | _ -> Error AccessRefusal.ResourceUnavailable
+        match target with
+        | GrantTarget.Installation -> Ok Scope.Installation
+        | _ ->
+            match Map.tryFind target facts.TargetCases with
+            | Some id when
+                (match target with
+                 | GrantTarget.CaseId requested -> requested = id
+                 | _ -> true)
+                ->
+                Ok(Scope.Case id)
+            | _ -> Error AccessRefusal.ResourceUnavailable
 
-    let private grantAdmission role scope (actor: ActorAuthority) =
+    let private grantAdmission role scope principal =
         let kind =
             match scope with
             | Scope.Installation -> ScopeKind.Installation
             | Scope.Case _ -> ScopeKind.Case
 
-        if humanOnlyRole role && not (PrincipalKey.isHuman actor.Principal) then
+        if humanOnlyRole role && not (PrincipalKey.isHuman principal) then
             Error AuthorityRefusal.HumanPrincipalRequired
         elif not (List.contains kind (roleScopes role)) then
             Error AuthorityRefusal.RoleScopeNotApplicable
@@ -386,7 +413,7 @@ module Authority =
 
     let private grantChange (facts: AuthorityFacts) active role scope (actor: ActorAuthority) =
         if active then
-            grantAdmission role scope actor
+            grantAdmission role scope actor.Principal
             |> Result.map (fun () -> AuthorityChange.Granted(role, scope))
         elif
             role = Role.Owner
@@ -405,11 +432,60 @@ module Authority =
             grantChange facts active role scope actor |> Result.mapError Refusal.Authority)
 
 
+    let private admissionChange
+        facts
+        principal
+        (admission: AuthorityAdmission<AuthoredGrant, ActorProfile>)
+        =
+        let granted =
+            admission.Grants
+            |> List.fold
+                (fun state grant ->
+                    state
+                    |> Result.bind (fun values ->
+                        grantScope facts grant.Scope
+                        |> Result.mapError Refusal.Access
+                        |> Result.bind (fun scope ->
+                            grantAdmission grant.Role scope principal
+                            |> Result.mapError Refusal.Authority
+                            |> Result.map (fun () ->
+                                {
+                                    Grant.Role = grant.Role
+                                    Scope = scope
+                                }
+                                :: values))))
+                (Ok [])
+
+        granted
+        |> Result.bind (fun grants ->
+            let keys = grants |> List.map (fun grant -> grant.Role, grant.Scope)
+
+            if (List.distinct keys).Length <> keys.Length then
+                InputValidation.invalid InputTarget.Grants Violation.DuplicateGrant
+            else
+                Ok(AuthorityChange.Admitted(admission.Profile, List.rev grants)))
+
     let private disableChange facts actor =
         if owner actor && required "enabled human owners" facts.EnabledHumanOwners <= 1 then
             Error(Refusal.Authority AuthorityRefusal.LastOwner)
         else
             Ok AuthorityChange.Disabled
+
+    let private existingChange facts act actor =
+        match act with
+        | AuthorityAct.SetProfile profile -> Ok(AuthorityChange.ProfileSet profile)
+        | AuthorityAct.EraseProfile -> Ok AuthorityChange.ProfileErased
+        | AuthorityAct.Enable -> Ok AuthorityChange.Enabled
+        | AuthorityAct.Disable -> disableChange facts actor
+        | AuthorityAct.Grant { Role = role; Scope = target } ->
+            scopedChange facts true role target actor
+        | AuthorityAct.Revoke { Role = role; Scope = target } ->
+            scopedChange facts false role target actor
+
+        | AuthorityAct.Register _
+        | AuthorityAct.Admit _
+        | AuthorityAct.ProvisionOwner _ ->
+            Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
 
     let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
         match command.Act, facts.TargetActor with
@@ -418,18 +494,13 @@ module Authority =
         | AuthorityAct.ProvisionOwner profile, None when required "actor count" facts.ActorCount = 0 ->
             Ok(AuthorityChange.OwnerProvisioned profile)
         | AuthorityAct.ProvisionOwner _, _
-        | AuthorityAct.Register _, Some _ ->
+        | AuthorityAct.Register _, Some _
+        | AuthorityAct.Admit _, Some _ ->
             Error(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
         | AuthorityAct.Register profile, None -> Ok(AuthorityChange.Registered profile)
+        | AuthorityAct.Admit admission, None -> admissionChange facts command.Target admission
         | _, None -> Error(Refusal.Authority AuthorityRefusal.ActorUnknown)
-        | AuthorityAct.SetProfile profile, Some _ -> Ok(AuthorityChange.ProfileSet profile)
-        | AuthorityAct.EraseProfile, Some _ -> Ok AuthorityChange.ProfileErased
-        | AuthorityAct.Enable, Some _ -> Ok AuthorityChange.Enabled
-        | AuthorityAct.Disable, Some actor -> disableChange facts actor
-        | AuthorityAct.Grant { Role = role; Scope = target }, Some actor ->
-            scopedChange facts true role target actor
-        | AuthorityAct.Revoke { Role = role; Scope = target }, Some actor ->
-            scopedChange facts false role target actor
+        | act, Some actor -> existingChange facts act actor
 
     let decide (facts: AuthorityFacts) (command: AuthorityCommand) =
         let permitted =

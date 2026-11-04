@@ -340,7 +340,7 @@ module CatalogCodecs =
     let private inputSource = InputSource.vocabulary |> VocabularyCodec.create
 
     let private binding =
-        record
+        (record
             (fun
                 identity
                 field
@@ -376,6 +376,7 @@ module CatalogCodecs =
                     DiagnosticTargets = targets
                     Source = source
                 })
+        : Fields<CatalogInput, _>)
         |> field "identity" _.Identity text
         |> field "field" _.Field (nullable inputTarget)
         |> field "path" _.Path (many text)
@@ -398,6 +399,51 @@ module CatalogCodecs =
         |> build
         |> named "Presentation.CatalogInput"
 
+    let private collection =
+        (record
+            (fun
+                identity
+                field
+                path
+                branches
+                label
+                meaning
+                order
+                required
+                minimum
+                maximum
+                inputs
+                constants ->
+                {
+                    CatalogCollection.Identity = identity
+                    Field = field
+                    Path = path
+                    Branches = branches
+                    LabelId = label
+                    MeaningId = meaning
+                    Order = order
+                    Required = required
+                    MinimumItems = minimum
+                    MaximumItems = maximum
+                    RowInputs = inputs
+                    RowConstants = constants
+                })
+        : Fields<CatalogCollection, _>)
+        |> field "identity" _.Identity text
+        |> field "field" _.Field inputTarget
+        |> field "path" _.Path (many text)
+        |> field "branches" _.Branches (many condition)
+        |> field "labelId" _.LabelId text
+        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "order" _.Order count
+        |> field "required" _.Required boolean
+        |> field "minimumItems" _.MinimumItems count
+        |> field "maximumItems" _.MaximumItems count
+        |> field "rowInputs" _.RowInputs (many binding)
+        |> field "rowConstants" _.RowConstants (many assignment)
+        |> build
+        |> named "Presentation.CatalogCollection"
+
     let private identityName =
         function
         | CatalogOperation.Act act -> ActKind.token act
@@ -416,6 +462,7 @@ module CatalogCodecs =
             Effect: InteractionEffect
             Consequence: Consequence
             Inputs: CatalogInput list
+            Collections: CatalogCollection list
             Constants: BindingAssignment list
         }
 
@@ -433,6 +480,7 @@ module CatalogCodecs =
                 effect
                 consequence
                 inputs
+                collections
                 constants ->
                 {
                     EntryWire.Endpoint = endpoint
@@ -446,6 +494,7 @@ module CatalogCodecs =
                     Effect = effect
                     Consequence = consequence
                     Inputs = inputs
+                    Collections = collections
                     Constants = constants
                 })
         |> field "endpoint" _.Endpoint text
@@ -462,6 +511,7 @@ module CatalogCodecs =
         |> field "effect" _.Effect (VocabularyCodec.create InteractionEffect.vocabulary)
         |> field "consequence" _.Consequence (VocabularyCodec.create Consequence.vocabulary)
         |> field "inputs" _.Inputs (many binding)
+        |> field "collections" _.Collections (many collection)
         |> field "constants" _.Constants (many assignment)
         |> build
         |> mapResult
@@ -497,6 +547,7 @@ module CatalogCodecs =
                             Effect = wire.Effect
                             Consequence = wire.Consequence
                             Inputs = wire.Inputs
+                            Collections = wire.Collections
                             Constants = wire.Constants
                         }
                 | _ ->
@@ -518,6 +569,7 @@ module CatalogCodecs =
                     Effect = value.Effect
                     Consequence = value.Consequence
                     Inputs = value.Inputs
+                    Collections = value.Collections
                     Constants = value.Constants
                 })
         |> named "Presentation.CatalogEntry"

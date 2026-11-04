@@ -12,6 +12,7 @@ type AuthorityKind =
     | Disable
     | SetProfile
     | EraseProfile
+    | Admit
 
 /// Unvalidated subject facts; Application admits the canonical principal key.
 type PrincipalInput =
@@ -31,9 +32,20 @@ type Grant<'scope> = { Role: Role; Scope: 'scope }
 
 type AuthoredGrant = Grant<GrantTarget>
 
+type AuthorityAdmission<'grant, 'profile> =
+    {
+        Profile: 'profile
+        Grants: 'grant list
+    }
+
+module AuthorityAdmission =
+    [<Literal>]
+    let MaximumGrants = 48
+
 [<RequireQualifiedAccess>]
 type AuthorityAct<'grant, 'profile> =
     | Register of 'profile
+    | Admit of AuthorityAdmission<'grant, 'profile>
     | Grant of 'grant
     | Revoke of 'grant
     | Enable
@@ -64,6 +76,7 @@ module AuthorityAct =
     let kind =
         function
         | AuthorityAct.Register _ -> AuthorityKind.Register
+        | AuthorityAct.Admit _ -> AuthorityKind.Admit
         | AuthorityAct.Grant _ -> AuthorityKind.Grant
         | AuthorityAct.Revoke _ -> AuthorityKind.Revoke
         | AuthorityAct.Enable -> AuthorityKind.Enable
@@ -77,6 +90,22 @@ module AuthorityAct =
         | AuthorityAct.Grant value -> grant value |> Result.map AuthorityAct.Grant
         | AuthorityAct.Revoke value -> grant value |> Result.map AuthorityAct.Revoke
         | AuthorityAct.Register value -> profile value |> Result.map AuthorityAct.Register
+        | AuthorityAct.Admit value ->
+            profile value.Profile
+            |> Result.bind (fun profile ->
+                value.Grants
+                |> List.fold
+                    (fun state value ->
+                        state
+                        |> Result.bind (fun values ->
+                            grant value |> Result.map (fun value -> value :: values)))
+                    (Ok [])
+                |> Result.map (fun grants ->
+                    AuthorityAct.Admit
+                        {
+                            Profile = profile
+                            Grants = List.rev grants
+                        }))
         | AuthorityAct.SetProfile value -> profile value |> Result.map AuthorityAct.SetProfile
         | AuthorityAct.ProvisionOwner value ->
             profile value |> Result.map AuthorityAct.ProvisionOwner

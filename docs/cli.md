@@ -420,6 +420,25 @@ claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 
+## authority admit
+
+Add person
+
+Register this account, record its authored profile and grant its initial access together.
+
+```sh
+claimcore authority admit [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --profile.display-name VALUE [--profile.contact VALUE] [--clear-profile.contact] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+| `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
+| `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
+| `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
+| `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
+| `--profile.display-name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
+| `--profile.contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+
 ## work update
 
 Update case work

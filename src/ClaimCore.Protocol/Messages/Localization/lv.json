@@ -498,5 +498,12 @@
   "input.responsibleActorFilter.label": "Atbildīgā konta filtrs",
   "input.responsibleActorFilter.meaning": "Atlasīt lietas, par kurām atbild norādītais konts, tikai jūsu lasīšanas tiesību ietvaros. Tiek piemēroti arī pārējie filtri.",
   "diagnostic.NOT_OFFERED": "Šī darbība nav pieejama. Pašreizējais lietas stāvoklis: {state}. Pārskatiet jaunāko lietas informāciju.",
-  "diagnostic.REMINDER_NOT_OFFERED": "Šī darbība nav pieejama. Pašreizējais atgādinājuma stāvoklis: {state}. Pārskatiet jaunāko atgādinājumu."
+  "diagnostic.REMINDER_NOT_OFFERED": "Šī darbība nav pieejama. Pašreizējais atgādinājuma stāvoklis: {state}. Pārskatiet jaunāko atgādinājumu.",
+  "act.ADMIT.label": "Pievienot personu",
+  "act.ADMIT.meaning": "Reģistrēt šo kontu, saglabāt tā ievadīto profilu un kopā piešķirt sākotnējo piekļuvi.",
+  "act.ADMIT.confirmation": "Pievienot šo kontu un piešķirt izvēlēto piekļuvi?",
+  "field.grants.label": "Piekļuves piešķīrumi",
+  "field.grants.meaning": "Izvēlieties lomas un to tvērumus. Katru lomas un tvēruma pāri drīkst norādīt tikai vienu reizi.",
+  "diagnostic.GRANT_COUNT_RANGE": "Izvēlieties no 1 līdz {maximumGrants} piekļuves piešķīrumiem.",
+  "diagnostic.DUPLICATE_GRANT": "Katru lomas un tvēruma pāri izvēlieties tikai vienu reizi."
 }

@@ -43,11 +43,30 @@ module ReceiptCodecs =
         |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
         |> field "snapshot" _.Snapshot disclosure
 
+    let private authorityEffect =
+        (record (fun act position ->
+            {
+                AuthorityReceiptEffect.Act = act
+                Position = position
+            })
+        : Fields<AuthorityReceiptEffect, _>)
+        |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
+        |> field "position" _.Position LedgerCodecs.position
+        |> build
+        |> named "AuthorityReceiptEffect"
+
     let private authorityFields =
-        (record (fun target act -> { TargetActorId = target; Act = act })
+        (record (fun target act effects ->
+            {
+                TargetActorId = target
+                Act = act
+                Effects = effects
+            })
         : Fields<AuthorityReceipt, _>)
         |> field "targetActorId" _.TargetActorId actorId
         |> field "act" _.Act (VocabularyCodec.create AuthorityKind.vocabulary)
+
+        |> field "effects" _.Effects (list AuthorityReceipt.MaximumEffects authorityEffect)
 
     let private caseVariant =
         variant

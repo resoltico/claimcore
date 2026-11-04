@@ -23,6 +23,7 @@ module LedgerEffects =
     let private supportedCount operation count =
         match operation with
         | None -> count = 1
+        | Some AuthorityKind.Admit -> count >= 3 && count <= MaximumCount
         | Some AuthorityKind.Register
         | Some AuthorityKind.ProvisionOwner -> count = 2
         | Some AuthorityKind.Grant
@@ -63,6 +64,13 @@ module LedgerEffects =
 
     let describesAuthority act value =
         match value.AuthorityOperation with
+        | Some AuthorityKind.Admit ->
+            value.Count >= 3
+            && value.Count <= MaximumCount
+            && act =
+                (if value.Index = 0 then AuthorityKind.Register
+                 elif value.Index = 1 then AuthorityKind.SetProfile
+                 else AuthorityKind.Grant)
         | Some AuthorityKind.Register ->
             value.Count = 2
             && act =

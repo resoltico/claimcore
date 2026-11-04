@@ -32,6 +32,7 @@ module Consequence =
         | AuthorityKind.EraseProfile -> Consequence.Irreversible
         | AuthorityKind.ProvisionOwner
         | AuthorityKind.Register
+        | AuthorityKind.Admit
         | AuthorityKind.Grant
         | AuthorityKind.Revoke
         | AuthorityKind.Enable -> Consequence.Routine

@@ -385,6 +385,18 @@ let authorityActs grants =
         match kind with
         | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner ownerProfile, token ]
         | AuthorityKind.Register -> [ AuthorityAct.Register actorProfile, token ]
+        | AuthorityKind.Admit ->
+            if List.isEmpty grants then
+                []
+            else
+                [
+                    AuthorityAct.Admit
+                        {
+                            Profile = actorProfile
+                            Grants = List.truncate AuthorityAdmission.MaximumGrants grants
+                        },
+                    token
+                ]
         | AuthorityKind.SetProfile -> [ AuthorityAct.SetProfile actorProfile, token ]
         | AuthorityKind.EraseProfile -> [ AuthorityAct.EraseProfile, token ]
         | AuthorityKind.Enable -> [ AuthorityAct.Enable, token ]

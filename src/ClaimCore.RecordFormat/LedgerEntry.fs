@@ -109,6 +109,7 @@ module LedgerEntry =
         | AuthorityKind.Disable -> 37uy
         | AuthorityKind.SetProfile -> 38uy
         | AuthorityKind.EraseProfile -> 39uy
+        | AuthorityKind.Admit -> 40uy
 
     let encodePayload (payload: LedgerPayload) =
         Array.concat

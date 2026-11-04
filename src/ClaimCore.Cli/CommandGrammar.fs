@@ -85,7 +85,8 @@ module CommandGrammar =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
     let derive (operation: CatalogOperation) =
-        let inputs, constants = OperationCatalog.derive operation
+        let bindings = OperationCatalog.derive operation
+        let inputs, constants = bindings.Inputs, bindings.Constants
 
         let grammar (input: OperationInputDefinition) =
             let argument =

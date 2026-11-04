@@ -34,7 +34,7 @@ let internal authorityReview fixture principal input =
                     Needed = Authority.factsNeeded request.Act
                     OperationId = (OperationId.value (request.OperationId))
                     Target = request.Target
-                    CaseTarget = AuthorityRequests.targetCase request
+                    CaseTargets = AuthorityRequests.targetCases request
                 }
                 (CancellationToken.None)
 
@@ -382,7 +382,7 @@ let internal authorityGrantReview fixture =
                     Needed = []
                     OperationId = id 14
                     Target = target
-                    CaseTarget = Some(CaseSelector.Reference "REVIEW-CASE")
+                    CaseTargets = [ GrantTarget.CaseReference "REVIEW-CASE" ]
                 }
                 (CancellationToken.None)
 

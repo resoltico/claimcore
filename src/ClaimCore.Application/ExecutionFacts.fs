@@ -23,7 +23,7 @@ type internal AuthorityExecutionFacts =
         Actor: AuthorityView
         ExistingOperation: StoredOperation option
         Target: AuthorityView
-        TargetCase: StoredCase option
+        TargetCases: Map<GrantTarget, StoredCase>
         EnabledHumanOwners: int option
         ActorCount: int option
     }
@@ -85,19 +85,32 @@ module internal ExecutionFacts =
                 }
         }
 
-    let target (services: ServiceContext) (tx: IReadTx) needed operationId target reference =
+    let target (services: ServiceContext) (tx: IReadTx) needed operationId target references =
         let principal = services.Principal
 
         task {
             let! existing = tx.FindOperation operationId
 
-            let! record =
-                match reference with
-                | Some selector -> findCase tx selector
-                | None -> System.Threading.Tasks.Task.FromResult None
+            let mutable records = Map.empty
+
+            for reference in List.distinct references do
+                let selector =
+                    match reference with
+                    | GrantTarget.CaseReference value -> Some(CaseSelector.Reference value)
+                    | GrantTarget.CaseId value -> Some(CaseSelector.Id value)
+                    | GrantTarget.Installation -> None
+
+                match selector with
+                | Some selector ->
+                    let! record = findCase tx selector
+
+                    match record with
+                    | Some record -> records <- Map.add reference record records
+                    | None -> ()
+                | None -> ()
 
             let! maintenance = tx.Maintenance()
-            let ids = record |> Option.map _.CaseId |> Option.toList
+            let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
 
@@ -120,7 +133,7 @@ module internal ExecutionFacts =
                     Actor = actor
                     ExistingOperation = existing
                     Target = target
-                    TargetCase = record
+                    TargetCases = records
                     EnabledHumanOwners = owners
                     ActorCount = actors
                 }

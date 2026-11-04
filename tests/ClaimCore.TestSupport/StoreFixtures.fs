@@ -61,7 +61,7 @@ type internal AuthorityInspection =
         Needed: AuthorityFact list
         OperationId: Guid
         Target: PrincipalKey
-        CaseTarget: CaseSelector option
+        CaseTargets: GrantTarget list
     }
 
 let internal inspectTarget fixture principal (query: AuthorityInspection) token =
@@ -75,7 +75,7 @@ let internal inspectTarget fixture principal (query: AuthorityInspection) token 
                         query.Needed
                         (CaseFixtures.operationId query.OperationId)
                         query.Target
-                        query.CaseTarget)
+                        query.CaseTargets)
             CancellationToken = token
         }
     )

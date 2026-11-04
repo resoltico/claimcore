@@ -20,6 +20,7 @@ module LedgerVerification =
             Root: StoredEntry
             NextIndex: int
             Nonces: byte array list
+            Grants: Set<Role * Scope>
         }
 
     type Scan =
@@ -51,6 +52,7 @@ module LedgerVerification =
                             Root = entry
                             NextIndex = 1
                             Nonces = entry.PayloadNonce |> Option.toList
+                            Grants = Set.empty
                         }
                 )
             | Some pending, index when index = pending.NextIndex ->
@@ -96,6 +98,32 @@ module LedgerVerification =
         |> Option.defaultValue (
             Error(divergence (Some entry.Sequence) VerificationFinding.OperationEffectGroup)
         )
+
+    let private grantEffects previous pending (entry: StoredEntry) payload =
+        match LedgerEffects.authorityOperation entry.Effects, payload with
+        | Some AuthorityKind.Admit,
+          VerifiedPayload.Authority { Effect = AuthorityEffect.Grant grant } ->
+            let scope =
+                match grant.Scope with
+                | RecordedGrantScope.Installation -> Scope.Installation
+                | RecordedGrantScope.Case(id, _) -> Scope.Case id
+
+            let key = grant.Role, scope
+
+            let seen =
+                previous
+                |> Option.map (fun (value: PendingEffects) -> value.Grants)
+                |> Option.defaultValue Set.empty
+
+            require
+                (Some entry.Sequence)
+                VerificationFinding.AuthorityFold
+                (not (Set.contains key seen))
+            |> Result.map (fun () ->
+                pending
+                |> Option.map (fun (value: PendingEffects) ->
+                    { value with Grants = Set.add key seen }))
+        | _ -> Ok pending
 
     let private profiles history (entry: StoredEntry) payload =
         match entry.Subject with
@@ -213,6 +241,7 @@ module LedgerVerification =
 
             do! require at VerificationFinding.EntryHash (hash = entry.EntryHash)
             let! payload = VerificationPayload.read installationId entry
+            let! pendingEffects = grantEffects state.PendingEffects pendingEffects entry payload
 
             do!
                 match payload with

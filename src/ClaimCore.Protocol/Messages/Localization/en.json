@@ -498,5 +498,12 @@
   "input.responsibleActorFilter.label": "Responsible account filter",
   "input.responsibleActorFilter.meaning": "Restrict cases to the selected responsible account within your readable scope. Other filters further restrict its results.",
   "diagnostic.NOT_OFFERED": "This action is not available. Case state: {state}. Review the latest case.",
-  "diagnostic.REMINDER_NOT_OFFERED": "This action is not available. Reminder state: {state}. Review the latest reminder."
+  "diagnostic.REMINDER_NOT_OFFERED": "This action is not available. Reminder state: {state}. Review the latest reminder.",
+  "act.ADMIT.label": "Add person",
+  "act.ADMIT.meaning": "Register this account, record its authored profile and grant its initial access together.",
+  "act.ADMIT.confirmation": "Add this account and grant the selected access?",
+  "field.grants.label": "Access grants",
+  "field.grants.meaning": "Select roles and their scopes. Each role and scope pair may appear only once.",
+  "diagnostic.GRANT_COUNT_RANGE": "Choose between 1 and {maximumGrants} access grants.",
+  "diagnostic.DUPLICATE_GRANT": "Choose each role and scope pair only once."
 }

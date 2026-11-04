@@ -66,6 +66,23 @@ type CatalogInput =
         Source: InputSource
     }
 
+/// One bounded record collection. Row paths and conditions are relative to a single item.
+type CatalogCollection =
+    {
+        Identity: string
+        Field: InputTarget
+        Path: string list
+        Branches: BindingCondition list
+        LabelId: string
+        MeaningId: string option
+        Order: int
+        Required: bool
+        MinimumItems: int
+        MaximumItems: int
+        RowInputs: CatalogInput list
+        RowConstants: BindingAssignment list
+    }
+
 [<RequireQualifiedAccess>]
 type CatalogSubject =
     | Work
@@ -178,6 +195,7 @@ type CatalogEntry =
         Consequence: Consequence
         Kind: CatalogOperation
         Inputs: CatalogInput list
+        Collections: CatalogCollection list
         Constants: BindingAssignment list
     }
 

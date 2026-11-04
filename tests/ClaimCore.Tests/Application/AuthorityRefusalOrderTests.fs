@@ -394,7 +394,18 @@ let private ordering () =
             { view.Read with
                 EnabledHumanOwners = Some owners
                 ActorCount = Some actors
-                TargetCase = current
+                TargetCases =
+                    current
+                    |> Option.map (fun record ->
+                        Map.ofList
+                            [
+                                GrantTarget.CaseId record.CaseId, record
+                                GrantTarget.CaseReference(
+                                    CaseReference.format record.Snapshot.Reference
+                                ),
+                                record
+                            ])
+                    |> Option.defaultValue Map.empty
             }
 
         let actual =

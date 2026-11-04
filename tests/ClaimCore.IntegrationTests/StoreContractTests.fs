@@ -18,6 +18,15 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "admission preserves typed effects names authority scopes and erased replay"
+                (withFixture factory AdmitContract.lifecycle)
+            testCaseAsync
+                "admission rejects normalized duplicates and preserves role admission"
+                (withFixture factory AdmitContract.boundary)
+            testCaseAsync
+                "admission accepts exactly48 distinct grants with50 independent effects"
+                (withFixture factory AdmitContract.maximum)
+            testCaseAsync
                 "profile groups and erasure projections roll back atomically"
                 (withFixture factory ActorProfilesContract.atomicWrites)
             testCaseAsync

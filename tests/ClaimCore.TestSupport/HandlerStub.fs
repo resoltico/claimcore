@@ -75,12 +75,39 @@ let receipt id (reference: string) =
     }
 
 let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
-    { receipt request.OperationId "WEB-001" with
+    let original = receipt request.OperationId "WEB-001"
+    let kind = AuthorityAct.kind request.Act
+
+    let kinds =
+        match request.Act with
+        | AuthorityAct.Register _ -> [ AuthorityKind.Register; AuthorityKind.SetProfile ]
+        | AuthorityAct.ProvisionOwner _ ->
+            [ AuthorityKind.ProvisionOwner; AuthorityKind.SetProfile ]
+        | AuthorityAct.Admit value ->
+            AuthorityKind.Register
+            :: AuthorityKind.SetProfile
+            :: List.replicate value.Grants.Length AuthorityKind.Grant
+        | _ -> [ kind ]
+
+    let effects =
+        kinds
+        |> List.mapi (fun index kind ->
+            {
+                AuthorityReceiptEffect.Act = kind
+                Position =
+                    LedgerPosition.create
+                        (Sequence.create (int64 index + 1L) |> Option.get)
+                        original.Position.EntryHash
+            })
+
+    { original with
+        Position = (List.last effects).Position
         Subject =
             ReceiptSubject.Authority
                 {
                     TargetActorId = CaseFixtures.actorId operationId
-                    Act = request.Act |> fun value -> AuthorityAct.kind value
+                    Act = kind
+                    Effects = effects
                 }
     }
 

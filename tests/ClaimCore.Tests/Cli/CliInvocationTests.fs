@@ -354,6 +354,36 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                 (Previewed.Reviewed >> Outcome.Succeeded) (
                     OperationReview.Authority
                         {
+                            Effects =
+                                (if enabledBefore <> enabledAfter then
+                                     [
+                                         if enabledAfter then
+                                             AuthorityReviewEffect.Enable
+                                         else
+                                             AuthorityReviewEffect.Disable
+                                     ]
+                                 elif grantBefore <> grantAfter then
+                                     [
+                                         if grantAfter then
+                                             AuthorityReviewEffect.Grant
+                                                 {
+                                                     Role = Role.CaseReader
+                                                     Scope = GrantScope.Installation
+                                                 }
+                                         else
+                                             AuthorityReviewEffect.Revoke
+                                                 {
+                                                     Role = Role.CaseReader
+                                                     Scope = GrantScope.Installation
+                                                 }
+                                     ]
+                                 else
+                                     [
+                                         if enabledAfter then
+                                             AuthorityReviewEffect.Enable
+                                         else
+                                             AuthorityReviewEffect.Disable
+                                     ])
                             Target = None
                             AccessScope = GrantScope.Installation
                             Before =

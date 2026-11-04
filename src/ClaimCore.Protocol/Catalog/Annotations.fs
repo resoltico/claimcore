@@ -237,6 +237,10 @@ module CatalogAnnotations =
                     constant (annotation (InteractionInput.Target(InputTarget.Group group)))
             for kind in [ CaseActKind.Void; CaseActKind.Reinstate ] do
                 yield (actBranch kind, WireMembers.Reason), constant (target InputTarget.Reason)
+            yield
+                (authorityBranch AuthorityKind.Admit, "grants"),
+                constant (target InputTarget.Grants)
+            yield ("AuthorityGrantInput", WireMembers.Role), constant (target InputTarget.Role)
             for kind in [ AuthorityKind.Grant; AuthorityKind.Revoke ] do
                 yield (authorityBranch kind, WireMembers.Role), constant (target InputTarget.Role)
             yield

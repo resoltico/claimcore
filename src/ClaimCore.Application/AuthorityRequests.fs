@@ -29,20 +29,19 @@ module AuthorityRequests =
                  | RecordedGrantScope.Case(id, reference) -> GrantScope.Case(id, reference))
         }
 
-    let toRecords (snapshot: CaseSnapshot option) target (command: AuthorityCommand) =
-        let resolve =
-            function
+    let toRecords (snapshots: Map<GrantTarget, CaseSnapshot>) target (command: AuthorityCommand) =
+        let resolve target =
+            match target with
             | GrantTarget.Installation -> Ok RecordedGrantScope.Installation
-            | GrantTarget.CaseReference reference ->
-                match snapshot with
+            | _ ->
+                match Map.tryFind target snapshots with
                 | Some current when
-                    CaseReference.key reference = CaseReference.identity current.Reference
+                    (match target with
+                     | GrantTarget.CaseReference reference ->
+                         CaseReference.key reference = CaseReference.identity current.Reference
+                     | GrantTarget.CaseId id -> id = current.CaseId
+                     | GrantTarget.Installation -> false)
                     ->
-                    Ok(RecordedGrantScope.Case(current.CaseId, current.Reference))
-                | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-            | GrantTarget.CaseId id ->
-                match snapshot with
-                | Some current when current.CaseId = id ->
                     Ok(RecordedGrantScope.Case(current.CaseId, current.Reference))
                 | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
@@ -56,6 +55,19 @@ module AuthorityRequests =
 
         let effects =
             match command.Act with
+            | AuthorityAct.Admit admission ->
+                admission.Grants
+                |> List.fold
+                    (fun state value ->
+                        state
+                        |> Result.bind (fun effects ->
+                            grant value
+                            |> Result.map (fun value -> AuthorityEffect.Grant value :: effects)))
+                    (Ok [])
+                |> Result.map (fun effects ->
+                    AuthorityEffect.Register(PrincipalKey.toInput command.Target)
+                    :: AuthorityEffect.SetProfile admission.Profile
+                    :: List.rev effects)
             | AuthorityAct.Register profile ->
                 Ok
                     [
@@ -102,14 +114,15 @@ module AuthorityRequests =
     let toInput (command: AuthorityCommand) =
         input (OperationId.value command.OperationId) command.Target command.Act
 
-    let internal targetCase (command: AuthorityCommand) =
-        match command.Act with
-        | AuthorityAct.Grant {
-                                 Scope = GrantTarget.CaseReference reference
-                             }
-        | AuthorityAct.Revoke {
-                                  Scope = GrantTarget.CaseReference reference
-                              } -> Some(CaseSelector.Reference reference)
-        | AuthorityAct.Grant { Scope = GrantTarget.CaseId id }
-        | AuthorityAct.Revoke { Scope = GrantTarget.CaseId id } -> Some(CaseSelector.Id id)
-        | _ -> None
+    let internal targetCases (command: AuthorityCommand) =
+        let targets =
+            match command.Act with
+            | AuthorityAct.Grant value
+            | AuthorityAct.Revoke value -> [ value.Scope ]
+            | AuthorityAct.Admit value -> value.Grants |> List.map _.Scope
+            | _ -> []
+
+        targets
+        |> List.filter (function
+            | GrantTarget.Installation -> false
+            | _ -> true)

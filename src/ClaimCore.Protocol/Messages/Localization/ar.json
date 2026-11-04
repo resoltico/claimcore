@@ -498,5 +498,12 @@
   "input.responsibleActorFilter.label": "تصفية حسب الحساب المسؤول",
   "input.responsibleActorFilter.meaning": "اعرض القضايا المسندة إلى الحساب المحدد ضمن نطاق القضايا التي يحق لك قراءتها، مع تطبيق عوامل التصفية الأخرى.",
   "diagnostic.NOT_OFFERED": "هذا الإجراء غير متاح. حالة المطالبة الحالية: {state}. راجع أحدث بيانات المطالبة.",
-  "diagnostic.REMINDER_NOT_OFFERED": "هذا الإجراء غير متاح. حالة التذكير الحالية: {state}. راجع أحدث بيانات التذكير."
+  "diagnostic.REMINDER_NOT_OFFERED": "هذا الإجراء غير متاح. حالة التذكير الحالية: {state}. راجع أحدث بيانات التذكير.",
+  "act.ADMIT.label": "إضافة شخص",
+  "act.ADMIT.meaning": "تسجيل هذا الحساب وحفظ ملفه الشخصي المُدخل ومنحه الوصول الأولي معًا.",
+  "act.ADMIT.confirmation": "هل تريد إضافة هذا الحساب ومنحه الوصول المحدد؟",
+  "field.grants.label": "منح الوصول",
+  "field.grants.meaning": "اختر الأدوار ونطاقاتها. يمكن تحديد كل زوج من الدور والنطاق مرة واحدة فقط.",
+  "diagnostic.GRANT_COUNT_RANGE": "اختر من 1 إلى {maximumGrants} من منح الوصول.",
+  "diagnostic.DUPLICATE_GRANT": "اختر كل زوج من الدور والنطاق مرة واحدة فقط."
 }
