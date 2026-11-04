@@ -49,6 +49,19 @@ module MessageGeneration =
     let private generate includeMetadata (catalogs: Map<string, Map<string, Template>>) =
         let english = catalogs["en"]
 
+        let guiDiagnosticKeys =
+            DiagnosticCode.all
+            |> Map.toList
+            |> List.map (fun (code, entry) ->
+                let key =
+                    if Map.containsKey (entry.MessageKey + ".gui") english then
+                        entry.MessageKey + ".gui"
+                    else
+                        entry.MessageKey
+
+                code, JsonValue.String key)
+            |> JsonValue.Object
+
         let shapes =
             english
             |> Map.toList
@@ -109,23 +122,18 @@ module MessageGeneration =
                 ))
             |> JsonValue.Object
 
-        let fieldGuidance =
+        let ruleArguments =
             ScalarGuidance.all
-            |> List.map (fun (field, guidance) ->
-                field,
-                JsonValue.Object
-                    [
-                        "key", JsonValue.String guidance.Key
-                        "arguments",
-                        guidance.Arguments
-                        |> Map.toList
-                        |> List.map (fun (name, value) ->
-                            name,
-                            match value with
-                            | GuidanceArgument.Count count -> JsonValue.Integer(int64 count)
-                            | GuidanceArgument.Code code -> JsonValue.String code)
-                        |> JsonValue.Object
-                    ])
+            |> List.map (fun guidance ->
+                guidance.Key,
+                guidance.Arguments
+                |> Map.toList
+                |> List.map (fun (name, value) ->
+                    name,
+                    match value with
+                    | GuidanceArgument.Count count -> JsonValue.Integer(int64 count)
+                    | GuidanceArgument.Code code -> JsonValue.String code)
+                |> JsonValue.Object)
             |> JsonValue.Object
 
         [
@@ -136,9 +144,14 @@ module MessageGeneration =
             if includeMetadata then
                 "export type Terms = {\n" + termTypes + "\n};"
                 "export const termKeys = " + json termKeys + " as const;"
-                "export const fieldGuidance = " + json fieldGuidance + " as const;"
+                "export const ruleArguments = " + json ruleArguments + " as const;"
                 "export const diagnosticParameters = " + json requirements + " as const;"
                 "export const diagnosticMessageKeys = " + json diagnosticKeys + " as const;"
+
+                "export const diagnosticGuiMessageKeys = "
+                + json guiDiagnosticKeys
+                + " as const;"
+
                 "export const correctionTargets = " + json corrections + " as const;"
         ]
         |> String.concat "\n"

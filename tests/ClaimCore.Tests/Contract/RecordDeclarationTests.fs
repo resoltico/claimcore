@@ -142,10 +142,14 @@ let private locales () =
 
         for row in CaseFields.declarations do
             for key in
-                [ FieldPresentation.labelId row.Field; FieldPresentation.meaningId row.Field ] do
+                [
+                    FieldPresentation.labelId row.Field
+                    FieldPresentation.hintId row.Field
+                    FieldPresentation.ruleId row.Field
+                ] do
                 Expect.isTrue
                     (document.RootElement.TryGetProperty key |> fst)
-                    "Locale has both field messages"
+                    "Locale has label, hint and precise rule"
 
 [<Tests>]
 let tests =

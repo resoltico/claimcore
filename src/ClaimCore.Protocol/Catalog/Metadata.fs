@@ -55,7 +55,8 @@ type CatalogInput =
         AdviceGroup: RecordGroup option
         Branches: BindingCondition list
         LabelId: string
-        MeaningId: string option
+        HintId: string option
+        RuleId: string option
         Order: int
         Prefill: string list option
         Required: bool
@@ -74,7 +75,8 @@ type CatalogCollection =
         Path: string list
         Branches: BindingCondition list
         LabelId: string
-        MeaningId: string option
+        HintId: string option
+        RuleId: string option
         Order: int
         Required: bool
         MinimumItems: int
@@ -188,7 +190,8 @@ type CatalogEntry =
     {
         LabelId: string
         MeaningId: string
-        ConfirmationId: string option
+        ConsequenceId: string option
+        DoneId: string option
         Family: ActFamily option
         AffectedSections: CaseSection list
         Effect: InteractionEffect
@@ -210,7 +213,8 @@ type FieldPresentationDefinition =
         Section: CaseSection option
         Pairs: BusinessField option
         LabelId: string
-        MeaningId: string
+        HintId: string
+        RuleId: string
         Scalar: ScalarRule
         AllowsAbsence: bool
         Prominence: Prominence
@@ -221,7 +225,8 @@ type InputPresentationDefinition =
     {
         Name: string
         LabelId: string
-        MeaningId: string option
+        HintId: string option
+        RuleId: string option
         Scalar: ScalarRule option
     }
 

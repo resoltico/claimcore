@@ -181,11 +181,12 @@ module CatalogCodecs =
         tagged "Presentation.ScalarRule" (textRules @ dateRules @ moneyRules @ statusRules)
 
     let private businessField =
-        (record (fun v0 v1 v2 v3 v4 v5 section pairs prominence listed ->
+        (record (fun v0 v1 v2 rule v3 v4 v5 section pairs prominence listed ->
             {
                 FieldPresentationDefinition.Name = v0
                 LabelId = v1
-                MeaningId = v2
+                HintId = v2
+                RuleId = rule
                 Scalar = v3
                 AllowsAbsence = v4
                 Group = v5
@@ -197,7 +198,8 @@ module CatalogCodecs =
         : Fields<FieldPresentationDefinition, _>)
         |> field "name" _.Name (fieldName)
         |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (text)
+        |> field "hintId" _.HintId text
+        |> field "ruleId" _.RuleId text
         |> field "scalar" _.Scalar (scalar)
         |> field "allowsAbsence" _.AllowsAbsence (boolean)
         |> field "group" _.Group (nullable (VocabularyCodec.create RecordGroup.vocabulary))
@@ -209,17 +211,19 @@ module CatalogCodecs =
         |> named "Presentation.FieldPresentationDefinition"
 
     let private inputField =
-        (record (fun v0 v1 v2 v3 ->
+        (record (fun v0 v1 v2 rule v3 ->
             {
                 InputPresentationDefinition.Name = v0
                 LabelId = v1
-                MeaningId = v2
+                HintId = v2
+                RuleId = rule
                 Scalar = v3
             })
         : Fields<InputPresentationDefinition, _>)
         |> field "name" _.Name text
         |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "hintId" _.HintId (nullable text)
+        |> field "ruleId" _.RuleId (nullable text)
         |> field "scalar" _.Scalar (nullable scalar)
         |> build
         |> named "Presentation.InputPresentationDefinition"
@@ -349,7 +353,8 @@ module CatalogCodecs =
                 adviceGroup
                 branches
                 label
-                meaning
+                hint
+                rule
                 order
                 prefill
                 required
@@ -366,7 +371,8 @@ module CatalogCodecs =
                     AdviceGroup = adviceGroup
                     Branches = branches
                     LabelId = label
-                    MeaningId = meaning
+                    HintId = hint
+                    RuleId = rule
                     Order = order
                     Prefill = prefill
                     Required = required
@@ -387,7 +393,8 @@ module CatalogCodecs =
             (nullable (VocabularyCodec.create RecordGroup.vocabulary))
         |> field "branches" _.Branches (many condition)
         |> field "labelId" _.LabelId text
-        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "hintId" _.HintId (nullable text)
+        |> field "ruleId" _.RuleId (nullable text)
         |> field "order" _.Order count
         |> field "prefill" _.Prefill (nullable (many text))
         |> field "required" _.Required boolean
@@ -407,7 +414,8 @@ module CatalogCodecs =
                 path
                 branches
                 label
-                meaning
+                hint
+                rule
                 order
                 required
                 minimum
@@ -420,7 +428,8 @@ module CatalogCodecs =
                     Path = path
                     Branches = branches
                     LabelId = label
-                    MeaningId = meaning
+                    HintId = hint
+                    RuleId = rule
                     Order = order
                     Required = required
                     MinimumItems = minimum
@@ -434,7 +443,8 @@ module CatalogCodecs =
         |> field "path" _.Path (many text)
         |> field "branches" _.Branches (many condition)
         |> field "labelId" _.LabelId text
-        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "hintId" _.HintId (nullable text)
+        |> field "ruleId" _.RuleId (nullable text)
         |> field "order" _.Order count
         |> field "required" _.Required boolean
         |> field "minimumItems" _.MinimumItems count
@@ -456,7 +466,8 @@ module CatalogCodecs =
             Kind: string
             LabelId: string
             MeaningId: string
-            ConfirmationId: string option
+            ConsequenceId: string option
+            DoneId: string option
             Family: ActFamily option
             AffectedSections: CaseSection list
             Effect: InteractionEffect
@@ -474,7 +485,8 @@ module CatalogCodecs =
                 kind
                 label
                 meaning
-                confirmation
+                consequenceCopy
+                doneCopy
                 family
                 sections
                 effect
@@ -488,7 +500,8 @@ module CatalogCodecs =
                     Kind = kind
                     LabelId = label
                     MeaningId = meaning
-                    ConfirmationId = confirmation
+                    ConsequenceId = consequenceCopy
+                    DoneId = doneCopy
                     Family = family
                     AffectedSections = sections
                     Effect = effect
@@ -502,7 +515,8 @@ module CatalogCodecs =
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text
-        |> field "confirmationId" _.ConfirmationId (nullable text)
+        |> field "consequenceId" _.ConsequenceId (nullable text)
+        |> field "doneId" _.DoneId (nullable text)
         |> field "family" _.Family (nullable (VocabularyCodec.create ActFamily.vocabulary))
         |> field
             "affectedSections"
@@ -541,7 +555,8 @@ module CatalogCodecs =
                             CatalogEntry.Kind = operation
                             LabelId = wire.LabelId
                             MeaningId = wire.MeaningId
-                            ConfirmationId = wire.ConfirmationId
+                            ConsequenceId = wire.ConsequenceId
+                            DoneId = wire.DoneId
                             Family = wire.Family
                             AffectedSections = wire.AffectedSections
                             Effect = wire.Effect
@@ -563,7 +578,8 @@ module CatalogCodecs =
                     Kind = identityName value.Kind
                     LabelId = value.LabelId
                     MeaningId = value.MeaningId
-                    ConfirmationId = value.ConfirmationId
+                    ConsequenceId = value.ConsequenceId
+                    DoneId = value.DoneId
                     Family = value.Family
                     AffectedSections = value.AffectedSections
                     Effect = value.Effect

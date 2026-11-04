@@ -74,9 +74,9 @@ let tests =
                         "Settlement has its own irreversible meaning"
 
                     Expect.equal
-                        settlement.ConfirmationId
-                        (Some "endpoint.operation.resolve.confirmation")
-                        "Both clients receive the same confirmation identity"
+                        settlement.ConsequenceId
+                        (Some "endpoint.operation.resolve.consequence")
+                        "Both clients receive the same consequence identity"
 
                     let erase =
                         OperationCatalog.entries
@@ -266,10 +266,12 @@ let tests =
                                 [
                                     yield entry.LabelId
                                     yield entry.MeaningId
-                                    yield! Option.toList entry.ConfirmationId
+                                    yield! Option.toList entry.ConsequenceId
+                                    yield! Option.toList entry.DoneId
                                     for input in entry.Inputs do
                                         yield input.LabelId
-                                        yield! Option.toList input.MeaningId
+                                        yield! Option.toList input.HintId
+                                        yield! Option.toList input.RuleId
                                 ] do
                                 Expect.isTrue (Set.contains key known) (language + ": " + key))
             testCase "synopses derive choices and flag names without exceptions" (fun () ->

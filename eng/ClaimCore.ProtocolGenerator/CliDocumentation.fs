@@ -33,26 +33,18 @@ module CliDocumentation =
         let escape (text: string) =
             text.Replace("|", "\\|").Replace("\n", " ")
 
-        let scalarGuidance (input: CatalogDerivedInput) =
-            let guidance =
-                match input.Name with
-                | InteractionInput.Target(InputTarget.Field field) -> ScalarGuidance.forField field
-                | (InteractionInput.Target InputTarget.Reason) -> Some ScalarGuidance.forReason
-                | (InteractionInput.Target InputTarget.Text) -> Some ScalarGuidance.forSearchText
-                | _ -> None
+        let rule input =
+            let guidance = ScalarGuidance.forInput input
 
-            guidance
-            |> Option.map (fun guidance ->
-                let arguments =
-                    guidance.Arguments
-                    |> Map.map (fun _ value ->
-                        match value with
-                        | GuidanceArgument.Count count ->
-                            count.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                        | GuidanceArgument.Code code -> code)
+            let arguments =
+                guidance.Arguments
+                |> Map.map (fun _ value ->
+                    match value with
+                    | GuidanceArgument.Count count ->
+                        count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    | GuidanceArgument.Code code -> code)
 
-                " " + Template.render english[guidance.Key] arguments)
-            |> Option.defaultValue ""
+            Template.render english[guidance.Key] arguments
 
         let describe operation =
             let inputs, _ = CommandGrammar.derive operation
@@ -93,12 +85,7 @@ module CliDocumentation =
                         + "` | "
                         + escape (message input.Binding.LabelId)
                         + " — "
-                        + escape (
-                            (input.Binding.MeaningId
-                             |> Option.map message
-                             |> Option.defaultValue "")
-                            + scalarGuidance input
-                        )
+                        + escape (rule input.Name)
                         + " | "
                         + escape choices
                         + " | "
@@ -116,9 +103,7 @@ module CliDocumentation =
                         + "...` | "
                         + escape (message binding.LabelId)
                         + " — "
-                        + escape (
-                            binding.MeaningId |> Option.map message |> Option.defaultValue ""
-                        )
+                        + escape (rule definition.Name)
                         + " | "
                         + string binding.MinimumItems
                         + "–"

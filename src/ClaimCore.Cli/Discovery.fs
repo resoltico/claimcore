@@ -74,45 +74,38 @@ module Discovery =
                                + "]"
                            | _ -> ""
 
-                       let guidance =
-                           match input.Name with
-                           | InteractionInput.Target(InputTarget.Field field) ->
-                               ScalarGuidance.forField field
-                           | (InteractionInput.Target InputTarget.Reason) ->
-                               Some ScalarGuidance.forReason
-                           | (InteractionInput.Target InputTarget.Text) ->
-                               Some ScalarGuidance.forSearchText
-                           | _ -> None
+                       let guidance = ScalarGuidance.forInput input.Name
 
-                       let hint =
-                           guidance
-                           |> Option.map (fun guidance ->
-                               let args =
-                                   guidance.Arguments
-                                   |> Map.map (fun _ value ->
-                                       match value with
-                                       | GuidanceArgument.Count count ->
-                                           count.ToString(
-                                               System.Globalization.CultureInfo
-                                                   .InvariantCulture
-                                           )
-                                       | GuidanceArgument.Code code -> code)
-
-                               " " + MessageCatalogs.render language guidance.Key args)
-                           |> Option.defaultValue ""
+                       let arguments =
+                           guidance.Arguments
+                           |> Map.map (fun _ value ->
+                               match value with
+                               | GuidanceArgument.Count count ->
+                                   count.ToString(
+                                       System.Globalization.CultureInfo.InvariantCulture
+                                   )
+                               | GuidanceArgument.Code code -> code)
 
                        message input.Binding.LabelId
                        + ": "
-                       + (input.Binding.MeaningId |> Option.map message |> Option.defaultValue "")
-                       + allowed
-                       + hint))
+                       + MessageCatalogs.render language guidance.Key arguments
+                       + allowed))
                 @ (CommandGrammar.collections operation
                    |> List.map (fun definition ->
                        let binding = definition.Binding
 
                        message binding.LabelId
                        + ": "
-                       + (binding.MeaningId |> Option.map message |> Option.defaultValue "")
+                       + (let guidance = ScalarGuidance.forInput definition.Name
+
+                          let arguments =
+                              guidance.Arguments
+                              |> Map.map (fun _ value ->
+                                  match value with
+                                  | GuidanceArgument.Count count -> string count
+                                  | GuidanceArgument.Code code -> code)
+
+                          MessageCatalogs.render language guidance.Key arguments)
                        + " ["
                        + CommandGrammar.collectionFlag definition
                        + " "

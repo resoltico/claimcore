@@ -35,10 +35,17 @@ module OperationCatalog =
     let labelId operation = message operation "label"
     let meaningId operation = message operation "meaning"
 
-    let confirmationId (operation: CatalogOperation) =
+    let consequenceId (operation: CatalogOperation) =
         match operation.SelectedAct, operation.Endpoint with
-        | Some _, _ -> Some(message operation "confirmation")
-        | None, ActorEndpoint.Query QueryEndpoint.Resolve -> Some(message operation "confirmation")
+        | Some _, _ -> Some(message operation "consequence")
+        | None, ActorEndpoint.Query QueryEndpoint.Resolve -> Some(message operation "consequence")
+        | _ -> None
+
+    let doneId (operation: CatalogOperation) =
+        match operation.SelectedAct, operation.Endpoint with
+        | Some _, _ -> Some(message operation "done")
+        | None, ActorEndpoint.Query(QueryEndpoint.Resolve | QueryEndpoint.AuthorityRequestsDismiss) ->
+            Some(message operation "done")
         | _ -> None
 
     let private structure (operation: CatalogOperation) =
@@ -107,7 +114,8 @@ module OperationCatalog =
                 Consequence = CatalogOperation.consequence operation
                 LabelId = labelId operation
                 MeaningId = meaningId operation
-                ConfirmationId = confirmationId operation
+                ConsequenceId = consequenceId operation
+                DoneId = doneId operation
                 Inputs = bindings.Inputs |> List.map _.Binding
                 Collections = bindings.Collections |> List.map _.Binding
                 Constants = bindings.Constants

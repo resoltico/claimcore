@@ -19,7 +19,8 @@ module CatalogValidation =
                 fields
                 |> List.collect (fun (name, value) ->
                     match name, value with
-                    | ("labelId" | "meaningId" | "confirmationId"), JsonValue.String key -> [ key ]
+                    | ("labelId" | "meaningId" | "consequenceId" | "doneId" | "hintId" | "ruleId"),
+                      JsonValue.String key -> [ key ]
                     | _ -> collect value)
             | _ -> []
 
@@ -52,7 +53,14 @@ module CatalogValidation =
                 matches key Set.empty
 
         for KeyValue(_, entry) in DiagnosticCode.all do
-            matches entry.MessageKey (entry.Parameters |> List.map _.Name |> Set.ofList)
+            let arguments = entry.Parameters |> List.map _.Name |> Set.ofList
+            matches entry.MessageKey arguments
+
+            if Map.containsKey (entry.MessageKey + ".gui") templates then
+                matches (entry.MessageKey + ".gui") arguments
+
+        for rule in ScalarGuidance.all do
+            matches rule.Key (rule.Arguments |> Map.keys |> Set.ofSeq)
 
     let validateReferences owner keys references =
         let unused = Set.difference keys references
@@ -61,6 +69,8 @@ module CatalogValidation =
             invalidOp ("Unreferenced " + owner + " message keys: " + String.concat ", " unused)
 
     let validateCatalogs (authored: Map<string, (string * string) list>) =
+        MessageRegisters.validate authored
+
         if (authored |> Map.keys |> Set.ofSeq) <> Set.ofList LocalizationPolicy.languages then
             invalidOp "Localization languages differ."
 
@@ -135,7 +145,10 @@ module CatalogValidation =
             for key in Set.union required tokens do
                 validateIdentity keys key
 
-                if not (Set.isEmpty (Template.arguments templates[key])) then
+                if
+                    not (key.EndsWith(".rule", System.StringComparison.Ordinal))
+                    && not (Set.isEmpty (Template.arguments templates[key]))
+                then
                     invalidOp ("Catalog metadata must not require arguments: " + key)
 
             producers templates

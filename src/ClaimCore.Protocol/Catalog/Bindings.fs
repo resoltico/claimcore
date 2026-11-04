@@ -406,7 +406,8 @@ module Bindings =
                         | _ -> None
                     Branches = input.Branches
                     LabelId = InteractionInput.messageKey annotation.Name "label"
-                    MeaningId = Some(InteractionInput.messageKey annotation.Name "meaning")
+                    HintId = Some(InteractionInput.messageKey annotation.Name "hint")
+                    RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
                     Order = 0
                     Prefill = annotation.Prefill
                     Required = authoredRequired input annotation
@@ -480,8 +481,8 @@ module Bindings =
                                 Path = row.Path
                                 Branches = row.Branches
                                 LabelId = InteractionInput.messageKey annotation.Name "label"
-                                MeaningId =
-                                    Some(InteractionInput.messageKey annotation.Name "meaning")
+                                HintId = Some(InteractionInput.messageKey annotation.Name "hint")
+                                RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
                                 Order = collections.Length
                                 Required = row.Required
                                 MinimumItems = row.MinimumItems

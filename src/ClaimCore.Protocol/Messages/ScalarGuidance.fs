@@ -27,7 +27,7 @@ module ScalarGuidance =
         |> Option.defaultWith (fun () ->
             invalidOp "Text guidance requires its Domain admission bound.")
 
-    let forField field =
+    let private scalarForField field =
         match (BusinessField.describe field).Kind with
         | FieldValueKind.ActorId -> Some(message "scalar.actorId.guidance" [])
         | FieldValueKind.PlannedDate -> Some(message "scalar.plannedDate.guidance" [])
@@ -37,6 +37,8 @@ module ScalarGuidance =
                 message
                     "scalar.amount.guidance"
                     [
+                        "maximumIntegerDigits",
+                        GuidanceArgument.Count Money.descriptor.Amount.MaximumIntegerDigits
                         "maximumFractionDigits",
                         GuidanceArgument.Count Money.descriptor.Amount.MaximumFractionalDigits
                     ]
@@ -87,33 +89,56 @@ module ScalarGuidance =
             )
         | FieldValueKind.Status -> None
 
+    let forField field =
+        let guidance = scalarForField field |> Option.defaultValue (message "" [])
+
+        Some
+            { guidance with
+                Key = FieldPresentation.ruleId field
+            }
+
     let forReason =
         message
-            "scalar.text.guidance"
+            (InteractionInput.messageKey (InteractionInput.Target InputTarget.Reason) "rule")
             [ "maximumCharacters", GuidanceArgument.Count(maximum Reason.descriptor) ]
 
     let forSearchText =
         message
-            "scalar.text.guidance"
+            (InteractionInput.messageKey (InteractionInput.Target InputTarget.Text) "rule")
             [ "maximumCharacters", GuidanceArgument.Count CaseSearchText.MaximumCharacters ]
 
     let forProfileName =
         message
-            "scalar.text.guidance"
+            (InteractionInput.messageKey
+                (InteractionInput.Target InputTarget.ProfileDisplayName)
+                "rule")
             [ "maximumCharacters", GuidanceArgument.Count(maximum PartyName.descriptor) ]
 
     let forProfileContact =
         message
-            "scalar.text.guidance"
+            (InteractionInput.messageKey (InteractionInput.Target InputTarget.ProfileContact) "rule")
             [ "maximumCharacters", GuidanceArgument.Count(maximum ContactText.descriptor) ]
+
+    let forInput input =
+        let key = InteractionInput.messageKey input "rule"
+
+        match input with
+        | InteractionInput.Target(InputTarget.Field field) -> forField field |> Option.get
+        | InteractionInput.Target InputTarget.Reason -> forReason
+        | InteractionInput.Target InputTarget.Text -> forSearchText
+        | InteractionInput.Target InputTarget.ProfileDisplayName -> forProfileName
+        | InteractionInput.Target InputTarget.ProfileContact -> forProfileContact
+        | InteractionInput.Target InputTarget.ReminderAction ->
+            message key [ "maximumScalars", GuidanceArgument.Count ReminderAction.MaximumScalars ]
+        | InteractionInput.Target InputTarget.ReminderDueDate -> message key []
+        | InteractionInput.Target InputTarget.Grants ->
+            message key [ "maximumGrants", GuidanceArgument.Count AuthorityAdmission.MaximumGrants ]
+        | _ -> message key []
 
     let all =
         (CaseFields.declarations
-         |> List.choose (fun field ->
-             forField field.Field |> Option.map (fun guidance -> field.Key, guidance)))
-        @ [
-            "reason", forReason
-            "text", forSearchText
-            "profile.displayName", forProfileName
-            "profile.contact", forProfileContact
-        ]
+         |> List.map (fun field -> forField field.Field |> Option.get))
+        @ (InteractionInput.technical |> List.map forInput)
+        @ (Vocabulary.all RecordGroup.vocabulary
+           |> List.map (InputTarget.Group >> InteractionInput.Target >> forInput))
+        |> List.distinctBy _.Key

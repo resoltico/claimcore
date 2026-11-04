@@ -79,15 +79,15 @@ claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--incident-date` | Incident date — Date on which the incident occurred. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. Use two uppercase letters. ZZ means unknown or international. |  |  |
-| `--claimant-name` | Claimant name — Name of the person or company making the claim. Up to 200 characters. |  |  |
-| `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. Up to 200 characters. |  |  |
-| `--claimed-amount` | Amount claimed — Amount requested by the claimant. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
-| `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. 3 uppercase ASCII letters (A–Z). |  |  |
-| `--incident-description` | Incident description — Optional plain-text account of what happened. Omission preserves the current value; explicit clear removes it. Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--incident-date` | Incident date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--incident-notification-date` | Notified date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
+| `--claimant-name` | Claimant name — Up to 200 characters. |  |  |
+| `--insurer-name` | Responsible insurer — Up to 200 characters. |  |  |
+| `--claimed-amount` | Amount claimed — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
+| `--claimed-currency` | Currency of claimed amount — 3 uppercase ASCII letters (A–Z). |  |  |
+| `--incident-description` | Incident description — Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
 
 ## case amend-registration
 
@@ -102,16 +102,16 @@ claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expect
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
-| `--incident-date` | Incident date — Date on which the incident occurred. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. Use two uppercase letters. ZZ means unknown or international. |  |  |
-| `--claimant-name` | Claimant name — Name of the person or company making the claim. Up to 200 characters. |  |  |
-| `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. Up to 200 characters. |  |  |
-| `--claimed-amount` | Amount claimed — Amount requested by the claimant. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
-| `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. 3 uppercase ASCII letters (A–Z). |  |  |
-| `--incident-description` | Incident description — Optional plain-text account of what happened. Omission preserves the current value; explicit clear removes it. Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
+| `--incident-date` | Incident date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--incident-notification-date` | Notified date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
+| `--claimant-name` | Claimant name — Up to 200 characters. |  |  |
+| `--insurer-name` | Responsible insurer — Up to 200 characters. |  |  |
+| `--claimed-amount` | Amount claimed — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
+| `--claimed-currency` | Currency of claimed amount — 3 uppercase ASCII letters (A–Z). |  |  |
+| `--incident-description` | Incident description — Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
 
 ## case correct
 
@@ -126,23 +126,23 @@ claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
 | `--registration` | Registration — Keep registration facts or update selected facts. Omitted facts stay unchanged; amount and currency are asserted together. | keep, update |  |
-| `--incident-date` | Incident date — Date on which the incident occurred. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--incident-notification-date` | Incident notification date (FNOL) — Date when this claims handler was first notified of the incident by anyone, not necessarily the claimant. Not the date another insurer or organisation was notified. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--incident-country` | Country of incident (ISO alpha-2 code) — Two uppercase ASCII letters identifying the incident country; ISO alpha-2 syntax only, without membership validation. ZZ means unknown or international. Use two uppercase letters. ZZ means unknown or international. |  |  |
-| `--claimant-name` | Claimant name — Name of the person or company making the claim. Up to 200 characters. |  |  |
-| `--insurer-name` | Responsible insurer — Insurer recorded by the claims handler as responsible for this claim. Up to 200 characters. |  |  |
-| `--claimed-amount` | Amount claimed — Amount requested by the claimant. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
-| `--claimed-currency` | Currency of claimed amount — Currency in which the amount is claimed. 3 uppercase ASCII letters (A–Z). |  |  |
-| `--incident-description` | Incident description — Optional plain-text account of what happened. Omission preserves the current value; explicit clear removes it. Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
+| `--incident-date` | Incident date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--incident-notification-date` | Notified date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
+| `--claimant-name` | Claimant name — Up to 200 characters. |  |  |
+| `--insurer-name` | Responsible insurer — Up to 200 characters. |  |  |
+| `--claimed-amount` | Amount claimed — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
+| `--claimed-currency` | Currency of claimed amount — 3 uppercase ASCII letters (A–Z). |  |  |
+| `--incident-description` | Incident description — Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
 | `--decision` | Payment decision — Keep the decision, update selected facts, or clear it. Amount and currency must be asserted together. | keep, update, clear |  |
-| `--payment-decision-date` | Payment decision date — Date when this claims handler decided the amount to be paid. Not recorded until a decision is made. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--payable-amount` | Amount to be paid — Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
-| `--payable-currency` | Currency of amount to be paid — Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency. 3 uppercase ASCII letters (A–Z). |  |  |
+| `--payment-decision-date` | Payment decision date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--payable-amount` | Amount to be paid — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
+| `--payable-currency` | Currency of amount to be paid — 3 uppercase ASCII letters (A–Z). |  |  |
 | `--payment` | Payment record — Keep, replace, reaffirm or clear the recorded payment date. Reaffirmation retains the date; clearing it does not refund money. | keep, replace, reaffirm, clear |  |
-| `--payment-date` | Payment date — Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--payment-date` | Payment date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 
 ## case decide
 
@@ -157,11 +157,11 @@ claimcore case decide [--operation-id VALUE] CASE-REFERENCE --expected-revision 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
-| `--payment-decision-date` | Payment decision date — Date when this claims handler decided the amount to be paid. Not recorded until a decision is made. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
-| `--payable-amount` | Amount to be paid — Amount the handler decided should be paid. Not recorded until decided; may differ from the claimed amount. Use ASCII digits and a dot, for example 0.10; up to 4 decimal places. No redundant leading zeros (00.10), signs or commas. |  |  |
-| `--payable-currency` | Currency of amount to be paid — Currency of the amount to be paid. Not recorded until decided; may differ from the claimed currency. 3 uppercase ASCII letters (A–Z). |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
+| `--payment-decision-date` | Payment decision date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `--payable-amount` | Amount to be paid — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
+| `--payable-currency` | Currency of amount to be paid — 3 uppercase ASCII letters (A–Z). |  |  |
 
 ## case withdraw-decision
 
@@ -176,8 +176,8 @@ claimcore case withdraw-decision [--operation-id VALUE] CASE-REFERENCE --expecte
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
 
 ## case record-payment
 
@@ -192,9 +192,9 @@ claimcore case record-payment [--operation-id VALUE] CASE-REFERENCE --expected-r
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
-| `--payment-date` | Payment date — Date when the full decided amount was paid, as recorded by the handler. Leave unrecorded if unpaid or unknown. Recording payment does not make or verify a bank transfer. Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
+| `--payment-date` | Payment date — Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06. |  |  |
 
 ## case clear-payment
 
@@ -209,8 +209,8 @@ claimcore case clear-payment [--operation-id VALUE] CASE-REFERENCE --expected-re
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
 
 ## case close
 
@@ -225,8 +225,8 @@ claimcore case close [--operation-id VALUE] CASE-REFERENCE --expected-revision N
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
 
 ## case reopen
 
@@ -241,8 +241,8 @@ claimcore case reopen [--operation-id VALUE] CASE-REFERENCE --expected-revision 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
 
 ## case void
 
@@ -257,9 +257,9 @@ claimcore case void [--operation-id VALUE] CASE-REFERENCE --expected-revision N 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
-| `--reason` | Stewardship reason — Why the case record should be voided or reinstated. Up to 200 characters. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
+| `--reason` | Reason — Up to 200 characters. |  |  |
 
 ## case reinstate
 
@@ -274,15 +274,15 @@ claimcore case reinstate [--operation-id VALUE] CASE-REFERENCE --expected-revisi
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
-| `--reason` | Stewardship reason — Why the case record should be voided or reinstated. Up to 200 characters. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
+| `--reason` | Reason — Up to 200 characters. |  |  |
 
 ## case erase
 
 Erase case payload
 
-Permanently remove business payload from the live database. WAL, backups and copies elsewhere are not erased.
+Remove this case and its details from ClaimCore. Copies held elsewhere remain.
 
 ```sh
 claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -291,14 +291,14 @@ claimcore case erase [--operation-id VALUE] CASE-REFERENCE --expected-revision N
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-revision` | Expected revision — The case revision on which this request is based. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-revision` | Reviewed case version — The case revision on which this request is based. |  |  |
 
 ## authority register
 
 Register actor
 
-Register an account with an authored display name and optional contact details, without granting case or administration capabilities.
+Add a registered account with a name and optional contact details. Roles can be assigned separately.
 
 ```sh
 claimcore authority register [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -310,14 +310,14 @@ claimcore authority register [--operation-id VALUE] --principal-kind human|servi
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
-| `--name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
-| `--contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+| `--name` | Name — Up to 200 characters. |  |  |
+| `--contact` | Contact details — Up to 200 characters. |  |  |
 
 ## authority grant
 
 Grant role
 
-Grant a role at installation or case scope.
+Assign the selected role to this account.
 
 ```sh
 claimcore authority grant [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -330,13 +330,13 @@ claimcore authority grant [--operation-id VALUE] --principal-kind human|service 
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 | `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
-| `--case-reference` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--case-reference` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 
 ## authority revoke
 
 Revoke role
 
-Revoke a role at installation or case scope. The final enabled human owner remains protected.
+Remove the selected role assignment.
 
 ```sh
 claimcore authority revoke [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --role owner|case-reader|case-registrar|case-handler|payment-recorder|data-steward|auditor [--case-reference VALUE] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -349,13 +349,13 @@ claimcore authority revoke [--operation-id VALUE] --principal-kind human|service
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
 | `--role` | Role — The capability role to grant or revoke. | owner, case-reader, case-registrar, case-handler, payment-recorder, data-steward, auditor |  |
-| `--case-reference` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--case-reference` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 
 ## authority enable
 
 Enable actor
 
-Enable a registered actor.
+Enable this account with its existing roles.
 
 ```sh
 claimcore authority enable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -372,7 +372,7 @@ claimcore authority enable [--operation-id VALUE] --principal-kind human|service
 
 Disable actor
 
-Disable a registered actor. The final enabled human owner remains protected.
+Disable this account. Its recorded changes remain.
 
 ```sh
 claimcore authority disable [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -401,8 +401,8 @@ claimcore authority set-profile [--operation-id VALUE] --principal-kind human|se
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
-| `--name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
-| `--contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
+| `--name` | Name — Up to 200 characters. |  |  |
+| `--contact` | Contact details — Up to 200 characters. |  |  |
 
 ## authority erase-profile
 
@@ -425,7 +425,7 @@ claimcore authority erase-profile [--operation-id VALUE] --principal-kind human|
 
 Add person
 
-Register this account, record its authored profile and grant its initial access together.
+Add an account with its name and initial roles together.
 
 ```sh
 claimcore authority admit [--operation-id VALUE] --principal-kind human|service --issuer VALUE --subject VALUE --name VALUE [--contact VALUE] --role ROLE[@CASE-REF]... [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -437,15 +437,15 @@ claimcore authority admit [--operation-id VALUE] --principal-kind human|service 
 | `--principal-kind` | Type — Whether the target principal is a person or a service. | human, service |  |
 | `--issuer` | Identity issuer — The exact HTTPS issuer of the target principal. |  |  |
 | `--subject` | Subject or client ID — The immutable subject or client ID of the target principal. |  |  |
-| `--name` | Display name — The authored name used for this account in work and audit views. It does not change the identity-provider subject. |  |  |
-| `--contact` | Contact details — Optional plain-text contact information. This is not an identity credential. |  |  |
-| `--role ROLE[@CASE-REF]...` | Access grants — Select roles and their scopes. Each role and scope pair may appear only once. | 1–48 | |
+| `--name` | Name — Up to 200 characters. |  |  |
+| `--contact` | Contact details — Up to 200 characters. |  |  |
+| `--role ROLE[@CASE-REF]...` | Access grants — Provide 1 to 48 distinct role-and-scope pairs. Case references are explicit references, including UUID-looking references. | 1–48 | |
 
 ## work update
 
 Update case work
 
-Change case responsibility or the optional handling summary using the independent work revision. This does not change financial facts.
+Change who is responsible or update the handling summary.
 
 ```sh
 claimcore work update [--operation-id VALUE] CASE-REFERENCE --expected-work-revision N [--responsible-actor-action clear|set] [--responsible-actor VALUE] [--handling-summary VALUE] [--handling-summary-file PATH | --handling-summary-stdin | --handling-summary-editor] [--clear-handling-summary] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -454,17 +454,17 @@ claimcore work update [--operation-id VALUE] CASE-REFERENCE --expected-work-revi
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--expected-work-revision` | Expected work revision — The work revision you reviewed. Financial fact revisions are independent. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--expected-work-revision` | Reviewed work version — The work revision you reviewed. Financial fact revisions are independent. |  |  |
 | `--responsible-actor-action` | Responsibility change — Choose set or clear; omit to keep the current responsible account. | clear, set |  |
-| `--responsible-actor` | Responsible account — The registered human account responsible for this case. Current read and work permissions are required for assignment. Use the exact registered account UUID. |  |  |
-| `--handling-summary` | Handling summary — Optional current handling context. It does not replace case status, payment progress or reminders. Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
+| `--responsible-actor` | Responsible — Use the exact registered account UUID. |  |  |
+| `--handling-summary` | Handling summary — Optional plain text, up to 600 Unicode scalar values. LF paragraph breaks are permitted. Whitespace and Unicode spelling are preserved; unsafe controls and directional formatting are refused. |  |  |
 
 ## reminder create
 
 Add reminder
 
-Plan one pending action for this case. Its identity is the operation ID.
+Plan the next action for this case.
 
 ```sh
 claimcore reminder create [--operation-id VALUE] CASE-REFERENCE --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -473,9 +473,9 @@ claimcore reminder create [--operation-id VALUE] CASE-REFERENCE --action VALUE -
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
-| `--action` | Action — The planned action in plain text, up to 200 Unicode scalar values on one line. |  |  |
-| `--due` | Due date — A planned Gregorian calendar date. Past and future dates are valid. This is not an exact-time alarm. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--action` | Action — Use one line of plain text, up to 200 Unicode scalar values. |  |  |
+| `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
 ## reminder update
 
@@ -490,11 +490,11 @@ claimcore reminder update [--operation-id VALUE] CASE-REFERENCE --reminder-id VA
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Expected reminder revision — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
-| `--action` | Action — The planned action in plain text, up to 200 Unicode scalar values on one line. |  |  |
-| `--due` | Due date — A planned Gregorian calendar date. Past and future dates are valid. This is not an exact-time alarm. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--action` | Action — Use one line of plain text, up to 200 Unicode scalar values. |  |  |
+| `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
 ## reminder complete
 
@@ -509,9 +509,9 @@ claimcore reminder complete [--operation-id VALUE] CASE-REFERENCE --reminder-id 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Expected reminder revision — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 
 ## reminder cancel
 
@@ -526,15 +526,15 @@ claimcore reminder cancel [--operation-id VALUE] CASE-REFERENCE --reminder-id VA
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Expected reminder revision — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 
 ## reminder reopen
 
 Reopen reminder
 
-Make a completed or cancelled reminder pending with an explicitly supplied date. Previous terminal events remain recorded.
+Reopen this reminder with a new due date.
 
 ```sh
 claimcore reminder reopen [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --due VALUE [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -543,16 +543,16 @@ claimcore reminder reopen [--operation-id VALUE] CASE-REFERENCE --reminder-id VA
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Expected reminder revision — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
-| `--due` | Due date — A planned Gregorian calendar date. Past and future dates are valid. This is not an exact-time alarm. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
 ## reminder complete-and-plan-next
 
 Complete and plan next action
 
-Atomically complete this pending reminder and create exactly one next pending action. Both effects commit together or neither commits.
+Complete this reminder and plan the next action together.
 
 ```sh
 claimcore reminder complete-and-plan-next [--operation-id VALUE] CASE-REFERENCE --reminder-id VALUE --expected-reminder-revision N --action VALUE --due VALUE [--action-file PATH | --action-stdin | --action-editor] [--format text|json] [--language en|lv|ar] [--dry-run] [--preview]
@@ -561,11 +561,11 @@ claimcore reminder complete-and-plan-next [--operation-id VALUE] CASE-REFERENCE 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Expected reminder revision — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
-| `--action` | Action — The planned action in plain text, up to 200 Unicode scalar values on one line. |  |  |
-| `--due` | Due date — A planned Gregorian calendar date. Past and future dates are valid. This is not an exact-time alarm. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--action` | Action — Use one line of plain text, up to 200 Unicode scalar values. |  |  |
+| `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
 ## case timeline
 
@@ -579,7 +579,7 @@ claimcore case timeline CASE-REFERENCE [--filter facts|work] [--cursor VALUE] [-
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--filter` | Timeline entries — Show case facts or work and reminders. Leave unset to show both. | facts, work |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
@@ -596,7 +596,7 @@ claimcore reminder get CASE-REFERENCE --reminder-id VALUE [--format text|json] [
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
 
 ## reminder list
@@ -611,12 +611,12 @@ claimcore reminder list [--case-reference VALUE] [--state pending|completed|canc
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `--case-reference` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `--case-reference` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--state` | Reminder state — Select current pending, completed or cancelled records. Omission selects pending reminders. | pending, completed, cancelled |  |
 | `--view` | Reminder view — Choose a standard reminder view. Explicit state, assignment, date, text and parent filters further restrict its results. | pending, mine, overdue, today, upcoming, completed, cancelled |  |
 | `--due` | Reminder due — Filter individual reminder dates against the installation business date; this differs from the case minimum next due. | overdue, today, upcoming |  |
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
-| `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
+| `--text` | Search text — Up to 100 characters. |  |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 | `--include-inactive` | Include inactive case work — Explicitly include work on closed or voided cases. Pending reminders retain their dates and state. |  |  |
@@ -673,7 +673,7 @@ claimcore case assignees CASE-REFERENCE [--cursor VALUE] [--limit N] [--format t
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--cursor` | Cursor — Continue the same query from the opaque cursor returned by the service. |  |  |
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 
@@ -689,7 +689,7 @@ claimcore case get CASE-REFERENCE [--format text|json] [--language en|lv|ar] [--
 
 | Input | Meaning | Choices | Default |
 | --- | --- | --- | --- |
-| `CASE-REFERENCE` | Handler's case reference — Reference assigned by the claims handler operating this register, not an insurer reference. Unique and immutable within one installation; printable non-space ASCII with case-insensitive identity and authored spelling retained. Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
+| `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 
 ## case list
 
@@ -708,7 +708,7 @@ claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|eras
 | `--lifecycle` | Lifecycle — Restrict results to the selected lifecycles. Omit this filter to include every lifecycle. | active, voided, erased |  |
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
-| `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
+| `--text` | Search text — Up to 100 characters. |  |  |
 | `--order` | Order — Order by reference, latest case-fact change, notification date or earliest pending reminder date. Dates sort oldest first; reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
@@ -730,7 +730,7 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--lifecycle` | Lifecycle — Restrict results to the selected lifecycles. Omit this filter to include every lifecycle. | active, voided, erased |  |
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
-| `--text` | Search text — Text searched within the claimant name, responsible insurer or handler's case reference. Search uses Unicode normalization and invariant lowercase. Up to 100 characters. |  |  |
+| `--text` | Search text — Up to 100 characters. |  |  |
 | `--order` | Order — Order by reference, latest case-fact change, notification date or earliest pending reminder date. Dates sort oldest first; reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |

@@ -59,7 +59,7 @@ module internal CliConfirmation =
             + "\n"
             + MessageCatalogs.render
                 language
-                (OperationCatalog.confirmationId operation |> Option.get)
+                (OperationCatalog.consequenceId operation |> Option.get)
                 Map.empty
             + "\n"
             + MessageCatalogs.renderCli language CliMessage.ReviewConfirmation

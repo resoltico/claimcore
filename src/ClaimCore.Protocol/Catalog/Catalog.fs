@@ -15,7 +15,8 @@ module Catalog =
                         Section = row.Section
                         Pairs = row.Pairs
                         LabelId = FieldPresentation.labelId row.Field
-                        MeaningId = FieldPresentation.meaningId row.Field
+                        HintId = FieldPresentation.hintId row.Field
+                        RuleId = FieldPresentation.ruleId row.Field
                         Scalar = FieldPresentation.descriptor row.Field
                         AllowsAbsence = row.AllowsAbsence
                         Prominence = row.Prominence
@@ -27,7 +28,8 @@ module Catalog =
                     {
                         Name = InteractionInput.key input
                         LabelId = InteractionInput.messageKey input "label"
-                        MeaningId = Some(InteractionInput.messageKey input "meaning")
+                        HintId = Some(InteractionInput.messageKey input "hint")
+                        RuleId = Some(InteractionInput.messageKey input "rule")
                         Scalar =
                             if input = InteractionInput.Target InputTarget.ProfileDisplayName then
                                 Some(ScalarRule.Text PartyName.descriptor)
