@@ -41,6 +41,7 @@ let internal listBounds (path: string) =
                 "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
                 "CaseWorklistCounts.Assignment", 2
                 "CaseWorklistCounts.Due", 5
+                "ActorReviewItem.Roles", 7
                 "AuthorityState.Grants", 48
                 "AuthorityAdmission`2.Grants", 48
                 "AuthorityReview.Effects", 50

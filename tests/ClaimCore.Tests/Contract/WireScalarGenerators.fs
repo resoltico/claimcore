@@ -203,7 +203,12 @@ let internal integer response context =
                     ])
         then
             1L, int64 Int32.MaxValue
-        elif not response || field = "ExpectedRevision" || field = "expectedRevision" then
+        elif
+            not response
+            || field = "CaseCount"
+            || field = "ExpectedRevision"
+            || field = "expectedRevision"
+        then
             0L, JsonValue.MaximumInteger
         else
             1L, JsonValue.MaximumInteger
