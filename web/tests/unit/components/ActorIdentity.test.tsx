@@ -37,7 +37,7 @@ it("links short IDs only for authority readers and formats time in the installat
   );
   expect(screen.getByRole("link", { name: "20000000" })).toHaveAttribute(
     "href",
-    "/authority/20000000-0000-4000-8000-000000000002",
+    "/people/20000000-0000-4000-8000-000000000002",
   );
   expect(view.container.querySelector("time")).toHaveTextContent("2 Jan 2026, 00:30");
   expect(view.container.querySelector("time")).toHaveAttribute("title", "2026-01-01T22:30:00Z");

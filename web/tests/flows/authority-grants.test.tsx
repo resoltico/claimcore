@@ -1,3 +1,4 @@
+import { navigate } from "../../src/routing/navigation";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
 import { authorityPreview } from "../support/authority-operation.fixtures";
@@ -57,6 +58,7 @@ const pending = <T,>() => {
   return { promise, finish };
 };
 const reads = (offered = true) => {
+  navigate("/people", true);
   const context = wireReply("context");
   if (context.outcome.kind !== "SUCCEEDED") {
     throw new Error("Context fixture absent.");

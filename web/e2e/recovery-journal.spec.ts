@@ -1,4 +1,4 @@
-import { goToView } from "./workspace-navigation";
+import { openRecovery, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -103,7 +103,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
   await second.reload();
-  await goToView(second, "operations");
+  await openRecovery(second);
   const checked = second.waitForResponse((response) =>
     response.url().endsWith("/api/operation.status"),
   );
@@ -182,7 +182,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   await page.close();
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await goToView(replacement, "operations");
+  await openRecovery(replacement);
   const scope = await scopeFor(replacement);
   const saved = await records(replacement, scope);
   expect(saved).toHaveLength(1);
@@ -253,7 +253,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await page.close();
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await goToView(replacement, "operations");
+  await openRecovery(replacement);
   const resolved = replacement.waitForResponse((response) =>
     response.url().endsWith("/api/operation.status"),
   );
@@ -516,7 +516,7 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
       promised.payload.outcome.kind === "NOT_ACCEPTED",
   ).toBe(true);
   await page.reload();
-  await goToView(page, "operations");
+  await openRecovery(page);
   const ready = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   let resolutions = 0;

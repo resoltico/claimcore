@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import type { CaseSelector } from "@contracts/client";
@@ -33,7 +34,7 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
   await page.waitForLoadState("networkidle");
   const first = await readCase(page, { kind: "REFERENCE", caseReference: reference });
   await expect(page).toHaveURL((url) => url.pathname === `/cases/id/${first.caseId}`);
-  await page.locator('.workspace-header nav a[href="/cases"]').click();
+  await goToView(page, "cases");
   await openCase(page, first.caseId);
   await page.waitForLoadState("networkidle");
   const second = await readCase(page, { kind: "REFERENCE", caseReference: first.caseId });
@@ -43,7 +44,7 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
   await expect(page.locator("#case-detail-title")).toHaveText(first.caseReference);
   await page.goto(referencePath(first.caseId), { waitUntil: "commit" });
   await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
-  await page.locator('.workspace-header nav a[href="/cases"]').click();
+  await goToView(page, "cases");
   const search = page.getByRole("searchbox");
   await search.fill(second.caseReference);
   await search.press("Enter");

@@ -50,17 +50,15 @@ type PreferenceVisit =
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
 export const settingsNavigation = async (page: Page): Promise<Locator> => {
   await settledWorkspaceHeader(page);
-  const link = page.locator('a[href="/settings"]');
-  if (!(await link.isVisible())) {
-    const compactMenu = page.locator(".workspace-header button[aria-expanded]");
-    if (await compactMenu.isVisible()) {
-      await compactMenu.click();
-    }
-    const account = page.locator(".account-menu > summary");
-    if (!(await link.isVisible())) {
-      await account.click();
-    }
+  const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
+  if (compact) {
+    return page.locator('.workspace-mobile-tabs a[href="/settings"]');
   }
+  const account = page.locator(".workspace-sidebar .account-menu");
+  if ((await account.getAttribute("open")) === null) {
+    await account.locator(":scope > summary").click();
+  }
+  const link = account.locator('a[href="/settings"]');
   return link;
 };
 const openPreferences = async (page: Page): Promise<PreferenceVisit> => {

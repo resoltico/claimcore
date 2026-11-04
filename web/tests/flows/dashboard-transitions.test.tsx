@@ -122,10 +122,11 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
       name: "Close the case",
     }),
   ).toBeVisible();
-  expect(screen.getByRole("link", { name: "Recovery" })).not.toHaveAttribute(
+  expect(document.querySelector('.workspace-sidebar a[href="/people"]')).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );
+  await user.click(document.querySelector(".account-menu > summary")!);
   expect(getButton("Sign out")).not.toBeDisabled();
   await user.click(getButton("Back to case"));
   expect(

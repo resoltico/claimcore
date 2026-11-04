@@ -27,14 +27,13 @@ it.each(["CASE-0042", "new", "NEW", ".", "..", "/", "%", "~", "~bmV3", "A/B", "1
 );
 it("reserves the OPEN route while preserving all ordinary deep links", () => {
   expect(parseRoute(new URL("/cases/new", window.location.origin))).toEqual({ screen: "newCase" });
-  expect(parseRoute(new URL("/operations/op-id", window.location.origin))).toEqual({
-    screen: "operations",
+  expect(parseRoute(new URL("/recovery/op-id", window.location.origin))).toEqual({
+    screen: "recovery",
     operationId: "op-id",
   });
-  expect(parseRoute(new URL("/authority/actor-id", window.location.origin))).toEqual({
-    screen: "authority",
+  expect(parseRoute(new URL("/people/actor-id", window.location.origin))).toEqual({
+    screen: "people",
     actorId: "actor-id",
-    history: false,
   });
   expect(parseRoute(new URL("/cases/%", window.location.origin))).toEqual({ screen: "missing" });
 });
@@ -45,7 +44,7 @@ it("keeps worklist state in the URL and blocks mutation navigation and unload", 
     query: "?view=recent&q=R%C4%ABga&order=RECENT",
   });
   setNavigationLock(true);
-  expect(navigate("/authority")).toBe(false);
+  expect(navigate("/people")).toBe(false);
   const unload = new Event("beforeunload", { cancelable: true });
   window.dispatchEvent(unload);
   expect(unload.defaultPrevented).toBe(true);
@@ -83,4 +82,25 @@ it("keeps canonical case identity separate from a UUID-shaped reference", () => 
   ]) {
     expect(parseRoute(new URL(invalid, location.origin))).toEqual({ screen: "missing" });
   }
+});
+
+it.each(["/work", "/authority", "/authority/actor-id", "/operations", "/operations/op-id"])(
+  "rejects retired route %s without an alias",
+  (path) => {
+    expect(parseRoute(new URL(path, location.origin))).toEqual({ screen: "missing" });
+  },
+);
+it("distinguishes default entry and the separate public areas", () => {
+  expect(parseRoute(new URL("/", location.origin))).toEqual({ screen: "home" });
+  expect(parseRoute(new URL("/reminders?view=pending", location.origin))).toEqual({
+    screen: "reminders",
+    query: "?view=pending",
+  });
+  expect(parseRoute(new URL("/authority-history", location.origin))).toEqual({
+    screen: "authorityHistory",
+  });
+  expect(parseRoute(new URL("/recovery", location.origin))).toEqual({
+    screen: "recovery",
+    operationId: "",
+  });
 });

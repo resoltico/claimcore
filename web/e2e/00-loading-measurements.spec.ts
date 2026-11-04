@@ -1,3 +1,4 @@
+import { goToView, openRecovery } from "./workspace-navigation";
 import { test, expect, type Page, type Browser } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -99,11 +100,15 @@ const measureNavigation = async (
   language: string,
   observations: Measurements,
 ) => {
-  for (const route of ["/operations", "/authority", "/cases"]) {
+  for (const route of ["/recovery", "/people", "/cases"]) {
     const before = await heading(page).textContent();
-    const count = (await resources(page)).length;
+    const count = route === "/recovery" ? 0 : (await resources(page)).length;
     const started = performance.now();
-    await page.locator(`.workspace-header nav a[href="${route}"]`).click();
+    if (route === "/recovery") {
+      await openRecovery(page);
+    } else {
+      await goToView(page, route === "/people" ? "people" : "cases");
+    }
     await expect(page).toHaveURL(new URL(route, baseURL).href);
     await expect.poll(() => heading(page).textContent()).not.toBe(before);
     await ready(page, route);
@@ -220,7 +225,7 @@ test("records comparable cold routes warm navigation and language activation", a
   }
   const observations: Measurements = [];
   for (const language of ["en", "lv", "ar"]) {
-    for (const route of ["/cases", "/operations", "/authority"]) {
+    for (const route of ["/cases", "/recovery", "/people"]) {
       await measureRoute(browser, baseURL, state, language, route, observations);
     }
   }

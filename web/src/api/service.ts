@@ -1,3 +1,4 @@
+import { captureBusinessDateObserver } from "./businessDateObservation";
 import { ReadAdmission } from "./readAdmission";
 import { replyCorrelates } from "../protocol/replyCorrelation";
 import type { PreparedRequest } from "../protocol/preparedRequest";
@@ -96,13 +97,18 @@ const send = <K extends EndpointId>(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
+  const observeDate = captureBusinessDateObserver(id, credential);
   const network = async (deliveredSignal: AbortSignal): Promise<ApiResult<ServiceResponse<K>>> => {
     if (deliveredSignal.aborted) {
       return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
     }
     try {
       const response = await sendHttp(endpoint, headers, body, deliveredSignal);
-      return await result(id, response, deliveredSignal, input);
+      const reply = await result(id, response, deliveredSignal, input);
+      if (!signal.aborted && !deliveredSignal.aborted && reply.kind === "outcome") {
+        observeDate(reply.value);
+      }
+      return reply;
     } catch {
       return { kind: "deliveryFailure", notice: localNotice("unreachable") };
     }

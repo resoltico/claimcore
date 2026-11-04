@@ -181,27 +181,3 @@
 .text-field textarea[rows="1"] {
   min-block-size: var(--target-primary);
 }
-
-.compact-work-overview .section-heading {
-  gap: var(--space-2);
-}
-.compact-work-overview .section-heading h2 {
-  margin: 0;
-  font-size: 1rem;
-}
-.work-attention-count {
-  margin-block: var(--space-2);
-}
-.work-attention-count > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--space-3);
-}
-.work-attention-count dd {
-  margin: 0;
-  font-size: 1.5rem;
-}
-.compact-work-overview .observation-basis {
-  margin-block: var(--space-1);
-}

@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { startOpen, reviewDraft } from "./case-workflow";
 import { expect, test, type Page } from "@playwright/test";
@@ -91,9 +92,9 @@ test("a missing view chunk leaves the workspace available and explicit reload in
       body: "SYNTHETIC_MISSING_VIEW_CHUNK",
     }),
   );
-  await page.locator('.workspace-header nav a[href="/authority"]').click();
+  await goToView(page, "people");
   await expect(page.getByRole("alert")).toContainText("This view could not be loaded");
-  await expect(page.locator('.workspace-header nav a[href="/operations"]')).toBeVisible();
+  await expect(page.locator('.workspace-sidebar nav a[href="/reminders"]')).toBeVisible();
   await expect(page.getByRole("button", { name: "Retry loading", exact: true })).toBeVisible();
   await page.unroute(accessModule);
   await reloadDocument(page);

@@ -28,7 +28,7 @@ const previewRefusal = async (page: Page, control: Locator, target: string, code
 };
 const openAuthority = async (page: Page, language: "en" | "lv" | "ar") => {
   await openAuthenticated(page);
-  await goToView(page, "authority");
+  await goToView(page, "people");
   await selectLanguage(page, language);
 };
 for (const language of ["en", "lv", "ar"] as const) {

@@ -4,18 +4,20 @@ export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
   await page.locator(".workspace-header").waitFor({ state: "visible" });
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   await page
-    .locator(".workspace-header button[aria-expanded]")
-    .waitFor({ state: compact ? "visible" : "detached" });
+    .locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav")
+    .waitFor({ state: "visible" });
 };
-/** Open the actual account actions in desktop or compact navigation. */
+/** Desktop account controls live in the sidebar footer. Compact sign out lives in Settings. */
 export const showAccountActions = async (page: Page): Promise<void> => {
   await settledWorkspaceHeader(page);
-  const account = page.locator(".account-menu > summary");
-  if (!(await account.isVisible())) {
-    await page.locator(".workspace-header button[aria-expanded]").click();
+  const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
+  if (compact) {
+    await page.locator('.workspace-mobile-tabs a[href="/settings"]').click();
+    return;
   }
-  if ((await page.locator(".account-menu").getAttribute("open")) === null) {
-    await account.click();
+  const account = page.locator(".workspace-sidebar .account-menu");
+  if ((await account.getAttribute("open")) === null) {
+    await account.locator(":scope > summary").click();
   }
 };
 export const chooseChoice = (page: Page, name: string, value: string): Promise<void> =>
@@ -33,16 +35,16 @@ export const showExactLookup = async (page: Page): Promise<Locator> => {
 };
 export const goToView = async (
   page: Page,
-  name: "cases" | "operations" | "authority",
+  name: "cases" | "people" | "reminders" | "authority-history",
 ): Promise<void> => {
   await settledWorkspaceHeader(page);
-  const link = page.locator(`nav a[href="/${name}"]`);
-  // The header mounts before the current-context reply supplies authorized navigation.
-  await link.waitFor({ state: "attached" });
-  if (!(await link.isVisible())) {
-    await page.locator(".workspace-header button[aria-expanded]").click();
-  }
-  await link.click();
+  const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
+  const navigation = page.locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav");
+  await navigation.locator(`a[href="/${name}"]`).click();
+};
+/** Recovery is intentionally absent from primary navigation; an exact direct link is supported. */
+export const openRecovery = async (page: Page): Promise<void> => {
+  await page.goto("/recovery", { waitUntil: "commit" });
 };
 
 /** General receipt observation is secondary to the actor's dedicated recovery list. */

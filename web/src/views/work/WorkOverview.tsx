@@ -1,47 +1,9 @@
-import { useEndpointCache } from "../../hooks/EndpointProvider";
 import type { WorkOverview as WorkOverviewData } from "@contracts/client";
-import { useEffect, useRef } from "react";
 import { useEndpoint } from "../../hooks/useEndpoint";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 
-/** Timers only request a new server observation. Business dates never come from this clock. */
-const useWorkRefresh = (reload: () => void, enabled: boolean) => {
-  useEffect(() => {
-    if (!enabled) {
-      return;
-    }
-    const resumed = () => {
-      if (document.visibilityState === "visible") {
-        reload();
-      }
-    };
-    window.addEventListener("focus", resumed);
-    document.addEventListener("visibilitychange", resumed);
-    const timer = window.setInterval(resumed, 60_000);
-    return () => {
-      window.removeEventListener("focus", resumed);
-      document.removeEventListener("visibilitychange", resumed);
-      window.clearInterval(timer);
-    };
-  }, [reload, enabled]);
-};
-/** A newly observed server business day refreshes date-dependent panes without inventing local dates. */
-const useBusinessDayObservation = (value: WorkOverviewData | null) => {
-  const date = value?.basis.businessDate ?? null;
-  const cache = useEndpointCache();
-  const previous = useRef<string | null>(null);
-  useEffect(() => {
-    if (date !== null) {
-      const changed = previous.current !== null && previous.current !== date;
-      previous.current = date;
-      if (changed) {
-        cache?.invalidate();
-      }
-    }
-  }, [date, cache]);
-};
 const OverviewCounts = ({ value }: { value: WorkOverviewData }) => {
   const p = usePresentation();
   const dimensions = [
@@ -82,41 +44,11 @@ const OverviewBasis = ({ value }: { value: WorkOverviewData }) => {
     </>
   );
 };
-const OverviewValues = ({ value, compact }: { value: WorkOverviewData; compact: boolean }) => {
+const OverviewHeading = ({ mine }: { mine: boolean }) => {
   const p = usePresentation();
-  if (!compact) {
-    return (
-      <>
-        <OverviewCounts value={value} />
-        <OverviewBasis value={value} />
-      </>
-    );
-  }
   return (
     <>
-      <dl className="work-attention-count">
-        <div>
-          <dt>{p.text("ui.attentionCases")}</dt>
-          <dd>{p.integer(value.attentionCases)}</dd>
-        </div>
-      </dl>
-      <OverviewBasis value={value} />
-      <details>
-        <summary>{p.text("ui.summaryDetails")}</summary>
-        <p>{p.text("ui.workScopeHint")}</p>
-        <OverviewCounts value={value} />
-      </details>
-    </>
-  );
-};
-const OverviewHeading = ({ mine, compact }: { mine: boolean; compact: boolean }) => {
-  const p = usePresentation();
-  const scope = p.text(mine ? "ui.myWork" : "ui.accessibleWork");
-  return compact ? (
-    scope
-  ) : (
-    <>
-      {p.text("ui.workOverview")} · {scope}
+      {p.text("ui.workOverview")} · {p.text(mine ? "ui.myWork" : "ui.accessibleWork")}
     </>
   );
 };
@@ -126,39 +58,27 @@ const observedOverview = (
   !overview.loading && overview.value?.outcome.kind === "SUCCEEDED"
     ? overview.value.outcome.data
     : null;
-export const WorkOverview = ({
-  mine = false,
-  compact = false,
-}: {
-  mine?: boolean;
-  compact?: boolean;
-}) => {
+export const WorkOverview = ({ mine = false }: { mine?: boolean }) => {
   const p = usePresentation();
   const requester = useRequesterContext();
   const titleId = `work-overview-${String(mine)}`;
   const enabled = requester !== null && requester.views.includes("CASES");
   const overview = useEndpoint("work.overview", mine ? { mine: true } : {}, enabled);
-  useWorkRefresh(overview.reload, enabled);
   const value = observedOverview(overview);
-  useBusinessDayObservation(value);
   if (!enabled) {
     return null;
   }
   return (
-    <section
-      className={compact ? "work-overview compact-work-overview" : "work-overview"}
-      aria-labelledby={titleId}
-      aria-busy={overview.loading}
-    >
+    <section className="work-overview" aria-labelledby={titleId} aria-busy={overview.loading}>
       <div className="section-heading">
         <h2 id={titleId}>
-          <OverviewHeading mine={mine} compact={compact} />
+          <OverviewHeading mine={mine} />
         </h2>
         <button type="button" disabled={overview.loading} onClick={overview.reload}>
           {p.text("ui.refreshWork")}
         </button>
       </div>
-      {compact ? null : <p>{p.text("ui.workScopeHint")}</p>}
+      <p>{p.text("ui.workScopeHint")}</p>
       {overview.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {overview.message === null ? null : (
         <p role="status">
@@ -168,7 +88,10 @@ export const WorkOverview = ({
       {value === null ? (
         <p>{p.text("ui.workOverviewUnavailable")}</p>
       ) : (
-        <OverviewValues value={value} compact={compact} />
+        <>
+          <OverviewCounts value={value} />
+          <OverviewBasis value={value} />
+        </>
       )}
     </section>
   );

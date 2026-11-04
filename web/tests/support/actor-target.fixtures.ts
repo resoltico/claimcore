@@ -90,8 +90,8 @@ export const authorDifferentTarget = async () => {
   });
 };
 export const actorRoute = () => {
-  navigate(`/authority/${firstActor.actorId}`);
+  navigate(`/people/${firstActor.actorId}`);
 };
 export const listRoute = () => {
-  navigate("/authority");
+  navigate("/people");
 };

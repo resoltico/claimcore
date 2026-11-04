@@ -1,5 +1,3 @@
-import { AuthorityHistory } from "./authority/AuthorityHistory";
-import { followLink } from "../routing/followLink";
 import type { ActorSummary } from "@contracts/client";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
 import { ActorOperation } from "./authority/ActorOperation";
@@ -93,7 +91,7 @@ const SelectedActorGrants = ({
         const target =
           document.getElementById(`actor-grants-${actorId}`) ??
           document.getElementById("authority-actors-title");
-        navigate("/authority", false, target?.id);
+        navigate("/people", false, target?.id);
       }}
       onDisclosureRefused={refused}
       onActor={onActor}
@@ -139,10 +137,9 @@ const AuthorityDirectory = ({
 };
 const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) => {
   const route = useRoute();
-  const selectedActorId =
-    route.screen === "authority" && route.actorId !== "" ? route.actorId : null;
+  const selectedActorId = route.screen === "people" && route.actorId !== "" ? route.actorId : null;
   const setSelectedActorId = (actorId: string | null): void => {
-    navigate(actorId === null ? "/authority" : `/authority/${encodeURIComponent(actorId)}`);
+    navigate(actorId === null ? "/people" : `/people/${encodeURIComponent(actorId)}`);
   };
   const context = useAuthorityContext(disclosure);
   const offered = useMemo(
@@ -281,7 +278,7 @@ const AuthorityLayout = ({
   target,
 }: AuthorityLayoutProps) => {
   const route = useRoute();
-  const selected = route.screen === "authority" && route.actorId !== "";
+  const selected = route.screen === "people" && route.actorId !== "";
   const credential = useCredential();
   const { invalidate } = disclosure;
   return (
@@ -350,7 +347,7 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
     (notice?: Notice) => {
       actions.current?.invalidate();
       setRecorded(null);
-      replaceDisclosureRoute("/authority");
+      replaceDisclosureRoute("/people");
       cache?.invalidate();
       refuseDisclosure(notice);
     },
@@ -358,7 +355,7 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
   );
   const onRecorded = (receipt: OperationReceipt) => {
     setNavigationLock(false);
-    replaceDisclosureRoute("/authority");
+    replaceDisclosureRoute("/people");
     setRecorded({ credential, id: receipt.operationId });
     cache?.invalidate();
     invalidate(true);
@@ -393,7 +390,7 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
     state.disclosure.revision,
     (props.disclosureAvailable ?? true) && state.disclosure.active,
   );
-  const navigation = useOperationNavigation(target.model, undefined, "/authority");
+  const navigation = useOperationNavigation(target.model, undefined, "/people");
   return (
     <AuthorityLayout
       {...state}
@@ -405,43 +402,4 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
   );
 };
 
-export const AuthorityPanel = (props: AuthorityPanelProps) => {
-  const p = usePresentation();
-  const route = useRoute();
-  const actorId = route.screen === "authority" ? route.actorId : "";
-  const history = route.screen === "authority" && route.history;
-  const base = actorId === "" ? "/authority" : `/authority/${encodeURIComponent(actorId)}`;
-  return (
-    <>
-      <nav className="authority-tabs" aria-label={p.text("ui.access")}>
-        <a
-          href={base}
-          aria-current={history ? undefined : "page"}
-          onClick={(event) => {
-            followLink(event, () => {
-              navigate(base);
-            });
-          }}
-        >
-          {p.text("ui.actors")}
-        </a>
-        <a
-          href={`${base}?tab=history`}
-          aria-current={history ? "page" : undefined}
-          onClick={(event) => {
-            followLink(event, () => {
-              navigate(`${base}?tab=history`);
-            });
-          }}
-        >
-          {p.text(actorId === "" ? "endpoint.authority.history.label" : "ui.historyForActor")}
-        </a>
-      </nav>
-      {history && props.disclosureAvailable !== false ? (
-        <AuthorityHistory key={actorId} actorId={actorId} />
-      ) : (
-        <AuthorityEditorPanel {...props} />
-      )}
-    </>
-  );
-};
+export const AuthorityPanel = (props: AuthorityPanelProps) => <AuthorityEditorPanel {...props} />;

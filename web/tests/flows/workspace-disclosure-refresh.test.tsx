@@ -53,7 +53,7 @@ const deferred = <T,>() => {
   return { promise, finish };
 };
 const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) => {
-  await user.click(await screen.findByRole("link", { name: "Access" }));
+  await user.click(await screen.findByRole("link", { name: "People & access" }));
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();

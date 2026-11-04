@@ -30,7 +30,7 @@ const sameSnapshot = (left: Snapshot | null, right: Snapshot) =>
 const useActorDisclosure = (revision: number, available: boolean) => {
   const credential = useCredential();
   const route = useRoute();
-  const actorId = route.screen === "authority" && route.actorId !== "" ? route.actorId : null;
+  const actorId = route.screen === "people" && route.actorId !== "" ? route.actorId : null;
   const epoch = `${credential}:${revision}`;
   const key = `${epoch}:${actorId ?? ""}`;
   const current = useRef({ key, available });

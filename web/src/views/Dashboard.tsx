@@ -3,7 +3,8 @@ import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
 import { useSessionContext } from "../session/SessionContext";
 import { RequesterContext } from "../hooks/useRequesterContext";
-import { WorkOverview } from "./work/WorkOverview";
+import { useBusinessDate } from "../hooks/useBusinessDate";
+import { RecoveryBanner } from "./RecoveryBanner";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
@@ -16,25 +17,51 @@ import { useRoute } from "../routing/useRoute";
 import type { Route } from "../routing/routes";
 import { casePath } from "../routing/routes";
 import { navigate, setNavigationLock, takeRouteFocus } from "../routing/navigation";
-const category = (route: Route): "cases" | "operations" | "authority" =>
-  route.screen === "operations" || route.screen === "authority" ? route.screen : "cases";
-
-const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>) => {
-  const selected = useRef(false);
+const category = (
+  route: Route,
+): "cases" | "people" | "recovery" | "authorityHistory" | "settings" => {
+  switch (route.screen) {
+    case "people":
+    case "recovery":
+    case "authorityHistory":
+    case "settings":
+      return route.screen;
+    default:
+      return "cases";
+  }
+};
+const availableRoute = (
+  route: Route,
+  views: ReadonlyArray<string>,
+  capabilities: ReadonlyArray<string>,
+) => {
+  switch (category(route)) {
+    case "settings":
+    case "recovery":
+      return true;
+    case "people":
+      return views.includes("AUTHORITY");
+    case "authorityHistory":
+      return capabilities.includes("READ_AUTHORITY");
+    case "cases":
+      return views.includes("CASES");
+  }
+};
+/** Only default entry chooses an area. Explicit deep links retain their URL and refusal state. */
+const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>, known: boolean) => {
   useEffect(() => {
-    if (route.screen === "settings" || selected.current || views.length === 0) {
+    if (route.screen !== "home" || !known) {
       return;
     }
-    selected.current = true;
-    if (!views.includes(category(route).toUpperCase())) {
-      const first = (["cases", "authority", "operations"] as const).find((name) =>
-        views.includes(name.toUpperCase()),
-      );
-      if (first !== undefined) {
-        navigate(`/${first}`, true);
-      }
+    let initial = "/settings";
+    if (views.includes("AUTHORITY")) {
+      initial = "/people";
     }
-  }, [route, views]);
+    if (views.includes("CASES")) {
+      initial = "/cases";
+    }
+    navigate(initial, true);
+  }, [route, views, known]);
 };
 const routeFocusTarget = (root: HTMLElement, id: string | null) => {
   const requested = id === null ? null : document.getElementById(id);
@@ -173,13 +200,13 @@ const useWorkspaceAccess = (route: Route) => {
   const views = actorContext?.views ?? [];
   const active = category(route);
   const noViews = !context.loading && actorContext !== null && views.length === 0;
-  useInitialAllowedRoute(route, views);
+  useInitialAllowedRoute(route, views, actorContext !== null);
   return { context, actorContext, views, active, noViews };
 };
 const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   const p = usePresentation();
   let title = p.text("ui.cases");
-  if (route.screen === "operations") {
+  if (route.screen === "recovery") {
     title = p.text("ui.operationLookup");
   }
   if (route.screen === "case") {
@@ -232,16 +259,26 @@ const WorkspaceContents = ({
 type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "authorityAvailable"> & {
   views: ReadonlyArray<string>;
   noViews: boolean;
+  capabilities: ReadonlyArray<string>;
+  known: boolean;
 };
-const WorkspaceRoute = ({ views, noViews, ...routing }: WorkspaceRouteProps) => {
+const WorkspaceRoute = ({
+  views,
+  noViews,
+  capabilities,
+  known,
+  ...routing
+}: WorkspaceRouteProps) => {
   const active = category(routing.route);
   return (
     <WorkspaceContents
       key={active}
-      advertised={routing.route.screen === "settings" || views.includes(active.toUpperCase())}
-      retainOperation={["authority", "caseAct", "newCase"].includes(routing.route.screen)}
-      noViews={noViews}
-      known={views.length > 0}
+      advertised={
+        routing.route.screen === "missing" || availableRoute(routing.route, views, capabilities)
+      }
+      retainOperation={["people", "caseAct", "newCase"].includes(routing.route.screen)}
+      noViews={routing.route.screen === "home" && noViews}
+      known={known}
       fallback={<WorkspaceUnavailable route={routing.route} />}
     >
       <RoutedContent
@@ -285,16 +322,18 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
     },
   };
 };
-const activeNavigation = (route: Route, active: string): string => {
-  switch (route.screen) {
-    case "settings":
-      return "settings";
-    case "work":
-      return "work";
-    default:
-      return active;
-  }
+const BusinessDateNotice = ({ date, refresh }: { date: string; refresh: () => void }) => {
+  const p = usePresentation();
+  return (
+    <aside className="shell-warning" role="status">
+      <p>{p.text("ui.shell.businessDateChanged", { date: p.dateHeading(date) })}</p>
+      <button type="button" onClick={refresh}>
+        {p.text("ui.refreshWork")}
+      </button>
+    </aside>
+  );
 };
+
 export const Dashboard = () => {
   const route = useRoute();
   const { context, actorContext, views, active, noViews } = useWorkspaceAccess(route);
@@ -310,6 +349,8 @@ export const Dashboard = () => {
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route, owner);
   useNavigationLock(locked);
+  const businessDate = useBusinessDate(actorContext);
+  const shellContext = actorContext ?? { capabilities: [], offers: [] };
   const committed = (receipt: CaseReceipt) => {
     if (!feedback.accept(receipt)) {
       return;
@@ -323,30 +364,44 @@ export const Dashboard = () => {
   return (
     <RequesterContext value={actorContext}>
       <RecoveryProvider>
-        <WorkspaceHeader active={activeNavigation(route, active)} views={views} locked={locked} />
-        <AcceptedToast
-          route={route}
-          receipt={feedback.receipt}
-          close={() => {
-            feedback.clear();
-          }}
-        />
-        <main className="app-shell">
-          <WorkspaceStatus context={context} />
-          <MaintenanceNotice active={actorContext?.maintenance.active ?? false} />
-          {route.screen === "settings" ? null : <WorkOverview compact={route.screen !== "work"} />}
-          <div ref={content}>
-            <WorkspaceRoute
-              key={owner}
+        <div className="workspace-shell">
+          <WorkspaceHeader
+            route={route}
+            active={route.screen === "reminders" ? "reminders" : active}
+            views={views}
+            capabilities={shellContext.capabilities}
+            offers={shellContext.offers}
+            locked={locked}
+          />
+          <main className="app-shell">
+            <AcceptedToast
               route={route}
-              views={views}
-              noViews={noViews}
-              setLocked={setLocked}
-              committed={committed}
-              refresh={refresh}
+              receipt={feedback.receipt}
+              close={() => {
+                feedback.clear();
+              }}
             />
-          </div>
-        </main>
+            <RecoveryBanner />
+            {businessDate.changedDate === null ? null : (
+              <BusinessDateNotice date={businessDate.changedDate} refresh={businessDate.refresh} />
+            )}
+            <WorkspaceStatus context={context} />
+            <MaintenanceNotice active={actorContext?.maintenance.active ?? false} />
+            <div ref={content}>
+              <WorkspaceRoute
+                key={owner}
+                route={route}
+                views={views}
+                noViews={noViews}
+                capabilities={shellContext.capabilities}
+                known={actorContext !== null}
+                setLocked={setLocked}
+                committed={committed}
+                refresh={refresh}
+              />
+            </div>
+          </main>
+        </div>
       </RecoveryProvider>
     </RequesterContext>
   );

@@ -1,4 +1,4 @@
-import { goToView } from "./workspace-navigation";
+import { openRecovery } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openCase, startAct, reviewDraft } from "./case-workflow";
@@ -59,7 +59,7 @@ for (const reload of [false, true]) {
     ]);
     if (reload) {
       await page.reload();
-      await goToView(page, "operations");
+      await openRecovery(page);
       await expect(
         page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
       ).toHaveCount(0);

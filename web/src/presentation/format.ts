@@ -75,7 +75,7 @@ export const recordedTime = (value: string, zone: string, locale: DisplayLocale)
 
 const calendarCarrier = (value: string): Date | null =>
   isGregorianDate(value) ? new Date(`${value}T00:00:00.000Z`) : null;
-export const calendarDate = (value: string, locale: DisplayLocale): string => {
+export const calendarDate = (value: string, locale: DisplayLocale, named = false): string => {
   const date = calendarCarrier(value);
   if (date === null) {
     return value;
@@ -86,8 +86,9 @@ export const calendarDate = (value: string, locale: DisplayLocale): string => {
     calendar: "gregory",
     timeZone: "UTC",
     year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+    month: named ? "short" : "2-digit",
+    day: named ? "numeric" : "2-digit",
+    ...(named ? { weekday: "short" as const } : {}),
   })
     .formatToParts(date)
     .map((part) => (part.type === "year" ? year : part.value))

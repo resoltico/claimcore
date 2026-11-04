@@ -1,4 +1,4 @@
-import { goToView, showExactLookup, showOperationLookup } from "./workspace-navigation";
+import { openRecovery, showExactLookup, showOperationLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
@@ -20,7 +20,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   ).toBeDisabled();
   await lookup.press("Enter");
   expect(requests).toHaveLength(0);
-  await goToView(page, "operations");
+  await openRecovery(page);
   const operation = await showOperationLookup(page);
   await expect(operation).toHaveAccessibleName("Exact operation ID");
   await operation.fill("not-an-operation-id");
@@ -57,7 +57,7 @@ test("hides absent case and operation identities behind neutral access refusals"
   await expect(page.getByText("Case was not found.", { exact: true })).toHaveCount(0);
   await expect(page.getByText(ui("en", "ui.loadingHistory"), { exact: true })).toHaveCount(0);
   await expectAccessible(page);
-  await goToView(page, "operations");
+  await openRecovery(page);
   await (await showOperationLookup(page)).fill(randomUUID());
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(page.getByRole("alert").first()).toBeVisible();

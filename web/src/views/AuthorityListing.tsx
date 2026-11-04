@@ -84,7 +84,7 @@ const ActorSubject = ({
       </bdi>
     );
   }
-  const href = `/authority/${encodeURIComponent(actor.actorId)}`;
+  const href = `/people/${encodeURIComponent(actor.actorId)}`;
   return (
     <a
       className="actor-subject row-link"

@@ -1,3 +1,4 @@
+import { navigate } from "../../src/routing/navigation";
 import { chooseOption } from "../support/choice-entry";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
@@ -164,16 +165,9 @@ it("shows current fields, server act labels, full expandable history and retryab
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      offers: context.offers,
-      items: [],
-      nextCursor: null,
-    }),
-  );
   fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
+  navigate("/recovery");
   render(<Dashboard />);
-  await user.click(await screen.findByRole("link", { name: "Recovery" }));
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
@@ -220,7 +214,7 @@ it("keeps public metadata and other panes available when a case read is refused"
   );
   const first = render(<Dashboard />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
-  expect(screen.getByRole("link", { name: "Recovery" })).not.toHaveAttribute(
+  expect(document.querySelector('.workspace-sidebar a[href="/people"]')).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );

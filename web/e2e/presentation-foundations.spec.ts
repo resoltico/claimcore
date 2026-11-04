@@ -52,8 +52,8 @@ const observe = async (page: Page, authenticated = false) => {
               productVersion: "synthetic-presentation",
               businessDate: "2026-11-04",
               timeZone: "Etc/UTC",
-              capabilities: [],
-              views: ["OPERATIONS"],
+              capabilities: ["READ_CASE", "READ_AUTHORITY"],
+              views: ["CASES", "AUTHORITY", "OPERATIONS"],
               offers: [],
             }),
           },
@@ -279,6 +279,39 @@ for (const language of ["en", "lv", "ar"] as const) {
     expect(bounds).toEqual([true, true]);
     await clean();
   });
+}
+
+for (const language of ["en", "ar"] as const) {
+  for (const width of [320, 800, 1440]) {
+    test(`shell uses the adopted navigation without overflow at ${width}px in ${language}`, async ({
+      page,
+    }) => {
+      const clean = await observe(page, true);
+      await seed(page, { language });
+      await page.setViewportSize({ width, height: 900 });
+      await page.goto("/settings", { waitUntil: "commit" });
+      await expect(page.locator(".settings-panel")).toBeVisible();
+      if (width === 320) {
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = "200%";
+        });
+      }
+      const mobile = width === 320;
+      await expect(page.locator(".workspace-mobile-tabs")).toHaveCount(mobile ? 1 : 0);
+      await expect(page.locator(".workspace-sidebar nav")).toHaveCount(mobile ? 0 : 1);
+      await expect(page.locator('nav a[href="/recovery"]')).toHaveCount(0);
+      await expect(page.locator(".shell-business-date")).toHaveCount(1);
+      const overflow = await page.evaluate(() => ({
+        document: document.documentElement.scrollWidth > document.documentElement.clientWidth,
+        main:
+          document.querySelector("main")!.getBoundingClientRect().right >
+          document.documentElement.clientWidth + 1,
+      }));
+      expect(overflow).toEqual({ document: false, main: false });
+      await expectAccessible(page);
+      await clean();
+    });
+  }
 }
 
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";

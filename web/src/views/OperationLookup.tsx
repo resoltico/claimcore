@@ -125,7 +125,7 @@ export const OperationLookup = ({ definition, initialOperationId }: OperationLoo
           if (initialOperationId === undefined) {
             void observe();
           } else {
-            navigate(`/operations/${encodeURIComponent(operationId)}`);
+            navigate(`/recovery/${encodeURIComponent(operationId)}`);
           }
         }}
       >

@@ -1,3 +1,4 @@
+import { AuthorityHistory } from "./authority/AuthorityHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import type { CaseSelector } from "@contracts/client";
@@ -189,6 +190,22 @@ const NewCaseEditor = ({
     onMutationLockChange={setLocked}
   />
 );
+const AreaContent = ({ route }: { route: Route }) => {
+  switch (route.screen) {
+    case "settings":
+      return <SettingsPage />;
+    case "reminders":
+      return <WorkQueue />;
+    case "recovery":
+      return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
+    case "authorityHistory":
+      return <AuthorityHistory actorId="" />;
+    case "missing":
+      return <MissingPage />;
+    default:
+      return null;
+  }
+};
 export const RoutedContent = ({
   route,
   setLocked,
@@ -204,10 +221,6 @@ export const RoutedContent = ({
 }) => {
   const { selectCase, openCase, backToCases } = useCaseNavigation();
   switch (route.screen) {
-    case "settings":
-      return <SettingsPage />;
-    case "work":
-      return <WorkQueue />;
     case "cases":
       return <CaseList onSelect={selectCase} onOpen={openCase} />;
     case "case":
@@ -240,11 +253,9 @@ export const RoutedContent = ({
           committed={committed}
         />
       );
-    case "operations":
-      return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
-    case "authority":
+    case "people":
       return <AuthorityPanel onLockChange={setLocked} disclosureAvailable={authorityAvailable} />;
-    case "missing":
-      return <MissingPage />;
+    default:
+      return <AreaContent route={route} />;
   }
 };

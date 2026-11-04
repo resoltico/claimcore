@@ -7,7 +7,7 @@ export const ActorIdentity = ({ actorId }: { actorId: string }) => {
   const p = usePresentation();
   const context = useRequesterContext();
   const label = context?.actorId === actorId ? p.text("ui.you") : actorId.slice(0, 8);
-  const href = `/authority/${encodeURIComponent(actorId)}`;
+  const href = `/people/${encodeURIComponent(actorId)}`;
   return (
     <span className="actor-identity">
       {context?.capabilities.includes("READ_AUTHORITY") === true ? (

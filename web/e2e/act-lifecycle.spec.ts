@@ -1,4 +1,4 @@
-import { goToView, showOperationLookup, chooseOption } from "./workspace-navigation";
+import { openRecovery, goToView, showOperationLookup, chooseOption } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
@@ -44,7 +44,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
   await expectAccessible(page);
 
-  await goToView(page, "operations");
+  await openRecovery(page);
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(

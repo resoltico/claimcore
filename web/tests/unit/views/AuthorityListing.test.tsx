@@ -56,7 +56,7 @@ it("exposes labelled table columns and one native keyboard link per actor", asyn
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
   expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("Grants: 0");
   expect(grants).not.toHaveBeenCalled();
-  expect(link).toHaveAttribute("href", `/authority/${actorId}`);
+  expect(link).toHaveAttribute("href", `/people/${actorId}`);
   expect(link.querySelector("bdi")).toHaveAttribute("title", subject);
   const user = userEvent.setup();
   await user.tab();

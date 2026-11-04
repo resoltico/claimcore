@@ -195,3 +195,118 @@
     --gutter: var(--space-6);
   }
 }
+
+@media (40rem <= width < 64rem) {
+  .workspace-shell {
+    grid-template-columns: 5rem minmax(0, 1fr);
+  }
+  .workspace-sidebar {
+    padding-inline: var(--space-2);
+    overflow: visible;
+  }
+  .workspace-sidebar :is(.shell-admin > p, .shell-business-date div) {
+    display: none;
+  }
+  .workspace-sidebar .shell-brand,
+  .workspace-sidebar .account-menu summary > span {
+    position: absolute;
+    inline-size: 1px;
+    block-size: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+  }
+  .workspace-sidebar .shell-link-label {
+    position: absolute;
+    inset-inline-start: calc(100% + var(--space-2));
+    padding: var(--space-2);
+    border: var(--border-width) solid var(--border-control);
+    border-radius: var(--radius-sm);
+    background: var(--bg-raised);
+    color: var(--text-primary);
+    inline-size: max-content;
+    max-inline-size: 18rem;
+    z-index: var(--layer-dialog);
+    visibility: hidden;
+  }
+  .workspace-sidebar nav a {
+    position: relative;
+    justify-content: center;
+  }
+  .workspace-sidebar nav a:is(:hover, :focus-visible) .shell-link-label {
+    visibility: visible;
+  }
+  .workspace-sidebar .account-menu[open] {
+    position: relative;
+  }
+  .workspace-sidebar .account-menu-items {
+    position: absolute;
+    inset-inline-start: 100%;
+    inset-block-end: 0;
+    min-inline-size: 12rem;
+    background: var(--bg-raised);
+    border: var(--border-width) solid var(--border-control);
+    z-index: var(--layer-dialog);
+  }
+}
+@media (width < 40rem) {
+  .workspace-shell {
+    grid-template-columns: minmax(0, 1fr);
+    padding-block-end: 6rem;
+  }
+  .workspace-sidebar,
+  .workspace-sidebar > footer {
+    display: contents;
+  }
+  .workspace-sidebar :is(.product-name, nav, .account-menu) {
+    display: none;
+  }
+  .workspace-sidebar .shell-business-date {
+    grid-column: 1;
+    grid-row: 2;
+    margin: var(--space-3) var(--gutter) 0;
+  }
+  .workspace-sidebar .shell-business-date div {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+  }
+  .workspace-header {
+    grid-column: 1;
+    grid-row: 1;
+    padding: var(--space-3) var(--gutter);
+  }
+  .shell-screen-title {
+    display: block;
+    font-weight: 700;
+    flex: 1;
+  }
+  .shell-search {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .workspace-shell > .app-shell {
+    grid-column: 1;
+    grid-row: 3;
+  }
+  .workspace-mobile-tabs {
+    display: flex;
+    position: fixed;
+    inset-inline: 0;
+    inset-block-end: 0;
+    z-index: var(--layer-dialog);
+    justify-content: space-around;
+    align-items: stretch;
+    background: var(--bg-surface);
+    border-block-start: var(--border-width) solid var(--border-control);
+    padding-block-end: env(safe-area-inset-bottom);
+  }
+  .workspace-mobile-tabs a {
+    flex: 1;
+    flex-direction: column;
+    justify-content: center;
+    gap: var(--space-1);
+    padding: var(--space-2) var(--space-1);
+    font-size: var(--text-xs);
+    text-align: center;
+  }
+}

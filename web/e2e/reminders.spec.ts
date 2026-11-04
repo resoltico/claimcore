@@ -601,7 +601,7 @@ test("published reminder rows show server timing in case and queue views across 
       await expect(item.locator(".observation-basis")).toContainText(timeZone);
     }
   }
-  await page.goto("/work");
+  await page.goto("/reminders");
   await page.getByRole("searchbox").fill(reference);
   await page.getByRole("search").getByRole("button").click();
   await expect(page.locator(".reminder-list li")).toHaveCount(3);

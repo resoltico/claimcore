@@ -35,15 +35,17 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
     </TestSession>,
   );
   await user.click(await screen.findByRole("button", { name: "Open a case" }));
+  await screen.findByRole("textbox", { name: "Claimant name" });
   fillRegistrationInputs({ caseReference: "DRAFT-CONSENT" });
   const name = screen.getByRole("textbox", { name: "Claimant name" });
   const authored = name.getAttribute("value");
-  await user.click(screen.getByRole("link", { name: "Recovery" }));
+  await user.click(screen.getByRole("link", { name: "People & access" }));
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Keep editing" }));
   expect(name).toHaveValue(authored);
   expect(screen.queryByRole("dialog")).toBeNull();
+  await user.click(document.querySelector(".account-menu > summary")!);
   await user.click(screen.getByRole("button", { name: "Sign out" }));
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();

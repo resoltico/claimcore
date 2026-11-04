@@ -69,7 +69,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     await Promise.all([
       page.waitForEvent("dialog", { timeout: 5_000 }),
       page.evaluate(() => {
-        window.location.assign("/operations");
+        window.location.assign("/recovery");
       }),
     ]);
     await dismissed.promise;
@@ -79,7 +79,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     );
     execution.release();
     await recoverAcceptedClose(page, identity.operationId);
-    await page.goto("/operations", { waitUntil: "commit" });
+    await page.goto("/recovery", { waitUntil: "commit" });
     await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {

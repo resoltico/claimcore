@@ -175,7 +175,7 @@ const routes = (data: {
 }): MatrixRoute[] => [
   ...worklistRoutes(data.marker, data.references.undecided),
   ...caseRoutes(data.references),
-  { id: "recovery", path: "/operations", ready: "#recovery-title" },
+  { id: "recovery", path: "/recovery", ready: "#recovery-title" },
   {
     id: "paid-correction-review",
     path: actPath({ kind: "REFERENCE", caseReference: data.references.paid }, "CORRECT"),
@@ -190,13 +190,13 @@ const routes = (data: {
   },
   {
     id: "operation-result",
-    path: `/operations/${encodeURIComponent(data.operationId)}`,
+    path: `/recovery/${encodeURIComponent(data.operationId)}`,
     ready: "#operation-lookup-title",
     endpoint: "operation.observe",
   },
   {
     id: "authority-history",
-    path: "/authority?tab=history",
+    path: "/authority-history",
     ready: "#authority-history-title",
     endpoint: "authority.history",
     expectedInput: { limit: 50 },
@@ -204,13 +204,13 @@ const routes = (data: {
   { id: "not-found", path: "/not-a-claimcore-page", ready: ".missing-page h1" },
   {
     id: "authority-list",
-    path: "/authority",
+    path: "/people",
     ready: "#authority-title",
     endpoint: "authority.list",
   },
   {
     id: "authority-detail",
-    path: `/authority/${encodeURIComponent(data.actorId)}`,
+    path: `/people/${encodeURIComponent(data.actorId)}`,
     ready: "#actor-grants-title",
     endpoint: "authority.grants",
   },

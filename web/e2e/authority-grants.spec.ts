@@ -89,7 +89,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   });
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
-  await page.getByRole("link").and(page.locator('nav a[href="/authority"]')).click();
+  await page.getByRole("link").and(page.locator('nav a[href="/people"]')).click();
   const table = page.getByRole("table").and(page.locator(".authority-table"));
   await expect(table.getByRole("columnheader")).toHaveCount(4);
   await expect(table.locator("thead")).toBeVisible();

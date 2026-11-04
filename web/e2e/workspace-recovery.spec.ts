@@ -34,7 +34,7 @@ test("authority input refusal preserves authored bytes and requires fresh review
   page,
 }) => {
   await openAuthenticated(page);
-  await goToView(page, "authority");
+  await goToView(page, "people");
   await page.locator('[name="target.subject"]').fill(`repair-${randomUUID()}`);
   const event = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
   await page.getByRole("button", { name: "Review changes", exact: true }).click();

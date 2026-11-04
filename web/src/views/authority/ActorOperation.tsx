@@ -57,7 +57,7 @@ const RetainedActorOperation = ({ model, target, available, offered }: Props) =>
       <button
         type="button"
         onClick={() => {
-          navigate("/authority");
+          navigate("/people");
         }}
       >
         {p.text("ui.continueAuthorityRequest")}

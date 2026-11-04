@@ -154,6 +154,7 @@ export const createPresenter = (
   recordedTime: (value: string, zone: string) =>
     recordedTime(value, zone, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),
+  dateHeading: (value: string) => calendarDate(value, preferences.displayLocale, true),
   fieldValue: (value: string | null, field: FieldCatalogEntry) =>
     fieldValueText(preferences, value, field),
 });

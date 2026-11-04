@@ -41,6 +41,7 @@ const WorklistSearch = ({ query, onChange }: Pick<Props, "query" | "onChange">) 
   return (
     <form
       role="search"
+      aria-label={p.text("ui.worklistSearch")}
       className="worklist-search"
       onSubmit={(event) => {
         event.preventDefault();
