@@ -13,7 +13,7 @@ it("focuses the selected actor route h1 and restores its originating control on 
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: { basis: workBasis, offers: [], items: [], nextCursor: null },
+        data: { basis: workBasis, exactReference: null, offers: [], items: [], nextCursor: null },
       },
     },
   });
@@ -24,6 +24,7 @@ it("focuses the selected actor route h1 and restores its originating control on 
       issuer: "https://issuer.example/",
       subject: "focus-origin",
     },
+    profile: { displayName: "focus-origin", contact: null },
     enabled: true,
   };
   mockEndpoint("authority.list").mockResolvedValue({

@@ -1,6 +1,7 @@
 import type { CaseSummary as Summary } from "../../src/protocol/types";
 import type {
   ActorContext,
+  ActorRef,
   CaseView,
   Principal,
   Registration,
@@ -40,10 +41,13 @@ type LiveStateSeed = {
   kind: "ACTIVE" | "VOIDED";
   fields: CaseFields;
 };
-type AdviceSeed = Omit<CaseView["advice"], "maintenance"> &
-  Partial<Pick<CaseView["advice"], "maintenance">>;
-type CaseViewSeed = Omit<CaseView, "mine" | "caseId" | "work" | "state" | "advice"> &
-  Partial<Pick<CaseView, "mine" | "caseId" | "work">> & {
+type AdviceSeed = Omit<CaseView["advice"], "maintenance" | "recommended"> &
+  Partial<Pick<CaseView["advice"], "maintenance" | "recommended">>;
+type CaseViewSeed = Omit<
+  CaseView,
+  "mine" | "caseId" | "work" | "state" | "advice" | "headline" | "attention"
+> &
+  Partial<Pick<CaseView, "mine" | "caseId" | "work" | "headline" | "attention">> & {
     state: LiveStateSeed | { kind: "ERASED" };
     advice: AdviceSeed;
   };
@@ -57,7 +61,13 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
   return {
     ...value,
-    advice: { ...value.advice, maintenance: value.advice.maintenance ?? initialMaintenance },
+    advice: {
+      recommended: null,
+      ...value.advice,
+      maintenance: value.advice.maintenance ?? initialMaintenance,
+    },
+    headline: value.headline ?? "UNDECIDED",
+    attention: value.attention ?? [],
     state,
     work: value.work ?? {
       ...unscheduledWork,
@@ -79,6 +89,14 @@ export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
   hasScopedCases: value.hasScopedCases ?? false,
   actorId: value.actorId ?? inventory.cliSamples.actorId,
   installationId: value.installationId ?? "90000000-0000-4000-8000-000000000001",
+});
+
+export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
+  actorId: inventory.cliSamples.actorId,
+  displayName: { kind: "NAMED", value: "Named account" },
+  principalKind: "HUMAN",
+  availability: "AVAILABLE",
+  ...value,
 });
 
 // Build inputs only. Expected outputs and oracle values must stay literal.
@@ -147,6 +165,11 @@ export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
     caseReference: "SYNTHETIC-001",
     revision: 1,
     changedAt: "2026-09-01T12:00:00.000000Z",
+    headline: "UNDECIDED",
+    attention: [],
+    nextAction: null,
+    responsible: null,
+    pendingReminders: 0,
     ...changes,
     state: state.kind === "ERASED" ? state : { ...live, ...state },
   };
@@ -175,16 +198,36 @@ const childGroup = (key: string, payload: Group | undefined): Group | undefined 
 const isAdviceOrContext = (value: Record<string, unknown>): boolean =>
   (Object.hasOwn(value, "acts") && Object.hasOwn(value, "history")) ||
   (Object.hasOwn(value, "installationId") && Object.hasOwn(value, "capabilities"));
+const isCaseReadSeed = (value: Record<string, unknown>): boolean =>
+  ["state", "caseReference", "revision"].every((key) => Object.hasOwn(value, key)) &&
+  (Object.hasOwn(value, "advice") || Object.hasOwn(value, "changedAt"));
+const completeCaseRead = (completed: Record<string, unknown>) => {
+  const data = { headline: "UNDECIDED", attention: [], ...completed };
+  return Object.hasOwn(completed, "changedAt")
+    ? { nextAction: null, responsible: null, pendingReminders: 0, ...data }
+    : data;
+};
 const completeRead = (completed: Record<string, unknown>): unknown => {
   if (isAdviceOrContext(completed)) {
-    return { maintenance: initialMaintenance, ...completed };
+    return {
+      maintenance: initialMaintenance,
+      ...(Object.hasOwn(completed, "acts") ? { recommended: null } : {}),
+      ...completed,
+    };
   }
+  if (["actorId", "principal", "enabled"].every((key) => Object.hasOwn(completed, key))) {
+    return { profile: null, ...completed };
+  }
+  if (isCaseReadSeed(completed)) {
+    return completeCaseRead(completed);
+  }
+
   if (
     Object.hasOwn(completed, "items") &&
     Object.hasOwn(completed, "offers") &&
     Object.hasOwn(completed, "nextCursor")
   ) {
-    return { basis: workBasis, ...completed };
+    return { basis: workBasis, exactReference: null, ...completed };
   }
   if (
     Object.hasOwn(completed, "counts") &&

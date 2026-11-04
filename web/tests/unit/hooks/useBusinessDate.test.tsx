@@ -1,3 +1,5 @@
+import { useEndpointPage } from "../../../src/hooks/useEndpointPage";
+import type { CaseSummary, ResponseByEndpoint } from "@contracts/client";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
 import { useEndpoint } from "../../../src/hooks/useEndpoint";
@@ -69,6 +71,65 @@ it("refreshes date-dependent reads on focus and server-day changes without polli
     await act(async () => {
       await vi.advanceTimersByTimeAsync(60_000);
     });
+    expect(fetch).toHaveBeenCalledTimes(3);
+  } finally {
+    view.unmount();
+    vi.useRealTimers();
+    vi.unstubAllGlobals();
+  }
+});
+
+const listInput = () => ({ limit: 50 });
+const listPage = (reply: ResponseByEndpoint["case.list"]) =>
+  reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
+const PageProbe = () => {
+  const day = useBusinessDate(requester);
+  const page = useEndpointPage<"case.list", CaseSummary, NonNullable<ReturnType<typeof listPage>>>(
+    "case.list",
+    listInput,
+    listPage,
+  );
+  return (
+    <>
+      <output data-testid="page-date">{page.page?.basis.businessDate ?? "loading"}</output>
+      <output data-testid="page-change">{day.changedDate ?? "unchanged"}</output>
+    </>
+  );
+};
+it("refreshes completed paginated rows on focus and business-date invalidation without polling", async () => {
+  vi.useFakeTimers({ toFake: ["Date", "setInterval", "clearInterval"] });
+  let advanced = false;
+  const fetch = vi.fn().mockImplementation(() =>
+    Promise.resolve(
+      response("case.list", "SUCCEEDED", {
+        basis: {
+          observedAt: "2026-11-04T22:00:00.000000Z",
+          businessDate: advanced ? "2026-11-05" : "2026-11-04",
+          timeZone: "Europe/Riga",
+        },
+        items: [],
+        offers: [],
+        nextCursor: null,
+        exactReference: null,
+      }),
+    ),
+  );
+  vi.stubGlobal("fetch", fetch);
+  const view = render(<PageProbe />);
+  try {
+    await waitFor(() => {
+      expect(screen.getByTestId("page-date")).toHaveTextContent("2026-11-04");
+    });
+    advanced = true;
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(60_000);
+    });
+    expect(fetch).toHaveBeenCalledTimes(1);
+    fireEvent.focus(window);
+    await waitFor(() => {
+      expect(screen.getByTestId("page-date")).toHaveTextContent("2026-11-05");
+    });
+    expect(screen.getByTestId("page-change")).toHaveTextContent("2026-11-05");
     expect(fetch).toHaveBeenCalledTimes(3);
   } finally {
     view.unmount();

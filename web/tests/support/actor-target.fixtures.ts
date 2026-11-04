@@ -9,12 +9,14 @@ import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { navigate } from "../../src/routing/navigation";
 export const firstActor = {
   actorId: "10000000-0000-4000-8000-000000000001",
+  profile: { displayName: "server-first", contact: null },
   enabled: true,
   principal: { kind: "HUMAN" as const, issuer: "https://issuer.example/", subject: "server-first" },
 };
 export const secondActor = {
   ...firstActor,
   actorId: "10000000-0000-4000-8000-000000000002",
+  profile: { displayName: "server-second", contact: null },
   principal: { ...firstActor.principal, subject: "server-second" },
 };
 export const grantsFor = (actor = firstActor): ApiResult<ServiceResponse<"authority.grants">> => ({
@@ -58,7 +60,11 @@ export const setupActorTargets = (
         kind: "SUCCEEDED",
         data: {
           items: [
-            { ...firstActor, principal: { ...firstActor.principal, subject: "stale-list-first" } },
+            {
+              ...firstActor,
+              profile: { displayName: "stale-list-first", contact: null },
+              principal: { ...firstActor.principal, subject: "stale-list-first" },
+            },
             secondActor,
           ],
           nextCursor: null,

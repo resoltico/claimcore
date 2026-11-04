@@ -1,3 +1,4 @@
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
@@ -11,6 +12,9 @@ import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { AuthorityGrants } from "../../src/views/AuthorityGrants";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { wireReply } from "../support/contract-corpus.fixtures";
+beforeEach(() => {
+  stubViewCounts();
+});
 const first = "10000000-0000-4000-8000-000000000001";
 const second = "10000000-0000-4000-8000-000000000002";
 const actor = (actorId: string, prefix = "header") => ({
@@ -20,6 +24,7 @@ const actor = (actorId: string, prefix = "header") => ({
     issuer: "https://issuer.example/",
     subject: `${prefix}-${actorId}`,
   },
+  profile: { displayName: `${prefix}-${actorId}`, contact: null },
   enabled: false,
 });
 const grants = (

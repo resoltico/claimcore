@@ -77,10 +77,11 @@ const ActorSubject = ({
   mayReadGrants: boolean;
 }) => {
   const p = usePresentation();
+  const label = actor.profile === null ? actor.actorId : actor.profile.displayName;
   if (!mayReadGrants) {
     return (
-      <bdi className="actor-subject" title={actor.principal.subject}>
-        {actor.principal.subject}
+      <bdi className="actor-subject" title={label}>
+        {label}
       </bdi>
     );
   }
@@ -91,14 +92,14 @@ const ActorSubject = ({
       href={href}
       id={`actor-grants-${actor.actorId}`}
       title={actor.actorId}
-      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${actor.principal.subject} ${p.text(actor.enabled ? "ui.yes" : "ui.no")}`}
+      aria-label={`${p.term("principalKind", actor.principal.kind)} · ${label} ${p.text(actor.enabled ? "ui.yes" : "ui.no")}`}
       onClick={(event) => {
         followLink(event, () => {
           onSelect(actor.actorId);
         });
       }}
     >
-      <bdi title={actor.principal.subject}>{actor.principal.subject}</bdi>
+      <bdi title={label}>{label}</bdi>
     </a>
   );
 };
@@ -147,7 +148,7 @@ const AuthorityTable = ({
       <thead className="authority-columns">
         <tr>
           <th scope="col">{p.fieldLabel("principal.kind")}</th>
-          <th scope="col">{p.fieldLabel("principal.subject")}</th>
+          <th scope="col">{p.text("ui.actor")}</th>
           <th scope="col">{p.text("label.enabled")}</th>
           <th scope="col">{p.text("ui.grantCount")}</th>
         </tr>

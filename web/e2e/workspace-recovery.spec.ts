@@ -22,12 +22,12 @@ test("keyboard navigation focuses the editor and restores its invoking control o
   page,
 }) => {
   await openAuthenticated(page);
-  await page.getByRole("button", { name: "Open a case", exact: true }).focus();
+  await page.getByRole("link", { name: "Open a case", exact: true }).focus();
   await page.keyboard.press("Enter");
   await expect(page.getByRole("heading", { name: "Open a case", exact: true })).toBeFocused();
   await page.getByRole("button", { name: "Back to cases", exact: true }).click();
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
-  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toBeFocused();
+  await expect(page.getByRole("link", { name: "Open a case", exact: true })).toBeFocused();
 });
 
 test("authority input refusal preserves authored bytes and requires fresh review after edit", async ({

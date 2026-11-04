@@ -171,19 +171,22 @@
     text-align: start;
   }
   .worklist-columns th:nth-child(1) {
-    inline-size: 28%;
+    inline-size: 24%;
   }
   .worklist-columns th:nth-child(2) {
-    inline-size: 19%;
+    inline-size: 12%;
   }
   .worklist-columns th:nth-child(3) {
-    inline-size: 15%;
+    inline-size: 23%;
   }
   .worklist-columns th:nth-child(4) {
-    inline-size: 23%;
+    inline-size: 15%;
   }
   .worklist-columns th:nth-child(5) {
     inline-size: 15%;
+  }
+  .worklist-columns th:nth-child(6) {
+    inline-size: 11%;
   }
   .worklist-cell-label {
     display: none;

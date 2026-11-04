@@ -1,3 +1,4 @@
+import { ActorIdentity } from "../../components/ActorIdentity";
 import type { CaseSelector } from "@contracts/client";
 import type { CaseSummary } from "../../api/service";
 import { CharacterWarning } from "../../components/BusinessValue";
@@ -5,7 +6,8 @@ import { usePresentation } from "../../presentation/context";
 import { changedTime } from "../../presentation/changedTime";
 import { casePath } from "../../routing/routes";
 import { followLink } from "../../routing/followLink";
-import { CaseStateBadge } from "../../components/CaseStateBadge";
+import { CaseHeadline } from "../../components/CaseHeadline";
+import { CaseAttention } from "../../components/CaseAttention";
 const RowReference = ({ value }: { value: string }) => {
   const tail = Math.min(9, Math.floor(value.length / 2));
   return (
@@ -88,40 +90,45 @@ export const CaseRow = ({
         </a>
         <Parties live={live} />
       </td>
-      <td className="worklist-money">
-        <Money live={live} />
-      </td>
       <td className="worklist-badges">
-        <CaseStateBadge state={state} />
+        <CaseHeadline value={value.headline} />
       </td>
-      <td className="worklist-work">
-        <span className="worklist-cell-label">{p.term("section", "work")}</span>
-        {live === null ? null : (
+      <td className="worklist-next-action">
+        <span className="worklist-cell-label">{p.text("ui.reminderAction")}</span>
+        {value.nextAction === null ? null : (
           <>
-            {live.work.responsible === null ? (
-              <span>{p.term("assignment", "UNASSIGNED")}</span>
-            ) : (
-              <>
-                <bdi dir="auto">{live.work.responsible.account.subject}</bdi>
-                <CharacterWarning value={live.work.responsible.account.subject} />
-                {live.work.responsible.available ? null : (
-                  <small>{p.text("label.assigneeUnavailable")}</small>
-                )}
-              </>
-            )}
+            <bdi>{value.nextAction.action}</bdi>
             <small>
-              {live.work.followUpDate === null ? null : (
-                <>
-                  <time dateTime={live.work.followUpDate}>
-                    <bdi dir="ltr">{p.date(live.work.followUpDate)}</bdi>
-                  </time>
-                  {" · "}
-                </>
-              )}
-              {p.term("due", live.work.due)}
+              <time dateTime={value.nextAction.due}>{p.date(value.nextAction.due)}</time>
+              {" · "}
+              <span className={`work-due work-due-${value.nextAction.dueState.toLowerCase()}`}>
+                {p.term("due", value.nextAction.dueState)}
+              </span>
             </small>
           </>
         )}
+        <CaseAttention values={value.attention} />
+        {value.pendingReminders > 1 ? (
+          <small>
+            {p.text("label.morePendingReminders", { count: p.integer(value.pendingReminders - 1) })}
+          </small>
+        ) : null}
+      </td>
+      <td className="worklist-responsible">
+        <span className="worklist-cell-label">{p.fieldLabel("responsibleActor")}</span>
+        {value.responsible === null ? (
+          p.term("assignment", "UNASSIGNED")
+        ) : (
+          <>
+            <ActorIdentity actor={value.responsible} />
+            {value.responsible.availability === "AVAILABLE" ? null : (
+              <small>{p.text("label.assigneeUnavailable")}</small>
+            )}
+          </>
+        )}
+      </td>
+      <td className="worklist-money">
+        <Money live={live} />
       </td>
       <td className="worklist-changed">
         <span className="worklist-cell-label">{p.text("label.changedAt")}</span>

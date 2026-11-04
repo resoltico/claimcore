@@ -54,6 +54,15 @@ export const typedResult = <K extends EndpointId>(
 };
 export class EndpointCache {
   private readonly entries = new Map<string, Entry>();
+  private generation = 0;
+  private readonly invalidationListeners = new Set<() => void>();
+  invalidation = (): number => this.generation;
+  subscribeInvalidation = (listener: () => void) => {
+    this.invalidationListeners.add(listener);
+    return () => {
+      this.invalidationListeners.delete(listener);
+    };
+  };
   private entry(key: string): Entry {
     let entry = this.entries.get(key);
     if (entry === undefined) {
@@ -121,10 +130,14 @@ export class EndpointCache {
     }
   };
   invalidate = (): void => {
+    this.generation += 1;
     for (const entry of this.entries.values()) {
       entry.controller?.abort();
       entry.pending = null;
       this.publish(entry, { result: null, previous: entry.snapshot.previous, loading: true });
     }
+    this.invalidationListeners.forEach((listener) => {
+      listener();
+    });
   };
 }

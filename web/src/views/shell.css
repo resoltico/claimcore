@@ -154,3 +154,17 @@
   background: var(--bg-sunken);
   color: var(--text-primary);
 }
+.shell-count {
+  margin-inline-start: auto;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+  font-size: var(--text-xs);
+  font-variant-numeric: tabular-nums;
+}
+
+.shell-count[data-active] {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+}

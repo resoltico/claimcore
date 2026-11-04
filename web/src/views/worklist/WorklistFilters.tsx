@@ -13,7 +13,7 @@ const selectSet = (
   name: string,
   values: ReadonlyArray<string>,
 ): WorklistQuery => {
-  const { view: _view, ...manual } = query;
+  const manual = query;
   switch (name) {
     case "lifecycle":
       return { ...manual, lifecycle: values.filter((value) => isTerm("lifecycle", value)) };
@@ -107,10 +107,10 @@ const WorkChoice = ({ query, onChange, input }: Props & { input: (typeof inputs)
       ]}
       onChange={(value) => {
         if (input.identity === "assignment") {
-          const { view: _view, assignment: _assignment, ...rest } = query;
+          const { assignment: _assignment, ...rest } = query;
           onChange(isTerm("assignment", value) ? { ...rest, assignment: value } : rest);
         } else {
-          const { view: _view, due: _due, ...rest } = query;
+          const { due: _due, ...rest } = query;
           onChange(isTerm("due", value) ? { ...rest, due: value } : rest);
         }
       }}
@@ -130,7 +130,7 @@ const OrderControl = ({ query, onChange }: Props) => {
         .filter((order) => isTerm("caseOrder", order))
         .map((order) => ({ value: order, label: p.term("caseOrder", order) }))}
       onChange={(value) => {
-        const { view: _view, ...manual } = query;
+        const manual = query;
         onChange({ ...manual, order: isTerm("caseOrder", value) ? value : "REFERENCE" });
       }}
     />

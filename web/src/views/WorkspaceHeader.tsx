@@ -1,3 +1,4 @@
+import { useWorkspaceViews } from "./WorkspaceViews";
 import { useCompact } from "../hooks/useCompact";
 import { useEffect, useRef, useState } from "react";
 import type { InstallationOffer } from "@contracts/client";
@@ -23,12 +24,43 @@ const areas = [
   { name: "settings", path: "/settings", label: "ui.settings", icon: "settings" },
 ] as const;
 type Area = (typeof areas)[number];
-const ShellLink = ({ area, active, locked }: { area: Area; active: string; locked: boolean }) => {
+const useNavigationCounts = () => {
+  const views = useWorkspaceViews();
+  const counts = new Map<Area["name"], number>();
+  const attention = views.cases.loading
+    ? undefined
+    : views.cases.data?.items.find((item) => item.view === "NEEDS_ATTENTION");
+  if (attention !== undefined) {
+    counts.set("cases", attention.count);
+  }
+  const reminders = views.reminders.loading ? undefined : views.reminders.data?.items;
+  const overdue = reminders?.find((item) => item.view === "OVERDUE");
+  const today = reminders?.find((item) => item.view === "TODAY");
+  // The core's pending OVERDUE and TODAY views are disjoint within this one snapshot (W3).
+  if (overdue !== undefined && today !== undefined) {
+    counts.set("reminders", overdue.count + today.count);
+  }
+  return counts;
+};
+const ShellLink = ({
+  area,
+  active,
+  locked,
+  counts,
+}: {
+  area: Area;
+  active: string;
+  locked: boolean;
+  counts: ReadonlyMap<Area["name"], number>;
+}) => {
   const p = usePresentation();
+  const count = counts.get(area.name);
+  const label =
+    count === undefined ? p.text(area.label) : `${p.text(area.label)} ${p.integer(count)}`;
   return (
     <a
       href={area.path}
-      aria-label={p.text(area.label)}
+      aria-label={label}
       aria-current={active === area.name ? "page" : undefined}
       aria-disabled={locked || undefined}
       onClick={(event) => {
@@ -41,6 +73,14 @@ const ShellLink = ({ area, active, locked }: { area: Area; active: string; locke
       <span className="shell-link-label" aria-hidden="true">
         {p.text(area.label)}
       </span>
+      {count === undefined ? null : (
+        <>
+          {" "}
+          <span className="shell-count" data-active={count > 0 || undefined} aria-hidden="true">
+            {p.integer(count)}
+          </span>
+        </>
+      )}
     </a>
   );
 };
@@ -178,6 +218,7 @@ export const WorkspaceHeader = ({
   capabilities,
   offers,
   locked,
+  openCase,
 }: {
   route: Route;
   active: string;
@@ -185,9 +226,11 @@ export const WorkspaceHeader = ({
   capabilities: ReadonlyArray<string>;
   offers: ReadonlyArray<InstallationOffer>;
   locked: boolean;
+  openCase: () => void;
 }) => {
   const p = usePresentation();
   const compact = useCompact();
+  const counts = useNavigationCounts();
   const cases = views.includes("CASES");
   const primary = areas.filter((area) => ["cases", "reminders"].includes(area.name) && cases);
   const admin = areas.filter(
@@ -223,13 +266,25 @@ export const WorkspaceHeader = ({
             </a>
             <nav aria-label={p.text("ui.primary")}>
               {primary.map((area) => (
-                <ShellLink key={area.name} area={area} active={active} locked={locked} />
+                <ShellLink
+                  key={area.name}
+                  area={area}
+                  active={active}
+                  locked={locked}
+                  counts={counts}
+                />
               ))}
               {admin.length === 0 ? null : (
                 <div className="shell-admin">
                   <p>{p.text("ui.shell.administration")}</p>
                   {admin.map((area) => (
-                    <ShellLink key={area.name} area={area} active={active} locked={locked} />
+                    <ShellLink
+                      key={area.name}
+                      area={area}
+                      active={active}
+                      locked={locked}
+                      counts={counts}
+                    />
                   ))}
                 </div>
               )}
@@ -244,14 +299,15 @@ export const WorkspaceHeader = ({
       <header className="workspace-header">
         <span className="shell-screen-title">{p.text(title)}</span>
         {cases ? <ShellSearch locked={locked} /> : null}
-        {offers.some((offer) => offer.kind === "OPEN") ? (
+        {route.screen === "cases" && offers.some((offer) => offer.kind === "OPEN") ? (
           <a
+            id="open-case"
             className="shell-open-case"
             href="/cases/new"
             aria-disabled={locked || undefined}
             onClick={(event) => {
               followLink(event, () => {
-                navigate("/cases/new");
+                openCase();
               });
             }}
           >
@@ -262,7 +318,13 @@ export const WorkspaceHeader = ({
       {compact ? (
         <nav className="workspace-mobile-tabs" aria-label={p.text("ui.primary")}>
           {mobile.map((area) => (
-            <ShellLink key={area.name} area={area} active={active} locked={locked} />
+            <ShellLink
+              key={area.name}
+              area={area}
+              active={active}
+              locked={locked}
+              counts={counts}
+            />
           ))}
         </nav>
       ) : null}

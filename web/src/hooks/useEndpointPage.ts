@@ -5,7 +5,7 @@ import { useEndpointCache } from "./EndpointProvider";
 import { canonicalInput, typedResult, type EndpointCache } from "./endpointCache";
 import { useCredential } from "../session/SessionContext";
 import type { Notice } from "../protocol/notices";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
@@ -132,12 +132,13 @@ type PageSource<K extends EndpointId> = {
   subscribe: EndpointCache["subscribe"];
   fetch: EndpointCache["fetch"];
   credential: string;
+  generation: number;
   endpoint: K;
   input: RequestByEndpoint[K];
   onResult: ((result: ApiResult<ServiceResponse<K>>) => void) | undefined;
 };
 const endpointPage = async <K extends EndpointId>(source: PageSource<K>, signal: AbortSignal) => {
-  const key = `${source.credential}\u001f${source.endpoint}:${canonicalInput(source.input)}`;
+  const key = `${source.credential}\u001f${source.generation}\u001f${source.endpoint}:${canonicalInput(source.input)}`;
   const release = source.subscribe(key, () => undefined);
   signal.addEventListener("abort", release, { once: true });
   try {
@@ -169,14 +170,27 @@ export const useEndpointPage = <K extends EndpointId, T, P extends Page<T>>(
   if (cache === null) {
     throw new Error("An endpoint provider is required.");
   }
+  const generation = useSyncExternalStore(
+    cache.subscribeInvalidation,
+    cache.invalidation,
+    cache.invalidation,
+  );
   const { subscribe, fetch: fetchEndpoint } = cache;
   const request = useCallback(
     (cursor: string | null, signal: AbortSignal) =>
       endpointPage(
-        { subscribe, fetch: fetchEndpoint, credential, endpoint, input: input(cursor), onResult },
+        {
+          subscribe,
+          fetch: fetchEndpoint,
+          credential,
+          endpoint,
+          input: input(cursor),
+          onResult,
+          generation,
+        },
         signal,
       ),
-    [subscribe, fetchEndpoint, credential, endpoint, input, onResult],
+    [subscribe, fetchEndpoint, credential, endpoint, input, onResult, generation],
   );
   return usePages<ServiceResponse<K>, T, P>(request, select, onDisclosureRefused);
 };

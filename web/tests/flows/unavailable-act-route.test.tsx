@@ -27,6 +27,7 @@ it("keeps a primary heading and a case return when a reloaded act is no longer o
       setLocked={vi.fn()}
       committed={vi.fn()}
       refresh={0}
+      caseNavigation={{ selectCase: vi.fn(), openCase: vi.fn(), backToCases: vi.fn() }}
     />,
   );
   expect(await screen.findByRole("heading", { name: "Case detail", level: 1 })).toBeVisible();

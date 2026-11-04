@@ -169,7 +169,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   queueAcceptedOpen();
   queueDetail();
   renderDashboard();
-  await user.click(await findButton("Open a case"));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByLabelText("Handler's case reference");
   const fill = (label: string, value: string): void => {
     changeField(label, value);

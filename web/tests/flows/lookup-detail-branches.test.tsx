@@ -226,7 +226,7 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   );
   const selected = vi.fn();
   const user = userEvent.setup();
-  render(<CaseList onSelect={selected} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={selected} />);
   const find = screen.getByRole("button", {
     name: "Open by exact reference",
   });

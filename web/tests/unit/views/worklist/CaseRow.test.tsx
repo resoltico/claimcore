@@ -38,9 +38,11 @@ it("makes the whole row one native keyboard link with full reference and no copy
   fireEvent.click(link, { button: 1 });
   expect(select).not.toHaveBeenCalled();
 });
-it("prioritizes voided state over status and retains decided progress as secondary text", () => {
+it("renders core headline and ordered attention without deriving them from state", () => {
   const value = caseSummaryInput({
     state: { kind: "VOIDED", status: "CLOSED", progress: "DECIDED" },
+    headline: "PAID",
+    attention: ["UNASSIGNED", "OVERDUE"],
   });
   const view = render(
     <table>
@@ -49,7 +51,41 @@ it("prioritizes voided state over status and retains decided progress as seconda
       </tbody>
     </table>,
   );
-  expect(view.container.querySelectorAll(".badge")).toHaveLength(1);
-  expect(view.container.querySelector(".badge")).toHaveTextContent("Voided");
-  expect(screen.getByText("was Decided")).toBeVisible();
+  expect(view.container.querySelectorAll(".badge")).toHaveLength(3);
+  expect(view.container.querySelector(".case-headline")).toHaveTextContent("Paid");
+  expect(
+    [...view.container.querySelectorAll(".case-attention li")].map((item) => item.textContent),
+  ).toEqual(["Unassigned", "Overdue"]);
+  expect(screen.queryByText("Voided")).toBeNull();
+  expect(screen.queryByText("was Decided")).toBeNull();
+});
+it("renders the supplied scheduling projection rather than reconstructing work state", () => {
+  const value = caseSummaryInput({
+    nextAction: {
+      reminderId: "10000000-0000-4000-8000-000000000001",
+      action: "Core-supplied next action",
+      due: "2026-11-05",
+      dueState: "UPCOMING",
+    },
+    responsible: {
+      actorId: "10000000-0000-4000-8000-000000000002",
+      displayName: { kind: "NAMED", value: "Assigned profile name" },
+      principalKind: "HUMAN",
+      availability: "DISABLED",
+    },
+    pendingReminders: 3,
+  });
+  const view = render(
+    <table>
+      <tbody>
+        <CaseRow value={value} businessDate="2026-11-04" onSelect={vi.fn()} />
+      </tbody>
+    </table>,
+  );
+  expect(screen.getByText("Core-supplied next action")).toBeVisible();
+  expect(screen.getByText("Assigned profile name")).toBeVisible();
+  expect(view.container.querySelector(".worklist-next-action")).toHaveTextContent("Upcoming");
+  expect(view.container.querySelector(".worklist-responsible")).toHaveTextContent(
+    "Unavailable for new assignment",
+  );
 });

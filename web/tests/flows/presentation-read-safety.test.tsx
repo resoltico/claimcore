@@ -183,7 +183,7 @@ it.each(languages)(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),
       );
-      const list = render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
+      const list = render(<CaseList onSelect={vi.fn()} />);
       await waitFor(() => {
         expect(list.container.querySelector(".worklist-row")).not.toBeNull();
       });

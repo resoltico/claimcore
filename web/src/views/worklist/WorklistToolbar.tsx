@@ -1,11 +1,13 @@
 import { ReferenceSummary } from "../../components/ReferenceSummary";
 import { useEffect, useState } from "react";
 import { usePresentation } from "../../presentation/context";
-import { savedViews, viewQuery, type WorklistQuery } from "../../routing/worklistQuery";
+import { type WorklistQuery } from "../../routing/worklistQuery";
 import { WorklistFilters } from "./WorklistFilters";
-import { savedViewLabel } from "./savedViewLabel";
+import type { CaseViewCount } from "@contracts/client";
 type Props = {
   query: WorklistQuery;
+  views: ReadonlyArray<CaseViewCount>;
+  viewsLoading: boolean;
   onChange: (query: WorklistQuery) => void;
   onSelect: (reference: string) => void;
   loading: boolean;
@@ -17,7 +19,7 @@ const useSearchCommit = (text: string, query: WorklistQuery, onChange: Props["on
       return;
     }
     const timer = window.setTimeout(() => {
-      const { view: _view, text: _text, ...manual } = query;
+      const { text: _text, ...manual } = query;
       onChange({ ...manual, ...(text === "" ? {} : { text }) });
     }, 300);
     return () => {
@@ -34,7 +36,7 @@ const WorklistSearch = ({ query, onChange }: Pick<Props, "query" | "onChange">) 
   }
   const text = draft.source === source ? draft.value : source;
   const commit = (value: string) => {
-    const { view: _view, text: _text, ...manual } = query;
+    const { text: _text, ...manual } = query;
     onChange({ ...manual, ...(value === "" ? {} : { text: value }) });
   };
   useSearchCommit(text, query, onChange);
@@ -119,19 +121,23 @@ export const WorklistToolbar = (props: Props) => {
           {props.loading ? p.text("ui.loading") : p.text("ui.reloadCases")}
         </button>
       </div>
-      <nav className="saved-views" aria-label={p.text("ui.savedViews")}>
-        {savedViews.map((view) => (
+      <nav
+        className="case-views"
+        aria-label={p.text("input.caseView.label")}
+        aria-busy={props.viewsLoading}
+      >
+        {props.views.map(({ view, count }) => (
           <button
             key={view}
             type="button"
-            aria-pressed={
-              props.query.view === view || (view === "all" && Object.keys(props.query).length === 0)
-            }
+            aria-pressed={props.query.view === view}
+            data-view={view}
             onClick={() => {
-              props.onChange(viewQuery(view));
+              props.onChange({ ...props.query, view });
             }}
           >
-            {savedViewLabel(p, view)}
+            {p.term("caseView", view)}{" "}
+            <span className="view-count">{props.viewsLoading ? "…" : p.integer(count)}</span>
           </button>
         ))}
       </nav>

@@ -39,7 +39,7 @@ it.each([
         value: {
           outcome: {
             kind: "SUCCEEDED",
-            data: { basis: workBasis, offers: [], items, nextCursor: null },
+            data: { basis: workBasis, exactReference: null, offers: [], items, nextCursor: null },
           },
         },
       }) as const;
@@ -88,14 +88,14 @@ it.each([
     const scroll = vi.fn();
     Object.defineProperty(window, "scrollY", { configurable: true, value: 340 });
     Object.defineProperty(window, "scrollTo", { configurable: true, value: scroll });
-    navigate("/cases?q=CASE&order=RECENT", true);
+    navigate("/cases?view=ALL&q=CASE&order=RECENT", true);
     const user = userEvent.setup();
     render(<Dashboard />);
     await user.click(await screen.findByRole("link", { name: current.caseReference }));
     await screen.findByRole("heading", { name: "Case detail" });
     await user.click(screen.getByRole("button", { name: "Back to cases" }));
     await waitFor(() => {
-      expect(location.pathname + location.search).toBe("/cases?q=CASE&order=RECENT");
+      expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");
     });
     if (interrupt) {
       const summary = document.querySelector<HTMLElement>(".exact-lookup > summary")!;

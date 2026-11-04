@@ -1,7 +1,6 @@
 import type { AuthorityHistory as AuthorityHistoryType } from "./authority/AuthorityHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
-import { useRequesterContext } from "../hooks/useRequesterContext";
-import type { CaseSelector } from "@contracts/client";
+import type { useCaseNavigation } from "../routing/useCaseNavigation";
 import { useEffect, useState, type ComponentProps } from "react";
 import { ViewModule } from "./ViewModule";
 import type { Notice } from "../protocol/notices";
@@ -60,34 +59,6 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
       </button>
     </section>
   );
-};
-/** A return observation belongs to this mounted requester workspace, never history or a journal. */
-const useCaseNavigation = () => {
-  const verified = useRequesterContext() !== null;
-  const [returnTo, setReturnTo] = useState<{
-    url: string;
-    scrollY: number;
-    focusId: string;
-  } | null>(null);
-  const remember = (focusId: string) => {
-    setReturnTo({ url: location.pathname + location.search, scrollY: window.scrollY, focusId });
-  };
-  return {
-    selectCase: (target: CaseSelector) => {
-      remember(target.kind === "ID" ? `case-${target.caseId}` : "case-lookup");
-      navigate(
-        target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference),
-      );
-    },
-    openCase: () => {
-      remember("open-case");
-      navigate("/cases/new");
-    },
-    backToCases: () => {
-      const owned = verified ? returnTo : null;
-      navigate(owned?.url ?? "/cases", false, owned?.focusId, owned?.scrollY);
-    },
-  };
 };
 const selectAct = (current: CurrentCase, act: string): void => {
   navigate(actPath({ kind: "ID", caseId: current.caseId }, act));
@@ -218,16 +189,18 @@ export const RoutedContent = ({
   refresh,
   authorityAvailable = true,
   caseAvailable = true,
+  caseNavigation,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
   authorityAvailable?: boolean;
   caseAvailable?: boolean;
+  caseNavigation: ReturnType<typeof useCaseNavigation>;
 }) => {
-  const { selectCase, openCase, backToCases } = useCaseNavigation();
+  const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
     case "cases":
-      return <CaseList onSelect={selectCase} onOpen={openCase} />;
+      return <CaseList onSelect={selectCase} />;
     case "case":
       return (
         <CaseDetail

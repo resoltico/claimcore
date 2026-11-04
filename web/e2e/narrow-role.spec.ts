@@ -34,7 +34,7 @@ const expectContextAccess = async (page: Page) => {
 };
 
 const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scoped: boolean) => {
-  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await findCase(page, fixture.reference);
   await expect(page.getByRole("region", { name: "Current case", exact: true })).toBeVisible();
   await expect(page.locator(".history-list li")).toHaveCount(1);

@@ -4,7 +4,7 @@ import type { ServiceResponse } from "../../api/service";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import { ActorIdentity, RecordedTime } from "../../components/ActorIdentity";
+import { TechnicalActorIdentity, RecordedTime } from "../../components/ActorIdentity";
 import { casePath } from "../../routing/routes";
 import { followLink } from "../../routing/followLink";
 import { navigate } from "../../routing/navigation";
@@ -62,11 +62,11 @@ const HistoryEntries = ({ items }: { items: ReadonlyArray<AuthorityHistoryEntry>
           <dl className="history-attribution">
             <dt>{p.text("ui.targetActor")}</dt>
             <dd>
-              <ActorIdentity actorId={entry.targetActorId} />
+              <TechnicalActorIdentity actorId={entry.targetActorId} />
             </dd>
             <dt>{p.text("ui.recordedBy")}</dt>
             <dd>
-              <ActorIdentity actorId={entry.recordedBy} />
+              <TechnicalActorIdentity actorId={entry.recordedBy} />
             </dd>
           </dl>
           <HistoryFacts entry={entry} />

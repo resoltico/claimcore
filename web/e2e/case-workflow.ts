@@ -134,7 +134,7 @@ export const startOpen = async (
     }
   };
   page.on("response", failedAsset);
-  await page.getByRole("button", { name: title }).click();
+  await page.getByRole("link", { name: title }).click();
   await progress("open-editor");
   await page
     .getByRole("heading", { name: title, exact: true })

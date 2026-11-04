@@ -14,6 +14,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
       kind: "SUCCEEDED",
       data: {
         basis: workBasis,
+        exactReference: null,
         offers: [],
         items: [
           caseSummaryInput({

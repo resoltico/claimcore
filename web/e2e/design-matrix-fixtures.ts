@@ -393,7 +393,7 @@ const setOwnerCaseWork = async (
     throw new Error("Matrix case work must be readable");
   }
   expect(assigned.outcome.data.mine).toBe(true);
-  expect(assigned.outcome.data.work.responsible?.account.actorId).toBe(actorId);
+  expect(assigned.outcome.data.work.responsible?.actorId).toBe(actorId);
   return async () => {
     try {
       await workAct(page, reference, 1, { responsibleActor: { kind: "CLEAR" } });

@@ -18,6 +18,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,
+          exactReference: null,
           offers: installationOffers(["OPEN"]),
           items: [],
           nextCursor: null,
@@ -34,7 +35,7 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
       <Dashboard />
     </TestSession>,
   );
-  await user.click(await screen.findByRole("button", { name: "Open a case" }));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByRole("textbox", { name: "Claimant name" });
   fillRegistrationInputs({ caseReference: "DRAFT-CONSENT" });
   const name = screen.getByRole("textbox", { name: "Claimant name" });

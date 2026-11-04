@@ -1,4 +1,5 @@
-import { expect, it, vi, afterEach } from "vitest";
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
+import { beforeEach, expect, it, vi, afterEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render } from "../support/presentation-test-support";
 import { Dashboard } from "../../src/views/Dashboard";
@@ -10,6 +11,9 @@ import { referencePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";
 import type { CaseReceipt } from "../../src/api/service";
 import type { ActorContext } from "@contracts/client";
+beforeEach(() => {
+  stubViewCounts();
+});
 const audit = vi.hoisted(() => ({
   context: null as ActorContext | null,
   receipt: null as CaseReceipt | null,

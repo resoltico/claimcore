@@ -1,6 +1,7 @@
+import { caseViewsFixture, reminderViewsFixture } from "../tests/support/view-counts.fixtures";
 import { expect, test, type Page } from "@playwright/test";
 import { consumerContractIdentity } from "@contracts/client";
-import { actorContextInput } from "../tests/support/inputs";
+import { actorContextInput, caseSummaryInput, actorRefInput } from "../tests/support/inputs";
 import { contrastRatio } from "../src/theme/contrast";
 import { chooseOption } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
@@ -47,6 +48,21 @@ const observe = async (
     }),
   );
   if (authenticated) {
+    const basis = {
+      observedAt: "2026-11-04T00:00:00.000000Z",
+      businessDate: "2026-11-04",
+      timeZone: "Etc/UTC",
+    };
+    await page.route("**/api/case.views", (route) =>
+      route.fulfill({
+        json: { outcome: { kind: "SUCCEEDED", data: { ...caseViewsFixture, basis } } },
+      }),
+    );
+    await page.route("**/api/reminder.views", (route) =>
+      route.fulfill({
+        json: { outcome: { kind: "SUCCEEDED", data: { ...reminderViewsFixture, basis } } },
+      }),
+    );
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
@@ -361,6 +377,166 @@ test("read admission retry stays non-blocking and honors the server delay under 
   await expect.poll(() => dispatches.length).toBe(2);
   expect(dispatches[1]! - dispatches[0]!).toBeGreaterThanOrEqual(1000);
   await expect(page.getByText("Busy — retrying", { exact: true })).toHaveCount(0);
+  await clean();
+});
+
+test("renders core view ordering, counts and row semantics without reconstructing predicates", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  const basis = {
+    observedAt: "2026-11-04T00:00:00.000000Z",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+  };
+  await page.route("**/api/case.views", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis,
+            items: [
+              { view: "OVERDUE", count: 7 },
+              { view: "NEEDS_ATTENTION", count: 2 },
+            ],
+          },
+        },
+      },
+    }),
+  );
+  const requests: unknown[] = [];
+  await page.route("**/api/case.list", (route) => {
+    requests.push(route.request().postDataJSON());
+    const row = caseSummaryInput({
+      caseReference: "VISIBLE-MATCH",
+      headline: "PAID",
+      attention: ["DUE_TODAY"],
+      responsible: actorRefInput({ displayName: { kind: "NAMED", value: "Responsible profile" } }),
+      pendingReminders: 3,
+      nextAction: {
+        reminderId: "10000000-0000-4000-8000-000000000002",
+        action: "Core next action",
+        due: "2026-11-04",
+        dueState: "TODAY",
+      },
+    });
+    return route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis,
+            items: [row],
+            offers: [],
+            nextCursor: null,
+            exactReference: { caseId: row.caseId, caseReference: row.caseReference },
+          },
+        },
+      },
+    });
+  });
+  await page.route("**/api/case.summary", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis,
+            counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+            claimed: [],
+            payable: [],
+          },
+        },
+      },
+    }),
+  );
+  await page.goto("/cases", { waitUntil: "commit" });
+  await expect(page).toHaveURL(/\/cases\?view=OVERDUE$/u);
+  const views = page.locator(".case-views button");
+  await expect(views).toHaveText(["Overdue 7", "Needs attention 2"]);
+  await expect(views.first()).toHaveAttribute("aria-pressed", "true");
+  await expect(page.locator(".case-headline")).toHaveText("Paid");
+  await expect(page.locator(".worklist-next-action")).toContainText("Core next action");
+  await expect(page.locator(".worklist-next-action")).toContainText("+2 more");
+  await expect(page.locator(".worklist-responsible")).toContainText("Responsible profile");
+  await expect(
+    page.getByRole("region", { name: "Exact reference match", exact: true }),
+  ).toBeVisible();
+  expect(requests).toEqual([{ limit: 50, view: "OVERDUE" }]);
+  await expectAccessible(page);
+  await clean();
+});
+
+test("shell case creation returns to the captured core view and focus without sending a mutation", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  await page.route("**/api/context", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: actorContextInput({
+            productVersion: "synthetic-presentation",
+            businessDate: "2026-11-04",
+            timeZone: "Etc/UTC",
+            capabilities: ["REGISTER"],
+            views: ["CASES"],
+            offers: [{ kind: "OPEN" }],
+          }),
+        },
+      },
+    }),
+  );
+  const basis = {
+    observedAt: "2026-11-04T00:00:00.000000Z",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+  };
+  await page.route("**/api/case.list", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { basis, items: [], offers: [], nextCursor: null, exactReference: null },
+        },
+      },
+    }),
+  );
+  await page.route("**/api/case.summary", (route) =>
+    route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis,
+            counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+            claimed: [],
+            payable: [],
+          },
+        },
+      },
+    }),
+  );
+  const writes: string[] = [];
+  page.on("request", (request) => {
+    if (/\/api\/operation\.(?:preview|execute)$/u.test(new URL(request.url()).pathname)) {
+      writes.push(request.url());
+    }
+  });
+  await page.goto("/cases?view=ALL&q=remember&order=RECENT", { waitUntil: "commit" });
+  const origin = page.locator("#open-case");
+  await expect(origin).toBeVisible();
+  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+  await origin.click();
+  await expect(page.getByRole("heading", { name: "Open a case", exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Back to cases", exact: true }).click();
+  await expect(page).toHaveURL(/\/cases\?view=ALL&q=remember&order=RECENT$/u);
+  await expect(origin).toBeFocused();
+  expect(writes).toEqual([]);
   await clean();
 });
 

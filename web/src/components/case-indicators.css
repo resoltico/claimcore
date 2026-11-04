@@ -1,0 +1,25 @@
+.case-attention {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.case-attention .badge[data-attention="OVERDUE"] {
+  color: var(--danger-text);
+  background: var(--danger-bg);
+}
+.case-attention
+  .badge:is(
+    [data-attention="DUE_TODAY"],
+    [data-attention="NO_NEXT_ACTION"],
+    [data-attention="ASSIGNEE_UNAVAILABLE"]
+  ) {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+.case-attention .badge[data-attention="READY_TO_CLOSE"] {
+  color: var(--success-text);
+  background: var(--success-bg);
+}

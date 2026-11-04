@@ -20,7 +20,8 @@ import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseHistory } from "./CaseHistory";
 import { LifecycleStatus } from "./LifecycleStatus";
-import { CaseStateBadge } from "../components/CaseStateBadge";
+import { CaseHeadline } from "../components/CaseHeadline";
+import { CaseAttention } from "../components/CaseAttention";
 
 type CaseDetailProps = {
   target: CaseSelector;
@@ -125,17 +126,8 @@ const CaseHeader = ({
           </h1>
           {state === null ? null : (
             <div className="case-header-state">
-              <CaseStateBadge
-                state={
-                  state.state.kind === "ERASED"
-                    ? state.state
-                    : {
-                        kind: state.state.kind,
-                        status: state.state.fields.status,
-                        progress: state.state.fields.progress,
-                      }
-                }
-              />
+              <CaseHeadline value={state.headline} />
+              <CaseAttention values={state.attention} />
               <span>{p.text("ui.revision", { revision: p.integer(state.revision) })}</span>
               {state.mine ? <span className="assigned-marker">{p.text("ui.mine")}</span> : null}
             </div>

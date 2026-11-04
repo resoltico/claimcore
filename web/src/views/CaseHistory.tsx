@@ -1,6 +1,6 @@
 import { Select } from "../ui/Select";
 import type { CaseSelector } from "@contracts/client";
-import { ActorIdentity, OperationIdentity } from "../components/ActorIdentity";
+import { TechnicalActorIdentity, OperationIdentity } from "../components/ActorIdentity";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import { IdentifierMessage } from "../presentation/IdentifierMessage";
 import type { Notice } from "../protocol/notices";
@@ -23,7 +23,7 @@ const historyPage = (response: ServiceResponse<"case.history">) =>
 type HistoryPage = NonNullable<ReturnType<typeof historyPage>>;
 const ReceiptAttribution = ({ operationId, actor }: { operationId: string; actor: string }) => (
   <p className="history-attribution">
-    <ActorIdentity actorId={actor} />
+    <TechnicalActorIdentity actorId={actor} />
     <OperationIdentity operationId={operationId} />
   </p>
 );

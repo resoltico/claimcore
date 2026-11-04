@@ -1,6 +1,7 @@
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
@@ -13,6 +14,9 @@ import { navigate } from "../../src/routing/navigation";
 import { referencePath } from "../../src/routing/routes";
 import { Dashboard } from "../../src/views/Dashboard";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
+beforeEach(() => {
+  stubViewCounts();
+});
 const outcome = <const T,>(value: T) => ({ kind: "outcome" as const, status: 200, value });
 const unavailable = {
   kind: "REJECTED",
@@ -74,7 +78,7 @@ const authorityReads = () => {
     outcome({
       outcome: {
         kind: "SUCCEEDED",
-        data: { basis: workBasis, offers: [], items: [], nextCursor: null },
+        data: { basis: workBasis, exactReference: null, offers: [], items: [], nextCursor: null },
       },
     }),
   );
@@ -85,6 +89,7 @@ const authorityReads = () => {
       issuer: "https://issuer.example/",
       subject: "PREVIOUS_ACTOR_CANARY",
     },
+    profile: { displayName: "PREVIOUS_ACTOR_CANARY", contact: null },
     enabled: true,
   };
   mockEndpoint("authority.list")

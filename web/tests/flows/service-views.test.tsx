@@ -68,12 +68,11 @@ const queueListPages = () => {
     }),
   );
 };
-it("lists, reloads, pages, selects and opens cases through typed list outcomes", async () => {
+it("lists, reloads, pages and selects cases through typed list outcomes", async () => {
   const user = userEvent.setup();
   queueListPages();
   const select = vi.fn();
-  const open = vi.fn();
-  render(<CaseList onSelect={select} onOpen={open} />);
+  render(<CaseList onSelect={select} />);
   await user.click(
     await screen.findByRole(
       "link",
@@ -89,8 +88,6 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
     kind: "ID",
     caseId: "20000000-0000-4000-8000-000000000001",
   });
-  await user.click(getButton("Open a case"));
-  expect(open).toHaveBeenCalledOnce();
   await user.click(getButton("Load more cases"));
   expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
   await user.click(screen.getByText("Open by exact reference", { selector: "summary" }));
@@ -155,7 +152,9 @@ it("shows current fields, server act labels, full expandable history and retryab
   const entrySummary = (await screen.findAllByText(/Open a case · revision/u))[0]!;
   await user.click(entrySummary);
   const entry = entrySummary.closest("details");
-  expect(entry?.querySelector(".history-attribution")).toHaveTextContent("You");
+  expect(entry?.querySelector(".history-attribution")).toHaveTextContent(
+    context.actorId.slice(0, 8),
+  );
   expect(entry?.querySelector(".history-exact")).toHaveTextContent(operationId);
   expect(entry).toHaveTextContent("Exact UTC instant");
   await user.click(getButton("Load more history"));
@@ -190,7 +189,7 @@ it("reports a failed list as a request-local error without manufacturing rows", 
       },
     ),
   );
-  render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={vi.fn()} />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
   expect(screen.queryByRole("listitem")).toBeNull();
 });
@@ -257,7 +256,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     }),
   );
   render(<Dashboard />);
-  await user.click(await findButton("Open a case"));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
   expect(
     await screen.findByRole("heading", {
       name: "Open a case",

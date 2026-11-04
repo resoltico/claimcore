@@ -1,3 +1,4 @@
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityPreview } from "../support/authority-operation.fixtures";
@@ -9,6 +10,9 @@ import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { wireReply } from "../support/contract-corpus.fixtures";
+beforeEach(() => {
+  stubViewCounts();
+});
 
 beforeEach(() => {
   authorityPreview();
@@ -21,6 +25,7 @@ const disclosedActor = {
     issuer: "https://issuer.example/",
     subject: "synthetic-disclosed",
   },
+  profile: { displayName: "synthetic-disclosed", contact: null },
   enabled: true,
 } as const;
 const success = <K extends "context" | "authority.list">(
@@ -329,7 +334,7 @@ it.each([
       expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 3);
     });
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
-    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
@@ -338,12 +343,12 @@ it.each([
       within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
     );
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
-    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
     expect(screen.queryByText("synthetic-authored")).toBeNull();
-    await user.click(screen.getByRole("link", { name: "Cases" }));
+    await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
     await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(logout).toHaveBeenCalledOnce();
   },

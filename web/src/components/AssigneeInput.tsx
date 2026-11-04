@@ -1,3 +1,4 @@
+import { ActorIdentity } from "./ActorIdentity";
 import { useMemo, useState } from "react";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useRequesterContext } from "../hooks/useRequesterContext";
@@ -5,7 +6,6 @@ import { useCredential, useSessionContext } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { IdentifierValue } from "./IdentifierValue";
-import { CharacterWarning } from "./BusinessValue";
 import type { AssigneePage, AssigneePageReply } from "@contracts/client";
 import type { CurrentCase } from "../protocol/types";
 import type { TypedFieldProps } from "./CatalogDate";
@@ -29,8 +29,7 @@ const AssigneeChoices = ({ page, ...props }: TypedFieldProps & { page: AssigneeP
                 props.onChange(account.actorId);
               }}
             />
-            <bdi dir="auto">{account.subject}</bdi> <IdentifierValue value={account.actorId} />
-            <CharacterWarning value={account.subject} />
+            <ActorIdentity actor={account} /> <IdentifierValue value={account.actorId} />
           </label>
         </li>
       ))}
@@ -39,11 +38,11 @@ const AssigneeChoices = ({ page, ...props }: TypedFieldProps & { page: AssigneeP
 };
 const SelectedAssignee = ({ current, value }: Pick<Props, "current" | "value">) => {
   const p = usePresentation();
-  const selected = current.work.responsible?.account;
+  const selected = current.work.responsible;
   return value === "" ? null : (
     <p>
       {p.text("ui.selectedAccount")}:{" "}
-      {selected?.actorId === value ? <bdi>{selected.subject}</bdi> : null}{" "}
+      {selected?.actorId === value ? <ActorIdentity actor={selected} /> : null}{" "}
       <IdentifierValue value={value} />
     </p>
   );

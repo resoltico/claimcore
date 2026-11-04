@@ -16,7 +16,7 @@ import {
 const startPseudo = async (page: Page) => {
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
-  await page.locator('section[aria-labelledby="case-list-title"] .section-heading button').click();
+  await page.locator("#open-case").click();
   const values = {
     caseReference: `PSEUDO-${randomUUID()}`,
     ...registration({ claimantName: "A\u0308 العربية\u200D", claimedAmount: "1.0000" }),

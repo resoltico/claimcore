@@ -1,3 +1,5 @@
+import { useCaseNavigation } from "../routing/useCaseNavigation";
+import { WorkspaceViewsProvider } from "./WorkspaceViews";
 import { ReadRetryStatus } from "./ReadRetryStatus";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
@@ -310,6 +312,7 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
     };
   }, [feedbackOwner]);
   return {
+    owner: feedbackOwner,
     receipt: accepted?.owner === feedbackOwner ? accepted.receipt : null,
     clear: () => {
       setAccepted(null);
@@ -346,6 +349,7 @@ export const Dashboard = () => {
     setOwner(observedOwner);
   }
   const feedback = useAcceptanceFeedback(observedOwner, views.includes("CASES"));
+  const caseNavigation = useCaseNavigation(feedback.owner);
   const [locked, setLocked] = useState(false);
   const [refresh, setRefresh] = useState(0);
   const content = useRouteHeading(route, owner);
@@ -365,45 +369,52 @@ export const Dashboard = () => {
   return (
     <RequesterContext value={actorContext}>
       <RecoveryProvider>
-        <div className="workspace-shell">
-          <WorkspaceHeader
-            route={route}
-            active={route.screen === "reminders" ? "reminders" : active}
-            views={views}
-            capabilities={shellContext.capabilities}
-            offers={shellContext.offers}
-            locked={locked}
-          />
-          <main className="app-shell">
-            <AcceptedToast
+        <WorkspaceViewsProvider>
+          <div className="workspace-shell">
+            <WorkspaceHeader
               route={route}
-              receipt={feedback.receipt}
-              close={() => {
-                feedback.clear();
-              }}
+              openCase={caseNavigation.openCase}
+              active={route.screen === "reminders" ? "reminders" : active}
+              views={views}
+              capabilities={shellContext.capabilities}
+              offers={shellContext.offers}
+              locked={locked}
             />
-            <RecoveryBanner />
-            <ReadRetryStatus />
-            {businessDate.changedDate === null ? null : (
-              <BusinessDateNotice date={businessDate.changedDate} refresh={businessDate.refresh} />
-            )}
-            <WorkspaceStatus context={context} />
-            <MaintenanceNotice active={actorContext?.maintenance.active ?? false} />
-            <div ref={content}>
-              <WorkspaceRoute
-                key={owner}
+            <main className="app-shell">
+              <AcceptedToast
                 route={route}
-                views={views}
-                noViews={noViews}
-                capabilities={shellContext.capabilities}
-                known={actorContext !== null}
-                setLocked={setLocked}
-                committed={committed}
-                refresh={refresh}
+                receipt={feedback.receipt}
+                close={() => {
+                  feedback.clear();
+                }}
               />
-            </div>
-          </main>
-        </div>
+              <RecoveryBanner />
+              <ReadRetryStatus />
+              {businessDate.changedDate === null ? null : (
+                <BusinessDateNotice
+                  date={businessDate.changedDate}
+                  refresh={businessDate.refresh}
+                />
+              )}
+              <WorkspaceStatus context={context} />
+              <MaintenanceNotice active={actorContext?.maintenance.active ?? false} />
+              <div ref={content}>
+                <WorkspaceRoute
+                  key={owner}
+                  route={route}
+                  caseNavigation={caseNavigation}
+                  views={views}
+                  noViews={noViews}
+                  capabilities={shellContext.capabilities}
+                  known={actorContext !== null}
+                  setLocked={setLocked}
+                  committed={committed}
+                  refresh={refresh}
+                />
+              </div>
+            </main>
+          </div>
+        </WorkspaceViewsProvider>
       </RecoveryProvider>
     </RequesterContext>
   );

@@ -6,10 +6,9 @@ import { isCaseAct, type ActKind } from "../../operation/metadata";
 import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
 import { operationEntry } from "../../protocol/operationCatalog";
-import { casePrimaryAction } from "../../operation/caseActionPriority";
 const stewardship = (act: ActKind) =>
   operationEntry({ subject: "CASE", kind: act }).family === "STEWARDSHIP";
-type Action = { act: ActKind; primary: ActKind | undefined; onAct: (act: ActKind) => void };
+type Action = { act: ActKind; primary: ActKind | null; onAct: (act: ActKind) => void };
 const ActButton = ({ act, primary, onAct }: Action) => {
   const p = usePresentation();
   let className = act === primary ? "primary" : "";
@@ -79,7 +78,7 @@ const CompactActions = ({ acts, primary, onAct }: GroupProps) => {
         {p.text("label.availableActs")}
       </h2>
       <div className="case-primary-action">
-        {primary === undefined ? null : <ActButton act={primary} primary={primary} onAct={onAct} />}
+        {primary === null ? null : <ActButton act={primary} primary={primary} onAct={onAct} />}
       </div>
       {acts.filter((act) => act !== primary).length === 0 ? null : (
         <details className="case-more-actions">
@@ -108,8 +107,8 @@ export const CasePrimaryAction = ({
   const compact = useCompact();
   const requester = useRequesterContext();
   const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
-  const primary = casePrimaryAction(current);
-  return compact || paused || primary === undefined ? null : (
+  const primary = current.advice.recommended;
+  return compact || paused || primary === null ? null : (
     <ActButton act={primary} primary={primary} onAct={onAct} />
   );
 };
@@ -125,7 +124,7 @@ export const CaseActions = ({
   const requester = useRequesterContext();
   const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
   const acts = paused ? [] : current.advice.acts.filter(isCaseAct);
-  const primary = paused ? undefined : casePrimaryAction(current);
+  const primary = paused ? null : current.advice.recommended;
   if (acts.length === 0) {
     return null;
   }

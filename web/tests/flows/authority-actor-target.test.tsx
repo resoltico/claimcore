@@ -1,7 +1,8 @@
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import userEvent from "@testing-library/user-event";
 import { chooseOption } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
-import { expect, it, vi } from "vitest";
+import { beforeEach, expect, it, vi } from "vitest";
 import { act, fireEvent } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
@@ -18,6 +19,9 @@ import {
   openActor,
   setupActorTargets,
 } from "../support/actor-target.fixtures";
+beforeEach(() => {
+  stubViewCounts();
+});
 const grantToSelected = async () => {
   fireEvent.click(await screen.findByRole("button", { name: /Grant role: Grant a role/u }));
   await screen.findByRole("dialog", { name: "Discard these draft changes?" });

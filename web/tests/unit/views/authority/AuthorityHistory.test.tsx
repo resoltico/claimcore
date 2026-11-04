@@ -22,7 +22,7 @@ it.each([
     language: "en",
     displayLocale: "en-GB",
     label: "Provision owner",
-    you: "You",
+
     day: "2 Jan 2026",
     time: "00:30",
   },
@@ -30,7 +30,7 @@ it.each([
     language: "lv",
     displayLocale: "lv-LV",
     label: "Iestatīt sākotnējo īpašnieku",
-    you: "Jūs",
+
     day: "2026. gada 2. janv.",
     time: "00:30",
   },
@@ -38,13 +38,13 @@ it.each([
     language: "ar",
     displayLocale: "ar-EG",
     label: "تعيين المالك الأول",
-    you: "أنت",
+
     day: "٠٢\u200f/٠١\u200f/٢٠٢٦",
     time: "١٢:٣٠ ص",
   },
 ])(
-  "localizes bootstrap history and requester attribution in $language",
-  async ({ language, displayLocale, label, you, day, time }) => {
+  "localizes bootstrap history while ID-only DTOs retain technical attribution in $language",
+  async ({ language, displayLocale, label, day, time }) => {
     localStorage.setItem(
       preferenceKey,
       JSON.stringify({
@@ -70,7 +70,7 @@ it.each([
     );
     await screen.findByText(label, { exact: true });
     expect(screen.queryByText("PROVISION_OWNER")).toBeNull();
-    expect(screen.getAllByText(you, { exact: true })).toHaveLength(2);
+    expect(screen.getAllByText(context.actorId.slice(0, 8), { exact: true })).toHaveLength(2);
     const instant = view.container.querySelector("li header time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);

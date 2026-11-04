@@ -1,13 +1,23 @@
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import type { EndpointId, RequestByEndpoint } from "@contracts/client";
-import { requestEndpoint, resultNotice } from "../api/service";
+import {
+  requestEndpoint,
+  resultNotice,
+  type ApiResult,
+  type EndpointOutcome,
+} from "../api/service";
 import { canonicalInput, typedResult } from "./endpointCache";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
+const readMessage = (result: ApiResult<EndpointOutcome> | null) =>
+  result === null || (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED")
+    ? null
+    : resultNotice(result);
 export const useEndpoint = <K extends EndpointId>(
   endpoint: K,
   input: RequestByEndpoint[K],
   enabled = true,
+  scope = "",
 ) => {
   const cache = useEndpointCache();
   if (cache === null) {
@@ -17,7 +27,8 @@ export const useEndpoint = <K extends EndpointId>(
   const { state: session } = useSessionContext();
   const active = enabled && session.kind === "authenticated";
   const serialized = canonicalInput(input);
-  const key = `${session.epoch}:${credential}\u001f${endpoint}:${serialized}`;
+  const scopedEndpoint = scope === "" ? endpoint : `${scope}\u001f${endpoint}`;
+  const key = `${session.epoch}:${credential}\u001f${scopedEndpoint}:${serialized}`;
   const subscribe = useCallback(
     (listener: () => void) => cache.subscribe(key, listener),
     [cache, key],
@@ -49,10 +60,7 @@ export const useEndpoint = <K extends EndpointId>(
     value: result?.kind === "outcome" ? result.value : null,
     previous: previous?.kind === "outcome" ? previous.value : null,
     loading: active && state.loading,
-    message:
-      result === null || (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED")
-        ? null
-        : resultNotice(result),
+    message: readMessage(result),
     reload,
   };
 };

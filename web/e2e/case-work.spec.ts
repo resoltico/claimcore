@@ -110,7 +110,7 @@ test("records future planned work and scoped responsibility, then finds My cases
   }
   expect(accepted.outcome.data.revision).toBe(1);
   expect(accepted.outcome.data.work.revision).toBe(1);
-  expect(accepted.outcome.data.work.responsible?.account.actorId).toBe(actorId);
+  expect(accepted.outcome.data.work.responsible?.actorId).toBe(actorId);
   expect(accepted.outcome.data.work.followUpDate).toBe(planned);
   await expect(page.locator(".case-work")).toContainText("Upcoming");
   await expectAccessible(page);
