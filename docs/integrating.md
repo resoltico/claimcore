@@ -76,6 +76,13 @@ than guessing it from a wire path. Principal input
 identities are `principal.kind`, `principal.issuer` and `principal.subject`; their wire paths remain
 `target.kind`, `target.issuer` and `target.subject`. CLI grammar owns the flag spellings.
 
+Protected Application entry points check the current caller before returning early business input
+refusals. Unknown or disabled callers receive `RESOURCE_UNAVAILABLE`, including for malformed business
+values. The error belongs to one authorized read or write transaction; rejected writes allocate no
+payload nonce or ledger entry. Malformed calls can therefore require available storage. Valid request
+paths retain their target/capability checks, and registered roleless callers retain their own delivery
+recovery. Offline CLI syntax and malformed-wire transport checks are separate boundaries.
+
 ## HTTPS contract
 
 Session bootstrap uses GET; other endpoints use POST `/api/<endpoint>`, retaining literal dots in the name.

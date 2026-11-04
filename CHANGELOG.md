@@ -17,6 +17,7 @@
 - Replace CLI case history and case activity with case timeline; typed changes, actor names and canonical CSV support bounded or complete live traversal.
 - Actor-directory search matches current names or contacts plus typed role filters; discard old actor cursors. Profile erasure clears both private search indexes.
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
+- Protected Application calls check requester availability before input refusals; malformed calls can need storage. Offline CLI syntax checks remain local.
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
 - Irreversible human CLI commands require an exact typed target or matching --confirm; dry-run and structured protocol calls retain their wire contracts.
 - Regenerate work readers and custom stores for summaryChangedAt/summaryRecordedBy; responsibility-only edits preserve the summary's actual author and time.
