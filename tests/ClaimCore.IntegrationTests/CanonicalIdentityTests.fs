@@ -106,13 +106,17 @@ let private casePairs (database: PostgresFixture.Database) =
             let! replay =
                 (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
 
-            let expected =
-                if vector.GetProperty("same").GetBoolean() then
-                    ExecuteResult.AlreadyAccepted receipt
-                else
-                    ExecuteResult.Rejected Refusal.IdempotencyConflict
+            if vector.GetProperty("same").GetBoolean() then
+                expectReceipt
+                    (replayReceipt replay)
+                    receipt
+                    "Replay follows independent canonical identity"
+            else
+                Expect.equal
+                    replay.Outcome
+                    (ExecuteResult.Rejected Refusal.IdempotencyConflict)
+                    "Different identity conflicts"
 
-            Expect.equal replay.Outcome expected "Replay follows independent canonical identity"
             let! after = verified database
             Expect.equal after before "Neither replay nor conflict appends a ledger entry"
             let! authored = retainedRequest database receipt
@@ -182,9 +186,9 @@ let private authorityPairs (database: PostgresFixture.Database) =
 
             let! replay = (Service.execute actor (OperationInput.Authority right) (token))
 
-            Expect.equal
-                replay.Outcome
-                (ExecuteResult.AlreadyAccepted receipt)
+            expectReceipt
+                (replayReceipt replay)
+                receipt
                 "Grant and revoke compare folded references"
 
             let! after = verified database

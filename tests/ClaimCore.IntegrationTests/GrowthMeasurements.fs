@@ -310,8 +310,10 @@ let internal verified workload actor database =
 
         Expect.equal
             (Sequence.value position.Sequence)
-            (int64 (1017 + workload.Cases + workload.Writes + workload.Actors * 11))
-            "Every accepted write is counted"
+            // Four setup effects, seven extra auditor grants, 1006 accepted control writes
+            // and one recovery fence; each actor has identity/profile plus ten ordinary grants.
+            (int64 (4 + 7 + 1006 + 1 + workload.Cases + workload.Writes + workload.Actors * 12))
+            "Every physical authority/profile effect and accepted business/control write is counted"
 
         do! history workload actor
 

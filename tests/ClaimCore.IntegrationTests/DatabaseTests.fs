@@ -128,8 +128,8 @@ let tests =
 
                         Expect.equal
                             (position head).Sequence
-                            (CaseFixtures.sequence (5L))
-                            "Five accepted entries"
+                            (CaseFixtures.sequence 6L)
+                            "Two owner effects, two grants and two case operations are retained"
 
                         let expected =
                             {

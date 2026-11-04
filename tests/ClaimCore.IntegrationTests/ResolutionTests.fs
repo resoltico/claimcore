@@ -169,10 +169,10 @@ let private receipts (database: PostgresFixture.Database) =
         let receipt = accepted created
         let! resolved = resolve actor (id 110)
 
-        Expect.equal
-            resolved
-            ((Resolved.Accepted >> Outcome.Succeeded) receipt)
-            "Committed operation returns its receipt"
+        match resolved with
+        | Outcome.Succeeded(Resolved.Accepted actual) ->
+            expectReceipt actual receipt "Committed operation returns its receipt"
+        | other -> failtestf "Expected resolved acceptance: %A" other
 
         do! revokeReadRoles actor database.Fixture.Owner
 
@@ -257,10 +257,7 @@ let private foreign (database: PostgresFixture.Database) =
 
         let! replayed = (Service.execute actor (input) (token))
 
-        Expect.equal
-            replayed.Outcome
-            (ExecuteResult.AlreadyAccepted receipt)
-            "Foreign fence cannot disturb author replay"
+        expectReceipt (replayReceipt replayed) receipt "Foreign fence cannot disturb author replay"
 
         let! fence = resolve other (id 122)
 
@@ -374,10 +371,10 @@ let private authorityFence (database: PostgresFixture.Database) =
         let receipt = accepted created
         let! accepted = resolve actor (id 131)
 
-        Expect.equal
-            accepted
-            ((Resolved.Accepted >> Outcome.Succeeded) receipt)
-            "Accepted authority operation resolves to its receipt"
+        match accepted with
+        | Outcome.Succeeded(Resolved.Accepted actual) ->
+            expectReceipt actual receipt "Accepted authority operation resolves to its receipt"
+        | other -> failtestf "Expected resolved authority acceptance: %A" other
     }
 
 let private privileges (database: PostgresFixture.Database) =

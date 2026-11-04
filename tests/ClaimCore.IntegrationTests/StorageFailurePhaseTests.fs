@@ -327,10 +327,31 @@ let private globalFactsIntegrity (database: PostgresFixture.Database) =
 
         let! absent = Service.context (core database.Fixture unknown) () token
 
+        match absent with
+        | Outcome.Succeeded {
+                                Requester = RequesterState.NotRegistered requester
+                            } ->
+            Expect.equal
+                requester.Issuer
+                "https://issuer.example/"
+                "Only the caller's issuer is disclosed"
+
+            Expect.equal
+                requester.Subject
+                "unknown-read-facts"
+                "Only the caller's identity is disclosed"
+        | other -> failtestf "Expected the unregistered caller's own context state: %A" other
+
+        let! protectedRead =
+            Service.list
+                (core database.Fixture unknown)
+                (Inputs.caseListPage { AfterCursor = None; Limit = 1 })
+                token
+
         Expect.equal
-            absent
+            protectedRead
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-            "A valid operational owner does not invent an unknown actor"
+            "Protected case reads remain non-disclosing"
     }
 
 [<Tests>]

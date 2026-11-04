@@ -118,7 +118,7 @@ let internal replayAndRefusal fixture =
                 (ClaimCore.TestSupport.Inputs.caseOperation original)
                 (CancellationToken.None))
 
-        Expect.equal replay.Outcome (ExecuteResult.AlreadyAccepted receipt) "Original receipt"
+        expectReceipt (replayReceipt replay) receipt "Original acceptance with current observation"
 
         let! stale =
             (Service.execute
@@ -230,7 +230,7 @@ let internal lockedView fixture =
             )
 
         match result with
-        | Ok(Verdict.Replay receipt) -> Expect.equal receipt first "Locked replay"
+        | Ok(Verdict.Replay receipt) -> expectReceipt receipt first "Locked replay"
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"

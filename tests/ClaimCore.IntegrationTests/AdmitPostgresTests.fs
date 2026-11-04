@@ -26,7 +26,7 @@ let private erasedRebuild (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "UPDATE claimcore.actors SET display_name='Resurrected projection',contact='Wrong contact' WHERE actor_id=$1"
+                "UPDATE claimcore.actors SET display_name='Resurrected projection',display_name_search='resurrected projection',contact='Wrong contact',contact_search='wrong contact' WHERE actor_id=$1"
                 [| box (id 740) |]
 
         do! finding VerificationFinding.AuthorityProfileProjection database

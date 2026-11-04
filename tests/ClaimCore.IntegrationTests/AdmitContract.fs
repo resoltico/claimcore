@@ -281,9 +281,9 @@ let internal lifecycle fixture =
                         Grants = aliasGrants
                     })
 
-        Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted receipt)
+        expectReceipt
+            (replayReceipt replay)
+            receipt
             "Reference and ID aliases replay the same normalized operation"
 
         let! erased = execute owner (id 741) target AuthorityAct.EraseProfile

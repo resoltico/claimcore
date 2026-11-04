@@ -108,9 +108,9 @@ let identities (fixture: Fixture) =
                     })
                 token
 
-        Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted receipt)
+        expectReceipt
+            (replayReceipt replay)
+            receipt
             "Resolved identity makes reference and ID retries equivalent"
 
         let query: HistoryRequest =
@@ -383,9 +383,9 @@ let grantScopes (fixture: Fixture) =
                     })
                 token
 
-        Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted acceptedGrant)
+        expectReceipt
+            (replayReceipt replay)
+            acceptedGrant
             "Reference and ID grants share canonical accepted identity"
 
         let! stored =

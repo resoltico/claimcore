@@ -235,6 +235,9 @@ let tests =
                         "reminder-current-case"
                         "reminder-financial-isolation"
                         "reminder-work-overview"
+                        "core-case-views"
+                        "core-reminder-views"
+                        "core-case-timeline"
                     ])
                 "Every declared case read workload executes"
 

@@ -1131,9 +1131,9 @@ let internal lifecycleAndErasure fixture =
                     })
                 token
 
-        Expect.equal
-            replayed.Outcome
-            (ExecuteResult.AlreadyAccepted compoundReceipt)
+        expectReceipt
+            (replayReceipt replayed)
+            compoundReceipt
             "Compound replay preserves both effects and identity"
 
         let! voided =

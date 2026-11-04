@@ -450,7 +450,7 @@ let private atomicRollback database =
 
         match replay.Outcome with
         | ExecuteResult.AlreadyAccepted replay ->
-            Expect.equal replay receipt "Accepted retry is exactly the original pair"
+            expectReceipt replay receipt "Accepted retry preserves the original pair"
         | other -> failtestf "Expected replay: %A" other
 
         let! _ = verified database

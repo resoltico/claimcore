@@ -232,10 +232,10 @@ let internal authorityReviewReplay fixture =
 
         let! replay, _ = authorityReview fixture fixture.Owner input
 
-        Expect.equal
-            replay.Outcome
-            ((Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt)
-            "Accepted registration replays before fresh-state refusal."
+        match replay.Outcome with
+        | Outcome.Succeeded(Previewed.AlreadyAccepted actual) ->
+            expectReceipt actual receipt "Accepted registration replays before fresh-state refusal."
+        | other -> failtestf "Expected preview of retained acceptance: %A" other
 
         let changed = authorityRequest (id 2) target (AuthorityAct.Disable)
         let! conflict, _ = authorityReview fixture fixture.Owner changed

@@ -206,8 +206,8 @@ let private zeroRevisionReply endpoint status response =
 
     Expect.equal
         (diagnostic.GetProperty("action").GetString())
-        "READ_CURRENT"
-        "Original corrective action"
+        "REVIEW_LATEST"
+        "Conflict asks for review against the latest authorized case"
 
     Expect.equal
         (diagnostic.GetProperty("actualRevision").GetInt64())

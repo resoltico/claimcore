@@ -336,10 +336,13 @@ let private assertRemainingHistoryAccess
                 })
                 (token))
 
-        Expect.equal
-            observed
-            (Outcome.Succeeded(withheldReceipt original))
-            "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
+        match observed with
+        | Outcome.Succeeded actual ->
+            expectReceipt
+                actual
+                (withheldReceipt original)
+                "Superseded OPEN preserves acceptance and withholds its snapshot"
+        | other -> failtestf "Expected own superseded acceptance: %A" other
     }
 
 let private revokedFullHistory
