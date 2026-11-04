@@ -2,6 +2,11 @@
 
 ## [Unreleased]
 
+- Recreate databases for ledger entry format 5 and atomic operation-effect groups; old installations are rejected without migration.
+- Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
+- CLI adds family/verb help and --version, rejects irrelevant clear flags, names escaped usage tokens and reports declined reviews.
+- CLI language follows explicit flag, environment, profile and POSIX locale precedence; configure --show reports the effective choice and source.
+
 - Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
 
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
