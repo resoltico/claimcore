@@ -12959,6 +12959,7 @@
           },
           "issuer": {
             "type": "string",
+            "pattern": "^https://[^/?#@\\s]+/[^?#\\s]*$",
             "minLength": 1,
             "maxLength": 2048
           }

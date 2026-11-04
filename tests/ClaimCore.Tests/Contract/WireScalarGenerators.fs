@@ -163,6 +163,9 @@ let internal generatedString response (source: Seeds) context =
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
     elif field = "Cursor" || field = "AfterCursor" then
         scalarText
+    elif response && context.EndsWith("ActorContext.Issuer", StringComparison.Ordinal) then
+        guid
+        |> Gen.map (fun value -> "https://issuer-" + value.ToString("N") + ".example/")
     elif response && context.EndsWith("AccountSubject.Subject", StringComparison.Ordinal) then
         scalarText
     elif response then

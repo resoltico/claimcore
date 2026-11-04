@@ -406,13 +406,7 @@ module ResponseCodecs =
         |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
         |> field "maintenance" _.Maintenance registerMaintenance
         |> field "self" _.Self ActorCodecs.actorRef
-        |> field
-            "issuer"
-            _.Issuer
-            (boundedText 1 PrincipalKey.MaximumIssuerCharacters
-             |> constrained
-                 (Schema.String(None, None, Some 1, Some PrincipalKey.MaximumIssuerCharacters))
-                 PrincipalKey.isIssuer)
+        |> field "issuer" _.Issuer PrincipalCodecs.issuer
 
     let actorContext = actorContextFields |> build |> named "ActorContext"
 
