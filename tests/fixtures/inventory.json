@@ -327,6 +327,16 @@
       "token": "reminder.get",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "case.views",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "reminder.views",
+      "method": "POST",
+      "effect": "Read"
     }
   ],
   "refusalCodes": [
@@ -400,7 +410,7 @@
     "mine",
     "caseView"
   ],
-  "cliFrameCount": 49,
+  "cliFrameCount": 51,
   "readInputs": {
     "case.get": [
       "target"
@@ -484,7 +494,9 @@
     "reminder.get": [
       "target",
       "reminderId"
-    ]
+    ],
+    "case.views": [],
+    "reminder.views": []
   },
   "caseLifecycles": [
     "ACTIVE",
@@ -563,7 +575,9 @@
     "reminderState",
     "reminderDue",
     "headline",
-    "attention"
+    "attention",
+    "caseView",
+    "reminderView"
   ],
   "goldens": [
     "wire-request-examples.json",

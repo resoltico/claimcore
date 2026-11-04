@@ -21,6 +21,9 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.ReminderGet -> Route.bind Api.reminder Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
             Route.bind Api.reminders Service.reminders
+        | ActorEndpoint.Query QueryEndpoint.CaseViews -> Route.bind Api.caseViews Service.caseViews
+        | ActorEndpoint.Query QueryEndpoint.ReminderViews ->
+            Route.bind Api.reminderViews Service.reminderViews
         | ActorEndpoint.Query QueryEndpoint.WorkOverview ->
             Route.bind Api.workOverview Service.workOverview
         | ActorEndpoint.Query QueryEndpoint.CaseActivity ->

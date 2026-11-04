@@ -225,6 +225,20 @@ module Api =
             RequestCodecs.empty
             (ReplyCodecs.readReply "ContextReply" ResponseCodecs.actorContext)
 
+    let caseViews =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseViews))
+            HttpMethod.Post
+            RequestCodecs.empty
+            (ReplyCodecs.readReply "CaseViewsReply" ViewCountCodecs.cases)
+
+    let reminderViews =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderViews))
+            HttpMethod.Post
+            RequestCodecs.empty
+            (ReplyCodecs.readReply "ReminderViewsReply" ViewCountCodecs.reminders)
+
     let caseGet =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet))
@@ -410,6 +424,9 @@ module Api =
         | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
             EndpointDefinition.create caseAssignees
         | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
+        | (ActorEndpoint.Query QueryEndpoint.CaseViews) -> EndpointDefinition.create caseViews
+        | (ActorEndpoint.Query QueryEndpoint.ReminderViews) ->
+            EndpointDefinition.create reminderViews
         | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
         | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> EndpointDefinition.create caseHistory
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->

@@ -28,6 +28,8 @@ module internal TextReply =
             read Api.reminder TextWorkReply.single
             read Api.reminders TextWorkReply.page
             read Api.workOverview TextWorkReply.overview
+            read Api.caseViews TextWorkReply.caseViews
+            read Api.reminderViews TextWorkReply.reminderViews
             read Api.caseActivity TextWorkReply.activity
             read Api.caseGet TextCaseReply.caseLines
             read Api.caseAssignees TextCaseReply.assigneePage

@@ -410,6 +410,8 @@ type IReadTx =
     abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId, ActorRef>>
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
     abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
+    abstract CaseViewCounts: CaseSelection -> Task<CaseViewCount list>
+    abstract ReminderViewCounts: CaseSelection -> Task<ReminderViewCount list>
     abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract FindOperation: OperationId -> Task<StoredOperation option>
     abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>

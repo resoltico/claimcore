@@ -2135,6 +2135,38 @@
         },
         "reminderId": "30000000-0000-4000-8000-000000000001"
       }
+    },
+    {
+      "id": "case.views-empty",
+      "endpoint": "case.views",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "case.views-no-hidden-filter",
+      "endpoint": "case.views",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "view": "MINE"
+      }
+    },
+    {
+      "id": "reminder.views-empty",
+      "endpoint": "reminder.views",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "reminder.views-no-hidden-filter",
+      "endpoint": "reminder.views",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "view": "MINE"
+      }
     }
   ]
 }

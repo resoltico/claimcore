@@ -39,6 +39,14 @@ module ReadCatalog =
                 Inputs = [ ReadInput.Reminders; ReadInput.Page ]
             }
             {
+                Endpoint = QueryEndpoint.CaseViews
+                Inputs = []
+            }
+            {
+                Endpoint = QueryEndpoint.ReminderViews
+                Inputs = []
+            }
+            {
                 Endpoint = QueryEndpoint.WorkOverview
                 Inputs = [ ReadInput.Mine ]
             }

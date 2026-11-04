@@ -561,6 +561,32 @@ claimcore reminder list [--case-reference VALUE] [--state pending|completed|canc
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 | `--include-inactive` | Include inactive case work — Explicitly include work on closed or voided cases. Pending reminders retain their dates and state. |  |  |
 
+## case views
+
+Case views
+
+Count accessible cases in every case view using one authorized snapshot and business date.
+
+```sh
+claimcore case views [--format text|json] [--language en|lv|ar] [--dry-run]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+
+## reminder views
+
+Reminder views
+
+Count accessible reminders in every reminder view using one authorized snapshot and business date.
+
+```sh
+claimcore reminder views [--format text|json] [--language en|lv|ar] [--dry-run]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
+
 ## work overview
 
 Work overview

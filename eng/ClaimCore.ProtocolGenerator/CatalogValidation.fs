@@ -101,6 +101,7 @@ module CatalogValidation =
         let families =
             [
                 "label"
+                "view"
                 "endpoint"
                 "authority"
                 "diagnostic"

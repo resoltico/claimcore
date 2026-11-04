@@ -74,6 +74,18 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
              | Some summary -> text + "\u001f" + summary))
 
 
+let private viewFacts state (record: StoredCase) : CaseWorkFacts =
+    {
+        State =
+            record.Snapshot.State
+            |> CaseState.map (fun fields -> fields.Status, CaseProgress.ofPayment fields.Progress)
+        Responsible =
+            record.Index.Responsible
+            |> Option.map (fun actor ->
+                actor, (assignedAccount state record.CaseId actor).Available)
+        NextPendingDue = record.Index.FollowUp
+    }
+
 let private total money =
     money
     |> Option.map (fun value ->
@@ -353,6 +365,66 @@ type internal Reader
                         })
                     rows
             )
+
+        member _.CaseViewCounts selection =
+            read ()
+            let state = get ()
+
+            let rows =
+                state.Cases
+                |> Map.values
+                |> Seq.filter (selected state selection)
+                |> Seq.map (viewFacts state)
+                |> Seq.toList
+
+            CaseView.all
+            |> List.map (fun view ->
+                {
+                    CaseViewCount.View = view
+                    Count =
+                        rows
+                        |> List.filter (
+                            CaseView.matches
+                                selection.DateBasis.BusinessDate
+                                selection.ActorId
+                                view
+                        )
+                        |> List.length
+                        |> int64
+                })
+            |> Task.FromResult
+
+        member _.ReminderViewCounts selection =
+            read ()
+            let state = get ()
+
+            let rows =
+                state.Reminders
+                |> Map.values
+                |> Seq.choose (fun row ->
+                    match Map.tryFind row.CaseId state.Cases, row.Snapshot with
+                    | Some parent, Some reminder when selected state selection parent ->
+                        Some(viewFacts state parent, reminder)
+                    | _ -> None)
+                |> Seq.toList
+
+            ReminderView.all
+            |> List.map (fun view ->
+                {
+                    ReminderViewCount.View = view
+                    Count =
+                        rows
+                        |> List.filter (fun (parent, reminder) ->
+                            ReminderView.matches
+                                selection.DateBasis.BusinessDate
+                                selection.ActorId
+                                view
+                                parent
+                                reminder)
+                        |> List.length
+                        |> int64
+                })
+            |> Task.FromResult
 
         member _.WorkOverview(selection, mine) =
             read ()

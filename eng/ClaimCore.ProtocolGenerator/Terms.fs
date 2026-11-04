@@ -76,6 +76,14 @@ module Terms =
                 ]
         }
 
+    let private views vocabulary =
+        {
+            Name = Vocabulary.name vocabulary
+            Labels =
+                Vocabulary.tokens vocabulary
+                |> List.map (fun token -> token, "view." + token + ".label")
+        }
+
     let all =
         [
             rendered CaseStatus.vocabulary
@@ -90,6 +98,8 @@ module Terms =
             rendered InteractionEffect.vocabulary
             rendered HistoryDetail.vocabulary
             sectionTerms
+            views CaseView.vocabulary
+            views ReminderView.vocabulary
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
             rendered WorkActKind.vocabulary

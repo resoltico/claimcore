@@ -279,6 +279,12 @@ type private ReadTx
         member _.WorkOverview(selection, mine) =
             WorkStorage.overview connection selection mine token
 
+        member _.CaseViewCounts selection =
+            ViewCountStorage.cases connection selection token
+
+        member _.ReminderViewCounts selection =
+            ViewCountStorage.reminders connection selection token
+
         member _.ActivityPage query =
             task {
                 let! rows =

@@ -24,6 +24,7 @@
     <Compile Include="RecoveryStatus.fs" />
     <Compile Include="WorkExecution.fs" />
     <Compile Include="WorkQueries.fs" />
+    <Compile Include="ViewQueries.fs" />
     <Compile Include="Service.fs" />
     <Compile Include="Verification/VerificationTypes.fs" />
     <Compile Include="Verification/AuthorityFold.fs" />

@@ -98,12 +98,12 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory | QueryEndpoint.CaseActivity) ->
+        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseViews | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory | QueryEndpoint.CaseActivity) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Work _)
         | CatalogOperation.Query QueryEndpoint.WorkOverview -> CatalogSubject.Work
         | CatalogOperation.Act(ActKind.Reminder _)
-        | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet) ->
+        | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet | QueryEndpoint.ReminderViews) ->
             CatalogSubject.Reminder
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->

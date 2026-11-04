@@ -235,6 +235,8 @@ module Service =
     let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
     let workOverview = WorkQueries.overview
+    let caseViews = ViewQueries.cases
+    let reminderViews = ViewQueries.reminders
     let activity = WorkQueries.activity
 
     let assignees = Queries.assignees

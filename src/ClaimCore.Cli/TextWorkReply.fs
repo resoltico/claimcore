@@ -82,6 +82,21 @@ module internal TextWorkReply =
         @ (page.Items |> List.collect (currentReminder language))
         @ nextLines language page.NextCursor
 
+    let caseViews language (value: CaseViews) =
+        basis language value.Basis
+        @ (value.Items
+           |> List.map (fun item ->
+               line language ("view." + CaseView.token item.View + ".label") (number item.Count)))
+
+    let reminderViews language (value: ReminderViews) =
+        basis language value.Basis
+        @ (value.Items
+           |> List.map (fun item ->
+               line
+                   language
+                   ("view." + ReminderView.token item.View + ".label")
+                   (number item.Count)))
+
     let overview language (value: WorkOverview) =
         basis language value.Basis
         @ [

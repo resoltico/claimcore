@@ -47,3 +47,5 @@ work overview --mine true	{"endpoint":"work.overview","input":{"mine":true}}
 reminder list --limit 5 --due overdue --assignment mine	{"endpoint":"reminder.list","input":{"due":"OVERDUE","assignment":"MINE","limit":5}}
 case activity R-1 --limit 5 --full	{"endpoint":"case.activity","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"detail":"FULL","limit":5}}
 reminder get R-1 --reminder-id 10000000-0000-4000-8000-000000000007	{"endpoint":"reminder.get","input":{"target":{"kind":"REFERENCE","caseReference":"R-1"},"reminderId":"10000000-0000-4000-8000-000000000007"}}
+case views	{"endpoint":"case.views","input":{}}
+reminder views	{"endpoint":"reminder.views","input":{}}

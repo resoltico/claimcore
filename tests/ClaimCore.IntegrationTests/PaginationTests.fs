@@ -185,6 +185,11 @@ type internal PausedPageStore
                                     member _.WorkOverview(selection, mine) =
                                         tx.WorkOverview(selection, mine)
 
+                                    member _.CaseViewCounts selection = tx.CaseViewCounts selection
+
+                                    member _.ReminderViewCounts selection =
+                                        tx.ReminderViewCounts selection
+
                                     member _.ActivityPage query = tx.ActivityPage query
                                     member _.FindOperation id = tx.FindOperation id
                                     member _.NonAcceptance key = tx.NonAcceptance key

@@ -55,6 +55,8 @@ let internal listBounds (path: string) =
                 "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
+                "CaseViews.Items", 11
+                "ReminderViews.Items", 7
                 "CaseReadModel.Attention", 6
                 "CaseSummary.Attention", 6
                 "AdvisoryReview.Changes", Inventory.fieldCount

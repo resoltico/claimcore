@@ -5740,6 +5740,32 @@
       ]
     },
     {
+      "endpoint": "case.views",
+      "subject": "CASE",
+      "kind": "case.views",
+      "labelId": "endpoint.case.views.label",
+      "meaningId": "endpoint.case.views.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [],
+      "constants": []
+    },
+    {
+      "endpoint": "reminder.views",
+      "subject": "REMINDER",
+      "kind": "reminder.views",
+      "labelId": "endpoint.reminder.views.label",
+      "meaningId": "endpoint.reminder.views.meaning",
+      "confirmationId": null,
+      "family": null,
+      "affectedSections": [],
+      "effect": "READ",
+      "inputs": [],
+      "constants": []
+    },
+    {
       "endpoint": "work.overview",
       "subject": "WORK",
       "kind": "work.overview",

@@ -13,6 +13,8 @@ type QueryEndpoint =
     | CaseGet
     | CaseAssignees
     | CaseList
+    | CaseViews
+    | ReminderViews
     | CaseSummary
     | CaseHistory
     | CaseActivity
@@ -45,6 +47,8 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.CaseAssignees)
                 (ActorEndpoint.Query QueryEndpoint.CaseGet)
                 (ActorEndpoint.Query QueryEndpoint.CaseList)
+                (ActorEndpoint.Query QueryEndpoint.CaseViews)
+                (ActorEndpoint.Query QueryEndpoint.ReminderViews)
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
                 (ActorEndpoint.Query QueryEndpoint.CaseHistory)
                 (ActorEndpoint.Query QueryEndpoint.CaseActivity)
@@ -65,6 +69,8 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) -> "case.assignees"
              | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
              | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
+             | (ActorEndpoint.Query QueryEndpoint.CaseViews) -> "case.views"
+             | (ActorEndpoint.Query QueryEndpoint.ReminderViews) -> "reminder.views"
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
              | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
              | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> "case.activity"
