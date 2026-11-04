@@ -11,6 +11,7 @@
     <Compile Include="DecimalTotal.fs" />
     <Compile Include="FieldValues.fs" />
     <Compile Include="Identifiers.fs" />
+    <Compile Include="ActorProfiles.fs" />
     <Compile Include="CaseFields.fs" />
     <Compile Include="CaseWork.fs" />
     <Compile Include="CaseUpdates.fs" />
