@@ -338,7 +338,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -1339,7 +1341,12 @@
                   {
                     "kind": "ENABLE"
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -1507,7 +1514,9 @@
               "needsNextAction": false,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "ERASED",
             "attention": [],
@@ -1595,7 +1604,9 @@
               "needsNextAction": false,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "ERASED",
             "attention": [],
@@ -3659,7 +3670,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "stages": {
               "kind": "ERASED"
@@ -3740,7 +3753,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "stages": {
               "kind": "TRACKER",
@@ -3949,7 +3964,9 @@
               "needsNextAction": false,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "VOIDED",
             "attention": [],
@@ -4762,7 +4779,12 @@
                       }
                     }
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -5109,7 +5131,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "ERASED",
             "attention": [],
@@ -5271,7 +5295,9 @@
               "needsNextAction": true,
               "canUpdateSummary": true,
               "canAssign": true,
-              "canCreateReminder": true
+              "canCreateReminder": true,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "UNDECIDED",
             "attention": [
@@ -5563,7 +5589,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -7150,7 +7178,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -7761,7 +7791,9 @@
               "needsNextAction": false,
               "canUpdateSummary": true,
               "canAssign": true,
-              "canCreateReminder": true
+              "canCreateReminder": true,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "UNDECIDED",
             "attention": [
@@ -7965,7 +7997,9 @@
               "needsNextAction": false,
               "canUpdateSummary": true,
               "canAssign": true,
-              "canCreateReminder": true
+              "canCreateReminder": true,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "UNDECIDED",
             "attention": [
@@ -12131,7 +12165,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -12864,7 +12900,9 @@
               "needsNextAction": false,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "VOIDED",
             "attention": [],
@@ -13039,7 +13077,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -13315,7 +13355,12 @@
                       }
                     }
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -13376,7 +13421,12 @@
                       "contact": "authored@example.invalid"
                     }
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -13436,7 +13486,12 @@
                   {
                     "kind": "ERASE_PROFILE"
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -13512,7 +13567,12 @@
                       }
                     }
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -13575,7 +13635,12 @@
                   {
                     "kind": "DISABLE"
                   }
-                ]
+                ],
+                "basis": {
+                  "observedAt": "2026-01-01T12:00:00.000000Z",
+                  "businessDate": "2026-01-01",
+                  "timeZone": "x"
+                }
               }
             }
           }
@@ -13753,7 +13818,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -13968,7 +14035,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -14185,7 +14254,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -14399,7 +14470,9 @@
               "needsNextAction": true,
               "canUpdateSummary": false,
               "canAssign": false,
-              "canCreateReminder": false
+              "canCreateReminder": false,
+              "summaryChangedAt": null,
+              "summaryRecordedBy": null
             },
             "headline": "PAID",
             "attention": [
@@ -14821,6 +14894,477 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "case-work-summaryChangedAt-required",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false,
+              "summaryRecordedBy": null
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case-work-summaryRecordedBy-required",
+      "endpoint": "case.get",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "caseReference": "x",
+            "revision": 1,
+            "state": {
+              "kind": "ACTIVE",
+              "fields": {
+                "caseReference": "x",
+                "status": "OPENED",
+                "registration": {
+                  "incidentDate": "2026-01-01",
+                  "incidentNotificationDate": "2026-01-01",
+                  "incidentCountry": "LV",
+                  "claimantName": "x",
+                  "insurerName": "x",
+                  "claimedAmount": "0",
+                  "claimedCurrency": "EUR",
+                  "incidentDescription": null
+                },
+                "decision": {
+                  "paymentDecisionDate": "2026-01-01",
+                  "payableAmount": "0",
+                  "payableCurrency": "EUR"
+                },
+                "payment": {
+                  "paymentDate": "2026-01-01"
+                },
+                "progress": "PAID"
+              }
+            },
+            "advice": {
+              "acts": [],
+              "history": [],
+              "maintenance": {
+                "active": false,
+                "generation": 0
+              },
+              "recommended": null,
+              "blocked": [
+                {
+                  "act": "OPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "AMEND_REGISTRATION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "CORRECT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "REGISTER"
+                  }
+                },
+                {
+                  "act": "DECIDE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "WITHDRAW_DECISION",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "DECIDE"
+                  }
+                },
+                {
+                  "act": "RECORD_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLEAR_PAYMENT",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "RECORD_PAYMENT"
+                  }
+                },
+                {
+                  "act": "CLOSE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "REOPEN",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "CLOSE"
+                  }
+                },
+                {
+                  "act": "VOID",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "REINSTATE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                },
+                {
+                  "act": "ERASE",
+                  "reason": {
+                    "code": "NOT_AUTHORIZED",
+                    "action": "ASK_FOR_ACCESS",
+                    "required": "STEWARD"
+                  }
+                }
+              ]
+            },
+            "mine": false,
+            "caseId": "20000000-0000-4000-8000-000000000001",
+            "work": {
+              "responsible": null,
+              "followUpDate": null,
+              "due": "UNSCHEDULED",
+              "basis": {
+                "observedAt": "2026-01-01T12:00:00.000000Z",
+                "businessDate": "2026-01-01",
+                "timeZone": "Etc/UTC"
+              },
+              "revision": 0,
+              "changedAt": null,
+              "recordedBy": null,
+              "summary": null,
+              "nextAction": null,
+              "pendingReminders": 0,
+              "overdueReminders": 0,
+              "needsNextAction": true,
+              "canUpdateSummary": false,
+              "canAssign": false,
+              "canCreateReminder": false,
+              "summaryChangedAt": null
+            },
+            "headline": "PAID",
+            "attention": [
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "READY_TO_CLOSE"
+            ],
+            "stages": {
+              "kind": "TRACKER",
+              "current": "PAID",
+              "steps": [
+                {
+                  "stage": "OPENED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "DECIDED",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "PAID",
+                  "completed": true,
+                  "date": "2026-01-01",
+                  "amount": {
+                    "amount": "0",
+                    "currency": "EUR"
+                  }
+                },
+                {
+                  "stage": "CLOSED",
+                  "completed": false,
+                  "date": null,
+                  "amount": null
+                }
+              ]
+            }
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "authority-review-basis-required",
+      "endpoint": "operation.preview",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "outcome": {
+          "kind": "REVIEWED",
+          "data": {
+            "review": {
+              "subject": {
+                "kind": "AUTHORITY",
+                "target": null,
+                "before": {
+                  "enabled": false,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "after": {
+                  "enabled": true,
+                  "grants": [],
+                  "access": [],
+                  "profile": null
+                },
+                "accessScope": {
+                  "kind": "INSTALLATION"
+                },
+                "effects": [
+                  {
+                    "kind": "ENABLE"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
     }
   ]
 }
