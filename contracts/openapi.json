@@ -2807,97 +2807,6 @@
           "act"
         ]
       },
-      "ActorContext": {
-        "type": "object",
-        "additionalProperties": false,
-        "properties": {
-          "installationId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "productVersion": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "businessDate": {
-            "type": "string",
-            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
-            "format": "date",
-            "minLength": 10,
-            "maxLength": 10
-          },
-          "timeZone": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 2147483647
-          },
-          "capabilities": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "READ_CASE",
-                "READ_HISTORY",
-                "READ_HISTORY_FULL",
-                "MANAGE_CASE_WORK",
-                "REGISTER",
-                "DECIDE",
-                "RECORD_PAYMENT",
-                "CLOSE",
-                "STEWARD",
-                "MANAGE_AUTHORITY",
-                "READ_AUTHORITY"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 16
-          },
-          "views": {
-            "type": "array",
-            "items": {
-              "enum": [
-                "CASES",
-                "AUTHORITY",
-                "OPERATIONS"
-              ]
-            },
-            "minItems": 0,
-            "maxItems": 3
-          },
-          "offers": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/InstallationOffer"
-            },
-            "minItems": 0,
-            "maxItems": 8
-          },
-          "actorId": {
-            "$ref": "#/components/schemas/Uuid"
-          },
-          "hasScopedCases": {
-            "type": "boolean"
-          },
-          "maintenance": {
-            "$ref": "#/components/schemas/RegisterMaintenance"
-          },
-          "self": {
-            "$ref": "#/components/schemas/ActorRef"
-          }
-        },
-        "required": [
-          "installationId",
-          "productVersion",
-          "businessDate",
-          "timeZone",
-          "capabilities",
-          "views",
-          "offers",
-          "actorId",
-          "hasScopedCases",
-          "maintenance",
-          "self"
-        ]
-      },
       "ActorProfile": {
         "type": "object",
         "additionalProperties": false,
@@ -6747,7 +6656,7 @@
             "const": "SUCCEEDED"
           },
           "data": {
-            "$ref": "#/components/schemas/ActorContext"
+            "$ref": "#/components/schemas/RequesterContext"
           }
         },
         "required": [
@@ -10964,6 +10873,236 @@
         "required": [
           "kind",
           "data"
+        ]
+      },
+      "RequesterClaims": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "preferredUsername": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          },
+          "email": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 200
+          }
+        },
+        "required": []
+      },
+      "RequesterContext": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "requester": {
+            "$ref": "#/components/schemas/RequesterState"
+          }
+        },
+        "required": [
+          "requester"
+        ]
+      },
+      "RequesterState": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/RequesterState.ACTIVE"
+          },
+          {
+            "$ref": "#/components/schemas/RequesterState.NO_ROLES"
+          },
+          {
+            "$ref": "#/components/schemas/RequesterState.DISABLED"
+          },
+          {
+            "$ref": "#/components/schemas/RequesterState.NOT_REGISTERED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "ACTIVE": "#/components/schemas/RequesterState.ACTIVE",
+            "NO_ROLES": "#/components/schemas/RequesterState.NO_ROLES",
+            "DISABLED": "#/components/schemas/RequesterState.DISABLED",
+            "NOT_REGISTERED": "#/components/schemas/RequesterState.NOT_REGISTERED"
+          }
+        }
+      },
+      "RequesterState.ACTIVE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "ACTIVE"
+          },
+          "installationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "productVersion": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "businessDate": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          },
+          "timeZone": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2147483647
+          },
+          "capabilities": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "READ_CASE",
+                "READ_HISTORY",
+                "READ_HISTORY_FULL",
+                "MANAGE_CASE_WORK",
+                "REGISTER",
+                "DECIDE",
+                "RECORD_PAYMENT",
+                "CLOSE",
+                "STEWARD",
+                "MANAGE_AUTHORITY",
+                "READ_AUTHORITY"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 16
+          },
+          "views": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 3
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/InstallationOffer"
+            },
+            "minItems": 0,
+            "maxItems": 8
+          },
+          "actorId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "hasScopedCases": {
+            "type": "boolean"
+          },
+          "maintenance": {
+            "$ref": "#/components/schemas/RegisterMaintenance"
+          },
+          "self": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "kind",
+          "installationId",
+          "productVersion",
+          "businessDate",
+          "timeZone",
+          "capabilities",
+          "views",
+          "offers",
+          "actorId",
+          "hasScopedCases",
+          "maintenance",
+          "self"
+        ]
+      },
+      "RequesterState.DISABLED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DISABLED"
+          },
+          "self": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "kind",
+          "self"
+        ]
+      },
+      "RequesterState.NOT_REGISTERED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NOT_REGISTERED"
+          },
+          "issuer": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 2048
+          },
+          "subject": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 512
+          },
+          "claims": {
+            "$ref": "#/components/schemas/RequesterClaims"
+          }
+        },
+        "required": [
+          "kind",
+          "issuer",
+          "subject",
+          "claims"
+        ]
+      },
+      "RequesterState.NO_ROLES": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "NO_ROLES"
+          },
+          "self": {
+            "$ref": "#/components/schemas/ActorRef"
+          },
+          "installationId": {
+            "$ref": "#/components/schemas/Uuid"
+          },
+          "businessDate": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          },
+          "timeZone": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "kind",
+          "self",
+          "installationId",
+          "businessDate",
+          "timeZone"
         ]
       },
       "ResolveReply": {
