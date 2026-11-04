@@ -466,7 +466,10 @@ module Grammar =
             // The enclosing subject tag is a catalog constant, not part of authored intent.
             let fields =
                 match body with
-                | JsonValue.Object fields -> fields |> List.filter (fst >> (<>) WireMembers.Kind)
+                | JsonValue.Object fields ->
+                    fields
+                    |> List.filter (fun (name, _) ->
+                        name <> WireMembers.Kind && name <> WireMembers.ExpectedRevision)
                 | _ -> []
 
             codec.Read "$" (JsonValue.Object fields)

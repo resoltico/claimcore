@@ -72,8 +72,7 @@ module internal InteractiveReview =
 
             words = List.truncate words.Length arguments
             && match entry.SelectedAct with
-               | Some(ActKind.Case kind) ->
-                   (CaseActKind.describe kind).Revision = RevisionInput.Expected
+               | Some(ActKind.Case _) -> true
                | Some(ActKind.Work _)
                | Some(ActKind.Reminder _)
                | Some(ActKind.Authority _) -> true
@@ -260,6 +259,19 @@ module internal InteractiveReview =
                                          Requester = RequesterState.Active scope
                                      }) ->
                 match draft.Intent with
+                | DraftIntent.Case(reference, DraftAct.Case act) when
+                    (CaseActKind.describe (CaseAct.kind act)).Revision = RevisionInput.New
+                    ->
+                    let input =
+                        OperationInput.Case
+                            {
+                                OperationId = draft.SuppliedId |> Option.defaultWith newId
+                                Target = CaseSelector.Reference reference
+                                ExpectedRevision = 0L
+                                Act = act
+                            }
+
+                    return! review console transport draft input scope.InstallationId token
                 | DraftIntent.Case(reference, act) ->
                     return!
                         readCase

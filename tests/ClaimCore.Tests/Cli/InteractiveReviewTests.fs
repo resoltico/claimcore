@@ -106,10 +106,28 @@ let private harness language answer scenario =
             | "context" ->
                 response frame Api.context.Output (ResponseExamples.defaultReply Api.context)
             | "case.get" ->
-                Expect.equal
-                    generated
-                    0
-                    "The automatically allocated id is not frozen before reading the case"
+                let acceptedOpen =
+                    calls
+                    |> Seq.tryPick (fun call ->
+                        Frames.value Api.operationExecute call
+                        |> Option.bind (function
+                            | OperationInput.Case request when
+                                CaseAct.kind request.Act = CaseActKind.Open
+                                ->
+                                Some request
+                            | _ -> None))
+
+                match acceptedOpen with
+                | Some _ ->
+                    Expect.equal
+                        generated
+                        1
+                        "Post-acceptance work refresh retains the frozen OPEN identity"
+                | None ->
+                    Expect.equal
+                        generated
+                        0
+                        "The automatically allocated id is not frozen before reading an existing case"
 
                 response
                     frame
@@ -237,6 +255,50 @@ let tests =
     testList
         "interactive CLI review"
         [
+            testCase
+                "OPEN previews without a lookup and confirms its exact authored input"
+                (fun () ->
+                    for answer, executed in [ Some "yes", true; Some "no", false; None, false ] do
+                        let h = harness "en" answer Scenario.Accepted
+
+                        let arguments =
+                            [ "case"; "open"; "x" ]
+                            @ CliExamples.registrationArguments Inputs.registration
+
+                        Expect.equal (run arguments h) 0 "Human completion"
+
+                        let expected =
+                            [ "context"; "operation.preview" ]
+                            @ (if executed then [ "operation.execute"; "case.get" ] else [])
+
+                        Expect.equal
+                            (endpoints h)
+                            expected
+                            "A new reference is not looked up before OPEN"
+
+                        let input = caseInput h.Calls[1]
+                        Expect.equal input.ExpectedRevision 0L "Zero is the actual OPEN contract"
+
+                        Expect.equal
+                            input.Target
+                            (CaseSelector.Reference "x")
+                            "Preview binds the authored reference"
+
+                        Expect.equal
+                            (h.Generated())
+                            1
+                            "Allocate one operation ID after valid syntax"
+
+                        if executed then
+                            Expect.equal
+                                (Frames.inputBytes h.Calls[1])
+                                (Frames.inputBytes h.Calls[2])
+                                "The exact previewed input is executed"
+                        else
+                            Expect.contains
+                                (List.ofSeq h.Prompts)
+                                "Not recorded.\n"
+                                "Explicit declined OPEN output")
             testCase
                 "accept freezes one id and fetched revision across preview and execute"
                 (fun () ->
