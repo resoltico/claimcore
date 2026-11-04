@@ -263,5 +263,6 @@
   "ui.conflict.kept": "Your draft is kept. Review the changes before preparing it against the latest version.",
   "ui.conflict.loading": "Loading the latest version…",
   "ui.conflict.reviewLatest": "Review against latest",
-  "ui.choiceNotAvailable": "Not available with the current facts."
+  "ui.choiceNotAvailable": "Not available with the current facts.",
+  "ui.returnToWorkspace": "Return to workspace"
 }

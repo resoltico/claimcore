@@ -1,3 +1,4 @@
+import { workBasis } from "./inputs";
 import { expect } from "vitest";
 import { fireEvent } from "@testing-library/react";
 import { screen, waitFor } from "./presentation-test-support";
@@ -31,7 +32,9 @@ export const secondActor = {
 export const grantsFor = (actor = firstActor): ApiResult<ServiceResponse<"authority.grants">> => ({
   kind: "outcome",
   status: 200,
-  value: { outcome: { kind: "SUCCEEDED", data: { actor, items: [], nextCursor: null } } },
+  value: {
+    outcome: { kind: "SUCCEEDED", data: { basis: workBasis, actor, items: [], nextCursor: null } },
+  },
 });
 export const setupActorTargets = (
   offered: Parameters<typeof installationOffers>[0] = [
@@ -71,6 +74,7 @@ export const setupActorTargets = (
       outcome: {
         kind: "SUCCEEDED",
         data: {
+          basis: workBasis,
           items: [
             {
               ...firstActor,

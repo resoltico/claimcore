@@ -263,5 +263,6 @@
   "ui.conflict.kept": "Jūsu melnraksts ir saglabāts. Pārskatiet izmaiņas, pirms to sagatavojat pret jaunāko versiju.",
   "ui.conflict.loading": "Ielādē jaunāko versiju…",
   "ui.conflict.reviewLatest": "Pārskatīt pret jaunāko versiju",
-  "ui.choiceNotAvailable": "Nav pieejams ar pašreizējiem faktiem."
+  "ui.choiceNotAvailable": "Nav pieejams ar pašreizējiem faktiem.",
+  "ui.returnToWorkspace": "Atgriezties darbvietā"
 }

@@ -4,7 +4,12 @@ import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { editor, draftAt, current, languageControl } from "../support/presentation-state.fixtures";
+import {
+  editor,
+  draftAt,
+  current,
+  setEditorLanguage,
+} from "../support/presentation-state.fixtures";
 import type { CurrentCase } from "../../src/api/service";
 import { response } from "../support/service-ui.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
@@ -56,7 +61,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   await user.clear(amount);
   await user.type(amount, "1.0000");
   for (const next of ["ar", "lv", "en"]) {
-    await user.click(languageControl(next));
+    await setEditorLanguage(user, next);
     expect(selectedOption(registration)).toBe("UPDATE");
     expect(selectedOption(decision)).toBe("CLEAR");
     expect(selectedOption(payment)).toBe("CLEAR");
@@ -92,7 +97,7 @@ it("associates payment acknowledgement with the generated mode control", async (
     ),
   );
   render(editor({ initialAct: "CORRECT", current: paidCase }));
-  const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
+  let payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await chooseOption(
     user,
     document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,
@@ -110,8 +115,11 @@ it("associates payment acknowledgement with the generated mode control", async (
     "act.groups.payment.kind-error",
   ]);
   expect(description).toHaveTextContent("explicit payment reaffirmation");
-  await user.click(languageControl("lv"));
-  expect(description).toHaveTextContent("skaidri jāapstiprina");
+  await setEditorLanguage(user, "lv");
+  expect(document.getElementById("act.groups.payment.kind-error")).toHaveTextContent(
+    "skaidri jāapstiprina",
+  );
+  payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await chooseOption(user, payment, "CLEAR");
   expect(payment).not.toHaveAttribute("aria-invalid");
   expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-hint");

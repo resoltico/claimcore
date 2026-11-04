@@ -1,3 +1,4 @@
+import { workBasis } from "../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { fireEvent, within } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
@@ -25,7 +26,9 @@ const setup = (mayReadGrants: boolean, changes: Partial<ActorReviewItem> = {}) =
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: { items: [actor], nextCursor: null } } },
+    value: {
+      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [actor], nextCursor: null } },
+    },
   });
   const select = vi.fn();
   render(

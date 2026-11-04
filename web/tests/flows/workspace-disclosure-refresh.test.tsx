@@ -104,7 +104,12 @@ const authorityReads = () => {
   };
   mockEndpoint("authority.list")
     .mockResolvedValueOnce(
-      outcome({ outcome: { kind: "SUCCEEDED", data: { items: [actor], nextCursor: null } } }),
+      outcome({
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { basis: workBasis, items: [actor], nextCursor: null },
+        },
+      }),
     )
     .mockResolvedValue(outcome({ outcome: unavailable }));
 };

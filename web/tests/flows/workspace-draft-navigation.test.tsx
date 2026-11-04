@@ -40,14 +40,24 @@ it("keeps an idle authored draft until explicit consent for navigation and sign 
   fillRegistrationInputs({ caseReference: "DRAFT-CONSENT" });
   const name = screen.getByRole("textbox", { name: "Claimant name" });
   const authored = name.getAttribute("value");
+  await user.click(screen.getByRole("button", { name: "Settings" }));
+  await screen.findByRole("heading", { name: "Settings", level: 1 });
+  expect(screen.queryByRole("dialog")).toBeNull();
   await user.click(screen.getByRole("link", { name: "People & access" }));
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Keep editing" }));
-  expect(name).toHaveValue(authored);
+  expect(document.querySelector('input[data-field-name="claimantName"]')).toBeNull();
   expect(screen.queryByRole("dialog")).toBeNull();
-  await user.click(document.querySelector(".account-menu > summary")!);
-  await user.click(screen.getByRole("button", { name: "Sign out" }));
+  await user.click(screen.getByRole("button", { name: "Return to workspace" }));
+  expect(await screen.findByRole("textbox", { name: "Claimant name" })).toHaveValue(authored);
+  await user.click(screen.getByRole("button", { name: "Settings" }));
+  await screen.findByRole("heading", { name: "Settings", level: 1 });
+  await user.click(
+    screen
+      .getAllByRole("button", { name: "Sign out" })
+      .find((button) => button.closest("main") !== null)!,
+  );
   expect(screen.getByRole("dialog")).toBeVisible();
   expect(logout).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Discard and leave" }));

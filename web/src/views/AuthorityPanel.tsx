@@ -3,7 +3,7 @@ import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/use
 import { ActorOperation } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useEndpointCache } from "../hooks/EndpointProvider";
-import { useRoute } from "../routing/useRoute";
+import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { navigate, setNavigationLock, replaceDisclosureRoute } from "../routing/navigation";
 import { useCredential } from "../session/SessionContext";
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -132,7 +132,7 @@ const AuthorityDirectory = ({
   );
 };
 const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) => {
-  const route = useRoute();
+  const route = useContentRoute();
   const selectedActorId = route.screen === "people" && route.actorId !== "" ? route.actorId : null;
   const setSelectedActorId = (actorId: string | null): void => {
     navigate(actorId === null ? "/people" : `/people/${encodeURIComponent(actorId)}`);
@@ -304,7 +304,7 @@ const AuthorityLayout = ({
   target,
   editor,
 }: AuthorityLayoutProps) => {
-  const route = useRoute();
+  const route = useContentRoute();
   const selected = route.screen === "people" && route.actorId !== "";
   const credential = useCredential();
   const { invalidate } = disclosure;
@@ -418,7 +418,7 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
     state.disclosure.revision,
     (props.disclosureAvailable ?? true) && state.disclosure.active,
   );
-  const route = useRoute();
+  const route = useContentRoute();
   const actorSelection = route.screen === "people" ? route.actorId : "";
   const selection = `${actorSelection}:${state.disclosure.revision}:${props.disclosureAvailable ?? true}`;
   const [editor, setEditor] = useState({ selection, active: false });

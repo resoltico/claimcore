@@ -36,12 +36,19 @@ it("focuses the selected actor route h1 and restores its originating control on 
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: { items: [actor], nextCursor: null } } },
+    value: {
+      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [actor], nextCursor: null } },
+    },
   });
   mockEndpoint("authority.grants").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: { actor, items: [], nextCursor: null } } },
+    value: {
+      outcome: {
+        kind: "SUCCEEDED",
+        data: { basis: workBasis, actor, items: [], nextCursor: null },
+      },
+    },
   });
   const user = userEvent.setup();
   render(<Dashboard />);

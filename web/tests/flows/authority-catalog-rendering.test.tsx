@@ -1,6 +1,6 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { chooseOption, optionValues } from "../support/choice-entry";
-import { actorContextInput } from "../support/inputs";
+import { workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
@@ -67,6 +67,7 @@ const authorityPreview = (parsed: AuthorityInput) =>
         review: {
           subject: {
             kind: "AUTHORITY",
+            basis: workBasis,
             effects:
               parsed.act.kind === "ADMIT"
                 ? [
@@ -113,10 +114,7 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
         response("authority.list", {
           outcome: {
             kind: "SUCCEEDED",
-            data: {
-              items: [],
-              nextCursor: null,
-            },
+            data: { basis: workBasis, items: [], nextCursor: null },
           },
         }),
       );

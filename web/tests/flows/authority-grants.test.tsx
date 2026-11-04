@@ -1,3 +1,4 @@
+import { workBasis } from "../support/inputs";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
@@ -46,6 +47,7 @@ const grants = (
     outcome: {
       kind: "SUCCEEDED",
       data: {
+        basis: workBasis,
         actor: actor(actorId),
         items: [
           {
@@ -99,6 +101,7 @@ const reads = (offered = true) => {
       outcome: {
         kind: "SUCCEEDED",
         data: {
+          basis: workBasis,
           items: [actor(first, "listed"), actor(second, "listed")],
           nextCursor: null,
         },
@@ -378,7 +381,7 @@ const actorPage = (
   value: {
     outcome: {
       kind: "SUCCEEDED",
-      data: { items: ids.map((id) => actor(id, "listed")), nextCursor },
+      data: { basis: workBasis, items: ids.map((id) => actor(id, "listed")), nextCursor },
     },
   },
 });

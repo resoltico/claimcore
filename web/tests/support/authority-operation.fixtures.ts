@@ -1,3 +1,4 @@
+import { workBasis } from "./inputs";
 import { vi } from "vitest";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { wireReply } from "./contract-corpus.fixtures";
@@ -14,6 +15,7 @@ export const authorityPreview = () =>
             review: {
               subject: {
                 kind: "AUTHORITY",
+                basis: workBasis,
                 effects: [],
                 target: null,
                 accessScope: { kind: "INSTALLATION" },

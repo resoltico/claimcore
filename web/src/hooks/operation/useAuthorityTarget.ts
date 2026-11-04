@@ -3,7 +3,7 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react
 import type { ActorReviewItem, PrincipalInput } from "@contracts/client";
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
-import { useRoute } from "../../routing/useRoute";
+import { useContentRoute } from "../SettingsDetourContext";
 import type { OperationModel } from "./useOperation";
 type Snapshot = { key: string; actor: ActorReviewItem; offered: ReadonlyArray<string> };
 type Intent = { epoch: string; actor: ActorReviewItem; kind: string };
@@ -25,7 +25,7 @@ const sameSnapshot = (left: Snapshot | null, right: Snapshot) =>
   left.offered.join(",") === right.offered.join(",");
 const useActorDisclosure = (revision: number, available: boolean) => {
   const credential = useCredential();
-  const route = useRoute();
+  const route = useContentRoute();
   const actorId = route.screen === "people" && route.actorId !== "" ? route.actorId : null;
   const epoch = `${credential}:${revision}`;
   const key = `${epoch}:${actorId ?? ""}`;

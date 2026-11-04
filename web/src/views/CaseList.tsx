@@ -10,7 +10,7 @@ import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { CaseSummary, ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
-import { useRoute } from "../routing/useRoute";
+import { useContentRoute } from "../hooks/SettingsDetourContext";
 import { navigate } from "../routing/navigation";
 import {
   parseWorklistQuery,
@@ -25,7 +25,7 @@ type Props = { onSelect: (target: CaseSelector) => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
   response.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
 const useWorklist = () => {
-  const route = useRoute();
+  const route = useContentRoute();
   const search = route.screen === "cases" ? route.query : "";
   const query = useMemo(() => parseWorklistQuery(search), [search]);
   const input = useCallback((cursor: string | null) => listRequest(query, cursor), [query]);
@@ -255,7 +255,7 @@ const DefaultCaseView = ({
 export const CaseList = (props: Props) => {
   const context = useRequesterContext();
   const views = useWorkspaceViews().cases;
-  const route = useRoute();
+  const route = useContentRoute();
   const query = useMemo(
     () => parseWorklistQuery(route.screen === "cases" ? route.query : ""),
     [route],

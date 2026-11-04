@@ -19,6 +19,8 @@ export type OperationFormProps = {
   onAct: (kind: string) => void;
   onClose?: () => void;
   formId?: string;
+  onMount?: (form: HTMLFormElement) => void;
+  onFieldBlur?: (control: EventTarget | null) => void;
 };
 const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
   const p = usePresentation();
@@ -79,6 +81,21 @@ const OperationInputs = ({
 export const OperationForm = (props: OperationFormProps) => {
   const { model, current, offered } = props;
   const form = useRef<HTMLFormElement>(null);
+  const { onMount, onFieldBlur } = props;
+  useEffect(() => {
+    const element = form.current;
+    if (element === null) {
+      return;
+    }
+    onMount?.(element);
+    const remember = (event: FocusEvent) => {
+      onFieldBlur?.(event.target);
+    };
+    element.addEventListener("focusout", remember);
+    return () => {
+      element.removeEventListener("focusout", remember);
+    };
+  }, [onMount, onFieldBlur]);
   useEffect(() => {
     if (model.notice === null) {
       return;

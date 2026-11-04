@@ -127,6 +127,7 @@ type RequesterState_ACTIVESeed = Omit<
   | "kind"
   | "observedAt"
   | "issuer"
+  | "roles"
 > &
   Partial<
     Pick<
@@ -139,12 +140,14 @@ type RequesterState_ACTIVESeed = Omit<
       | "kind"
       | "observedAt"
       | "issuer"
+      | "roles"
     >
   >;
 export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T) => ({
   ...value,
   observedAt: value.observedAt ?? `${value.businessDate}T12:00:00.000000Z`,
   issuer: value.issuer ?? "https://issuer.example/",
+  roles: value.roles ?? [],
   kind: "ACTIVE" as const,
   self: value.self ?? actorRefInput(),
   maintenance: value.maintenance ?? initialMaintenance,
@@ -285,7 +288,7 @@ const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
     Object.hasOwn(completed, "after") &&
     Object.hasOwn(completed, "accessScope")
   ) {
-    return { effects: [], ...completed };
+    return { basis: workBasis, effects: [], ...completed };
   }
   return null;
 };
@@ -319,6 +322,7 @@ const completeAdvice = (completed: Record<string, unknown>): Record<string, unkn
         ? {
             observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`,
             issuer: "https://issuer.example/",
+            roles: [],
           }
         : {}),
       ...(Object.hasOwn(completed, "acts")

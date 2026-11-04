@@ -3,7 +3,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Select } from "../../ui/Select";
 import { usePresentation } from "../../presentation/context";
 import { isTerm } from "../../presentation/terms";
-import { useRoute } from "../../routing/useRoute";
+import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
 import { parseReminderQuery, remindersPath, type ReminderQuery } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
@@ -158,7 +158,7 @@ const ReadyReminderQueue = ({ query }: { query: ReminderQuery }) => {
   );
 };
 export const ReminderQueue = () => {
-  const route = useRoute();
+  const route = useContentRoute();
   const query = useMemo(
     () => parseReminderQuery(route.screen === "reminders" ? route.query : ""),
     [route],

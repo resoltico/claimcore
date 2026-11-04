@@ -1,4 +1,4 @@
-import { principal } from "../support/inputs";
+import { workBasis, principal } from "../support/inputs";
 import type { ComponentProps } from "react";
 import { expect, it, vi } from "vitest";
 import { fireEvent, within } from "@testing-library/react";
@@ -100,6 +100,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
   const proposed: Review = {
     subject: {
       kind: "AUTHORITY",
+      basis: workBasis,
       effects: [],
       target: null,
       accessScope: resolvedScope,
@@ -252,6 +253,7 @@ it("shows the core's profile values in authority review before consent", () => {
   const proposed: Review = {
     subject: {
       kind: "AUTHORITY",
+      basis: workBasis,
       effects: [],
       target: null,
       accessScope: { kind: "INSTALLATION" },

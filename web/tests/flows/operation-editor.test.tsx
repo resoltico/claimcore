@@ -80,7 +80,9 @@ it("readonly preview failure stays editable and cannot submit", async () => {
   render(editor());
   await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("alert");
-  expect(screen.getByRole("button", { name: "Close" })).not.toBeDisabled();
+  for (const close of screen.getAllByRole("button", { name: "Close" })) {
+    expect(close).not.toBeDisabled();
+  }
   expect(queryReviewConfirm()).toBeNull();
 });
 it("an invalid input rejection focuses and labels the exact authoring field", async () => {

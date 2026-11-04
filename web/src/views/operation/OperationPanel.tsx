@@ -1,10 +1,12 @@
+import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
+import { IconButton } from "../../ui/IconButton";
 import { Button } from "../../ui/Button";
 import { operationEntry } from "../../protocol/operationCatalog";
 import { renderCatalogKey } from "../../presentation/messages";
 import { ConflictChanges } from "./ConflictChanges";
 import { resourceUnavailableDiagnostic } from "@contracts/client";
 import { IdentifierValue } from "../../components/IdentifierValue";
-import { useEffect, useRef, useId, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useId, type ReactNode } from "react";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import { CopyValue } from "../../components/CopyValue";
@@ -251,11 +253,57 @@ const OperationSurface = ({
   }
   return review === null ? <EnterOperation {...props} /> : review.body;
 };
+const useFieldSelection = (operationId: unknown) => {
+  const selection = useRef<{
+    operationId: unknown;
+    name: string;
+    start: number;
+    end: number;
+    direction: "forward" | "backward" | "none";
+  } | null>(null);
+  const onFieldBlur = useCallback(
+    (target: EventTarget | null) => {
+      if (
+        (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) &&
+        target.selectionStart !== null &&
+        target.selectionEnd !== null
+      ) {
+        selection.current = {
+          operationId,
+          name: target.name,
+          start: target.selectionStart,
+          end: target.selectionEnd,
+          direction: target.selectionDirection ?? "none",
+        };
+      }
+    },
+    [operationId],
+  );
+  const onMount = useCallback(
+    (form: HTMLFormElement) => {
+      const remembered = selection.current;
+      if (remembered === null || remembered.operationId !== operationId) {
+        return;
+      }
+      const target = form.elements.namedItem(remembered.name);
+      if (
+        (target instanceof HTMLInputElement || target instanceof HTMLTextAreaElement) &&
+        target.selectionStart !== null
+      ) {
+        target.setSelectionRange(remembered.start, remembered.end, remembered.direction);
+      }
+    },
+    [operationId],
+  );
+  return { onFieldBlur, onMount };
+};
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true, open = true } = props;
   const p = usePresentation();
   const formId = useId();
   const preview = usePreviewReturnFocus(model);
+  const settings = useSettingsDetour();
+  const selection = useFieldSelection(model.values["operationId"]);
   const entry = operationEntry(model.entry);
   const close = () => {
     requestClose(model, props.onClose);
@@ -274,7 +322,27 @@ export const OperationPanel = (props: Props) => {
           description={renderCatalogKey(p, entry.meaningId)}
           closeLabel={p.text("ui.close")}
           placement="end"
+          headerEnd={
+            <div className="actions">
+              {settings === null ? null : (
+                <IconButton
+                  data-open-settings
+                  icon="settings"
+                  label={p.text("ui.settings")}
+                  isDisabled={model.busy}
+                  onPress={settings.visit}
+                />
+              )}
+              <IconButton
+                icon="close"
+                label={p.text("ui.close")}
+                isDisabled={model.busy}
+                onPress={close}
+              />
+            </div>
+          }
           isOpen={
+            settings?.paused !== true &&
             open &&
             model.pendingDiscard === null &&
             disclosureAvailable &&
@@ -298,7 +366,7 @@ export const OperationPanel = (props: Props) => {
             ))
           }
         >
-          <OperationSurface props={{ ...props, formId }} review={review} />
+          <OperationSurface props={{ ...props, ...selection, formId }} review={review} />
         </Dialog>
       )}
     </OperationReview>

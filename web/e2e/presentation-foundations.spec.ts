@@ -23,6 +23,12 @@ import { contrastRatio } from "../src/theme/contrast";
 import { chooseOption } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
 
+const presentationBasis = {
+  observedAt: "2026-11-04T12:00:00.000000Z",
+  businessDate: "2026-11-04",
+  timeZone: "Etc/UTC",
+};
+
 const captureCheckpoint = async (page: Page, path: string) => {
   await page.evaluate(() => {
     window.scrollTo(0, 0);
@@ -937,7 +943,12 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   );
   await page.route("**/api/authority.list", (route) =>
     route.fulfill({
-      json: { outcome: { kind: "SUCCEEDED", data: { items: [], nextCursor: null } } },
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { basis: presentationBasis, items: [], nextCursor: null },
+        },
+      },
     }),
   );
   await page.route("**/api/operation.preview", (route) => {
@@ -958,6 +969,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
             review: {
               subject: {
                 kind: "AUTHORITY",
+                basis: presentationBasis,
                 effects: [],
                 target: null,
                 accessScope: { kind: "INSTALLATION" },
@@ -1217,9 +1229,24 @@ test("atomic admission edits independent grant rows and reviews every core effec
   );
   await page.route("**/api/authority.list", (route) =>
     route.fulfill({
-      json: { outcome: { kind: "SUCCEEDED", data: { items: [], nextCursor: null } } },
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { basis: presentationBasis, items: [], nextCursor: null },
+        },
+      },
     }),
   );
+  const reads: string[] = [];
+  page.on("request", (request) => {
+    if (
+      request.url().includes("/api/") &&
+      !request.url().endsWith("/api/operation.preview") &&
+      !request.url().endsWith("/api/operation.execute")
+    ) {
+      reads.push(request.url());
+    }
+  });
   let previews = 0;
   let writes = 0;
   page.on("request", (request) => {
@@ -1252,6 +1279,7 @@ test("atomic admission edits independent grant rows and reviews every core effec
           review: {
             subject: {
               kind: "AUTHORITY",
+              basis: presentationBasis,
               target: null,
               accessScope: { kind: "INSTALLATION" },
               before: { enabled: false, profile: null, grants: [], access: [] },
@@ -1300,12 +1328,42 @@ test("atomic admission edits independent grant rows and reviews every core effec
   await second.getByRole("radio", { name: "One case", exact: true }).check();
   await second.getByRole("textbox", { name: /Case reference/u }).fill("SYNTHETIC-1");
   await expectAccessible(page);
+  expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
+  expect(reads.filter((url) => url.endsWith("/api/authority.list"))).toHaveLength(1);
+  expect(reads.filter((url) => url.endsWith("/api/session"))).toHaveLength(1);
+  expect(
+    reads.filter(
+      (url) =>
+        !["session", "context", "authority.list", "case.views", "reminder.views"].some((endpoint) =>
+          url.endsWith(`/api/${endpoint}`),
+        ),
+    ),
+  ).toEqual([]);
+  expect(reads.filter((url) => url.endsWith("/api/case.views")).length).toBeLessThanOrEqual(1);
+  expect(reads.filter((url) => url.endsWith("/api/reminder.views")).length).toBeLessThanOrEqual(1);
+  const beforeSettingsReads = [...reads];
+  await page.getByRole("button", { name: "Settings", exact: true }).click();
+  await expect(page).toHaveURL(/\/settings$/u);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await chooseOption(page, page.getByRole("combobox", { name: "Date and number format" }), "lv-LV");
+  await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+  await expect(page).toHaveURL(/\/people$/u);
+  await expect(page.locator('[name="target.subject"]')).toHaveValue("admission-person");
+  await expect(
+    page
+      .getByRole("group", { name: "Role 2", exact: true })
+      .getByRole("textbox", { name: /Case reference/u }),
+  ).toHaveValue("SYNTHETIC-1");
+  expect(reads).toEqual(beforeSettingsReads);
+  expect(previews).toBe(0);
+  expect(writes).toBe(0);
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   const review = page.getByRole("dialog");
   await expect(review.locator(".authority-effects > li")).toHaveCount(4);
   await expect(review.getByText("SYNTHETIC-1", { exact: true })).toBeVisible();
   expect(previews).toBe(1);
   expect(writes).toBe(0);
+  expect(reads).toEqual(beforeSettingsReads);
   await expectAccessible(page);
   await clean();
   if (browserName === "chromium") {
@@ -1430,14 +1488,19 @@ test("People uses core roles and state without row reads and forwards known-zero
   await page.route("**/api/authority.list", (route) => {
     listing += 1;
     return route.fulfill({
-      json: { outcome: { kind: "SUCCEEDED", data: { items, nextCursor: null } } },
+      json: {
+        outcome: { kind: "SUCCEEDED", data: { basis: presentationBasis, items, nextCursor: null } },
+      },
     });
   });
   await page.route("**/api/authority.grants", (route) => {
     grants += 1;
     return route.fulfill({
       json: {
-        outcome: { kind: "SUCCEEDED", data: { actor: items[0], items: [], nextCursor: null } },
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { basis: presentationBasis, actor: items[0], items: [], nextCursor: null },
+        },
       },
     });
   });

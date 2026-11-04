@@ -1,3 +1,4 @@
+import { SettingsWorkspace } from "./SettingsWorkspace";
 import { operationEntry } from "../protocol/operationCatalog";
 import { renderCatalogKey } from "../presentation/messages";
 import type { RequesterState, RequesterState_ACTIVE } from "@contracts/client";
@@ -288,7 +289,7 @@ type WorkspaceRouteProps = Omit<Parameters<typeof RoutedContent>[0], "authorityA
   capabilities: ReadonlyArray<string>;
   known: boolean;
 };
-const WorkspaceRoute = ({
+const WorkspaceArea = ({
   views,
   noViews,
   capabilities,
@@ -315,6 +316,11 @@ const WorkspaceRoute = ({
     </WorkspaceContents>
   );
 };
+const WorkspaceRoute = (props: WorkspaceRouteProps) => (
+  <SettingsWorkspace route={props.route}>
+    {(route) => <WorkspaceArea {...props} route={route} />}
+  </SettingsWorkspace>
+);
 /** Feedback is a disclosure owned by this verified requester and session generation. */
 const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: boolean) => {
   const { state: session } = useSessionContext();

@@ -99,3 +99,13 @@
   padding-block-start: var(--space-3);
   border-block-start: var(--border-width) solid var(--border-control);
 }
+
+.ui-dialog-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ui-dialog-heading .ui-dialog-title {
+  margin-block-end: var(--space-2);
+}

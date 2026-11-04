@@ -1,3 +1,8 @@
+import { Dashboard } from "../../src/views/Dashboard";
+import { actPath } from "../../src/routing/routes";
+import { navigate } from "../../src/routing/navigation";
+import { stubDashboardContext } from "../support/dashboard-context.fixtures";
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { chooseOption } from "../support/choice-entry";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
@@ -89,16 +94,37 @@ it.each([
       }),
     );
     const spy = preview();
-    editor();
+    stubDashboardContext();
+    const read = mockEndpoint("case.get").mockResolvedValue({
+      kind: "outcome",
+      status: 200,
+      value: { outcome: { kind: "SUCCEEDED", data: current } },
+    });
+    const execute = vi.spyOn(service, "execute");
+    const path = actPath({ kind: "ID", caseId: current.caseId }, "AMEND_REGISTRATION");
+    navigate(path);
+    render(<Dashboard />);
+    await screen.findByRole("checkbox", { name: /^Change Amount claimed and Currency/u });
     await userEvent
       .setup()
       .click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
     changeField("Amount claimed", raw);
-    await chooseOption(
-      userEvent.setup(),
-      screen.getByRole("combobox", { name: "Date and number format" }),
-      display,
-    );
+    const switchFormat = async (locale: string) => {
+      const user = userEvent.setup();
+      await user.click(screen.getByRole("button", { name: "Settings" }));
+      await screen.findByRole("heading", { name: "Settings", level: 1 });
+      expect(screen.queryByRole("dialog")).toBeNull();
+      expect(window.location.pathname).toBe("/settings");
+      await chooseOption(
+        user,
+        screen.getByRole("combobox", { name: "Date and number format" }),
+        locale,
+      );
+      await user.click(screen.getByRole("button", { name: "Return to workspace" }));
+      await screen.findByRole("dialog");
+      expect(window.location.pathname).toBe(path);
+    };
+    await switchFormat(display);
     expect(screen.getByRole("textbox", { name: "Amount claimed" })).toHaveValue(raw);
     const frame = await prepared(spy);
     expect(frame.input.act).toEqual({
@@ -106,15 +132,13 @@ it.each([
       values: { claimed: { amount: expected, currency: "EUR" } },
     });
     const { bytes } = frame;
-    await chooseOption(
-      userEvent.setup(),
-      screen.getByRole("combobox", { name: "Date and number format" }),
-      entered,
-    );
+    await switchFormat(entered);
     await userEvent.setup().click(screen.getByRole("button", { name: "Review changes" }));
     await waitFor(() => {
       expect(spy).toHaveBeenCalledTimes(2);
     });
     expect(spy.mock.calls[1]![0].bytes).toBe(bytes);
+    expect(read).toHaveBeenCalledOnce();
+    expect(execute).not.toHaveBeenCalled();
   },
 );
