@@ -148,3 +148,9 @@
 .shell-warning p {
   margin: 0;
 }
+.shell-read-status {
+  padding: var(--space-2) var(--space-3);
+  border-inline-start: var(--border-width) solid var(--border-control);
+  background: var(--bg-sunken);
+  color: var(--text-primary);
+}

@@ -1,4 +1,4 @@
-import { AuthorityHistory } from "./authority/AuthorityHistory";
+import type { AuthorityHistory as AuthorityHistoryType } from "./authority/AuthorityHistory";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import type { CaseSelector } from "@contracts/client";
@@ -21,6 +21,11 @@ import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
 
+const loadAuthorityHistory = () =>
+  import("./authority/AuthorityHistory").then((module) => module.AuthorityHistory);
+const AuthorityHistory = (props: ComponentProps<typeof AuthorityHistoryType>) => (
+  <ViewModule load={loadAuthorityHistory} viewProps={props} />
+);
 const loadAuthorityPanel = () => import("./AuthorityPanel").then((module) => module.AuthorityPanel);
 const AuthorityPanel = (props: ComponentProps<typeof AuthorityPanelType>) => (
   <ViewModule load={loadAuthorityPanel} viewProps={props} />

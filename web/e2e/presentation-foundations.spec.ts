@@ -7,7 +7,11 @@ import { expectAccessible } from "./session-helpers";
 
 type Violation = { directive: string; blocked: string };
 type ProbeWindow = Window & { claimcorePresentationCsp?: Violation[] };
-const observe = async (page: Page, authenticated = false) => {
+const observe = async (
+  page: Page,
+  authenticated = false,
+  expectedConsoleErrors: ReadonlyArray<RegExp> = [],
+) => {
   const errors: string[] = [];
   page.on("pageerror", (error) => {
     errors.push(error.message);
@@ -62,7 +66,7 @@ const observe = async (page: Page, authenticated = false) => {
     );
   }
   return async () => {
-    expect(errors).toEqual([]);
+    expect(errors).toEqual(expectedConsoleErrors.map((pattern) => expect.stringMatching(pattern)));
     expect(
       await page.evaluate(() => {
         const violations = (window as ProbeWindow).claimcorePresentationCsp;
@@ -313,6 +317,52 @@ for (const language of ["en", "ar"] as const) {
     });
   }
 }
+
+test("read admission retry stays non-blocking and honors the server delay under CSP", async ({
+  page,
+  browserName,
+}) => {
+  // Chromium/WebKit report the injected HTTP error in console; Firefox does not.
+  const expectedConsole =
+    browserName === "firefox" ? [] : [/server responded with a status of 429/u];
+  const clean = await observe(page, true, expectedConsole);
+  await seed(page);
+  const dispatches: number[] = [];
+  await page.route("**/api/context", (route) => {
+    dispatches.push(Date.now());
+    if (dispatches.length === 1) {
+      return route.fulfill({
+        status: 429,
+        headers: { "Retry-After": "1" },
+        json: { hostFailure: { code: "RATE_LIMITED", phase: "NOT_STARTED" } },
+      });
+    }
+    return route.fulfill({
+      json: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: actorContextInput({
+            productVersion: "synthetic-presentation",
+            businessDate: "2026-11-04",
+            timeZone: "Etc/UTC",
+            capabilities: [],
+            views: [],
+            offers: [],
+          }),
+        },
+      },
+    });
+  });
+  await page.goto("/settings", { waitUntil: "commit" });
+  await expect(page.getByText("Busy — retrying", { exact: true })).toBeVisible();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await page.getByRole("radio", { name: "Blue", exact: true }).check();
+  await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
+  await expect.poll(() => dispatches.length).toBe(2);
+  expect(dispatches[1]! - dispatches[0]!).toBeGreaterThanOrEqual(1000);
+  await expect(page.getByText("Busy — retrying", { exact: true })).toHaveCount(0);
+  await clean();
+});
 
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
 if (engine === "chromium") {

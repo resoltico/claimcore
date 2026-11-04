@@ -1,3 +1,4 @@
+import { ReadRetryStatus } from "./ReadRetryStatus";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
@@ -382,6 +383,7 @@ export const Dashboard = () => {
               }}
             />
             <RecoveryBanner />
+            <ReadRetryStatus />
             {businessDate.changedDate === null ? null : (
               <BusinessDateNotice date={businessDate.changedDate} refresh={businessDate.refresh} />
             )}

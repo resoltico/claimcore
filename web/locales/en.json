@@ -226,6 +226,7 @@
   "ui.shell.businessDateChanged": "The business date is now {date}. Refresh to update due dates.",
   "ui.shell.checkNow": "Check now",
   "ui.shell.people": "People & access",
+  "ui.shell.retryingRead": "Busy — retrying",
   "ui.shell.searchCases": "Search cases",
   "ui.shell.unresolved": "{count} changes may not have been recorded",
   "ui.shell.unresolvedOne": "1 change may not have been recorded",
