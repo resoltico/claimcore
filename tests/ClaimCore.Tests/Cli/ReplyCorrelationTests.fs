@@ -1,6 +1,7 @@
 module ClaimCore.Tests.ReplyCorrelationTests
 
 open System
+open System.Text.Json.Nodes
 open System.Net.Http
 open System.Threading.Tasks
 open Expecto
@@ -73,11 +74,211 @@ let private exchange invocation value =
 
     send handler invocation
 
+let private correlationReview family =
+    ClaimCore.TestSupport.PositiveExamples.forEndpoint
+        "wire-response-examples.json"
+        "operation.preview"
+    |> List.find (fun value ->
+        let at path =
+            path
+            |> List.fold
+                (fun value key -> value |> Option.bind (JsonValue.tryMember key))
+                (Some value)
+
+        at [ "outcome"; "data"; "review"; "subject"; "kind" ] = Some(JsonValue.String family))
+    |> WireWriter.bytes
+    |> System.Text.Encoding.UTF8.GetString
+    |> JsonNode.Parse
+    |> nonNull
+
+let private jsonValue (node: JsonNode) =
+    StrictJson.read Limits.MaximumResponseBytes (bytes (node.ToJsonString()))
+    |> Result.defaultWith (fun _ -> failtest "Authored JSON")
+
+let private reviewedIdentity () =
+    let operation = "10000000-0000-4000-8000-000000000001"
+
+    let input =
+        (JsonNode.Parse
+            """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"UNIT-001"},"expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-01-01","incidentNotificationDate":"2026-01-01","incidentCountry":"LV","claimantName":"x","insurerName":"x","claimedAmount":"0","claimedCurrency":"EUR"}}}"""
+         |> nonNull)
+
+    let reply = correlationReview "CASE"
+    reply["operationId"] <- System.Text.Json.Nodes.JsonValue.Create operation
+
+    let subject =
+        (((reply["outcome"] |> nonNull)["data"] |> nonNull)["review"] |> nonNull)["subject"]
+        |> nonNull
+
+    subject["before"] <- null
+    (subject["after"] |> nonNull)["caseId"] <- System.Text.Json.Nodes.JsonValue.Create operation
+
+    (subject["after"] |> nonNull)["caseReference"] <-
+        System.Text.Json.Nodes.JsonValue.Create "UNIT-001"
+
+    (subject["after"] |> nonNull)["revision"] <- System.Text.Json.Nodes.JsonValue.Create 1
+
+    let assertMatches expected label =
+        Expect.isOk
+            (Api.operationPreview.Output.Read "$" (jsonValue reply))
+            "Mutation stays structurally admitted"
+
+        Expect.equal
+            (ReplyCorrelation.matches "operation.preview" (jsonValue input) (jsonValue reply))
+            expected
+            label
+
+        let invocation =
+            JsonValue.Object
+                [ "endpoint", JsonValue.String "operation.preview"; "input", jsonValue input ]
+            |> WireWriter.bytes
+            |> Frames.admit
+            |> Result.defaultWith (fun _ ->
+                failtest "Independent authored request remains structural")
+
+        let actual = exchange invocation (jsonValue reply)
+
+        Expect.equal
+            actual.ExitCode
+            (if expected then 0 else 2)
+            "Actual HTTP admission rejects mismatched review"
+
+        if not expected then
+            Expect.equal
+                actual.Frame.Delivery
+                DeliveryState.Uncertain
+                "Mismatched review never enables confirmation"
+
+    assertMatches true "OPEN is correlated without looking up an absent case"
+    (subject["after"] |> nonNull)["revision"] <- System.Text.Json.Nodes.JsonValue.Create 999
+    assertMatches false "A different proposed revision cannot enable confirmation"
+    (subject["after"] |> nonNull)["revision"] <- System.Text.Json.Nodes.JsonValue.Create 1
+
+    (subject["after"] |> nonNull)["caseId"] <-
+        System.Text.Json.Nodes.JsonValue.Create "90000000-0000-4000-8000-000000000099"
+
+    assertMatches false "OPEN identity derives from the actual operation"
+    let before = (subject["after"] |> nonNull).DeepClone()
+    before["revision"] <- System.Text.Json.Nodes.JsonValue.Create 1
+    subject["before"] <- before
+    (subject["after"] |> nonNull)["revision"] <- System.Text.Json.Nodes.JsonValue.Create 2
+    input["expectedRevision"] <- System.Text.Json.Nodes.JsonValue.Create 1
+    input["act"] <- (JsonNode.Parse """{"kind":"CLOSE"}""" |> nonNull)
+    assertMatches true "Existing case before and proposed versions are correlated"
+    before["revision"] <- System.Text.Json.Nodes.JsonValue.Create 8
+    assertMatches false "A foreign before revision cannot enable confirmation"
+    before["revision"] <- System.Text.Json.Nodes.JsonValue.Create 1
+    before["caseReference"] <- System.Text.Json.Nodes.JsonValue.Create "FOREIGN"
+    assertMatches false "A foreign before reference cannot enable confirmation"
+
+let private reviewedAuthorityIdentity () =
+    let reply = correlationReview "AUTHORITY"
+
+    let subject =
+        (((reply["outcome"] |> nonNull)["data"] |> nonNull)["review"] |> nonNull)["subject"]
+        |> nonNull
+
+    let input =
+        (JsonNode.Parse
+            """{"kind":"AUTHORITY","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"person"},"act":{"kind":"ENABLE"}}"""
+         |> nonNull)
+
+    reply["operationId"] <- (input["operationId"] |> nonNull).DeepClone()
+    // Use the complete independent actor shape from an existing actor page.
+    let actor =
+        ClaimCore.TestSupport.PositiveExamples.forEndpoint
+            "wire-response-examples.json"
+            "authority.list"
+        |> List.pick (fun value ->
+            match
+                JsonValue.tryMember "outcome" value
+                |> Option.bind (JsonValue.tryMember "data")
+                |> Option.bind (JsonValue.tryMember "items")
+            with
+            | Some(JsonValue.Array(head :: _)) -> Some head
+            | _ -> None)
+        |> WireWriter.bytes
+        |> System.Text.Encoding.UTF8.GetString
+        |> JsonNode.Parse
+        |> nonNull
+
+    actor["principal"] <- (input["target"] |> nonNull).DeepClone()
+    subject["target"] <- actor
+    subject["effects"] <- (JsonNode.Parse """[{"kind":"ENABLE"}]""" |> nonNull)
+
+    let assertMatches expected label =
+        Expect.isOk
+            (Api.operationPreview.Output.Read "$" (jsonValue reply))
+            "Authority mutation stays structurally admitted"
+
+        Expect.equal
+            (ReplyCorrelation.matches "operation.preview" (jsonValue input) (jsonValue reply))
+            expected
+            label
+
+        let invocation =
+            JsonValue.Object
+                [ "endpoint", JsonValue.String "operation.preview"; "input", jsonValue input ]
+            |> WireWriter.bytes
+            |> Frames.admit
+            |> Result.defaultWith (fun _ ->
+                failtest "Independent authored request remains structural")
+
+        let actual = exchange invocation (jsonValue reply)
+
+        Expect.equal
+            actual.ExitCode
+            (if expected then 0 else 2)
+            "Actual HTTP admission rejects mismatched review"
+
+        if not expected then
+            Expect.equal
+                actual.Frame.Delivery
+                DeliveryState.Uncertain
+                "Mismatched review never enables confirmation"
+
+    assertMatches true "The authored existing account is correlated"
+
+    (actor["principal"] |> nonNull)["subject"] <-
+        System.Text.Json.Nodes.JsonValue.Create "another-person"
+
+    assertMatches false "Another account cannot enable confirmation"
+    subject["target"] <- null
+    assertMatches false "An existing-account action requires the disclosed target principal"
+
+    input["act"] <-
+        (JsonNode.Parse """{"kind":"REGISTER","profile":{"displayName":"Person"}}"""
+         |> nonNull)
+
+    subject["effects"] <-
+        (JsonNode.Parse
+            """[{"kind":"REGISTER","principal":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"person"}},{"kind":"SET_PROFILE","profile":{"displayName":"Person","contact":null}}]"""
+         |> nonNull)
+
+    assertMatches true "New account identity is owned by its registration effect"
+
+    (((subject["effects"] |> nonNull)[0] |> nonNull)["principal"] |> nonNull)["subject"] <-
+        System.Text.Json.Nodes.JsonValue.Create "foreign"
+
+    assertMatches false "A foreign registration effect cannot enable confirmation"
+
+    (((subject["effects"] |> nonNull)[0] |> nonNull)["principal"] |> nonNull)["subject"] <-
+        System.Text.Json.Nodes.JsonValue.Create "person"
+
+    subject["effects"] <- (JsonNode.Parse """[{"kind":"ENABLE"}]""" |> nonNull)
+    assertMatches false "A different action cannot masquerade as registration"
+
 [<Tests>]
 let tests =
     testList
         "client reply correlation"
         [
+            testCase
+                "case preview binds both snapshots to the authored identity and revision"
+                reviewedIdentity
+            testCase
+                "authority preview binds target and registration effects to the authored principal"
+                reviewedAuthorityIdentity
             testCase
                 "real HTTP admission requires matching operation envelopes for every operation endpoint"
                 (fun () ->

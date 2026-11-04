@@ -619,6 +619,76 @@ module ReplyCorrelation =
                 | Some "REMINDER" -> guid "caseId" subject = guid "caseId" parent
                 | _ -> false))
 
+    let private caseReview input subject =
+        let expected = integerMember "expectedRevision" input
+        let after = memberValue "after" subject
+        let before = memberValue "before" subject
+
+        let opening =
+            memberValue "act" input |> Option.bind (stringMember "kind") = Some "OPEN"
+
+        stringMember "kind" subject = Some "CASE"
+        && expected.IsSome
+        && (after
+            |> Option.exists (fun after ->
+                caseTarget input after
+                && integerMember "revision" after = (expected |> Option.map ((+) 1L))
+                && (if opening then
+                        expected = Some 0L
+                        && before = Some JsonValue.Null
+                        && guid "caseId" after = guid "operationId" input
+                    else
+                        before
+                        |> Option.exists (fun before ->
+                            caseTarget input before
+                            && integerMember "revision" before = expected
+                            && guid "caseId" before = guid "caseId" after
+                            && sameReference
+                                (stringMember "caseReference" before)
+                                (stringMember "caseReference" after)))))
+
+    let private principalMatches expected actual =
+        [ "kind"; "issuer"; "subject" ]
+        |> List.forall (fun field ->
+            let value = stringMember field expected
+            value.IsSome && stringMember field actual = value)
+
+    let private authorityReview input subject =
+        match
+            memberValue "target" input, memberValue "act" input, memberValue "effects" subject
+        with
+        | Some principal, Some act, Some(JsonValue.Array effects) ->
+            let tag = stringMember "kind" act
+            let creating = tag = Some "REGISTER" || tag = Some "ADMIT"
+
+            let identity =
+                if creating then
+                    memberValue "target" subject = Some JsonValue.Null
+                else
+                    memberValue "target" subject
+                    |> Option.bind (memberValue "principal")
+                    |> Option.exists (principalMatches principal)
+
+            let expectedKinds =
+                match tag, memberValue "grants" act with
+                | Some "ADMIT", Some(JsonValue.Array grants) ->
+                    "REGISTER" :: "SET_PROFILE" :: List.replicate grants.Length "GRANT"
+                | Some "REGISTER", _ -> [ "REGISTER"; "SET_PROFILE" ]
+                | Some tag, _ -> [ tag ]
+                | _ -> []
+
+            stringMember "kind" subject = Some "AUTHORITY"
+            && identity
+            && List.map (stringMember "kind") effects = List.map Some expectedKinds
+            && (effects
+                |> List.forall (fun effect ->
+                    match stringMember "kind" effect with
+                    | Some("REGISTER" | "PROVISION_OWNER") ->
+                        memberValue "principal" effect
+                        |> Option.exists (principalMatches principal)
+                    | _ -> true))
+        | _ -> false
+
     let matches token input reply =
         let outcome = memberValue "outcome" reply
         let kind = outcome |> Option.bind (stringMember "kind")
@@ -703,8 +773,11 @@ module ReplyCorrelation =
             | "operation.preview", Some "REVIEWED", Some "CASE", Some data ->
                 memberValue "review" data
                 |> Option.bind (memberValue "subject")
-                |> Option.bind (memberValue "after")
-                |> Option.exists (caseTarget input)
+                |> Option.exists (caseReview input)
+            | "operation.preview", Some "REVIEWED", Some "AUTHORITY", Some data ->
+                memberValue "review" data
+                |> Option.bind (memberValue "subject")
+                |> Option.exists (authorityReview input)
             | "operation.preview", Some "REVIEWED", Some "WORK", Some data ->
                 memberValue "review" data
                 |> Option.bind (memberValue "subject")

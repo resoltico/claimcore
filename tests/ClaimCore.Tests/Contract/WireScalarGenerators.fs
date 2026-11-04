@@ -153,6 +153,27 @@ let internal responseString field =
     else
         Map.tryFind field responseStrings |> Option.defaultValue scalarText
 
+let private presentationIdentifier field (context: string) =
+    match field with
+    | "LabelId"
+    | "messageId"
+    | "reasonId" -> true
+    | "Key" ->
+        [ "PresentedChange."; "PresentedField." ]
+        |> List.exists (fun owner -> context.Contains(owner, StringComparison.Ordinal))
+    | _ -> false
+
+let private generatedResponseString field (context: string) =
+    if presentationIdentifier field context then
+        Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
+    elif context.EndsWith("ActorContext.Issuer", StringComparison.Ordinal) then
+        guid
+        |> Gen.map (fun value -> "https://issuer-" + value.ToString("N") + ".example/")
+    elif context.EndsWith("AccountSubject.Subject", StringComparison.Ordinal) then
+        scalarText
+    else
+        responseString field
+
 let internal generatedString response (source: Seeds) context =
     let field = name context
 
@@ -163,22 +184,8 @@ let internal generatedString response (source: Seeds) context =
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
     elif field = "Cursor" || field = "AfterCursor" then
         scalarText
-    elif response && (field = "LabelId" || field = "messageId" || field = "reasonId") then
-        Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
-    elif
-        response
-        && field = "Key"
-        && (context.Contains("PresentedChange.", StringComparison.Ordinal)
-            || context.Contains("PresentedField.", StringComparison.Ordinal))
-    then
-        Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
-    elif response && context.EndsWith("ActorContext.Issuer", StringComparison.Ordinal) then
-        guid
-        |> Gen.map (fun value -> "https://issuer-" + value.ToString("N") + ".example/")
-    elif response && context.EndsWith("AccountSubject.Subject", StringComparison.Ordinal) then
-        scalarText
     elif response then
-        responseString field
+        generatedResponseString field context
     else
         arbitraryText
 

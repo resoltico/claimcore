@@ -43,24 +43,28 @@ let internal resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
-            let invocation = frameForReply (Api.id endpoint) body
-            let body = correlatedBody invocation body
+            // Raw review examples prove structural admission, not correlation with an arbitrary
+            // request. Authored matching and mismatched reviews are exercised over HTTP in
+            // ReplyCorrelationTests; impossible but shape-valid examples still render separately.
+            if tag <> "REVIEWED" then
+                let invocation = frameForReply (Api.id endpoint) body
+                let body = correlatedBody invocation body
 
-            use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
-            let reply = send handler invocation
+                use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
+                let reply = send handler invocation
 
-            Expect.equal
-                reply.ExitCode
-                (Map.tryFind tag expected |> Option.defaultValue 0)
-                ("Outcome selects exit for "
-                 + (Api.id endpoint)
-                 + " "
-                 + tag
-                 + " sample "
-                 + string index)
+                Expect.equal
+                    reply.ExitCode
+                    (Map.tryFind tag expected |> Option.defaultValue 0)
+                    ("Outcome selects exit for "
+                     + (Api.id endpoint)
+                     + " "
+                     + tag
+                     + " sample "
+                     + string index)
 
-            Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
-            seen <- Set.add tag seen
+                Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
+                seen <- Set.add tag seen
 
     for tag in Map.keys expected do
         Expect.isTrue (Set.contains tag seen) "Each specified outcome exit has a fixture"

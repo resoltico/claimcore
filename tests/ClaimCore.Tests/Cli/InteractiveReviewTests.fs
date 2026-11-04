@@ -149,7 +149,29 @@ let private harness language answer scenario =
                                         Refusal.Access(AccessRefusal.NotAuthorized Capability.Close)
                                     )
                                 else
-                                    Outcome.Succeeded(Previewed.Reviewed review)
+                                    let supplied =
+                                        match Frames.value Api.operationPreview frame, review with
+                                        | Some(OperationInput.Case request),
+                                          OperationReview.Case value when
+                                            CaseAct.kind request.Act = CaseActKind.Open
+                                            ->
+                                            OperationReview.Case
+                                                { value with
+                                                    Before = None
+                                                    Proposed =
+                                                        { value.Proposed with
+                                                            CaseId =
+                                                                CaseId.ofOperationId (
+                                                                    CaseFixtures.operationId
+                                                                        request.OperationId
+                                                                )
+                                                            Reference = CaseFixtures.reference "x"
+                                                            Revision = Revision.first
+                                                        }
+                                                }
+                                        | _ -> review
+
+                                    Outcome.Succeeded(Previewed.Reviewed supplied)
                         })
             | "operation.execute" ->
                 let receipt =
