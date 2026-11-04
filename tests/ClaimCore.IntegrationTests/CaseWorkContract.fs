@@ -579,7 +579,11 @@ let internal dueFiltersAndOrder fixture =
         Expect.equal overview.OverdueCases 1L "Case units"
         Expect.equal overview.OverdueReminders 1L "Reminder units"
         Expect.equal overview.UnassignedCases 3L "Explicit responsibility"
-        Expect.equal overview.AttentionCases 3L "Overlapping attention uses distinct union"
+
+        Expect.equal
+            overview.AttentionCases
+            4L
+            "The distinct union includes the available assignee’s due-today case"
 
         let! completed =
             Service.execute

@@ -47,10 +47,8 @@ let private invalidReasons =
         " leading"
         "trailing "
         "a\u0000b"
-        "a
-b"
-        "a
-b"
+        "a\u2028b"
+        "a\u2029b"
         String([| char 0xD800 |])
         String.replicate 201 "x"
     ]
