@@ -179,7 +179,7 @@ let private formats () =
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
             ]
-            [ 4; 2; 4; 4 ]
+            [ 4; 2; 4; 5 ]
             "Each retained grammar has its adopted format number"
 
         for format in [ "3"; "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do

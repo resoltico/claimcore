@@ -51,6 +51,7 @@ let private row payload =
 
     let metadata: LedgerMetadata =
         {
+            Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 1 0
             CreationReference = None
             InstallationId = installation
             Sequence = CaseFixtures.sequence 1L
@@ -69,6 +70,7 @@ let private row payload =
 
     let entry: StoredEntry =
         {
+            Effects = metadata.Effects
             CreationReference = None
             Sequence = CaseFixtures.sequence 1L
             EntryHash = LedgerEntry.hash metadata
@@ -125,6 +127,7 @@ let requestEffectAgreement =
 
             let metadata =
                 { metadata with
+                    Effects = LedgerEffects.single
                     CreationReference = Some reference
                     Subject =
                         RecordedTarget.Case
@@ -138,6 +141,7 @@ let requestEffectAgreement =
 
             let entry =
                 { entry with
+                    Effects = LedgerEffects.single
                     CreationReference = Some reference
                     Subject =
                         EntryTarget.Case(
@@ -194,6 +198,22 @@ let private history: CaseHistory =
 
 let private ledgerChecks =
     [
+        VerificationFinding.OperationEffectGroup,
+        fun () ->
+            let entry, _ = row [| 1uy |]
+
+            LedgerVerification.complete
+                None
+                { state with
+                    PendingEffects =
+                        Some
+                            {
+                                Root = entry
+                                NextIndex = 1
+                                Nonces = []
+                            }
+                }
+            |> unitResult
         VerificationFinding.Link,
         fun () ->
             LedgerVerification.link

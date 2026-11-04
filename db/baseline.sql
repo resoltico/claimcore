@@ -65,9 +65,9 @@ INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (
 -- ---------------------------------------------------------------------------------------------
 -- The ledger: the single record of everything ClaimCore has accepted.
 --
--- Every accepted case act and every accepted authority act is exactly one row. Rows form one
+-- Accepted operations have one root and bounded, consecutive effect rows. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 4). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 5). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -76,12 +76,21 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 4),
+    entry_format smallint NOT NULL CHECK (entry_format = 5),
     subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'CONTROL', 'WORK', 'REMINDER')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
     operation_id uuid NOT NULL
         CHECK (operation_id <> '00000000-0000-0000-0000-000000000000'),
+    effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
+    effect_count integer NOT NULL CHECK (effect_count BETWEEN 1 AND 50 AND effect_index < effect_count),
+    authority_operation text,
+    CONSTRAINT ledger_operation_shape CHECK (
+        (subject_kind = 'AUTHORITY' AND authority_operation IS NOT NULL AND authority_operation ~ '^[A-Z][A-Z_]{0,39}$'
+            AND (effect_count > 1 OR authority_operation = act)
+            AND (effect_count = 1 OR authority_operation IN ('REGISTER','PROVISION_OWNER','ADMIT')))
+        OR (subject_kind <> 'AUTHORITY' AND effect_index = 0 AND effect_count = 1 AND authority_operation IS NULL)
+    ),
     actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (
         recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z'
@@ -136,7 +145,49 @@ CREATE TABLE claimcore.ledger (
 );
 
 -- Retained authoritative references cannot be reused even if a projection is damaged.
-CREATE UNIQUE INDEX ledger_accepted_operation ON claimcore.ledger (operation_id) WHERE subject_kind <> 'CONTROL';
+CREATE UNIQUE INDEX ledger_accepted_operation ON claimcore.ledger (operation_id,effect_index) WHERE subject_kind <> 'CONTROL';
+-- Commit-time completeness keeps partial roots and mixed groups from becoming accepted operations.
+CREATE FUNCTION claimcore.complete_ledger_operation()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+DECLARE
+    root claimcore.ledger%ROWTYPE;
+    actual_count bigint;
+    coherent boolean;
+    nonce_count bigint;
+BEGIN
+    IF NEW.subject_kind = 'CONTROL' OR NEW.effect_count = 1 THEN RETURN NULL; END IF;
+    SELECT * INTO root FROM claimcore.ledger
+      WHERE operation_id = NEW.operation_id AND subject_kind <> 'CONTROL' AND effect_index = 0;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'operation effect has no root' USING ERRCODE = 'CC004';
+    END IF;
+    IF NEW.effect_index <> 0 THEN
+        IF NEW.effect_count IS DISTINCT FROM root.effect_count OR NEW.actor_id IS DISTINCT FROM root.actor_id
+           OR NEW.recorded_at IS DISTINCT FROM root.recorded_at OR NEW.subject_id IS DISTINCT FROM root.subject_id
+           OR NEW.authority_operation IS DISTINCT FROM root.authority_operation
+           OR NEW.sequence <> root.sequence + NEW.effect_index THEN
+            RAISE EXCEPTION 'operation effect differs from its root' USING ERRCODE = 'CC004';
+        END IF;
+        RETURN NULL;
+    END IF;
+    SELECT count(*), bool_and(effect_count=root.effect_count
+          AND actor_id=root.actor_id AND recorded_at=root.recorded_at
+          AND sequence=root.sequence+effect_index
+          AND (root.effect_count=1 OR (subject_kind='AUTHORITY' AND subject_id=root.subject_id
+              AND authority_operation=root.authority_operation))), count(DISTINCT payload_nonce)
+      INTO actual_count, coherent, nonce_count
+      FROM claimcore.ledger WHERE operation_id=NEW.operation_id AND subject_kind<>'CONTROL';
+    IF actual_count <> root.effect_count OR coherent IS NOT TRUE
+       OR (root.effect_count > 1 AND nonce_count <> root.effect_count) THEN
+        RAISE EXCEPTION 'operation effects are incomplete or inconsistent' USING ERRCODE = 'CC004';
+    END IF;
+    RETURN NULL;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER ledger_operation_complete
+    AFTER INSERT ON claimcore.ledger DEFERRABLE INITIALLY DEFERRED
+    FOR EACH ROW EXECUTE FUNCTION claimcore.complete_ledger_operation();
+
 CREATE UNIQUE INDEX ledger_nonacceptance ON claimcore.ledger (actor_id,operation_id) WHERE subject_kind = 'CONTROL';
 
 CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger (upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
@@ -226,11 +277,11 @@ BEGIN
        OR NEW.payload IS NOT NULL
        OR NEW.payload_nonce IS NOT NULL
        OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
-           NEW.act, NEW.operation_id, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
+           NEW.act, NEW.operation_id, NEW.effect_index, NEW.effect_count, NEW.authority_operation, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
            NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.parent_case_id, NEW.next_reminder_id, NEW.payload_commitment)
           IS DISTINCT FROM
           (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.subject_kind,
-           OLD.act, OLD.operation_id, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
+           OLD.act, OLD.operation_id, OLD.effect_index, OLD.effect_count, OLD.authority_operation, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
            OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.parent_case_id, OLD.next_reminder_id, OLD.payload_commitment)
     THEN
         RAISE EXCEPTION 'ledger rows change only by case erasure' USING ERRCODE = 'CC003';

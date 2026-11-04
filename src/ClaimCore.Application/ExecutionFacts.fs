@@ -4,22 +4,24 @@ open System
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
+[<NoComparison>]
 type internal CaseFacts =
     {
         ObservedAt: DateTimeOffset
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
         Assignee: AuthorityView option
-        ExistingOperation: StoredEntry option
+        ExistingOperation: StoredOperation option
         Case: StoredCase option
     }
 
+[<NoComparison>]
 type internal AuthorityExecutionFacts =
     {
         ObservedAt: DateTimeOffset
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
-        ExistingOperation: StoredEntry option
+        ExistingOperation: StoredOperation option
         Target: AuthorityView
         TargetCase: StoredCase option
         EnabledHumanOwners: int option
@@ -27,7 +29,7 @@ type internal AuthorityExecutionFacts =
     }
 
 module internal ExecutionFacts =
-    let private operationCase (entry: StoredEntry option) =
+    let private operationCase (entry: StoredOperation option) =
         match entry |> Option.map _.Subject with
         | Some(EntryTarget.Case(id, _, _, _)) -> Some id
         | Some(EntryTarget.Work subject) -> Some subject.CaseId
@@ -59,7 +61,7 @@ module internal ExecutionFacts =
         task {
             let! existing =
                 match operationId with
-                | Some id -> tx.FindEntry id
+                | Some id -> tx.FindOperation id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let! record = findCase tx selector
@@ -87,7 +89,7 @@ module internal ExecutionFacts =
         let principal = services.Principal
 
         task {
-            let! existing = tx.FindEntry operationId
+            let! existing = tx.FindOperation operationId
 
             let! record =
                 match reference with
@@ -126,7 +128,7 @@ module internal ExecutionFacts =
 
     let operation (tx: IReadTx) principal id =
         task {
-            let! entry = tx.FindEntry id
+            let! entry = tx.FindOperation id
             let! actor = authority tx principal (operationCase entry |> Option.toList)
 
             let! record =
@@ -193,5 +195,33 @@ module internal ExecutionFacts =
                             do! project projection
                             return Verdict.Proceed receipt
                         })
+            | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
+        }
+
+    /// One verdict commits every effect and projection together, or the store rolls all of them back.
+    let persistOperation
+        (tx: IWriteTx)
+        (project: 'projection -> System.Threading.Tasks.Task<unit>)
+        (verdict: Verdict<EntryDraft list * 'projection list * OperationReceipt>)
+        =
+        task {
+            match verdict with
+            | Verdict.Proceed(entries, projections, receipt) ->
+                let group = StoredOperation.create (entries |> List.map LedgerEntries.stored)
+
+                match group with
+                | Error fault -> return Verdict.Fail fault
+                | Ok _ when entries.Length <> projections.Length ->
+                    return Verdict.Fail CoreFault.InternalError
+                | Ok _ ->
+                    return!
+                        whenWritable tx (fun () ->
+                            task {
+                                for entry, projection in List.zip entries projections do
+                                    do! tx.Append entry
+                                    do! project projection
+
+                                return Verdict.Proceed receipt
+                            })
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
         }

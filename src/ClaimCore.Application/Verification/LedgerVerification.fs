@@ -9,6 +9,13 @@ open ClaimCore.Application.VerificationChecks
 
 /// Deterministic ledger interpretation independent of storage, current admission and clocks.
 module LedgerVerification =
+    type PendingEffects =
+        {
+            Root: StoredEntry
+            NextIndex: int
+            Nonces: byte array list
+        }
+
     type Scan =
         {
             Head: LedgerPosition
@@ -18,9 +25,70 @@ module LedgerVerification =
             Actors: Map<ActorId, ActorAuthority>
             Fences: Map<ActorId * OperationId, DateTimeOffset>
             Accepted: Map<OperationId, ActorId>
+            PendingEffects: PendingEffects option
             References: Map<string, CaseId>
             ExpectedSeen: bool
         }
+
+    let private effects pending (entry: StoredEntry) =
+        let index = LedgerEffects.index entry.Effects
+        let count = LedgerEffects.count entry.Effects
+
+        let result =
+            match pending, index with
+            | None, 0 when count = 1 -> Some None
+            | None, 0 ->
+                Some(
+                    Some
+                        {
+                            Root = entry
+                            NextIndex = 1
+                            Nonces = entry.PayloadNonce |> Option.toList
+                        }
+                )
+            | Some pending, index when index = pending.NextIndex ->
+                let root = pending.Root
+
+                let targetMatches =
+                    match root.Subject, entry.Subject with
+                    | EntryTarget.Authority(target, _), EntryTarget.Authority(current, _) ->
+                        target = current
+                    | _ -> false
+
+                let fresh =
+                    entry.PayloadNonce
+                    |> Option.forall (fun nonce -> not (List.contains nonce pending.Nonces))
+
+                if
+                    root.OperationId = entry.OperationId
+                    && root.ActorId = entry.ActorId
+                    && root.RecordedAt = entry.RecordedAt
+                    && LedgerEffects.count root.Effects = count
+                    && LedgerEffects.authorityOperation root.Effects =
+                        LedgerEffects.authorityOperation entry.Effects
+                    && Sequence.value entry.Sequence = Sequence.value root.Sequence + int64 index
+                    && targetMatches
+                    && fresh
+                then
+                    if index + 1 = count then
+                        Some None
+                    else
+                        Some(
+                            Some
+                                { pending with
+                                    NextIndex = index + 1
+                                    Nonces = pending.Nonces @ (entry.PayloadNonce |> Option.toList)
+                                }
+                        )
+                else
+                    None
+            | _ -> None
+
+        result
+        |> Option.map Ok
+        |> Option.defaultValue (
+            Error(divergence (Some entry.Sequence) VerificationFinding.OperationEffectGroup)
+        )
 
     let private histories installationId state (entry: StoredEntry) payload =
         match entry.Subject, payload with
@@ -91,7 +159,8 @@ module LedgerVerification =
                 require
                     at
                     VerificationFinding.PayloadFormat
-                    (metadata.InstallationId = installationId
+                    (metadata.Effects = entry.Effects
+                     && metadata.InstallationId = installationId
                      && metadata.Sequence = entry.Sequence
                      && metadata.OperationId = entry.OperationId
                      && metadata.ActorId = entry.ActorId
@@ -99,6 +168,8 @@ module LedgerVerification =
                      && metadata.Subject = subject
                      && metadata.CreationReference = entry.CreationReference
                      && metadata.PayloadCommitment = entry.PayloadCommitment)
+
+            let! pendingEffects = effects state.PendingEffects entry
 
             do! link state sequence metadata.PreviousHash
 
@@ -147,7 +218,8 @@ module LedgerVerification =
                 expected
                 |> Option.exists (fun position ->
                     position.Sequence = sequence
-                    && EntryHash.toBytes position.EntryHash = entry.EntryHash)
+                    && EntryHash.toBytes position.EntryHash = entry.EntryHash
+                    && pendingEffects.IsNone)
 
             return
                 {
@@ -160,10 +232,13 @@ module LedgerVerification =
                     Reminders = reminders
                     Cases = cases
                     Actors = actors
+                    PendingEffects = pendingEffects
                     Accepted =
                         match payload with
                         | VerifiedPayload.NonAcceptance _ -> state.Accepted
-                        | _ -> Map.add entry.OperationId entry.ActorId state.Accepted
+                        | _ when pendingEffects.IsNone ->
+                            Map.add entry.OperationId entry.ActorId state.Accepted
+                        | _ -> state.Accepted
                     References = references
                     Fences =
                         match payload with
@@ -185,6 +260,7 @@ module LedgerVerification =
             Actors = Map.empty
             Fences = Map.empty
             Accepted = Map.empty
+            PendingEffects = None
             References = Map.empty
             ExpectedSeen =
                 expected
@@ -196,7 +272,9 @@ module LedgerVerification =
         require None VerificationFinding.Head (actual = Some state.Head)
 
     let complete (expected: LedgerPosition option) (state: Scan) =
-        if expected.IsSome && not state.ExpectedSeen then
+        if state.PendingEffects.IsSome then
+            Error(divergence (Some state.Head.Sequence) VerificationFinding.OperationEffectGroup)
+        elif expected.IsSome && not state.ExpectedSeen then
             Error(
                 divergence (expected |> Option.map _.Sequence) VerificationFinding.ExpectedPosition
             )

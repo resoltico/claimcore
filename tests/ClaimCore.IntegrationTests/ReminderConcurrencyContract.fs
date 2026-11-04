@@ -382,10 +382,10 @@ let internal erasureRaces fixture =
 
                 let! entry =
                     storeRead fixture (fun tx ->
-                        tx.FindEntry(OperationId.create (id (number + 2)) |> Option.get))
+                        tx.FindOperation(OperationId.create (id (number + 2)) |> Option.get))
 
-                Expect.isNone (Option.get entry).Payload "Related ledger payload cleared"
-                Expect.isNone (Option.get entry).PayloadNonce "Related nonce cleared"
+                Expect.isNone (Option.get entry).Root.Payload "Related ledger payload cleared"
+                Expect.isNone (Option.get entry).Root.PayloadNonce "Related nonce cleared"
             | ExecuteResult.Rejected(Refusal.Reminder ReminderRuleRefusal.ParentNotActive) ->
                 Expect.isNone child "Erase-before-action creates no child"
             | other -> failtestf "Invalid erase/reminder outcome: %A" other

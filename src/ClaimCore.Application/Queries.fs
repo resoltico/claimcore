@@ -602,9 +602,11 @@ module internal Queries =
                                                 return Outcome.Failed CoreFault.StoreIntegrityError
                                             else
                                                 return
-                                                    LedgerEntries.validate installation entry
+                                                    LedgerEntries.validateOperation
+                                                        installation
+                                                        entry
                                                     |> Result.bind (
-                                                        LedgerEntries.receipt
+                                                        LedgerEntries.receiptOperation
                                                             principal
                                                             actor
                                                             current

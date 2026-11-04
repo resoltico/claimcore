@@ -26,6 +26,7 @@
     <Compile Include="ReminderPostgresTests.fs" />
     <Compile Include="StoredIdentityTests.fs" />
     <Compile Include="DurableVocabularyTests.fs" />
+    <Compile Include="LedgerGroupingTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
     <Compile Include="ResolutionTests.fs" />
     <Compile Include="SessionDrain.fs" />

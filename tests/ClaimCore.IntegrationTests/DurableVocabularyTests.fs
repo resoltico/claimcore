@@ -26,7 +26,7 @@ let private corruptRead (read: unit -> Task<unit>) =
 
 let private readEntry (tx: IReadTx) =
     task {
-        let! _ = tx.FindEntry(CaseFixtures.operationId (id 10))
+        let! _ = tx.FindOperation(CaseFixtures.operationId (id 10))
         return ()
     }
 

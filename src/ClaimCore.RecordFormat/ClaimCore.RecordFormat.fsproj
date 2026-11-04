@@ -18,6 +18,7 @@
     <Compile Include="HistoricalWorkEffects.fs" />
     <Compile Include="AuthorityRecord.fs" />
     <Compile Include="ControlRecord.fs" />
+    <Compile Include="LedgerEffects.fs" />
     <Compile Include="LedgerEntry.fs" />
   </ItemGroup>
   <ItemGroup>

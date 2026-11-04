@@ -5,7 +5,7 @@ derives RFC 8785 canonical bytes, resolved case identities, framed ledger payloa
 salted commitments, framed retained creation identities and entry hashes, in the structure of
 tests/fixtures/record-format-vectors.json.
 
-  python3 -I generate_vectors.py --request 4 --snapshot 4 --authority 2 --ledger 4
+  python3 -I generate_vectors.py --request 4 --snapshot 4 --authority 2 --ledger 5
 
 Writes JSON to standard output.
 """
@@ -200,6 +200,9 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             previous,
             bytes([subject_byte, act_code]),
             uuid.UUID(spec["operationId"]).bytes,
+            spec.get("effectIndex", 0).to_bytes(4, "big"),
+            spec.get("effectCount", 1).to_bytes(4, "big"),
+            bytes([ACT_CODES[spec.get("authorityOperation", spec["act"])] if spec["subject"] == "AUTHORITY" else 0]),
             uuid.UUID(spec["actorId"]).bytes,
             micros(spec["recordedAt"]).to_bytes(8, "big", signed=True),
             uuid.UUID(subject).bytes,
@@ -215,6 +218,8 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             "sequence": spec["sequence"], "previousHash": previous.hex(),
             "subject": spec["subject"], "act": spec["act"], "actCode": act_code,
             "operationId": spec["operationId"], "actorId": spec["actorId"],
+            "effectIndex": spec.get("effectIndex", 0), "effectCount": spec.get("effectCount", 1),
+            "authorityOperation": spec.get("authorityOperation", spec["act"]) if spec["subject"] == "AUTHORITY" else None,
             "recordedAt": spec["recordedAt"], "recordedAtUnixMicroseconds": micros(spec["recordedAt"]),
             "subjectId": subject, "entityRevision": spec["entityRevision"],
             "parentCaseId": spec.get("parentCaseId"), "nextReminderId": spec.get("nextReminderId"),
@@ -226,7 +231,7 @@ def ledger(sources, requests, snapshot, authority, ledger_format, work_snapshots
             "entryHash": entry_hash.hex(),
         })
         previous = entry_hash
-    return {"entryFormat": ledger_format, "tag": f"claimcore/ledger-entry/{ledger_format}\n", "preimageBytes": "variable: 184 plus OPEN reference framing and reminder parent/next framing",
+    return {"entryFormat": ledger_format, "tag": f"claimcore/ledger-entry/{ledger_format}\n", "preimageBytes": "variable: 193 plus OPEN reference framing and reminder parent/next framing",
             "actCodes": ACT_CODES, "vectors": vectors}
 
 
@@ -248,7 +253,7 @@ def main():
     parser.add_argument("--request", type=int, required=True)
     parser.add_argument("--snapshot", type=int, required=True)
     parser.add_argument("--authority", type=int, required=True)
-    parser.add_argument("--ledger", type=int, required=True)
+    parser.add_argument("--ledger", type=int, choices=[5], required=True)
     parser.add_argument("--sources", default=str(pathlib.Path(__file__).with_name("sources.json")))
     arguments = parser.parse_args()
     sources = json.loads(pathlib.Path(arguments.sources).read_text(encoding="utf-8"))
@@ -261,7 +266,7 @@ def main():
     reminder_effects = [with_format(item["value"], 1) for item in sources["reminderEffects"]]
     document = {
         "purpose": "Independent Python oracle for ClaimCore durable formats; regenerate with "
-                   "python3 -I generate_vectors.py",
+                   "python3 -I tests/fixtures/oracle/generate_vectors.py",
         "jcs": [vector(item["name"], item["value"]) for item in sources["jcs"]],
         "jcsRefusals": sources["jcsRefusals"],
         "caseRequests": [vector(item["name"], value)

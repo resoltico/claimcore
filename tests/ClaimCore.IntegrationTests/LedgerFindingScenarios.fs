@@ -29,6 +29,22 @@ let internal link (database: PostgresFixture.Database) =
         do! finding VerificationFinding.Link database
     }
 
+let internal operationEffectGroup (database: PostgresFixture.Database) =
+    task {
+        let! _ = populated database
+
+        do!
+            rewrite database Sequence.first (fun value ->
+                { value with
+                    Metadata =
+                        { value.Metadata with
+                            Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 2 0
+                        }
+                })
+
+        do! finding VerificationFinding.OperationEffectGroup database
+    }
+
 let internal entryHash (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
@@ -432,6 +448,7 @@ let private fenceProjection (database: PostgresFixture.Database) =
 let internal findingCases =
     [
         VerificationFinding.Link, link
+        VerificationFinding.OperationEffectGroup, operationEffectGroup
         VerificationFinding.EntryHash, entryHash
         VerificationFinding.Commitment, commitment
         VerificationFinding.PayloadFormat, format

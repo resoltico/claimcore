@@ -244,6 +244,7 @@ let tests =
 
                         let entry: StoredEntry =
                             {
+                                Effects = LedgerEffects.single
                                 Sequence = CaseFixtures.sequence 100L
                                 EntryHash = Array.zeroCreate 32
                                 OperationId = command.OperationId

@@ -145,7 +145,6 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                                     InstallationId = installationId
                                     Observed = this.ObservedAt
                                     Head = state.Head
-                                    Nonce = RandomNumberGenerator.GetBytes 32
                                     Read = (fun () -> events.Add "read")
                                     FactRead = factRead
                                 }
@@ -156,7 +155,11 @@ type Store(installationId: Guid, observed: DateTimeOffset) =
                             let! verdict = work tx
 
                             match verdict with
-                            | Verdict.Proceed _ -> state <- pending
+                            | Verdict.Proceed _ ->
+                                if not (completeOperations state.Head.Sequence pending) then
+                                    raise CorruptProjection
+
+                                state <- pending
                             | Verdict.Replay _
                             | Verdict.Refuse _
                             | Verdict.Fail _ -> ()

@@ -421,9 +421,26 @@ type internal Reader
 
             Task.FromResult(page query.Limit _.Sequence rows)
 
-        member _.FindEntry id =
+        member _.FindOperation id =
             read ()
-            Task.FromResult(Map.tryFind id (get ()).Entries |> Option.map copyEntry)
+
+            let entries =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry -> entry.OperationId = id)
+                |> Seq.sortBy (fun entry -> LedgerEffects.index entry.Effects)
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            let operation =
+                match entries with
+                | [] -> None
+                | entries ->
+                    StoredOperation.create entries
+                    |> Result.map Some
+                    |> Result.defaultWith (fun _ -> raise CorruptProjection)
+
+            Task.FromResult operation
 
         member _.NonAcceptance(key: FenceKey) =
             read ()

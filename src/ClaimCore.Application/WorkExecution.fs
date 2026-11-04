@@ -249,7 +249,7 @@ module internal WorkExecution =
                         Bytes = bytes
                         Existing = view.ExistingOperation
                     }
-                    (LedgerEntries.receipt services.Principal view.Actor state)
+                    (LedgerEntries.receiptOperation services.Principal view.Actor state)
 
             match replay with
             | Verdict.Proceed() ->
@@ -428,7 +428,7 @@ module internal WorkExecution =
                         Bytes = bytes
                         Existing = view.ExistingOperation
                     }
-                    (LedgerEntries.receipt services.Principal view.Actor state)
+                    (LedgerEntries.receiptOperation services.Principal view.Actor state)
 
             match replay with
             | Verdict.Proceed() when view.Maintenance.Active ->
@@ -584,7 +584,7 @@ module internal WorkExecution =
                                                 view.Actor
                                                 {
                                                     Head = tx.Head
-                                                    Nonce = tx.Nonce
+                                                    Nonce = tx.NewPayloadNonce()
                                                     Fenced = fenced
                                                 }
                                                 {

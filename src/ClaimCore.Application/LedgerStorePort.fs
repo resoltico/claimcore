@@ -71,6 +71,7 @@ type EntryTarget =
 
 type StoredEntry =
     {
+        Effects: LedgerEffects
         Sequence: Sequence
         EntryHash: byte array
         OperationId: OperationId
@@ -82,6 +83,78 @@ type StoredEntry =
         PayloadNonce: byte array option
         Payload: byte array option
     }
+
+/// One accepted operation, including every contiguous physical effect in sequence order.
+[<NoComparison>]
+type StoredOperation =
+    private
+    | StoredOperation of root: StoredEntry * entries: StoredEntry list
+
+    member this.Root = let (StoredOperation(root, _)) = this in root
+    member this.Entries = let (StoredOperation(_, entries)) = this in entries
+    member this.OperationId = this.Root.OperationId
+    member this.ActorId = this.Root.ActorId
+    member this.Subject = this.Root.Subject
+
+    member this.Position =
+        let last = List.last this.Entries
+        LedgerPosition.create last.Sequence (EntryHash.ofBytes last.EntryHash |> Option.get)
+
+module StoredOperation =
+    /// Metadata completeness is independent of payload availability after authorized erasure.
+    let create (entries: StoredEntry list) =
+        let failure () = Error CoreFault.StoreIntegrityError
+
+        match entries with
+        | [] -> failure ()
+        | root :: _ ->
+            let count = LedgerEffects.count root.Effects
+            let authority = LedgerEffects.authorityOperation root.Effects
+
+            let target =
+                match root.Subject with
+                | EntryTarget.Authority(id, _) -> Some id
+                | _ -> None
+
+            let coherent index (entry: StoredEntry) =
+                LedgerEffects.index entry.Effects = index
+                && LedgerEffects.count entry.Effects = count
+                && LedgerEffects.authorityOperation entry.Effects = authority
+                && entry.OperationId = root.OperationId
+                && entry.ActorId = root.ActorId
+                && entry.RecordedAt = root.RecordedAt
+                && Sequence.value entry.Sequence = Sequence.value root.Sequence + int64 index
+                && not (obj.ReferenceEquals(entry.EntryHash, null))
+                && entry.EntryHash.Length = 32
+                && (match entry.Subject with
+                    | EntryTarget.Authority(_, act) ->
+                        LedgerEffects.describesAuthority act entry.Effects
+                    | _ -> entry.Effects = LedgerEffects.single)
+                && (match target, entry.Subject with
+                    | Some expected, EntryTarget.Authority(actual, _) -> expected = actual
+                    | None, _ -> count = 1
+                    | _ -> false)
+
+            let nonces = entries |> List.choose _.PayloadNonce
+
+            let accepted =
+                match root.Subject with
+                | EntryTarget.NonAcceptance _ -> false
+                | _ -> true
+
+            if
+                accepted
+                && root.Sequence >= Sequence.first
+                && count >= 1
+                && count <= LedgerEffects.MaximumCount
+                && entries.Length = count
+                && (List.mapi coherent entries |> List.forall id)
+                && (List.distinct nonces |> List.length) = nonces.Length
+                && (count = 1 || target.IsSome)
+            then
+                Ok(StoredOperation(root, entries))
+            else
+                failure ()
 
 type StoredWork =
     {
@@ -153,6 +226,7 @@ type CaseProjection =
 
 type EntryDraft =
     {
+        Effects: LedgerEffects
         Sequence: Sequence
         PreviousHash: byte array
         EntryHash: byte array
@@ -337,7 +411,7 @@ type IReadTx =
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
     abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
     abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
-    abstract FindEntry: OperationId -> Task<StoredEntry option>
+    abstract FindOperation: OperationId -> Task<StoredOperation option>
     abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
@@ -357,7 +431,7 @@ type IReadTx =
 type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerPosition
-    abstract Nonce: byte array
+    abstract NewPayloadNonce: unit -> byte array
     abstract Append: EntryDraft -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>

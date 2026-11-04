@@ -504,6 +504,7 @@
   ],
   "verificationFindings": [
     "LINK",
+    "OPERATION_EFFECT_GROUP",
     "ENTRY_HASH",
     "COMMITMENT",
     "PAYLOAD_FORMAT",

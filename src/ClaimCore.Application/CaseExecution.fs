@@ -123,7 +123,7 @@ module internal CaseExecution =
                     Bytes = bytes
                     Existing = view.ExistingOperation
                 }
-                (LedgerEntries.receipt principal view.Actor (ReceiptCurrent.Case view.Case))
+                (LedgerEntries.receiptOperation principal view.Actor (ReceiptCurrent.Case view.Case))
 
     let private propose installationId (calendar: IBusinessCalendar) request (view: CaseFacts) =
         try
@@ -264,7 +264,7 @@ module internal CaseExecution =
                                             {
                                                 Head = tx.Head
                                                 Fenced = fenced
-                                                Nonce = tx.Nonce
+                                                Nonce = tx.NewPayloadNonce()
                                             }
                                             view
 

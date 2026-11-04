@@ -74,7 +74,7 @@ module internal Persistence =
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
             [|
                 box (Sequence.value entry.Sequence)
                 box entry.PreviousHash
@@ -96,6 +96,12 @@ module internal Persistence =
                 )
                 DatabaseSession.parameter (subject.Parent |> Option.map CaseId.value)
                 DatabaseSession.parameter (subject.Next |> Option.map ReminderId.value)
+                box (LedgerEffects.index entry.Effects)
+                box (LedgerEffects.count entry.Effects)
+                DatabaseSession.parameter (
+                    LedgerEffects.authorityOperation entry.Effects
+                    |> Option.map DurableNames.authorityAct
+                )
             |]
             token
 

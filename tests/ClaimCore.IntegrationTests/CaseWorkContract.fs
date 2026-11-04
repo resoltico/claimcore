@@ -1145,11 +1145,11 @@ let internal lifecycleAndErasure fixture =
                                 for operation in
                                     [ 20; 21; 22; 23; 24; 25; 26; 27; 28; 30; 31; 32; 34; 35 ] do
                                     let! entry =
-                                        tx.FindEntry(
+                                        tx.FindOperation(
                                             OperationId.create (id operation) |> Option.get
                                         )
 
-                                    entries.Add(Option.get entry)
+                                    entries.AddRange((Option.get entry).Entries)
 
                                 return work, [ a; b; c; d ], List.ofSeq entries
                             }

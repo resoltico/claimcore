@@ -25,6 +25,14 @@ type internal ValidatedEntry =
             Content: EntryContent
         }
 
+[<NoComparison>]
+type internal ValidatedOperation =
+    private
+        {
+            Stored: StoredOperation
+            ValidatedEntries: ValidatedEntry list
+        }
+
 type internal EntryCreation =
     {
         InstallationId: Guid
@@ -38,11 +46,29 @@ type internal EntryCreation =
         Snapshot: byte array
     }
 
+type internal LedgerEffectCreation =
+    {
+        Subject: EntryTarget
+        Request: byte array
+        Snapshot: byte array
+    }
+
+type internal AuthorityOperationCreation =
+    {
+        InstallationId: Guid
+        Head: LedgerPosition
+        Instant: DateTimeOffset
+        ActorId: ActorId
+        OperationId: OperationId
+        Effects: LedgerEffectCreation list
+    }
+
+[<NoComparison>]
 type internal OperationIdentityRequest =
     {
         OperationId: OperationId
         Bytes: byte array
-        Existing: StoredEntry option
+        Existing: StoredOperation option
     }
 
 module LedgerEntries =
@@ -56,6 +82,7 @@ module LedgerEntries =
 
     let internal stored (entry: EntryDraft) : StoredEntry =
         {
+            Effects = entry.Effects
             Sequence = entry.Sequence
             EntryHash = entry.EntryHash
             OperationId = entry.OperationId
@@ -84,7 +111,7 @@ module LedgerEntries =
                     BusinessDate = date
                 }
 
-    let internal create (input: EntryCreation) : EntryDraft =
+    let internal createEffect effects (input: EntryCreation) : EntryDraft =
         let installationId = input.InstallationId
         let head = input.Head
         let instant = input.Instant
@@ -118,6 +145,7 @@ module LedgerEntries =
 
         let metadata =
             {
+                Effects = effects
                 InstallationId = installationId
                 Sequence = sequence
                 PreviousHash = EntryHash.toBytes head.EntryHash
@@ -130,6 +158,7 @@ module LedgerEntries =
             }
 
         {
+            Effects = effects
             Sequence = sequence
             PreviousHash = EntryHash.toBytes head.EntryHash
             EntryHash = LedgerEntry.hash metadata
@@ -142,6 +171,61 @@ module LedgerEntries =
             PayloadNonce = Array.copy nonce
             Payload = payload
         }
+
+    let internal create (input: EntryCreation) =
+        let effects =
+            match input.Subject with
+            | EntryTarget.Authority(_, act) -> LedgerEffects.authority act 1 0
+            | _ -> LedgerEffects.single
+
+        createEffect effects input
+
+    /// Every physical effect gets a fresh salt and extends the previous effect's hash.
+    let internal createAuthorityOperation
+        operation
+        newPayloadNonce
+        (input: AuthorityOperationCreation)
+        =
+        let count = input.Effects.Length
+
+        if
+            count < 1
+            || count > LedgerEffects.MaximumCount
+            || Sequence.value input.Head.Sequence > Sequence.Maximum - int64 count
+        then
+            Error CoreFault.InternalError
+        else
+            try
+                let _, reversed =
+                    input.Effects
+                    |> List.indexed
+                    |> List.fold
+                        (fun (head, entries) (index, effect) ->
+                            let entry =
+                                createEffect
+                                    (LedgerEffects.authority operation count index)
+                                    {
+                                        InstallationId = input.InstallationId
+                                        Head = head
+                                        Instant = input.Instant
+                                        Nonce = newPayloadNonce ()
+                                        ActorId = input.ActorId
+                                        OperationId = input.OperationId
+                                        Subject = effect.Subject
+                                        Request = effect.Request
+                                        Snapshot = effect.Snapshot
+                                    }
+
+                            position entry.Sequence entry.EntryHash, entry :: entries)
+                        (input.Head, [])
+
+                let entries = List.rev reversed
+
+                StoredOperation.create (entries |> List.map stored)
+                |> Result.map (fun _ -> entries)
+            with
+            | :? ArgumentException
+            | :? OverflowException -> Error CoreFault.InternalError
 
     /// The existing salted commitment protects ordinary reads and replay before content is interpreted.
     let internal payload (entry: StoredEntry) =
@@ -204,6 +288,9 @@ module LedgerEntries =
         && width 32 entry.EntryHash
         && width 32 entry.PayloadCommitment
         && entry.RecordedAt.UtcTicks % 10L = 0L
+        && (match entry.Subject with
+            | EntryTarget.Authority(_, act) -> LedgerEffects.describesAuthority act entry.Effects
+            | _ -> entry.Effects = LedgerEffects.single)
         && subject
 
     let private caseRequestMatches (entry: StoredEntry) id revision act (request: CaseCommand) =
@@ -331,6 +418,20 @@ module LedgerEntries =
                     Content = content
                 })
 
+    let internal validateOperation installation (operation: StoredOperation) =
+        operation.Entries
+        |> List.fold
+            (fun state entry ->
+                state
+                |> Result.bind (fun entries ->
+                    validate installation entry |> Result.map (fun value -> value :: entries)))
+            (Ok [])
+        |> Result.map (fun reversed ->
+            {
+                Stored = operation
+                ValidatedEntries = List.rev reversed
+            })
+
     /// Only a validated authority payload can supply typed audit facts.
     let internal authorityHistory (validated: ValidatedEntry) =
         let entry = validated.Entry
@@ -371,6 +472,50 @@ module LedgerEntries =
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase
         | EntryContent.NonAcceptance -> None
+
+    /// Canonical request bytes exist only while every required effect payload remains available.
+    let internal authorityIdentityBytes operation (requests: byte array list) =
+        match requests with
+        | [ request ] -> request
+        | requests ->
+            if requests.IsEmpty || requests.Length > LedgerEffects.MaximumCount then
+                invalidArg (nameof requests) "Use one bounded authority operation."
+
+            let frame (bytes: byte array) =
+                let size = Array.zeroCreate<byte> 4
+                System.Buffers.Binary.BinaryPrimitives.WriteInt32BigEndian(Span size, bytes.Length)
+                Array.append size bytes
+
+            Array.concat
+                [
+                    yield
+                        System.Text.Encoding.ASCII.GetBytes
+                            "claimcore/authority-operation-identity/1\n"
+                    yield
+                        DurableNames.authorityAct operation
+                        |> System.Text.Encoding.ASCII.GetBytes
+                        |> frame
+                    yield! requests |> List.map frame
+                ]
+
+    let internal identityBytesOperation (operation: ValidatedOperation) =
+        let requests =
+            operation.ValidatedEntries
+            |> List.fold
+                (fun state entry ->
+                    Option.map2
+                        (fun requests value -> value :: requests)
+                        state
+                        (identityBytes entry))
+                (Some [])
+            |> Option.map List.rev
+
+        requests
+        |> Option.map (fun requests ->
+            match LedgerEffects.authorityOperation operation.Stored.Root.Effects, requests with
+            | Some kind, requests -> authorityIdentityBytes kind requests
+            | None, [ request ] -> request
+            | _ -> invalidOp "A non-authority operation has one effect.")
 
     /// The same snapshot-disclosure policy shapes append, replay, preview, observation and history.
     let private disclosure principal actor (current: StoredCase) revision snapshot =
@@ -580,6 +725,22 @@ module LedgerEntries =
                 RecordedBy = entry.ActorId
             })
 
+    let internal receiptOperation principal actor current (operation: ValidatedOperation) =
+        receipt principal actor current (List.head operation.ValidatedEntries)
+        |> Result.map (fun receipt ->
+            let subject =
+                match
+                    receipt.Subject, LedgerEffects.authorityOperation operation.Stored.Root.Effects
+                with
+                | ReceiptSubject.Authority authority, Some kind ->
+                    ReceiptSubject.Authority { authority with Act = kind }
+                | subject, _ -> subject
+
+            { receipt with
+                Position = operation.Stored.Position
+                Subject = subject
+            })
+
     let internal summary (current: StoredCase) (entry: StoredEntry) =
         match entry.Subject with
         | EntryTarget.Case(id, revision, act, _) when
@@ -619,10 +780,10 @@ module internal OperationIdentity =
         | Some entry when entry.OperationId <> operationId ->
             Verdict.Fail CoreFault.StoreIntegrityError
         | Some entry ->
-            match LedgerEntries.validate installationId entry with
+            match LedgerEntries.validateOperation installationId entry with
             | Error fault -> Verdict.Fail fault
             | Ok validated ->
-                match LedgerEntries.identityBytes validated with
+                match LedgerEntries.identityBytesOperation validated with
                 | None -> Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
                 | Some accepted when accepted = bytes ->
                     receipt validated

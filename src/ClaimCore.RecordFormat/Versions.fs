@@ -16,7 +16,7 @@ module RecordVersions =
     let Authority = 2
 
     [<Literal>]
-    let LedgerEntry = 4
+    let LedgerEntry = 5
 
     [<Literal>]
     let Work = 1

@@ -44,7 +44,7 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
                 Snapshot = 4
                 Authority = 2
                 Control = 2
-                LedgerEntry = 4
+                LedgerEntry = 5
                 Work = 1
                 Reminder = 1
             }

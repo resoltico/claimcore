@@ -300,7 +300,7 @@ type private ReadTx
                     |> TransactionPages.page query.Limit _.Sequence
             }
 
-        member _.FindEntry id =
+        member _.FindOperation id =
             StoredEntries.operation connection installation id token
 
         member _.NonAcceptance(key: FenceKey) =
@@ -426,12 +426,14 @@ type private ReadTx
             }
 
 /// Construction is private and occurs only after lock_ledger_head returns in IStore.Write.
-type private WriteTx(connection, installation, head, observedAt, nonce, token) =
+type private WriteTx(connection, installation, head, observedAt, token) =
     inherit ReadTx(connection, installation, observedAt, token)
 
     interface IWriteTx with
         member _.Head = head
-        member _.Nonce = nonce
+
+        member _.NewPayloadNonce() =
+            System.Security.Cryptography.RandomNumberGenerator.GetBytes 32
 
         member _.Append entry =
             task {
@@ -497,12 +499,12 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
             =
             Transactions.write source settings token (fun connection ->
                 task {
-                    let! head, observedAt, nonce = Transactions.head connection token
+                    let! head, observedAt = Transactions.head connection token
                     FailureDiagnostics.phase FailurePhase.Read
 
                     let! verdict =
                         work (
-                            WriteTx(connection, installationId, head, observedAt, nonce, token)
+                            WriteTx(connection, installationId, head, observedAt, token)
                             :> IWriteTx
                         )
 

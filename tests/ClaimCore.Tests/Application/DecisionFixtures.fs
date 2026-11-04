@@ -95,7 +95,10 @@ let locked authority current existing : LockedFacts<CaseFacts> =
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 Actor = authority
-                ExistingOperation = existing
+                ExistingOperation =
+                    existing
+                    |> Option.map (fun entry ->
+                        StoredOperation.create [ entry ] |> Result.defaultWith (string >> failtest))
                 Case = current
             }
     }
@@ -178,7 +181,10 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 Actor = caller
-                ExistingOperation = existing
+                ExistingOperation =
+                    existing
+                    |> Option.map (fun entry ->
+                        StoredOperation.create [ entry ] |> Result.defaultWith (string >> failtest))
                 Target = target
                 TargetCase = None
                 EnabledHumanOwners = Some 2

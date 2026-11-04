@@ -127,8 +127,12 @@ request and response types, so dispatch can invoke the route without recovering 
 ### Read and write transactions
 
 [IReadTx](../src/ClaimCore.Application/LedgerStorePort.fs) supplies primitives over one consistent snapshot.
-`IWriteTx` adds the head, nonce, append, projection and fence primitives. The PostgreSQL adapter constructs
+`IWriteTx` adds the head, fresh payload-nonce provider, append, projection and fence primitives. The PostgreSQL adapter constructs
 it after acquiring the ledger head lock.
+Accepted authority operations may contain up to 50 contiguous effects. Each effect has an independently
+generated payload nonce; all effects and projections commit together. Operation lookup validates the
+complete group, and receipts/checkpoints use its final effect position. Payload erasure preserves
+accepted metadata but can make exact replay unavailable.
 
 ### Request gate
 

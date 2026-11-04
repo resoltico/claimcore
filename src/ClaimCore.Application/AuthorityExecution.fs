@@ -142,7 +142,7 @@ module internal AuthorityExecution =
                 Bytes = bytes
                 Existing = view.ExistingOperation
             }
-            (LedgerEntries.receipt services.Principal view.Actor ReceiptCurrent.Authority)
+            (LedgerEntries.receiptOperation services.Principal view.Actor ReceiptCurrent.Authority)
 
     let private propose _installationId command view =
         match Authority.decide (domainFacts view) command with
@@ -173,12 +173,12 @@ module internal AuthorityExecution =
             | Some entry when entry.OperationId <> operationId ->
                 Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry ->
-                match LedgerEntries.validate installationId entry with
+                match LedgerEntries.validateOperation installationId entry with
                 | Error fault -> Verdict.Fail fault
                 | Ok validated ->
-                    match LedgerEntries.identityBytes validated with
+                    match LedgerEntries.identityBytesOperation validated with
                     | Some accepted when accepted = bytes ->
-                        LedgerEntries.receipt
+                        LedgerEntries.receiptOperation
                             principal
                             view.Actor
                             ReceiptCurrent.Authority
@@ -312,7 +312,7 @@ module internal AuthorityExecution =
                                         {
                                             Head = tx.Head
                                             Fenced = fenced
-                                            Nonce = tx.Nonce
+                                            Nonce = tx.NewPayloadNonce()
                                         }
                                         view
 
@@ -363,7 +363,7 @@ module internal AuthorityExecution =
                                         {
                                             Head = tx.Head
                                             Fenced = fenced
-                                            Nonce = tx.Nonce
+                                            Nonce = tx.NewPayloadNonce()
                                         }
                                         view
 

@@ -11,7 +11,7 @@ module internal Resolution =
         (services: ServiceContext)
         operation
         (actor: AuthorityView)
-        (entry: StoredEntry option)
+        (entry: StoredOperation option)
         (current: ReceiptCurrent)
         =
         let installation = services.InstallationId
@@ -25,8 +25,8 @@ module internal Resolution =
             | Some entry when entry.OperationId <> operation ->
                 Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry when entry.ActorId = owner.ActorId ->
-                LedgerEntries.validate installation entry
-                |> Result.bind (LedgerEntries.receipt principal actor current)
+                LedgerEntries.validateOperation installation entry
+                |> Result.bind (LedgerEntries.receiptOperation principal actor current)
                 |> Result.map Verdict.Replay
                 |> Result.defaultWith Verdict.Fail
             | _ -> Verdict.Proceed owner.ActorId
@@ -95,7 +95,8 @@ module internal Resolution =
                                                                             Head = tx.Head
                                                                             Instant =
                                                                                 tx.ObservedAt
-                                                                            Nonce = tx.Nonce
+                                                                            Nonce =
+                                                                                tx.NewPayloadNonce()
                                                                             ActorId = actor
                                                                             OperationId =
                                                                                 operationId

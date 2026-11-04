@@ -386,6 +386,40 @@
       "reminderRequestIndex": 2,
       "reminderEffectsIndex": 1,
       "entityRevision": 5
+    },
+    {
+      "name": "group root registration",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 11,
+      "act": "REGISTER",
+      "operationId": "80000000-0000-4000-8000-000000000099",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:28.000001+00:00",
+      "businessDate": null,
+      "payloadNonce": "3131313131313131313131313131313131313131313131313131313131313131",
+      "subjectId": "b0000000-0000-4000-8000-000000000002",
+      "subject": "AUTHORITY",
+      "entityRevision": null,
+      "effectIndex": 0,
+      "effectCount": 2,
+      "authorityOperation": "REGISTER"
+    },
+    {
+      "name": "group grant effect under registration root",
+      "installationId": "1f0e7c52-6b3a-4d0e-9a51-2c7d8e9f0a1b",
+      "sequence": 12,
+      "act": "GRANT",
+      "operationId": "80000000-0000-4000-8000-000000000099",
+      "actorId": "a0000000-0000-4000-8000-000000000001",
+      "recordedAt": "2026-08-03T09:15:28.000001+00:00",
+      "businessDate": null,
+      "payloadNonce": "7272727272727272727272727272727272727272727272727272727272727272",
+      "subjectId": "b0000000-0000-4000-8000-000000000002",
+      "subject": "AUTHORITY",
+      "entityRevision": null,
+      "effectIndex": 1,
+      "effectCount": 2,
+      "authorityOperation": "REGISTER"
     }
   ],
   "canonicalIdentity": [

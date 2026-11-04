@@ -8,6 +8,7 @@ open System
 [<RequireQualifiedAccess>]
 type VerificationFinding =
     | Link
+    | OperationEffectGroup
     | EntryHash
     | Commitment
     | PayloadFormat

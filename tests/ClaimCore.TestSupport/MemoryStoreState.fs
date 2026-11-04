@@ -15,7 +15,7 @@ type internal State =
     {
         Maintenance: RegisterMaintenance
         Head: LedgerPosition
-        Entries: Map<OperationId, StoredEntry>
+        Entries: Map<OperationId * int, StoredEntry>
         Controls: Map<Sequence, RetainedControl>
         Cases: Map<CaseId, StoredCase>
         Work: Map<CaseId, StoredWork>
@@ -50,10 +50,10 @@ let internal copyEntry (entry: StoredEntry) =
 
 exception CorruptProjection
 
-let internal readCase (entries: Map<OperationId, StoredEntry>) (record: StoredCase) =
+let internal readCase (entries: Map<OperationId * int, StoredEntry>) (record: StoredCase) =
     let identity =
         entries
-        |> Map.tryFind (OperationId.create (CaseId.value record.CaseId) |> Option.get)
+        |> Map.tryFind ((OperationId.create (CaseId.value record.CaseId) |> Option.get), 0)
         |> Option.exists (fun entry ->
             entry.CreationReference = Some record.Snapshot.Reference
             && entry.Subject
@@ -154,3 +154,27 @@ let internal assignedAccount state caseId actorId =
                     Capability.ManageCaseWork
                     (Scope.Case caseId)
         }
+
+let internal completeOperations previousHead (state: State) =
+    let changed =
+        state.Entries
+        |> Map.values
+        |> Seq.filter (fun entry -> entry.Sequence > previousHead)
+        |> Seq.map _.OperationId
+        |> Set.ofSeq
+
+    changed
+    |> Set.forall (fun operation ->
+        let entries =
+            state.Entries
+            |> Map.values
+            |> Seq.filter (fun entry -> entry.OperationId = operation)
+            |> Seq.sortBy (fun entry -> LedgerEffects.index entry.Effects)
+            |> Seq.toList
+
+        match StoredOperation.create entries with
+        | Error _ -> false
+        | Ok operation ->
+            operation.Entries.Length = 1
+            || (operation.Entries
+                |> List.forall (fun entry -> entry.Payload.IsSome && entry.PayloadNonce.IsSome)))

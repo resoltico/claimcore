@@ -386,7 +386,7 @@ let grantScopes (fixture: Fixture) =
         let! stored =
             fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.FindEntry(CaseFixtures.operationId (id 632)))
+                    Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId (id 632)))
                     CancellationToken = token
                 }
 
@@ -396,7 +396,7 @@ let grantScopes (fixture: Fixture) =
             | _ -> failtest "The real accepted authority record must exist"
 
         let payload =
-            LedgerEntries.payload entry
+            LedgerEntries.payload entry.Root
             |> Result.defaultWith (fun _ -> failtest "Salted payload positive control")
 
         let permanent =

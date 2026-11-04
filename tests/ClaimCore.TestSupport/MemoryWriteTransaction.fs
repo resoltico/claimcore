@@ -20,7 +20,6 @@ type internal WriteInputs =
         InstallationId: Guid
         Observed: DateTimeOffset
         Head: LedgerPosition
-        Nonce: byte array
         Read: unit -> unit
         FactRead: AuthorityFact -> unit
     }
@@ -38,11 +37,10 @@ type internal Writer(inputs: WriteInputs) =
     let get = inputs.Get
     let set = inputs.Set
     let head = inputs.Head
-    let nonce = inputs.Nonce
 
     interface IWriteTx with
         member _.Head = head
-        member _.Nonce = nonce
+        member _.NewPayloadNonce() = RandomNumberGenerator.GetBytes 32
 
         member _.Append draft =
             let state = get ()
@@ -55,7 +53,10 @@ type internal Writer(inputs: WriteInputs) =
             if
                 draft.Sequence <> Sequence.successor state.Head.Sequence
                 || draft.PreviousHash <> EntryHash.toBytes state.Head.EntryHash
-                || (not control && Map.containsKey draft.OperationId state.Entries)
+                || (not control
+                    && Map.containsKey
+                        (draft.OperationId, LedgerEffects.index draft.Effects)
+                        state.Entries)
             then
                 invalidOp "An append must extend the owned head with a fresh operation."
 
@@ -83,7 +84,7 @@ type internal Writer(inputs: WriteInputs) =
                             state.Entries
                         else
                             Map.add
-                                draft.OperationId
+                                (draft.OperationId, LedgerEffects.index draft.Effects)
                                 (LedgerEntries.stored draft |> copyEntry)
                                 state.Entries
                 }

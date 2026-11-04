@@ -53,7 +53,7 @@ let internal genesis fixture =
                                         {
                                             Head = tx.Head
                                             Fenced = false
-                                            Nonce = tx.Nonce
+                                            Nonce = tx.NewPayloadNonce()
                                         }
                                         view
                                     |> ExecutionFacts.persist tx tx.ProjectAuthority
@@ -84,7 +84,7 @@ let internal genesis fixture =
 
         match entry with
         | Ok { ExistingOperation = Some entry } ->
-            Expect.equal entry.Sequence (CaseFixtures.sequence 1L) "Readable acceptance"
+            Expect.equal entry.Position.Sequence (CaseFixtures.sequence 1L) "Readable acceptance"
         | _ -> failtest "Missing accepted entry"
     }
 
@@ -212,7 +212,7 @@ let internal lockedView fixture =
                                                     failtestf
                                                         "Unexpected fence integrity failure: %A"
                                                         fault)
-                                            Nonce = tx.Nonce
+                                            Nonce = tx.NewPayloadNonce()
                                         }
                                         view
                                     |> ExecutionFacts.persist tx tx.ProjectCase
@@ -295,7 +295,7 @@ let internal caseUpdate fixture =
                  ExistingOperation = Some entry
                  Case = Some record
              } ->
-            Expect.equal entry.Sequence receipt.Position.Sequence "Operation position"
+            Expect.equal entry.Position.Sequence receipt.Position.Sequence "Operation position"
             Expect.equal record.Snapshot.Revision (CaseFixtures.revision (2L)) "Current projection"
         | _ -> failtest "Missing accepted update"
     }

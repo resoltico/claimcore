@@ -186,7 +186,7 @@ type internal PausedPageStore
                                         tx.WorkOverview(selection, mine)
 
                                     member _.ActivityPage query = tx.ActivityPage query
-                                    member _.FindEntry id = tx.FindEntry id
+                                    member _.FindOperation id = tx.FindOperation id
                                     member _.NonAcceptance key = tx.NonAcceptance key
 
                                     member _.CasePage
