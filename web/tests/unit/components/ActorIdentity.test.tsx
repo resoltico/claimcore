@@ -13,7 +13,13 @@ it.each([
   (language, label) => {
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" }),
+      JSON.stringify({
+        version: 3,
+        language,
+        displayLocale: "en-GB",
+        mode: "system",
+        accent: "green" as const,
+      }),
     );
     render(<ActorIdentity actorId={context.actorId} />);
     expect(screen.getByText(label)).toBeVisible();

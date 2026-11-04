@@ -2,7 +2,7 @@ import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { PresentationControls } from "../../src/presentation/PresentationControls";
+import { SettingsPanel } from "../../src/features/settings/SettingsPanel";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { current } from "../support/operation-form.fixtures";
@@ -18,7 +18,7 @@ const preview = () =>
 const editor = () =>
   render(
     <>
-      <PresentationControls />
+      <SettingsPanel />
       <OperationEditor
         definition={productMetadata}
         current={current}
@@ -79,7 +79,13 @@ it.each([
   async (entered, display, raw, expected) => {
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({ version: 2, language: "en", displayLocale: entered, theme: "SYSTEM" }),
+      JSON.stringify({
+        version: 3,
+        language: "en",
+        displayLocale: entered,
+        mode: "system",
+        accent: "green" as const,
+      }),
     );
     const spy = preview();
     editor();

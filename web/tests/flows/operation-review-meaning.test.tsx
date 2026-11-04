@@ -188,10 +188,11 @@ it.each(localized)(
     localStorage.setItem(
       preferenceKey,
       JSON.stringify({
-        version: 2,
+        version: 3,
         language,
         displayLocale: "en-GB",
-        theme: "SYSTEM" as const,
+        mode: "system" as const,
+        accent: "green" as const,
       }),
     );
     render(<OperationReview model={model(correction, review)} />);

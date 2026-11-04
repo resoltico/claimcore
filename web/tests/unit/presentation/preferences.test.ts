@@ -19,17 +19,20 @@ it("admits the exact tag budget and refuses otherwise valid oversized tags", () 
   expect(resolveLanguage(`${tag}f`)).toBe("en");
 });
 it("accepts exactly bounded settings and refuses valid JSON beyond its storage budget", () => {
-  const json = '{"version":2,"language":"ar","displayLocale":"lv-LV","theme":"SYSTEM"}';
+  const json =
+    '{"version":3,"language":"ar","displayLocale":"lv-LV","mode":"system","accent":"green"}';
   const bounded = json.padEnd(256, " ");
   expect(parsePreferences(bounded)).toEqual({
     language: "ar",
     displayLocale: "lv-LV",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   });
   expect(parsePreferences(`${bounded} `)).toEqual({
     language: "en",
     displayLocale: "en-GB",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   });
 });
 it("resets version-one settings and accepts only the current stored record", () => {

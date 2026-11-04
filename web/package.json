@@ -20,7 +20,8 @@
     "test:unit:watch": "vitest",
     "dead-code": "knip",
     "licenses:check": "license-checker-rseidelsohn --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;CC0-1.0'",
-    "notices:generate": "node scripts/generate-third-party-notices.mjs"
+    "notices:generate": "node scripts/generate-third-party-notices.mjs",
+    "theme": "node scripts/generate-theme.mjs"
   },
   "dependencies": {
     "react": "19.3.1",

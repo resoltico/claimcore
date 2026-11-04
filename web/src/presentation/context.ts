@@ -4,7 +4,8 @@ import type { Language, PreferenceChange } from "./preferences";
 export type Presentation = ReturnType<typeof createPresenter> & {
   setPreferences: (change: PreferenceChange) => void;
   persistenceFailed: boolean;
-  changed: boolean;
+  changed: PreferenceChange | null;
+  detectedLanguage: boolean;
   requestedLanguage: Language | null;
   languageFailure: Language | null;
   retryLanguage: () => void;

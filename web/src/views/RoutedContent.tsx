@@ -1,3 +1,4 @@
+import { SettingsPage } from "../features/settings/SettingsPage";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 import type { CaseSelector } from "@contracts/client";
 import { useEffect, useState, type ComponentProps } from "react";
@@ -18,7 +19,6 @@ import { WorkQueue } from "./work/WorkQueue";
 import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
-import type { RecoveryPanel as RecoveryPanelType } from "./RecoveryPanel";
 
 const loadAuthorityPanel = () => import("./AuthorityPanel").then((module) => module.AuthorityPanel);
 const AuthorityPanel = (props: ComponentProps<typeof AuthorityPanelType>) => (
@@ -34,8 +34,11 @@ const OperationEditor = (props: ComponentProps<typeof OperationEditorType>) => (
   <ViewModule load={loadOperationEditor} viewProps={props} />
 );
 const loadRecoveryPanel = () => import("./RecoveryPanel").then((module) => module.RecoveryPanel);
-const RecoveryPanel = (props: ComponentProps<typeof RecoveryPanelType>) => (
-  <ViewModule load={loadRecoveryPanel} viewProps={props} />
+const RecoveryPanel = ({ operationId }: { operationId: string }) => (
+  <ViewModule
+    load={loadRecoveryPanel}
+    viewProps={operationId === "" ? {} : { initialOperationId: operationId }}
+  />
 );
 
 const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void }) => {
@@ -201,6 +204,8 @@ export const RoutedContent = ({
 }) => {
   const { selectCase, openCase, backToCases } = useCaseNavigation();
   switch (route.screen) {
+    case "settings":
+      return <SettingsPage />;
     case "work":
       return <WorkQueue />;
     case "cases":
@@ -236,12 +241,7 @@ export const RoutedContent = ({
         />
       );
     case "operations":
-      return (
-        <RecoveryPanel
-          key={route.operationId}
-          {...(route.operationId === "" ? {} : { initialOperationId: route.operationId })}
-        />
-      );
+      return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
     case "authority":
       return <AuthorityPanel onLockChange={setLocked} disclosureAvailable={authorityAvailable} />;
     case "missing":

@@ -33,6 +33,11 @@ module LocalizationPolicy =
                 label = "English — United Kingdom"
             |}
             {|
+                value = "en-US"
+                language = "en"
+                label = "English — United States"
+            |}
+            {|
                 value = "lv-LV"
                 language = "lv"
                 label = "Latviešu — Latvija"
@@ -42,8 +47,27 @@ module LocalizationPolicy =
                 language = "ar"
                 label = "العربية — مصر"
             |}
+            {|
+                value = "ar-AE"
+                language = "ar"
+                label = "العربية — الإمارات العربية المتحدة"
+            |}
+            {|
+                value = "de-DE"
+                language = "de"
+                label = "Deutsch — Deutschland"
+            |}
+            {|
+                value = "fr-FR"
+                language = "fr"
+                label = "Français — France"
+            |}
+
         ]
 
     let displayLocales = displayOptions |> List.map _.value
     let defaultLanguage = "en"
     let defaultDisplayLocale = "en-GB"
+
+    let accents = [ "green"; "blue" ]
+    let modes = [ "system"; "light"; "dark" ]

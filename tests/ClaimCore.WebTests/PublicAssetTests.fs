@@ -62,6 +62,40 @@ let private serve () =
                 "Errors and HTML fallback cannot inherit asset caching"
     }
 
+let private pressableStylesheet () =
+    task {
+        let bytes =
+            Encoding.UTF8.GetBytes
+                "[data-react-aria-pressable]{touch-action:pan-x pan-y pinch-zoom}"
+
+        use host = new Host(true, buildAssets = [ "react-aria-pressable.css", bytes ])
+        let admission = host.Services.GetRequiredService<AuthenticationAdmission>()
+        use first = admission.Acquire(DefaultHttpContext())
+        use second = admission.Acquire(DefaultHttpContext())
+        Expect.isTrue (first.IsAcquired && second.IsAcquired) "Private authentication is saturated"
+        use! response = host.Client.GetAsync "/react-aria-pressable.css"
+
+        Expect.equal
+            response.StatusCode
+            HttpStatusCode.OK
+            "The exact verified stylesheet stays public"
+
+        let! actual = response.Content.ReadAsByteArrayAsync()
+        Expect.equal actual bytes "Only the inventoried bytes are served"
+
+        Expect.isTrue
+            (response.Headers.CacheControl |> nonNull).NoStore
+            "A fixed URL cannot retain immutable bytes across builds"
+
+        Expect.isFalse (response.Headers.Contains "Set-Cookie") "Public CSS creates no session"
+        use! unknown = host.Client.GetAsync "/another-pressable.css"
+
+        Expect.equal
+            (int unknown.StatusCode)
+            429
+            "Other root files gain no authentication exemption"
+    }
+
 let private independentAdmission () =
     task {
         let bytes = Encoding.UTF8.GetBytes "export const publicValue = 2;"
@@ -195,6 +229,9 @@ let tests =
             testCaseAsync
                 "caches only actual served build bytes and preserves private fallback policy"
                 (async { do! serve () |> Async.AwaitTask })
+            testCaseAsync
+                "verifies fixed-name pressable CSS without immutable caching or broader exemptions"
+                (async { do! pressableStylesheet () |> Async.AwaitTask })
             testCaseAsync
                 "serves verified public bytes independently of saturated authentication"
                 (async { do! independentAdmission () |> Async.AwaitTask })

@@ -9,19 +9,28 @@ const css = (directory: string): string[] =>
     }
     return entry.name.endsWith(".css") ? [filename] : [];
   });
-it("owns every CSS hex color in tokens.css and keeps media breakpoints aligned with tokens", () => {
+it("owns every CSS hex color in tokens.css and viewport queries in layout.css", () => {
   const root = resolve("src");
   for (const path of css(root).filter((filename) => !filename.endsWith("/theme/tokens.css"))) {
     expect(readFileSync(path, "utf8"), path).not.toMatch(/#[0-9a-f]{3,8}\b/iu);
   }
-  const tokens = readFileSync(resolve(root, "theme/tokens.css"), "utf8");
-  expect(tokens).toContain("--breakpoint-compact: 40rem");
-  expect(tokens).toContain("--breakpoint-wide: 64rem");
-  for (const path of css(root)) {
-    for (const match of readFileSync(path, "utf8").matchAll(
-      /@media\s*\(width\s*(?:<|>=)\s*([0-9]+rem)\)/gu,
-    )) {
-      expect(["40rem", "64rem"]).toContain(match[1]);
-    }
+  for (const path of css(root).filter((filename) => !filename.endsWith("/ui/layout.css"))) {
+    expect(readFileSync(path, "utf8"), path).not.toMatch(/@media[^{}]*\b(?:width|height)\b/u);
   }
+});
+
+const missingTokens = (sources: ReadonlyArray<string>): string[] => {
+  const text = sources.join("\n");
+  const declared = new Set([...text.matchAll(/(--[\w-]+)\s*:/gu)].map((match) => match[1]!));
+  const references = new Set(
+    [...text.matchAll(/var\(\s*(--[\w-]+)\s*\)/gu)].map((match) => match[1]!),
+  );
+  return [...references].filter((name) => !declared.has(name));
+};
+it("declares every referenced CSS token without a fallback", () => {
+  const sources = css(resolve("src")).map((path) => readFileSync(path, "utf8"));
+  expect(missingTokens(sources)).toEqual([]);
+  expect(
+    missingTokens([...sources, ".witness { font-family: var(--undeclared-font-witness); }"]),
+  ).toEqual(["--undeclared-font-witness"]);
 });

@@ -14,7 +14,13 @@ it.each([
 ])("keeps an unknown route offline and localized in %s", async (language, title) => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" }),
+    JSON.stringify({
+      version: 3,
+      language,
+      displayLocale: "en-GB",
+      mode: "system",
+      accent: "green" as const,
+    }),
   );
   const fetch = vi.fn();
   vi.stubGlobal("fetch", fetch);

@@ -161,7 +161,7 @@ const performRoute = async (route: MatrixRoute, run: Run) => {
   });
 };
 const registerDimension = (dimension: Dimension) => {
-  test(`${dimension.language} ${dimension.width}px ${dimension.theme}${dimension.zoom === undefined ? "" : " at 200% zoom"}`, async ({
+  test(`${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.zoom === undefined ? "" : " at 200% zoom"}`, async ({
     page,
   }, info) => {
     test.setTimeout(240_000);

@@ -91,7 +91,13 @@ for (const authenticated of [false, true]) {
               (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
               preferenceKey,
             ),
-          ).toEqual({ version: 2, language: target, displayLocale, theme: "SYSTEM" });
+          ).toEqual({
+            version: 3,
+            language: target,
+            displayLocale,
+            mode: "system",
+            accent: "green" as const,
+          });
           expect(requests).toHaveLength(0);
         });
       }

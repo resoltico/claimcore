@@ -111,6 +111,12 @@ module TypeScript =
             "export const presentationDisplayLocales = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.displayLocales)
             + " as const;"
+            "export const presentationAccents = "
+            + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.accents)
+            + " as const;"
+            "export const presentationModes = "
+            + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.modes)
+            + " as const;"
             "export const presentationDefaults = { language: "
             + quote ClaimCore.Protocol.LocalizationPolicy.defaultLanguage
             + ", displayLocale: "

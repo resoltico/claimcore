@@ -47,7 +47,13 @@ it.each([
   async ({ language, displayLocale, label, you, day, time }) => {
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({ version: 2, language, displayLocale, theme: "SYSTEM" }),
+      JSON.stringify({
+        version: 3,
+        language,
+        displayLocale,
+        mode: "system",
+        accent: "green" as const,
+      }),
     );
     const fetch = vi
       .fn()

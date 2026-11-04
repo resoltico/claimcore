@@ -53,7 +53,13 @@ for (const [language, labels, pending] of [
       vi.setSystemTime(new Date("2031-06-15T12:00:00Z"));
       localStorage.setItem(
         preferenceKey,
-        JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" }),
+        JSON.stringify({
+          version: 3,
+          language,
+          displayLocale: "en-GB",
+          mode: "system",
+          accent: "green" as const,
+        }),
       );
       vi.stubGlobal(
         "fetch",

@@ -15,7 +15,13 @@ const error = (field: "issuer" | "subject"): Notice => ({
 const preferences = (language: "en" | "lv" | "ar") => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
+    JSON.stringify({
+      version: 3,
+      language,
+      displayLocale: "en-GB",
+      mode: "system" as const,
+      accent: "green" as const,
+    }),
   );
 };
 it.each(["en", "lv", "ar"] as const)(

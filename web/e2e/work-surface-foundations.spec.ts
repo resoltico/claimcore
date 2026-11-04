@@ -164,18 +164,18 @@ test("canonical case links reload and browser back and forward preserve the case
   await page.goForward();
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
 });
-for (const theme of ["LIGHT", "DARK"] as const) {
+for (const theme of ["light", "dark"] as const) {
   test(`theme ${theme} passes axe and reflows at 320px`, async ({ page }) => {
     await openAuthenticated(page);
     await page.locator("[data-settings-button]").click();
     await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption(theme);
     await page.keyboard.press("Escape");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+    await expect(page.locator("html")).toHaveAttribute("data-mode", theme.toLowerCase());
     await expectAccessible(page);
     await page.setViewportSize({ width: 320, height: 900 });
     await noHorizontalOverflow(page, "narrow");
     await expectAccessible(page);
     await page.reload();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+    await expect(page.locator("html")).toHaveAttribute("data-mode", theme.toLowerCase());
   });
 }

@@ -6,7 +6,13 @@ import { preferenceKey } from "../../../src/presentation/preferences";
 it("keeps Arabic-formatted numbers and references LTR while names retain automatic direction", () => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language: "ar", displayLocale: "ar-EG", theme: "LIGHT" }),
+    JSON.stringify({
+      version: 3,
+      language: "ar",
+      displayLocale: "ar-EG",
+      mode: "light",
+      accent: "green" as const,
+    }),
   );
   for (const [name, value, direction] of [
     ["claimedAmount", "12.34", "ltr"],

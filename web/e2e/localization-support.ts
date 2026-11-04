@@ -29,7 +29,16 @@ export const seedPresentation = async (
     ({ key, preferences }) => {
       localStorage.setItem(key, JSON.stringify(preferences));
     },
-    { key: preferenceKey, preferences: { version: 2, language, displayLocale, theme: "SYSTEM" } },
+    {
+      key: preferenceKey,
+      preferences: {
+        version: 3,
+        language,
+        displayLocale,
+        mode: "system",
+        accent: "green" as const,
+      },
+    },
   );
 };
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
@@ -91,14 +100,16 @@ export const expectPreferences = async (
 ) => {
   const opened = await openPreferences(page);
   if (expected.language !== undefined) {
-    await expect(page.locator('select[id$="-language"]')).toHaveValue(expected.language);
+    await expect(
+      page.locator(`input[type="radio"][name$="-language"][value="${expected.language}"]`),
+    ).toBeChecked();
   }
   if (expected.displayLocale !== undefined) {
     await expect(page.locator('select[id$="-format"]')).toHaveValue(expected.displayLocale);
   }
   if (expected.language !== undefined && expected.language !== "en-XA") {
     await expect(
-      page.getByText(ui(expected.language, "ui.preferencesHint"), { exact: true }),
+      page.getByText(ui(expected.language, "ui.settingsIntroduction"), { exact: true }),
     ).toBeVisible();
   }
   if (opened) {

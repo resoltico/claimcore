@@ -4,7 +4,7 @@ import { screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
 import type { OperationDraft, CurrentCase } from "../../src/api/service";
-import { PresentationControls } from "../../src/presentation/PresentationControls";
+import { SettingsPanel } from "../../src/features/settings/SettingsPanel";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
 export const current: CurrentCase = caseViewInput({
@@ -22,7 +22,7 @@ export const current: CurrentCase = caseViewInput({
 });
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (
   <>
-    <PresentationControls />
+    <SettingsPanel />
     <OperationEditor
       definition={definition}
       current={current}
@@ -95,10 +95,17 @@ export const deferredResponse = () => {
     reject,
   };
 };
-export const languageControl = (): HTMLSelectElement => {
-  const result = screen.getAllByRole("combobox").find((item) => item.id.endsWith("-language"));
-  if (!(result instanceof HTMLSelectElement)) {
-    throw new Error("Expected the accessible language selector.");
+export const languageControl = (language: string): HTMLInputElement => {
+  const result = screen
+    .getAllByRole("radio")
+    .find(
+      (item) =>
+        item instanceof HTMLInputElement &&
+        item.name.endsWith("-language") &&
+        item.value === language,
+    );
+  if (!(result instanceof HTMLInputElement)) {
+    throw new Error("Expected the accessible language radio.");
   }
   return result;
 };

@@ -1,0 +1,197 @@
+@media (width < 40rem) {
+  body {
+    font-size: var(--text-md);
+  }
+  .field-row,
+  .review-values {
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--space-1);
+  }
+
+  .app-shell,
+  .login-shell,
+  .loading {
+    inline-size: min(100% - var(--space-4), 72rem);
+    padding-block-start: var(--space-4);
+  }
+  .workspace-header nav {
+    order: 3;
+    flex-basis: 100%;
+  }
+  .react-aria-CalendarCell {
+    min-inline-size: var(--target-minimum);
+    min-block-size: var(--target-minimum);
+  }
+  .operation-form-card,
+  .recovery-attempt,
+  .recovery-lookup {
+    padding: var(--space-3);
+  }
+  .review-values .review-comparison {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .review-values > div {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .worklist-search {
+    flex-basis: 100%;
+  }
+}
+
+@media (width < 64rem) {
+  .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .case-detail > .case-workspace > .case-fields > dl > .field-row {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (width >= 64rem) {
+  .case-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
+    align-items: start;
+  }
+  .case-actions {
+    position: sticky;
+    inset-block-start: var(--space-4);
+  }
+  .case-fact-groups {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .case-fact-card dl {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--space-3);
+  }
+  .editor-layout {
+    grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
+    align-items: start;
+  }
+  .editor-current {
+    display: block;
+  }
+  .correction-replacement {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--space-5);
+  }
+  .correction-current {
+    display: block;
+  }
+  .correction-current dl > div {
+    margin-block: var(--space-3);
+  }
+  .correction-current dd {
+    margin-inline: 0;
+    overflow-wrap: anywhere;
+  }
+  .authority-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+  .authority-table {
+    display: table;
+  }
+  .authority-columns {
+    display: table-header-group;
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+  .authority-rows {
+    display: table-row-group;
+  }
+  .authority-row {
+    display: table-row;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+  .authority-row > td,
+  .authority-columns th {
+    display: table-cell;
+    padding: var(--space-1) var(--space-2);
+    vertical-align: middle;
+    text-align: start;
+    border-block-end: var(--border-width) solid var(--border-control);
+  }
+  .authority-columns th {
+    font-size: var(--text-sm);
+    inline-size: 20%;
+  }
+  .authority-columns th:nth-child(2) {
+    inline-size: 40%;
+  }
+  .authority-cell-label {
+    display: none;
+  }
+  .worklist-filters details[open] fieldset {
+    position: absolute;
+    z-index: 3;
+    min-inline-size: max-content;
+    box-shadow: var(--shadow-2);
+  }
+  .worklist-table {
+    display: table;
+    background: var(--bg-surface);
+    border: 1px solid var(--border-control);
+    border-radius: var(--radius-md);
+  }
+  .worklist-columns {
+    display: table-header-group;
+    position: static;
+    inline-size: auto;
+    block-size: auto;
+    overflow: visible;
+    clip-path: none;
+  }
+  .worklist-columns th {
+    text-align: start;
+    font-size: var(--text-xs);
+    color: var(--text-secondary);
+    background: var(--bg-sunken);
+    font-weight: 650;
+  }
+  .worklist-rows {
+    display: table-row-group;
+  }
+  .worklist-rows .worklist-row,
+  .worklist-columns tr {
+    display: table-row;
+  }
+  .worklist-row > td,
+  .worklist-columns th {
+    display: table-cell;
+    padding: var(--space-4) var(--space-3);
+    vertical-align: top;
+    border-block-end: 1px solid var(--border-control);
+    text-align: start;
+  }
+  .worklist-columns th:nth-child(1) {
+    inline-size: 28%;
+  }
+  .worklist-columns th:nth-child(2) {
+    inline-size: 19%;
+  }
+  .worklist-columns th:nth-child(3) {
+    inline-size: 15%;
+  }
+  .worklist-columns th:nth-child(4) {
+    inline-size: 23%;
+  }
+  .worklist-columns th:nth-child(5) {
+    inline-size: 15%;
+  }
+  .worklist-cell-label {
+    display: none;
+  }
+}
+
+@media (width >= 40rem) {
+  :root {
+    --gutter: var(--space-6);
+  }
+}

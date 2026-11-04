@@ -3,7 +3,6 @@ import { Button } from "react-aria-components/Button";
 import { Dialog } from "react-aria-components/Dialog";
 import { Heading } from "react-aria-components/Heading";
 import { Modal, ModalOverlay } from "react-aria-components/Modal";
-import { PresentationControls } from "../presentation/PresentationControls";
 
 type AccessibleModalProps = {
   title: string;
@@ -14,7 +13,7 @@ type AccessibleModalProps = {
   isDismissable: boolean;
   onOpenChange: (open: boolean) => void;
 };
-/** One persistent dialog: language controls do not submit, dismiss, or remount it. */
+/** One persistent dialog traps focus and returns it to the trigger. */
 export const AccessibleModal = ({
   title,
   closeLabel,
@@ -38,7 +37,6 @@ export const AccessibleModal = ({
             <Heading slot="title">{title}</Heading>
             <p>{description}</p>
             {children}
-            <PresentationControls />
             {isDismissable ? (
               <Button className="secondary-button" onPress={close}>
                 {closeLabel}

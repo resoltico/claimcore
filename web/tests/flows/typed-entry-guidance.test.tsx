@@ -7,7 +7,13 @@ import { preferenceKey } from "../../src/presentation/preferences";
 it("describes locale entry and derives the amount limit from the machine descriptor", () => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language: "en", displayLocale: "lv-LV", theme: "LIGHT" }),
+    JSON.stringify({
+      version: 3,
+      language: "en",
+      displayLocale: "lv-LV",
+      mode: "light",
+      accent: "green" as const,
+    }),
   );
   const amount = productMetadata.catalog.fields.find((field) => field.name === "claimedAmount")!;
   const date = productMetadata.catalog.fields.find((field) => field.name === "incidentDate")!;

@@ -22,7 +22,7 @@ const category = (route: Route): "cases" | "operations" | "authority" =>
 const useInitialAllowedRoute = (route: Route, views: ReadonlyArray<string>) => {
   const selected = useRef(false);
   useEffect(() => {
-    if (selected.current || views.length === 0) {
+    if (route.screen === "settings" || selected.current || views.length === 0) {
       return;
     }
     selected.current = true;
@@ -169,10 +169,12 @@ const useNavigationLock = (locked: boolean) => {
 const useWorkspaceAccess = (route: Route) => {
   const context = useEndpoint("context", {});
   const response = context.value ?? (context.loading ? context.previous : null);
-  const views = response?.outcome.kind === "SUCCEEDED" ? response.outcome.data.views : [];
+  const actorContext = response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null;
+  const views = actorContext?.views ?? [];
   const active = category(route);
+  const noViews = !context.loading && actorContext !== null && views.length === 0;
   useInitialAllowedRoute(route, views);
-  return { context, response, views, active };
+  return { context, actorContext, views, active, noViews };
 };
 const WorkspaceUnavailable = ({ route }: { route: Route }) => {
   const p = usePresentation();
@@ -236,7 +238,7 @@ const WorkspaceRoute = ({ views, noViews, ...routing }: WorkspaceRouteProps) => 
   return (
     <WorkspaceContents
       key={active}
-      advertised={views.includes(active.toUpperCase())}
+      advertised={routing.route.screen === "settings" || views.includes(active.toUpperCase())}
       retainOperation={["authority", "caseAct", "newCase"].includes(routing.route.screen)}
       noViews={noViews}
       known={views.length > 0}
@@ -283,17 +285,23 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
     },
   };
 };
-const activeNavigation = (route: Route, active: string): string =>
-  route.screen === "work" ? "work" : active;
+const activeNavigation = (route: Route, active: string): string => {
+  switch (route.screen) {
+    case "settings":
+      return "settings";
+    case "work":
+      return "work";
+    default:
+      return active;
+  }
+};
 export const Dashboard = () => {
   const route = useRoute();
-  const { context, response, views, active } = useWorkspaceAccess(route);
+  const { context, actorContext, views, active, noViews } = useWorkspaceAccess(route);
   const cache = useEndpointCache();
   const [owner, setOwner] = useState<string | null>(null);
   const observedOwner =
-    response?.outcome.kind === "SUCCEEDED"
-      ? `${response.outcome.data.installationId}:${response.outcome.data.actorId}`
-      : null;
+    actorContext === null ? null : `${actorContext.installationId}:${actorContext.actorId}`;
   if (observedOwner !== null && observedOwner !== owner) {
     setOwner(observedOwner);
   }
@@ -313,7 +321,7 @@ export const Dashboard = () => {
     navigate(casePath(receipt.subject.caseId));
   };
   return (
-    <RequesterContext value={response?.outcome.kind === "SUCCEEDED" ? response.outcome.data : null}>
+    <RequesterContext value={actorContext}>
       <RecoveryProvider>
         <WorkspaceHeader active={activeNavigation(route, active)} views={views} locked={locked} />
         <AcceptedToast
@@ -325,20 +333,14 @@ export const Dashboard = () => {
         />
         <main className="app-shell">
           <WorkspaceStatus context={context} />
-          <MaintenanceNotice
-            active={
-              response?.outcome.kind === "SUCCEEDED" && response.outcome.data.maintenance.active
-            }
-          />
-          <WorkOverview compact={route.screen !== "work"} />
+          <MaintenanceNotice active={actorContext?.maintenance.active ?? false} />
+          {route.screen === "settings" ? null : <WorkOverview compact={route.screen !== "work"} />}
           <div ref={content}>
             <WorkspaceRoute
               key={owner}
               route={route}
               views={views}
-              noViews={
-                !context.loading && response?.outcome.kind === "SUCCEEDED" && views.length === 0
-              }
+              noViews={noViews}
               setLocked={setLocked}
               committed={committed}
               refresh={refresh}

@@ -19,27 +19,27 @@
   inline-size: auto;
   min-inline-size: var(--target-minimum);
   padding: var(--space-3);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
-  color: var(--color-text);
+  background: var(--bg-surface);
+  color: var(--text-primary);
 }
 .worklist-filters details {
   position: relative;
 }
 .worklist-filters summary {
   padding: var(--space-2);
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-sm);
   cursor: pointer;
 }
 .worklist-filters fieldset {
   display: grid;
   gap: var(--space-2);
-  background: var(--color-surface);
+  background: var(--bg-surface);
   padding: var(--space-3);
   margin: 0;
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-control);
 }
 .worklist-filters label {
   display: flex;
@@ -63,16 +63,16 @@
 .saved-views button[aria-pressed="true"],
 .saved-views button[aria-pressed="true"]:hover {
   font-weight: 700;
-  color: var(--color-accent);
-  background: var(--color-accent-soft);
-  border-color: var(--color-accent);
+  color: var(--accent-text);
+  background: var(--accent-soft-bg);
+  border-color: var(--accent-text);
 }
 .exact-lookup {
   margin-block: var(--space-3);
 }
 .exact-lookup summary {
   cursor: pointer;
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 .exact-lookup form {
   display: flex;
@@ -110,8 +110,8 @@
   gap: var(--space-3);
   padding: var(--space-4);
   margin-block: var(--space-3);
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-control);
   border-radius: var(--radius-md);
 }
 .worklist-row > td {
@@ -128,7 +128,7 @@
   display: block;
   min-block-size: var(--target-minimum);
   max-inline-size: 100%;
-  color: var(--color-accent);
+  color: var(--accent-text);
   font-family: var(--font-mono);
   font-weight: 700;
   white-space: nowrap;
@@ -159,11 +159,11 @@
   vertical-align: bottom;
 }
 .worklist-row:focus-within {
-  outline: var(--focus-width) solid var(--color-focus);
+  outline: var(--focus-width) solid var(--focus-ring);
   outline-offset: var(--focus-offset);
 }
 .worklist-row:hover {
-  background: var(--color-accent-soft);
+  background: var(--accent-soft-bg);
 }
 .worklist-person,
 .worklist-person bdi,
@@ -178,7 +178,7 @@
 }
 .worklist-row small {
   display: block;
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-size: var(--text-xs);
 }
 .worklist-money {
@@ -201,15 +201,15 @@
   gap: var(--space-1);
 }
 .case-state small {
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-size: var(--text-xs);
 }
 .badge {
   display: inline-block;
   padding: var(--space-1) var(--space-2);
   border-radius: var(--radius-sm);
-  color: var(--color-text);
-  background: var(--color-neutral-bg);
+  color: var(--text-primary);
+  background: var(--bg-sunken);
   font-size: var(--text-xs);
 }
 .worklist-work {
@@ -224,7 +224,7 @@
 }
 .worklist-cell-label {
   display: block;
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-size: var(--text-xs);
   margin-block-end: var(--space-1);
 }
@@ -232,14 +232,14 @@
   min-block-size: 8rem;
   margin-block: var(--space-4);
   border-radius: var(--radius-md);
-  background: var(--color-surface-2);
+  background: var(--bg-sunken);
 }
 .summary-band {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: var(--space-3);
-  border-block: 1px solid var(--color-border);
+  border-block: 1px solid var(--border-control);
   padding: var(--space-3) 0;
   margin-block: var(--space-4);
   font-size: var(--text-sm);
@@ -275,83 +275,16 @@ details.summary-band {
   overflow-wrap: anywhere;
 }
 .observation-basis {
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
   font-size: var(--text-xs);
 }
 .filter-sheet {
   inline-size: 100%;
-  max-inline-size: var(--breakpoint-compact);
-  background: var(--color-surface);
+  max-inline-size: var(--sheet-max-inline-size);
+  background: var(--bg-surface);
   border-radius: var(--radius-md);
   padding: var(--space-4);
 }
 .sheet-overlay {
   align-items: end;
-}
-@media (width < 40rem) {
-  .worklist-search {
-    flex-basis: 100%;
-  }
-}
-@media (width >= 64rem) {
-  .worklist-filters details[open] fieldset {
-    position: absolute;
-    z-index: 3;
-    min-inline-size: max-content;
-    box-shadow: var(--shadow-2);
-  }
-  .worklist-table {
-    display: table;
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    border-radius: var(--radius-md);
-  }
-  .worklist-columns {
-    display: table-header-group;
-    position: static;
-    inline-size: auto;
-    block-size: auto;
-    overflow: visible;
-    clip-path: none;
-  }
-  .worklist-columns th {
-    text-align: start;
-    font-size: var(--text-xs);
-    color: var(--color-text-muted);
-    background: var(--color-surface-2);
-    font-weight: 650;
-  }
-  .worklist-rows {
-    display: table-row-group;
-  }
-  .worklist-rows .worklist-row,
-  .worklist-columns tr {
-    display: table-row;
-  }
-  .worklist-row > td,
-  .worklist-columns th {
-    display: table-cell;
-    padding: var(--space-4) var(--space-3);
-    vertical-align: top;
-    border-block-end: 1px solid var(--color-border);
-    text-align: start;
-  }
-  .worklist-columns th:nth-child(1) {
-    inline-size: 28%;
-  }
-  .worklist-columns th:nth-child(2) {
-    inline-size: 19%;
-  }
-  .worklist-columns th:nth-child(3) {
-    inline-size: 15%;
-  }
-  .worklist-columns th:nth-child(4) {
-    inline-size: 23%;
-  }
-  .worklist-columns th:nth-child(5) {
-    inline-size: 15%;
-  }
-  .worklist-cell-label {
-    display: none;
-  }
 }

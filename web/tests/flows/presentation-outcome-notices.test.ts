@@ -18,12 +18,14 @@ it("diagnostics remain typed and never expose server prose", () => {
   const en = createPresenter({
     language: "en",
     displayLocale: "en-GB",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   }).notice(notice);
   const ar = createPresenter({
     language: "ar",
     displayLocale: "en-GB",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   }).notice(notice);
   expect(en).not.toBe(ar);
   expect(en + ar).not.toContain("PRIVATE_PROVIDER_CANARY");

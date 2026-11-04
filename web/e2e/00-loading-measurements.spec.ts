@@ -49,7 +49,13 @@ const authenticated = async (browser: Browser, language: string, state: unknown)
     ({ key, language: selected }) => {
       localStorage.setItem(
         key,
-        JSON.stringify({ version: 2, language: selected, displayLocale: "en-GB", theme: "SYSTEM" }),
+        JSON.stringify({
+          version: 3,
+          language: selected,
+          displayLocale: "en-GB",
+          mode: "system",
+          accent: "green" as const,
+        }),
       );
     },
     { key: preferenceKey, language },

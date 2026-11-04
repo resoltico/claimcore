@@ -3,6 +3,7 @@ import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
   | { screen: "work" }
+  | { screen: "settings" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector }
   | { screen: "caseAct"; target: CaseSelector; act: string }
@@ -68,6 +69,9 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
   }
   if (segments.length !== 1) {
     return null;
+  }
+  if (segments[0] === "settings") {
+    return { screen: "settings" };
   }
   if (segments[0] === "cases") {
     return { screen: "cases", query };

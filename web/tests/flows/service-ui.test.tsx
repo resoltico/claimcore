@@ -183,10 +183,11 @@ const sessionLifecycle = async () => {
       name: "Cases",
     }),
   ).toBeVisible();
+  await user.click(screen.getByText("Account", { selector: "summary" }));
   await user.click(getButton("Sign out"));
   expect(
     await screen.findByRole("heading", {
-      name: "ClaimCore",
+      name: "Sign in to the case register",
     }),
   ).toBeVisible();
 };

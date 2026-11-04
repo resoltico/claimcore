@@ -16,7 +16,12 @@ it("matches independent quoting, isolation, RTL and pseudolocale vectors", () =>
   for (const row of vectors.presentation) {
     expect(
       renderCatalogKey(
-        { language: row.language as Language, displayLocale: "en-GB", theme: "SYSTEM" as const },
+        {
+          language: row.language as Language,
+          displayLocale: "en-GB",
+          mode: "system" as const,
+          accent: "green" as const,
+        },
         row.key,
         row.arguments,
       ),
@@ -28,7 +33,12 @@ it("pseudolocalizes only literal text while preserving authored argument values"
   expect(pseudolocalizeLiteral("aeiouAEIOU")).toBe("ààëëïïööüüÀÀËËÏÏÖÖÜÜ");
   expect(
     renderKey(
-      { language: "en-XA", displayLocale: "en-GB", theme: "SYSTEM" as const },
+      {
+        language: "en-XA",
+        displayLocale: "en-GB",
+        mode: "system" as const,
+        accent: "green" as const,
+      },
       "ui.reference",
       {
         label: "EXACT-A",
@@ -43,7 +53,7 @@ it("isolates technical revision holes in Arabic history summaries and preserves 
   const values = { act: reference.exact, revision: "12", timestamp: "EXACT" };
   expect(
     renderIsolatedValue(
-      { language: "en", displayLocale: "en-GB", theme: "SYSTEM" as const },
+      { language: "en", displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
       "ui.historySummary",
       values,
       reference,
@@ -52,7 +62,7 @@ it("isolates technical revision holes in Arabic history summaries and preserves 
   ).toEqual([reference, " · revision 12 · EXACT"]);
   expect(
     renderIsolatedValue(
-      { language: "ar", displayLocale: "en-GB", theme: "SYSTEM" as const },
+      { language: "ar", displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
       "ui.historySummary",
       values,
       reference,

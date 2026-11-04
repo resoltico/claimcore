@@ -154,7 +154,13 @@ const expectGrantReferencePath = (active: boolean) => {
 const referencePreferences = (language: string) => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" }),
+    JSON.stringify({
+      version: 3,
+      language,
+      displayLocale: "en-GB",
+      mode: "system",
+      accent: "green" as const,
+    }),
   );
 };
 it.each(

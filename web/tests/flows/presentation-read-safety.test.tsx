@@ -42,10 +42,11 @@ const preferences = (language: (typeof languages)[number]) => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
-      version: 2,
+      version: 3,
       language,
       displayLocale: "lv-LV",
-      theme: "SYSTEM" as const,
+      mode: "system" as const,
+      accent: "green" as const,
     }),
   );
 };

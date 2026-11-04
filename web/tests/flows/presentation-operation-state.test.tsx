@@ -1,6 +1,7 @@
+import * as catalogs from "../../src/presentation/languageCatalog";
 import { changeField } from "../support/field-entry";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
-import { fireEvent, within } from "@testing-library/react";
+import { act, fireEvent, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, afterEach, expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -26,10 +27,11 @@ it("preserves authored content, DOM selection and operation identity across lang
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
-      version: 2,
+      version: 3,
       language: "en-XA",
       displayLocale: "en-GB",
-      theme: "SYSTEM" as const,
+      mode: "system" as const,
+      accent: "green" as const,
     }),
   );
   render(editor({ current: null, initialAct: "OPEN" }));
@@ -40,9 +42,8 @@ it("preserves authored content, DOM selection and operation identity across lang
   changeField(date, "2026-02-28");
   name.setSelectionRange(1, 3);
   const before = ids.mock.calls.length;
-  const selector = languageControl();
   for (const language of ["ar", "lv", "en"]) {
-    await user.selectOptions(selector, language);
+    await user.click(languageControl(language));
   }
   expect(ids.mock.calls.length).toBe(before);
   expect(name.selectionStart).toBe(1);
@@ -58,27 +59,32 @@ it("preserves authored content, DOM selection and operation identity across lang
   expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("2026-02-28");
 });
 
-it("renders a delayed review in the selected language without replay or confirmation loss", async () => {
+it("finishes an in-flight language load without replaying or losing review confirmation", async () => {
   const user = userEvent.setup();
   const pending = deferredResponse();
+  const languageReady = Promise.withResolvers<void>();
+  vi.spyOn(catalogs, "languageLoaded").mockImplementation((language) => language === "en");
+  vi.spyOn(catalogs, "loadLanguage").mockReturnValue(languageReady.promise);
   vi.mocked(globalThis.fetch).mockReturnValueOnce(pending.promise);
   render(editor());
+  await user.click(languageControl("ar"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   const original = draftAt(0);
-  await user.selectOptions(languageControl(), "lv");
   pending.resolve(previewReply());
   const dialog = await screen.findByRole("dialog");
   const checkbox = within(dialog).getByRole("checkbox");
   await user.click(checkbox);
-  await user.selectOptions(languageControl(), "ar");
+  expect(within(dialog).queryByRole("radio")).toBeNull();
+  await act(async () => {
+    languageReady.resolve();
+    await languageReady.promise;
+  });
   expect(screen.getByRole("dialog")).toBe(dialog);
   expect(checkbox).toBeChecked();
   expect(dialog).toHaveTextContent(original.operationId);
   expect(globalThis.fetch).toHaveBeenCalledOnce();
   expect(draftAt(0)).toEqual(original);
   expect(document.documentElement.dir).toBe("rtl");
-  await user.selectOptions(languageControl(), "en");
-  expect(checkbox).toBeChecked();
 });
 
 it("does not rebase a frozen request after language switching and an external revision change", async () => {
@@ -89,9 +95,9 @@ it("does not rebase a frozen request after language switching and an external re
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("alert");
   const initialBody = fetch.mock.calls[0]?.[1]?.body;
-  await user.selectOptions(languageControl(), "ar");
+  await user.click(languageControl("ar"));
   view.rerender(editor({ current: { ...current, revision: 99 } }));
-  await user.selectOptions(languageControl(), "en");
+  await user.click(languageControl("en"));
   fetch.mockRejectedValueOnce(new Error("lost-again"));
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
@@ -109,7 +115,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
   fillRegistrationInputs({ claimantName: " " });
   const name = screen.getByLabelText<HTMLInputElement>("Claimant name", { exact: true });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.selectOptions(languageControl(), "lv");
+  await user.click(languageControl("lv"));
   pending.resolve(
     response("operation.preview", "REJECTED", {
       code: "INVALID_INPUT",
@@ -127,7 +133,7 @@ it("localizes late validation by diagnostic identity and focuses the unchanged a
     "Prasījumu iesniegušās personas vārds vai uzņēmuma nosaukums.Līdz 200 rakstzīmēm. Nepieciešama netukša vērtība.",
   );
   const alert = screen.getByRole("alert").textContent;
-  await user.selectOptions(languageControl(), "en");
+  await user.click(languageControl("en"));
   expect(screen.getByRole("alert").textContent).not.toBe(alert);
   expect(screen.getByRole("alert")).toHaveTextContent("Input problems: 1.");
   expect(name).toHaveAccessibleDescription(

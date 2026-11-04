@@ -82,7 +82,13 @@ test("preserves language and independent display preferences through real logout
       (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
       preferenceKey,
     ),
-  ).toEqual({ version: 2, language: "ar", displayLocale: "lv-LV", theme: "SYSTEM" });
+  ).toEqual({
+    version: 3,
+    language: "ar",
+    displayLocale: "lv-LV",
+    mode: "system",
+    accent: "green" as const,
+  });
   await selectLanguage(page, "en");
   await logout(page);
 });

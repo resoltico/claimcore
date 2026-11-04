@@ -18,7 +18,7 @@ it("returns focus to preview after presentation controls were used during pendin
   const preview = screen.getByRole("button", { name: "Review changes" });
   await user.click(preview);
   expect(preview).toBeDisabled();
-  await user.click(languageControl());
+  await user.click(languageControl("en"));
   pending.resolve(previewReply());
   await user.click(await screen.findByRole("button", { name: "Return to editing" }));
   await waitFor(() => {

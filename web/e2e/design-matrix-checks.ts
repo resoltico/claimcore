@@ -9,12 +9,13 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { expect, type Page, type TestInfo, type Response, type Request } from "@playwright/test";
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
-import { preferenceKey } from "../src/presentation/preferences";
+import { accents, preferenceKey } from "../src/presentation/preferences";
 import { isResponse } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 export type Dimension = {
   language: "en" | "lv" | "ar" | "en-XA";
-  theme: "light" | "dark";
+  mode: "light" | "dark";
+  accent: "green" | "blue";
   width: number;
   zoom?: number;
 };
@@ -26,14 +27,16 @@ export const dimensions = (engine: string): Dimension[] => {
   for (const width of widths) {
     for (const language of languages) {
       for (const theme of themes) {
-        result.push({ width, language, theme });
+        for (const accent of accents) {
+          result.push({ width, language, mode: theme, accent });
+        }
       }
     }
   }
   if (engine === "chromium") {
     result.push(
-      { width: 320, language: "en-XA", theme: "light" },
-      { width: 640, language: "en", theme: "light", zoom: 2 },
+      { width: 320, language: "en-XA", mode: "light", accent: "green" as const },
+      { width: 640, language: "en", mode: "light", accent: "green" as const, zoom: 2 },
     );
   }
   return result;
@@ -43,7 +46,7 @@ export const displayLocaleFor = (language: Dimension["language"]) =>
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   await retainResponseBodies(page);
   await page.setViewportSize({ width: dimension.width, height: 900 });
-  await page.emulateMedia({ reducedMotion: "reduce", colorScheme: dimension.theme });
+  await page.emulateMedia({ reducedMotion: "reduce", colorScheme: dimension.mode });
   await page.addInitScript(
     ({ key, preferences }) => {
       localStorage.setItem(key, JSON.stringify(preferences));
@@ -51,10 +54,11 @@ export const configureDimension = async (page: Page, dimension: Dimension) => {
     {
       key: preferenceKey,
       preferences: {
-        version: 2,
+        version: 3,
         language: dimension.language,
         displayLocale: displayLocaleFor(dimension.language),
-        theme: dimension.theme.toUpperCase(),
+        mode: dimension.mode,
+        accent: dimension.accent,
       },
     },
   );
@@ -209,7 +213,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
     "dir",
     dimension.language === "ar" ? "rtl" : "ltr",
   );
-  await expect(page.locator("html")).toHaveAttribute("data-theme", dimension.theme);
+  await expect(page.locator("html")).toHaveAttribute("data-mode", dimension.mode);
   if (dimension.zoom !== undefined) {
     expect(
       await page.evaluate(
@@ -452,12 +456,12 @@ export const checkFrame = async (page: Page, dimension: Dimension, frame: string
 const screenshotDimension = (dimension: Dimension): boolean =>
   dimension.zoom === undefined &&
   ((dimension.language === "en" && [390, 1280].includes(dimension.width)) ||
-    (dimension.language === "en" && dimension.width === 320 && dimension.theme === "light") ||
-    (dimension.language === "ar" && dimension.width === 390 && dimension.theme === "light"));
+    (dimension.language === "en" && dimension.width === 320 && dimension.mode === "light") ||
+    (dimension.language === "ar" && dimension.width === 390 && dimension.mode === "light"));
 export const expectedCaptures = (engine: string, dimension: Dimension): number =>
   engine === "chromium" && screenshotDimension(dimension)
     ? 15 +
-      Number(dimension.language === "en" && dimension.width === 390 && dimension.theme === "light")
+      Number(dimension.language === "en" && dimension.width === 390 && dimension.mode === "light")
     : 0;
 export const matrixEvidenceDirectory = async (): Promise<string> => {
   const configured =
@@ -492,7 +496,7 @@ const capturesFrame = (frame: string, dimension: Dimension): boolean => {
     frame === "cases-open-undecided" &&
     dimension.language === "en" &&
     dimension.width === 390 &&
-    dimension.theme === "light";
+    dimension.mode === "light";
   if (
     !baselinePair &&
     ![
@@ -532,7 +536,7 @@ export const captureFrame = async (
   const root = await matrixEvidenceDirectory();
   const path = resolve(
     root,
-    `${dimension.language}-${dimension.width}-${dimension.theme}-${frame}.png`,
+    `${dimension.language}-${dimension.width}-${dimension.accent}-${dimension.mode}-${frame}.png`,
   );
   await page.screenshot({
     path,

@@ -19,7 +19,7 @@ it("renders every admitted diagnostic identity in every real language", () => {
     );
     for (const language of ["en", "lv", "ar"] as const) {
       const value = renderCatalogKey(
-        { language, displayLocale: "en-GB", theme: "SYSTEM" as const },
+        { language, displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
         id,
         values,
       );

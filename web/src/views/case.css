@@ -17,16 +17,16 @@
   gap: var(--space-3);
   padding: var(--space-3);
   border-radius: var(--radius-sm);
-  background: var(--color-neutral-bg);
+  background: var(--bg-sunken);
 }
 .case-lifecycle p {
   margin: 0;
 }
 .case-lifecycle-voided {
-  background: var(--color-warning-bg);
+  background: var(--warning-bg);
 }
 .case-lifecycle-erased {
-  background: var(--color-neutral-bg);
+  background: var(--bg-sunken);
 }
 .case-progress [role="list"] {
   display: flex;
@@ -37,12 +37,12 @@
 }
 .case-progress [role="listitem"] {
   padding: var(--space-2) var(--space-3);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-sm);
 }
 .case-progress [aria-current="step"] {
-  background: var(--color-accent);
-  color: var(--color-on-accent);
+  background: var(--accent-solid);
+  color: var(--on-accent-solid);
 }
 .case-workspace,
 .case-fact-groups {
@@ -51,8 +51,8 @@
   min-inline-size: 0;
 }
 .case-fact-card {
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-control);
   padding: var(--space-4);
   border-radius: var(--radius-md);
   min-inline-size: 0;
@@ -73,16 +73,16 @@
   overflow-wrap: anywhere;
 }
 .case-fields dt {
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
 }
 .case-fields .field-row {
   padding-block: var(--space-2);
 }
 .case-actions {
   padding: var(--space-4);
-  border: var(--border-width) solid var(--color-border);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-md);
-  background: var(--color-surface);
+  background: var(--bg-surface);
 }
 .case-actions .actions {
   display: flex;
@@ -91,14 +91,14 @@
   gap: var(--space-2);
 }
 .case-stewardship {
-  border-block-start: var(--border-width) solid var(--color-border);
+  border-block-start: var(--border-width) solid var(--border-control);
   margin-block-start: var(--space-4);
 }
 button.primary.case-action-danger,
 button.case-action-danger {
-  background: var(--color-danger-bg);
-  color: var(--color-danger);
-  border-color: var(--color-danger);
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-color: var(--danger-text);
 }
 .case-action-bar {
   position: fixed;
@@ -109,8 +109,8 @@ button.case-action-danger {
   align-items: stretch;
   gap: var(--space-2);
   padding: var(--space-3) var(--gutter);
-  background: var(--color-surface);
-  border-block-start: var(--border-width) solid var(--color-border);
+  background: var(--bg-surface);
+  border-block-start: var(--border-width) solid var(--border-control);
   box-shadow: var(--shadow-2);
 }
 .case-primary-action {
@@ -134,7 +134,7 @@ button.case-action-danger {
   min-block-size: var(--target-primary);
   padding: var(--space-2) var(--space-3);
   cursor: pointer;
-  border: var(--border-width) solid var(--color-text-muted);
+  border: var(--border-width) solid var(--text-secondary);
   border-radius: var(--radius-sm);
 }
 .case-more-popup {
@@ -147,8 +147,8 @@ button.case-action-danger {
   );
   overflow: auto;
   padding: var(--space-4);
-  background: var(--color-surface);
-  border: var(--border-width) solid var(--color-border);
+  background: var(--bg-surface);
+  border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-md);
   box-shadow: var(--shadow-2);
 }
@@ -162,14 +162,14 @@ button.case-action-danger {
 .case-timeline {
   list-style: none;
   padding-inline-start: var(--space-4);
-  border-inline-start: var(--border-width) solid var(--color-border);
+  border-inline-start: var(--border-width) solid var(--border-control);
 }
 .case-timeline > li {
   position: relative;
   padding: var(--space-3);
   margin-block-end: var(--space-4);
   border-radius: var(--radius-sm);
-  background: var(--color-surface);
+  background: var(--bg-surface);
   overflow-wrap: anywhere;
 }
 .case-timeline > li::before {
@@ -180,33 +180,16 @@ button.case-action-danger {
   inline-size: var(--space-2);
   block-size: var(--space-2);
   border-radius: 50%;
-  background: var(--color-accent);
+  background: var(--accent-solid);
 }
 .case-timeline summary {
   min-block-size: var(--target-primary);
   cursor: pointer;
 }
-@media (width >= 64rem) {
-  .case-workspace {
-    grid-template-columns: minmax(0, 1fr) minmax(12rem, 16rem);
-    align-items: start;
-  }
-  .case-actions {
-    position: sticky;
-    inset-block-start: var(--space-4);
-  }
-  .case-fact-groups {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
+
 .case-fact-card .field-row {
   grid-template-columns: minmax(0, 1fr);
   gap: var(--space-1);
-}
-@media (width < 64rem) {
-  .case-detail > .case-workspace > .case-fields > dl > .field-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
 }
 
 .case-header-state {
@@ -216,7 +199,7 @@ button.case-action-danger {
   gap: var(--space-2);
 }
 .assigned-marker {
-  color: var(--color-accent);
+  color: var(--accent-text);
   font-size: var(--text-sm);
 }
 .field-row dd {
@@ -254,18 +237,18 @@ button.case-action-danger {
 .case-progress [role="listitem"] {
   counter-increment: case-step;
   border: 0;
-  border-block-end: var(--border-width) solid var(--color-border);
+  border-block-end: var(--border-width) solid var(--border-control);
   border-radius: 0;
   background: transparent;
   padding: var(--space-2);
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
 }
 .case-progress [role="listitem"]::before {
   content: counter(case-step) ". ";
 }
 .case-progress [role="listitem"][aria-current="step"] {
-  color: var(--color-accent);
-  border-block-end: var(--focus-width) solid var(--color-accent);
+  color: var(--accent-text);
+  border-block-end: var(--focus-width) solid var(--accent-text);
   font-weight: 700;
 }
 @media (hover: none), (pointer: coarse) {
@@ -309,11 +292,11 @@ button.case-action-danger {
 .case-technical {
   font-size: var(--text-sm);
   margin-block: var(--space-3);
-  color: var(--color-text-muted);
+  color: var(--text-secondary);
 }
 .case-technical summary {
   cursor: pointer;
-  color: var(--color-accent);
+  color: var(--accent-text);
 }
 .case-technical dl {
   display: flex;
@@ -341,15 +324,8 @@ button.case-action-danger {
   font-weight: 550;
 }
 .case-timeline > li {
-  border: 1px solid var(--color-border);
+  border: 1px solid var(--border-control);
   padding: var(--space-4);
-}
-@media (width >= 64rem) {
-  .case-fact-card dl {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: var(--space-3);
-  }
 }
 
 .assignee-available,
@@ -358,6 +334,6 @@ button.case-action-danger {
   font-size: var(--text-sm);
 }
 .assignee-unavailable {
-  color: var(--color-danger);
+  color: var(--danger-text);
   font-weight: 650;
 }
