@@ -123,19 +123,17 @@ it("shows a typed unavailable history refusal after revalidating readable curren
     expect(fetch).toHaveBeenCalledTimes(3);
   });
   await waitFor(() => {
-    expect(
-      screen.queryByRole("region", {
-        name: "Current case",
-      }),
-    ).toBeNull();
+    expect(document.querySelector(".case-fields")).toBeNull();
   });
   await act(async () => {
     release?.(readableCurrent());
     await revalidation;
   });
   expect(
-    await screen.findByRole("region", {
-      name: "Current case",
+    await waitFor(() => {
+      const facts = document.querySelector(".case-fields");
+      expect(facts).not.toBeNull();
+      return facts;
     }),
   ).toBeVisible();
   expect(

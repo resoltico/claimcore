@@ -135,9 +135,15 @@ export const CaseActions = ({
     return null;
   }
   return (
-    <aside className="case-actions" aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("ui.continueCase")}</h2>
-      <ActionGroups acts={acts.filter((act) => act !== primary)} primary={primary} onAct={onAct} />
-    </aside>
+    <details className="case-actions">
+      <summary id="acts-title">{p.text("ui.moreCaseActions")}</summary>
+      <div className="case-actions-popup">
+        <ActionGroups
+          acts={acts.filter((act) => act !== primary)}
+          primary={primary}
+          onAct={onAct}
+        />
+      </div>
+    </details>
   );
 };

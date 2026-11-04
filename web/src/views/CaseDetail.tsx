@@ -9,7 +9,8 @@ import { Button } from "react-aria-components/Button";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
 
-import { CaseReminders } from "./work/CaseReminders";
+import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
+import { useWide } from "../hooks/useWide";
 import { CaseFacts } from "./case/CaseFacts";
 import { CaseActions, CasePrimaryAction } from "./case/CaseActions";
 import { CaseProgress } from "./case/CaseProgress";
@@ -18,7 +19,7 @@ import "./case.css";
 import { CopyValue } from "../components/CopyValue";
 import { type ActKind } from "../operation/metadata";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
-import { CaseTimeline } from "./case/CaseTimeline";
+import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 import { CaseHeadline } from "../components/CaseHeadline";
 import { CaseAttention } from "../components/CaseAttention";
 
@@ -49,7 +50,6 @@ const CurrentFeedback = ({ message, loading }: { message: Notice | null; loading
 const CurrentPresentation = ({
   current,
   definition,
-  onAct,
   onChanged,
   onMutationLockChange,
   disclosureAvailable,
@@ -60,46 +60,48 @@ const CurrentPresentation = ({
   recordDetails: ReactNode;
   current: CurrentCase;
   definition: CatalogDocument;
-  onAct: (current: CurrentCase, act: ActKind) => void;
   onChanged: () => void;
   disclosureAvailable: boolean;
   onMutationLockChange: (locked: boolean) => void;
 }) => {
   const globalPaused = useRequesterContext()?.maintenance.active === true;
+  const wide = useWide();
+  const panels = useCaseWorkPanels({
+    current,
+    onChanged,
+    onLockChange: onMutationLockChange,
+    disclosureAvailable,
+  });
+  const facts = disclosureAvailable ? (
+    <CaseFacts values={current.state.fields} fields={definition.fields} />
+  ) : null;
   return (
     <>
       {disclosureAvailable ? (
         <MaintenanceNotice active={current.advice.maintenance.active && !globalPaused} />
       ) : null}
-      <div className="case-workspace">
-        <div className="case-main-column">
-          {disclosureAvailable ? (
-            <>
-              <CaseActions
-                current={current}
-                onAct={(act) => {
-                  onAct(current, act);
-                }}
-              />
-              <CaseFacts
-                values={current.state.fields}
-                revision={current.revision}
-                fields={definition.fields}
-              />
-            </>
-          ) : null}
-          {timeline}
+      {wide ? (
+        <div className="case-workspace">
+          <div className="case-main-column">
+            {facts}
+            {timeline}
+          </div>
+          <aside className="case-work-rail">
+            {panels.nextActions}
+            {panels.work}
+            {recordDetails}
+          </aside>
         </div>
-        <aside className="case-work-rail">
-          <CaseReminders
-            current={current}
-            onChanged={onChanged}
-            onLockChange={onMutationLockChange}
-            disclosureAvailable={disclosureAvailable}
-          />
+      ) : (
+        <div className="case-workspace case-workspace-compact">
+          {panels.nextActions}
+          {facts}
+          {panels.work}
+          {timeline}
           {recordDetails}
-        </aside>
-      </div>
+        </div>
+      )}
+      {panels.operation}
     </>
   );
 };
@@ -161,12 +163,20 @@ const CaseHeader = ({
           )}
         </div>
         {current === null ? null : (
-          <CasePrimaryAction
-            current={current}
-            onAct={(act) => {
-              onAct(current, act);
-            }}
-          />
+          <div className="case-header-actions">
+            <CasePrimaryAction
+              current={current}
+              onAct={(act) => {
+                onAct(current, act);
+              }}
+            />
+            <CaseActions
+              current={current}
+              onAct={(act) => {
+                onAct(current, act);
+              }}
+            />
+          </div>
         )}
       </div>
     </>
@@ -176,7 +186,7 @@ const CaseHeader = ({
 const CaseRecordDetails = ({ state }: { state: CaseView }) => {
   const p = usePresentation();
   return (
-    <details className="case-technical">
+    <details className="case-technical" data-record-details>
       <summary>{p.text("ui.technicalDetails")}</summary>
       <dl>
         <div>
@@ -192,9 +202,23 @@ const CaseRecordDetails = ({ state }: { state: CaseView }) => {
           <dt>{p.fieldLabel("caseReference")}</dt>
           <dd>
             <bdi dir="ltr">{state.caseReference}</bdi>
+            <CharacterWarning value={state.caseReference} />
             <CopyValue icon label={p.fieldLabel("caseReference")} value={state.caseReference} />
           </dd>
         </div>
+        {state.work.responsible === null ? null : (
+          <div>
+            <dt>{p.text("ui.accountDetails")}</dt>
+            <dd>
+              <bdi dir="ltr">{state.work.responsible.actorId}</bdi>
+              <CopyValue
+                icon
+                label={p.fieldLabel("actorId")}
+                value={state.work.responsible.actorId}
+              />
+            </dd>
+          </div>
+        )}
         <div>
           <dt>{p.text("label.revisionLabel")}</dt>
           <dd>{p.integer(state.revision)}</dd>
@@ -255,6 +279,21 @@ const useRetainedCase = (lookup: CurrentCase | null) => {
   }
   return lookup ?? retained;
 };
+const useTimelineSelection = (access: string) => {
+  const [selection, setSelection] = useState<{ access: string; value: TimelineFilter }>({
+    access,
+    value: "ALL",
+  });
+  if (selection.access !== access) {
+    setSelection({ access, value: "ALL" });
+  }
+  return {
+    value: selection.access === access ? selection.value : "ALL",
+    change: (value: TimelineFilter) => {
+      setSelection({ access, value });
+    },
+  };
+};
 const CaseDisclosure = ({
   target,
   definition,
@@ -265,14 +304,17 @@ const CaseDisclosure = ({
 }: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(target);
+  const historyAccess = current.historyModes.join(":");
+  const timelineSelection = useTimelineSelection(historyAccess);
   const state = current.value;
   const lookup = asCurrentCase(state);
   const mounted = useRetainedCase(lookup);
   const timeline =
     current.historyModes.length === 0 ? null : (
       <CaseTimeline
-        key={current.historyModes.join(":")}
+        key={historyAccess}
         target={target}
+        selection={timelineSelection}
         onDisclosureRefused={current.revalidate}
       />
     );
@@ -302,7 +344,6 @@ const CaseDisclosure = ({
           recordDetails={recordDetails}
           disclosureAvailable={lookup !== null}
           definition={definition}
-          onAct={onAct}
           onChanged={current.revalidate}
           onMutationLockChange={onMutationLockChange}
         />

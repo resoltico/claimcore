@@ -125,7 +125,7 @@ export const TimelineEntries = ({
     ))}
   </ol>
 );
-type Filter = "ALL" | "FACTS" | "WORK";
+export type TimelineFilter = "ALL" | "FACTS" | "WORK";
 const filterLabels = {
   ALL: "ui.timeline.all",
   FACTS: "ui.timeline.facts",
@@ -134,12 +134,15 @@ const filterLabels = {
 export const CaseTimeline = ({
   target,
   onDisclosureRefused,
+  selection,
 }: {
   target: CaseSelector;
   onDisclosureRefused?: () => void;
+  selection?: { value: TimelineFilter; change: (value: TimelineFilter) => void };
 }) => {
   const p = usePresentation();
-  const [filter, setFilter] = useState<Filter>("ALL");
+  const [localFilter, setLocalFilter] = useState<TimelineFilter>("ALL");
+  const filter = selection?.value ?? localFilter;
   const input = useCallback(
     (cursor: string | null) => ({
       target,
@@ -171,7 +174,11 @@ export const CaseTimeline = ({
               key={value}
               aria-pressed={filter === value}
               onPress={() => {
-                setFilter(value);
+                if (selection === undefined) {
+                  setLocalFilter(value);
+                } else {
+                  selection.change(value);
+                }
               }}
             >
               {p.text(filterLabels[value])}

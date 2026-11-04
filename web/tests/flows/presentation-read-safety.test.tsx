@@ -148,7 +148,7 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     expect(view.container).not.toHaveTextContent(fields.registration.claimantName);
     expect(view.container.querySelector("#acts-title")).toBeNull();
   } else {
-    assertSafe(view.container.querySelector(".case-fields")!, value, points);
+    assertSafe(view.container.querySelector("[data-record-details]")!, value, points);
     assertSafe(view.container.querySelector(".case-timeline li")!, value, points);
   }
   view.unmount();

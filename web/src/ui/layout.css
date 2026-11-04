@@ -313,8 +313,3 @@
     text-align: center;
   }
 }
-@media (width < 64rem) {
-  .case-work-rail {
-    order: -1;
-  }
-}

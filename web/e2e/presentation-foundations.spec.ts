@@ -781,7 +781,34 @@ for (const language of ["en", "ar"] as const) {
     expect(retired).toEqual([]);
     await expectAccessible(page);
     await clean();
+    await timeline.locator("summary").click();
+    await expect(timeline.locator("details")).toContainText(entryOperationId);
+    const filters = timeline.locator(".timeline-filters button");
+    await filters.nth(2).click();
+    await expect(timeline).toContainText("Core work change");
+    expect(reads).toBe(2);
+    await page.setViewportSize({ width: language === "en" ? 390 : 1440, height: 900 });
+    await expect(timeline).toContainText("Core work change");
+    await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
+    await expect.poll(() => reads).toBe(3);
+
+    await expectAccessible(page);
+    await clean();
     if (browserName === "chromium") {
+      await page.evaluate(() => {
+        window.scrollTo(0, 0);
+      });
+      await page.evaluate(
+        () =>
+          new Promise<void>((resolve) => {
+            requestAnimationFrame(() => {
+              requestAnimationFrame(() => {
+                resolve();
+              });
+            });
+          }),
+      );
+      await clean();
       const camera = await page.context().newCDPSession(page);
       const capture = await camera.send("Page.captureScreenshot", {
         format: "png",
@@ -792,14 +819,6 @@ for (const language of ["en", "ar"] as const) {
       await testInfo.attach("case-timeline", { path, contentType: "image/png" });
       await camera.detach();
     }
-    await timeline.locator("summary").click();
-    await expect(timeline.locator("details")).toContainText(entryOperationId);
-    const filters = timeline.locator(".timeline-filters button");
-    await filters.nth(2).click();
-    await expect(timeline).toContainText("Core work change");
-    expect(reads).toBe(2);
-    await expectAccessible(page);
-    await clean();
   });
 }
 
@@ -1249,6 +1268,78 @@ test("atomic admission edits independent grant rows and reviews every core effec
   await expect(review.locator(".authority-effects > li")).toHaveCount(4);
   await expect(review.getByText("SYNTHETIC-1", { exact: true })).toBeVisible();
   expect(previews).toBe(1);
+  expect(writes).toBe(0);
+  await expectAccessible(page);
+  await clean();
+});
+
+test("case panels follow compact reading order while a work draft survives responsive reflow", async ({
+  page,
+}) => {
+  const clean = await observe(page, true);
+  await seed(page);
+  await page.setViewportSize({ width: 390, height: 844 });
+  const initial = caseViewInput({
+    caseId: "20000000-0000-4000-8000-000000000001",
+    caseReference: "CASE-1",
+    revision: 1,
+    advice: { acts: [], history: [] },
+    state: { kind: "ACTIVE", fields: caseFields },
+  });
+  const current = {
+    ...initial,
+    work: {
+      ...initial.work,
+      basis: {
+        observedAt: "2026-11-04T12:00:00.000000Z",
+        businessDate: "2026-11-04",
+        timeZone: "Etc/UTC",
+      },
+      canUpdateSummary: true,
+      canAssign: true,
+    },
+  };
+  let reads = 0;
+  let writes = 0;
+  await page.route("**/api/case.get", (route) => {
+    reads += 1;
+    return route.fulfill({ json: { outcome: { kind: "SUCCEEDED", data: current } } });
+  });
+  page.on("request", (request) => {
+    if (request.url().endsWith("/api/operation.execute")) {
+      writes += 1;
+    }
+  });
+  await page.goto(casePath(current.caseId), { waitUntil: "commit" });
+  await expect(page.getByRole("heading", { name: "Next actions", exact: true })).toBeVisible();
+  expect(
+    await page
+      .locator(".case-workspace-compact")
+      .evaluate((node) => [...node.children].map((child) => child.className)),
+  ).toEqual([
+    "case-reminders",
+    "case-fields",
+    "case-work case-responsible",
+    "case-work case-handling-summary",
+    "case-technical",
+  ]);
+  await expect(page.locator("[data-record-details]")).toHaveCount(1);
+  await expectAccessible(page);
+  await page.getByRole("button", { name: "Change Handling summary", exact: true }).click();
+  await page.locator('input[data-selects-fields~="handlingSummary"]').check();
+  const field = page.getByRole("textbox", { name: "Handling summary", exact: true });
+  await field.fill("Keep exact draft\nثانٍ 😀");
+  const retained = await field.elementHandle();
+  expect(retained).not.toBeNull();
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await expect(page.locator(".case-workspace-compact")).toHaveCount(0);
+  expect(await retained.evaluate((node) => node.isConnected)).toBe(true);
+  await expect(field).toHaveValue("Keep exact draft\nثانٍ 😀");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator(".case-workspace-compact")).toHaveCount(1);
+  expect(await retained.evaluate((node) => node.isConnected)).toBe(true);
+  await expect(field).toHaveValue("Keep exact draft\nثانٍ 😀");
+  expect(reads).toBe(1);
   expect(writes).toBe(0);
   await expectAccessible(page);
   await clean();

@@ -100,7 +100,16 @@ for (const retainCurrent of [false, true]) {
       await waitFor(() => {
         expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(retainCurrent ? 5 : 4);
       });
-      if (!retainCurrent) {
+      if (retainCurrent) {
+        expect(screen.getByRole("button", { name: "Everything" })).toHaveAttribute(
+          "aria-pressed",
+          "true",
+        );
+        expect(screen.getByRole("button", { name: "Facts" })).toHaveAttribute(
+          "aria-pressed",
+          "false",
+        );
+      } else {
         expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
       }
     },
