@@ -127,7 +127,18 @@ let tests =
                             Items =
                                 [
                                     { entry 2L with
-                                        Changes = TimelineChanges.Disclosed [ moneyChange ]
+                                        Changes =
+                                            TimelineChanges.Disclosed
+                                                {
+                                                    Items = [ moneyChange ]
+                                                    Overview =
+                                                        {
+                                                            Event =
+                                                                TimelineEvent.CaseActRecorded
+                                                                    CaseActKind.Close
+                                                            Highlights = []
+                                                        }
+                                                }
                                     }
                                 ]
                         }
@@ -166,7 +177,7 @@ let tests =
                     Expect.stringContains
                         text
                         "DISCLOSED,claimedAmount,1234.5678 EUR,100 EUR"
-                        "Canonical exact precision survives without localized separators or imposed display zeros"
+                        "Full Items survive empty overview highlights with canonical exact precision and no localized separators or imposed display zeros"
 
                     Expect.stringContains
                         text
@@ -374,7 +385,17 @@ let tests =
 
                     let disclosed =
                         { entry 2L with
-                            Changes = TimelineChanges.Disclosed changes
+                            Changes =
+                                TimelineChanges.Disclosed
+                                    {
+                                        Items = changes
+                                        Overview =
+                                            {
+                                                Event =
+                                                    TimelineEvent.CaseActRecorded CaseActKind.Close
+                                                Highlights = []
+                                            }
+                                    }
                         }
 
                     for language in [ "en"; "lv"; "ar" ] do

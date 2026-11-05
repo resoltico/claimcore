@@ -288,19 +288,31 @@ let nextAndConflicts =
                                             TimelineChanges.Erased
                                         else
                                             TimelineChanges.Disclosed
-                                                [
-                                                    TimelineChange.HandlingSummary
+                                                {
+                                                    Items =
+                                                        [
+                                                            TimelineChange.HandlingSummary
+                                                                {
+                                                                    Before = None
+                                                                    After =
+                                                                        Some(
+                                                                            HandlingSummary.parse (
+                                                                                sprintf
+                                                                                    "Change %d"
+                                                                                    number
+                                                                            )
+                                                                            |> Fixtures.accepted
+                                                                        )
+                                                                }
+                                                        ]
+                                                    Overview =
                                                         {
-                                                            Before = None
-                                                            After =
-                                                                Some(
-                                                                    HandlingSummary.parse (
-                                                                        sprintf "Change %d" number
-                                                                    )
-                                                                    |> Fixtures.accepted
-                                                                )
+                                                            Event =
+                                                                TimelineEvent.CaseActRecorded
+                                                                    CaseActKind.AmendRegistration
+                                                            Highlights = []
                                                         }
-                                                ]
+                                                }
                                 }
                         ]
 
