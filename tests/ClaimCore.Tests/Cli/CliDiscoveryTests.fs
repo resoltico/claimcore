@@ -285,3 +285,59 @@ let unknownSchema =
                          Array.append expected [| byte '\n' |])
                     "Exact successful schema bytes remain unchanged"
             | other -> failtestf "Known schema admission: %A" other)
+
+
+[<Tests>]
+let failedDiscoveryLanguage =
+    testCase "discovery loads its human failure language only when a lookup fails" (fun () ->
+        use output = new MemoryStream()
+        use errors = new MemoryStream()
+        let mutable resolved = 0
+
+        let language () =
+            resolved <- resolved + 1
+            "lv"
+
+        let missing = UsageError.UnknownCommand("unknown-language-schema", [])
+        let bytes = Encoding.UTF8.GetBytes "{}\n"
+
+        Expect.equal
+            (CliDiscovery.writeDiscovery output errors language "schema" missing (Some bytes))
+            0
+            "Successful machine output remains offline"
+
+        Expect.equal
+            (output.ToArray())
+            bytes
+            "Successful machine bytes are independent of language"
+
+        Expect.equal resolved 0 "Success never loads the language/profile resolver"
+
+        Expect.equal
+            (CliDiscovery.writeDiscovery output errors language "schema" missing None)
+            64
+            "Failed lookup is a human usage refusal"
+
+        Expect.equal resolved 1 "Only failure resolves language"
+        let error = Encoding.UTF8.GetString(errors.ToArray())
+        Expect.stringContains error "Nezināma komanda" "Independent Latvian failure expectation"
+        Expect.stringContains error "unknown-language-schema" "Selector identity remains visible"
+        use describeOutput = new MemoryStream()
+        use describeErrors = new MemoryStream()
+
+        Expect.equal
+            (CliDiscovery.discovery
+                describeOutput
+                describeErrors
+                (CliInvocation.Describe(
+                    CliDescription.Operation [ "unsupported.synthetic" ],
+                    false,
+                    "lv"
+                )))
+            64
+            "Programmatic missing JSON description remains a refusal"
+
+        Expect.stringContains
+            (Encoding.UTF8.GetString(describeErrors.ToArray()))
+            "Nezināma komanda"
+            "Description failure preserves its already resolved language")
