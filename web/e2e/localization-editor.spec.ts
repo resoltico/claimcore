@@ -124,7 +124,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
   await page.keyboard.press("Escape");
   await expect(date.locator(".field-help")).not.toHaveAttribute("open");
   await expect(date.locator('input[type="hidden"]')).toHaveValue("");
-  await expect(page.locator('textarea[data-field-name="claimantName"]')).toHaveValue(
+  await expect(page.locator('input[data-field-name="claimantName"]')).toHaveValue(
     "A\u0308 / العربية",
   );
   expect(requests).toEqual(["POST /api/operation.preview"]);
@@ -132,7 +132,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
   await expectAccessible(page);
 };
 const policyRefusal = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
-  const name = page.locator('textarea[data-field-name="claimantName"]');
+  const name = page.locator('input[data-field-name="claimantName"]');
   const authored = `A\u0308 / العربية${"x".repeat(201)}`;
   await fillBusinessField(page, "incidentDate", "2026-09-01");
   await name.fill(authored);
@@ -181,10 +181,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
     await startOpen(page, reference, ui(language, "act.OPEN.label"));
     await malformedCalendarBoundary(page, reference);
-    const name = page.locator('textarea[data-field-name="claimantName"]');
+    const name = page.locator('input[data-field-name="claimantName"]');
     await name.fill("A\u0308 / العربية");
     await fillBusinessField(page, "incidentDate", "");
-    await name.evaluate((element: HTMLTextAreaElement) => {
+    await name.evaluate((element: HTMLInputElement) => {
       element.setSelectionRange(1, 3);
     });
     const originalNode = await name.elementHandle();

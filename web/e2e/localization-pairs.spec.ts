@@ -61,12 +61,9 @@ const visibleLanguage = async (
     await expect(
       page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", {
-        name: openLabel(language),
-        exact: true,
-      }),
-    ).toBeVisible();
+    const open = page.getByRole("link", { name: openLabel(language), exact: true });
+    await expect(open).toBeVisible();
+    await expect(open).toHaveAttribute("href", "/cases/new");
     await showAccountActions(page);
     await expect(
       page.getByRole("button", { name: ui(language, "ui.signOut"), exact: true }),

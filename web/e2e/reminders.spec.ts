@@ -324,6 +324,7 @@ for (const language of ["en", "lv", "ar"] as const) {
 test("paid description correction preserves payment, then a closed case accepts summary and pending cleanup", async ({
   page,
 }) => {
+  await seedPresentation(page, "en", "en-GB");
   await openAuthenticated(page);
   const reference = `PAID-WORK-${randomUUID()}`;
   await openCase(page, reference);
@@ -504,6 +505,9 @@ test("a reminder revision change after compound preview refuses both effects wit
     },
   });
   expect(concurrent.outcome.kind).toBe("ACCEPTED");
+  if (concurrent.outcome.kind !== "ACCEPTED") {
+    throw new Error("Expected the independently recorded reminder update.");
+  }
   const attempted = page.waitForResponse(
     (value) => new URL(value.url()).pathname === "/api/operation.execute",
   );
@@ -524,7 +528,25 @@ test("a reminder revision change after compound preview refuses both effects wit
     kind: "REJECTED",
     data: { code: "REVISION_CONFLICT", actualRevision: 2 },
   });
-  await expect(page.getByRole("dialog").locator("[data-error-summary]")).toBeVisible();
+  if (rejected.outcome.kind !== "REJECTED" || rejected.outcome.data.code !== "REVISION_CONFLICT") {
+    throw new Error("Expected the authoritative reminder revision conflict.");
+  }
+  expect(rejected.outcome.data.changes.kind).toBe("PAGE");
+  if (rejected.outcome.data.changes.kind !== "PAGE") {
+    throw new Error("Expected the current owner's disclosed conflict changes.");
+  }
+  expect(rejected.outcome.data.changes.page.entries.map((entry) => entry.operationId)).toContain(
+    concurrent.outcome.data.operationId,
+  );
+  const conflict = page.getByRole("dialog").locator(".revision-conflict");
+  await expect(
+    conflict.getByRole("heading", { name: "This case has changed", exact: true }),
+  ).toBeVisible();
+  await expect(conflict).toContainText("Your draft is kept.");
+  await expect(conflict).toContainText("Changed by another session");
+  await expect(
+    conflict.getByRole("button", { name: "Review against latest", exact: true }),
+  ).toBeEnabled();
   const current = await workRequest(page, "reminder.list", {
     target: { kind: "REFERENCE", caseReference: reference },
     state: "PENDING",
@@ -622,7 +644,13 @@ test("published reminder rows show server timing in case and queue views across 
   await reminderSearch.getByRole("searchbox").fill(reference);
   await reminderSearch.getByRole("button").click();
   await expect(page.locator(".reminder-list li")).toHaveCount(0);
-  await page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") }).check();
+  const inactive = page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") });
+  await expect(inactive).toBeDisabled();
+  await page.getByRole("button", { name: ui("ar", "ui.manualFilters"), exact: true }).click();
+  await expect(page).toHaveURL(
+    (url) => url.searchParams.get("filters") === "manual" && !url.searchParams.has("view"),
+  );
+  await inactive.check();
   await expect(page.locator(".reminder-list li")).toHaveCount(3);
   await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
   for (const item of await page.locator(".reminder-list li").all()) {

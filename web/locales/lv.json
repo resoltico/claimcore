@@ -256,5 +256,7 @@
   "ui.requests.empty": "Nav neizskatītu piekļuves pieprasījumu.",
   "ui.requests.hints": "Šī pierakstīšanās informācija ir nepārbaudītas norādes. Pirms personas pievienošanas pārbaudiet ievadīto profilu.",
   "ui.requests.more": "Ielādēt vēl piekļuves pieprasījumus",
-  "ui.requests.refresh": "Atjaunot piekļuves pieprasījumus"
+  "ui.requests.refresh": "Atjaunot piekļuves pieprasījumus",
+  "ui.manualFilters": "Manuālie filtri",
+  "ui.manualFiltersHint": "Izmantojiet manuālos filtrus, lai iekļautu neaktīvu lietu darbu."
 }

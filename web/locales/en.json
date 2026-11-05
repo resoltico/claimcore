@@ -256,5 +256,7 @@
   "ui.requests.empty": "No pending access requests.",
   "ui.requests.hints": "These sign-in details are unverified hints. Confirm the authored profile before adding this person.",
   "ui.requests.more": "Load more access requests",
-  "ui.requests.refresh": "Refresh access requests"
+  "ui.requests.refresh": "Refresh access requests",
+  "ui.manualFilters": "Manual filters",
+  "ui.manualFiltersHint": "Use manual filters to include inactive work."
 }

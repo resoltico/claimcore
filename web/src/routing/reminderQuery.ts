@@ -33,3 +33,21 @@ export const remindersPath = (query: ReminderQuery): string => {
   const suffix = params.toString();
   return suffix === "" ? "/reminders" : `/reminders?${suffix}`;
 };
+
+/** Manual filtering is interface navigation state, never a Core reminder view or request property. */
+export const parseReminderPageQuery = (
+  search: string,
+): { manual: boolean; query: ReminderQuery } => {
+  const manual = new URLSearchParams(search).get("filters") === "manual";
+  const parsed = parseReminderQuery(search);
+  const { view: _view, ...filters } = parsed;
+  return { manual, query: manual ? filters : parsed };
+};
+export const reminderPagePath = (query: ReminderQuery, manual: boolean): string => {
+  if (!manual) {
+    return remindersPath(query);
+  }
+  const { view: _view, ...filters } = query;
+  const path = remindersPath(filters);
+  return `${path}${path.includes("?") ? "&" : "?"}filters=manual`;
+};
