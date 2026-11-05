@@ -43,7 +43,7 @@ const TimelineEntry = ({
       <details>
         <summary aria-labelledby={headingId}>
           <span id={headingId} className="timeline-entry-heading">
-            <strong>{actLabel}</strong>
+            <strong>{actLabel}</strong>{" "}
             <span className="timeline-attribution">
               <ActorIdentity actor={entry.recordedBy} /> ·{" "}
               {observedAt === null ? (
@@ -51,7 +51,7 @@ const TimelineEntry = ({
               ) : (
                 <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
               )}
-            </span>
+            </span>{" "}
             <span className="timeline-details-label">{p.text("ui.timeline.details")}</span>
           </span>
         </summary>

@@ -207,4 +207,5 @@ it("keeps the visible act, actor and details text in the disclosure's accessible
   expect(summary).toHaveAccessibleName(/Open a case/u);
   expect(summary).toHaveAccessibleName(/Timeline recorder/u);
   expect(summary).toHaveAccessibleName(/Show details/u);
+  expect(summary).toHaveTextContent("Open a case Timeline recorder");
 });
