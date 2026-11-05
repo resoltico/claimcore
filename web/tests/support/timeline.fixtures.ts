@@ -10,7 +10,14 @@ export const timelineEntry = (
   recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
   revision: 1,
   act: "OPEN",
-  changes: { kind: "DISCLOSED", items: [] },
+  changes: {
+    kind: "DISCLOSED",
+    items: [],
+    overview: {
+      event: { kind: "CASE_OPENED", messageId: "timeline.event.caseOpened" },
+      highlights: [],
+    },
+  },
   ...value,
 });
 export const timelinePage = (

@@ -7,6 +7,10 @@ it("renders the supplied typed differences, including each money currency and ac
     <TimelineChanges
       changes={{
         kind: "DISCLOSED",
+        overview: {
+          event: { kind: "WORK_RECORDED", messageId: "timeline.event.workRecorded" },
+          highlights: [],
+        },
         items: [
           {
             kind: "CASE_FIELD",
@@ -55,7 +59,18 @@ it.each(["WITHHELD", "ERASED"] as const)("renders %s without a change panel", (k
   expect(view.container.querySelector("dl")).toBeNull();
 });
 it("renders core empty changes without inventing a comparison", () => {
-  const view = render(<TimelineChanges changes={{ kind: "DISCLOSED", items: [] }} />);
+  const view = render(
+    <TimelineChanges
+      changes={{
+        kind: "DISCLOSED",
+        overview: {
+          event: { kind: "WORK_RECORDED", messageId: "timeline.event.workRecorded" },
+          highlights: [],
+        },
+        items: [],
+      }}
+    />,
+  );
   expect(view.container).toHaveTextContent("No disclosed fields changed.");
 });
 it("renders reminder differences and work summary independently of fact differences", () => {
@@ -63,6 +78,10 @@ it("renders reminder differences and work summary independently of fact differen
     <TimelineChanges
       changes={{
         kind: "DISCLOSED",
+        overview: {
+          event: { kind: "WORK_RECORDED", messageId: "timeline.event.workRecorded" },
+          highlights: [],
+        },
         items: [
           { kind: "HANDLING_SUMMARY", change: { before: null, after: "Core summary" } },
           {
@@ -88,6 +107,10 @@ it("marks only typed empty sides for compact formatting and preserves every repl
       compact
       changes={{
         kind: "DISCLOSED",
+        overview: {
+          event: { kind: "WORK_RECORDED", messageId: "timeline.event.workRecorded" },
+          highlights: [],
+        },
         items: [
           {
             kind: "CASE_FIELD",

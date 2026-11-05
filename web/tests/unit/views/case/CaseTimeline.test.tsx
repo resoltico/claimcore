@@ -89,6 +89,10 @@ it("shows page-boundary differences immediately and appends work entries in core
     revision: 2,
     changes: {
       kind: "DISCLOSED",
+      overview: {
+        event: { kind: "REGISTRATION_AMENDED", messageId: "timeline.event.registrationAmended" },
+        highlights: [{ kind: "CHANGE", index: 0 }],
+      },
       items: [
         {
           kind: "CASE_FIELD",
@@ -135,23 +139,34 @@ it("shows page-boundary differences immediately and appends work entries in core
   expect(view.container.querySelector(".case-timeline > li")).toHaveTextContent("Core after");
 });
 
-it("keeps every supplied difference as a compact chip and the complete summary inside Show details", async () => {
+it("renders only Core-selected highlights while keeping every exact difference in details", async () => {
   const user = userEvent.setup();
   const supplied = timelineEntry({
+    act: "DECIDE",
     changes: {
       kind: "DISCLOSED",
+      overview: {
+        event: { kind: "DECISION_RECORDED", messageId: "timeline.event.decisionRecorded" },
+        highlights: [{ kind: "CHANGE", index: 1 }],
+      },
       items: [
         {
           kind: "CASE_FIELD",
           change: {
-            field: "claimantName",
-            before: { kind: "PARTY", value: "Before العربية" },
-            after: { kind: "PARTY", value: "After Latviešu" },
+            field: "paymentDecisionDate",
+            before: { kind: "DATE", value: "2026-10-01" },
+            after: { kind: "DATE", value: "2026-10-10" },
           },
         },
         {
-          kind: "HANDLING_SUMMARY",
-          change: { before: null, after: "First authored line\nSecond authored line" },
+          kind: "CASE_MONEY",
+          change: {
+            field: "payableAmount",
+            change: {
+              before: { amount: "25000", currency: "AED" },
+              after: { amount: "20000", currency: "AED" },
+            },
+          },
         },
       ],
     },
@@ -160,12 +175,14 @@ it("keeps every supplied difference as a compact chip and the complete summary i
   const entry = view.container.querySelector(".timeline-entry")!;
   const compact = entry.querySelector(".timeline-changes-compact")!;
   const details = entry.querySelector("details")!;
-  expect(compact).not.toBeNull();
-  expect(compact.querySelectorAll(".timeline-change")).toHaveLength(2);
-  expect(compact).toHaveTextContent("Before العربية");
-  expect(compact).toHaveTextContent("After Latviešu");
-  expect(compact).toHaveTextContent("Second authored line");
-  expect(details.querySelector(".timeline-changes")).toHaveTextContent("Second authored line");
+  expect(compact.querySelectorAll(".timeline-change")).toHaveLength(1);
+  expect(compact).toHaveTextContent("25,000.00 AED");
+  expect(compact).toHaveTextContent("20,000.00 AED");
+  expect(compact).not.toHaveTextContent("01/10/2026");
+  expect(compact).not.toHaveTextContent("10/10/2026");
+  expect(details.querySelectorAll(".timeline-change")).toHaveLength(2);
+  expect(details.querySelector(".timeline-changes")).toHaveTextContent("01/10/2026");
+  expect(details.querySelector(".timeline-changes")).toHaveTextContent("10/10/2026");
   expect(details).not.toHaveAttribute("open");
   await user.click(details.querySelector("summary")!);
   expect(details).toHaveAttribute("open");
@@ -181,6 +198,13 @@ it.each(["SUMMARY", "ERASED"] as const)(
           timelineEntry({
             changes: {
               kind: "DISCLOSED",
+              overview: {
+                event: {
+                  kind: "HANDLING_SUMMARY_ADDED",
+                  messageId: "timeline.event.handlingSummaryAdded",
+                },
+                highlights: [{ kind: "CHANGE", index: 0 }],
+              },
               items: [
                 {
                   kind: "HANDLING_SUMMARY",
@@ -204,8 +228,8 @@ it("keeps the visible act, actor and details text in the disclosure's accessible
     <TimelineEntries items={[timelineEntry()]} observedAt={null} detail="CURRENT" />,
   );
   const summary = view.container.querySelector("summary")!;
-  expect(summary).toHaveAccessibleName(/Open a case/u);
+  expect(summary).toHaveAccessibleName(/Case opened/u);
   expect(summary).toHaveAccessibleName(/Timeline recorder/u);
   expect(summary).toHaveAccessibleName(/Show details/u);
-  expect(summary).toHaveTextContent("Open a case Timeline recorder");
+  expect(summary).toHaveTextContent("Case opened Timeline recorder");
 });

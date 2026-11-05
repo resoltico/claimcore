@@ -171,6 +171,21 @@ const ChangedValues = ({ item }: { item: TimelineChange }) => {
       return <ReminderChanges change={item.change} />;
   }
 };
+export const TimelineChangeList = ({
+  items,
+  compact = false,
+}: {
+  items: ReadonlyArray<TimelineChange>;
+  compact?: boolean;
+}) =>
+  items.length === 0 ? null : (
+    <dl className={compact ? "timeline-changes timeline-changes-compact" : "timeline-changes"}>
+      {items.map((item) => (
+        <ChangedValues key={changeKey(item)} item={item} />
+      ))}
+    </dl>
+  );
+
 /** The core owns differences and disclosure. No comparisons or adjacent-page reconstruction occur here. */
 export const TimelineChanges = ({
   changes,
@@ -189,11 +204,5 @@ export const TimelineChanges = ({
   if (changes.items.length === 0) {
     return <p>{p.text("ui.historyNoChanges")}</p>;
   }
-  return (
-    <dl className={compact ? "timeline-changes timeline-changes-compact" : "timeline-changes"}>
-      {changes.items.map((item) => (
-        <ChangedValues key={changeKey(item)} item={item} />
-      ))}
-    </dl>
-  );
+  return <TimelineChangeList items={changes.items} compact={compact} />;
 };

@@ -56,6 +56,10 @@ const historyReply = (value: string) => ({
       timelineEntry({
         changes: {
           kind: "DISCLOSED",
+          overview: {
+            event: { kind: "CASE_OPENED", messageId: "timeline.event.caseOpened" },
+            highlights: [],
+          },
           items: [
             {
               kind: "CASE_FIELD",

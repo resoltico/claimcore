@@ -36,6 +36,13 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
           timelineEntry({
             changes: {
               kind: "DISCLOSED",
+              overview: {
+                event: {
+                  kind: "HANDLING_SUMMARY_ADDED",
+                  messageId: "timeline.event.handlingSummaryAdded",
+                },
+                highlights: [{ kind: "CHANGE", index: 0 }],
+              },
               items: [
                 {
                   kind: "HANDLING_SUMMARY",

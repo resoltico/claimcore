@@ -49,6 +49,10 @@ const fact = (revision: number) =>
     recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Laila Haddad" } }),
     changes: {
       kind: "DISCLOSED",
+      overview: {
+        event: { kind: "REGISTRATION_AMENDED", messageId: "timeline.event.registrationAmended" },
+        highlights: [{ kind: "CHANGE", index: 0 }],
+      },
       items: [
         {
           kind: "CASE_FIELD",
@@ -375,6 +379,13 @@ it("discards a late draining conflict page when explicit re-preparation replaces
         timelineEntry({
           changes: {
             kind: "DISCLOSED",
+            overview: {
+              event: {
+                kind: "HANDLING_SUMMARY_ADDED",
+                messageId: "timeline.event.handlingSummaryAdded",
+              },
+              highlights: [{ kind: "CHANGE", index: 0 }],
+            },
             items: [
               {
                 kind: "HANDLING_SUMMARY",

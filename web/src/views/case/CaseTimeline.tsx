@@ -1,8 +1,10 @@
 import { useCallback, useId, useState } from "react";
+import { resolveTimelineHighlights } from "@contracts/client";
 import type {
   CaseSelector,
   CaseTimelineEntry,
   CaseTimelinePage,
+  TimelineChanges as Changes,
   ResponseByEndpoint,
 } from "@contracts/client";
 import { Button } from "../../ui/Button";
@@ -14,10 +16,28 @@ import { usePresentation } from "../../presentation/context";
 import { renderCatalogKey } from "../../presentation/messages";
 import { productMetadata } from "../../protocol/productMetadata";
 import { RelativeTime } from "../../ui/RelativeTime";
-import { TimelineChanges } from "./TimelineChanges";
+import { TimelineChanges, TimelineChangeList } from "./TimelineChanges";
+import { TimelineEventView } from "./TimelineEventView";
 import "./timeline.css";
 const select = (reply: ResponseByEndpoint["case.timeline"]): CaseTimelinePage | null =>
   reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
+const TimelineEntryHighlights = ({
+  changes,
+  detail,
+}: {
+  changes: Changes;
+  detail: "CURRENT" | "SUMMARY" | "ERASED";
+}) => {
+  const p = usePresentation();
+  if (detail === "CURRENT") {
+    return changes.kind === "DISCLOSED" ? (
+      <TimelineChangeList items={resolveTimelineHighlights(changes)} compact />
+    ) : (
+      <TimelineChanges changes={changes} />
+    );
+  }
+  return <p>{p.text(detail === "ERASED" ? "lifecycle.ERASED.meaning" : "ui.timeline.withheld")}</p>;
+};
 const TimelineEntry = ({
   entry,
   observedAt,
@@ -43,7 +63,13 @@ const TimelineEntry = ({
       <details>
         <summary aria-labelledby={headingId}>
           <span id={headingId} className="timeline-entry-heading">
-            <strong>{actLabel}</strong>{" "}
+            <strong>
+              {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
+                <TimelineEventView event={entry.changes.overview.event} />
+              ) : (
+                actLabel
+              )}
+            </strong>{" "}
             <span className="timeline-attribution">
               <ActorIdentity actor={entry.recordedBy} /> ·{" "}
               {observedAt === null ? (
@@ -102,11 +128,7 @@ const TimelineEntry = ({
           ) : null}
         </dl>
       </details>
-      {detail === "CURRENT" ? (
-        <TimelineChanges changes={entry.changes} compact />
-      ) : (
-        <p>{p.text(detail === "ERASED" ? "lifecycle.ERASED.meaning" : "ui.timeline.withheld")}</p>
-      )}
+      <TimelineEntryHighlights changes={entry.changes} detail={detail} />
     </li>
   );
 };
