@@ -18,7 +18,7 @@
   "ui.accountDetails": "هوية الحساب وتوافره",
   "ui.actDescription": "{label}: {meaning}",
   "ui.actor": "الجهة",
-  "ui.actorRequestRetained": "للطلب الحالي هدف مختلف. تابع الطلب أو تجاهله قبل بدء إجراء لهذه الجهة.",
+  "ui.actorRequestRetained": "طلبك الحالي محفوظ. تابعه أو تجاهله قبل بدء إجراء آخر.",
   "ui.addGrant": "إضافة دور",
   "ui.after": "بعد: {value}",
   "ui.anyFilter": "الكل",

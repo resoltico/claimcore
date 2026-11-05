@@ -12,7 +12,7 @@
   "ui.accountDetails": "Konta identitāte un pieejamība",
   "ui.actDescription": "{label}: {meaning}",
   "ui.actor": "Dalībnieks",
-  "ui.actorRequestRetained": "Pašreizējam pieprasījumam ir cits mērķis. Turpiniet to vai atmetiet pirms darbības sākšanas šim dalībniekam.",
+  "ui.actorRequestRetained": "Pašreizējais pieprasījums ir saglabāts. Turpiniet to vai atmetiet pirms citas darbības sākšanas.",
   "ui.addGrant": "Pievienot lomu",
   "ui.after": "Pēc: {value}",
   "ui.anyFilter": "Jebkurš",

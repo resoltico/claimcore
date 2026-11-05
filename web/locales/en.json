@@ -12,7 +12,7 @@
   "ui.accountDetails": "Account identity and availability",
   "ui.actDescription": "{label}: {meaning}",
   "ui.actor": "Actor",
-  "ui.actorRequestRetained": "The current request has a different target. Continue it or discard it before starting an action for this actor.",
+  "ui.actorRequestRetained": "Your current request is kept. Continue it or discard it before starting another action.",
   "ui.addGrant": "Add role",
   "ui.after": "After: {value}",
   "ui.anyFilter": "Any",
