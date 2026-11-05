@@ -608,9 +608,14 @@ for (const language of ["en", "ar"] as const) {
       reads += 1;
       const input = route.request().postDataJSON() as { filter?: string };
       const entry = timelineEntry({
+        act: "CORRECT",
         recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),
         changes: {
           kind: "DISCLOSED",
+          overview: {
+            event: { kind: "FACTS_CORRECTED", messageId: "timeline.event.factsCorrected" },
+            highlights: [{ kind: "CHANGE", index: 0 }],
+          },
           items: [
             {
               kind: "CASE_MONEY",
@@ -638,6 +643,13 @@ for (const language of ["en", "ar"] as const) {
                       act: "UPDATE_WORK",
                       changes: {
                         kind: "DISCLOSED",
+                        overview: {
+                          event: {
+                            kind: "HANDLING_SUMMARY_ADDED",
+                            messageId: "timeline.event.handlingSummaryAdded",
+                          },
+                          highlights: [{ kind: "CHANGE", index: 0 }],
+                        },
                         items: [
                           {
                             kind: "HANDLING_SUMMARY",
@@ -969,6 +981,13 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                       }),
                       changes: {
                         kind: "DISCLOSED",
+                        overview: {
+                          event: {
+                            kind: "REGISTRATION_AMENDED",
+                            messageId: "timeline.event.registrationAmended",
+                          },
+                          highlights: [{ kind: "CHANGE", index: 0 }],
+                        },
                         items: [
                           {
                             kind: "CASE_FIELD",
