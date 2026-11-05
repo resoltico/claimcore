@@ -54,6 +54,7 @@ let private actorTarget endpoint (response: byte array) =
                 .GetProperty("outcome")
                 .GetProperty("data")
                 .GetProperty("actor")
+                .GetProperty("actor")
                 .GetProperty("actorId")
                 .GetString())
             (request.RootElement.GetProperty("actorId").GetString())
@@ -450,7 +451,15 @@ let private principalAdmission () =
                             issuer = issuer
                             subject = subject
                         |}
-                    act = {| kind = "REGISTER" |}
+                    act =
+                        {|
+                            kind = "REGISTER"
+                            profile =
+                                {|
+                                    displayName = "Principal boundary person"
+                                    contact = null
+                                |}
+                        |}
                 |}
 
         let samples =

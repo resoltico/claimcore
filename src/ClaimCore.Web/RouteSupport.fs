@@ -59,7 +59,8 @@ module internal RouteSupport =
         if tag = "ACCEPTED" then
             outcome
             |> Option.bind (JsonValue.tryMember "data")
-            |> Option.bind (memberText "recordedBy")
+            |> Option.bind (JsonValue.tryMember "recordedBy")
+            |> Option.bind (memberText "actorId")
             |> Option.iter (fun text -> RequestLog.actor (System.Guid.Parse text) context)
 
         WebWire.reply value
