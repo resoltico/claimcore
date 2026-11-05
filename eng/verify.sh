@@ -99,6 +99,7 @@ validate_postgres_selection() {
 # Refuse invalid expensive-stage inputs before restoring, installing browsers or building.
 for stage in "${stages[@]}"; do
   case "${stage}" in
+    workflows) python3 eng/check-verification-sequencing.py ;;
     browsers) validate_browser_selection ;;
     acceptance) refuse_diagnostic_acceptance; validate_browser_selection; validate_postgres_selection ;;
     integration | postgres | growth) validate_postgres_selection ;;

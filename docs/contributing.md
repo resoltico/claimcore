@@ -347,6 +347,11 @@ Explicit task acceptance and required clean/independent checks still apply. Trac
 (such as a full growth comparison or field retest) separately from the ordinary `Gate`. Focused runs,
 smoke selections and partial matrices establish only their reported scope, never unrun qualification.
 
+CI enforces the order: published browsers wait for frontend checks, and a full comparison waits for a
+successful ordinary `Gate`. The workflow stage rejects regressions in those dependencies and partial
+browser qualification before starting tools or containers. The matrix plan also checks its required
+tuples and counts during cheap frontend tests and spec collection, before creating its dataset.
+
 After [first checkout](#first-checkout), examples for focused iteration are:
 
 ```sh
