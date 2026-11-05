@@ -22,6 +22,12 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   expect(requests).toHaveLength(0);
   await openRecovery(page);
   const operation = await showOperationLookup(page);
+  await page.waitForLoadState("networkidle");
+  // Direct Recovery navigation starts a new document and its authenticated shell reads.
+  expect([...requests].sort()).toEqual(
+    ["POST /api/context", "POST /api/case.views", "POST /api/reminder.views"].sort(),
+  );
+  requests.length = 0;
   await expect(operation).toHaveAccessibleName("Exact operation ID");
   await operation.fill("not-an-operation-id");
   await page.getByRole("button", { name: "Look up recorded result" }).click();

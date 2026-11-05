@@ -164,10 +164,15 @@ test("canonical case links reload and browser back and forward preserve the case
   await page.reload();
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await page.getByRole("button", { name: "Back to cases", exact: true }).click();
-  await expect(page).toHaveURL(/\/cases$/u);
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",
+  );
   await page.goBack();
   await expect(page).toHaveURL((url) => url.pathname === destination);
   await page.goForward();
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",
+  );
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
 });
 for (const theme of ["light", "dark"] as const) {

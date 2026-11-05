@@ -680,14 +680,18 @@ for (const language of ["en", "ar"] as const) {
       "2026-09-01",
     );
     const timeline = page.locator(".case-timeline-panel");
-    await expect(timeline.locator("del")).toContainText("JPY");
-    await expect(timeline.locator("ins")).toContainText("EUR");
+    const highlights = timeline.locator(".timeline-changes-compact");
+    await expect(highlights.locator("del")).toContainText("JPY");
+    await expect(highlights.locator("ins")).toContainText("EUR");
     expect(reads).toBe(1);
     expect(retired).toEqual([]);
     await expectAccessible(page);
     await clean();
     await timeline.locator("summary").click();
     await expect(timeline.locator("details")).toContainText(entryOperationId);
+    const complete = timeline.locator("details .timeline-changes");
+    await expect(complete.locator("del")).toContainText("JPY");
+    await expect(complete.locator("ins")).toContainText("EUR");
     const filters = timeline.locator(".timeline-filters button");
     await filters.nth(2).click();
     await expect(timeline).toContainText("Core work change");

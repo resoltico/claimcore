@@ -89,7 +89,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await expect(steward.getByRole("status").filter({ hasText: "Voided" })).toBeVisible();
     await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
     await stewardAct(steward, reference, "ERASE");
-    await expect(steward.getByText(/Erased — only/u)).toBeVisible();
+    await expect(steward.locator(".case-lifecycle-erased")).toContainText("Erased — only");
     await expect(steward.locator(".case-fields")).toHaveCount(0);
     await expectAccessible(steward);
   } finally {
@@ -249,7 +249,8 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   await expect(owner).toBeDisabled();
   await expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
   await assertHumanOnlyBoundary(page, source.issuer, subject);
-  // Arbitrary-target grant entry is no longer exposed; keep the literal missing-principal boundary through the real API.
+  // The active authority manager retains the existing missing-target diagnostic.
+  // Unavailable callers remain non-disclosing at the service boundary.
   const missing = await browserRequest(page, "/api/operation.preview", {
     method: "POST",
     headers: {
@@ -265,7 +266,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   });
   expect(missing.status).toBe(200);
   expect(missing.payload).toMatchObject({
-    outcome: { kind: "REJECTED", data: { code: "RESOURCE_UNAVAILABLE" } },
+    outcome: { kind: "REJECTED", data: { code: "ACTOR_UNKNOWN" } },
   });
   // Close the untouched grant and person drawers through their actual controls, then exercise a rendered admission refusal.
   await page
