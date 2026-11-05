@@ -58,7 +58,12 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
     />,
   );
   expect(await screen.findAllByText("PRIOR_FULL_PAYLOAD_CANARY")).toHaveLength(2);
-  await userEvent.setup().click(screen.getByRole("button", { name: "Refresh work" }));
+  const user = userEvent.setup();
+  const controls = document.querySelector(".case-reminder-controls")!;
+  expect(controls).not.toHaveAttribute("open");
+  await user.click(controls.querySelector("summary")!);
+  expect(controls).toHaveAttribute("open");
+  await user.click(screen.getByRole("button", { name: "Refresh work" }));
   await waitFor(() => {
     expect(timeline).toHaveBeenCalledTimes(2);
   });
