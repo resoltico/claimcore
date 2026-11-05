@@ -224,3 +224,21 @@ it("keeps refused disclosure masked after transient read and conflict failures u
   );
   expect(conflictFailed.disclosureRefused).toBe(true);
 });
+
+it("discarding authored intent cannot restore a refused disclosure without a positive observation", () => {
+  const initialState = initial();
+  const refusedState = { ...initialState, disclosureRefused: true };
+  const resetState = operationReducer(refusedState, {
+    type: "RESET",
+    state: initial(),
+    abandon: false,
+  });
+  expect(resetState.disclosureRefused).toBe(true);
+  expect(resetState.disclosureContext).toBe(refusedState.disclosureContext);
+  const identity = effect("explicit-current-read");
+  const restored = operationReducer(
+    { ...resetState, disclosureRead: identity },
+    { type: "DISCLOSED", identity, value: initialState.caseObservation! },
+  );
+  expect(restored.disclosureRefused).toBe(false);
+});

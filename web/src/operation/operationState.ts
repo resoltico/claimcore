@@ -483,6 +483,7 @@ const reset = (
     ? state
     : {
         ...action.state,
+        disclosureRefused: state.disclosureRefused || action.state.disclosureRefused,
         context: state.context,
         disclosureContext: state.disclosureContext,
       };
