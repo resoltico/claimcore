@@ -238,6 +238,28 @@ let private timelineBudget () =
             Availability = ActorAvailability.Available
         }
 
+    let changes =
+        [
+            TimelineChange.Responsibility
+                {
+                    Before = Some(person 2 (char 2))
+                    After = Some(person 3 (char 3))
+                }
+            TimelineChange.HandlingSummary
+                {
+                    Before =
+                        Some(
+                            HandlingSummary.parse (String(char 4, HandlingSummary.MaximumBytes))
+                            |> required
+                        )
+                    After =
+                        Some(
+                            HandlingSummary.parse (String(char 5, HandlingSummary.MaximumBytes))
+                            |> required
+                        )
+                }
+        ]
+
     let entry =
         {
             CaseTimelineEntry.OperationId = CaseFixtures.operationId id
@@ -247,30 +269,14 @@ let private timelineBudget () =
             RecordedBy = person 1 (char 1)
             Changes =
                 TimelineChanges.Disclosed
-                    [
-                        TimelineChange.Responsibility
+                    {
+                        Items = changes
+                        Overview =
                             {
-                                Before = Some(person 2 (char 2))
-                                After = Some(person 3 (char 3))
+                                Event = TimelineEvent.ResponsibilityAssigned(person 3 (char 3))
+                                Highlights = [ TimelineHighlight.Change 1 ]
                             }
-                        TimelineChange.HandlingSummary
-                            {
-                                Before =
-                                    Some(
-                                        HandlingSummary.parse (
-                                            String(char 4, HandlingSummary.MaximumBytes)
-                                        )
-                                        |> required
-                                    )
-                                After =
-                                    Some(
-                                        HandlingSummary.parse (
-                                            String(char 5, HandlingSummary.MaximumBytes)
-                                        )
-                                        |> required
-                                    )
-                            }
-                    ]
+                    }
         }
 
     let bytes =
@@ -288,7 +294,7 @@ let private timelineBudget () =
     let caseBound = 2 * LedgerPayload.MaximumBytes + 6 * PartyName.MaximumBytes + 4096
 
     let workBound =
-        12 * HandlingSummary.MaximumBytes + 18 * PartyName.MaximumBytes + 4096
+        12 * HandlingSummary.MaximumBytes + 24 * PartyName.MaximumBytes + 4096
 
     let bound = Paging.MaximumPageSize * max caseBound workBound + 4096
 

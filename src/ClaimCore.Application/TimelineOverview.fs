@@ -14,20 +14,29 @@ module internal TimelineOverview =
                 Highlights = highlights
             }
 
+    let private select predicate changes =
+        changes
+        |> List.indexed
+        |> List.choose (fun (index, change) ->
+            if predicate change then
+                Some(TimelineHighlight.Change index)
+            else
+                None)
+
     let private caseHighlights act changes =
         match act with
         | CaseActKind.AmendRegistration
-        | CaseActKind.Correct -> changes
+        | CaseActKind.Correct -> select (fun _ -> true) changes
         | CaseActKind.Decide
         | CaseActKind.WithdrawDecision ->
             changes
-            |> List.filter (function
+            |> select (function
                 | TimelineChange.CaseMoney value -> value.FieldName = BusinessField.PayableAmount
                 | _ -> false)
         | CaseActKind.RecordPayment
         | CaseActKind.ClearPayment ->
             changes
-            |> List.filter (function
+            |> select (function
                 | TimelineChange.CaseField value -> value.FieldName = BusinessField.PaymentDate
                 | _ -> false)
         | CaseActKind.Open
@@ -52,7 +61,7 @@ module internal TimelineOverview =
 
         let highlights =
             changes
-            |> List.filter (function
+            |> select (function
                 | TimelineChange.HandlingSummary _ -> true
                 | _ -> false)
 
@@ -73,18 +82,22 @@ module internal TimelineOverview =
 
     let private reminderHighlights dueOnly changes =
         changes
-        |> List.choose (function
+        |> List.indexed
+        |> List.choose (fun (index, change) ->
+            match change with
             | TimelineChange.Reminder difference ->
-                let difference =
-                    { difference with
-                        Action = if dueOnly then None else difference.Action
-                        State = None
-                    }
+                let facets =
+                    [
+                        if not dueOnly && difference.Action.IsSome then
+                            TimelineFacet.Action
+                        if difference.Due.IsSome then
+                            TimelineFacet.Due
+                    ]
 
-                if difference.Action.IsNone && difference.Due.IsNone then
+                if facets.IsEmpty then
                     None
                 else
-                    Some(TimelineChange.Reminder difference)
+                    Some(TimelineHighlight.Reminder(index, facets))
             | _ -> None)
 
     let private reminder scope act effects changes =

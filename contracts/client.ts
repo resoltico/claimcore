@@ -493,7 +493,11 @@ export type TimelineEvent_REMINDER_REOPENED = { readonly "kind": "REMINDER_REOPE
 export type TimelineEvent_RESPONSIBILITY_ASSIGNED = { readonly "kind": "RESPONSIBILITY_ASSIGNED"; readonly "messageId": "timeline.event.responsibilityAssigned"; readonly "person": ActorRef; };
 export type TimelineEvent_RESPONSIBILITY_CLEARED = { readonly "kind": "RESPONSIBILITY_CLEARED"; readonly "messageId": "timeline.event.responsibilityCleared"; readonly "person": ActorRef; };
 export type TimelineEvent_WORK_RECORDED = { readonly "kind": "WORK_RECORDED"; readonly "messageId": "timeline.event.workRecorded"; };
-export type TimelineOverview = { readonly "event": TimelineEvent; readonly "highlights": ReadonlyArray<TimelineChange>; };
+export type TimelineFacet = "ACTION" | "DUE" | "STATE";
+export type TimelineHighlight = TimelineHighlight_CHANGE | TimelineHighlight_REMINDER;
+export type TimelineHighlight_CHANGE = { readonly "kind": "CHANGE"; readonly "index": number; };
+export type TimelineHighlight_REMINDER = { readonly "kind": "REMINDER"; readonly "index": number; readonly "facets": ReadonlyArray<TimelineFacet>; };
+export type TimelineOverview = { readonly "event": TimelineEvent; readonly "highlights": ReadonlyArray<TimelineHighlight>; };
 export type TimelineReminderVersion = { readonly "reminderId": Uuid; readonly "revision": number; };
 export type Uuid = string;
 export type WorkAct = WorkAct_UPDATE_WORK;
@@ -620,6 +624,38 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
   }
   return path;
 };
+// Relational response grammar: selectors reference only already supplied disclosed differences.
+const wireTimelineDisclosure = (structural: WireCheck): WireCheck => (value,draft,path) => {
+  const issue=structural(value,draft,path); if(issue!==null||draft) { return issue; }
+  const disclosure=value as TimelineChanges_DISCLOSED; let previous=-1;
+  for(let ordinal=0;ordinal<disclosure.overview.highlights.length;ordinal++) {
+    const reference=disclosure.overview.highlights[ordinal]!; const where=[...path,"overview","highlights",String(ordinal)];
+    const item=disclosure.items[reference.index];
+    if(reference.index<=previous||item===undefined) { return where; } previous=reference.index;
+    if(reference.kind==="CHANGE") { if(item.kind==="REMINDER") { return where; } continue; }
+    if(item.kind!=="REMINDER"||reference.facets.length===0) { return where; }
+    let previousFacet=-1;
+    for(const facet of reference.facets) {
+      const rank=["ACTION","DUE","STATE"].indexOf(facet); const field=facet.toLowerCase() as "action"|"due"|"state";
+      if(rank<=previousFacet||item.change[field]===null) { return where; } previousFacet=rank;
+    }
+  }
+  return null;
+};
+/** Resolve Core-selected references mechanically; no renderer chooses business importance or values. */
+export const resolveTimelineHighlights = (disclosure: TimelineChanges_DISCLOSED): ReadonlyArray<TimelineChange> => {
+  if(check_TimelineChanges_DISCLOSED(disclosure,false,[])!==null) { throw new Error("Invalid timeline highlight references."); }
+  return disclosure.overview.highlights.map(reference=>{
+    const item=disclosure.items[reference.index]!;
+    if(reference.kind==="CHANGE") { return item; }
+    if(item.kind!=="REMINDER") { throw new Error("Invalid reminder highlight reference."); }
+    return {kind:"REMINDER",change:{reminderId:item.change.reminderId,
+      action:reference.facets.includes("ACTION")?item.change.action:null,
+      due:reference.facets.includes("DUE")?item.change.due:null,
+      state:reference.facets.includes("STATE")?item.change.state:null}};
+  });
+};
+
 
 function check_AccessRequest(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["principal",false,check_Principal],["firstSeen",false,wireString(27,27,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z$/u,"date-time",null)],["lastSeen",false,wireString(27,27,/^[0-9]{4}-[0-9]{2}-[0-9]{2}T[0-9]{2}:[0-9]{2}:[0-9]{2}\.[0-9]{6}Z$/u,"date-time",null)],["claims",false,check_RequesterClaims]]))(value,draft,path); }
 function check_AccessRequestDismissReply(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["outcome",false,check_AccessRequestDismissReply_Outcome]]))(value,draft,path); }
@@ -1114,7 +1150,7 @@ function check_TimelineChange_LIFECYCLE(value:unknown,draft:boolean,path:WireIss
 function check_TimelineChange_REMINDER(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REMINDER")],["change",false,check_ReminderDifference]]))(value,draft,path); }
 function check_TimelineChange_RESPONSIBILITY(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("RESPONSIBILITY")],["change",false,check_ResponsibilityChange]]))(value,draft,path); }
 function check_TimelineChanges(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_TimelineChanges_DISCLOSED,check_TimelineChanges_WITHHELD,check_TimelineChanges_ERASED],"kind",{"DISCLOSED":check_TimelineChanges_DISCLOSED,"WITHHELD":check_TimelineChanges_WITHHELD,"ERASED":check_TimelineChanges_ERASED}))(value,draft,path); }
-function check_TimelineChanges_DISCLOSED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("DISCLOSED")],["items",false,wireArray(check_TimelineChange,0,17)],["overview",false,check_TimelineOverview]]))(value,draft,path); }
+function check_TimelineChanges_DISCLOSED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireTimelineDisclosure(wireObject([["kind",false,wireConstant("DISCLOSED")],["items",false,wireArray(check_TimelineChange,0,17)],["overview",false,check_TimelineOverview]])))(value,draft,path); }
 function check_TimelineChanges_ERASED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("ERASED")]]))(value,draft,path); }
 function check_TimelineChanges_WITHHELD(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("WITHHELD")]]))(value,draft,path); }
 function check_TimelineEvent(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_TimelineEvent_CASE_OPENED,check_TimelineEvent_REGISTRATION_AMENDED,check_TimelineEvent_FACTS_CORRECTED,check_TimelineEvent_DECISION_RECORDED,check_TimelineEvent_DECISION_WITHDRAWN,check_TimelineEvent_PAYMENT_RECORDED,check_TimelineEvent_PAYMENT_CLEARED,check_TimelineEvent_CASE_CLOSED,check_TimelineEvent_CASE_REOPENED,check_TimelineEvent_CASE_VOIDED,check_TimelineEvent_CASE_REINSTATED,check_TimelineEvent_CASE_ERASED,check_TimelineEvent_RESPONSIBILITY_ASSIGNED,check_TimelineEvent_RESPONSIBILITY_CLEARED,check_TimelineEvent_WORK_RECORDED,check_TimelineEvent_HANDLING_SUMMARY_ADDED,check_TimelineEvent_HANDLING_SUMMARY_CHANGED,check_TimelineEvent_HANDLING_SUMMARY_CLEARED,check_TimelineEvent_REMINDER_PLANNED,check_TimelineEvent_REMINDER_CHANGED,check_TimelineEvent_REMINDER_COMPLETED,check_TimelineEvent_REMINDER_CANCELLED,check_TimelineEvent_REMINDER_REOPENED,check_TimelineEvent_REMINDER_COMPLETED_AND_PLANNED],"kind",{"CASE_OPENED":check_TimelineEvent_CASE_OPENED,"REGISTRATION_AMENDED":check_TimelineEvent_REGISTRATION_AMENDED,"FACTS_CORRECTED":check_TimelineEvent_FACTS_CORRECTED,"DECISION_RECORDED":check_TimelineEvent_DECISION_RECORDED,"DECISION_WITHDRAWN":check_TimelineEvent_DECISION_WITHDRAWN,"PAYMENT_RECORDED":check_TimelineEvent_PAYMENT_RECORDED,"PAYMENT_CLEARED":check_TimelineEvent_PAYMENT_CLEARED,"CASE_CLOSED":check_TimelineEvent_CASE_CLOSED,"CASE_REOPENED":check_TimelineEvent_CASE_REOPENED,"CASE_VOIDED":check_TimelineEvent_CASE_VOIDED,"CASE_REINSTATED":check_TimelineEvent_CASE_REINSTATED,"CASE_ERASED":check_TimelineEvent_CASE_ERASED,"RESPONSIBILITY_ASSIGNED":check_TimelineEvent_RESPONSIBILITY_ASSIGNED,"RESPONSIBILITY_CLEARED":check_TimelineEvent_RESPONSIBILITY_CLEARED,"WORK_RECORDED":check_TimelineEvent_WORK_RECORDED,"HANDLING_SUMMARY_ADDED":check_TimelineEvent_HANDLING_SUMMARY_ADDED,"HANDLING_SUMMARY_CHANGED":check_TimelineEvent_HANDLING_SUMMARY_CHANGED,"HANDLING_SUMMARY_CLEARED":check_TimelineEvent_HANDLING_SUMMARY_CLEARED,"REMINDER_PLANNED":check_TimelineEvent_REMINDER_PLANNED,"REMINDER_CHANGED":check_TimelineEvent_REMINDER_CHANGED,"REMINDER_COMPLETED":check_TimelineEvent_REMINDER_COMPLETED,"REMINDER_CANCELLED":check_TimelineEvent_REMINDER_CANCELLED,"REMINDER_REOPENED":check_TimelineEvent_REMINDER_REOPENED,"REMINDER_COMPLETED_AND_PLANNED":check_TimelineEvent_REMINDER_COMPLETED_AND_PLANNED}))(value,draft,path); }
@@ -1142,7 +1178,11 @@ function check_TimelineEvent_REMINDER_REOPENED(value:unknown,draft:boolean,path:
 function check_TimelineEvent_RESPONSIBILITY_ASSIGNED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("RESPONSIBILITY_ASSIGNED")],["messageId",false,wireUnion([wireConstant("timeline.event.responsibilityAssigned")],null,{})],["person",false,check_ActorRef]]))(value,draft,path); }
 function check_TimelineEvent_RESPONSIBILITY_CLEARED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("RESPONSIBILITY_CLEARED")],["messageId",false,wireUnion([wireConstant("timeline.event.responsibilityCleared")],null,{})],["person",false,check_ActorRef]]))(value,draft,path); }
 function check_TimelineEvent_WORK_RECORDED(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("WORK_RECORDED")],["messageId",false,wireUnion([wireConstant("timeline.event.workRecorded")],null,{})]]))(value,draft,path); }
-function check_TimelineOverview(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["event",false,check_TimelineEvent],["highlights",false,wireArray(check_TimelineChange,0,17)]]))(value,draft,path); }
+function check_TimelineFacet(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([wireConstant("ACTION"),wireConstant("DUE"),wireConstant("STATE")],null,{}))(value,draft,path); }
+function check_TimelineHighlight(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_TimelineHighlight_CHANGE,check_TimelineHighlight_REMINDER],"kind",{"CHANGE":check_TimelineHighlight_CHANGE,"REMINDER":check_TimelineHighlight_REMINDER}))(value,draft,path); }
+function check_TimelineHighlight_CHANGE(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("CHANGE")],["index",false,wireInteger(0,16)]]))(value,draft,path); }
+function check_TimelineHighlight_REMINDER(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["kind",false,wireConstant("REMINDER")],["index",false,wireInteger(0,16)],["facets",false,wireArray(check_TimelineFacet,1,3)]]))(value,draft,path); }
+function check_TimelineOverview(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["event",false,check_TimelineEvent],["highlights",false,wireArray(check_TimelineHighlight,0,17)]]))(value,draft,path); }
 function check_TimelineReminderVersion(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireObject([["reminderId",false,check_Uuid],["revision",false,wireInteger(1,9007199254740991)]]))(value,draft,path); }
 function check_Uuid(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireString(36,36,/^(?!00000000-0000-0000-0000-000000000000$)[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/u,"uuid",null))(value,draft,path); }
 function check_WorkAct(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return (wireUnion([check_WorkAct_UPDATE_WORK],"kind",{"UPDATE_WORK":check_WorkAct_UPDATE_WORK}))(value,draft,path); }
@@ -1238,6 +1278,6 @@ export const capabilityRoleRequirements = {"READ_CASE":["CASE_READER","CASE_REGI
 export const presentationAccents = ["green","blue"] as const;
 export const presentationModes = ["system","light","dark"] as const;
 export const presentationDefaults = { language: "en", displayLocale: "en-GB" } as const;
-export const consumerContractIdentity = "f7dbd08a32dc600cd8d5b047922c194f5a6499d0256db80c2ea3f9c4b6dc2fcf";
+export const consumerContractIdentity = "6673e95ea627c4dabd420f17f8f03c8d530925926a3c8ce618b4f2dc540c3c9a";
 export const strictByteProfile = {"maximumDepth":32,"maximumInvocationBytes":131072,"maximumRequestBytes":65536,"maximumResponseBytes":4194304,"maximumSafeInteger":9007199254740991} as const;
 export const limits = { maximumPageSize: 50, requestBytes: 65536, responseBytes: 4194304 } as const;

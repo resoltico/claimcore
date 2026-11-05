@@ -171,9 +171,11 @@ module internal TimelineHistory =
                                                     subject
                                                     content
                                                     changes)
-                                            |> Result.map (fun overview ->
-                                                TimelineChanges.Disclosed
-                                                    { Items = changes; Overview = overview }))
+                                            |> Result.bind (fun overview ->
+                                                TimelineDisclosure.create changes overview
+                                                |> Result.map TimelineChanges.Disclosed
+                                                |> Result.mapError (fun _ ->
+                                                    CoreFault.StoreIntegrityError)))
 
                                 match
                                     subject entry.Subject,

@@ -117,6 +117,38 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
   }
   return path;
 };
+// Relational response grammar: selectors reference only already supplied disclosed differences.
+const wireTimelineDisclosure = (structural: WireCheck): WireCheck => (value,draft,path) => {
+  const issue=structural(value,draft,path); if(issue!==null||draft) { return issue; }
+  const disclosure=value as TimelineChanges_DISCLOSED; let previous=-1;
+  for(let ordinal=0;ordinal<disclosure.overview.highlights.length;ordinal++) {
+    const reference=disclosure.overview.highlights[ordinal]!; const where=[...path,"overview","highlights",String(ordinal)];
+    const item=disclosure.items[reference.index];
+    if(reference.index<=previous||item===undefined) { return where; } previous=reference.index;
+    if(reference.kind==="CHANGE") { if(item.kind==="REMINDER") { return where; } continue; }
+    if(item.kind!=="REMINDER"||reference.facets.length===0) { return where; }
+    let previousFacet=-1;
+    for(const facet of reference.facets) {
+      const rank=["ACTION","DUE","STATE"].indexOf(facet); const field=facet.toLowerCase() as "action"|"due"|"state";
+      if(rank<=previousFacet||item.change[field]===null) { return where; } previousFacet=rank;
+    }
+  }
+  return null;
+};
+/** Resolve Core-selected references mechanically; no renderer chooses business importance or values. */
+export const resolveTimelineHighlights = (disclosure: TimelineChanges_DISCLOSED): ReadonlyArray<TimelineChange> => {
+  if(check_TimelineChanges_DISCLOSED(disclosure,false,[])!==null) { throw new Error("Invalid timeline highlight references."); }
+  return disclosure.overview.highlights.map(reference=>{
+    const item=disclosure.items[reference.index]!;
+    if(reference.kind==="CHANGE") { return item; }
+    if(item.kind!=="REMINDER") { throw new Error("Invalid reminder highlight reference."); }
+    return {kind:"REMINDER",change:{reminderId:item.change.reminderId,
+      action:reference.facets.includes("ACTION")?item.change.action:null,
+      due:reference.facets.includes("DUE")?item.change.due:null,
+      state:reference.facets.includes("STATE")?item.change.state:null}};
+  });
+};
+
 """
 
     let private optionNumber value =
@@ -245,7 +277,10 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
                 "function check_"
                 + identifier name
                 + "(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return ("
-                + check schema
+                + (if name = "TimelineChanges.DISCLOSED" then
+                       "wireTimelineDisclosure(" + check schema + ")"
+                   else
+                       check schema)
                 + ")(value,draft,path); }")
 
         [

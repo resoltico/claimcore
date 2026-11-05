@@ -15705,6 +15705,75 @@
           "messageId"
         ]
       },
+      "TimelineFacet": {
+        "enum": [
+          "ACTION",
+          "DUE",
+          "STATE"
+        ]
+      },
+      "TimelineHighlight": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TimelineHighlight.CHANGE"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineHighlight.REMINDER"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CHANGE": "#/components/schemas/TimelineHighlight.CHANGE",
+            "REMINDER": "#/components/schemas/TimelineHighlight.REMINDER"
+          }
+        }
+      },
+      "TimelineHighlight.CHANGE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CHANGE"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 16
+          }
+        },
+        "required": [
+          "kind",
+          "index"
+        ]
+      },
+      "TimelineHighlight.REMINDER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER"
+          },
+          "index": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 16
+          },
+          "facets": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineFacet"
+            },
+            "minItems": 1,
+            "maxItems": 3
+          }
+        },
+        "required": [
+          "kind",
+          "index",
+          "facets"
+        ]
+      },
       "TimelineOverview": {
         "type": "object",
         "additionalProperties": false,
@@ -15715,7 +15784,7 @@
           "highlights": {
             "type": "array",
             "items": {
-              "$ref": "#/components/schemas/TimelineChange"
+              "$ref": "#/components/schemas/TimelineHighlight"
             },
             "minItems": 0,
             "maxItems": 17

@@ -243,6 +243,36 @@ module TimelineCodecs =
                          |> field "nextDue" (fun (_, _, value) -> value) calendarDate)
             ]
 
+    let private highlight =
+        let index = integer 0L (int64 CaseFields.declarations.Length) |> map int int64
+
+        let facets =
+            TimelineFacet.all
+            |> List.map (fun facet -> facet, TimelineFacet.token facet)
+            |> enumeration
+            |> named "TimelineFacet"
+
+        tagged
+            "TimelineHighlight"
+            [
+                variant
+                    "CHANGE"
+                    TimelineHighlight.Change
+                    (function
+                    | TimelineHighlight.Change index -> Some index
+                    | _ -> None)
+                    (record id |> field "index" id index)
+                variant
+                    "REMINDER"
+                    TimelineHighlight.Reminder
+                    (function
+                    | TimelineHighlight.Reminder(index, facets) -> Some(index, facets)
+                    | _ -> None)
+                    (record (fun index facets -> index, facets)
+                     |> field "index" fst index
+                     |> field "facets" snd (boundedList 1 3 facets))
+            ]
+
     let private overview =
         (record (fun event highlights ->
             {
@@ -251,31 +281,39 @@ module TimelineCodecs =
             })
         : Fields<TimelineOverview, _>)
         |> field "event" _.Event event
-        |> field "highlights" _.Highlights (list (CaseFields.declarations.Length + 1) change)
+        |> field "highlights" _.Highlights (list (CaseFields.declarations.Length + 1) highlight)
         |> build
         |> named "TimelineOverview"
 
     let private changes =
-        tagged
-            "TimelineChanges"
-            [
-                variant
-                    "DISCLOSED"
-                    TimelineChanges.Disclosed
-                    (function
-                    | TimelineChanges.Disclosed value -> Some value
-                    | _ -> None)
-                    ((record (fun items overview ->
-                        {
-                            TimelineDisclosure.Items = items
-                            Overview = overview
-                        })
-                     : Fields<TimelineDisclosure, _>)
-                     |> field "items" _.Items (list (CaseFields.declarations.Length + 1) change)
-                     |> field "overview" _.Overview overview)
-                unitVariant "WITHHELD" TimelineChanges.Withheld
-                unitVariant "ERASED" TimelineChanges.Erased
-            ]
+        let codec =
+            tagged
+                "TimelineChanges"
+                [
+                    variant
+                        "DISCLOSED"
+                        TimelineChanges.Disclosed
+                        (function
+                        | TimelineChanges.Disclosed value -> Some value
+                        | _ -> None)
+                        ((record (fun items overview ->
+                            {
+                                TimelineDisclosure.Items = items
+                                Overview = overview
+                            })
+                         : Fields<TimelineDisclosure, _>)
+                         |> field "items" _.Items (list (CaseFields.declarations.Length + 1) change)
+                         |> field "overview" _.Overview overview)
+                    unitVariant "WITHHELD" TimelineChanges.Withheld
+                    unitVariant "ERASED" TimelineChanges.Erased
+                ]
+
+        constrained
+            codec.Schema
+            (function
+            | TimelineChanges.Disclosed value -> TimelineDisclosure.resolve value |> Result.isOk
+            | _ -> true)
+            codec
 
     let private entry operation position at author changes subject =
         {

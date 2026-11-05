@@ -279,7 +279,9 @@ let tests =
                     "Reminder conflicts isolate their own revisions"
 
                 match reminders.Entries.Head.Changes with
-                | TimelineChanges.Disclosed [ TimelineChange.Reminder difference ] ->
+                | TimelineChanges.Disclosed {
+                                                Items = [ TimelineChange.Reminder difference ]
+                                            } ->
                     Expect.equal
                         (ReminderId.value difference.ReminderId)
                         (id 77300)

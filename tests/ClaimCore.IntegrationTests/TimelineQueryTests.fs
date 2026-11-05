@@ -241,7 +241,9 @@ let tests =
                 let! cleared = Service.timeline owner request token
 
                 match (read cleared).Items.Head.Changes with
-                | TimelineChanges.Disclosed [ TimelineChange.Responsibility difference ] ->
+                | TimelineChanges.Disclosed {
+                                                Items = [ TimelineChange.Responsibility difference ]
+                                            } ->
                     Expect.equal
                         (difference.Before |> Option.map (fun actor -> ActorId.value actor.ActorId))
                         (Some(id 99210))
@@ -290,7 +292,9 @@ let tests =
                 let! money = Service.timeline owner request token
 
                 match (read money).Items.Head.Changes with
-                | TimelineChanges.Disclosed [ TimelineChange.CaseMoney difference ] ->
+                | TimelineChanges.Disclosed {
+                                                Items = [ TimelineChange.CaseMoney difference ]
+                                            } ->
                     Expect.equal
                         (difference.Change.Before |> Option.map Money.currency)
                         (Some "EUR")

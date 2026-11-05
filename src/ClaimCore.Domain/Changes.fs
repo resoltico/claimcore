@@ -78,10 +78,30 @@ type TimelineEvent =
         nextAction: ReminderAction *
         nextDue: CalendarDate
 
+[<RequireQualifiedAccess>]
+type TimelineFacet =
+    | Action
+    | Due
+    | State
+
+module TimelineFacet =
+    let all = [ TimelineFacet.Action; TimelineFacet.Due; TimelineFacet.State ]
+
+    let token =
+        function
+        | TimelineFacet.Action -> "ACTION"
+        | TimelineFacet.Due -> "DUE"
+        | TimelineFacet.State -> "STATE"
+
+[<RequireQualifiedAccess>]
+type TimelineHighlight =
+    | Change of index: int
+    | Reminder of index: int * facets: TimelineFacet list
+
 type TimelineOverview =
     {
         Event: TimelineEvent
-        Highlights: TimelineChange list
+        Highlights: TimelineHighlight list
     }
 
 type TimelineDisclosure =
@@ -89,6 +109,88 @@ type TimelineDisclosure =
         Items: TimelineChange list
         Overview: TimelineOverview
     }
+
+module TimelineDisclosure =
+    let private reminderFacet (difference: ReminderDifference) =
+        function
+        | TimelineFacet.Action -> difference.Action.IsSome
+        | TimelineFacet.Due -> difference.Due.IsSome
+        | TimelineFacet.State -> difference.State.IsSome
+
+    let private rank =
+        function
+        | TimelineFacet.Action -> 0
+        | TimelineFacet.Due -> 1
+        | TimelineFacet.State -> 2
+
+    /// Canonical selectors are a bounded mechanical projection, never a second source of business values.
+    let resolve (disclosure: TimelineDisclosure) =
+        let index =
+            function
+            | TimelineHighlight.Change index
+            | TimelineHighlight.Reminder(index, _) -> index
+
+        let selectors = disclosure.Overview.Highlights
+
+        let ordered =
+            selectors
+            |> List.pairwise
+            |> List.forall (fun (before, after) -> index before < index after)
+
+        let rec collect accumulated =
+            function
+            | [] -> Ok(List.rev accumulated)
+            | selector :: rest ->
+                match
+                    selector,
+                    (if index selector < 0 then
+                         None
+                     else
+                         List.tryItem (index selector) disclosure.Items)
+                with
+                | TimelineHighlight.Change _, Some(TimelineChange.Reminder _) ->
+                    Error "A reminder highlight requires explicit facets."
+                | TimelineHighlight.Change _, Some value -> collect (value :: accumulated) rest
+                | TimelineHighlight.Reminder(_, facets), Some(TimelineChange.Reminder difference) when
+                    not facets.IsEmpty
+                    && (facets
+                        |> List.pairwise
+                        |> List.forall (fun (before, after) -> rank before < rank after))
+                    && (facets |> List.forall (reminderFacet difference))
+                    ->
+                    let value =
+                        TimelineChange.Reminder
+                            { difference with
+                                Action =
+                                    if List.contains TimelineFacet.Action facets then
+                                        difference.Action
+                                    else
+                                        None
+                                Due =
+                                    if List.contains TimelineFacet.Due facets then
+                                        difference.Due
+                                    else
+                                        None
+                                State =
+                                    if List.contains TimelineFacet.State facets then
+                                        difference.State
+                                    else
+                                        None
+                            }
+
+                    collect (value :: accumulated) rest
+                | _ ->
+                    Error
+                        "A timeline highlight must select an existing value and canonical nonempty facets."
+
+        if not ordered then
+            Error "Timeline highlight indexes must be strictly increasing."
+        else
+            collect [] selectors
+
+    let create items (overview: TimelineOverview) =
+        let disclosure: TimelineDisclosure = { Items = items; Overview = overview }
+        resolve disclosure |> Result.map (fun _ -> disclosure)
 
 [<RequireQualifiedAccess>]
 type TimelineChanges =
