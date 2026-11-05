@@ -134,6 +134,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await expect(page.locator("#case-detail-title")).toBeVisible();
     await expect(page.locator(".success-toast")).toContainText("Case closed.");
     await startAct(page, "CORRECT", "en");
+    await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);
     const mode = page.locator('input[type="radio"][name="act.groups.decision.kind"]');
     await expect(mode).toHaveCount(1);
