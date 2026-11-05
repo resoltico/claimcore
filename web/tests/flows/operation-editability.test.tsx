@@ -25,7 +25,7 @@ const current: CurrentCase = caseViewInput({
 });
 const expectAuthoringDisabled = () => {
   const controls = document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
-    ".operation-editor form input, .operation-editor form button[role=combobox]",
+    ".operation-form-card input, .operation-form-card button[role=combobox]",
   );
   expect(controls.length).toBeGreaterThan(1);
   for (const control of controls) {
@@ -102,13 +102,11 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
     );
     expectAuthoringDisabled();
     preparing.resolve(previewReply());
-    await screen.findByRole("dialog", {
-      name: "Review changes",
-    });
-    expectAuthoringDisabled();
+    await screen.findByRole("dialog");
+    expect(screen.queryByRole("textbox")).toBeNull();
     await waitForReviewConfirm();
     await user.click(reviewConfirm());
-    expectAuthoringDisabled();
+    expect(screen.queryByRole("textbox")).toBeNull();
     expect(
       screen.getByRole("button", {
         name: "Recording…",

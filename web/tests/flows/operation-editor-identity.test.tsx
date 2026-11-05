@@ -83,6 +83,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     .mockImplementationOnce(previewForRequest(preparedResponse()))
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
+  vi.spyOn(crypto, "randomUUID").mockReturnValueOnce("20000000-0000-4000-8000-000000000001");
   render(editor(null, "OPEN"));
   fillRegistrationInputs({
     claimantName: "Synthetic A",

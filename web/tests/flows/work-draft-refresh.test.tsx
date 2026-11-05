@@ -42,7 +42,7 @@ it("retains a work draft through same-owner session refresh while masking the un
   const view = render(detail("before"));
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: "Change Handling summary" }));
-  expect(screen.getByRole("heading", { name: "Update case work" })).toHaveFocus();
+  expect(screen.getByRole("dialog", { name: "Update case work" })).toHaveFocus();
   await user.click(
     document.querySelector<HTMLInputElement>('input[data-selects-fields~="handlingSummary"]')!,
   );
@@ -64,7 +64,7 @@ it("retains a work draft through same-owner session refresh while masking the un
     "private work draft\nثانٍ",
   );
   expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
-  await user.click(screen.getByRole("button", { name: "Back to case" }));
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
   expect(await screen.findByRole("button", { name: "Change Handling summary" })).toHaveFocus();
 });

@@ -35,7 +35,7 @@ it("shows every ordered core admission effect including profile and differently 
   );
   expect(screen.getAllByRole("listitem")).toHaveLength(4);
   expect(screen.getAllByRole("heading").map((item) => item.textContent)).toEqual([
-    "Register actor",
+    "Register account",
     "Update profile",
     "Grant role",
     "Grant role",

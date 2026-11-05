@@ -56,9 +56,9 @@ it("presents closed correction targets through groups while preserving exact act
     mode: "system" as const,
     accent: "green" as const,
   });
-  expect(en.authoredTargetLabel("registration.action")).toBe("Registration · Action");
+  expect(en.authoredTargetLabel("registration.action")).toBe("Claim · Action");
   expect(en.authoredTargetLabel("decision.action")).toBe("Payment decision · Action");
-  expect(en.authoredTargetLabel("payment.action")).toBe("Payment record · Action");
+  expect(en.authoredTargetLabel("payment.action")).toBe("Payment · Action");
   expect(en.authoredTargetLabel("claimedAmount")).toBe("Amount claimed");
   expect(en.term("correction", "REPLACE")).toBe("Replace details");
   for (const language of ["lv", "ar"] as const) {

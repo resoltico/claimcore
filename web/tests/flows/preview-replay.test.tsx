@@ -14,7 +14,7 @@ it("readonly preview can be repeated with its unchanged exact draft after lost o
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await screen.findByRole("alert");
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("dialog", { name: "Review changes" });
+  await screen.findByRole("dialog", { name: "Close the case" });
   expect(vi.mocked(fetch).mock.calls[1]?.[1]?.body).toBe(vi.mocked(fetch).mock.calls[0]?.[1]?.body);
 });
 it("already accepted preview returns its recorded receipt without another execution", async () => {

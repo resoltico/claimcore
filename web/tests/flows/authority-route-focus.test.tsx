@@ -5,7 +5,7 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { Dashboard } from "../../src/views/Dashboard";
-it("focuses the selected actor route h1 and restores its originating control on return", async () => {
+it("focuses the selected person dialog and restores its originating control on return", async () => {
   stubDashboardContext();
   mockEndpoint("case.list").mockResolvedValue({
     kind: "outcome",
@@ -55,16 +55,16 @@ it("focuses the selected actor route h1 and restores its originating control on 
   await user.click(await screen.findByRole("link", { name: "People & access" }));
   const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
   await user.click(origin);
-  const heading = await screen.findByRole("heading", { name: "Actor grants", level: 1 });
+  const heading = await screen.findByRole("dialog", { name: "focus-origin" });
   await waitFor(() => {
     expect(heading).toHaveFocus();
   });
   expect(document.querySelectorAll("h1")).toHaveLength(1);
-  await user.click(screen.getByRole("button", { name: "Back to actors" }));
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await waitFor(() => {
     expect(origin).toHaveFocus();
   });
   expect(origin).not.toHaveAttribute("tabindex", "-1");
-  expect(screen.getByRole("heading", { name: "Access", level: 1 })).toBeVisible();
+  expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
   expect(document.querySelectorAll("h1")).toHaveLength(1);
 });

@@ -123,9 +123,10 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
     "aria-disabled",
     "true",
   );
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(document.querySelector(".account-menu > summary")!);
   expect(getButton("Sign out")).not.toBeDisabled();
-  await user.click(getButton("Back to case"));
   expect(
     await screen.findByRole("heading", {
       name: current.state.fields.registration.claimantName,
@@ -163,6 +164,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   queueDefinitionAndList();
+  vi.spyOn(crypto, "randomUUID").mockReturnValueOnce("20000000-0000-4000-8000-000000000001");
   queueOpenPreview();
   queueAcceptedOpen();
   queueDetail();

@@ -1,3 +1,4 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
@@ -144,7 +145,7 @@ it("shows current fields, server act labels, full expandable history and retryab
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
+  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.observe")));
   navigate("/recovery");
   render(<Dashboard />);
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
@@ -205,6 +206,16 @@ it("keeps public metadata and other panes available when a case read is refused"
   first.unmount();
 });
 it("routes dashboard list selections and the new-case act into the typed editor", async () => {
+  mockEndpoint("case.get").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { outcome: { kind: "SUCCEEDED", data: current } },
+  });
+  mockEndpoint("case.timeline").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { outcome: { kind: "SUCCEEDED", data: timelinePage() } },
+  });
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
@@ -242,11 +253,11 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       name: "Open a case",
     }),
   ).toBeVisible();
-  await user.click(getButton("Back to cases"));
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(screen.getByRole("link", { name: "CASE-1" }));
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: fields.registration.claimantName,
     }),
   ).toBeVisible();
 });

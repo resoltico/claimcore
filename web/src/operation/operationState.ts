@@ -348,7 +348,7 @@ const refuse = (
       operationEntry(state.entry),
       state.values,
     ),
-    disclosureRefused: action.disclosure,
+    disclosureRefused: state.disclosureRefused || action.disclosure,
     conflict:
       conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict,
   };

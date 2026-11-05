@@ -68,6 +68,7 @@ export const previewReply = (index = 0): Response => {
           },
         },
         after: {
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: {
             ...fields,
             status: "CLOSED",

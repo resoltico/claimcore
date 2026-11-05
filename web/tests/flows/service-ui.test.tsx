@@ -110,11 +110,7 @@ const acceptsOperation = async (): Promise<void> => {
     />,
   );
   await user.click(getButton("Review changes"));
-  expect(
-    await screen.findByRole("dialog", {
-      name: "Review changes",
-    }),
-  ).toBeVisible();
+  expect(await screen.findByRole("dialog", { name: "Close the case" })).toBeVisible();
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   expect(

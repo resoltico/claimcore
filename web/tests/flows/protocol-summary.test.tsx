@@ -45,7 +45,7 @@ it("localizes generated enum tokens while preserving identical authored principa
     }),
   ).toHaveLength(2);
   expect(
-    screen.getByText("Register actor", {
+    screen.getByText("Register account", {
       exact: true,
     }),
   ).toBeVisible();

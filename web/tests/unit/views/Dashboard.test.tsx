@@ -53,9 +53,11 @@ it("locks navigation and logout while a reviewed mutation is dispatched", async 
       "true",
     );
   });
-  await user.click(document.querySelector(".account-menu > summary")!);
-  expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Back to cases" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  expect(document.querySelector(".account-menu")?.closest('[aria-hidden="true"]')).not.toBeNull();
+  for (const close of screen.getAllByRole("button", { name: "Close" })) {
+    expect(close).toBeDisabled();
+  }
 });
 
 it("chooses an advertised workspace only for the default entry route", async () => {
@@ -86,7 +88,7 @@ it("chooses an advertised workspace only for the default entry route", async () 
     value: wireReply("authority.list"),
   });
   render(<Dashboard />);
-  expect(await screen.findByRole("heading", { name: "Access", level: 1 })).toBeVisible();
+  expect(await screen.findByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
   expect(window.location.pathname).toBe("/people");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();

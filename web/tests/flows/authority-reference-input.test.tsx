@@ -13,7 +13,8 @@ import { useOperation } from "../../src/hooks/operation/useOperation";
 import { initialOperationValues, refusalPath } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
 import { preferenceKey } from "../../src/presentation/preferences";
-import { OperationForm } from "../../src/views/operation/OperationForm";
+import { useRef } from "react";
+import { OperationFormActions, OperationForm } from "../../src/views/operation/OperationForm";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 const enField = { ...coreCatalogs.en, ...enChrome };
 const lvField = { ...coreCatalogs.lv, ...lvChrome };
@@ -55,7 +56,25 @@ const AuthorityForm = ({ kind }: { kind: "GRANT" | "REVOKE" }) => {
     credential: "synthetic-token",
     onLockChange: noLockChange,
   });
-  return <OperationForm model={model} current={null} offered={[kind]} onAct={() => undefined} />;
+  const preview = useRef<HTMLButtonElement>(null);
+  return (
+    <>
+      <OperationForm
+        model={model}
+        current={null}
+        offered={[kind]}
+        onAct={() => undefined}
+        formId="grant-form"
+      />
+      <OperationFormActions
+        model={model}
+        current={null}
+        offered={[kind]}
+        formId="grant-form"
+        preview={preview}
+      />
+    </>
+  );
 };
 const rejectedPreview = () =>
   vi.spyOn(service, "preview").mockImplementation((prepared) =>

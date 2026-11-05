@@ -24,20 +24,23 @@ export const hook = () =>
       },
     },
   );
+const previewIdentity = (input: PreparedRequest<"operation.execute">["input"] | undefined) => ({
+  reference:
+    input !== undefined && input.kind !== "AUTHORITY" && input.target.kind === "REFERENCE"
+      ? input.target.caseReference
+      : current.caseReference,
+  expected: input?.kind === "CASE" ? input.expectedRevision : current.revision,
+  caseId:
+    input?.kind === "CASE" && input.target.kind === "ID" ? input.target.caseId : current.caseId,
+});
 export const preview = (
   prepared?: PreparedRequest<"operation.execute">,
 ): ApiResult<ServiceResponse<"operation.preview">> => {
   const input = prepared?.input;
-  const reference =
-    input !== undefined && input.kind !== "AUTHORITY" && input.target.kind === "REFERENCE"
-      ? input.target.caseReference
-      : current.caseReference;
+  const { reference, expected, caseId } = previewIdentity(input);
   if (review.subject.kind !== "CASE") {
     throw new Error("Expected independently authored case review.");
   }
-  const expected = input?.kind === "CASE" ? input.expectedRevision : current.revision;
-  const caseId =
-    input?.kind === "CASE" && input.target.kind === "ID" ? input.target.caseId : current.caseId;
   const after = {
     ...review.subject.after,
     caseId,

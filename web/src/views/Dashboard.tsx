@@ -79,7 +79,8 @@ const routeFocusTarget = (root: HTMLElement, id: string | null) => {
     [...root.querySelectorAll<HTMLElement>("h1")].find(
       (candidate) => candidate.closest("[hidden],[inert]") === null,
     ) ?? null;
-  return { element: requested ?? heading, restored: requested !== null };
+  const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+  return { element: requested ?? dialog ?? heading, restored: requested !== null };
 };
 const moveRouteFocus = (element: HTMLElement, scrollY: number | null) => {
   const closed = element.closest<HTMLDetailsElement>("details:not([open])");

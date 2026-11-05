@@ -1,4 +1,5 @@
 import type {
+  AuthorityTargetDisclosure,
   Scope,
   GrantScope,
   ActorProfileInput,
@@ -97,9 +98,9 @@ export const authorityPreview = () =>
     });
   });
 const createdTarget = (
-  target: import("@contracts/client").AuthorityTargetDisclosure,
+  target: AuthorityTargetDisclosure,
   operationId: string,
-): import("@contracts/client").AuthorityTargetDisclosure => {
+): AuthorityTargetDisclosure => {
   if (target.kind === "DISCLOSED") {
     return { ...target, actor: { ...target.actor, actorId: operationId } };
   }

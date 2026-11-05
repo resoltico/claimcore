@@ -52,14 +52,9 @@ it("case review leads with its business target and retains the full exact reques
     }),
   ).toBeNull();
   expect(dialog).not.toHaveTextContent("One case");
-  const intent = dialog.querySelector<HTMLElement>(".review-intent")!;
-  expect(
-    within(intent).getByText("CASE-1", {
-      exact: true,
-    }),
-  ).toBeVisible();
   const request = dialog.querySelector<HTMLElement>(".review-request")!;
   fireEvent.click(request.querySelector("summary")!);
+  expect(within(request).getByText("CASE-1", { exact: true })).toBeVisible();
   expect(
     within(request).getByText("12.3400", {
       exact: true,
@@ -131,18 +126,19 @@ it.each(["INSTALLATION", "CASE"] as const)(
   (kind) => {
     render(<OperationReview model={authorityReviewModel(kind)} />);
     const dialog = screen.getByRole("dialog");
+    fireEvent.click(dialog.querySelector(".review-request > summary")!);
     expect(
       within(dialog).getAllByText("Grant scope", {
         exact: true,
       }),
-    ).toHaveLength(2);
+    ).toHaveLength(1);
     expect(
       within(dialog).getAllByText(kind === "CASE" ? "One case" : "Installation", {
         exact: true,
       }),
-    ).toHaveLength(3);
+    ).toHaveLength(1);
     expect(
-      within(dialog.querySelector<HTMLElement>(".review-intent")!)
+      within(dialog.querySelector<HTMLElement>(".review-request")!)
         .getByText("KEEP", {
           exact: true,
         })
@@ -163,26 +159,26 @@ it.each(["INSTALLATION", "CASE"] as const)(
         within(dialog).getAllByText("SYNTHETIC-GRANT", {
           exact: true,
         }),
-      ).toHaveLength(3);
+      ).toHaveLength(1);
     }
   },
 );
 const localized = [
   {
     language: "en",
-    groups: ["Registration", "Payment decision", "Payment record"],
+    groups: ["Claim", "Payment decision", "Payment"],
     action: "Action",
     keep: "Keep current details",
   },
   {
     language: "lv",
-    groups: ["Reģistrācija", "Izmaksas lēmums", "Maksājuma ieraksts"],
+    groups: ["Prasījums", "Izmaksas lēmums", "Maksājums"],
     action: "Darbība",
     keep: "Saglabāt pašreizējos datus",
   },
   {
     language: "ar",
-    groups: ["التسجيل", "قرار الدفع", "سجل الدفع"],
+    groups: ["المطالبة", "قرار الدفع", "الدفع"],
     action: "الإجراء",
     keep: "إبقاء التفاصيل الحالية",
   },
@@ -200,21 +196,51 @@ it.each(localized)(
         accent: "green" as const,
       }),
     );
-    render(<OperationReview model={model(correction, review)} />);
+    render(
+      <OperationReview
+        model={model(correction, {
+          ...review,
+          presentation: {
+            changes: [
+              {
+                key: "claimant",
+                labelId: "field.claimantName.label",
+                before: { kind: "PARTY", value: "Earlier name" },
+                after: { kind: "PARTY", value: "KEEP" },
+              },
+            ],
+            unchanged: [
+              { key: "registration", labelId: "group.registration.label" },
+              { key: "decision", labelId: "group.decision.label" },
+              { key: "payment", labelId: "group.payment.label" },
+            ],
+          },
+        })}
+      />,
+    );
     const dialog = screen.getByRole("dialog");
-    const intent = dialog.querySelector<HTMLElement>(".review-groups")!;
+    const unchanged = dialog.querySelector<HTMLElement>(".review-unchanged")!;
     for (const label of groups) {
-      expect(within(intent).getByText(label, { selector: "dt", exact: true })).toBeVisible();
+      expect(unchanged).toHaveTextContent(label);
     }
-    expect(within(intent).getByText(keep, { exact: true })).toBeVisible();
-    expect(within(intent).queryByText(action, { selector: "dt", exact: true })).toBeNull();
+    expect(
+      within(dialog.querySelector<HTMLElement>(".review-values")!).queryByText(keep, {
+        exact: true,
+      }),
+    ).toBeNull();
+    expect(
+      within(dialog.querySelector<HTMLElement>(".review-values")!).queryByText(action, {
+        selector: "dt",
+        exact: true,
+      }),
+    ).toBeNull();
     const request = dialog.querySelector<HTMLElement>(".review-request")!;
     fireEvent.click(request.querySelector("summary")!);
     const authored = within(dialog).getAllByText("KEEP", {
       exact: true,
     });
-    expect(authored).toHaveLength(2);
-    expect(authored.filter((value) => value.closest("code") === null)).toHaveLength(1);
+    expect(authored).toHaveLength(3);
+    expect(authored.filter((value) => value.closest("code") === null)).toHaveLength(2);
     const headings = [...dialog.querySelectorAll("dt")].map((value) => value.textContent);
     for (const structural of ["values", "groups", "kind"]) {
       expect(headings).not.toContain(structural);
@@ -252,7 +278,23 @@ it("shows the core's profile values in authority review before consent", () => {
     },
   };
   const proposed: Review = {
-    presentation: { changes: [], unchanged: [] },
+    presentation: {
+      changes: [
+        {
+          key: "profileName",
+          labelId: "field.profile.displayName.label",
+          before: { kind: "PARTY", value: "Recorded name" },
+          after: { kind: "PARTY", value: "Core proposed name" },
+        },
+        {
+          key: "profileContact",
+          labelId: "field.profile.contact.label",
+          before: { kind: "TEXT", value: "Recorded contact" },
+          after: { kind: "TEXT", value: "Core proposed contact" },
+        },
+      ],
+      unchanged: [],
+    },
     subject: {
       kind: "AUTHORITY",
       basis: workBasis,

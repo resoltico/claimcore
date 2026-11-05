@@ -69,7 +69,11 @@ export const chooseOption = async (page: Page, control: Locator, value: string):
     await control.evaluate(
       () =>
         new Promise<void>((resolve) => {
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              resolve();
+            });
+          });
         }),
     );
     await control.click();

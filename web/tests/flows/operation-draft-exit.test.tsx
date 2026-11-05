@@ -39,21 +39,17 @@ const open = (act: "AMEND_REGISTRATION" | "CORRECT" = "AMEND_REGISTRATION") => {
 it("leaves an untouched prefilled amendment directly", async () => {
   const user = userEvent.setup();
   const close = open();
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).toHaveBeenCalledOnce();
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Discard these draft changes?" })).toBeNull();
 });
 it("keeps a routed amendment fixed until returning to the case", async () => {
   const user = userEvent.setup();
   const close = open();
   expect(screen.queryByLabelText("Case action")).toBeNull();
-  await user.click(screen.getByRole("button", { name: "Back to case" }));
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).toHaveBeenCalledOnce();
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Discard these draft changes?" })).toBeNull();
 });
 it("protects an amendment changed to all empty strings on Back", async () => {
   const user = userEvent.setup();
@@ -62,7 +58,7 @@ it("protects an amendment changed to all empty strings on Back", async () => {
   for (const input of screen.getAllByRole("textbox")) {
     await user.clear(input);
   }
-  await user.click(screen.getByRole("button", { name: "Back to case" }));
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(
     await screen.findByRole("dialog", {
       name: "Discard these draft changes?",
@@ -73,11 +69,7 @@ it("protects an amendment changed to all empty strings on Back", async () => {
       name: "Keep editing",
     }),
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).not.toHaveBeenCalled();
   await user.click(
     await screen.findByRole("button", {
@@ -90,30 +82,23 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
   const user = userEvent.setup();
   const close = open();
   selectFact("claimedAmount");
-  const amount = screen.getByLabelText("Amount claimed", {
+  let amount = screen.getByLabelText("Amount claimed", {
     exact: true,
   });
   await user.clear(amount);
   await user.type(amount, "12.3400");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).not.toHaveBeenCalled();
   await user.click(
     screen.getByRole("button", {
       name: "Keep editing",
     }),
   );
+  amount = screen.getByLabelText("Amount claimed", { exact: true });
   await user.clear(amount);
   await user.type(amount, "12.34");
   await user.click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).toHaveBeenCalledOnce();
 });
 it("protects hidden correction replacement edits after returning its mode to KEEP", async () => {
@@ -128,11 +113,7 @@ it("protects hidden correction replacement edits after returning its mode to KEE
     }),
   );
   await chooseOption(user, mode, "KEEP");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).not.toHaveBeenCalled();
   expect(
     await screen.findByRole("dialog", {
@@ -146,11 +127,7 @@ it("leaves a correction whose mode was changed and reverted without value edits"
   const mode = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await chooseOption(user, mode, "CLEAR");
   await chooseOption(user, mode, "KEEP");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).toHaveBeenCalledOnce();
 });
 it("protects exact authored edits after retaining the review", async () => {
@@ -177,11 +154,7 @@ it("protects exact authored edits after retaining the review", async () => {
   });
   await user.clear(amount);
   await user.type(amount, "12.3400");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Back to case",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).not.toHaveBeenCalled();
   expect(
     await screen.findByRole("dialog", {

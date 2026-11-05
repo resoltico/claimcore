@@ -31,11 +31,7 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
     }),
     "synthetic-authored",
   );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Discard and leave",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(screen.getByRole("dialog")).toBeVisible();
   view.rerender(<Workspace epoch={1} />);
   const dialog = screen.getByRole("dialog");
@@ -50,11 +46,7 @@ it("preserves an open discard warning when a readonly workspace epoch is replace
       name: "Subject or client ID",
     }),
   ).toHaveValue("synthetic-authored");
-  await user.click(
-    screen.getByRole("button", {
-      name: "Discard and leave",
-    }),
-  );
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(
     within(screen.getByRole("dialog")).getByRole("button", {
       name: "Discard and leave",

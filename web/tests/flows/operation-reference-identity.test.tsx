@@ -28,7 +28,12 @@ const prepared = () =>
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
-        before: current,
+        before: {
+          caseId: current.caseId,
+          caseReference: current.caseReference,
+          revision: current.revision,
+          state: current.state,
+        },
         after: {
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: fields.caseReference,

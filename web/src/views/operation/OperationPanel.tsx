@@ -237,6 +237,12 @@ const EnterOperation = (props: Props) => {
     </>
   );
 };
+const hasCurrentDisclosure = (model: OperationModel, available = true) =>
+  model.ownerVerified &&
+  available &&
+  !model.disclosureRefused &&
+  !model.contextChanged &&
+  model.disclosureCurrent;
 const OperationSurface = ({
   props,
   review,
@@ -248,13 +254,7 @@ const OperationSurface = ({
   if (model.priorUncertain) {
     return <UnknownOperation model={model} />;
   }
-  if (
-    !model.ownerVerified ||
-    !disclosureAvailable ||
-    model.disclosureRefused ||
-    model.contextChanged ||
-    !model.disclosureCurrent
-  ) {
+  if (!hasCurrentDisclosure(model, disclosureAvailable)) {
     return <UnavailableDisclosure model={model} available={disclosureAvailable} />;
   }
   return review === null ? <EnterOperation {...props} /> : review.body;
@@ -367,6 +367,33 @@ const OperationSteps = ({ model }: { model: OperationModel }) => {
     </ol>
   );
 };
+const OperationFooter = ({
+  props,
+  review,
+  formId,
+  preview,
+  close,
+}: {
+  props: Props;
+  review: { body: ReactNode; actions: ReactNode } | null;
+  formId: string;
+  preview: React.RefObject<HTMLButtonElement | null>;
+  close: () => void;
+}) => {
+  const p = usePresentation();
+  const { model, disclosureAvailable = true } = props;
+  if (review !== null) {
+    return review.actions;
+  }
+  if (model.priorUncertain || !hasCurrentDisclosure(model, disclosureAvailable)) {
+    return (
+      <Button variant="secondary" isDisabled={model.busy} onPress={close}>
+        {p.text("ui.close")}
+      </Button>
+    );
+  }
+  return <OperationFormActions {...props} formId={formId} preview={preview} onClose={close} />;
+};
 export const OperationPanel = (props: Props) => {
   const { model, disclosureAvailable = true, open = true } = props;
   const p = usePresentation();
@@ -432,14 +459,13 @@ export const OperationPanel = (props: Props) => {
             }
           }}
           footer={
-            review?.actions ??
-            (model.priorUncertain ? (
-              <Button variant="secondary" isDisabled={model.busy} onPress={close}>
-                {p.text("ui.close")}
-              </Button>
-            ) : (
-              <OperationFormActions {...props} formId={formId} preview={preview} onClose={close} />
-            ))
+            <OperationFooter
+              props={props}
+              review={review}
+              formId={formId}
+              preview={preview}
+              close={close}
+            />
           }
         >
           <OperationSurface props={{ ...props, ...selection, formId }} review={review} />

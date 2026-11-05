@@ -53,7 +53,7 @@ it("separates core-classified stewardship and does not invent a primary for inco
   expect(view.container.querySelector(".case-stewardship")).toHaveTextContent("Void");
   expect(view.container.querySelector("button.primary")).toBeNull();
   await user.click(view.container.querySelector(".case-actions > summary")!);
-  await user.click(screen.getByRole("button", { name: /Erase case payload/u }));
+  await user.click(screen.getByRole("button", { name: /Erase case/u }));
   expect(onAct).toHaveBeenCalledWith("ERASE");
   expect(screen.queryByRole("button", { name: /Reinstate/u })).toBeNull();
 });
@@ -65,6 +65,6 @@ it("keeps every compact advised action reachable even without a primary", async 
   const view = render(<CaseActions current={current} onAct={onAct} />);
   expect(view.container.querySelector(".case-primary-action")?.textContent).toBe("");
   await user.click(view.container.querySelector(".case-more-actions > summary")!);
-  await user.click(screen.getByRole("button", { name: /Erase case payload/u }));
+  await user.click(screen.getByRole("button", { name: /Erase case/u }));
   expect(onAct).toHaveBeenCalledWith("ERASE");
 });

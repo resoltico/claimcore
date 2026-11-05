@@ -6,7 +6,7 @@ import { editor, current } from "../support/presentation-state.fixtures";
 import { fields, response, runtime } from "../support/service-ui.fixtures";
 const stateLabels = {
   ACTIVE: "Active",
-  VOIDED: "Voided as a data-entry error",
+  VOIDED: "Voided",
   ERASED: "Erased",
 };
 const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "ERASED") => {
@@ -16,7 +16,17 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
       Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
-            presentation: { changes: [], unchanged: [] },
+            presentation: {
+              changes: [
+                {
+                  key: "recordState",
+                  labelId: "input.lifecycle.label",
+                  before: { kind: "CODE", vocabulary: "lifecycle", token: before },
+                  after: { kind: "CODE", vocabulary: "lifecycle", token: after },
+                },
+              ],
+              unchanged: [],
+            },
             subject: {
               kind: "CASE",
               before: {
@@ -68,7 +78,7 @@ it.each([
   },
   {
     act: "ERASE",
-    label: "Erase case payload",
+    label: "Erase case",
     before: "ACTIVE",
     after: "ERASED",
     reason: null,
@@ -101,8 +111,8 @@ it.each([
     if (reason !== null) {
       expect(dialog).toHaveTextContent(reason);
     }
-    expect(dialog).toHaveTextContent(`Before: ${stateLabels[before]}`);
-    expect(dialog).toHaveTextContent(`After: ${stateLabels[after]}`);
+    expect(dialog.querySelector(".review-before")).toHaveTextContent(stateLabels[before]);
+    expect(dialog.querySelector(".review-after")).toHaveTextContent(stateLabels[after]);
     if (act === "ERASE") {
       expect(dialog).toHaveTextContent("Copies held elsewhere remain.");
     }

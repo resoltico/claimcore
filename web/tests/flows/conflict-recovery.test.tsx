@@ -164,17 +164,17 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   });
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = editor();
+  editor();
   const field = await author(user);
   await screen.findByRole("button", { name: "Review against latest" });
   expect(field).toHaveValue("My retained draft");
-  expect(view.container.querySelector(".editor-current")).toHaveTextContent("Latest stored name");
-  expect(view.container.querySelectorAll(".revision-conflict .timeline-entry")).toHaveLength(50);
+  expect(document.querySelector(".case-detail")).toHaveTextContent("Latest stored name");
+  expect(document.querySelectorAll(".revision-conflict .timeline-entry")).toHaveLength(50);
   expect(drafts).toHaveLength(1);
   expect(pages).toHaveLength(0);
   await user.click(screen.getByRole("button", { name: "Load 50 more" }));
   await waitFor(() => {
-    expect(view.container.querySelectorAll(".revision-conflict .timeline-entry")).toHaveLength(52);
+    expect(document.querySelectorAll(".revision-conflict .timeline-entry")).toHaveLength(52);
   });
   expect(pages).toEqual([
     {
@@ -216,14 +216,14 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
     );
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = editor();
+  editor();
   const field = await author(user);
   await screen.findByRole("button", { name: "Review against latest" });
   expect(field).toHaveValue("My retained draft");
-  expect(view.container.querySelector(".revision-conflict")).toHaveTextContent(
+  expect(document.querySelector(".revision-conflict")).toHaveTextContent(
     "These changes are not available to this account.",
   );
-  expect(view.container.querySelector(".revision-conflict .timeline-entry")).toBeNull();
+  expect(document.querySelector(".revision-conflict .timeline-entry")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(
     fetch.mock.calls.some(([path]) => typeof path === "string" && path.endsWith("case.timeline")),
@@ -243,16 +243,17 @@ it("does not use an older-than-conflict read as latest or replay the refused ope
     .mockResolvedValueOnce(response("case.get", "SUCCEEDED", current(4, "Fresh name")));
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = editor();
+  editor();
   const field = await author(user);
   await screen.findByRole("alert");
   expect(screen.queryByRole("button", { name: "Review against latest" })).toBeNull();
-  expect(view.container.querySelector(".editor-current")).toBeNull();
+  expect(document.body).not.toHaveTextContent("Stale name");
+  expect(document.querySelector(".case-detail")).toHaveTextContent("Original name");
   expect(field).toHaveValue("My retained draft");
   expect(fetch).toHaveBeenCalledTimes(2);
   await user.click(screen.getByRole("button", { name: "Reload current case" }));
   await screen.findByRole("button", { name: "Review against latest" });
-  expect(view.container.querySelector(".editor-current")).toHaveTextContent("Fresh name");
+  expect(document.querySelector(".case-detail")).toHaveTextContent("Fresh name");
   expect(fetch).toHaveBeenCalledTimes(3);
 });
 
@@ -302,18 +303,16 @@ it("hides previously disclosed changes when a continuation refusal is followed b
   });
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = editor();
+  editor();
   const field = await author(user);
   await screen.findByRole("button", { name: "Review against latest" });
-  expect(view.container).toHaveTextContent("Core change 53");
+  expect(document.body).toHaveTextContent("Core change 53");
   await user.click(screen.getByRole("button", { name: "Load 50 more" }));
   await waitFor(() => {
-    expect(view.container.querySelector(".editor-current")).toHaveTextContent(
-      "After access change",
-    );
+    expect(document.querySelector(".case-detail")).toHaveTextContent("After access change");
   });
-  expect(view.container).not.toHaveTextContent("Core change 53");
-  expect(view.container.querySelector(".revision-conflict .timeline-entry")).toBeNull();
+  expect(document.body).not.toHaveTextContent("Core change 53");
+  expect(document.querySelector(".revision-conflict .timeline-entry")).toBeNull();
   expect(field).toHaveValue("My retained draft");
   expect(previews).toBe(1);
 });
@@ -357,7 +356,7 @@ it("discards a late draining conflict page when explicit re-preparation replaces
   });
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
-  const view = editor();
+  editor();
   await author(user);
   await screen.findByRole("button", { name: "Review against latest" });
   await user.click(screen.getByRole("button", { name: "Load 50 more" }));
@@ -390,7 +389,7 @@ it("discards a late draining conflict page when explicit re-preparation replaces
   );
   await late;
   await waitFor(() => {
-    expect(view.container.querySelector(".revision-conflict")).toBeNull();
+    expect(document.querySelector(".revision-conflict")).toBeNull();
   });
-  expect(view.container).not.toHaveTextContent("LATE_PAGE_PAYLOAD_CANARY");
+  expect(document.body).not.toHaveTextContent("LATE_PAGE_PAYLOAD_CANARY");
 });
