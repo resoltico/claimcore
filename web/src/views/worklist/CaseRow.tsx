@@ -64,10 +64,10 @@ const Changed = ({ value }: { value: string }) => {
 const Parties = ({ live }: { live: LiveSummary | null }) =>
   live === null ? null : (
     <span className="worklist-person">
-      <bdi>{live.fields.claimantName}</bdi>
+      <bdi title={live.fields.claimantName}>{live.fields.claimantName}</bdi>
       <CharacterWarning value={live.fields.claimantName} />
       <small>
-        <bdi>{live.fields.insurerName}</bdi>
+        <bdi title={live.fields.insurerName}>{live.fields.insurerName}</bdi>
         <CharacterWarning value={live.fields.insurerName} />
       </small>
     </span>
@@ -103,7 +103,14 @@ export const CaseRow = ({
   const { state } = value;
   const live = state.kind === "ERASED" ? null : state;
   return (
-    <tr className={`worklist-row ${state.kind === "ERASED" ? "erased-row" : ""}`}>
+    <tr
+      className={`worklist-row ${state.kind === "ERASED" ? "erased-row" : ""}`}
+      aria-label={
+        live === null
+          ? value.caseReference
+          : `${value.caseReference} · ${live.fields.claimantName} · ${live.fields.insurerName}`
+      }
+    >
       <td className="worklist-reference">
         <a
           className="reference row-link"
@@ -130,7 +137,7 @@ export const CaseRow = ({
         <span className="worklist-cell-label">{p.text("ui.reminderAction")}</span>
         {value.nextAction === null ? null : (
           <>
-            <bdi>{value.nextAction.action}</bdi>
+            <bdi title={value.nextAction.action}>{value.nextAction.action}</bdi>
             <small>
               <time dateTime={value.nextAction.due}>{p.date(value.nextAction.due)}</time>
               {" · "}

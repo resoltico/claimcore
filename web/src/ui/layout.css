@@ -46,6 +46,60 @@
 }
 
 @media (width < 64rem) {
+  .worklist-rows .worklist-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, auto);
+    gap: var(--space-1) var(--space-2);
+    padding: var(--space-2) var(--space-3);
+  }
+  .worklist-row .worklist-reference {
+    grid-column: 1;
+    grid-row: 1 / 3;
+  }
+  .worklist-row .reference {
+    min-block-size: 0;
+  }
+  .worklist-person {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    margin-block-start: var(--space-1);
+  }
+  .worklist-person > small,
+  .worklist-row .worklist-payable,
+  .worklist-row .worklist-cell-label,
+  .worklist-row .case-stage-mini,
+  .worklist-row .worklist-responsible,
+  .worklist-row .worklist-changed,
+  .worklist-row .worklist-extra-fields {
+    display: none;
+  }
+  .worklist-row .worklist-money {
+    grid-column: 2;
+    grid-row: 1;
+    max-inline-size: 19ch;
+    text-align: end;
+    font-size: var(--text-sm);
+  }
+  .worklist-row .worklist-badges {
+    grid-column: 2;
+    grid-row: 2;
+  }
+  .worklist-row .worklist-next-action {
+    grid-column: 1 / -1;
+    grid-row: 3;
+  }
+  .worklist-next-action > bdi {
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .worklist-next-action > small,
+  .worklist-next-action .case-attention {
+    display: inline-flex;
+    margin-block: 0;
+    margin-inline-end: var(--space-1);
+  }
   .field-row {
     grid-template-columns: minmax(0, 1fr);
   }

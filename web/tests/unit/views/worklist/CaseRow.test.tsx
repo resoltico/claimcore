@@ -19,6 +19,11 @@ it("makes the whole row one native keyboard link with full reference and no copy
       </tbody>
     </table>,
   );
+  expect(screen.getByRole("row")).toHaveAccessibleName(
+    `${reference} · Synthetic claimant · Synthetic insurer`,
+  );
+  expect(screen.getByTitle("Synthetic claimant")).toBeVisible();
+  expect(screen.getByTitle("Synthetic insurer")).toBeVisible();
   const link = screen.getByRole("link", { name: reference });
   expect(screen.getAllByRole("link")).toHaveLength(1);
   expect(screen.queryByRole("button")).toBeNull();
