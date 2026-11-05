@@ -88,8 +88,43 @@ it("renders the supplied scheduling projection rather than reconstructing work s
   );
   expect(screen.getByText("Core-supplied next action")).toBeVisible();
   expect(screen.getByText("Assigned profile name")).toBeVisible();
-  expect(view.container.querySelector(".worklist-next-action")).toHaveTextContent("Upcoming");
+  const due = view.container.querySelector(".worklist-next-action time")!;
+  expect(due).toHaveAttribute("datetime", "2026-11-05");
+  expect(due).toHaveAttribute("data-due", "UPCOMING");
+  expect(due).toHaveAttribute("title", "Upcoming");
+  expect(due).toHaveAccessibleName("05/11/2026 · Upcoming");
   expect(view.container.querySelector(".worklist-responsible")).toHaveTextContent(
     "Unavailable for new assignment",
+  );
+});
+
+it("shows one timing badge while preserving every Core attention flag and the reminder timing", () => {
+  const view = render(
+    <table>
+      <tbody>
+        <CaseRow
+          value={caseSummaryInput({
+            attention: ["OVERDUE", "UNASSIGNED"],
+            nextAction: {
+              reminderId: "10000000-0000-4000-8000-000000000001",
+              action: "Call claimant",
+              due: "2026-11-04",
+              dueState: "OVERDUE",
+            },
+          })}
+          onSelect={vi.fn()}
+        />
+      </tbody>
+    </table>,
+  );
+  expect(screen.getAllByText("Overdue", { exact: true })).toHaveLength(1);
+  expect(
+    [...view.container.querySelectorAll(".case-attention [data-attention]")].map((el) =>
+      el.getAttribute("data-attention"),
+    ),
+  ).toEqual(["OVERDUE", "UNASSIGNED"]);
+  expect(view.container.querySelector(".worklist-next-action time")).toHaveAttribute(
+    "title",
+    "Overdue",
   );
 });

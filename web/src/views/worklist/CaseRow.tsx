@@ -139,11 +139,14 @@ export const CaseRow = ({
           <>
             <bdi title={value.nextAction.action}>{value.nextAction.action}</bdi>
             <small>
-              <time dateTime={value.nextAction.due}>{p.date(value.nextAction.due)}</time>
-              {" · "}
-              <span className={`work-due work-due-${value.nextAction.dueState.toLowerCase()}`}>
-                {p.term("due", value.nextAction.dueState)}
-              </span>
+              <time
+                dateTime={value.nextAction.due}
+                data-due={value.nextAction.dueState}
+                title={p.term("due", value.nextAction.dueState)}
+                aria-label={`${p.date(value.nextAction.due)} · ${p.term("due", value.nextAction.dueState)}`}
+              >
+                {p.date(value.nextAction.due)}
+              </time>
             </small>
           </>
         )}
