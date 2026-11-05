@@ -1,3 +1,4 @@
+import { DateEntryDraftContext } from "../../components/DateEntryDraftContext";
 import type { ActorRef } from "@contracts/client";
 import { ActorIdentity } from "../../components/ActorIdentity";
 import { useSettingsDetour } from "../../hooks/SettingsDetourContext";
@@ -425,77 +426,79 @@ export const OperationPanel = (props: Props) => {
     requestClose(model, props.onClose);
   };
   return (
-    <OperationReview
-      model={model}
-      paused={
-        props.current?.advice.maintenance.active === true ||
-        !props.offered.includes(model.entry.kind)
-      }
-    >
-      {(review) => (
-        <Dialog
-          title={renderCatalogKey(p, entry.labelId)}
-          description={renderCatalogKey(p, entry.meaningId)}
-          identity={
-            <>
-              <OperationTarget model={model} actor={props.actor} current={props.current} />
-              {steps}
-            </>
-          }
-          closeLabel={p.text("ui.close")}
-          placement="end"
-          {...(props.completionAnchor === undefined ||
-          model.priorUncertain ||
-          !hasCurrentDisclosure(model, disclosureAvailable)
-            ? {}
-            : { anchorRef: props.completionAnchor })}
-          headerEnd={
-            <div className="actions">
-              {settings === null ? null : (
-                <IconButton
-                  data-open-settings
-                  icon="settings"
-                  label={p.text("ui.settings")}
-                  isDisabled={model.busy}
-                  onPress={settings.visit}
-                />
-              )}
-              <IconButton
-                icon="close"
-                label={p.text("ui.close")}
-                isDisabled={model.busy}
-                onPress={close}
-              />
-            </div>
-          }
-          isOpen={
-            settings?.paused !== true &&
-            open &&
-            model.pendingDiscard === null &&
-            (disclosureAvailable || model.priorUncertain) &&
-            model.ownerVerified &&
-            model.phase !== "ACCEPTED"
-          }
-          isDismissable={!model.busy}
-          onOpenChange={(next) => {
-            if (!next) {
-              close();
+    <DateEntryDraftContext value={{ entries: model.dateEntries, capture: model.captureDateEntry }}>
+      <OperationReview
+        model={model}
+        paused={
+          props.current?.advice.maintenance.active === true ||
+          !props.offered.includes(model.entry.kind)
+        }
+      >
+        {(review) => (
+          <Dialog
+            title={renderCatalogKey(p, entry.labelId)}
+            description={renderCatalogKey(p, entry.meaningId)}
+            identity={
+              <>
+                <OperationTarget model={model} actor={props.actor} current={props.current} />
+                {steps}
+              </>
             }
-          }}
-          footer={
-            <OperationFooter
-              props={props}
-              review={review}
-              formId={formId}
-              preview={preview}
-              close={close}
-            />
-          }
-        >
-          <OperationSurface props={{ ...props, ...selection, formId }} review={review} />
-        </Dialog>
-      )}
-    </OperationReview>
+            closeLabel={p.text("ui.close")}
+            placement="end"
+            {...(props.completionAnchor === undefined ||
+            model.priorUncertain ||
+            !hasCurrentDisclosure(model, disclosureAvailable)
+              ? {}
+              : { anchorRef: props.completionAnchor })}
+            headerEnd={
+              <div className="actions">
+                {settings === null ? null : (
+                  <IconButton
+                    data-open-settings
+                    icon="settings"
+                    label={p.text("ui.settings")}
+                    isDisabled={model.busy}
+                    onPress={settings.visit}
+                  />
+                )}
+                <IconButton
+                  icon="close"
+                  label={p.text("ui.close")}
+                  isDisabled={model.busy}
+                  onPress={close}
+                />
+              </div>
+            }
+            isOpen={
+              settings?.paused !== true &&
+              open &&
+              model.pendingDiscard === null &&
+              (disclosureAvailable || model.priorUncertain) &&
+              model.ownerVerified &&
+              model.phase !== "ACCEPTED"
+            }
+            isDismissable={!model.busy}
+            onOpenChange={(next) => {
+              if (!next) {
+                close();
+              }
+            }}
+            footer={
+              <OperationFooter
+                props={props}
+                review={review}
+                formId={formId}
+                preview={preview}
+                close={close}
+              />
+            }
+          >
+            <OperationSurface props={{ ...props, ...selection, formId }} review={review} />
+          </Dialog>
+        )}
+      </OperationReview>
+    </DateEntryDraftContext>
   );
 };
 /** Mutation consent stays mounted when independently authorized read panes are replaced. */

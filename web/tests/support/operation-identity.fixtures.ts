@@ -25,6 +25,7 @@ export const initial = (): OperationState => {
     disclosureRead: null,
     conflict: null,
     disclosureRefused: false,
+    dateEntries: {},
     values: valuesFor(),
     baseline: valuesFor(),
     generation: 0,

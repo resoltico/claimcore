@@ -1,3 +1,4 @@
+import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { isCurrentCase } from "../protocol/types";
 import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
 import { receiptCorrelates } from "../protocol/replyCorrelation";
@@ -64,12 +65,17 @@ const clearsRoleSelection = (state: OperationState, action: EditAction): boolean
   );
 };
 const edit = (state: OperationState, action: EditAction): OperationState => {
-  if (!canEdit(state) || state.values[action.path] === action.value) {
+  if (!canEdit(state)) {
     return state;
+  }
+  const dateEntries = withoutDateEntries(state.dateEntries, [action.path]);
+  if (state.values[action.path] === action.value) {
+    return dateEntries === state.dateEntries ? state : { ...state, dateEntries };
   }
   const source = operationSource(state.operation);
   return {
     ...state,
+    dateEntries,
     generation: state.generation + 1,
     operation: {
       kind: "EDITING",
@@ -100,12 +106,17 @@ const editFields = (
   const changed =
     action.omitted.some((path) => Object.hasOwn(state.values, path)) ||
     Object.entries(action.values).some(([path, value]) => state.values[path] !== value);
+  const dateEntries = withoutDateEntries(state.dateEntries, [
+    ...Object.keys(action.values),
+    ...action.omitted,
+  ]);
   if (!changed) {
-    return state;
+    return dateEntries === state.dateEntries ? state : { ...state, dateEntries };
   }
   const source = operationSource(state.operation);
   return {
     ...state,
+    dateEntries,
     generation: state.generation + 1,
     operation: { kind: "EDITING", exposed: null },
     values: { ...values, operationId: source === null ? state.values["operationId"]! : action.id },
@@ -392,6 +403,7 @@ const record = (
         receipt: action.receipt,
       },
       pendingDiscard: null,
+      dateEntries: {},
       notice: null,
       disclosureContext: state.context,
       disclosureRefused: false,
@@ -483,6 +495,7 @@ const reset = (
     ? state
     : {
         ...action.state,
+        dateEntries: {},
         disclosureRefused: state.disclosureRefused || action.state.disclosureRefused,
         context: state.context,
         disclosureContext: state.disclosureContext,
@@ -581,8 +594,11 @@ type NavigationAction = Exclude<
   {
     type:
       | "EDIT"
+      | "DATE_ENTRY"
+      | "CLEAR_DATE_ENTRIES"
       | "EDIT_FIELDS"
       | "READ_CURRENT"
+      | "RESTORE_CREATION_DRAFT"
       | "DISCLOSED"
       | "DISCLOSURE_READ_FAILED"
       | "READ_CONFLICT"
@@ -637,16 +653,45 @@ const handoff = (state: OperationState, identity: EffectIdentity): OperationStat
   completing(state, identity) && state.operation.kind === "PREPARING"
     ? { ...state, operation: { ...state.operation, kind: "SUBMITTING" } }
     : state;
+export const isCreationDraftRefresh = (state: OperationState): boolean => {
+  const previous = state.disclosureContext;
+  const next = state.context;
+  const refreshed = previous.epoch !== next.epoch;
+  return (
+    refreshed &&
+    previous.target === next.target &&
+    state.target === next.target &&
+    state.entry.subject === "CASE" &&
+    state.entry.kind === "OPEN" &&
+    state.caseObservation === null &&
+    state.operation.kind === "EDITING"
+  );
+};
+// Reject a scheduled restore if a refusal or another phase transition intervened.
+const restoreCreationDraft = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "RESTORE_CREATION_DRAFT" }>,
+): OperationState =>
+  current(state, action.identity) &&
+  state.operation === action.editing &&
+  isCreationDraftRefresh(state)
+    ? { ...state, disclosureContext: state.context, disclosureRefused: false }
+    : state;
 type DisclosureAction = Extract<
   OperationAction,
-  { type: "READ_CURRENT" | "DISCLOSED" | "DISCLOSURE_READ_FAILED" }
+  { type: "READ_CURRENT" | "RESTORE_CREATION_DRAFT" | "DISCLOSED" | "DISCLOSURE_READ_FAILED" }
 >;
 const isDisclosureAction = (action: OperationAction): action is DisclosureAction =>
   action.type === "READ_CURRENT" ||
+  action.type === "RESTORE_CREATION_DRAFT" ||
   action.type === "DISCLOSED" ||
   action.type === "DISCLOSURE_READ_FAILED";
-const disclosureTransition = (state: OperationState, action: DisclosureAction): OperationState =>
-  action.type === "READ_CURRENT" ? readCurrent(state, action) : disclosed(state, action);
+const disclosureTransition = (state: OperationState, action: DisclosureAction): OperationState => {
+  if (action.type === "RESTORE_CREATION_DRAFT") {
+    return restoreCreationDraft(state, action);
+  }
+  return action.type === "READ_CURRENT" ? readCurrent(state, action) : disclosed(state, action);
+};
 type ConflictAction = Extract<
   OperationAction,
   { type: "READ_CONFLICT" | "CONFLICT_OBSERVED" | "CONFLICT_READ_FAILED" | "REVIEW_LATEST" }
@@ -666,11 +711,60 @@ const conflictTransition = (state: OperationState, action: ConflictAction): Oper
       return reviewLatest(state, action);
   }
 };
+const dateEntry = (
+  state: OperationState,
+  action: Extract<OperationAction, { type: "DATE_ENTRY" }>,
+): OperationState => {
+  const value = state.values[action.path];
+  const canonical = typeof value === "string" ? value : "";
+  if (
+    !canEdit(state) ||
+    state.disclosureRefused ||
+    state.disclosureContext !== state.context ||
+    canonical !== action.canonical
+  ) {
+    return state;
+  }
+  if (action.parts === null || action.parts.length === 0) {
+    const entries = withoutDateEntries(state.dateEntries, [action.path]);
+    return entries === state.dateEntries ? state : { ...state, dateEntries: entries };
+  }
+  const next =
+    canonical === ""
+      ? state
+      : edit(state, { type: "EDIT", path: action.path, value: "", id: action.id });
+  const draft = { canonical: "", parts: action.parts };
+  if (sameDateEntryDraft(next.dateEntries[action.path], draft)) {
+    return next;
+  }
+  return { ...next, dateEntries: { ...next.dateEntries, [action.path]: draft } };
+};
+type FormEntryAction = Extract<
+  OperationAction,
+  { type: "EDIT" | "EDIT_FIELDS" | "DATE_ENTRY" | "CLEAR_DATE_ENTRIES" }
+>;
+const isFormEntryAction = (action: OperationAction): action is FormEntryAction =>
+  ["EDIT", "EDIT_FIELDS", "DATE_ENTRY", "CLEAR_DATE_ENTRIES"].includes(action.type);
+const formEntryTransition = (state: OperationState, action: FormEntryAction): OperationState => {
+  switch (action.type) {
+    case "EDIT":
+      return edit(state, action);
+    case "EDIT_FIELDS":
+      return editFields(state, action);
+    case "DATE_ENTRY":
+      return dateEntry(state, action);
+    case "CLEAR_DATE_ENTRIES":
+      return Object.keys(state.dateEntries).length === 0 ? state : { ...state, dateEntries: {} };
+  }
+};
 /** Effects are issued only by explicit events; completions are fenced by epoch, target and effect ID. */
 export const operationReducer = (
   state: OperationState,
   action: OperationAction,
 ): OperationState => {
+  if (isFormEntryAction(action)) {
+    return formEntryTransition(state, action);
+  }
   if (isConflictAction(action)) {
     return conflictTransition(state, action);
   }
@@ -678,10 +772,6 @@ export const operationReducer = (
     return disclosureTransition(state, action);
   }
   switch (action.type) {
-    case "EDIT":
-      return edit(state, action);
-    case "EDIT_FIELDS":
-      return editFields(state, action);
     case "PREVIEW":
       return preview(state, action);
     case "EXECUTE":

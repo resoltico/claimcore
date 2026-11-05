@@ -1,3 +1,4 @@
+import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
   OperationReceipt,
   OperationReview,
@@ -108,6 +109,7 @@ export type OperationState = {
   conflict: RevisionConflictSnapshot | null;
   disclosureRefused: boolean;
   values: FormValues;
+  dateEntries: DateEntryDrafts;
   baseline: FormValues;
   generation: number;
   operation: OperationPhase;
@@ -117,6 +119,15 @@ export type OperationState = {
   pendingDiscard: string | null;
 };
 export type OperationAction =
+  | {
+      type: "DATE_ENTRY";
+      path: string;
+      canonical: string;
+      parts: ReadonlyArray<DateEntryPart> | null;
+      id: string;
+    }
+  | { type: "CLEAR_DATE_ENTRIES" }
+  | { type: "RESTORE_CREATION_DRAFT"; identity: EffectIdentity; editing: OperationPhase }
   | { type: "READ_CONFLICT"; identity: EffectIdentity; conflictId: string }
   | {
       type: "CONFLICT_OBSERVED";

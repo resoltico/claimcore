@@ -1,3 +1,4 @@
+import { DateEntryDraft } from "./DateEntryDraft";
 import { I18nProvider } from "react-aria-components/I18nProvider";
 import { FieldHelp } from "./FieldHelp";
 import { parseDate } from "@internationalized/date";
@@ -82,6 +83,7 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
       isInvalid={error !== undefined}
       validationBehavior="aria"
     >
+      <DateEntryDraft path={inputName} canonical={value} disabled={disabled} />
       <div className="field-label-row">
         <Label>{p.fieldLabel(field.name)}</Label>
         <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />

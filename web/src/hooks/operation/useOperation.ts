@@ -1,3 +1,4 @@
+import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
 import { latestOperationValues } from "../../operation/operationConflict";
 import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
@@ -32,6 +33,7 @@ import { operationEntry } from "../../protocol/operationCatalog";
 import {
   operationReducer,
   operationView,
+  isCreationDraftRefresh,
   type OperationState,
   type OperationEffect,
   type OperationAction,
@@ -82,6 +84,7 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     conflict: null,
     disclosureRefused: false,
     values,
+    dateEntries: {},
     baseline: values,
     generation: 0,
     operation: {
@@ -646,35 +649,65 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   state.target === targetKey(options) &&
   !state.disclosureRefused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
-const useVerifiedOperationOwner = (scope: RecoveryScope | undefined): boolean => {
+const useVerifiedOperationOwner = (scope: RecoveryScope | undefined) => {
   const [owner, setOwner] = useState<RecoveryScope | null>(null);
   if (owner === null && scope !== undefined) {
     setOwner(scope);
   }
-  return owner !== null && scope !== undefined && sameRecoveryScope(owner, scope);
+  return {
+    verified: owner !== null && scope !== undefined && sameRecoveryScope(owner, scope),
+    changed: owner !== null && scope !== undefined && !sameRecoveryScope(owner, scope),
+  };
 };
+const useCreationDraftRestore = (
+  state: OperationState,
+  dispatch: Dispatch,
+  options: Options,
+  ownerVerified: boolean,
+  offered: boolean,
+) => {
+  // A later refusal cannot reuse this same verified epoch to unmask the draft again.
+  const attempted = useRef<OperationState["context"] | null>(null);
+  const eligible = ownerVerified && offered && isCreationDraftRefresh(state);
+  useLayoutEffect(() => {
+    if (eligible && attempted.current !== state.context) {
+      attempted.current = state.context;
+      dispatch({
+        type: "RESTORE_CREATION_DRAFT",
+        identity: identity(options, state.context.generation),
+        editing: state.operation,
+      });
+    }
+  }, [eligible, dispatch, options, state.context, state.operation]);
+};
+const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
+  requester?.offers.some((offer) => offer.kind === "OPEN") === true;
+const requesterRecoveryScope = (
+  requester: ReturnType<typeof useRequesterContext>,
+): RecoveryScope | undefined =>
+  requester === null
+    ? undefined
+    : {
+        serviceOrigin: location.origin,
+        installationId: requester.installationId,
+        actorId: requester.actorId,
+      };
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {
   const requester = useRequesterContext();
   const journal = useRecoveryJournal();
   const session = useContext(SessionContext);
   const contextEpoch = supplied.contextEpoch ?? session?.state.epoch ?? 0;
-  const recoveryScope =
-    supplied.recoveryScope ??
-    (requester === null
-      ? undefined
-      : {
-          serviceOrigin: location.origin,
-          installationId: requester.installationId,
-          actorId: requester.actorId,
-        });
+  const recoveryScope = supplied.recoveryScope ?? requesterRecoveryScope(requester);
   const options: Options = {
     ...supplied,
     contextEpoch,
     journal: supplied.journal ?? journal,
     ...(recoveryScope === undefined ? {} : { recoveryScope }),
   };
-  const ownerVerified = useVerifiedOperationOwner(options.recoveryScope);
+  const { verified: ownerVerified, changed: ownerChanged } = useVerifiedOperationOwner(
+    options.recoveryScope,
+  );
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const target = targetKey(options);
   useLayoutEffect(() => {
@@ -685,6 +718,18 @@ export const useOperation = (supplied: Options) => {
       target,
     });
   }, [options.credential, target, contextEpoch]);
+  useLayoutEffect(() => {
+    if (ownerChanged) {
+      dispatch({ type: "CLEAR_DATE_ENTRIES" });
+    }
+  }, [ownerChanged]);
+  useCreationDraftRestore(
+    state,
+    dispatch,
+    options,
+    ownerVerified,
+    requesterOffersCreation(requester),
+  );
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);
   const view = operationView(state);
@@ -693,7 +738,16 @@ export const useOperation = (supplied: Options) => {
     ...view,
     ownerVerified,
     ...actions(state, dispatch, options),
-    dirty: dirtyValues(state.values, state.baseline),
+    captureDateEntry: (
+      path: string,
+      canonical: string,
+      parts: ReadonlyArray<DateEntryPart> | null,
+    ) => {
+      if (ownerVerified && disclosureCurrent) {
+        dispatch({ type: "DATE_ENTRY", path, canonical, parts, id: crypto.randomUUID() });
+      }
+    },
+    dirty: dirtyValues(state.values, state.baseline) || Object.keys(state.dateEntries).length > 0,
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.caseObservation : null,
     revalidating: state.disclosureRead !== null,
