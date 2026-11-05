@@ -313,3 +313,43 @@ let coherentPreview (reply: PresentedPreviewReply) =
         | outcome -> outcome
 
     { reply with Outcome = outcome }
+
+/// Selectors vary independently while retaining the structural relationship to the full items.
+/// This generates valid wire references, not the application's business highlight policy.
+let internal timelineHighlights items =
+    items
+    |> List.mapi (fun index change ->
+        gen {
+            let! includeItem = Gen.bool
+
+            if not includeItem then
+                return None
+            else
+                match change with
+                | TimelineChange.Reminder difference ->
+                    let available =
+                        [
+                            if difference.Action.IsSome then
+                                yield TimelineFacet.Action
+                            if difference.Due.IsSome then
+                                yield TimelineFacet.Due
+                            if difference.State.IsSome then
+                                yield TimelineFacet.State
+                        ]
+
+                    if available.IsEmpty then
+                        return None
+                    else
+                        let! mask = Gen.int32 (Range.constant 1 ((1 <<< available.Length) - 1))
+
+                        let facets =
+                            available
+                            |> List.indexed
+                            |> List.choose (fun (offset, facet) ->
+                                if mask &&& (1 <<< offset) <> 0 then Some facet else None)
+
+                        return Some(TimelineHighlight.Reminder(index, facets))
+                | _ -> return Some(TimelineHighlight.Change index)
+        })
+    |> sequence
+    |> Gen.map (List.choose (fun value -> value))

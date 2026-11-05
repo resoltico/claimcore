@@ -195,6 +195,11 @@ let internal integer response context =
     let low, high =
         if context.Contains("InstallationOffer.Open", StringComparison.Ordinal) then
             0L, 0L
+        elif
+            field = "expectedRevision"
+            && context.Contains("ReminderAct`1.", StringComparison.Ordinal)
+        then
+            1L, JsonValue.MaximumInteger
         elif field = "DisplayScale" then
             0L, 4L
         elif field = "Limit" then

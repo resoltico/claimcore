@@ -72,6 +72,7 @@ let internal listBounds (path: string) =
                 "ReviewPresentation.Unchanged", 324
                 "HistoryDifference.Fields", Inventory.fieldCount
                 "Disclosed.Item", Inventory.fieldCount + 1
+                "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50
@@ -448,12 +449,52 @@ and private freshList response source context kind =
     }
 
 and private freshRecord response source context kind value =
-    Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
-    |> Array.map (fun (field, item) ->
-        fresh response source (context + "." + recordContext kind field) field.PropertyType item)
-    |> Array.toList
-    |> sequence
-    |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
+    if kind = typeof<TimelineDisclosure> then
+        let seed = unbox<TimelineDisclosure> value
+
+        gen {
+            let! items =
+                freshList
+                    response
+                    source
+                    (context + ".TimelineDisclosure.Items")
+                    typeof<TimelineChange list>
+                |> Gen.map unbox<TimelineChange list>
+
+            let! event =
+                fresh
+                    response
+                    source
+                    (context + ".TimelineDisclosure.Overview.TimelineOverview.Event")
+                    typeof<TimelineEvent>
+                    (box seed.Overview.Event)
+                |> Gen.map unbox<TimelineEvent>
+
+            let! highlights = WireWorkGenerators.timelineHighlights items
+
+            return
+                box
+                    {
+                        TimelineDisclosure.Items = items
+                        Overview =
+                            {
+                                Event = event
+                                Highlights = highlights
+                            }
+                    }
+        }
+    else
+        Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
+        |> Array.map (fun (field, item) ->
+            fresh
+                response
+                source
+                (context + "." + recordContext kind field)
+                field.PropertyType
+                item)
+        |> Array.toList
+        |> sequence
+        |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
 
 and private freshUnion response source context kind value =
     if kind = typeof<PresentedValue> then
