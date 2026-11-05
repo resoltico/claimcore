@@ -153,6 +153,25 @@ export const startOpen = async (
   await progress("open-filled");
 };
 
+/** Reveal the offered global actions without opening an operation or sending a mutation. */
+export const showCaseActionMenu = async (page: Page): Promise<void> => {
+  const more = page
+    .locator(".case-actions > summary, .case-more-actions > summary")
+    .filter({ visible: true });
+  if ((await more.count()) === 0) {
+    return;
+  }
+  await expect(more).toHaveCount(1);
+  if (
+    !(await more.evaluate(
+      (element) =>
+        element.parentElement instanceof HTMLDetailsElement && element.parentElement.open,
+    ))
+  ) {
+    await more.click();
+  }
+};
+
 export const startAct = async (page: Page, label: string): Promise<void> => {
   const button = page.getByRole("button", { name: new RegExp(`^${label}:`, "u") });
   const more = page

@@ -3,6 +3,7 @@ import { registration } from "../tests/support/inputs";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { openCase, reviewDraft, startAct, startOpen } from "./case-workflow";
+import { isResponse } from "../src/protocol/client";
 import { openAuthenticated } from "./session-helpers";
 
 test("protects exact routed amendment edits on Back while untouched drafts leave directly", async ({
@@ -73,12 +74,23 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   page,
 }) => {
   await openAuthenticated(page);
-  await startOpen(page, `RECEIPT-${randomUUID()}`);
+  const reference = `RECEIPT-${randomUUID()}`;
+  await startOpen(page, reference);
   await reviewDraft(page);
   await expect(page.locator(".operation-form-card")).toHaveCount(0);
   await expect(page.getByRole("dialog").getByRole("textbox")).toHaveCount(0);
   await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toBeEnabled();
+  const disclosed = page.waitForResponse(
+    (response) => new URL(response.url()).pathname === "/api/case.get",
+  );
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+  const current: unknown = await (await disclosed).json();
+  if (!isResponse("case.get", current) || current.outcome.kind !== "SUCCEEDED") {
+    throw new Error("E2E_ACCEPTED_OPEN_CASE_DISCLOSURE_REQUIRED");
+  }
+  expect(current.outcome.data.caseReference).toBe(reference);
+  expect(current.outcome.data.revision).toBe(1);
+  expect(current.outcome.data.advice.acts).toContain("AMEND_REGISTRATION");
   const detail = page.locator("#case-detail-title");
   await expect(detail).toBeVisible();
   await expect(detail).toBeFocused();
@@ -96,5 +108,9 @@ test("review blocks authoring and accepted OPEN returns to the recorded case wit
   await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.getByRole("button", { name: /^Update claim details:/u })).toBeVisible();
+  await expect(
+    page
+      .locator(".case-fact-card")
+      .getByRole("button", { name: "Update claim details", exact: true }),
+  ).toBeVisible();
 });

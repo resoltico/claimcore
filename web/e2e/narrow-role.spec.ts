@@ -1,3 +1,4 @@
+import { showCaseActionMenu } from "./case-workflow";
 import { showExactLookup } from "./workspace-navigation";
 import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
@@ -50,6 +51,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await expect(history).not.toContainText("Synthetic claimant");
     await expect(history).not.toContainText("Synthetic insurer");
   }
+  await showCaseActionMenu(page);
   await expect(page.getByRole("button", { name: /^Close the case:/u })).toHaveCount(
     role === "CASE_HANDLER" ? 1 : 0,
   );
