@@ -426,8 +426,20 @@ const compactActionGeometry = async (page: Page, dimension: Dimension) => {
   if ((await page.getByRole("dialog").count()) > 0) {
     const controls = bar.locator("button, summary, a[href]");
     expect(await controls.count()).toBeGreaterThan(0);
-    await expect(bar.getByRole("button")).toHaveCount(0);
-    await expect(bar.getByRole("link")).toHaveCount(0);
+    const inert = await controls.evaluateAll((elements) =>
+      elements.every((element) => {
+        for (let parent: Element | null = element; parent !== null; parent = parent.parentElement) {
+          if (parent instanceof HTMLElement && parent.inert) {
+            return true;
+          }
+        }
+        return false;
+      }),
+    );
+    expect(
+      inert,
+      "Every background case action inherits native inert while the modal is active",
+    ).toBe(true);
     const exposed = await controls.evaluateAll(
       (elements) =>
         elements.filter((element) => {
