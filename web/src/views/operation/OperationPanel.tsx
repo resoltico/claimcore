@@ -421,7 +421,7 @@ export const OperationPanel = (props: Props) => {
             settings?.paused !== true &&
             open &&
             model.pendingDiscard === null &&
-            disclosureAvailable &&
+            (disclosureAvailable || model.priorUncertain) &&
             model.ownerVerified &&
             model.phase !== "ACCEPTED"
           }

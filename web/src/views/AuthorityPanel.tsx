@@ -216,7 +216,10 @@ const AuthorityWorkspace = ({
           type="button"
           disabled={model.busy}
           onClick={() => {
-            if (!model.dirty && model.prepared === null && !model.priorUncertain) {
+            if (
+              model.phase === "ACCEPTED" ||
+              (!model.dirty && model.prepared === null && !model.priorUncertain)
+            ) {
               editor.admit(context.value!.issuer);
             }
             editor.open();
@@ -325,6 +328,11 @@ const AuthorityUnavailable = ({
         open={editor.active}
         onClose={editor.close}
       />
+      {model.priorUncertain ? (
+        <button type="button" onClick={editor.open}>
+          {p.text("ui.continueAuthorityRequest")}
+        </button>
+      ) : null}
       <button
         type="button"
         onClick={() => {
