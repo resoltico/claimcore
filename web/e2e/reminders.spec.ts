@@ -66,7 +66,7 @@ test("stores exact optional LF incident text and clears it without a financial a
   await expect(page.locator('[data-field-name="incidentDescription"].field-row')).toContainText(
     "حادث في الطريق",
   );
-  await startAct(page, "Update claim details");
+  await startAct(page, "AMEND_REGISTRATION", "en");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   await page.getByRole("checkbox", { name: "Clear recorded value", exact: true }).check();
   await reviewDraft(page);
@@ -348,7 +348,7 @@ test("paid description correction preserves payment, then a closed case accepts 
     expect(seeded.outcome.kind).toBe("ACCEPTED");
   }
   await page.reload();
-  await startAct(page, "Correct case facts");
+  await startAct(page, "CORRECT", "en");
   await chooseChoice(page, "act.groups.registration.kind", "UPDATE");
   await page.locator('input[data-selects-fields~="incidentDescription"]').check();
   const description = "Paid case description\nNo new payment assertion.";

@@ -1,3 +1,7 @@
+import type { CaseAct, AuthorityAct } from "@contracts/client";
+import type { Language } from "../src/presentation/preferences";
+import { defaults } from "../src/presentation/preferences";
+import { createPresenter } from "../src/presentation/presenter";
 import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
@@ -9,17 +13,25 @@ import {
   browserRequest,
   sessionToken,
 } from "./session-helpers";
-import { confirmReview } from "./localization-support";
+import { confirmReview, installTestLanguage } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
 
-const stewardAct = async (page: Page, reference: string, label: string, reason?: string) => {
-  await startAct(page, label);
+const stewardAct = async (
+  page: Page,
+  reference: string,
+  kind: CaseAct["kind"],
+  reason?: string,
+) => {
+  installTestLanguage("en");
+  const p = createPresenter({ ...defaults, language: "en" });
+  const label = p.actLabel(kind);
+  await startAct(page, kind, "en");
   const dialog = page.getByRole("dialog", { name: label, exact: true });
   if (reason !== undefined) {
     await dialog.getByLabel("Reason", { exact: true }).fill(reason);
   }
-  if (label === "Erase case") {
+  if (kind === "ERASE") {
     await expect(dialog).toContainText("Copies held elsewhere remain.");
   }
   const previewed = page.waitForResponse(
@@ -29,7 +41,7 @@ const stewardAct = async (page: Page, reference: string, label: string, reason?:
   const preview = await previewed;
   await confirmReview(page);
   const action = dialog.locator("button[data-confirm-operation]");
-  if (label === "Erase case") {
+  if (kind === "ERASE") {
     await expect(dialog).toContainText(
       "This permanently removes the case details, work and reminders from ClaimCore.",
     );
@@ -73,10 +85,10 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
     await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
-    await stewardAct(steward, reference, "Void case record", "Synthetic entry error");
+    await stewardAct(steward, reference, "VOID", "Synthetic entry error");
     await expect(steward.getByRole("status").filter({ hasText: "Voided" })).toBeVisible();
-    await stewardAct(steward, reference, "Reinstate case record", "Synthetic correction");
-    await stewardAct(steward, reference, "Erase case");
+    await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
+    await stewardAct(steward, reference, "ERASE");
     await expect(steward.getByText(/Erased — only/u)).toBeVisible();
     await expect(steward.locator(".case-fields")).toHaveCount(0);
     await expectAccessible(steward);
@@ -157,12 +169,28 @@ const openActor = async (page: Page, actorId: string, name: string) => {
   await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
   await expect(page.getByRole("dialog", { name, exact: true })).toBeVisible();
 };
-const beginActorAct = async (page: Page, name: string, label: string) => {
-  await page
-    .getByRole("dialog", { name, exact: true })
-    .getByRole("button", { name: new RegExp(`^${label}:`, "u") })
-    .click();
-  await expect(page.getByRole("dialog", { name: label, exact: true })).toBeVisible();
+const beginActorAct = async (
+  page: Page,
+  name: string,
+  kind: AuthorityAct["kind"],
+  language: Language,
+) => {
+  installTestLanguage(language);
+  const p = createPresenter({ ...defaults, language });
+  const person = page.getByRole("dialog", { name, exact: true });
+  const button = person.getByRole("button", {
+    name: p.text("ui.actDescription", {
+      label: p.authorityLabel(kind),
+      meaning: p.authorityMeaning(kind),
+    }),
+    exact: true,
+  });
+  await expect(button).toBeVisible();
+  await expect(button).toHaveText(p.authorityLabel(kind));
+  await button.click();
+  await expect(
+    page.getByRole("dialog", { name: p.authorityLabel(kind), exact: true }),
+  ).toBeVisible();
 };
 
 const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: string) => {
@@ -207,16 +235,16 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   }
   const { actorId } = admitted.subject.targetActor.actor;
   await openActor(page, actorId, name);
-  await beginActorAct(page, name, "Grant role");
+  await beginActorAct(page, name, "GRANT", "en");
   await chooseChoice(page, "act.role", "CASE_READER");
   await chooseChoice(page, "act.scope.kind", "CASE");
   await page.locator('[name="act.scope.target.caseReference"]').fill(reference);
   await submitAuthority(page, "ACCEPTED");
   await openActor(page, actorId, name);
-  await beginActorAct(page, name, "Disable account");
+  await beginActorAct(page, name, "DISABLE", "en");
   await submitAuthority(page, "ACCEPTED");
   await openActor(page, actorId, name);
-  await beginActorAct(page, name, "Grant role");
+  await beginActorAct(page, name, "GRANT", "en");
   const owner = page.locator('input[name="act.role"][value="OWNER"]');
   await expect(owner).toBeDisabled();
   await expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);

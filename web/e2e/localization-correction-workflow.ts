@@ -8,7 +8,7 @@ import { startAct } from "./case-workflow";
 import { browserRequest, sessionToken, installationId } from "./session-helpers";
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
-import { selectLanguage, ui } from "./localization-support";
+import { selectLanguage } from "./localization-support";
 
 export type Modes = Readonly<{
   registration: "KEEP" | "UPDATE";
@@ -144,7 +144,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
-  await startAct(page, ui(language, "act.CORRECT.label"));
+  await startAct(page, "CORRECT", language);
   for (const [group, mode] of Object.entries(modes)) {
     await chooseChoice(page, `act.groups.${group}.kind`, mode);
   }

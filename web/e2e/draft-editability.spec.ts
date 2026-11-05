@@ -11,14 +11,14 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
 }) => {
   await openAuthenticated(page);
   await openCase(page, `DRAFT-${randomUUID()}`);
-  await startAct(page, "Update claim details");
+  await startAct(page, "AMEND_REGISTRATION", "en");
   await expect(page.getByRole("combobox", { name: "Case action", exact: true })).toHaveCount(0);
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Close", exact: true })
     .first()
     .click();
-  await startAct(page, "Close the case");
+  await startAct(page, "CLOSE", "en");
   await expect(page.getByRole("heading", { name: "Close the case" })).toBeVisible();
   await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
   await page
@@ -26,7 +26,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
     .getByRole("button", { name: "Close", exact: true })
     .first()
     .click();
-  await startAct(page, "Update claim details");
+  await startAct(page, "AMEND_REGISTRATION", "en");
   const selectedFacts = page.locator(".operation-form-card input[data-selects-fields]");
   await selectedFacts.first().waitFor({ state: "visible" });
   for (const selected of await selectedFacts.all()) {
@@ -61,7 +61,7 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
     "1,200.50",
   );
-  await startAct(page, "Update claim details");
+  await startAct(page, "AMEND_REGISTRATION", "en");
   await page
     .getByRole("dialog")
     .getByRole("button", { name: "Close", exact: true })

@@ -140,7 +140,7 @@ for (const [entered, expected] of [
     const reference = `ENTRY-${randomUUID()}`;
     await openCase(page, reference);
     await selectFormat(page, entered);
-    await startAct(page, "Update claim details");
+    await startAct(page, "AMEND_REGISTRATION", "en");
     await page.locator('input[data-selects-fields~="claimedAmount"]').check();
     await fillBusinessField(page, "claimedAmount", "1,234");
     const editorUrl = page.url();

@@ -1,4 +1,4 @@
-import { showCaseActionMenu } from "./case-workflow";
+import { showCaseActionMenu, caseActionButton } from "./case-workflow";
 import { showExactLookup } from "./workspace-navigation";
 import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
@@ -52,9 +52,16 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     await expect(history).not.toContainText("Synthetic insurer");
   }
   await showCaseActionMenu(page);
-  await expect(page.getByRole("button", { name: /^Close the case:/u })).toHaveCount(
-    role === "CASE_HANDLER" ? 1 : 0,
-  );
+  if (role === "CASE_HANDLER") {
+    await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
+  } else {
+    await expect(
+      page
+        .getByRole("button")
+        .and(page.locator('button[data-act="CLOSE"]'))
+        .filter({ visible: true }),
+    ).toHaveCount(0);
+  }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator(".timeline-change")).toHaveCount(0);
     await refusedRead(page, "case.history", async () => {

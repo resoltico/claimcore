@@ -123,7 +123,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     const reference = `MISSING-${randomUUID()}`;
     await openCase(page, reference);
-    await startAct(page, "Close the case");
+    await startAct(page, "CLOSE", "en");
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes" }).click();
@@ -133,7 +133,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     await expect(page.locator("#case-detail-title")).toBeVisible();
     await expect(page.locator(".success-toast")).toContainText("Case closed.");
-    await startAct(page, "Correct case facts");
+    await startAct(page, "CORRECT", "en");
     await selectLanguage(page, language);
     const mode = page.locator('input[type="radio"][name="act.groups.decision.kind"]');
     await expect(mode).toHaveCount(1);

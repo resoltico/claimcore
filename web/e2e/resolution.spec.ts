@@ -14,7 +14,7 @@ import { isResponse } from "../src/protocol/client";
 
 const loseAcceptedClose = async (page: Page) => {
   await openCase(page, `RESOLVE-${randomUUID()}`);
-  await startAct(page, "Close the case");
+  await startAct(page, "CLOSE", "en");
   await reviewDraft(page);
   await confirmReview(page);
   const pending = await pauseJsonReply(page, "operation.execute", true);
@@ -87,7 +87,7 @@ test("recovery storage refusal prevents handoff and storage restoration permits 
   await openAuthenticated(page);
   const reference = `STORAGE-REFUSAL-${randomUUID()}`;
   await openCase(page, reference);
-  await startAct(page, "Close the case");
+  await startAct(page, "CLOSE", "en");
   const previewed = page.waitForRequest((request) =>
     request.url().endsWith("/api/operation.preview"),
   );

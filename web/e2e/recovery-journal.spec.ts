@@ -235,7 +235,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
   await adapter(page);
   const scope = await scopeFor(page);
-  await startAct(page, "Close the case");
+  await startAct(page, "CLOSE", "en");
   const identity = await reviewDraft(page);
   let executions = 0;
   await page.route("**/api/operation.execute", async (route) => {
