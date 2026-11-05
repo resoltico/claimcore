@@ -1,6 +1,6 @@
 import type { CaseStageDisplay } from "@contracts/client";
 import { usePresentation } from "../presentation/context";
-export const lifecycleMessageIds = {
+const lifecycleMessageIds = {
   ACTIVE: "lifecycle.ACTIVE.label",
   VOIDED: "lifecycle.VOIDED.meaning",
   ERASED: "lifecycle.ERASED.meaning",
