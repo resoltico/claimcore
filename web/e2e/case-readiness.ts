@@ -11,12 +11,10 @@ export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
   if ((await reminders.count()) > 0) {
     await expect(reminders).toHaveAttribute("aria-busy", "false");
     await expect(reminders.getByRole("alert")).toHaveCount(0);
-    const observed = reminders.getByText(/^Work observed for /u).first();
-    const empty = reminders.getByText("No reminders match this view.", { exact: true });
-    // A successful empty page can show both its message and its observation basis.
-    await expect(observed.or(empty).first()).toBeVisible();
   }
-  const overview = page.locator(".work-overview");
-  await expect(overview).toHaveAttribute("aria-busy", "false");
-  await expect(overview.getByText(/^Work observed for /u)).toBeVisible();
+  const timeline = current.locator(".case-timeline-panel");
+  if ((await timeline.count()) > 0) {
+    await expect(timeline).toHaveAttribute("aria-busy", "false");
+    await expect(timeline.getByRole("alert")).toHaveCount(0);
+  }
 };

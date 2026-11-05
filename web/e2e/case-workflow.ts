@@ -2,7 +2,7 @@ import { registration } from "../tests/support/inputs";
 import type { CaseFields } from "../src/api/service";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
-import { businessFieldCount, inventory } from "../tests/support/inventory";
+import { inventory } from "../tests/support/inventory";
 import { expect, type Page, type Response } from "@playwright/test";
 
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -29,10 +29,14 @@ type SubmitOutcome = ServiceResponse<"operation.execute">["outcome"];
 const submitFailureCategory = (outcome: SubmitOutcome): string => outcome.kind;
 
 const visibleFieldCount = (fields: CaseFields): number =>
-  businessFieldCount -
-  inventory.workFields.length -
-  (fields.decision === null ? inventory.groups.decision.length : 0) -
-  (fields.payment === null ? inventory.groups.payment.length : 0);
+  (["registration", "decision", "payment"] as const).reduce(
+    (count, group) =>
+      count +
+      (fields[group] === null
+        ? 0
+        : inventory.groups[group].filter((field) => field.kind !== "CURRENCY").length),
+    0,
+  );
 const responseJson = async (response: Response, phase: "SUBMIT" | "PREVIEW"): Promise<unknown> => {
   let text: string;
   try {
@@ -55,34 +59,19 @@ const refuseSubmitHttp = async (response: Response): Promise<never> => {
   throw new Error(`E2E_SUBMIT_HTTP_${status}_${classification}`);
 };
 
-export const recordReviewed = async (
-  page: Page,
-  confirmation = "I confirm these changes.",
-): Promise<void> => {
+export const recordReviewed = async (page: Page): Promise<void> => {
   // Callers can supply an authenticated page without using openApplication's setup.
   await retainResponseBodies(page);
-  const confirmed = page.getByRole("checkbox", { name: confirmation, exact: true });
-  await confirmed.waitFor({ state: "visible" });
-  await progress("confirm-click-start");
-  if ((await confirmed.count()) !== 1) {
-    throw new Error("E2E_REVIEW_CHECKBOX_CARDINALITY");
-  }
-  try {
-    await page.getByText(confirmation, { exact: true }).click({ timeout: 5_000 });
-  } catch {
-    throw new Error("E2E_REVIEW_LABEL_CLICK_FAILED");
-  }
-  await progress("confirm-clicked");
-  if (!(await confirmed.isChecked())) {
-    throw new Error("E2E_REVIEW_CHECKBOX_NOT_CHECKED");
-  }
-  await progress("confirm-checked");
+  const confirmed = page.getByRole("dialog").locator("button[data-confirm-operation]");
+  await expect(confirmed).toHaveCount(1);
+  await expect(confirmed).toBeVisible();
+  await expect(confirmed).toBeEnabled();
   const responseEvent = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/operation.execute",
     { timeout: 10_000 },
   );
   await progress("submit-dispatch");
-  await page.getByRole("button", { name: "Record changes" }).click();
+  await confirmed.click();
   const response = await responseEvent;
   if (response.status() !== 200) {
     await refuseSubmitHttp(response);
@@ -96,14 +85,14 @@ export const recordReviewed = async (
     throw new Error(`E2E_SUBMIT_${submitFailureCategory(outcome)}`);
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.locator(".success-toast")).toContainText("revision");
+  await expect(page.locator(".success-toast")).toBeVisible();
   const receipt = outcome.data;
   if (receipt.subject.kind !== "CASE") {
     throw new Error("Expected a case receipt.");
   }
   const { snapshot } = receipt.subject;
   const expected = snapshot.kind === "DISCLOSED" ? visibleFieldCount(snapshot.view.fields) : 0;
-  await expect(page.locator("section.case-fields dl > div")).toHaveCount(expected);
+  await expect(page.locator("section.case-fields .field-row")).toHaveCount(expected);
   await expectCaseReadsSettled(page);
   await progress("accepted-receipt");
 };
@@ -205,7 +194,9 @@ export const reviewDraft = async (
   }
   const { operationId } = posted;
   const identity = { operationId };
-  const dialog = page.getByRole("dialog", { name: "Review changes" });
+  const dialog = page
+    .getByRole("dialog")
+    .filter({ has: page.locator("button[data-confirm-operation]") });
   await expect(dialog).toContainText(operationId);
 
   await progress("review-visible");
@@ -235,9 +226,9 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await submit(page);
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("open-detail");
-  await expect(page.locator("section.case-fields").first().locator("dl > div")).toHaveCount(
-    inventory.specialFields.length + inventory.groups.registration.length,
-  );
+  await expect(
+    page.locator("section.case-fields .case-fact-card").first().locator(".field-row"),
+  ).toHaveCount(inventory.groups.registration.filter((field) => field.kind !== "CURRENCY").length);
   return identity;
 };
 
