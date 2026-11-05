@@ -188,6 +188,9 @@ The interface asks before discarding an unsent draft or retained retry. See
 name with an anonymous account reference. Earlier values appear only when your history access allows
 them; erased or withheld contents remain hidden.
 
+The concise event and highlighted differences come from Core. Choose **Show details** for the complete
+exact differences and the operation identity, revision and recorded time used for support.
+
 In the CLI use `claimcore case timeline REFERENCE`, optionally with `--filter facts` or `--filter work`.
 The former human `case history` and `case activity` commands are removed. JSON and CSV exports retain
 canonical values. See [integration](integrating.md) for formats, history permissions and live traversal.

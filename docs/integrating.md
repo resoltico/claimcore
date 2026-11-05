@@ -595,9 +595,20 @@ Current rights govern every disclosure. Current snapshots need case read; supers
 history. Receipts distinguish `DISCLOSED`, `WITHHELD` and `ERASED`. Access/session changes clear disclosed
 views, and stale replies cannot populate a different actor or resource context.
 
+`case.timeline` combines fact, work and reminder entries in descending ledger sequence. Its optional
+`FACTS` or `WORK` filter is applied by Core. Follow the returned cursor for older entries; a conflict
+continuation keeps its observed revision range and rechecks current disclosure rights.
+
+`changes: DISCLOSED` contains the full `items` and a Core-owned `overview`. The overview supplies a
+typed recorded event with a fixed `messageId` and historical arguments, plus ordered highlight
+references into `items`. Reminder references also select explicit action, due-date or state facets.
+Use the generated `resolveTimelineHighlights` helper for compact rendering; do not rank changes or
+reconstruct event arguments from current work. The complete items remain available for audit and
+canonical export. `WITHHELD` and `ERASED` contain no event, highlight or difference payload.
+
 `case.history` returns newest revisions first. Start without a cursor, then follow `nextCursor` for older
-revisions. Each continuation selects revisions older than its last entry. The browser loads
-bounded pages. Core supplies each full entry's nullable `difference`, including lifecycle and field
+revisions. Each continuation selects revisions older than its last entry. Pages are bounded.
+Core supplies each full entry's nullable `difference`, including lifecycle and field
 changes, using the predecessor already fetched in the same LIMIT+1 query. That context row is not an
 extra visible entry. Clients do no business comparison. Withheld or erased fields are never inferred;
 a missing comparison remains unavailable. This does not pin later pages or fetch the whole history.

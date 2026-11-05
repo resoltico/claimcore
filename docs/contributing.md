@@ -240,6 +240,12 @@ CLI and web adapt inputs and render these values; they must not rank actions or 
 Case and reminder view predicates, rows and counts use the same authorized read snapshot. Exercise
 both the memory contract and PostgreSQL implementation when changing a view.
 
+[TimelineOverview](../src/ClaimCore.Application/TimelineOverview.fs) selects concise recorded events and
+highlight references from validated historical effects after disclosure and conflict-range filtering.
+Full differences remain authoritative. The generated `resolveTimelineHighlights` helper only resolves
+those references; renderers must not choose other fields or reconstruct historical reminder actions.
+Keep maximal retained-value replies within the existing 4 MiB cap, including 50-entry conflict pages.
+
 Catalog field and input metadata distinguish labels, short GUI hints and precise rules. Rules retain
 wire syntax for CLI help, documentation and information tips. GUI diagnostics use the generated GUI
 message map rather than displaying CLI syntax. Consequence and completion identities are core metadata;
