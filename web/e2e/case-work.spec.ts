@@ -46,10 +46,7 @@ test("records future planned work and scoped responsibility, then finds My cases
     () => window.performance.getEntriesByType("resource").length,
   );
   const started = performance.now();
-  await page
-    .locator(".case-work")
-    .getByRole("button", { name: "Update case work", exact: true })
-    .click();
+  await page.locator("#case-work-update").click();
   const renderMilliseconds = performance.now() - started;
   await page.waitForLoadState("networkidle");
   const resources = await page.evaluate(
@@ -116,10 +113,15 @@ test("records future planned work and scoped responsibility, then finds My cases
   expect(accepted.outcome.data.work.revision).toBe(1);
   expect(accepted.outcome.data.work.responsible?.actorId).toBe(actorId);
   expect(accepted.outcome.data.work.followUpDate).toBe(planned);
-  await expect(page.locator(".case-work")).toContainText("Upcoming");
+  await expect(
+    page
+      .locator(".reminder-list .reminder-row")
+      .filter({ hasText: "Request the remaining documents" })
+      .locator(".reminder-timing"),
+  ).toHaveText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");
-  await page.getByRole("button", { name: "My cases", exact: true }).click();
+  await page.getByRole("tab", { name: /^My cases(?: \d+)?$/u }).click();
   await expect(page.getByRole("link", { name: reference, exact: true })).toBeVisible();
 });
 
@@ -127,21 +129,24 @@ for (const [entered, expected] of [
   ["en-GB", "1234"],
   ["lv-LV", "1.234"],
 ] as const) {
-  test(`guards Settings navigation while preserving ${entered} amount meaning in a partial editor`, async ({
+  test(`preserves the Settings detour and ${entered} amount meaning in a partial editor`, async ({
     page,
   }) => {
     await openAuthenticated(page);
     const reference = `ENTRY-${randomUUID()}`;
     await openCase(page, reference);
     await selectFormat(page, entered);
-    await startAct(page, "Amend registration");
+    await startAct(page, "Update claim details");
     await page.locator('input[data-selects-fields~="claimedAmount"]').check();
     await fillBusinessField(page, "claimedAmount", "1,234");
     const editorUrl = page.url();
     await (await settingsNavigation(page)).click();
-    const guard = page.getByRole("dialog", { name: "Discard these draft changes?", exact: true });
-    await expect(guard).toBeVisible();
-    await guard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/settings");
+    await expect(page.locator(".settings-panel")).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "Discard these draft changes?", exact: true }),
+    ).toHaveCount(0);
+    await page.locator("[data-return-workspace]").click();
     await expect(page).toHaveURL(editorUrl);
     await expect(page.locator(".settings-panel")).toHaveCount(0);
     await expect(page.locator('[data-field-name="claimedAmount"]')).toHaveValue("1,234");
