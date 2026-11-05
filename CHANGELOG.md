@@ -40,6 +40,7 @@
 - CLI language follows explicit flag, environment, profile and POSIX locale precedence; configure --show reports the effective choice and source.
 - CLI --dry-run rejects malformed writes locally with exit 2 and ordered input issues; structured refusals retain the existing frame shape with NOT_SENT delivery.
 - CLI money keeps meaningful precision and adds ISO minor units for known currencies; canonical JSON and CSV amounts stay unchanged.
+- CLI human values use explicit en-GB, lv-LV and Latin-digit ar-AE cultures so money, dates and observation footers agree across supported platforms.
 - Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
