@@ -254,5 +254,9 @@
   "ui.workRecorded": "سُجل عمل الملف.",
   "ui.workRevision": "إصدار العمل {revision}",
   "ui.worklistSearch": "تصفية هذا العرض",
-  "ui.yes": "نعم"
+  "ui.yes": "نعم",
+  "ui.requests.empty": "لا توجد طلبات وصول معلّقة.",
+  "ui.requests.hints": "تفاصيل تسجيل الدخول هذه معلومات إرشادية غير متحقق منها. أكّد الملف الشخصي المُدخل قبل إضافة هذا الشخص.",
+  "ui.requests.more": "تحميل المزيد من طلبات الوصول",
+  "ui.requests.refresh": "تحديث طلبات الوصول"
 }

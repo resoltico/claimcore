@@ -254,5 +254,9 @@
   "ui.choiceNotAvailable": "Not available with the current facts.",
   "ui.returnToWorkspace": "Return to workspace",
   "ui.enterDetails": "Enter details",
-  "ui.review.checked": "Checked {when}."
+  "ui.review.checked": "Checked {when}.",
+  "ui.requests.empty": "No pending access requests.",
+  "ui.requests.hints": "These sign-in details are unverified hints. Confirm the authored profile before adding this person.",
+  "ui.requests.more": "Load more access requests",
+  "ui.requests.refresh": "Refresh access requests"
 }

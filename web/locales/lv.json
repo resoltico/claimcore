@@ -254,5 +254,9 @@
   "ui.choiceNotAvailable": "Nav pieejams ar pašreizējiem faktiem.",
   "ui.returnToWorkspace": "Atgriezties darbvietā",
   "ui.enterDetails": "Ievade",
-  "ui.review.checked": "Pārbaudīts {when}."
+  "ui.review.checked": "Pārbaudīts {when}.",
+  "ui.requests.empty": "Nav neizskatītu piekļuves pieprasījumu.",
+  "ui.requests.hints": "Šī pierakstīšanās informācija ir nepārbaudītas norādes. Pirms personas pievienošanas pārbaudiet ievadīto profilu.",
+  "ui.requests.more": "Ielādēt vēl piekļuves pieprasījumus",
+  "ui.requests.refresh": "Atjaunot piekļuves pieprasījumus"
 }

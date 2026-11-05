@@ -1,0 +1,16 @@
+.access-requests-list {
+  display: grid;
+  gap: var(--space-4);
+  padding-inline-start: 0;
+  list-style: none;
+}
+.access-requests-list > li {
+  border-block-end: 1px solid var(--border-subtle);
+  padding-block-end: var(--space-4);
+  overflow-wrap: anywhere;
+}
+.access-request-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+}
