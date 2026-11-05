@@ -204,7 +204,10 @@ module RequestCodecs =
     let private reminderTargetFields =
         record (fun id revision -> id, revision)
         |> field "reminderId" fst uuid
-        |> field "expectedRevision" snd revision
+        |> field
+            "expectedRevision"
+            snd
+            (integer (Revision.value Revision.first) JsonValue.MaximumInteger)
 
     let private reminderPlanFields targetFields =
         record (fun (id, revision) plan -> id, revision, plan)

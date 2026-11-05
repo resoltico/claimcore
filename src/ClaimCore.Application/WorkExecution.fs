@@ -37,8 +37,9 @@ module internal WorkExecution =
             Error(Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired))
         )
 
-    let private revision target raw =
+    let private revision target minimum raw =
         Revision.create raw
+        |> Option.filter (fun value -> value >= minimum)
         |> Option.map Ok
         |> Option.defaultValue (
             Error(Refusal.invalidInput (target, Violation.ExpectedRevisionRange))
@@ -89,7 +90,7 @@ module internal WorkExecution =
                 (Admission.map2
                     (fun id expected -> id, expected)
                     (reminderId id)
-                    (revision InputTarget.ExpectedReminderRevision expected))
+                    (revision InputTarget.ExpectedReminderRevision Revision.first expected))
                 change
 
     let prepareWork (request: WorkOperationRequest) =
@@ -114,7 +115,7 @@ module internal WorkExecution =
             (Admission.map2
                 (fun operation expected -> operation, expected)
                 (operation request.OperationId)
-                (revision InputTarget.ExpectedWorkRevision request.ExpectedRevision))
+                (revision InputTarget.ExpectedWorkRevision Revision.zero request.ExpectedRevision))
             update
         |> fun prepared ->
             Admission.map2

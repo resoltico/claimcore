@@ -12881,7 +12881,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -12903,7 +12903,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           }
         },
@@ -12925,7 +12925,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           },
           "action": {
@@ -12975,7 +12975,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           },
           "dueDate": {
@@ -13001,7 +13001,7 @@
           },
           "expectedRevision": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 1,
             "maximum": 9007199254740991
           },
           "action": {

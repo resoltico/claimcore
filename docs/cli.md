@@ -492,7 +492,7 @@ claimcore reminder update [--operation-id VALUE] CASE-REFERENCE --reminder-id VA
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — Use the positive revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 | `--action` | Action — Use one line of plain text, up to 200 Unicode scalar values. |  |  |
 | `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
@@ -511,7 +511,7 @@ claimcore reminder complete [--operation-id VALUE] CASE-REFERENCE --reminder-id 
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — Use the positive revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 
 ## reminder cancel
 
@@ -528,7 +528,7 @@ claimcore reminder cancel [--operation-id VALUE] CASE-REFERENCE --reminder-id VA
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — Use the positive revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 
 ## reminder reopen
 
@@ -545,7 +545,7 @@ claimcore reminder reopen [--operation-id VALUE] CASE-REFERENCE --reminder-id VA
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — Use the positive revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 | `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
 ## reminder complete-and-plan-next
@@ -563,7 +563,7 @@ claimcore reminder complete-and-plan-next [--operation-id VALUE] CASE-REFERENCE 
 | `--operation-id` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
 | `CASE-REFERENCE` | Case reference — Use 1 to 80 printable ASCII characters without spaces. Letter case identifies the same case; the original spelling is retained. |  |  |
 | `--reminder-id` | Reminder ID — The immutable identity of one reminder in this case. |  |  |
-| `--expected-reminder-revision` | Reviewed reminder version — The revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
+| `--expected-reminder-revision` | Reviewed reminder version — Use the positive revision of this exact reminder that you reviewed. Other reminders have independent revisions. |  |  |
 | `--action` | Action — Use one line of plain text, up to 200 Unicode scalar values. |  |  |
 | `--due` | Due date — Use a Gregorian date, YYYY-MM-DD. Past and future dates are allowed. |  |  |
 
