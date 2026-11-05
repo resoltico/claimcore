@@ -85,13 +85,11 @@ type TimelineFacet =
     | State
 
 module TimelineFacet =
-    let all = [ TimelineFacet.Action; TimelineFacet.Due; TimelineFacet.State ]
+    let vocabulary =
+        Vocabulary.ofUnion<TimelineFacet> "timelineFacet" TokenCasing.ScreamingSnake None
 
-    let token =
-        function
-        | TimelineFacet.Action -> "ACTION"
-        | TimelineFacet.Due -> "DUE"
-        | TimelineFacet.State -> "STATE"
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
 
 [<RequireQualifiedAccess>]
 type TimelineHighlight =

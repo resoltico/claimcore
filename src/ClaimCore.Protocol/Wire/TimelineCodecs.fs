@@ -258,10 +258,7 @@ module TimelineCodecs =
         let index = integer 0L (int64 CaseFields.declarations.Length) |> map int int64
 
         let facets =
-            TimelineFacet.all
-            |> List.map (fun facet -> facet, TimelineFacet.token facet)
-            |> enumeration
-            |> named "TimelineFacet"
+            VocabularyCodec.create TimelineFacet.vocabulary |> named "TimelineFacet"
 
         tagged
             "TimelineHighlight"

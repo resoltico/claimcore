@@ -23222,6 +23222,707 @@
         }
       },
       "valid": false
+    },
+    {
+      "name": "case.timeline-event-responsibility-cleared",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        },
+                        "after": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_CLEARED",
+                      "messageId": "timeline.event.responsibilityCleared",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": []
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-work-recorded",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [],
+                  "overview": {
+                    "event": {
+                      "kind": "WORK_RECORDED",
+                      "messageId": "timeline.event.workRecorded"
+                    },
+                    "highlights": []
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-summary-added",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "New authored summary"
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "HANDLING_SUMMARY_ADDED",
+                      "messageId": "timeline.event.handlingSummaryAdded"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 0
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-summary-changed",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": "Old authored summary",
+                        "after": "New authored summary"
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "HANDLING_SUMMARY_CHANGED",
+                      "messageId": "timeline.event.handlingSummaryChanged"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 0
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-summary-cleared",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": "Old authored summary",
+                        "after": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "HANDLING_SUMMARY_CLEARED",
+                      "messageId": "timeline.event.handlingSummaryCleared"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 0
+                      }
+                    ]
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-reminder-planned",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "CREATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": null,
+                          "after": "Exact historical action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_PLANNED",
+                      "messageId": "timeline.event.reminderPlanned",
+                      "action": "Exact historical action",
+                      "due": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-reminder-completed",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED",
+                      "messageId": "timeline.event.reminderCompleted",
+                      "action": "Exact historical action"
+                    },
+                    "highlights": []
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-reminder-cancelled",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "CANCEL",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "CANCELLED"
+                        }
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CANCELLED",
+                      "messageId": "timeline.event.reminderCancelled",
+                      "action": "Exact historical action"
+                    },
+                    "highlights": []
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-reminder-reopened",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "REOPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": "COMPLETED",
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_REOPENED",
+                      "messageId": "timeline.event.reminderReopened",
+                      "action": "Exact historical action",
+                      "due": "2026-01-02"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-event-selectable-state-facet-boundary",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "CANCEL",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "CANCELLED"
+                        }
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CANCELLED",
+                      "messageId": "timeline.event.reminderCancelled",
+                      "action": "Exact historical action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "STATE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
     }
   ]
 }
