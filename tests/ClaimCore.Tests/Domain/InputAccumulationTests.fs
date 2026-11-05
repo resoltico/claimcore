@@ -312,6 +312,48 @@ let oneRound =
 
                         return actual = expected
                     }))
+            testCase "complete reminder metadata stays supplied in every changing act" (fun () ->
+                let plan =
+                    {
+                        ReminderPlanInput.Action = "Valid action"
+                        Due = "2026-11-04"
+                    }
+
+                let changing =
+                    [
+                        ReminderAct.Update(Guid.Empty, -1L, plan)
+                        ReminderAct.Complete(Guid.Empty, -1L)
+                        ReminderAct.Cancel(Guid.Empty, -1L)
+                        ReminderAct.Reopen(Guid.Empty, -1L, "2026-11-04")
+                        ReminderAct.CompleteAndPlanNext(Guid.Empty, -1L, plan)
+                    ]
+
+                for act in changing do
+                    let issues =
+                        Validation.syntax (AuthoredInput.Reminder(Guid.Empty, act))
+                        |> Option.get
+                        |> InputIssues.toList
+                        |> List.map (fun issue -> issue.Target, issue.Violation)
+
+                    Expect.equal
+                        issues
+                        [
+                            InputTarget.OperationId, Violation.OperationIdRequired
+                            InputTarget.ReminderId, Violation.ReminderIdRequired
+                            InputTarget.ExpectedReminderRevision, Violation.ExpectedRevisionRange
+                        ]
+                        "Invalid supplied IDs and revision are retained, ordered and not treated as omitted intent"
+
+                let creation =
+                    Validation.syntax (AuthoredInput.Reminder(Guid.Empty, ReminderAct.Create plan))
+                    |> Option.get
+                    |> InputIssues.toList
+                    |> List.map (fun issue -> issue.Target, issue.Violation)
+
+                Expect.equal
+                    creation
+                    [ InputTarget.OperationId, Violation.OperationIdRequired ]
+                    "Creation has no invented prior reminder ID or revision")
             testCase "offline syntax admits future dates but checks text and format" (fun () ->
                 let input =
                     opening

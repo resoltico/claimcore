@@ -85,36 +85,6 @@ module Validation =
 
             Admission.collect [ reminderId id; revisionCheck expected; payload ]
 
-    /// Checks formats, lengths and characters, never future dates or accepted-state rules.
-    let syntax input =
-        let result =
-            match input with
-            | AuthoredInput.Case(id, reference, expected, act) ->
-                Admission.collect
-                    [
-                        RequestValidation.syntax id reference expected act
-                        StateValidation.authoredChronology None act
-                    ]
-            | AuthoredInput.Authority request -> Authority.parse request |> Result.map ignore
-            | AuthoredInput.Work(id, expected, input) ->
-                Admission.collect
-                    [
-                        operation id
-                        revision InputTarget.ExpectedWorkRevision expected
-                        CaseWorkInput.admit input |> InputValidation.group |> Result.map ignore
-                    ]
-            | AuthoredInput.Reminder(id, input) ->
-                Admission.collect
-                    [
-                        operation id
-                        reminderWith (revision InputTarget.ExpectedReminderRevision) input
-                    ]
-
-        match InputValidation.ordered result with
-        | Error(Refusal.InvalidInput issues) -> Some issues
-        | _ -> None
-
-
     /// Validate the authored draft before any read, without fabricating an ID, revision or clock.
     let syntaxIntent input =
         let supplied check =
@@ -153,3 +123,25 @@ module Validation =
         match InputValidation.ordered result with
         | Error(Refusal.InvalidInput issues) -> Some issues
         | _ -> None
+
+    /// Complete requests use the same authored syntax owner with their real supplied metadata.
+    let syntax input =
+        let reminder =
+            function
+            | ReminderAct.Create plan -> ReminderAct.Create plan
+            | ReminderAct.Update(id, expected, plan) -> ReminderAct.Update(id, Some expected, plan)
+            | ReminderAct.Complete(id, expected) -> ReminderAct.Complete(id, Some expected)
+            | ReminderAct.Cancel(id, expected) -> ReminderAct.Cancel(id, Some expected)
+            | ReminderAct.Reopen(id, expected, due) -> ReminderAct.Reopen(id, Some expected, due)
+            | ReminderAct.CompleteAndPlanNext(id, expected, plan) ->
+                ReminderAct.CompleteAndPlanNext(id, Some expected, plan)
+
+        match input with
+        | AuthoredInput.Case(id, reference, expected, act) ->
+            AuthoredIntent.Case(Some id, reference, Some expected, act)
+        | AuthoredInput.Work(id, expected, work) ->
+            AuthoredIntent.Work(Some id, None, Some expected, work)
+        | AuthoredInput.Reminder(id, act) -> AuthoredIntent.Reminder(Some id, None, reminder act)
+        | AuthoredInput.Authority request ->
+            AuthoredIntent.Authority(Some request.OperationId, request.Target, request.Act)
+        |> syntaxIntent
