@@ -4,6 +4,7 @@ import { CaseProgress } from "./case/CaseProgress";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
+import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
@@ -51,6 +52,7 @@ const useCaseOperation = (props: OperationEditorProps) => {
 };
 export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
+  const requester = useRequesterContext();
   if (props.disclosureAvailable !== false && model.receipt?.subject.kind === "CASE") {
     return (
       <AcceptedOperation
@@ -62,7 +64,13 @@ export const OperationEditor = (props: OperationEditorProps) => {
     );
   }
   const current = model.currentCase;
-  const offered = current?.advice.acts ?? (props.current === null ? [props.initialAct] : []);
+  const offered =
+    current?.advice.acts ??
+    (props.current === null &&
+    props.initialAct === "OPEN" &&
+    requester?.offers.some((offer) => offer.kind === "OPEN") === true
+      ? ["OPEN"]
+      : []);
   return (
     <>
       {current === null || props.disclosureAvailable === false ? null : (

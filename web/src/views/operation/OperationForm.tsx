@@ -44,6 +44,8 @@ const OperationInputs = ({
 }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(model.entry.kind);
+  const retainCreationInputs =
+    model.entry.subject === "CASE" && model.entry.kind === "OPEN" && current === null;
   const act = operationEntry(model.entry);
   return (
     <>
@@ -62,7 +64,7 @@ const OperationInputs = ({
       {act.inputs.some((input) => input.kind.kind === "GROUP" && input.adviceGroup !== null) ? (
         <p>{p.text("ui.correctionHint")}</p>
       ) : null}
-      {offered.length === 0 ? null : (
+      {offered.length === 0 && !retainCreationInputs ? null : (
         <CatalogInputs
           entry={act}
           current={current}
