@@ -45,7 +45,7 @@
 - CLI human values use explicit en-GB, lv-LV and Latin-digit ar-AE cultures so money, dates and observation footers agree across supported platforms.
 - Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
-- Contributors can diagnose one published browser spec without replaying the full suite; ordinary acceptance refuses partial scope. Qualify stable source and reuse applicable CI evidence.
+- Contributors can diagnose selected browser specs without replaying full suites; diagnostic batches collect failures but never qualify acceptance. Reuse applicable CI evidence.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
 
 ## [0.15.0] - 2026-11-03
