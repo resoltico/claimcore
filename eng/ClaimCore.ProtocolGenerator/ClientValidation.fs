@@ -118,35 +118,47 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
   return path;
 };
 // Relational response grammar: selectors reference only already supplied disclosed differences.
-const wireTimelineDisclosure = (structural: WireCheck): WireCheck => (value,draft,path) => {
-  const issue=structural(value,draft,path); if(issue!==null||draft) { return issue; }
-  const disclosure=value as TimelineChanges_DISCLOSED; let previous=-1;
-  for(let ordinal=0;ordinal<disclosure.overview.highlights.length;ordinal++) {
-    const reference=disclosure.overview.highlights[ordinal]!; const where=[...path,"overview","highlights",String(ordinal)];
-    const item=disclosure.items[reference.index];
-    if(reference.index<=previous||item===undefined) { return where; } previous=reference.index;
-    if(reference.kind==="CHANGE") { if(item.kind==="REMINDER") { return where; } continue; }
-    if(item.kind!=="REMINDER"||reference.facets.length===0) { return where; }
-    let previousFacet=-1;
-    for(const facet of reference.facets) {
-      const rank=["ACTION","DUE","STATE"].indexOf(facet); const field=facet.toLowerCase() as "action"|"due"|"state";
-      if(rank<=previousFacet||item.change[field]===null) { return where; } previousFacet=rank;
-    }
+const hasTimelineDisclosureShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is TimelineChanges_DISCLOSED => structural(value,draft,path)===null;
+const timelineFacetOrder: Readonly<Record<TimelineFacet,number>> = {ACTION:0,DUE:1,STATE:2};
+const timelineFacetAvailable = (facet:TimelineFacet,change:ReminderDifference):boolean => {
+  switch(facet) { case "ACTION":return change.action!==null;case "DUE":return change.due!==null;case "STATE":return change.state!==null; }
+};
+const timelineFacetsValid = (facets:ReadonlyArray<TimelineFacet>,change:ReminderDifference):boolean => {
+  if(facets.length===0) { return false; } let previous=-1;
+  for(const facet of facets) { const rank=timelineFacetOrder[facet];if(rank<=previous||!timelineFacetAvailable(facet,change)) { return false; } previous=rank; }
+  return true;
+};
+const timelineReferenceValid = (reference:TimelineHighlight,item:TimelineChange|undefined):boolean => {
+  if(item===undefined) { return false; }
+  if(reference.kind==="CHANGE") { return item.kind!=="REMINDER"; }
+  return item.kind==="REMINDER"&&timelineFacetsValid(reference.facets,item.change);
+};
+const timelineReferencesIssue = (disclosure:TimelineChanges_DISCLOSED,path:WireIssue):WireIssue|null => {
+  let previous=-1;
+  for(const [ordinal,reference] of disclosure.overview.highlights.entries()) {
+    if(reference.index<=previous||!timelineReferenceValid(reference,disclosure.items.at(reference.index))) { return [...path,"overview","highlights",String(ordinal)]; }
+    previous=reference.index;
   }
   return null;
 };
+const wireTimelineDisclosure = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasTimelineDisclosureShape(value,structural,draft,path)) { return path; }
+  return draft?null:timelineReferencesIssue(value,path);
+};
+const resolveTimelineHighlight = (disclosure:TimelineChanges_DISCLOSED,reference:TimelineHighlight):TimelineChange => {
+  const item=disclosure.items.at(reference.index);
+  if(item===undefined) { throw new Error("Invalid timeline highlight reference."); }
+  if(reference.kind==="CHANGE") { return item; }
+  if(item.kind!=="REMINDER") { throw new Error("Invalid reminder highlight reference."); }
+  return {kind:"REMINDER",change:{reminderId:item.change.reminderId,
+    action:reference.facets.includes("ACTION")?item.change.action:null,
+    due:reference.facets.includes("DUE")?item.change.due:null,
+    state:reference.facets.includes("STATE")?item.change.state:null}};
+};
 /** Resolve Core-selected references mechanically; no renderer chooses business importance or values. */
-export const resolveTimelineHighlights = (disclosure: TimelineChanges_DISCLOSED): ReadonlyArray<TimelineChange> => {
+export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):ReadonlyArray<TimelineChange> => {
   if(check_TimelineChanges_DISCLOSED(disclosure,false,[])!==null) { throw new Error("Invalid timeline highlight references."); }
-  return disclosure.overview.highlights.map(reference=>{
-    const item=disclosure.items[reference.index]!;
-    if(reference.kind==="CHANGE") { return item; }
-    if(item.kind!=="REMINDER") { throw new Error("Invalid reminder highlight reference."); }
-    return {kind:"REMINDER",change:{reminderId:item.change.reminderId,
-      action:reference.facets.includes("ACTION")?item.change.action:null,
-      due:reference.facets.includes("DUE")?item.change.due:null,
-      state:reference.facets.includes("STATE")?item.change.state:null}};
-  });
+  return disclosure.overview.highlights.map(reference=>resolveTimelineHighlight(disclosure,reference));
 };
 
 """
