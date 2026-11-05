@@ -602,6 +602,8 @@ continuation keeps its observed revision range and rechecks current disclosure r
 `changes: DISCLOSED` contains the full `items` and a Core-owned `overview`. The overview supplies a
 typed recorded event with a fixed `messageId` and historical arguments, plus ordered highlight
 references into `items`. Reminder references also select explicit action, due-date or state facets.
+Reply validators must check index bounds, ordering, target kinds and non-null selected facets;
+ordinary JSON Schema shape validation cannot establish those data-dependent relationships.
 Use the generated `resolveTimelineHighlights` helper for compact rendering; do not rank changes or
 reconstruct event arguments from current work. The complete items remain available for audit and
 canonical export. `WITHHELD` and `ERASED` contain no event, highlight or difference payload.

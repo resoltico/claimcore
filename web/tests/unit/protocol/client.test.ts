@@ -1,5 +1,10 @@
+import { timelineEntry, timelinePage } from "../../support/timeline.fixtures";
 import { it, expect } from "vitest";
-import { endpoints } from "@contracts/client";
+import {
+  endpoints,
+  resolveTimelineHighlights,
+  type TimelineChanges_DISCLOSED,
+} from "@contracts/client";
 import { isResponse, isObject, isEndpointId, isHostFailure } from "../../../src/protocol/client";
 import { corpusCases, wireReply, hostCases } from "../../support/contract-corpus.fixtures";
 import { readFileSync } from "node:fs";
@@ -157,4 +162,101 @@ it("host failures bind actual HTTP status and forbid extra members", () => {
       isHostFailure({ hostFailure: { ...c.value.hostFailure, unexpected: 1 } }, c.status),
     ).toBe(false);
   }
+});
+
+it("admits only valid ordered timeline highlight references and resolves only the supplied facets", () => {
+  // Selector grammar is independent of the Core's semantic event/highlight selection policy.
+  const disclosure: TimelineChanges_DISCLOSED = {
+    kind: "DISCLOSED",
+    overview: {
+      event: { kind: "WORK_RECORDED", messageId: "timeline.event.workRecorded" },
+      highlights: [
+        { kind: "CHANGE", index: 0 },
+        { kind: "REMINDER", index: 1, facets: ["ACTION", "DUE"] },
+      ],
+    },
+    items: [
+      { kind: "HANDLING_SUMMARY", change: { before: "Before", after: "After" } },
+      {
+        kind: "REMINDER",
+        change: {
+          reminderId: "10000000-0000-4000-8000-000000000001",
+          action: { before: "Old action", after: "New action" },
+          due: { before: "2026-11-04", after: "2026-11-05" },
+          state: { before: "PENDING", after: "COMPLETED" },
+        },
+      },
+    ],
+  };
+  const frame = (changes: unknown) => ({
+    outcome: {
+      kind: "SUCCEEDED",
+      data: { ...timelinePage(), items: [{ ...timelineEntry(), changes }] },
+    },
+  });
+  expect(isResponse("case.timeline", frame(disclosure))).toBe(true);
+  const before = structuredClone(disclosure);
+  expect(resolveTimelineHighlights(disclosure)).toEqual([
+    { kind: "HANDLING_SUMMARY", change: { before: "Before", after: "After" } },
+    {
+      kind: "REMINDER",
+      change: {
+        reminderId: "10000000-0000-4000-8000-000000000001",
+        action: { before: "Old action", after: "New action" },
+        due: { before: "2026-11-04", after: "2026-11-05" },
+        state: null,
+      },
+    },
+  ]);
+  expect(disclosure).toEqual(before);
+  for (const [name, highlights] of [
+    ["out of range", [{ kind: "CHANGE", index: 2 }]],
+    [
+      "duplicate index",
+      [
+        { kind: "CHANGE", index: 0 },
+        { kind: "CHANGE", index: 0 },
+      ],
+    ],
+    [
+      "descending index",
+      [
+        { kind: "REMINDER", index: 1, facets: ["ACTION"] },
+        { kind: "CHANGE", index: 0 },
+      ],
+    ],
+    ["reminder through generic change", [{ kind: "CHANGE", index: 1 }]],
+    ["non-reminder through facets", [{ kind: "REMINDER", index: 0, facets: ["ACTION"] }]],
+    ["empty facets", [{ kind: "REMINDER", index: 1, facets: [] }]],
+    ["duplicate facets", [{ kind: "REMINDER", index: 1, facets: ["ACTION", "ACTION"] }]],
+    ["descending facets", [{ kind: "REMINDER", index: 1, facets: ["DUE", "ACTION"] }]],
+    ["unknown facet", [{ kind: "REMINDER", index: 1, facets: ["PAYMENT"] }]],
+  ] as const) {
+    expect(
+      isResponse(
+        "case.timeline",
+        frame({ ...disclosure, overview: { ...disclosure.overview, highlights } }),
+      ),
+      name,
+    ).toBe(false);
+  }
+  const noDue = {
+    ...disclosure,
+    items: [
+      disclosure.items[0],
+      {
+        kind: "REMINDER",
+        change: {
+          reminderId: "10000000-0000-4000-8000-000000000001",
+          action: { before: "Old action", after: "New action" },
+          due: null,
+          state: null,
+        },
+      },
+    ],
+  };
+  expect(
+    isResponse("case.timeline", frame(noDue)),
+    "cannot highlight a missing due difference",
+  ).toBe(false);
 });
