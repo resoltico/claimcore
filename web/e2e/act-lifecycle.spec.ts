@@ -50,7 +50,14 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await expect(opening).toContainText("Synthetic claimant");
   await expect(opening).toContainText("1,200.50");
   await expect(opening).toContainText(opened.operationId);
-  await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
+  const close = page.getByRole("button", { name: /^Close the case:/u });
+  if (!(await close.isVisible())) {
+    await page
+      .locator(".case-actions > summary, .case-more-actions > summary")
+      .filter({ visible: true })
+      .click();
+  }
+  await expect(close).toBeVisible();
   await expectAccessible(page);
 
   await openRecovery(page);
