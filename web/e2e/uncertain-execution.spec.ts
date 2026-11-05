@@ -134,7 +134,17 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
   if (first.kind !== "ACCEPTED" || second.kind !== "ALREADY_ACCEPTED") {
     throw new Error("Expected accepted replay.");
   }
-  expect(second.data).toEqual(first.data);
+  const { basis: firstBasis, ...acceptedIdentity } = first.data;
+  const { basis: replayBasis, ...replayedIdentity } = second.data;
+  expect(replayedIdentity).toEqual(acceptedIdentity);
+  const { observedAt: firstObservedAt, ...acceptedBasis } = firstBasis;
+  const { observedAt: replayObservedAt, ...otherReplayBasis } = replayBasis;
+  expect(otherReplayBasis).toEqual(acceptedBasis);
+  // ReceiptObservationTests owns fresh-snapshot time with an independently advanced server clock.
+  // This transport oracle permits only that observation to advance, without extra RPCs or a client clock.
+  expect(replayObservedAt).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{6}Z$/u);
+  expect(Number.isFinite(Date.parse(replayObservedAt))).toBe(true);
+  expect(replayObservedAt >= firstObservedAt).toBe(true);
   expect(second.data.operationId).toBe(identity.operationId);
   expect(second.data.subject.kind === "CASE" ? second.data.subject.revision : null).toBe(2);
   expect(requests).toEqual([original, original, original]);

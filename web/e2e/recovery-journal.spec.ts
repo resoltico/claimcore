@@ -115,18 +115,41 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const status: unknown = await (await checked).json();
   expect(isResponse("operation.status", status) && status.outcome.kind === "UNRESOLVED").toBe(true);
   expect(await records(page, scope)).toEqual([secondRecord]);
+  let settlements = 0;
+  second.on("request", (request) => {
+    if (request.url().endsWith("/api/operation.resolve")) {
+      settlements += 1;
+    }
+  });
   await second.getByRole("button", { name: "Settle operation permanently", exact: true }).click();
   await expect(second.getByRole("dialog", { name: "Settle operation permanently" })).toContainText(
     operationId,
   );
+  const settlement = second.getByRole("dialog", {
+    name: "Settle operation permanently",
+    exact: true,
+  });
+  const confirmation = settlement.getByRole("button", {
+    name: "Confirm permanent settlement",
+    exact: true,
+  });
+  const exact = settlement.getByRole("textbox", { name: "Exact operation ID", exact: true });
+  await expect(confirmation).toBeDisabled();
+  await exact.fill(`${operationId}-wrong`);
+  await expect(confirmation).toBeDisabled();
+  expect(settlements).toBe(0);
+  await exact.fill(operationId);
+  await expect(confirmation).toBeEnabled();
+  expect(settlements).toBe(0);
   const settled = second.waitForResponse((response) =>
     response.url().endsWith("/api/operation.resolve"),
   );
-  await second.getByRole("button", { name: "Confirm permanent settlement", exact: true }).click();
+  await confirmation.click();
   const final: unknown = await (await settled).json();
   expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
     true,
   );
+  expect(settlements).toBe(1);
   await expect.poll(() => records(page, scope)).toEqual([]);
   await second.close();
 });
@@ -211,12 +234,26 @@ test("tab loss after transaction commit and before notification leaves identity 
     replacement.getByRole("dialog", { name: "Settle operation permanently" }),
   ).toContainText(identity.operationId);
   expect(settlements).toBe(0);
+  const settlement = replacement.getByRole("dialog", {
+    name: "Settle operation permanently",
+    exact: true,
+  });
+  const confirmation = settlement.getByRole("button", {
+    name: "Confirm permanent settlement",
+    exact: true,
+  });
+  const exact = settlement.getByRole("textbox", { name: "Exact operation ID", exact: true });
+  await expect(confirmation).toBeDisabled();
+  await exact.fill(`${identity.operationId}-wrong`);
+  await expect(confirmation).toBeDisabled();
+  expect(settlements).toBe(0);
+  await exact.fill(identity.operationId);
+  await expect(confirmation).toBeEnabled();
+  expect(settlements).toBe(0);
   const settled = replacement.waitForResponse((response) =>
     response.url().endsWith("/api/operation.resolve"),
   );
-  await replacement
-    .getByRole("button", { name: "Confirm permanent settlement", exact: true })
-    .click();
+  await confirmation.click();
   const final: unknown = await (await settled).json();
   expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
     true,

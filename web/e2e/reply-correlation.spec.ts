@@ -12,6 +12,12 @@ for (const [authored, ascii] of [
   test(`preview correlation does not fold ${authored} into ${ascii}`, async ({ page }) => {
     await openAuthenticated(page);
     const suffix = randomUUID();
+    let executions = 0;
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/operation.execute")) {
+        executions += 1;
+      }
+    });
     await startOpen(page, `${ascii.toLowerCase()}-${suffix}`);
     const pending = page.waitForResponse((response) =>
       response.url().endsWith("/api/operation.preview"),
@@ -30,7 +36,22 @@ for (const [authored, ascii] of [
       .getByRole("dialog")
       .getByRole("button", { name: ui("en", "ui.returnToEdit"), exact: true })
       .click();
-    await page.getByLabel("Case reference", { exact: true }).fill(`${authored}-${suffix}`);
+    const authoredReference = `${authored}-${suffix}`;
+    await page.getByLabel("Case reference", { exact: true }).fill(authoredReference);
+    const editor = page.getByRole("dialog", { name: "Open a case", exact: true });
+    const editingUrl = page.url();
+    const rawInput = () =>
+      editor.locator("form.operation-form-card").evaluate((form) => {
+        if (!(form instanceof HTMLFormElement)) {
+          throw new Error("Expected the actual retained operation form");
+        }
+        return Object.fromEntries(
+          [...new FormData(form).entries()].filter(
+            ([name]) => name.startsWith("target.") || name.startsWith("act."),
+          ),
+        );
+      });
+    const retainedInput = await rawInput();
     let forgedReplies = 0;
     await page.route("**/api/operation.preview", async (route) => {
       const input: unknown = route.request().postDataJSON();
@@ -41,6 +62,7 @@ for (const [authored, ascii] of [
       ) {
         throw new Error("Expected a structurally admitted OPEN request");
       }
+      expect(input.target).toEqual({ kind: "REFERENCE", caseReference: authoredReference });
       const forged = {
         operationId: input.operationId,
         outcome: {
@@ -63,6 +85,16 @@ for (const [authored, ascii] of [
       ui("en", "notice.invalidHttp").replace("{status}", "200"),
     );
     expect(forgedReplies).toBe(1);
-    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(editor).toBeVisible();
+    await expect(page).toHaveURL(editingUrl);
+    await expect(editor.getByLabel("Case reference", { exact: true })).toHaveValue(
+      authoredReference,
+    );
+    expect(await rawInput()).toEqual(retainedInput);
+    await expect(editor.getByRole("button", { name: "Review changes", exact: true })).toBeEnabled();
+    await expect(editor.locator("button[data-confirm-operation]")).toHaveCount(0);
+    await expect(editor.locator(".review-request")).toHaveCount(0);
+    await expect(page.locator("#case-detail-title")).toHaveCount(0);
+    expect(executions).toBe(0);
   });
 }
