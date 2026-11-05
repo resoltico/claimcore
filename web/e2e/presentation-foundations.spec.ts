@@ -1,4 +1,4 @@
-import type { DisplayLocale } from "../src/presentation/preferences";
+import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
 import { isRequest, isResponse } from "../src/protocol/client";
 import { writeFile } from "node:fs/promises";
@@ -8,13 +8,8 @@ import {
   caseFields,
   operationId as entryOperationId,
 } from "../tests/support/service-foundation.fixtures";
-import { caseViewsFixture, reminderViewsFixture } from "../tests/support/view-counts.fixtures";
 import { expect, test, type Page } from "@playwright/test";
-import {
-  consumerContractIdentity,
-  type RequestByEndpoint,
-  type RequesterState,
-} from "@contracts/client";
+import { type RequestByEndpoint, type RequesterState } from "@contracts/client";
 import {
   actorContextInput,
   caseSummaryInput,
@@ -31,148 +26,6 @@ const presentationBasis = {
   timeZone: "Etc/UTC",
 };
 
-const captureCheckpoint = async (page: Page, path: string) => {
-  await page.evaluate(() => {
-    window.scrollTo(0, 0);
-  });
-  await page.evaluate(
-    () =>
-      new Promise<void>((resolve) => {
-        requestAnimationFrame(() => {
-          requestAnimationFrame(() => {
-            resolve();
-          });
-        });
-      }),
-  );
-  const camera = await page.context().newCDPSession(page);
-  const result = await camera.send("Page.captureScreenshot", {
-    format: "png",
-    captureBeyondViewport: false,
-  });
-  await writeFile(path, Buffer.from(result.data, "base64"));
-  await camera.detach();
-};
-
-type Violation = { directive: string; blocked: string };
-type ProbeWindow = Window & { claimcorePresentationCsp?: Violation[] };
-const observe = async (
-  page: Page,
-  authenticated = false,
-  expectedConsoleErrors: ReadonlyArray<RegExp> = [],
-) => {
-  const errors: string[] = [];
-  page.on("pageerror", (error) => {
-    errors.push(error.message);
-  });
-  page.on("console", (message) => {
-    if (message.type() === "error") {
-      errors.push(message.text());
-    }
-  });
-  await page.addInitScript(() => {
-    const scope = window as ProbeWindow;
-    const violations: Violation[] = [];
-    scope.claimcorePresentationCsp = violations;
-    document.addEventListener("securitypolicyviolation", (event) => {
-      violations.push({
-        directive: event.effectiveDirective,
-        blocked: event.blockedURI,
-      });
-    });
-  });
-  await page.route("**/api/session", (route) =>
-    route.fulfill({
-      json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            authenticated,
-            contractIdentity: consumerContractIdentity,
-            antiforgeryToken: authenticated ? "synthetic-presentation" : null,
-          },
-        },
-      },
-    }),
-  );
-  if (authenticated) {
-    const basis = {
-      observedAt: "2026-11-04T00:00:00.000000Z",
-      businessDate: "2026-11-04",
-      timeZone: "Etc/UTC",
-    };
-    await page.route("**/api/case.views", (route) =>
-      route.fulfill({
-        json: { outcome: { kind: "SUCCEEDED", data: { ...caseViewsFixture, basis } } },
-      }),
-    );
-    await page.route("**/api/reminder.views", (route) =>
-      route.fulfill({
-        json: { outcome: { kind: "SUCCEEDED", data: { ...reminderViewsFixture, basis } } },
-      }),
-    );
-    await page.route("**/api/context", (route) =>
-      route.fulfill({
-        json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: {
-              requester: actorContextInput({
-                productVersion: "synthetic-presentation",
-                observedAt: "2026-11-04T12:00:00.000000Z",
-                businessDate: "2026-11-04",
-                timeZone: "Etc/UTC",
-                capabilities: ["READ_CASE", "READ_AUTHORITY"],
-                views: ["CASES", "AUTHORITY", "OPERATIONS"],
-                offers: [],
-              }),
-            },
-          },
-        },
-      }),
-    );
-  }
-  return async () => {
-    expect(errors).toEqual(expectedConsoleErrors.map((pattern) => expect.stringMatching(pattern)));
-    expect(
-      await page.evaluate(() => {
-        const violations = (window as ProbeWindow).claimcorePresentationCsp;
-        if (violations === undefined) {
-          throw new Error("E2E_CSP_OBSERVER_MISSING");
-        }
-        return violations;
-      }),
-    ).toEqual([]);
-    expect(await page.locator("select").count()).toBe(0);
-  };
-};
-const seed = async (
-  page: Page,
-  options: {
-    language?: "en" | "lv" | "ar";
-    displayLocale?: DisplayLocale;
-    mode?: "system" | "light" | "dark";
-    accent?: "green" | "blue";
-  } = {},
-) => {
-  await page.addInitScript((selected) => {
-    if (localStorage.getItem("claimcore.presentation.v3") !== null) {
-      return;
-    }
-    localStorage.setItem(
-      "claimcore.presentation.v3",
-      JSON.stringify({
-        version: 3,
-        language: selected.language ?? "en",
-        displayLocale:
-          selected.displayLocale ??
-          ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG" } as const)[selected.language ?? "en"],
-        mode: selected.mode ?? "system",
-        accent: selected.accent ?? "green",
-      }),
-    );
-  }, options);
-};
 const signInSettings = async (page: Page) => {
   await page.goto("/", { waitUntil: "commit" });
   await page.locator(".login-footer button").click();
@@ -591,7 +444,11 @@ test("shell case creation returns to the captured core view and focus without se
   await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
   await origin.click();
   await expect(page.getByRole("heading", { name: "Open a case", exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Back to cases", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
   await expect(page).toHaveURL(/\/cases\?view=ALL&q=remember&order=RECENT$/u);
   await expect(origin).toBeFocused();
   expect(writes).toEqual([]);
@@ -921,7 +778,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     timeZone: "Etc/UTC",
     capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
     views: ["AUTHORITY", "OPERATIONS"],
-    offers: [{ kind: "AUTHORITY_ACT", act: "REGISTER" }],
+    offers: [{ kind: "AUTHORITY_ACT", act: "ADMIT" }],
   });
   let hasAccess = true;
   await page.route("**/api/context", (route) =>
@@ -959,7 +816,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     if (
       !isRequest("operation.preview", input) ||
       input.kind !== "AUTHORITY" ||
-      input.act.kind !== "REGISTER"
+      input.act.kind !== "ADMIT"
     ) {
       throw new Error("Expected the browser's real registration preview request.");
     }
@@ -974,7 +831,14 @@ test("same-requester access loss retains unknown bytes and a visible departure g
               subject: {
                 kind: "AUTHORITY",
                 basis: presentationBasis,
-                effects: [],
+                effects: [
+                  { kind: "REGISTER", principal: input.target },
+                  {
+                    kind: "SET_PROFILE",
+                    profile: { displayName: input.act.profile.displayName, contact: null },
+                  },
+                  { kind: "GRANT", grant: { role: "OWNER", scope: { kind: "INSTALLATION" } } },
+                ],
                 target: null,
                 accessScope: { kind: "INSTALLATION" },
                 before: { enabled: false, profile: null, grants: [], access: [] },
@@ -1007,9 +871,11 @@ test("same-requester access loss retains unknown bytes and a visible departure g
     });
   });
   await page.goto("/people", { waitUntil: "commit" });
-  await page.locator('[name="target.issuer"]').fill("https://issuer.example/");
+  await page.getByRole("button", { name: "Add person", exact: true }).click();
+  await expect(page.locator('[name="target.issuer"]')).toHaveValue("https://issuer.example/");
   await page.locator('[name="target.subject"]').fill("retained-person");
   await page.locator('[name="act.profile.displayName"]').fill("Retained person");
+  await page.getByRole("radio", { name: "Owner", exact: true }).check();
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await page.locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
@@ -1030,6 +896,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeFocused();
   hasAccess = true;
   await page.getByRole("button", { name: "Check access", exact: true }).click();
+  await page.getByRole("button", { name: "Continue current request", exact: true }).click();
   await page.getByRole("button", { name: "Send again", exact: true }).click();
   await expect.poll(() => bytes.length).toBe(2);
   expect(bytes[1]).toBe(bytes[0]);
@@ -1189,7 +1056,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     page.getByRole("heading", { name: "This case has changed", exact: true }),
   ).toBeVisible();
   await expect(page.getByText("Laila Haddad", { exact: true })).toBeVisible();
-  await expect(page.locator(".editor-current")).toContainText("Latest stored name");
+  await expect(page.locator(".case-detail")).toContainText("Latest stored name");
   await expect(field).toHaveValue("My retained draft");
   expect(drafts).toHaveLength(1);
   expect(writes).toEqual([]);
@@ -1388,13 +1255,19 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await expectAccessible(page);
     expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
     expect(reads.filter((url) => url.endsWith("/api/authority.list"))).toHaveLength(1);
+    expect(reads.filter((url) => url.endsWith("/api/authority.requests"))).toHaveLength(1);
     expect(reads.filter((url) => url.endsWith("/api/session"))).toHaveLength(1);
     expect(
       reads.filter(
         (url) =>
-          !["session", "context", "authority.list", "case.views", "reminder.views"].some(
-            (endpoint) => url.endsWith(`/api/${endpoint}`),
-          ),
+          ![
+            "session",
+            "context",
+            "authority.list",
+            "authority.requests",
+            "case.views",
+            "reminder.views",
+          ].some((endpoint) => url.endsWith(`/api/${endpoint}`)),
       ),
     ).toEqual([]);
     expect(reads.filter((url) => url.endsWith("/api/case.views")).length).toBeLessThanOrEqual(1);

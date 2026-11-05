@@ -420,6 +420,7 @@ export const OperationPanel = (props: Props) => {
   const settings = useSettingsDetour();
   const selection = useFieldSelection(model.values["operationId"]);
   const entry = operationEntry(model.entry);
+  const steps = props.completionAnchor === undefined ? <OperationSteps model={model} /> : null;
   const close = () => {
     requestClose(model, props.onClose);
   };
@@ -438,7 +439,7 @@ export const OperationPanel = (props: Props) => {
           identity={
             <>
               <OperationTarget model={model} actor={props.actor} current={props.current} />
-              <OperationSteps model={model} />
+              {steps}
             </>
           }
           closeLabel={p.text("ui.close")}

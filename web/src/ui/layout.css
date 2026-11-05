@@ -1,4 +1,7 @@
 @media (width < 40rem) {
+  .case-stage-list {
+    gap: var(--space-1);
+  }
   .case-stage-step small,
   .case-stage-step > bdi {
     font-size: var(--text-xs);

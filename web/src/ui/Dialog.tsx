@@ -72,9 +72,12 @@ export const Dialog = ({
               {headerEnd}
             </div>
             {identity}
-            {description === undefined ? null : <p>{description}</p>}
+            {description === undefined || anchorRef !== undefined ? null : <p>{description}</p>}
           </header>
-          <div className="ui-dialog-body">{children}</div>
+          <div className="ui-dialog-body">
+            {anchorRef !== undefined && description !== undefined ? <p>{description}</p> : null}
+            {children}
+          </div>
           <DialogFooter dismissable={isDismissable} label={closeLabel} close={close}>
             {footer}
           </DialogFooter>
