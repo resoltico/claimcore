@@ -145,7 +145,6 @@
   background: var(--accent-soft-bg);
 }
 .worklist-person,
-.worklist-person bdi,
 .worklist-person > small {
   display: block;
   min-inline-size: 0;
@@ -154,6 +153,7 @@
 .worklist-person {
   margin-block-start: var(--space-2);
   font-size: var(--text-sm);
+  text-align: start;
 }
 .worklist-row small {
   display: block;
