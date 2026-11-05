@@ -198,3 +198,13 @@ it.each(["SUMMARY", "ERASED"] as const)(
     expect(view.container).not.toHaveTextContent("Must stay undisclosed");
   },
 );
+
+it("keeps the visible act, actor and details text in the disclosure's accessible name", () => {
+  const view = render(
+    <TimelineEntries items={[timelineEntry()]} observedAt={null} detail="CURRENT" />,
+  );
+  const summary = view.container.querySelector("summary")!;
+  expect(summary).toHaveAccessibleName(/Open a case/u);
+  expect(summary).toHaveAccessibleName(/Timeline recorder/u);
+  expect(summary).toHaveAccessibleName(/Show details/u);
+});

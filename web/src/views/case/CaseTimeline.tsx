@@ -40,7 +40,7 @@ const TimelineEntry = ({
   return (
     <li className="timeline-entry">
       <details>
-        <summary aria-label={`${p.text("ui.timeline.details")}: ${actLabel}`}>
+        <summary>
           <span className="timeline-entry-heading">
             <strong>{actLabel}</strong>
             <span className="timeline-attribution">
