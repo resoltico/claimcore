@@ -86,7 +86,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
     await stewardAct(steward, reference, "VOID", "Synthetic entry error");
-    await expect(steward.getByRole("status").filter({ hasText: "Voided" })).toBeVisible();
+    await expect(steward.locator(".case-lifecycle-voided")).toContainText("Voided");
     await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
     await stewardAct(steward, reference, "ERASE");
     await expect(steward.locator(".case-lifecycle-erased")).toContainText("Erased — only");
