@@ -48,6 +48,19 @@ const ActionGroups = ({ acts, primary, onAct }: GroupProps) => {
     </>
   );
 };
+export const CaseActionAlternatives = ({
+  current,
+  onAct,
+}: {
+  current: CurrentCase;
+  onAct: Action["onAct"];
+}) => {
+  const requester = useRequesterContext();
+  if (current.advice.maintenance.active || requester?.maintenance.active === true) {
+    return null;
+  }
+  return <ActionGroups acts={current.advice.acts.filter(isCaseAct)} primary={null} onAct={onAct} />;
+};
 const useActionBar = () => {
   const ref = useRef<HTMLElement>(null);
   useLayoutEffect(() => {

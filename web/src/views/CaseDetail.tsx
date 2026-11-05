@@ -12,7 +12,7 @@ import { isCurrentCase } from "../api/service";
 import { useCaseWorkPanels } from "./work/useCaseWorkPanels";
 import { useWide } from "../hooks/useWide";
 import { CaseFacts } from "./case/CaseFacts";
-import { CaseActions, CasePrimaryAction } from "./case/CaseActions";
+import { CaseActions, CasePrimaryAction, CaseActionAlternatives } from "./case/CaseActions";
 import { CaseProgress } from "./case/CaseProgress";
 import { CharacterWarning } from "../components/BusinessValue";
 import "./case.css";
@@ -285,7 +285,9 @@ const UnavailableAct = ({
         <strong>{p.actLabel(value.act)}</strong>:{" "}
         <NoticeView value={{ kind: "diagnostic", diagnostic: value.reason }} />
       </p>
-      {current === null || alternative === null ? null : (
+      {current === null ? null : alternative === null ? (
+        <CaseActionAlternatives current={current} onAct={(act) => onAct(current, act)} />
+      ) : (
         <Button
           onPress={() => {
             onAct(current, alternative);
