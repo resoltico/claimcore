@@ -69,15 +69,17 @@ export const renderCatalogKey = (
   values: Readonly<Record<string, string | number>> = {},
 ): string => renderKey(preferences, catalogMessageKey(key) ?? "notice.unknownDiagnostic", values);
 
-/** Retain word order and substitute a DOM-isolated reference for the selected hole. */
-export const renderIsolatedValue = <T>(
+/** Retain catalog word order while rendering selected arguments as isolated DOM values. */
+export const renderIsolatedValues = <T>(
   preferences: Preferences,
   key: MessageKey,
   values: Readonly<Record<string, string | number>>,
-  reference: T,
-  argument = "reference",
+  references: Readonly<Record<string, T>>,
 ): (string | T)[] => {
-  if (!safeArgs(key, values) || shapes[key]?.[argument] !== "string") {
+  if (
+    !safeArgs(key, values) ||
+    Object.keys(references).some((argument) => shapes[key]?.[argument] !== "string")
+  ) {
     return [renderKey(preferences, "notice.unknownDiagnostic")];
   }
   const result: (string | T)[] = [];
@@ -85,8 +87,8 @@ export const renderIsolatedValue = <T>(
     let value: string | T;
     if (part.kind === "literal") {
       ({ value } = part);
-    } else if (part.value === argument) {
-      value = reference;
+    } else if (Object.hasOwn(references, part.value)) {
+      value = references[part.value]!;
     } else {
       value = isolate(values[part.value]!, preferences);
     }
@@ -99,3 +101,11 @@ export const renderIsolatedValue = <T>(
   }
   return result;
 };
+
+export const renderIsolatedValue = <T>(
+  preferences: Preferences,
+  key: MessageKey,
+  values: Readonly<Record<string, string | number>>,
+  reference: T,
+  argument = "reference",
+): (string | T)[] => renderIsolatedValues(preferences, key, values, { [argument]: reference });
