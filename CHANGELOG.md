@@ -25,6 +25,7 @@
 - Irreversible human CLI commands require an exact typed target or matching --confirm; dry-run and structured protocol calls retain their wire contracts.
 - Regenerate work readers and custom stores for summaryChangedAt/summaryRecordedBy; responsibility-only edits preserve the summary's actual author and time.
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
+- Incomplete dates survive Settings and language changes as private draft segments; canonical dates and prepared request bytes stay separate.
 - Set or erase actor profiles separately from identity and grants; historical names use current profiles, while erasure preserves acceptance but can prevent exact replay.
 - Case and reminder view counts share a snapshot; case timelines combine fact, work and reminder changes under current history permissions.
 - ADMIT records an authored profile and up to 48 role assignments atomically; access requests distinguish human and service identities and clear on admission.
