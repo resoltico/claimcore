@@ -21,7 +21,7 @@ let private description cli language arguments =
 
 let private selectedInputs cli =
     for language in LocalizationPolicy.languages do
-        for operation in OperationCatalog.all do
+        for operation in CommandGrammar.operations do
             let output = description cli language (CommandGrammar.words operation)
 
             Expect.stringContains
@@ -56,13 +56,13 @@ let private frameOracle cli =
                 cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
                 |> List.ofArray
 
-            OperationCatalog.all
+            CommandGrammar.operations
             |> List.find (fun operation ->
                 let words = CommandGrammar.words operation
                 List.truncate words.Length arguments = words))
         |> Set.ofArray
 
-    let expected = OperationCatalog.all |> Set.ofList
+    let expected = CommandGrammar.operations |> Set.ofList
     Expect.equal captured expected "Every catalog operation has an independent captured frame"
     let arguments = rows |> Array.map (fun row -> row.Split('\t', 2)[0])
 
