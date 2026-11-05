@@ -9,6 +9,7 @@ import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
+import { catalogLanguage, installLanguage } from "../src/presentation/languageCatalog";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
 import enCore from "../../src/ClaimCore.Protocol/Messages/Localization/en.json" with { type: "json" };
@@ -43,6 +44,15 @@ export const seedPresentation = async (
         accent: "green" as const,
       },
     },
+  );
+};
+/** Admit the same complete catalog pair for Node-side presentation expectations. */
+export const installTestLanguage = (language: Language): void => {
+  const selected = catalogLanguage(language);
+  installLanguage(
+    selected,
+    { en: enCore, lv: lvCore, ar: arCore }[selected],
+    { en: enChrome, lv: lvChrome, ar: arChrome }[selected],
   );
 };
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
