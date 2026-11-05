@@ -3,7 +3,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
 import { response } from "../../../support/service-ui.fixtures";
 import { timelineEntry, timelinePage } from "../../../support/timeline.fixtures";
-import { CaseTimeline } from "../../../../src/views/case/CaseTimeline";
+import { CaseTimeline, TimelineEntries } from "../../../../src/views/case/CaseTimeline";
 const requestText = (body: unknown): string => {
   if (typeof body !== "string") {
     throw new Error("Expected JSON timeline request bytes.");
@@ -122,7 +122,11 @@ it("shows page-boundary differences immediately and appends work entries in core
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
-  await screen.findByText("Core after");
+  await waitFor(() => {
+    expect(view.container.querySelector(".timeline-changes-compact")).toHaveTextContent(
+      "Core after",
+    );
+  });
   expect(fetch).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "Load 50 more" }));
   await waitFor(() => {
@@ -130,3 +134,67 @@ it("shows page-boundary differences immediately and appends work entries in core
   });
   expect(view.container.querySelector(".case-timeline > li")).toHaveTextContent("Core after");
 });
+
+it("keeps every supplied difference as a compact chip and the complete summary inside Show details", async () => {
+  const user = userEvent.setup();
+  const supplied = timelineEntry({
+    changes: {
+      kind: "DISCLOSED",
+      items: [
+        {
+          kind: "CASE_FIELD",
+          change: {
+            field: "claimantName",
+            before: { kind: "PARTY", value: "Before العربية" },
+            after: { kind: "PARTY", value: "After Latviešu" },
+          },
+        },
+        {
+          kind: "HANDLING_SUMMARY",
+          change: { before: null, after: "First authored line\nSecond authored line" },
+        },
+      ],
+    },
+  });
+  const view = render(<TimelineEntries items={[supplied]} observedAt={null} detail="CURRENT" />);
+  const entry = view.container.querySelector(".timeline-entry")!;
+  const compact = entry.querySelector(".timeline-changes-compact")!;
+  const details = entry.querySelector("details")!;
+  expect(compact).not.toBeNull();
+  expect(compact.querySelectorAll(".timeline-change")).toHaveLength(2);
+  expect(compact).toHaveTextContent("Before العربية");
+  expect(compact).toHaveTextContent("After Latviešu");
+  expect(compact).toHaveTextContent("Second authored line");
+  expect(details.querySelector(".timeline-changes")).toHaveTextContent("Second authored line");
+  expect(details).not.toHaveAttribute("open");
+  await user.click(details.querySelector("summary")!);
+  expect(details).toHaveAttribute("open");
+  expect(details).toHaveTextContent(supplied.operationId);
+  expect(compact).not.toHaveTextContent(supplied.operationId);
+});
+it.each(["SUMMARY", "ERASED"] as const)(
+  "keeps %s timeline disclosure free of both compact and expanded differences",
+  (detail) => {
+    const view = render(
+      <TimelineEntries
+        items={[
+          timelineEntry({
+            changes: {
+              kind: "DISCLOSED",
+              items: [
+                {
+                  kind: "HANDLING_SUMMARY",
+                  change: { before: null, after: "Must stay undisclosed" },
+                },
+              ],
+            },
+          }),
+        ]}
+        observedAt={null}
+        detail={detail}
+      />,
+    );
+    expect(view.container.querySelector(".timeline-changes")).toBeNull();
+    expect(view.container).not.toHaveTextContent("Must stay undisclosed");
+  },
+);

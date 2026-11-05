@@ -11,10 +11,15 @@ import { ActorIdentity } from "../../components/ActorIdentity";
 import { CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
 
+const AbsentValue = () => {
+  const p = usePresentation();
+  return <span className="timeline-absent-value">{p.text("ui.notRecorded")}</span>;
+};
+
 const Scalar = ({ value }: { value: CaseFieldValue | null }) => {
   const p = usePresentation();
   if (value === null) {
-    return <>{p.text("ui.notRecorded")}</>;
+    return <AbsentValue />;
   }
   switch (value.kind) {
     case "DATE":
@@ -55,7 +60,10 @@ const Change = ({
       <dd>
         <span className="sr-only">{p.text("ui.timeline.before")}</span>
         <del>{before}</del>
-        <span aria-hidden="true"> → </span>
+        <span className="timeline-change-arrow" aria-hidden="true">
+          {" "}
+          →{" "}
+        </span>
         <span className="sr-only">{p.text("ui.timeline.after")}</span>
         <ins>{after}</ins>
       </dd>
@@ -64,27 +72,15 @@ const Change = ({
 };
 const MoneyValue = ({ value }: { value: Money | null }) => {
   const p = usePresentation();
-  return value === null ? (
-    <>{p.text("ui.notRecorded")}</>
-  ) : (
-    <bdi>{p.money(value.amount, value.currency)}</bdi>
-  );
+  return value === null ? <AbsentValue /> : <bdi>{p.money(value.amount, value.currency)}</bdi>;
 };
-const PersonValue = ({ value }: { value: ActorRef | null }) => {
-  const p = usePresentation();
-  return value === null ? <>{p.text("ui.notRecorded")}</> : <ActorIdentity actor={value} />;
-};
-const TextValue = ({ value }: { value: string | null }) => {
-  const p = usePresentation();
-  return value === null ? (
-    <>{p.text("ui.notRecorded")}</>
-  ) : (
-    <bdi className="plain-text-value">{value}</bdi>
-  );
-};
+const PersonValue = ({ value }: { value: ActorRef | null }) =>
+  value === null ? <AbsentValue /> : <ActorIdentity actor={value} />;
+const TextValue = ({ value }: { value: string | null }) =>
+  value === null ? <AbsentValue /> : <bdi className="plain-text-value">{value}</bdi>;
 const ReminderChanges = ({ change }: { change: ReminderDifference }) => {
   const p = usePresentation();
-  const absent = p.text("ui.notRecorded");
+  const absent = <AbsentValue />;
   return (
     <>
       {change.action === null ? null : (
@@ -150,9 +146,7 @@ const ChangedValues = ({ item }: { item: TimelineChange }) => {
         <Change
           label={p.text("input.lifecycle.label")}
           before={
-            item.change.before === null
-              ? p.text("ui.notRecorded")
-              : p.term("lifecycle", item.change.before)
+            item.change.before === null ? <AbsentValue /> : p.term("lifecycle", item.change.before)
           }
           after={p.term("lifecycle", item.change.after)}
         />
@@ -178,7 +172,13 @@ const ChangedValues = ({ item }: { item: TimelineChange }) => {
   }
 };
 /** The core owns differences and disclosure. No comparisons or adjacent-page reconstruction occur here. */
-export const TimelineChanges = ({ changes }: { changes: Changes }) => {
+export const TimelineChanges = ({
+  changes,
+  compact = false,
+}: {
+  changes: Changes;
+  compact?: boolean;
+}) => {
   const p = usePresentation();
   if (changes.kind === "WITHHELD") {
     return <p>{p.text("ui.timeline.withheld")}</p>;
@@ -190,7 +190,7 @@ export const TimelineChanges = ({ changes }: { changes: Changes }) => {
     return <p>{p.text("ui.historyNoChanges")}</p>;
   }
   return (
-    <dl className="timeline-changes">
+    <dl className={compact ? "timeline-changes timeline-changes-compact" : "timeline-changes"}>
       {changes.items.map((item) => (
         <ChangedValues key={changeKey(item)} item={item} />
       ))}

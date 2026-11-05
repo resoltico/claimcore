@@ -57,7 +57,7 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
       onAct={vi.fn()}
     />,
   );
-  await screen.findByText("PRIOR_FULL_PAYLOAD_CANARY");
+  expect(await screen.findAllByText("PRIOR_FULL_PAYLOAD_CANARY")).toHaveLength(2);
   await userEvent.setup().click(screen.getByRole("button", { name: "Refresh work" }));
   await waitFor(() => {
     expect(timeline).toHaveBeenCalledTimes(2);

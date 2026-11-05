@@ -82,3 +82,41 @@ it("renders reminder differences and work summary independently of fact differen
   expect(view.container).toHaveTextContent("After action");
   expect(view.container).toHaveTextContent("Completed");
 });
+it("marks only typed empty sides for compact formatting and preserves every replacement value", () => {
+  const view = render(
+    <TimelineChanges
+      compact
+      changes={{
+        kind: "DISCLOSED",
+        items: [
+          {
+            kind: "CASE_FIELD",
+            change: {
+              field: "claimantName",
+              before: null,
+              after: { kind: "PARTY", value: "Added party" },
+            },
+          },
+          { kind: "HANDLING_SUMMARY", change: { before: "Removed\nsummary", after: null } },
+          {
+            kind: "CASE_FIELD",
+            change: {
+              field: "insurerName",
+              before: { kind: "PARTY", value: "Old العربية" },
+              after: { kind: "PARTY", value: "New Latviešu" },
+            },
+          },
+        ],
+      }}
+    />,
+  );
+  const changes = view.container.querySelectorAll(".timeline-change");
+  expect(changes).toHaveLength(3);
+  expect(changes[0]!.querySelector("del .timeline-absent-value")).toHaveTextContent("Not recorded");
+  expect(changes[0]!.querySelector("ins")).toHaveTextContent("Added party");
+  expect(changes[1]!.querySelector("del")!.textContent).toBe("Removed\nsummary");
+  expect(changes[1]!.querySelector("ins .timeline-absent-value")).toHaveTextContent("Not recorded");
+  expect(changes[2]!.querySelector(".timeline-absent-value")).toBeNull();
+  expect(changes[2]!.querySelector("del")).toHaveTextContent("Old العربية");
+  expect(changes[2]!.querySelector("ins")).toHaveTextContent("New Latviešu");
+});

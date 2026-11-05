@@ -362,3 +362,42 @@ button.case-action-danger {
   color: var(--text-secondary);
   font-size: var(--text-sm);
 }
+
+.case-fact-card > dl {
+  margin-block: var(--space-3) 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2) var(--space-4);
+}
+.case-fact-card .field-row {
+  min-inline-size: 0;
+  padding-block: var(--space-1);
+}
+.case-fact-card .field-row:has(.plain-text-value) {
+  grid-column: 1 / -1;
+}
+.case-fact-card .field-row dt {
+  display: block;
+  font-size: var(--text-sm);
+}
+
+.case-fact-card .section-heading :is(h2, h3),
+.case-work .section-heading h2,
+.case-reminders .section-heading h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.case-work .section-heading,
+.case-reminders .section-heading {
+  margin-block-end: var(--space-3);
+}
+.case-fact-card {
+  position: relative;
+}
+.case-fact-card .field-help {
+  position: static;
+}
+.case-fact-card .field-help[open] p {
+  inset-inline: var(--space-4);
+  inline-size: auto;
+}

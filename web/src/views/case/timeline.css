@@ -88,7 +88,92 @@
   cursor: pointer;
 }
 
+.timeline-entry-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: var(--space-1) var(--space-2);
+  flex: 1;
+  min-inline-size: 0;
+}
+.timeline-entry-heading .timeline-attribution {
+  grid-column: 1 / -1;
+}
+.timeline-changes-compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-block: var(--space-2);
+  font-size: var(--text-xs);
+}
+.timeline-changes-compact .timeline-change {
+  min-inline-size: 0;
+  max-inline-size: 100%;
+  padding: var(--space-1) var(--space-2);
+  gap: var(--space-1);
+  border-radius: var(--radius-sm);
+  background: var(--bg-sunken);
+}
+.timeline-changes-compact .plain-text-value {
+  white-space: normal;
+}
 .case-timeline > li {
-  border: 1px solid var(--border-control);
-  padding: var(--space-4);
+  padding: 0 0 var(--space-2);
+  background: transparent;
+}
+.timeline-entry > details > .timeline-changes {
+  padding-block: var(--space-2);
+}
+
+.timeline-changes-compact :is(del, ins):has(.timeline-absent-value) {
+  position: absolute;
+  inline-size: 1px;
+  block-size: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+.timeline-changes-compact .timeline-change:has(.timeline-absent-value) .timeline-change-arrow {
+  display: none;
+}
+.case-timeline-panel .section-heading h2 {
+  margin: 0;
+  font-size: var(--text-lg);
+}
+.case-timeline-panel .section-heading {
+  margin-block-end: var(--space-3);
+}
+
+.timeline-details-label {
+  grid-row: 1;
+  grid-column: 2;
+  color: var(--accent-text);
+  font-size: var(--text-xs);
+}
+.timeline-entry > details[open] ~ .timeline-changes-compact {
+  display: none;
+}
+.timeline-change-arrow:dir(rtl) {
+  display: inline-block;
+  transform: scaleX(-1);
+}
+
+.timeline-entry > details > summary {
+  display: flex;
+  align-items: start;
+  gap: var(--space-1);
+  list-style: none;
+}
+.timeline-entry > details > summary::-webkit-details-marker {
+  display: none;
+}
+.timeline-entry > details > summary::before {
+  content: "▸";
+}
+.timeline-entry > details[open] > summary::before {
+  content: "▾";
+}
+.timeline-entry > details > summary:dir(rtl)::before {
+  transform: scaleX(-1);
 }

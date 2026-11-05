@@ -36,29 +36,28 @@ const TimelineEntry = ({
         (constant) => constant.path.join(".") === "act.kind" && constant.value === entry.act,
       ),
   );
+  const actLabel = definition === undefined ? entry.act : renderCatalogKey(p, definition.labelId);
   return (
     <li className="timeline-entry">
-      <p>
-        <strong>
-          {definition === undefined ? entry.act : renderCatalogKey(p, definition.labelId)}
-        </strong>
-      </p>
-      <p className="timeline-attribution">
-        <ActorIdentity actor={entry.recordedBy} /> ·{" "}
-        {observedAt === null ? (
-          <RecordedTime value={entry.recordedAt} />
-        ) : (
-          <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
-        )}
-      </p>
-      {detail === "CURRENT" ? (
-        <TimelineChanges changes={entry.changes} />
-      ) : (
-        <p>{p.text(detail === "ERASED" ? "lifecycle.ERASED.meaning" : "ui.timeline.withheld")}</p>
-      )}
       <details>
-        <summary>{p.text("ui.timeline.details")}</summary>
-        <dl>
+        <summary aria-label={`${p.text("ui.timeline.details")}: ${actLabel}`}>
+          <span className="timeline-entry-heading">
+            <strong>{actLabel}</strong>
+            <span className="timeline-attribution">
+              <ActorIdentity actor={entry.recordedBy} /> ·{" "}
+              {observedAt === null ? (
+                <RecordedTime value={entry.recordedAt} />
+              ) : (
+                <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
+              )}
+            </span>
+            <span className="timeline-details-label">{p.text("ui.timeline.details")}</span>
+          </span>
+        </summary>
+        {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
+          <TimelineChanges changes={entry.changes} />
+        ) : null}
+        <dl className="timeline-record-details">
           <div>
             <dt>{p.fieldLabel("operationId")}</dt>
             <dd>
@@ -102,6 +101,11 @@ const TimelineEntry = ({
           ) : null}
         </dl>
       </details>
+      {detail === "CURRENT" ? (
+        <TimelineChanges changes={entry.changes} compact />
+      ) : (
+        <p>{p.text(detail === "ERASED" ? "lifecycle.ERASED.meaning" : "ui.timeline.withheld")}</p>
+      )}
     </li>
   );
 };
