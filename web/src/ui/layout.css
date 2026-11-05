@@ -1,4 +1,33 @@
 @media (width < 40rem) {
+  .case-workspace-compact,
+  .case-workspace-compact .case-fact-groups {
+    gap: var(--space-3);
+  }
+  .case-workspace-compact :is(.case-fact-card, .case-work, .case-reminders, .case-timeline-panel) {
+    padding: var(--space-3);
+  }
+  .case-workspace-compact .case-fact-card .field-row {
+    padding-block: 0;
+  }
+  .case-workspace-compact > .case-timeline-panel {
+    margin-block-start: 0;
+  }
+  .case-workspace-compact .case-timeline > li {
+    margin-block-end: var(--space-2);
+  }
+  .case-workspace-compact .case-fact-card:has(> p) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--space-3);
+  }
+  .case-workspace-compact .case-fact-card:has(> p) > .section-heading {
+    flex: 1;
+    margin-block: 0;
+  }
+  .case-workspace-compact .case-fact-card > p {
+    margin-block: 0;
+  }
   .view-tabs {
     flex-wrap: nowrap;
     overflow-x: auto;
