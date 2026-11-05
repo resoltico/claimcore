@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useId, useState } from "react";
 import type {
   CaseSelector,
   CaseTimelineEntry,
@@ -28,6 +28,7 @@ const TimelineEntry = ({
   detail: "CURRENT" | "SUMMARY" | "ERASED";
 }) => {
   const p = usePresentation();
+  const headingId = useId();
   const subject = entry.kind === "CASE_FACT" ? "CASE" : entry.kind;
   const definition = productMetadata.catalog.entries.find(
     (candidate) =>
@@ -40,8 +41,8 @@ const TimelineEntry = ({
   return (
     <li className="timeline-entry">
       <details>
-        <summary>
-          <span className="timeline-entry-heading">
+        <summary aria-labelledby={headingId}>
+          <span id={headingId} className="timeline-entry-heading">
             <strong>{actLabel}</strong>
             <span className="timeline-attribution">
               <ActorIdentity actor={entry.recordedBy} /> ·{" "}

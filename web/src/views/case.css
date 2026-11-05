@@ -432,6 +432,7 @@ button.case-action-danger {
   background: var(--bg-raised);
   box-shadow: var(--shadow-2);
 }
-.case-work .case-edit-link {
+.case-work .case-edit-link,
+.case-fact-card > .section-heading > .case-edit-link {
   margin-inline-start: auto;
 }
