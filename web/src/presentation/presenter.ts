@@ -7,6 +7,7 @@ import type { Notice } from "../protocol/notices";
 import type { FieldCatalogEntry } from "../api/service";
 import {
   calendarDate,
+  calendarDateParts,
   displayField,
   exactAmount,
   exactInteger,
@@ -146,6 +147,7 @@ export const createPresenter = (
   recordedTime: (value: string, zone: string) =>
     recordedTime(value, zone, preferences.displayLocale),
   date: (value: string) => calendarDate(value, preferences.displayLocale),
+  dateParts: (value: string) => calendarDateParts(value, preferences.displayLocale),
   dateHeading: (value: string) => calendarDate(value, preferences.displayLocale, true),
   fieldValue: (value: string | null, field: FieldCatalogEntry) =>
     fieldValueText(preferences, value, field),

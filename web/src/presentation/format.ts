@@ -86,10 +86,14 @@ export const recordedTime = (value: string, zone: string, locale: DisplayLocale)
 
 const calendarCarrier = (value: string): Date | null =>
   isGregorianDate(value) ? new Date(`${value}T00:00:00.000Z`) : null;
-export const calendarDate = (value: string, locale: DisplayLocale, named = false): string => {
+export const calendarDateParts = (
+  value: string,
+  locale: DisplayLocale,
+  named = false,
+): ReadonlyArray<Intl.DateTimeFormatPart> => {
   const date = calendarCarrier(value);
   if (date === null) {
-    return value;
+    return [{ type: "literal", value }];
   }
   const digits = digitsFor(locale);
   const year = Array.from(value.slice(0, 4), (d) => digits[d.charCodeAt(0) - 48]).join("");
@@ -102,9 +106,12 @@ export const calendarDate = (value: string, locale: DisplayLocale, named = false
     ...(named ? { weekday: "short" as const } : {}),
   })
     .formatToParts(date)
-    .map((part) => (part.type === "year" ? year : part.value))
-    .join("");
+    .map((part) => ({ type: part.type, value: part.type === "year" ? year : part.value }));
 };
+export const calendarDate = (value: string, locale: DisplayLocale, named = false): string =>
+  calendarDateParts(value, locale, named)
+    .map((part) => part.value)
+    .join("");
 export const displayField = (
   value: string,
   field: FieldCatalogEntry,

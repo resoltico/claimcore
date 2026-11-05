@@ -1,10 +1,27 @@
 @media (width < 40rem) {
+  .case-progress {
+    padding-inline: var(--space-1);
+  }
   .case-stage-list {
+    grid-template-columns: repeat(4, minmax(min-content, 1fr));
     gap: var(--space-1);
+  }
+  .case-stage-step {
+    overflow-wrap: normal;
   }
   .case-stage-step small,
   .case-stage-step > bdi {
     font-size: var(--text-xs);
+  }
+  .case-stage-step > bdi {
+    overflow-wrap: anywhere;
+  }
+  .case-stage-step time {
+    white-space: normal;
+  }
+  .case-stage-year {
+    display: inline-block;
+    white-space: nowrap;
   }
   body {
     font-size: var(--text-md);

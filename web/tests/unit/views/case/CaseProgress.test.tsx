@@ -41,3 +41,30 @@ it.each(["REINSTATED", "VOIDED", "ERASED"] as const)(
     expect(screen.getByRole("status")).toBeVisible();
   },
 );
+it("offers a line break before the whole year while preserving full numeric date and amount text", () => {
+  const view = render(
+    <CaseProgress
+      value={{
+        kind: "TRACKER",
+        current: "OPENED",
+        steps: [
+          {
+            stage: "OPENED",
+            completed: true,
+            date: "0001-01-01",
+            amount: { amount: "123456789012345678.0100", currency: "EUR" },
+          },
+          { stage: "DECIDED", completed: false, date: null, amount: null },
+          { stage: "PAID", completed: false, date: null, amount: null },
+          { stage: "CLOSED", completed: false, date: null, amount: null },
+        ],
+      }}
+    />,
+  );
+  const time = view.container.querySelector("time")!;
+  expect(time).toHaveAttribute("datetime", "0001-01-01");
+  expect(time.textContent).toBe("01/01/0001");
+  expect(time.querySelector("wbr + .case-stage-year")).toHaveTextContent("0001");
+  expect(time.querySelectorAll("wbr")).toHaveLength(1);
+  expect(view.container).toHaveTextContent("123,456,789,012,345,678.0100 EUR");
+});

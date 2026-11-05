@@ -3,6 +3,29 @@ import { usePresentation } from "../../presentation/context";
 import { LifecycleStatus } from "../LifecycleStatus";
 import { Icon } from "../../ui/icons";
 import "./stage.css";
+const StageDate = ({ value }: { value: string }) => {
+  const p = usePresentation();
+  const parts = p.dateParts(value);
+  const yearIndex = parts.findIndex((part) => part.type === "year");
+  const year = parts[yearIndex];
+  if (year === undefined) {
+    return <time dateTime={value}>{parts.map((part) => part.value).join("")}</time>;
+  }
+  return (
+    <time dateTime={value}>
+      {parts
+        .slice(0, yearIndex)
+        .map((part) => part.value)
+        .join("")}
+      <wbr />
+      <span className="case-stage-year">{year.value}</span>
+      {parts
+        .slice(yearIndex + 1)
+        .map((part) => part.value)
+        .join("")}
+    </time>
+  );
+};
 const Stage = ({
   entry,
   current,
@@ -26,11 +49,7 @@ const Stage = ({
       </span>
       {entry.completed ? (
         <small>
-          {entry.date === null ? (
-            p.text("ui.stage.noDate")
-          ) : (
-            <time dateTime={entry.date}>{p.date(entry.date)}</time>
-          )}
+          {entry.date === null ? p.text("ui.stage.noDate") : <StageDate value={entry.date} />}
         </small>
       ) : (
         <small>{p.text("ui.notRecorded")}</small>
