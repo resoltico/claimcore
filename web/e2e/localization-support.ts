@@ -1,5 +1,9 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
-import { chooseOption, settledWorkspaceHeader } from "./workspace-navigation";
+import {
+  chooseOption,
+  compactSettingsNavigation,
+  settledWorkspaceHeader,
+} from "./workspace-navigation";
 import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
@@ -56,7 +60,7 @@ export const settingsNavigation = async (page: Page): Promise<Locator> => {
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   if (compact) {
-    return page.locator('.workspace-mobile-tabs a[href="/settings"]');
+    return compactSettingsNavigation(page);
   }
   const account = page.locator(".workspace-sidebar .account-menu");
   if ((await account.getAttribute("open")) === null) {
@@ -76,8 +80,9 @@ const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
     await expect(panel).toBeVisible();
     return { kind: "DIALOG" };
   }
+  const navigation = await settingsNavigation(page);
   const returnUrl = page.url();
-  await (await settingsNavigation(page)).click();
+  await navigation.click();
   await expect(page).toHaveURL((url) => url.pathname === "/settings");
   await expect(panel).toBeVisible();
   return { kind: "PAGE", returnUrl };

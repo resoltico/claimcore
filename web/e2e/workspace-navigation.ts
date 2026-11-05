@@ -4,15 +4,33 @@ export const settledWorkspaceHeader = async (page: Page): Promise<void> => {
   await page.locator(".workspace-header").waitFor({ state: "visible" });
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   await page
-    .locator(compact ? ".workspace-mobile-tabs" : ".workspace-sidebar nav")
+    .locator(
+      compact
+        ? ".workspace-mobile-tabs:visible, .case-action-bar:visible"
+        : ".workspace-sidebar nav",
+    )
     .waitFor({ state: "visible" });
+};
+/** Compact case tasks retain one bar; use its actual Back action to reach navigation. */
+export const compactSettingsNavigation = async (page: Page): Promise<Locator> => {
+  const settings = page.locator('.workspace-mobile-tabs a[href="/settings"]');
+  if (!(await settings.isVisible())) {
+    await page.locator(".case-back button").click();
+  }
+  await expect(settings).toBeVisible();
+  return settings;
 };
 /** Desktop account controls live in the sidebar footer. Compact sign out lives in Settings. */
 export const showAccountActions = async (page: Page): Promise<void> => {
+  const drawerSettings = page.locator('[role="dialog"] [data-open-settings]');
+  if (await drawerSettings.isVisible()) {
+    await drawerSettings.click();
+    return;
+  }
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   if (compact) {
-    await page.locator('.workspace-mobile-tabs a[href="/settings"]').click();
+    await (await compactSettingsNavigation(page)).click();
     return;
   }
   const account = page.locator(".workspace-sidebar .account-menu");
