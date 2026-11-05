@@ -68,13 +68,11 @@ it("authority read alone never requests or exposes pending principals", async ()
 });
 it("binds request admission identity while profile hints stay editable through review and exact retry", async () => {
   const preview = authorityPreview();
-  const execute = vi
-    .spyOn(service, "execute")
-    .mockResolvedValue({
-      kind: "deliveryFailure",
-      notice: { kind: "local", reason: "unreachable" },
-      dispatched: true,
-    });
+  const execute = vi.spyOn(service, "execute").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "unreachable" },
+    dispatched: true,
+  });
   setup(true);
   const user = userEvent.setup();
   await screen.findByText("Unverified name");
