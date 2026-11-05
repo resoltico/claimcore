@@ -1,3 +1,8 @@
+import {
+  openPersonEditor,
+  chooseAdmissionRole,
+  DisclosureRefreshDriver,
+} from "../support/people-drawer.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
@@ -42,9 +47,15 @@ const contextFor = (
       ? views.includes("AUTHORITY")
       : views.includes("CASES"),
   );
-  const offers = source.offers.filter((offer) =>
-    views.includes(offer.kind === "OPEN" ? "CASES" : "AUTHORITY"),
-  );
+  const offers = [
+    ...source.offers.filter((offer) =>
+      views.includes(offer.kind === "OPEN" ? "CASES" : "AUTHORITY"),
+    ),
+    // This synthetic owner snapshot explicitly offers the current new-person entry.
+    ...(views.includes("AUTHORITY")
+      ? [{ kind: "AUTHORITY_ACT" as const, act: "ADMIT" as const }]
+      : []),
+  ];
   return outcome({
     outcome: {
       kind: "SUCCEEDED",
@@ -62,16 +73,17 @@ const deferred = <T,>() => {
 const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) => {
   await user.click(await screen.findByRole("link", { name: "People & access" }));
   await screen.findByText("PREVIOUS_ACTOR_CANARY");
+  await openPersonEditor();
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
   });
   for (const [name, value] of [
-    ["target.issuer", "https://issuer.example/"],
     ["target.subject", "pending-target"],
     ["act.profile.displayName", "Synthetic pending person"],
   ]) {
     await user.type(document.querySelector<HTMLInputElement>(`[name="${name}"]`)!, value!);
   }
+  await chooseAdmissionRole();
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
@@ -142,10 +154,11 @@ it("retains the exact uncertain authority request when delayed context removes i
     delayed.finish(contextFor(["CASES", "OPERATIONS"]));
     await delayed.promise;
   });
-  expect(screen.getByRole("heading", { name: "Access", level: 1 })).toBeVisible();
-  expect(screen.queryByRole("link", { name: "Access" })).toBeNull();
+  expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
+  expect(screen.queryByRole("link", { name: "People & access" })).toBeNull();
   expect(document.body).not.toHaveTextContent("PREVIOUS_ACTOR_CANARY");
-  await user.click(screen.getByRole("button", { name: "Send again" }));
+  await user.click(screen.getByRole("button", { name: "Continue current request" }));
+  await user.click(await screen.findByRole("button", { name: "Send again" }));
   expect(execute.mock.calls.map(([prepared]) => prepared.bytes)).toEqual([
     original,
     original,
@@ -255,15 +268,22 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
       dispatched: true,
     });
     const user = userEvent.setup();
+    let refresh: () => void = () => {
+      throw new Error("Refresh driver not mounted");
+    };
     render(
       <>
         <Dashboard />
-        <RefreshDisclosure />
+        <DisclosureRefreshDriver
+          capture={(invalidate) => {
+            refresh = invalidate;
+          }}
+        />
       </>,
     );
     await beginUnknownAuthority(user);
     const [{ bytes }] = execute.mock.calls[0]!;
-    await user.click(screen.getByRole("button", { name: "Refresh disclosure" }));
+    await act(() => Promise.resolve().then(refresh));
     await screen.findByRole("heading", {
       name: kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",
     });
@@ -273,6 +293,7 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     expect(await screen.findByRole("dialog")).toBeVisible();
     await user.click(screen.getByRole("button", { name: "Keep editing" }));
     await user.click(screen.getByRole("button", { name: "Check access" }));
+    await user.click(await screen.findByRole("button", { name: "Continue current request" }));
     const retry = await screen.findByRole("button", { name: "Send again" });
     await user.click(retry);
     expect(execute).toHaveBeenCalledTimes(2);
@@ -318,20 +339,28 @@ it.each(["actor", "installation"] as const)(
       dispatched: true,
     });
     const user = userEvent.setup();
+    let refresh: () => void = () => {
+      throw new Error("Refresh driver not mounted");
+    };
     render(
       <>
         <Dashboard />
-        <RefreshDisclosure />
+        <DisclosureRefreshDriver
+          capture={(invalidate) => {
+            refresh = invalidate;
+          }}
+        />
       </>,
     );
     await beginUnknownAuthority(user);
-    await user.click(screen.getByRole("button", { name: "Refresh disclosure" }));
+    await act(() => Promise.resolve().then(refresh));
     await screen.findByRole("heading", { name: "You don’t have access yet" });
     expect(document.querySelector(".workspace-shell")).toBeNull();
     expect(execute).toHaveBeenCalledOnce();
     await user.click(screen.getByRole("button", { name: "Check access" }));
-    await screen.findByRole("heading", { name: "Access", level: 1 });
+    await screen.findByRole("heading", { name: "People & access", level: 1 });
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
+    expect(screen.queryByRole("button", { name: "Continue current request" })).toBeNull();
     expect(execute).toHaveBeenCalledOnce();
   },
 );

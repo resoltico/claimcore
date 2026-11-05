@@ -1,9 +1,13 @@
+import {
+  openPersonEditor,
+  chooseAdmissionRole,
+  DisclosureRefreshDriver,
+} from "../support/people-drawer.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { actorContextInput, workBasis } from "../support/inputs";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
-import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { authorityPreview } from "../support/authority-operation.fixtures";
+import { authorityPreview, authorityAcceptance } from "../support/authority-operation.fixtures";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
@@ -61,7 +65,7 @@ const success = <K extends "context" | "authority.list">(
               offers: [
                 {
                   kind: "AUTHORITY_ACT",
-                  act: "REGISTER",
+                  act: "ADMIT",
                 },
               ],
             }),
@@ -78,6 +82,7 @@ const success = <K extends "context" | "authority.list">(
       outcome: {
         ...value.outcome,
         data: {
+          basis: workBasis,
           items: [disclosedActor],
           nextCursor: null,
         },
@@ -109,11 +114,11 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
   },
 });
 const author = async () => {
+  await openPersonEditor();
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
   });
   for (const [name, value] of [
-    ["target.issuer", "https://issuer.example/"],
     ["target.subject", "synthetic-authored"],
     ["act.profile.displayName", "Synthetic registered person"],
   ]) {
@@ -122,7 +127,7 @@ const author = async () => {
 };
 const prepare = async () => {
   await author();
-  chooseRoleForReview();
+  await chooseAdmissionRole();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitForReviewConfirm();
 };
@@ -212,7 +217,8 @@ it("aborts prior authority reads and ignores their late completion after an unce
     priorFinish?.(success("authority.list"));
   });
   expect(screen.queryByText(listPrincipal())).toBeNull();
-  expect(screen.getByRole("button", { name: "Send again" })).toBeVisible();
+  fireEvent.click(await screen.findByRole("button", { name: "Continue current request" }));
+  expect(await screen.findByRole("button", { name: "Send again" })).toBeVisible();
   expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
   expect(execute.mock.calls[1]![0].bytes).toBe(execute.mock.calls[0]![0].bytes);
 });
@@ -249,14 +255,15 @@ const revalidatingReads = async () => {
 it("keeps discard actionable when readonly restoration completes during a pointer press", async () => {
   const { finishContext, finishListing } = await revalidatingReads();
   const user = userEvent.setup();
-  const discard = screen.getByRole("button", { name: "Discard and leave" });
+  await user.click(screen.getByRole("button", { name: "Continue current request" }));
+  const discard = screen.getAllByRole("button", { name: "Close" })[0]!;
   expect(discard).not.toBeDisabled();
   await user.pointer({ target: discard, keys: "[MouseLeft>]" });
   await finishRead(() => {
     finishContext?.(emptyOffers());
     finishListing?.(success("authority.list"));
   });
-  expect(screen.getByRole("button", { name: "Discard and leave" })).toBe(discard);
+  expect(screen.getAllByRole("button", { name: "Close" })[0]).toBe(discard);
   await user.pointer({ keys: "[/MouseLeft]" });
   const dialog = screen.getByRole("dialog");
   expect(dialog).toBeVisible();
@@ -302,6 +309,7 @@ const loseManagement = async (
   returned: boolean,
   context: ReturnType<typeof mockEndpoint<"context">>,
   listing: ReturnType<typeof mockEndpoint<"authority.list">>,
+  refresh: () => void,
 ) => {
   if (reviewed) {
     await prepare();
@@ -309,7 +317,7 @@ const loseManagement = async (
       await user.click(screen.getByRole("button", { name: "Return to editing" }));
       context.mockResolvedValue(emptyOffers());
       listing.mockResolvedValue(refused());
-      await user.click(screen.getByRole("button", { name: "Reload actors" }));
+      await act(() => Promise.resolve().then(refresh));
     } else {
       await user.click(reviewConfirm());
     }
@@ -317,7 +325,7 @@ const loseManagement = async (
     await author();
     context.mockResolvedValue(emptyOffers());
     listing.mockResolvedValue(refused());
-    await user.click(screen.getByRole("button", { name: "Reload actors" }));
+    await act(() => Promise.resolve().then(refresh));
   }
 };
 it.each([
@@ -340,22 +348,36 @@ it.each([
       context.mockResolvedValue(emptyOffers());
       return Promise.resolve(unavailable());
     });
+    let refresh: () => void = () => {
+      throw new Error("Refresh driver not mounted");
+    };
     render(
       <TestSession logout={logout}>
+        <DisclosureRefreshDriver
+          capture={(invalidate) => {
+            refresh = invalidate;
+          }}
+        />
         <Dashboard />
       </TestSession>,
     );
     await user.click(await screen.findByRole("link", { name: "People & access" }));
-    await loseManagement(user, reviewed, returned, context, listing);
+    await loseManagement(user, reviewed, returned, context, listing, () => {
+      refresh();
+    });
     await waitFor(() => {
-      expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 3);
+      // External cache invalidation refreshes the global context as well as the
+      // Authority workspace; its ensuing refusal revalidation remains bounded.
+      expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 4);
     });
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
     expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
-    await user.click(screen.getByRole("button", { name: "Discard and leave" }));
+    // Leaving the area requests discard through the global navigation boundary,
+    // even when current disclosure has removed the operation drawer entirely.
+    await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
     await user.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
     );
@@ -370,16 +392,8 @@ it.each([
     expect(logout).toHaveBeenCalledOnce();
   },
 );
-const authorityReceipt = () => {
-  const accepted = wireReply("operation.execute", "AUTHORITY");
-  if (accepted.outcome.kind !== "ACCEPTED" || accepted.outcome.data.subject.kind !== "AUTHORITY") {
-    throw new Error("Missing authority receipt fixture");
-  }
-  return { ...accepted.outcome.data, subject: accepted.outcome.data.subject };
-};
-const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
-  const receipt = authorityReceipt();
-  return vi
+const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
+  vi
     .spyOn(service, "execute")
     .mockImplementationOnce((prepared) =>
       Promise.resolve(
@@ -401,27 +415,19 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
             },
       ),
     )
-    .mockImplementation((prepared) =>
-      Promise.resolve({
-        kind: "outcome",
-        status: 200,
+    .mockImplementation((prepared) => {
+      const accepted = authorityAcceptance(prepared);
+      if (accepted.kind !== "outcome" || accepted.value.outcome.kind !== "ACCEPTED") {
+        throw new Error("Expected authored acceptance");
+      }
+      return Promise.resolve({
+        ...accepted,
         value: {
           operationId: prepared.input.operationId,
-          outcome: {
-            kind: "ALREADY_ACCEPTED",
-            data: {
-              ...receipt,
-              operationId: prepared.input.operationId,
-              subject: {
-                ...receipt.subject,
-                act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
-              },
-            },
-          },
+          outcome: { kind: "ALREADY_ACCEPTED" as const, data: accepted.value.outcome.data },
         },
-      }),
-    );
-};
+      });
+    });
 it.each(["lost", "unknown"] as const)(
   "removes the obsolete %s attempt alert after exact authority replay acceptance",
   async (first) => {

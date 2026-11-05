@@ -1,10 +1,14 @@
+import {
+  chooseAdmissionRole,
+  closePersonDetails,
+  DisclosureRefreshDriver,
+} from "../support/people-drawer.fixtures";
 import { workBasis } from "../support/inputs";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { navigate } from "../../src/routing/navigation";
-import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { mockEndpoint, getEndpointMock } from "../support/endpoint-mocks";
-import { authorityPreview } from "../support/authority-operation.fixtures";
+import { authorityPreview, authorityAcceptance } from "../support/authority-operation.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
 import { act, fireEvent, waitFor } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
@@ -87,7 +91,7 @@ const reads = (offered = true) => {
         data: {
           requester: {
             ...context.outcome.data.requester,
-            offers: installationOffers(["REGISTER"]),
+            offers: installationOffers(["ADMIT", "GRANT"]),
             views: offered ? ["AUTHORITY"] : [],
           },
         },
@@ -129,6 +133,7 @@ it("loads no grants without explicit core-offered selection and discards a late 
   await waitFor(() => {
     expect(request).toHaveBeenCalledTimes(1);
   });
+  await closePersonDetails();
   fireEvent.click(buttons[1]!);
   await screen.findByText(`GRANT-${second}`);
   expect(request.mock.calls[0]?.[2]?.aborted).toBe(true);
@@ -139,7 +144,7 @@ it("loads no grants without explicit core-offered selection and discards a late 
   );
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
   expect(screen.getAllByText(`header-${second}`)[0]).toBeVisible();
-  expect(screen.getByRole("heading", { name: "Actor grants" })).toHaveFocus();
+  expect(screen.getByRole("dialog", { name: `header-${second}` })).toHaveFocus();
 });
 it("consumes the core read offer rather than inferring it from actor rows", async () => {
   reads(false);
@@ -199,27 +204,10 @@ it("loads and clears the selected grant page without request-per-row reads", asy
   expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(1);
   expect(screen.queryByText("SECOND")).toBeNull();
   expect(request).toHaveBeenCalledTimes(3);
-  fireEvent.click(screen.getByRole("button", { name: "Back to actors" }));
+  await closePersonDetails();
   expect(document.querySelector(".actor-grant-items")).toBeNull();
 });
 
-const authorTarget = async () => {
-  await waitFor(() => {
-    expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
-  });
-  fireEvent.change(document.querySelector('[name="target.issuer"]')!, {
-    target: { value: "https://issuer.example/" },
-  });
-  fireEvent.change(document.querySelector('[name="target.subject"]')!, {
-    target: { value: "authored-subject" },
-  });
-};
-const prepare = async () => {
-  await authorTarget();
-  chooseRoleForReview();
-  fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await waitForReviewConfirm();
-};
 const refused = (kind: string): ApiResult<ServiceResponse<"authority.grants">> =>
   kind === "access"
     ? {
@@ -244,24 +232,38 @@ it.each(["session", "access"])(
   "clears all selected disclosures on %s refusal while preserving exact uncertain mutation bytes",
   async (kind) => {
     reads();
-    const grant = mockEndpoint("authority.grants").mockResolvedValue(refused(kind));
+    const late = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
+    const grant = mockEndpoint("authority.grants")
+      .mockResolvedValueOnce(grants(first, "next"))
+      .mockReturnValueOnce(late.promise);
     const execute = vi.spyOn(service, "execute").mockResolvedValue({
       kind: "deliveryFailure",
       notice: { kind: "local", reason: "unreachable" },
     });
     render(<AuthorityPanel onLockChange={vi.fn()} />);
-    await prepare();
+    fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
+    await screen.findByText(`GRANT-${first}`);
+    fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Grant role/u }));
+    await chooseAdmissionRole();
+    fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+    await waitForReviewConfirm();
     fireEvent.click(reviewConfirm());
     await screen.findByRole("button", { name: "Send again" });
     const original = execute.mock.calls[0]?.[0];
-    fireEvent.click(screen.getAllByRole("link", { name: / ·/u })[0]!);
+    await act(() =>
+      Promise.resolve().then(() => {
+        late.finish(refused(kind));
+      }),
+    );
     await waitFor(() => {
       expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
     });
-    expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
+    expect(screen.queryByRole("dialog", { name: `header-${first}` })).toBeNull();
     expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
-    expect(grant).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Send again" }));
+    expect(grant).toHaveBeenCalledTimes(2);
+    fireEvent.click(screen.getByRole("button", { name: "Continue current request" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Send again" }));
     await waitFor(() => {
       expect(execute).toHaveBeenCalledTimes(2);
     });
@@ -272,53 +274,35 @@ it.each(["session", "access"])(
 it("ignores an in-flight grant page after an accepted authority mutation resets selection", async () => {
   reads();
   const old = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
-  const request = mockEndpoint("authority.grants").mockReturnValue(old.promise);
-  vi.spyOn(service, "execute").mockImplementation((prepared) => {
-    const receipt = wireReply("operation.execute", "AUTHORITY");
-    if (receipt.outcome.kind !== "ACCEPTED" || receipt.outcome.data.subject.kind !== "AUTHORITY") {
-      throw new Error("Receipt fixture absent.");
-    }
-    return Promise.resolve({
-      kind: "outcome",
-      status: 200,
-      value: {
-        ...receipt,
-        operationId: prepared.input.operationId,
-        outcome: {
-          kind: "ACCEPTED",
-          data: {
-            ...receipt.outcome.data,
-            operationId: prepared.input.operationId,
-            subject: {
-              ...receipt.outcome.data.subject,
-              act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
-            },
-          },
-        },
-      },
-    });
-  });
+  const request = mockEndpoint("authority.grants")
+    .mockResolvedValueOnce(grants(first, "next"))
+    .mockReturnValueOnce(old.promise);
+  vi.spyOn(service, "execute").mockImplementation((prepared) =>
+    Promise.resolve(authorityAcceptance(prepared)),
+  );
   render(<AuthorityPanel onLockChange={vi.fn()} />);
-  await authorTarget();
   fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
-  await waitFor(() => {
-    expect(request).toHaveBeenCalledTimes(1);
-  });
-  await prepare();
+  await screen.findByText(`GRANT-${first}`);
+  fireEvent.click(screen.getByRole("button", { name: "More grants" }));
+  fireEvent.click(screen.getByRole("button", { name: /^Grant role/u }));
+  await chooseAdmissionRole();
+  fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
+  await waitForReviewConfirm();
   fireEvent.click(reviewConfirm());
   await waitFor(() => {
     expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
   });
-  expect(request.mock.calls[0]?.[2]?.aborted).toBe(true);
+  expect(request.mock.calls[1]?.[2]?.aborted).toBe(true);
   await act(() =>
     Promise.resolve().then(() => {
       old.finish(grants(first));
     }),
   );
-  expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
+  expect(screen.queryByRole("dialog", { name: `header-${first}` })).toBeNull();
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
-  expect(request).toHaveBeenCalledTimes(1);
+  expect(request).toHaveBeenCalledTimes(2);
 });
+
 it("clears pending pagination on back and never restores it on late completion", async () => {
   reads();
   const late = pending<Awaited<ReturnType<typeof service.authorityGrants>>>();
@@ -328,14 +312,14 @@ it("clears pending pagination on back and never restores it on late completion",
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
   fireEvent.click(await screen.findByRole("button", { name: "More grants" }));
-  fireEvent.click(screen.getByRole("button", { name: "Back to actors" }));
+  await closePersonDetails();
   expect(request.mock.calls[1]?.[2]?.aborted).toBe(true);
   await act(() =>
     Promise.resolve().then(() => {
       late.finish(grants(first));
     }),
   );
-  expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
+  expect(screen.queryByRole("heading", { name: `header-${first}` })).toBeNull();
   expect(screen.queryByText(`GRANT-${first}`)).toBeNull();
 });
 
@@ -385,12 +369,8 @@ const actorPage = (
     },
   },
 });
-const focusedBack = () => {
-  const back = screen.getByRole("button", { name: "Back to actors" });
-  back.focus();
-  expect(back).toHaveFocus();
-  fireEvent.click(back);
-};
+const focusedBack = closePersonDetails;
+
 it("returns focus to the originating grant control when it is still present", async () => {
   reads();
   mockEndpoint("authority.grants").mockResolvedValue(grants(first));
@@ -398,7 +378,7 @@ it("returns focus to the originating grant control when it is still present", as
   const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
   fireEvent.click(origin);
   await screen.findByText(`GRANT-${first}`);
-  focusedBack();
+  await focusedBack();
   await waitFor(() => {
     expect(origin).toHaveFocus();
   });
@@ -407,13 +387,25 @@ it("focuses the stable actors heading during a pending reload and keeps it after
   reads();
   mockEndpoint("authority.grants").mockResolvedValue(grants(first));
   const late = pending<Awaited<ReturnType<typeof service.authorityList>>>();
-  render(<Dashboard />);
+  let refresh: () => void = () => {
+    throw new Error("Refresh driver not mounted");
+  };
+  render(
+    <>
+      <DisclosureRefreshDriver
+        capture={(invalidate) => {
+          refresh = invalidate;
+        }}
+      />
+      <Dashboard />
+    </>,
+  );
   fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
   await screen.findByText(`GRANT-${first}`);
   getEndpointMock("authority.list").mockReturnValueOnce(late.promise);
-  fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
+  await act(() => Promise.resolve().then(refresh));
   expect(screen.queryByRole("link", { name: / ·/u })).toBeNull();
-  focusedBack();
+  await focusedBack();
   const heading = screen.getByRole("heading", { name: "People & access" });
   await waitFor(() => {
     expect(heading).toHaveFocus();
@@ -435,15 +427,27 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
     .mockResolvedValueOnce(actorPage([second]))
     .mockResolvedValueOnce(actorPage([first]));
   mockEndpoint("authority.grants").mockResolvedValue(grants(second));
-  render(<Dashboard />);
+  let refresh: () => void = () => {
+    throw new Error("Refresh driver not mounted");
+  };
+  render(
+    <>
+      <DisclosureRefreshDriver
+        capture={(invalidate) => {
+          refresh = invalidate;
+        }}
+      />
+      <Dashboard />
+    </>,
+  );
   fireEvent.click(await screen.findByRole("button", { name: "More actors" }));
   await screen.findByText(`listed-${second}`);
   fireEvent.click(screen.getAllByRole("link", { name: / ·/u })[1]!);
   await screen.findByText(`GRANT-${second}`);
-  fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
+  await act(() => Promise.resolve().then(refresh));
   await screen.findByText(`listed-${first}`);
   expect(screen.queryByText(`listed-${second}`)).toBeNull();
-  focusedBack();
+  await focusedBack();
   await waitFor(() => {
     expect(screen.getByRole("heading", { name: "People & access" })).toHaveFocus();
   });
@@ -456,14 +460,14 @@ it("does not restore actor focus when global disclosure refusal removes the sele
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   fireEvent.click((await screen.findAllByRole("link", { name: / ·/u }))[0]!);
   await screen.findByText(`GRANT-${first}`);
-  screen.getByRole("button", { name: "Back to actors" }).focus();
+  screen.getAllByRole("button", { name: "Close" })[0]!.focus();
   const focus = vi.spyOn(HTMLElement.prototype, "focus");
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await waitFor(() => {
     expect(getEndpointMock("authority.list")).toHaveBeenCalledTimes(2);
   });
   await screen.findByText(`listed-${first}`);
-  expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
+  expect(screen.queryByRole("heading", { name: `header-${first}` })).toBeNull();
   expect(focus).not.toHaveBeenCalled();
   expect(document.body).toHaveFocus();
 });
@@ -476,12 +480,12 @@ it("focuses the authority route heading without restoring an actor after disclos
   const origin = (await screen.findAllByRole("link", { name: / ·/u }))[0]!;
   fireEvent.click(origin);
   await screen.findByText(`GRANT-${first}`);
-  screen.getByRole("button", { name: "Back to actors" }).focus();
+  screen.getAllByRole("button", { name: "Close" })[0]!.focus();
   const focus = vi.spyOn(HTMLElement.prototype, "focus");
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await waitFor(() => {
-    expect(screen.queryByRole("heading", { name: "Actor grants" })).toBeNull();
-    expect(screen.getByRole("heading", { name: "Access", level: 1 })).toHaveFocus();
+    expect(screen.queryByRole("heading", { name: `header-${first}` })).toBeNull();
+    expect(screen.getByRole("heading", { name: "People & access", level: 1 })).toHaveFocus();
   });
   expect(
     focus.mock.contexts.some((target) => target instanceof HTMLElement && target.id === origin.id),
