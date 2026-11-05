@@ -205,16 +205,14 @@ button:disabled {
   padding-inline-start: var(--space-3);
 }
 
-.case-list,
 .history-list {
   padding-inline-start: var(--space-5);
 }
 
-:is(.case-list, .history-list) li {
+.history-list li {
   margin: var(--space-3) 0;
 }
 
-.case-list li,
 .case-fields {
   margin: var(--space-4) 0;
 }
