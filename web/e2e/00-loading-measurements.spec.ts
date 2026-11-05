@@ -109,7 +109,8 @@ const measureNavigation = async (
     } else {
       await goToView(page, route === "/people" ? "people" : "cases");
     }
-    await expect(page).toHaveURL(new URL(route, baseURL).href);
+    const destination = route === "/cases" ? "/cases?view=NEEDS_ATTENTION" : route;
+    await expect(page).toHaveURL(new URL(destination, baseURL).href);
     await expect.poll(() => heading(page).textContent()).not.toBe(before);
     await ready(page, route);
     const rendered = performance.now() - started;
@@ -125,7 +126,8 @@ const measureNavigation = async (
   const count = (await resources(page)).length;
   const started = performance.now();
   await page.locator(".worklist-rows").getByRole("link", { name: reference, exact: true }).click();
-  await expect(page.locator("section.case-fields")).toContainText(reference);
+  await expect(page.locator("section.case-detail .case-heading .eyebrow")).toHaveText(reference);
+  await expect(page.locator("section.case-detail .case-fields")).toBeVisible();
   const rendered = performance.now() - started;
   await page.waitForLoadState("networkidle");
   observations.push({
