@@ -16,6 +16,7 @@ import "./access-requests.css";
 type Props = {
   available: boolean;
   busy: boolean;
+  mayAdmit?: boolean;
   onAdmit: (request: AccessRequest) => void;
   onDisclosureRefused: (notice?: Notice) => void;
 };
@@ -100,7 +101,12 @@ const RequestFeedback = ({
     </>
   );
 };
-const AvailableRequests = ({ busy, onAdmit, onDisclosureRefused }: Omit<Props, "available">) => {
+const AvailableRequests = ({
+  busy,
+  mayAdmit = true,
+  onAdmit,
+  onDisclosureRefused,
+}: Omit<Props, "available">) => {
   const p = usePresentation();
   const credential = useCredential();
   const [selected, setSelected] = useState<AccessRequest | null>(null);
@@ -188,7 +194,7 @@ const AvailableRequests = ({ busy, onAdmit, onDisclosureRefused }: Omit<Props, "
             </dl>
             <div className="access-request-actions">
               <Button
-                isDisabled={disabled}
+                isDisabled={disabled || !mayAdmit}
                 onPress={() => {
                   onAdmit(request);
                 }}

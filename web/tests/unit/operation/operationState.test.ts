@@ -176,3 +176,51 @@ it("duplicate execute events emit one ledger effect and mismatched effect IDs ca
     }),
   ).toBe(first);
 });
+
+it("keeps refused disclosure masked after transient read and conflict failures until a positive read", () => {
+  const identity = effect("reread");
+  const state = { ...initial(), disclosureRefused: true, disclosureRead: identity };
+  const failed = operationReducer(state, {
+    type: "DISCLOSURE_READ_FAILED",
+    identity,
+    notice: { kind: "local", reason: "unreachable" },
+    refused: false,
+  });
+  expect(failed.disclosureRefused).toBe(true);
+  expect(operationReducer(failed, { type: "INVALIDATE", refused: false }).disclosureRefused).toBe(
+    true,
+  );
+  const restored = operationReducer(
+    { ...failed, disclosureRead: identity },
+    { type: "DISCLOSED", identity, value: initial().caseObservation! },
+  );
+  expect(restored.disclosureRefused).toBe(false);
+  const conflict = operationReducer(begin(), {
+    type: "REFUSE",
+    identity: effect(),
+    notice: {
+      kind: "diagnostic",
+      diagnostic: {
+        code: "REVISION_CONFLICT",
+        action: "REVIEW_LATEST",
+        actualRevision: 2,
+        changes: { kind: "WITHHELD" },
+      },
+    },
+    uncertain: false,
+    disclosure: false,
+    target: null,
+  });
+  expect(conflict.conflict).not.toBeNull();
+  const conflictFailed = operationReducer(
+    { ...conflict, disclosureRefused: true, disclosureRead: identity },
+    {
+      type: "CONFLICT_READ_FAILED",
+      identity,
+      conflictId: conflict.conflict!.identity.id,
+      notice: { kind: "local", reason: "unreachable" },
+      refused: false,
+    },
+  );
+  expect(conflictFailed.disclosureRefused).toBe(true);
+});

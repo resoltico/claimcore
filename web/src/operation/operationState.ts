@@ -136,7 +136,7 @@ const invalidate = (state: OperationState, refused: boolean): OperationState => 
   return {
     ...state,
     operation,
-    disclosureRefused: refused,
+    disclosureRefused: state.disclosureRefused || refused,
     disclosureRead: null,
     effects: [],
   };
@@ -264,7 +264,7 @@ const conflictObservation = (
       ...state,
       disclosureRead: null,
       notice: action.notice,
-      disclosureRefused: action.refused,
+      disclosureRefused: state.disclosureRefused || action.refused,
     };
   }
   return {
@@ -568,7 +568,12 @@ const disclosed = (
         disclosureRefused: false,
         notice: null,
       }
-    : { ...state, disclosureRead: null, notice: action.notice, disclosureRefused: action.refused };
+    : {
+        ...state,
+        disclosureRead: null,
+        notice: action.notice,
+        disclosureRefused: state.disclosureRefused || action.refused,
+      };
 };
 type NavigationAction = Exclude<
   OperationAction,

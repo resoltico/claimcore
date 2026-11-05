@@ -1,5 +1,11 @@
-import type { AuthorityGrant, ActorReviewItem } from "@contracts/client";
+import type {
+  AccessRequest,
+  PrincipalInput,
+  AuthorityGrant,
+  ActorReviewItem,
+} from "@contracts/client";
 import { useAuthorityTarget, type AuthorityTarget } from "../hooks/operation/useAuthorityTarget";
+import { AccessRequests } from "./authority/AccessRequests";
 import { ActorOperation, ActorActions } from "./authority/ActorOperation";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
 import { useEndpointCache } from "../hooks/EndpointProvider";
@@ -187,6 +193,41 @@ const useAuthorityWorkspace = (disclosure: Disclosure, target: AuthorityTarget) 
   );
   return { selectedActorId, setSelectedActorId, context, offered, onActor };
 };
+const PendingAuthorityRequests = ({
+  model,
+  context,
+  selected,
+  available,
+  editor,
+  refused,
+}: {
+  model: OperationModel;
+  context: ReturnType<typeof contextData>;
+  selected: boolean;
+  available: boolean;
+  editor: AuthorityEditor;
+  refused: Disclosure["refused"];
+}) => (
+  <AccessRequests
+    available={
+      !selected && available && context?.capabilities.includes("MANAGE_AUTHORITY") === true
+    }
+    busy={
+      model.busy ||
+      (model.phase !== "ACCEPTED" &&
+        (model.dirty || model.prepared !== null || model.priorUncertain))
+    }
+    mayAdmit={
+      context?.offers.some((offer) => offer.kind === "AUTHORITY_ACT" && offer.act === "ADMIT") ===
+        true && !context.maintenance.active
+    }
+    onDisclosureRefused={refused}
+    onAdmit={(request) => {
+      editor.admit(request.principal.issuer, request);
+      editor.open();
+    }}
+  />
+);
 const AuthorityWorkspace = ({
   model,
   disclosure,
@@ -228,6 +269,14 @@ const AuthorityWorkspace = ({
           {p.authorityLabel("ADMIT")}
         </button>
       ) : null}
+      <PendingAuthorityRequests
+        model={model}
+        context={context.value}
+        selected={selectedActorId !== null}
+        available={disclosureAvailable}
+        editor={editor}
+        refused={disclosure.refused}
+      />
       <div className="authority-workspace">
         <div>
           <AuthorityDirectory
@@ -291,7 +340,7 @@ type AuthorityEditor = {
   active: boolean;
   open: () => void;
   close: () => void;
-  admit: (issuer: string) => void;
+  admit: (issuer: string, request?: AccessRequest) => void;
 };
 type AuthorityLayoutProps = {
   editor: AuthorityEditor;
@@ -461,10 +510,12 @@ const useAuthorityOperation = ({ onLockChange }: AuthorityPanelProps) => {
 };
 const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
   const state = useAuthorityOperation(props);
+  const [admissionPrincipal, setAdmissionPrincipal] = useState<PrincipalInput | null>(null);
   const target = useAuthorityTarget(
     state.model,
     state.disclosure.revision,
     (props.disclosureAvailable ?? true) && state.disclosure.active,
+    admissionPrincipal,
   );
   const route = useContentRoute();
   const actorSelection = route.screen === "people" ? route.actorId : "";
@@ -489,8 +540,20 @@ const AuthorityEditorPanel = (props: AuthorityPanelProps) => {
           setEditor({ selection, active: true });
         },
         close: navigation.close,
-        admit: (issuer) => {
-          state.model.discard(false, "ADMIT", { "target.issuer": issuer });
+        admit: (issuer, request) => {
+          setAdmissionPrincipal(request?.principal ?? null);
+          state.model.discard(false, "ADMIT", {
+            "target.issuer": issuer,
+            ...(request === undefined
+              ? {}
+              : {
+                  "target.kind": request.principal.kind,
+                  "target.subject": request.principal.subject,
+                  "act.profile.displayName":
+                    request.claims.name ?? request.claims.preferredUsername ?? "",
+                  "act.profile.contact": request.claims.email ?? "",
+                }),
+          });
         },
       }}
       onClose={navigation.close}

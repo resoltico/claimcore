@@ -13,6 +13,8 @@ import { Dialog } from "../ui/Dialog";
 import { Button } from "../ui/Button";
 import { actorName } from "../presentation/actorName";
 import { useSettingsDetour } from "../hooks/SettingsDetourContext";
+import { followLink } from "../routing/followLink";
+import { navigate } from "../routing/navigation";
 import { ActorSummary } from "../components/ActorSummary";
 
 const grantPage = (response: ServiceResponse<"authority.grants">) =>
@@ -108,6 +110,20 @@ const PersonContents = ({
         </p>
       )}
       {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
+      {page.page === null ? null : (
+        <a
+          href={`/authority-history?actorId=${encodeURIComponent(page.page.actor.actor.actorId)}`}
+          onClick={(event) => {
+            followLink(event, () => {
+              navigate(
+                `/authority-history?actorId=${encodeURIComponent(page.page!.actor.actor.actorId)}`,
+              );
+            });
+          }}
+        >
+          {p.text("ui.shell.authorityHistory")}
+        </a>
+      )}
       {page.page === null ? null : (
         <p role="status">{p.text(page.cursor === null ? "ui.grantsEnd" : "ui.grantsPartial")}</p>
       )}

@@ -113,6 +113,7 @@ const useActorConsent = (
   epoch: string,
   available: boolean,
   fixed: boolean,
+  admissionPrincipal: PrincipalInput | null,
 ) => {
   const [intent, setIntent] = useState<Intent | null>(null);
   const begin = (kind: string, values: FormValues = {}) => {
@@ -130,7 +131,8 @@ const useActorConsent = (
     acknowledged = false,
     kind = source === null ? "ADMIT" : (authorityPrimaryAction(source.offered) ?? "ADMIT"),
   ) => {
-    const fallback = fixed && source !== null ? source.actor.principal : undefined;
+    const fallback =
+      admissionPrincipal ?? (fixed && source !== null ? source.actor.principal : undefined);
     const pending = currentIntent(intent, kind, epoch, available);
     const principal = pending?.actor.principal ?? fallback;
     model.discard(
@@ -163,17 +165,35 @@ const targetMode = (model: OperationModel, actorId: string | null, fixed: boolea
   }
   return "unbound";
 };
-export const useAuthorityTarget = (model: OperationModel, revision: number, available: boolean) => {
+const actorBound = (model: OperationModel, source: Snapshot | null) =>
+  source !== null &&
+  matches(model.values, source.actor.principal) &&
+  model.entry.kind !== "REGISTER" &&
+  model.entry.kind !== "ADMIT";
+export const useAuthorityTarget = (
+  model: OperationModel,
+  revision: number,
+  available: boolean,
+  admissionPrincipal: PrincipalInput | null = null,
+) => {
   const { source, epoch, actorId, observe } = useActorDisclosure(revision, available);
-  const fixed =
-    source !== null &&
-    matches(model.values, source.actor.principal) &&
-    model.entry.kind !== "REGISTER" &&
-    model.entry.kind !== "ADMIT";
+  const admissionBound =
+    admissionPrincipal !== null &&
+    model.entry.kind === "ADMIT" &&
+    matches(model.values, admissionPrincipal);
+  const fixed = admissionBound || actorBound(model, source);
   useActorDefault(model, source, fixed);
-  const consent = useActorConsent(model, source, epoch, available, fixed);
+  const consent = useActorConsent(
+    model,
+    source,
+    epoch,
+    available,
+    fixed,
+    admissionBound ? admissionPrincipal : null,
+  );
   return {
     ...consent,
+    admissionBound,
     observe,
     offered: source?.offered ?? [],
     primary: authorityPrimaryAction(source?.offered ?? []),

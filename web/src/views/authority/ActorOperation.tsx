@@ -24,30 +24,46 @@ export const ActorActions = ({
   if (target.offered.length === 0) {
     return null;
   }
+  const groups = [
+    {
+      label: p.text("ui.people.roles"),
+      acts: target.offered.filter((kind) => kind === "GRANT" || kind === "REVOKE"),
+    },
+    {
+      label: p.text("ui.account"),
+      acts: target.offered.filter((kind) => kind !== "GRANT" && kind !== "REVOKE"),
+    },
+  ];
   return (
-    <section aria-labelledby="actor-actions-title">
-      <h2 id="actor-actions-title">{p.text("label.availableActs")}</h2>
-      <div className="actions">
-        {target.offered.map((kind) => (
-          <button
-            key={kind}
-            className={kind === target.primary ? "primary" : undefined}
-            type="button"
-            disabled={busy}
-            aria-label={p.text("ui.actDescription", {
-              label: p.authorityLabel(kind),
-              meaning: p.authorityMeaning(kind),
-            })}
-            onClick={() => {
-              target.begin(kind);
-              onOpen();
-            }}
-          >
-            {p.authorityLabel(kind)}
-          </button>
+    <>
+      {groups
+        .filter((group) => group.acts.length > 0)
+        .map((group) => (
+          <section key={group.label} aria-label={group.label}>
+            <h2>{group.label}</h2>
+            <div className="actions">
+              {group.acts.map((kind) => (
+                <button
+                  key={kind}
+                  className={kind === target.primary ? "primary" : undefined}
+                  type="button"
+                  disabled={busy}
+                  aria-label={p.text("ui.actDescription", {
+                    label: p.authorityLabel(kind),
+                    meaning: p.authorityMeaning(kind),
+                  })}
+                  onClick={() => {
+                    target.begin(kind);
+                    onOpen();
+                  }}
+                >
+                  {p.authorityLabel(kind)}
+                </button>
+              ))}
+            </div>
+          </section>
         ))}
-      </div>
-    </section>
+    </>
   );
 };
 export const ActorOperation = ({
@@ -80,7 +96,7 @@ export const ActorOperation = ({
             ? target.offered
             : offered.filter((kind) => model.entry.kind !== "ADMIT" || kind === "ADMIT")
         }
-        fixedTarget={target.mode === "bound"}
+        fixedTarget={target.mode === "bound" || target.admissionBound}
         fixedPaths={model.entry.kind === "ADMIT" ? ["target.issuer"] : []}
         disclosureAvailable={available}
         open={open}
