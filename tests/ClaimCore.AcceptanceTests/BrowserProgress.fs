@@ -127,7 +127,8 @@ let private readFailureCategory kind (code: string) =
                 || List.contains
                     detail
                     [ "INVALID_WIRE"; "UNEXPECTED_STATUS"; "MISSING_ANTIFORGERY" ]))
-        || (kind = "WORK_READBACK" && detail = "INVALID_RESPONSE")
+        || (kind = "WORK_READBACK"
+            && List.contains detail [ "INVALID_RESPONSE"; "RAW_ISSUER_PREVIEW" ])
 
     if known then kind + "_HTTP_" + code else "ERROR"
 
