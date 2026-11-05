@@ -18,6 +18,11 @@
   color: var(--accent-soft-text);
   border-color: var(--accent-soft-border);
 }
+.timeline-filters .ui-button {
+  min-block-size: var(--target-minimum);
+  padding: var(--space-1) var(--space-2);
+  font-size: var(--text-xs);
+}
 .timeline-entry > p {
   margin-block: var(--space-2);
 }
