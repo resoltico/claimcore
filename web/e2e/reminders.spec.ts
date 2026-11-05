@@ -312,8 +312,8 @@ for (const language of ["en", "lv", "ar"] as const) {
       await expectAccessible(page);
       await page.screenshot({
         path: test.info().outputPath(`work-${language}-${mode}.png`),
-        fullPage: true,
-        // Keep the full zoomed page below Linux WebKit's device-bitmap limit.
+        // Bound this review artifact; full text, reflow and axe are checked above.
+        fullPage: false,
         scale: "css",
         animations: "disabled",
       });
