@@ -285,9 +285,15 @@ const UnavailableAct = ({
         <strong>{p.actLabel(value.act)}</strong>:{" "}
         <NoticeView value={{ kind: "diagnostic", diagnostic: value.reason }} />
       </p>
-      {current === null ? null : alternative === null ? (
-        <CaseActionAlternatives current={current} onAct={(act) => onAct(current, act)} />
-      ) : (
+      {current !== null && alternative === null ? (
+        <CaseActionAlternatives
+          current={current}
+          onAct={(act) => {
+            onAct(current, act);
+          }}
+        />
+      ) : null}
+      {current === null || alternative === null ? null : (
         <Button
           onPress={() => {
             onAct(current, alternative);
