@@ -39,8 +39,8 @@ test("owner-only workspace renders without inventing case authority", async ({ p
   const fixture = await prepareRoleFixture(page);
   await ownerGrants(page, false);
   try {
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Access", exact: true })).toBeVisible();
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "People", exact: true })).toBeVisible();
     await noCaseWorkspace(page);
     await opaqueCaseRefusal(page, fixture.reference);
   } finally {
