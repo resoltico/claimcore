@@ -22,6 +22,7 @@ import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { CaseTimeline, type TimelineFilter } from "./case/CaseTimeline";
 import { CaseHeadline } from "../components/CaseHeadline";
 import { CaseAttention } from "../components/CaseAttention";
+import { CaseSectionActions } from "./case/CaseSectionActions";
 
 type CaseDetailProps = {
   target: CaseSelector;
@@ -55,6 +56,7 @@ const CurrentPresentation = ({
   disclosureAvailable,
   timeline,
   recordDetails,
+  onAct,
 }: {
   timeline: ReactNode;
   recordDetails: ReactNode;
@@ -63,6 +65,7 @@ const CurrentPresentation = ({
   onChanged: () => void;
   disclosureAvailable: boolean;
   onMutationLockChange: (locked: boolean) => void;
+  onAct: CaseDetailProps["onAct"];
 }) => {
   const globalPaused = useRequesterContext()?.maintenance.active === true;
   const wide = useWide();
@@ -73,7 +76,23 @@ const CurrentPresentation = ({
     disclosureAvailable,
   });
   const facts = disclosureAvailable ? (
-    <CaseFacts values={current.state.fields} fields={definition.fields} />
+    <CaseFacts
+      values={current.state.fields}
+      fields={definition.fields}
+      actions={Object.fromEntries(
+        (["registration", "decision", "payment"] as const).map((section) => [
+          section,
+          <CaseSectionActions
+            key={section}
+            current={current}
+            section={section}
+            onAct={(act) => {
+              onAct(current, act);
+            }}
+          />,
+        ]),
+      )}
+    />
   ) : null;
   return (
     <>
@@ -380,6 +399,7 @@ const CaseDisclosure = ({
           definition={definition}
           onChanged={current.revalidate}
           onMutationLockChange={onMutationLockChange}
+          onAct={onAct}
         />
       )}
       {mounted === null ? recordDetails : null}

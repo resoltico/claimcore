@@ -4,6 +4,7 @@ import type { CaseFields, CatalogDocument } from "../api/service";
 import { caseFieldValue } from "../protocol/caseFields";
 import { BusinessValue } from "./BusinessValue";
 import { usePresentation } from "../presentation/context";
+import type { ReactNode } from "react";
 type Props = { values: CaseFields; fields: CatalogDocument["fields"] };
 const countryField = (field: Props["fields"][number]) =>
   field.scalar.kind === "TEXT" && typeof field.scalar.format?.unknownCode === "string";
@@ -51,13 +52,19 @@ export const CaseFactGroup = ({
   fields,
   group,
   headingLevel = 3,
-}: Props & { group: "registration" | "decision" | "payment"; headingLevel?: 2 | 3 }) => {
+  actions,
+}: Props & {
+  group: "registration" | "decision" | "payment";
+  headingLevel?: 2 | 3;
+  actions?: ReactNode;
+}) => {
   const p = usePresentation();
   const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <section className="case-fact-card">
       <div className="section-heading">
         <Heading>{p.text(`group.${group}.label`)}</Heading>
+        {actions}
       </div>
       {values[group] === null ? (
         <p>{p.text("ui.notRecorded")}</p>

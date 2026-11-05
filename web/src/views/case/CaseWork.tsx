@@ -3,6 +3,7 @@ import { ActorIdentity } from "../../components/ActorIdentity";
 import type { CaseWorkView } from "@contracts/client";
 import { CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
+import { Icon } from "../../ui/icons";
 
 const WorkAccount = ({ value }: { value: CaseWorkView["responsible"] }) => {
   const p = usePresentation();
@@ -29,8 +30,15 @@ export const CaseWork = ({ value, onUpdate }: { value: CaseWorkView; onUpdate?: 
         <div className="section-heading">
           <h2 id="case-responsible-title">{p.fieldLabel("responsibleActor")}</h2>
           {onUpdate === undefined || !value.canAssign ? null : (
-            <button id="case-work-update" type="button" onClick={onUpdate}>
-              {p.text("ui.changeFact", { field: p.fieldLabel("responsibleActor") })}
+            <button
+              id="case-work-update"
+              className="case-edit-link"
+              type="button"
+              onClick={onUpdate}
+              aria-label={p.text("ui.changeFact", { field: p.fieldLabel("responsibleActor") })}
+              title={p.text("ui.changeFact", { field: p.fieldLabel("responsibleActor") })}
+            >
+              <Icon name="edit" />
             </button>
           )}
         </div>
@@ -40,8 +48,15 @@ export const CaseWork = ({ value, onUpdate }: { value: CaseWorkView; onUpdate?: 
         <div className="section-heading">
           <h2 id="case-summary-title">{p.fieldLabel("handlingSummary")}</h2>
           {onUpdate === undefined || !value.canUpdateSummary ? null : (
-            <button id="case-summary-update" type="button" onClick={onUpdate}>
-              {p.text("ui.changeFact", { field: p.fieldLabel("handlingSummary") })}
+            <button
+              id="case-summary-update"
+              className="case-edit-link"
+              type="button"
+              onClick={onUpdate}
+              aria-label={p.text("ui.changeFact", { field: p.fieldLabel("handlingSummary") })}
+              title={p.text("ui.changeFact", { field: p.fieldLabel("handlingSummary") })}
+            >
+              <Icon name="edit" />
             </button>
           )}
         </div>
