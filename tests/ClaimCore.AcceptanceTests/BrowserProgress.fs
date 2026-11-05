@@ -132,17 +132,37 @@ let private readFailureCategory kind (code: string) =
 
     if known then kind + "_HTTP_" + code else "ERROR"
 
+let private factReadabilityCode =
+    "(?:INCIDENT_DATE|INCIDENT_NOTIFICATION_DATE|PAYMENT_DECISION_DATE|PAYMENT_DATE)_(?:CASES_MINE|CASES_NOTIFIED|CASES_SUMMARY|CASES_OPEN_UNDECIDED|CASES_DECIDED_UNPAID|CASES_RECENT|CASES_CLOSED|CASES_VOIDED|CASES_ALL|CASES_FILTERED|CASE_UNDECIDED|CASE_DECIDED|CASE_PAID|CASE_CLOSED|CASE_VOIDED|CASE_ERASED|EDITOR_OPEN|EDITOR_DECIDE|EDITOR_CORRECT|EDITOR_VOID|EDITOR_WORK|RECOVERY|PAID_CORRECTION_REVIEW|HISTORY_COMPARISON|OPERATION_RESULT|AUTHORITY_HISTORY|NOT_FOUND|AUTHORITY_LIST|AUTHORITY_DETAIL|CASES_FILTER_PANEL)_(?:EXPOSED|INERT)"
+
+/// Only closed field, scene and visibility tokens cross into safe diagnostics.
+let factReadabilityMarkers bytes =
+    Regex.Matches(
+        plain bytes,
+        @"(?m)^[ \t]*(?:Error: )?E2E_FACT_READABILITY_(?<code>"
+        + factReadabilityCode
+        + @")[ \t]*\r?$",
+        RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
+    )
+    |> Seq.map (fun row -> row.Groups["code"].Value)
+    |> Set.ofSeq
+    |> Set.toList
+
 /// Categories are a closed vocabulary; no error message or stack function is returned.
 let failureCategories bytes =
     Regex.Matches(
         plain bytes,
-        @"(?m)^[ \t]+(?:(?<accessibility>Error: E2E_AXE_[A-Z0-9_]{1,200}[ \t]*\r?$)|(?<layout>Error: E2E_LAYOUT_(?:LOGIN|CASES|NARROW|ZOOM)_OVERFLOW(?:_REPORT_UNAVAILABLE)?[ \t]*\r?$)|(?<assertion>AssertionError:|Error: expect\()|(?<testTimeout>(?:Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: )?Test timeout of [1-9][0-9]{0,7}ms exceeded\.)|(?<actionTimeout>TimeoutError:|Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<timeout>(?:Error: )?Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<submit>Error: E2E_SUBMIT_HTTP_(?<submitCode>"
+        @"(?m)^[ \t]+(?:(?<fact>(?:Error: )?E2E_FACT_READABILITY_"
+        + factReadabilityCode
+        + @")[ \t]*\r?$|(?<accessibility>Error: E2E_AXE_[A-Z0-9_]{1,200}[ \t]*\r?$)|(?<layout>Error: E2E_LAYOUT_(?:LOGIN|CASES|NARROW|ZOOM)_OVERFLOW(?:_REPORT_UNAVAILABLE)?[ \t]*\r?$)|(?<assertion>AssertionError:|Error: expect\()|(?<testTimeout>(?:Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: )?Test timeout of [1-9][0-9]{0,7}ms exceeded\.)|(?<actionTimeout>TimeoutError:|Error: (?:locator|page)\.[a-zA-Z][a-zA-Z0-9]{0,39}: Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<timeout>(?:Error: )?Timeout [1-9][0-9]{0,7}ms exceeded\.)|(?<submit>Error: E2E_SUBMIT_HTTP_(?<submitCode>"
         + submitFailures
         + @")[ \t]*\r?$)|(?<read>Error: E2E_(?<readKind>SESSION|WORK_READBACK)_HTTP_(?<readCode>[1-5][0-9]{2}_[A-Z_]{1,80})[ \t]*\r?$)|(?<globalTimeout>Timed out waiting [1-9][0-9]{0,8}ms for the entire test run\.?[ \t]*\r?$)|(?<error>Error:))",
         RegexOptions.CultureInvariant ||| RegexOptions.NonBacktracking
     )
     |> Seq.map (fun row ->
-        if row.Groups["submit"].Success then
+        if row.Groups["fact"].Success then
+            "FACT_READABILITY"
+        elif row.Groups["submit"].Success then
             "HTTP_" + row.Groups["submitCode"].Value
         elif row.Groups["read"].Success then
             readFailureCategory row.Groups["readKind"].Value row.Groups["readCode"].Value

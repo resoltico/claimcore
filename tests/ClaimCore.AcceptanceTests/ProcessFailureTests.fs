@@ -488,6 +488,98 @@ let private targetGeometryControls () =
         ]
         "Public target evidence is capped at five values"
 
+let private factReadabilityControls () =
+    let markers text =
+        Encoding.UTF8.GetBytes(text: string) |> BrowserProgress.factReadabilityMarkers
+
+    let fields =
+        [
+            "INCIDENT_DATE"
+            "INCIDENT_NOTIFICATION_DATE"
+            "PAYMENT_DECISION_DATE"
+            "PAYMENT_DATE"
+        ]
+
+    let frames =
+        [
+            "CASES_MINE"
+            "CASES_NOTIFIED"
+            "CASES_SUMMARY"
+            "CASES_OPEN_UNDECIDED"
+            "CASES_DECIDED_UNPAID"
+            "CASES_RECENT"
+            "CASES_CLOSED"
+            "CASES_VOIDED"
+            "CASES_ALL"
+            "CASES_FILTERED"
+            "CASE_UNDECIDED"
+            "CASE_DECIDED"
+            "CASE_PAID"
+            "CASE_CLOSED"
+            "CASE_VOIDED"
+            "CASE_ERASED"
+            "EDITOR_OPEN"
+            "EDITOR_DECIDE"
+            "EDITOR_CORRECT"
+            "EDITOR_VOID"
+            "EDITOR_WORK"
+            "RECOVERY"
+            "PAID_CORRECTION_REVIEW"
+            "HISTORY_COMPARISON"
+            "OPERATION_RESULT"
+            "AUTHORITY_HISTORY"
+            "NOT_FOUND"
+            "AUTHORITY_LIST"
+            "AUTHORITY_DETAIL"
+            "CASES_FILTER_PANEL"
+        ]
+
+    let expected =
+        [
+            for field in fields do
+                for frame in frames do
+                    for state in [ "EXPOSED"; "INERT" ] -> field + "_" + frame + "_" + state
+        ]
+        |> List.sort
+
+    let text =
+        expected
+        |> List.map (fun code -> "    E2E_FACT_READABILITY_" + code)
+        |> String.concat "\n"
+
+    Expect.equal
+        (markers text)
+        expected
+        "Every closed field/scene/visibility survives without values"
+
+    Expect.equal
+        (BrowserProgress.failureCategories (Encoding.UTF8.GetBytes text))
+        [ "FACT_READABILITY" ]
+        "Multiline markers share one safe category"
+
+    let valid = "    Error: E2E_FACT_READABILITY_INCIDENT_DATE_CASE_PAID_EXPOSED"
+
+    Expect.equal
+        (markers valid)
+        [ "INCIDENT_DATE_CASE_PAID_EXPOSED" ]
+        "The first Error-prefixed marker is retained"
+
+    for invalid in
+        [
+            valid.Replace("INCIDENT_DATE", "PRIVATE_FIELD")
+            valid.Replace("CASE_PAID", "PRIVATE_FRAME")
+            valid.Replace("EXPOSED", "PRIVATE_VISIBILITY")
+            valid + " private-value"
+            valid + ";private=secret"
+            valid + "_" + String('A', 300)
+        ] do
+        Expect.isEmpty (markers invalid) "Unknown or private suffixes cannot enter safe metadata"
+
+        Expect.equal
+            (BrowserProgress.failureCategories (Encoding.UTF8.GetBytes invalid))
+            [ "ERROR" ]
+            "Unknown fact markers stay generic"
+
 let private browserMetadataControls () =
     progressControls ()
     locationControls ()
@@ -498,6 +590,7 @@ let private browserMetadataControls () =
     timeoutControls ()
     layoutControls ()
     targetGeometryControls ()
+    factReadabilityControls ()
 
 let private controls () =
     cleanupControls ()

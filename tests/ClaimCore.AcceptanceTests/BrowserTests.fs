@@ -65,6 +65,28 @@ let private selectScope
             BrowserScope.Diagnostic names
     | _ -> invalidOp "Acceptance browser scope must be complete, smoke or diagnostic."
 
+let private selectCase selected (value: string | null) =
+    match value with
+    | null -> None
+    | title ->
+        match selected with
+        | BrowserScope.Diagnostic [ _ ] -> ()
+        | _ ->
+            invalidOp
+                "A literal browser case requires diagnostic scope and exactly one specification."
+
+        let runes = title.EnumerateRunes() |> Seq.toList
+
+        if
+            runes.IsEmpty
+            || runes.Length > 256
+            || title <> title.Trim()
+            || List.exists Rune.IsControl runes
+        then
+            invalidOp "Browser case must be a nonempty, unpadded, bounded literal without controls."
+
+        Some title
+
 let private engines =
     Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE"
     |> selectEngines
@@ -74,6 +96,9 @@ let private scope =
         (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE")
         (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SPEC")
         engines
+
+let private caseTitle =
+    selectCase scope (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_CASE")
 
 let private smokeSpecifications =
     [
@@ -157,9 +182,13 @@ let private reportDirectory () =
     | null -> fallbackReportDirectory.Value
     | value -> value
 
-let private report selected files output engine =
+let private report selected selection files output engine =
+    let path = Path.Combine(output, "playwright.json")
+
     let count, duration =
-        BrowserCompletion.read files engine (Path.Combine(output, "playwright.json"))
+        match selection with
+        | None -> BrowserCompletion.read files engine path
+        | Some(title, identity) -> BrowserCompletion.readCase files engine title identity path
 
     let directory = reportDirectory ()
 
@@ -190,6 +219,7 @@ let private report selected files output engine =
             scope = scopeName selected
             fullQualification = selected = BrowserScope.Complete
             specifications = specifications selected
+            selectedCase = selection |> Option.map fst |> Option.toObj
             passed = count
             duration = duration
         |}
@@ -205,7 +235,7 @@ let private completionFixture nested =
         """{"projectName":"chromium","expectedStatus":"passed","status":"expected","results":[{"status":"passed","retry":0,"errors":[]}]}"""
 
     let spec id file =
-        $"""{{"id":"{id}","file":"{file}","ok":true,"tests":[{test}]}}"""
+        $"""{{"id":"{id}","title":"{id}","file":"{file}","ok":true,"tests":[{test}]}}"""
 
     let specifications =
         [ spec "a" "synthetic-a.spec.ts"; spec "b" "synthetic-b.spec.ts" ]
@@ -379,7 +409,188 @@ let private browserArguments selected engine =
     ]
     @ [ $"--global-timeout={timeoutMinutes selected * 60_000}" ]
 
+let private caseArguments =
+    function
+    | None -> []
+    | Some title -> [ "--grep"; "(?:^| )" + Regex.Escape title + "$" ]
+
+let private browserStart selected arguments values =
+    let start = PublishedProcesses.start "npm" arguments values
+    start.Environment.Remove "CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE" |> ignore
+    start.Environment["CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE"] <- scopeName selected
+    start
+
+let private caseControls () =
+    let selected = BrowserScope.Diagnostic [ "synthetic-a.spec.ts" ]
+
+    Expect.equal
+        (selectCase BrowserScope.Complete null)
+        None
+        "No literal case keeps normal qualification"
+
+    for campaign in
+        [
+            BrowserScope.Complete
+            BrowserScope.Smoke
+            BrowserScope.Diagnostic [ "a.spec.ts"; "b.spec.ts" ]
+        ] do
+        Expect.throws
+            (fun () -> selectCase campaign "literal" |> ignore)
+            "Cases cannot narrow qualification or multiple files"
+
+    for title in
+        [
+            ""
+            " "
+            " padded"
+            "padded "
+            "line\nfeed"
+            "tab\tcase"
+            "nul\u0000case"
+            String('x', 257)
+        ] do
+        Expect.throws
+            (fun () -> selectCase selected title |> ignore)
+            "Malformed literal cases fail before setup"
+
+    let unicode = String.replicate 256 "🚗"
+
+    Expect.equal
+        (selectCase selected unicode)
+        (Some unicode)
+        "Length bounds Unicode scalars without normalization"
+
+    Expect.throws
+        (fun () -> selectCase selected (unicode + "🚗") |> ignore)
+        "Scalar bound is enforced"
+
+    let arguments = caseArguments (Some "case .+?")
+
+    Expect.equal
+        arguments
+        [ "--grep"; @"(?:^| )case\ \.\+\?$" ]
+        "Only an escaped literal suffix enters arguments"
+
+    Expect.isTrue (Regex.IsMatch("file case .+?", arguments[1])) "Literal title matches"
+
+    Expect.isFalse
+        (Regex.IsMatch("file case XYZ", arguments[1]))
+        "User punctuation cannot become a regular expression"
+
+    Expect.isFalse
+        (Regex.IsMatch("file othercase .+?", arguments[1]))
+        "Case suffix has a title boundary"
+
+    let previous =
+        Environment.GetEnvironmentVariable "CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE"
+
+    try
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE", "unvalidated")
+
+        for campaign in [ selected; BrowserScope.Complete; BrowserScope.Smoke ] do
+            let start = browserStart campaign [] (Dictionary<string, string>())
+
+            Expect.isFalse
+                (start.Environment.ContainsKey "CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE")
+                "Inherited case never silently narrows Node"
+    finally
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE", previous)
+
+    let node = System.Text.Json.Nodes.JsonNode.Parse(completionFixture false) |> nonNull
+
+    let specs (root: System.Text.Json.Nodes.JsonNode) =
+        (((root["suites"] |> nonNull).AsArray()[0] |> nonNull)["specs"] |> nonNull).AsArray()
+
+    let spec root = (specs root)[0] |> nonNull
+
+    let testNode root =
+        ((spec root)["tests"] |> nonNull).AsArray()[0] |> nonNull
+
+    (specs node).RemoveAt 1
+    (node["stats"] |> nonNull)["expected"] <- System.Text.Json.Nodes.JsonValue.Create 1
+
+    let bytes () =
+        Encoding.UTF8.GetBytes(node.ToJsonString())
+
+    let files =
+        Set.singleton (Path.GetFullPath(Path.Combine(Path.GetTempPath(), "synthetic-a.spec.ts")))
+
+    Expect.equal
+        (BrowserCompletion.selectedCase files "chromium" "a" (bytes ()))
+        "a"
+        "One known case resolves its identity"
+
+    let collection = node.DeepClone()
+
+    let test =
+        ((((specs collection)[0] |> nonNull)["tests"] |> nonNull).AsArray()[0] |> nonNull)
+
+    test["results"] <- System.Text.Json.Nodes.JsonArray()
+
+    Expect.equal
+        (BrowserCompletion.selectedCase
+            files
+            "chromium"
+            "a"
+            (Encoding.UTF8.GetBytes(collection.ToJsonString())))
+        "a"
+        "Collection does not pretend to execute tests"
+
+    Expect.throws
+        (fun () ->
+            BrowserCompletion.inspect
+                files
+                "chromium"
+                (Encoding.UTF8.GetBytes(collection.ToJsonString()))
+            |> ignore)
+        "Collection alone never qualifies"
+
+    for change in
+        [
+            (fun copy -> (specs copy).Clear())
+            (fun copy -> (specs copy).Add((specs copy)[0] |> nonNull |> _.DeepClone()))
+            (fun copy ->
+                (spec copy)["file"] <- System.Text.Json.Nodes.JsonValue.Create "foreign.spec.ts")
+            (fun copy -> (spec copy)["title"] <- System.Text.Json.Nodes.JsonValue.Create "foreign")
+            (fun copy -> (spec copy)["id"] <- System.Text.Json.Nodes.JsonValue.Create "")
+            (fun copy ->
+                (testNode copy)["projectName"] <- System.Text.Json.Nodes.JsonValue.Create "webkit")
+            (fun copy ->
+                (testNode copy)["expectedStatus"] <-
+                    System.Text.Json.Nodes.JsonValue.Create "skipped")
+        ] do
+        let copy = node.DeepClone()
+        change copy
+
+        Expect.throws
+            (fun () ->
+                BrowserCompletion.selectedCase
+                    files
+                    "chromium"
+                    "a"
+                    (Encoding.UTF8.GetBytes(copy.ToJsonString()))
+                |> ignore)
+            "Zero, multiple, foreign or disabled cases fail before a fixture"
+
+    let directory = Directory.CreateTempSubdirectory("claimcore-case-completion-")
+
+    try
+        let path = Path.Combine(directory.FullName, "playwright.json")
+        File.WriteAllBytes(path, bytes ())
+
+        Expect.equal
+            (BrowserCompletion.readCase files "chromium" "a" "a" path)
+            (1, "1.2s")
+            "Exactly the collected case completes"
+
+        Expect.throws
+            (fun () -> BrowserCompletion.readCase files "chromium" "a" "other-id" path |> ignore)
+            "Changed execution identity cannot pass"
+    finally
+        directory.Delete true
+
 let private diagnosticControls () =
+    caseControls ()
     let root = Directory.CreateTempSubdirectory("claimcore-browser-selection-")
     let directory = Path.Combine(root.FullName, "web", "e2e")
     Directory.CreateDirectory directory |> ignore
@@ -625,7 +836,7 @@ let private diagnosticControls () =
             Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", null)
             let fallback = reportDirectory ()
             Expect.equal (reportDirectory ()) fallback "Default evidence destination stays stable"
-            report selected files output "chromium"
+            report selected None files output "chromium"
 
             Expect.isTrue
                 (File.Exists(Path.Combine(fallback, "browser-chromium.json")))
@@ -633,7 +844,7 @@ let private diagnosticControls () =
 
             Directory.Delete(fallback, true)
             Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", reports)
-            report selected files output "chromium"
+            report selected None files output "chromium"
 
             use summary =
                 JsonDocument.Parse(
@@ -658,6 +869,27 @@ let private diagnosticControls () =
                 "synthetic-a.spec.ts"
                 "The selected file is retained in evidence"
 
+            report selected (Some("a", "a")) files output "chromium"
+
+            use partial =
+                JsonDocument.Parse(
+                    File.ReadAllBytes(Path.Combine(reports, "browser-chromium.json"))
+                )
+
+            Expect.equal
+                (partial.RootElement.GetProperty("selectedCase").GetString())
+                "a"
+                "The exact executed case is explicit"
+
+            Expect.equal
+                (partial.RootElement.GetProperty("passed").GetInt32())
+                1
+                "Only the selected case is reported"
+
+            Expect.isFalse
+                (partial.RootElement.GetProperty("fullQualification").GetBoolean())
+                "One case never qualifies its whole file"
+
             let workFile = Path.Combine(directory, "case-work.spec.ts")
             File.WriteAllText(workFile, "")
             let workScope = selectScope "diagnostic" "case-work.spec.ts" [ "chromium" ]
@@ -672,7 +904,7 @@ let private diagnosticControls () =
 
             Expect.throws
                 (fun () ->
-                    report workScope (expectedFiles root.FullName workScope) output "chromium")
+                    report workScope None (expectedFiles root.FullName workScope) output "chromium")
                 "Selected work specification cannot pass without its required measurement artifact"
         finally
             Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", previousReports)
@@ -721,10 +953,11 @@ let private printFailureSummary root engine bytes =
     let durations = BrowserProgress.failedDurations codeFiles bytes |> String.concat ","
     let stack = BrowserProgress.stackLocations codeFiles bytes |> String.concat ","
     let categories = BrowserProgress.failureCategories bytes |> String.concat ","
+    let facts = BrowserProgress.factReadabilityMarkers bytes |> String.concat ","
     let targets = BrowserProgress.targetGeometry bytes |> String.concat ","
 
     let summary =
-        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; targets={targets}"
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; targets={targets}; facts={facts}"
 
     Console.WriteLine summary
 
@@ -747,11 +980,77 @@ let private runBrowser selected root engine output start =
 
         failtest ($"Browser process failure: {failure.Kind}; bounded private evidence retained.")
 
+let private collectCase root selected files engine title =
+    match title with
+    | None -> None
+    | Some title ->
+        let directory = Directory.CreateTempSubdirectory("claimcore-browser-collection-")
+        let values = Dictionary<string, string>()
+        values["CLAIMCORE_WEB_E2E_ENGINE"] <- engine
+        values["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"] <- directory.FullName
+
+        let arguments =
+            browserArguments selected engine
+            @ caseArguments (Some title)
+            @ [ "--list"; "--reporter=json" ]
+
+        let start = browserStart selected arguments values
+        start.WorkingDirectory <- Path.Combine(root, "web")
+
+        for name in
+            [
+                "PLAYWRIGHT_JSON_OUTPUT_FILE"
+                "PLAYWRIGHT_JSON_OUTPUT_DIR"
+                "PLAYWRIGHT_JSON_OUTPUT_NAME"
+            ] do
+            start.Environment.Remove name |> ignore
+
+        let mutable complete = false
+
+        try
+            let result =
+                try
+                    PublishedProcesses.run 30_000 start None
+                with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
+                    FixtureFiles.write directory.FullName "collection.stdout" failure.StandardOutput
+                    |> ignore
+
+                    FixtureFiles.write directory.FullName "collection.stderr" failure.StandardError
+                    |> ignore
+
+                    failtest
+                        "Literal browser collection exceeded its bound; private evidence retained."
+
+            FixtureFiles.write directory.FullName "collection.stdout" result.StandardOutput
+            |> ignore
+
+            FixtureFiles.write directory.FullName "collection.stderr" result.StandardError
+            |> ignore
+
+            Expect.equal
+                result.ExitCode
+                0
+                "Literal case collection must succeed before fixture startup"
+
+            let identity =
+                BrowserCompletion.selectedCase files engine title result.StandardOutput
+
+            complete <- true
+            Some(title, identity)
+        finally
+            if complete then
+                directory.Delete true
+            else
+                Console.Error.WriteLine(
+                    "Browser collection evidence retained privately: " + directory.FullName
+                )
+
 let private qualifyEngine engine =
     task {
         let root = ClaimCore.TestSupport.RepositoryRoot.find ()
         // Resolve the exact inventory before any expensive fixture or authentication starts.
         let files = expectedFiles root scope
+        let selection = collectCase root scope files engine caseTitle
         // Refuse an unusable evidence destination before starting the expensive fixture.
         Directory.CreateDirectory(reportDirectory ()) |> ignore
 
@@ -778,7 +1077,12 @@ let private qualifyEngine engine =
         values["CLAIMCORE_WEB_E2E_PRINCIPALS_FILE"] <-
             Path.Combine(fixture.Directory, "principals.json")
 
-        let start = PublishedProcesses.start "npm" (browserArguments scope engine) values
+        let start =
+            browserStart scope (browserArguments scope engine @ caseArguments caseTitle) values
+
+        match selection with
+        | Some(title, _) -> start.Environment["CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE"] <- title
+        | None -> ()
 
         start.WorkingDirectory <- Path.Combine(fixture.Root, "web")
         let result = runBrowser scope fixture.Root engine output start
@@ -795,7 +1099,7 @@ let private qualifyEngine engine =
             0
             ("Published browser scope " + engine + "; private evidence retained")
 
-        report scope files output engine
+        report scope selection files output engine
 
         if requiresSpecification scope "unicode-parity.spec.ts" then
             BrowserReadback.qualify fixture output

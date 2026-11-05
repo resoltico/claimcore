@@ -57,7 +57,7 @@ for stage in "${stages[@]}"; do
 done
 
 refuse_diagnostic_acceptance() {
-  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-}" == diagnostic || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" ]]; then
+  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-}" == diagnostic || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_CASE+x}" ]]; then
     echo "Diagnostic browser selection is not an acceptance gate. Use the focused native filter 'FullyQualifiedName~published browser diagnostic' with current built inputs and eng/expecto.acceptance.runsettings." >&2
     return 64
   fi

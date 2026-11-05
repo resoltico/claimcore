@@ -409,7 +409,13 @@ existing basenames (no spaces or paths). Diagnostics collect all selected failur
 validated before fixture startup; every selected test must pass without skips or retries, and reports
 explicitly state incomplete qualification. Selected specs share mutable fixture state, so later failures
 may be cascades: inspect chronology and current state before treating them as independent defects.
-The ordinary acceptance gate refuses diagnostic selection. Use this path to diagnose the affected
+To run one existing test within one spec, also set `CLAIMCORE_ACCEPTANCE_BROWSER_CASE` to its exact
+literal title (at most 256 Unicode scalars, unpadded and without controls). The runner escapes it as an
+exact suffix and validates exactly one existing file/title/engine identity with Playwright `--list`
+before fixture startup. Completion must match that identity, pass without skips or retries, and reports
+include `selectedCase` with `fullQualification=false`; it does not establish whole-file coverage.
+Existing selected-file artifact requirements remain; select the case that produces them.
+The ordinary acceptance gate refuses diagnostic selection, including case selectors. Use this path to diagnose the affected
 spec instead of restarting complete suites and replaying unrelated passing tests.
 
 For a Linux-only browser failure, dispatch the existing CI workflow with `browser_spec` set to that
@@ -419,7 +425,11 @@ This runs only the explicitly partial one-file diagnostic; qualification, growth
 skipped. Invalid or ambiguous spec names and unknown engines fail before setup. A nondefault engine
 without `browser_spec` fails configuration and blocks qualification jobs; ordinary dispatches keep full
 qualification. Chromium is also installed for CLI authentication bootstrap when the selected test
-engine differs. The existing diagnostic execution and outer time limits are unchanged.
+engine differs. Add `-f browser_case='en 640px green light at 200% zoom'` with
+`-f browser_spec=design-matrix.spec.ts` to diagnose only that existing planned dimension. It still
+requires all 29 scene loads and 30 checks, with the expected captures, and remains partial.
+Case-only input is rejected before qualification setup. The existing diagnostic execution and outer
+time limits are unchanged.
 
 For broader verification:
 

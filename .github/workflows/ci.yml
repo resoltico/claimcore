@@ -19,6 +19,10 @@ on:
         description: Optional one-spec browser diagnostic; skips qualification jobs
         type: string
         default: ""
+      browser_case:
+        description: Optional one literal test title within browser_spec; never qualification
+        type: string
+        default: ""
       browser_engine:
         description: Engine for browser_spec diagnostics only
         type: choice
@@ -51,9 +55,12 @@ jobs:
       - name: Validate qualification engine selection before setup
         env:
           BROWSER_ENGINE: ${{ inputs.browser_engine || 'chromium' }}
+          BROWSER_CASE: ${{ inputs.browser_case }}
         run: |
           python3 - <<'PYTHON'
           import os
+          if os.environ["BROWSER_CASE"]:
+              raise ValueError("browser_case requires browser_spec")
           if os.environ["BROWSER_ENGINE"] != "chromium":
               raise ValueError("browser_engine requires browser_spec; ordinary qualification selects all engines")
           PYTHON
@@ -85,7 +92,7 @@ jobs:
           PYTHON
 
   lint:
-    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Native format, lint, browser boundaries and workflow hygiene
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -103,7 +110,7 @@ jobs:
           advanced-security: false
 
   unit:
-    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Pure tests and compiled architecture (${{ matrix.rid }})
     strategy:
       fail-fast: true
@@ -165,7 +172,7 @@ jobs:
             artifacts/verification/native.*/cli-failure/**
 
   integration:
-    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: PostgreSQL ${{ matrix.major }} store tests
     needs: [configuration]
     strategy:
@@ -200,7 +207,7 @@ jobs:
 
   growth:
     name: Manual PostgreSQL ${{ matrix.major }} growth qualification
-    if: github.event_name == 'workflow_dispatch' && inputs.growth && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: github.event_name == 'workflow_dispatch' && inputs.growth && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     needs: [configuration]
     strategy:
       fail-fast: true
@@ -219,7 +226,7 @@ jobs:
       - run: bash eng/verify.sh growth
 
   web:
-    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Web host and identity tests
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -247,7 +254,7 @@ jobs:
             artifacts/verification/native.*/cli-failure/**
 
   frontend:
-    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Frontend checks (SDK-free Node container)
     needs: [configuration]
     runs-on: ubuntu-24.04
@@ -285,7 +292,7 @@ jobs:
             '
 
   acceptance:
-    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Published clients (${{ matrix.engine }}, complete)
     needs: [frontend]
     strategy:
@@ -354,6 +361,7 @@ jobs:
     timeout-minutes: 50
     env:
       BROWSER_ENGINE: ${{ inputs.browser_engine || 'chromium' }}
+      BROWSER_CASE: ${{ inputs.browser_case }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -365,7 +373,10 @@ jobs:
           GROWTH: ${{ inputs.growth }}
         run: |
           python3 - <<'PYTHON'
-          import os, pathlib, re
+          import os, pathlib, re, unicodedata
+          case = os.environ["BROWSER_CASE"]
+          if case and (len(case) > 256 or case != case.strip() or any(unicodedata.category(c) == "Cc" for c in case)):
+              raise ValueError("Choose one bounded unpadded literal case without controls")
           if os.environ["BROWSER_ENGINE"] not in {"chromium", "firefox", "webkit"}:
               raise ValueError("Select chromium, firefox or webkit")
           name = os.environ["BROWSER_SPEC"]
@@ -399,6 +410,10 @@ jobs:
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: diagnostic
           CLAIMCORE_ACCEPTANCE_BROWSER_SPEC: ${{ inputs.browser_spec }}
         run: |
+          unset CLAIMCORE_ACCEPTANCE_BROWSER_CASE
+          if [[ -n "$BROWSER_CASE" ]]; then
+            export CLAIMCORE_ACCEPTANCE_BROWSER_CASE="$BROWSER_CASE"
+          fi
           dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
             --configuration Release --no-build --no-restore --zero-tests-policy=strict --timeout=40m \
             --filter 'FullyQualifiedName~published browser diagnostic' \
@@ -418,7 +433,7 @@ jobs:
   comparison:
     name: Manual same-host growth comparison
     needs: [gate]
-    if: github.event_name == 'workflow_dispatch' && inputs.comparison_ref != '' && needs.gate.result == 'success' && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium')
+    if: github.event_name == 'workflow_dispatch' && inputs.comparison_ref != '' && needs.gate.result == 'success' && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     runs-on: ubuntu-24.04
     # Three complete same-host pairs require six isolated growth runs.
     timeout-minutes: 360
