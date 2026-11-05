@@ -58,9 +58,41 @@ type TimelineChange =
     | HandlingSummary of ValueChange<HandlingSummary>
     | Reminder of ReminderDifference
 
+/// A concise recorded event, not an instruction to perform an act.
+[<RequireQualifiedAccess>]
+type TimelineEvent =
+    | CaseActRecorded of CaseActKind
+    | ResponsibilityAssigned of ActorRef
+    | ResponsibilityCleared of ActorRef
+    | WorkRecorded
+    | HandlingSummaryAdded
+    | HandlingSummaryChanged
+    | HandlingSummaryCleared
+    | ReminderPlanned of action: ReminderAction * due: CalendarDate
+    | ReminderChanged of ReminderAction
+    | ReminderCompleted of ReminderAction
+    | ReminderCancelled of ReminderAction
+    | ReminderReopened of action: ReminderAction * due: CalendarDate
+    | ReminderCompletedAndPlanned of
+        completedAction: ReminderAction *
+        nextAction: ReminderAction *
+        nextDue: CalendarDate
+
+type TimelineOverview =
+    {
+        Event: TimelineEvent
+        Highlights: TimelineChange list
+    }
+
+type TimelineDisclosure =
+    {
+        Items: TimelineChange list
+        Overview: TimelineOverview
+    }
+
 [<RequireQualifiedAccess>]
 type TimelineChanges =
-    | Disclosed of TimelineChange list
+    | Disclosed of TimelineDisclosure
     | Withheld
     | Erased
 

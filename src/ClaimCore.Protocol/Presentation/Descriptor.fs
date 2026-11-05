@@ -700,7 +700,8 @@ module Descriptor =
                         ]
                 }
             match entry.Changes with
-            | TimelineChanges.Disclosed changes -> yield! changes |> List.collect timelineChange
+            | TimelineChanges.Disclosed changes ->
+                yield! changes.Items |> List.collect timelineChange
             | TimelineChanges.Withheld ->
                 yield
                     {

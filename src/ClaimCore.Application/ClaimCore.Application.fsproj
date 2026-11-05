@@ -15,6 +15,7 @@
     <Compile Include="NonAcceptance.fs" />
     <Compile Include="CaseChanges.fs" />
     <Compile Include="TimelineDifferences.fs" />
+    <Compile Include="TimelineOverview.fs" />
     <Compile Include="TimelineHistory.fs" />
     <Compile Include="ConflictReads.fs" />
     <Compile Include="ExecutionFacts.fs" />

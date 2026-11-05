@@ -45,6 +45,10 @@ module CatalogValidation =
         for KeyValue(key, arguments) in CliMessages.contracts do
             matches key arguments
 
+        for KeyValue(key, arguments) in
+            ClaimCore.Protocol.Presentation.TimelineEventPresentation.contracts do
+            matches key arguments
+
         for KeyValue(key, _) in templates do
             if
                 key.StartsWith("cli.", System.StringComparison.Ordinal)
@@ -121,6 +125,7 @@ module CatalogValidation =
                 "scalar"
                 "ui"
                 "cli"
+                "timeline"
             ]
             @ (Terms.all |> List.map _.Name)
 

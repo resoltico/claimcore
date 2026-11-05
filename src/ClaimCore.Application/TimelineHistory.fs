@@ -163,7 +163,17 @@ module internal TimelineHistory =
                                                         difference.ReminderId = id
                                                     | _ -> false)
                                             | _ -> changes)
-                                        |> Result.map TimelineChanges.Disclosed
+                                        |> Result.bind (fun changes ->
+                                            subject entry.Subject
+                                            |> Result.bind (fun subject ->
+                                                TimelineOverview.create
+                                                    (range |> Option.map _.Entity)
+                                                    subject
+                                                    content
+                                                    changes)
+                                            |> Result.map (fun overview ->
+                                                TimelineChanges.Disclosed
+                                                    { Items = changes; Overview = overview }))
 
                                 match
                                     subject entry.Subject,

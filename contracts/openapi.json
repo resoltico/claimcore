@@ -15100,11 +15100,15 @@
             },
             "minItems": 0,
             "maxItems": 17
+          },
+          "overview": {
+            "$ref": "#/components/schemas/TimelineOverview"
           }
         },
         "required": [
           "kind",
-          "items"
+          "items",
+          "overview"
         ]
       },
       "TimelineChanges.ERASED": {
@@ -15129,6 +15133,597 @@
         },
         "required": [
           "kind"
+        ]
+      },
+      "TimelineEvent": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/TimelineEvent.CASE_OPENED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REGISTRATION_AMENDED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.FACTS_CORRECTED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.DECISION_RECORDED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.DECISION_WITHDRAWN"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.PAYMENT_CLEARED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.CASE_CLOSED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.CASE_REOPENED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.CASE_VOIDED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.CASE_REINSTATED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.CASE_ERASED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.RESPONSIBILITY_ASSIGNED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.RESPONSIBILITY_CLEARED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.WORK_RECORDED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_ADDED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_CHANGED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_CLEARED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMINDER_PLANNED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMINDER_CHANGED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMINDER_COMPLETED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMINDER_CANCELLED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMINDER_REOPENED"
+          },
+          {
+            "$ref": "#/components/schemas/TimelineEvent.REMINDER_COMPLETED_AND_PLANNED"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "CASE_OPENED": "#/components/schemas/TimelineEvent.CASE_OPENED",
+            "REGISTRATION_AMENDED": "#/components/schemas/TimelineEvent.REGISTRATION_AMENDED",
+            "FACTS_CORRECTED": "#/components/schemas/TimelineEvent.FACTS_CORRECTED",
+            "DECISION_RECORDED": "#/components/schemas/TimelineEvent.DECISION_RECORDED",
+            "DECISION_WITHDRAWN": "#/components/schemas/TimelineEvent.DECISION_WITHDRAWN",
+            "PAYMENT_RECORDED": "#/components/schemas/TimelineEvent.PAYMENT_RECORDED",
+            "PAYMENT_CLEARED": "#/components/schemas/TimelineEvent.PAYMENT_CLEARED",
+            "CASE_CLOSED": "#/components/schemas/TimelineEvent.CASE_CLOSED",
+            "CASE_REOPENED": "#/components/schemas/TimelineEvent.CASE_REOPENED",
+            "CASE_VOIDED": "#/components/schemas/TimelineEvent.CASE_VOIDED",
+            "CASE_REINSTATED": "#/components/schemas/TimelineEvent.CASE_REINSTATED",
+            "CASE_ERASED": "#/components/schemas/TimelineEvent.CASE_ERASED",
+            "RESPONSIBILITY_ASSIGNED": "#/components/schemas/TimelineEvent.RESPONSIBILITY_ASSIGNED",
+            "RESPONSIBILITY_CLEARED": "#/components/schemas/TimelineEvent.RESPONSIBILITY_CLEARED",
+            "WORK_RECORDED": "#/components/schemas/TimelineEvent.WORK_RECORDED",
+            "HANDLING_SUMMARY_ADDED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_ADDED",
+            "HANDLING_SUMMARY_CHANGED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_CHANGED",
+            "HANDLING_SUMMARY_CLEARED": "#/components/schemas/TimelineEvent.HANDLING_SUMMARY_CLEARED",
+            "REMINDER_PLANNED": "#/components/schemas/TimelineEvent.REMINDER_PLANNED",
+            "REMINDER_CHANGED": "#/components/schemas/TimelineEvent.REMINDER_CHANGED",
+            "REMINDER_COMPLETED": "#/components/schemas/TimelineEvent.REMINDER_COMPLETED",
+            "REMINDER_CANCELLED": "#/components/schemas/TimelineEvent.REMINDER_CANCELLED",
+            "REMINDER_REOPENED": "#/components/schemas/TimelineEvent.REMINDER_REOPENED",
+            "REMINDER_COMPLETED_AND_PLANNED": "#/components/schemas/TimelineEvent.REMINDER_COMPLETED_AND_PLANNED"
+          }
+        }
+      },
+      "TimelineEvent.CASE_CLOSED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_CLOSED"
+          },
+          "messageId": {
+            "const": "timeline.event.caseClosed"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.CASE_ERASED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_ERASED"
+          },
+          "messageId": {
+            "const": "timeline.event.caseErased"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.CASE_OPENED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_OPENED"
+          },
+          "messageId": {
+            "const": "timeline.event.caseOpened"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.CASE_REINSTATED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_REINSTATED"
+          },
+          "messageId": {
+            "const": "timeline.event.caseReinstated"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.CASE_REOPENED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_REOPENED"
+          },
+          "messageId": {
+            "const": "timeline.event.caseReopened"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.CASE_VOIDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "CASE_VOIDED"
+          },
+          "messageId": {
+            "const": "timeline.event.caseVoided"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.DECISION_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DECISION_RECORDED"
+          },
+          "messageId": {
+            "const": "timeline.event.decisionRecorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.DECISION_WITHDRAWN": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "DECISION_WITHDRAWN"
+          },
+          "messageId": {
+            "const": "timeline.event.decisionWithdrawn"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.FACTS_CORRECTED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "FACTS_CORRECTED"
+          },
+          "messageId": {
+            "const": "timeline.event.factsCorrected"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.HANDLING_SUMMARY_ADDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "HANDLING_SUMMARY_ADDED"
+          },
+          "messageId": {
+            "const": "timeline.event.handlingSummaryAdded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.HANDLING_SUMMARY_CHANGED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "HANDLING_SUMMARY_CHANGED"
+          },
+          "messageId": {
+            "const": "timeline.event.handlingSummaryChanged"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.HANDLING_SUMMARY_CLEARED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "HANDLING_SUMMARY_CLEARED"
+          },
+          "messageId": {
+            "const": "timeline.event.handlingSummaryCleared"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PAYMENT_CLEARED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENT_CLEARED"
+          },
+          "messageId": {
+            "const": "timeline.event.paymentCleared"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.PAYMENT_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "PAYMENT_RECORDED"
+          },
+          "messageId": {
+            "const": "timeline.event.paymentRecorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.REGISTRATION_AMENDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REGISTRATION_AMENDED"
+          },
+          "messageId": {
+            "const": "timeline.event.registrationAmended"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineEvent.REMINDER_CANCELLED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER_CANCELLED"
+          },
+          "messageId": {
+            "const": "timeline.event.reminderCancelled"
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "action"
+        ]
+      },
+      "TimelineEvent.REMINDER_CHANGED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER_CHANGED"
+          },
+          "messageId": {
+            "const": "timeline.event.reminderChanged"
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "action"
+        ]
+      },
+      "TimelineEvent.REMINDER_COMPLETED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER_COMPLETED"
+          },
+          "messageId": {
+            "const": "timeline.event.reminderCompleted"
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "action"
+        ]
+      },
+      "TimelineEvent.REMINDER_COMPLETED_AND_PLANNED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER_COMPLETED_AND_PLANNED"
+          },
+          "messageId": {
+            "const": "timeline.event.reminderCompletedAndPlanned"
+          },
+          "completedAction": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "nextAction": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "nextDue": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "completedAction",
+          "nextAction",
+          "nextDue"
+        ]
+      },
+      "TimelineEvent.REMINDER_PLANNED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER_PLANNED"
+          },
+          "messageId": {
+            "const": "timeline.event.reminderPlanned"
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "due": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "action",
+          "due"
+        ]
+      },
+      "TimelineEvent.REMINDER_REOPENED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "REMINDER_REOPENED"
+          },
+          "messageId": {
+            "const": "timeline.event.reminderReopened"
+          },
+          "action": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 1024,
+            "x-claimcore-maxUtf8Bytes": 1024
+          },
+          "due": {
+            "type": "string",
+            "pattern": "^(?!0000-)[0-9]{4}-[0-9]{2}-[0-9]{2}(?![\\s\\S])",
+            "format": "date",
+            "minLength": 10,
+            "maxLength": 10
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "action",
+          "due"
+        ]
+      },
+      "TimelineEvent.RESPONSIBILITY_ASSIGNED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "RESPONSIBILITY_ASSIGNED"
+          },
+          "messageId": {
+            "const": "timeline.event.responsibilityAssigned"
+          },
+          "person": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "person"
+        ]
+      },
+      "TimelineEvent.RESPONSIBILITY_CLEARED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "RESPONSIBILITY_CLEARED"
+          },
+          "messageId": {
+            "const": "timeline.event.responsibilityCleared"
+          },
+          "person": {
+            "$ref": "#/components/schemas/ActorRef"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId",
+          "person"
+        ]
+      },
+      "TimelineEvent.WORK_RECORDED": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "WORK_RECORDED"
+          },
+          "messageId": {
+            "const": "timeline.event.workRecorded"
+          }
+        },
+        "required": [
+          "kind",
+          "messageId"
+        ]
+      },
+      "TimelineOverview": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "event": {
+            "$ref": "#/components/schemas/TimelineEvent"
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TimelineChange"
+            },
+            "minItems": 0,
+            "maxItems": 17
+          }
+        },
+        "required": [
+          "event",
+          "highlights"
         ]
       },
       "TimelineReminderVersion": {

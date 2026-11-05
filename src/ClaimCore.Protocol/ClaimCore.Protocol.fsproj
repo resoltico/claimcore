@@ -31,6 +31,7 @@
     <Compile Include="Wire/WireMembers.fs" />
     <Compile Include="Wire/RequestCodecs.fs" />
     <Compile Include="Catalog/Metadata.fs" />
+    <Compile Include="Presentation/TimelineEventPresentation.fs" />
     <Compile Include="Presentation/Descriptor.fs" />
     <Compile Include="Presentation/PreviewReplies.fs" />
     <Compile Include="Catalog/Bindings.fs" />
