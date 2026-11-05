@@ -230,3 +230,58 @@ let unknownDefaults =
 
         let _, text = inspect [ "frobnicate"; "--language"; "lv" ]
         Expect.stringContains text "\"frobnicate\"" "Only the unknown root token is named")
+
+
+[<Tests>]
+let unknownSchema =
+    testCase
+        "unknown named schema lookup retains authored selectors with inert literal escapes"
+        (fun () ->
+            for selector, expected in
+                [
+                    "unsupported.synthetic", "unsupported.synthetic"
+                    "bad\u001b[31m", "bad\\u{001B}[31m"
+                    "line\nschema", "line\\u{000A}schema"
+                ] do
+                let code, text = inspect [ "schema"; selector ]
+                Expect.equal code 64 "Unknown named schema is a usage refusal"
+
+                Expect.stringContains
+                    text
+                    expected
+                    "Actual unknown selector survives registry lookup failure"
+
+                Expect.isFalse (text.Contains '\u001b') "No active terminal escape"
+
+            for args in [ [ "schema" ]; [ "call"; "--help"; "extra" ] ] do
+                Expect.equal
+                    (inspect args |> fst)
+                    64
+                    "Missing selector and closed invocation remain usage failures"
+
+            let admitted = CliInvocations.admit [ "schema"; "invocation" ]
+
+            match admitted with
+            | Ok(CliInvocation.Schema selection) ->
+                use output = new MemoryStream()
+                use errors = new MemoryStream()
+
+                Expect.equal
+                    (CliDiscovery.discovery output errors (CliInvocation.Schema selection))
+                    0
+                    "Known schema remains offline success"
+
+                Expect.equal errors.Length 0L "Known schema has no diagnostics"
+
+                let expected =
+                    Discovery.schema selection
+                    |> Option.defaultWith (fun () -> failtest "Known schema")
+
+                Expect.equal
+                    (output.ToArray())
+                    (if expected.Length > 0 && expected[expected.Length - 1] = byte '\n' then
+                         expected
+                     else
+                         Array.append expected [| byte '\n' |])
+                    "Exact successful schema bytes remain unchanged"
+            | other -> failtestf "Known schema admission: %A" other)

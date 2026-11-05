@@ -154,20 +154,30 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     let canary = "secret-canary\u001b[31mhttps://private.example/path"
 
-    for args in
+    for args, echoSelector in
         [
-            [ canary ]
-            [ "help"; canary ]
-            [ "call"; "--help"; canary ]
-            [ "describe"; "fields"; canary ]
-            [ "schema"; canary ]
+            [ canary ], true
+            [ "help"; canary ], true
+            [ "call"; "--help"; canary ], false
+            [ "describe"; "fields"; canary ], true
+            [ "schema"; canary ], true
         ] do
         let result = invoke args None
         Expect.equal result.ExitCode 64 "Usage failure"
         Expect.equal result.StandardOutput.Length 0 "No machine stdout on invalid invocation"
 
-        Expect.isFalse
-            (Encoding.UTF8.GetString(result.StandardError).Contains "secret-canary")
-            "No raw token echo"
+        let error = Encoding.UTF8.GetString result.StandardError
+        Expect.isFalse (error.Contains '\u001b') "Usage never emits an active ANSI escape"
+        Expect.isFalse (error.Contains canary) "The raw control-bearing token is never echoed"
+
+        if echoSelector then
+            Expect.stringContains
+                error
+                "secret-canary\\u{001B}[31mhttps://private.example/path"
+                "The authored unknown selector is retained as independent inert text"
+        else
+            Expect.isFalse
+                (error.Contains "secret-canary")
+                "Closed call invocation keeps its existing argument refusal"
 
     missingConfiguration invoke

@@ -22,12 +22,12 @@ let unsupported errors language arguments issue =
 
     ExitCode.value ExitCode.Usage
 
-let writeDiscovery output errors language command response =
+let writeDiscovery output errors language command missing response =
     match response with
     | Some bytes ->
         writeBytes output bytes
         ExitCode.value ExitCode.Success
-    | None -> unsupported errors language [ command ] (UsageError.UnknownCommand(command, []))
+    | None -> unsupported errors language [ command ] missing
 
 let discovery output errors =
     function
@@ -52,10 +52,23 @@ let discovery output errors =
         Discovery.versionJson () |> writeBytes output
         ExitCode.value ExitCode.Success
     | CliInvocation.Describe(selector, false, _) ->
-        Discovery.describe selector |> writeDiscovery output errors "en" "describe"
+        Discovery.describe selector
+        |> writeDiscovery output errors "en" "describe" (UsageError.UnknownCommand("describe", []))
     | CliInvocation.Describe(selector, true, language) ->
         Discovery.describeText language selector
-        |> writeDiscovery output errors language "describe"
+        |> writeDiscovery
+            output
+            errors
+            language
+            "describe"
+            (UsageError.UnknownCommand("describe", []))
     | CliInvocation.Schema selection ->
-        Discovery.schema selection |> writeDiscovery output errors "en" "schema"
+        let selector =
+            match selection with
+            | CliSchema.Named name -> name
+            | CliSchema.Request endpoint -> endpoint + " request"
+            | CliSchema.Response endpoint -> endpoint + " response"
+
+        Discovery.schema selection
+        |> writeDiscovery output errors "en" "schema" (UsageError.UnknownCommand(selector, []))
     | _ -> unsupported errors "en" [] (UsageError.NotApplicable("arguments", "command"))
