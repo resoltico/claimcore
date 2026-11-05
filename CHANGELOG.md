@@ -28,8 +28,10 @@
 - Set or erase actor profiles separately from identity and grants; historical names use current profiles, while erasure preserves acceptance but can prevent exact replay.
 - Case and reminder view counts share a snapshot; case timelines combine fact, work and reminder changes under current history permissions.
 - ADMIT records an authored profile and up to 48 role assignments atomically; access requests distinguish human and service identities and clear on admission.
+- Sign-in distinguishes unregistered, roleless and disabled accounts; owners can review unverified request hints and bind admission to the exact account.
 - People show bounded role summaries and explicit assignment state; optional responsibility counts and links use the viewer's case-read access and preserve known zero.
 - Unavailable case actions carry current core reasons; case trackers use recorded dates and keep absent financial stages unrecorded after closure.
+- Web task drawers use one routine confirmation button; reminder completion stays beside its row, and erasure still requires the exact reference.
 - Case, work, reminder and timeline text use typed core descriptors; case tables adapt to width without truncating money, and retained actor names are safely escaped.
 - Work overview attention includes due-today and ready-to-close cases, matching core case views.
 - Case lists identify exact visible reference matches using installation case-folding and expose the next reminder identity; unavailable cases remain undisclosed.
