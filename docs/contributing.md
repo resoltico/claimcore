@@ -380,7 +380,7 @@ Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
 
-For a concrete browser failure, select one existing spec and one engine. With current Release
+For concrete browser failures, select existing specs and one engine. With current Release
 applications/test assembly and frontend assets already built:
 
 ```sh
@@ -394,7 +394,12 @@ dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.
 ```
 
 This starts the same isolated fixture and keeps the existing hard limits, but runs only the selected
-file. Selection is validated before fixture startup; reports explicitly state incomplete qualification.
+files. `CLAIMCORE_ACCEPTANCE_BROWSER_SPEC` also accepts a comma-separated list of unique exact
+existing basenames (no spaces or paths). Diagnostics collect all selected failures with
+`--max-failures=0`, under the unchanged 20-minute, one-worker, zero-retry limits. Selection is
+validated before fixture startup; every selected test must pass without skips or retries, and reports
+explicitly state incomplete qualification. Selected specs share mutable fixture state, so later failures
+may be cascades: inspect chronology and current state before treating them as independent defects.
 The ordinary acceptance gate refuses diagnostic selection. Use this path to diagnose the affected
 spec instead of restarting complete suites and replaying unrelated passing tests.
 

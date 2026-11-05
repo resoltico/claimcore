@@ -21,7 +21,7 @@ let private selectEngines (value: string | null) =
 type private BrowserScope =
     | Complete
     | Smoke
-    | Diagnostic of specification: string
+    | Diagnostic of specifications: string list
 
 let private selectScope
     (value: string | null)
@@ -49,10 +49,20 @@ let private selectScope
         oneEngine ()
 
         match specification with
-        | null -> invalidOp "Diagnostic scope requires one existing *.spec.ts basename."
-        | name when Regex.IsMatch(name, @"\A[A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts\z") ->
-            BrowserScope.Diagnostic name
-        | _ -> invalidOp "Diagnostic specification must be one existing *.spec.ts basename."
+        | null -> invalidOp "Diagnostic scope requires existing *.spec.ts basenames."
+        | value ->
+            let names = value.Split ',' |> Array.toList
+
+            if
+                names
+                |> List.exists (fun name ->
+                    not (Regex.IsMatch(name, @"\A[A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts\z")))
+                || (Set.ofList names).Count <> names.Length
+            then
+                invalidOp
+                    "Diagnostic specifications must be unique comma-separated *.spec.ts basenames."
+
+            BrowserScope.Diagnostic names
     | _ -> invalidOp "Acceptance browser scope must be complete, smoke or diagnostic."
 
 let private engines =
@@ -97,14 +107,16 @@ let private scopeDescription =
     function
     | BrowserScope.Complete -> "complete engine suite"
     | BrowserScope.Smoke -> "smoke; full browser qualification remains unrun"
-    | BrowserScope.Diagnostic specification ->
-        $"diagnostic {specification}; full browser qualification remains unrun"
+    | BrowserScope.Diagnostic names ->
+        "diagnostic "
+        + String.concat ", " names
+        + "; full browser qualification remains unrun"
 
 let private specifications =
     function
     | BrowserScope.Complete -> []
     | BrowserScope.Smoke -> smokeSpecifications
-    | BrowserScope.Diagnostic specification -> [ specification ]
+    | BrowserScope.Diagnostic names -> names
 
 let private requiresSpecification selected name =
     selected = BrowserScope.Complete || List.contains name (specifications selected)
@@ -121,10 +133,15 @@ let private expectedFiles root selected =
         smokeSpecifications
         |> Seq.map (fun file -> Path.GetFullPath(Path.Combine(directory, file)))
         |> Set.ofSeq
-    | BrowserScope.Diagnostic basename ->
-        match all |> Seq.filter (fun file -> Path.GetFileName file = basename) |> Seq.toList with
-        | [ file ] -> Set.singleton (Path.GetFullPath file)
-        | _ -> invalidOp "Diagnostic specification must identify exactly one existing file."
+    | BrowserScope.Diagnostic names ->
+        names
+        |> List.map (fun basename ->
+            match
+                all |> Seq.filter (fun file -> Path.GetFileName file = basename) |> Seq.toList
+            with
+            | [ file ] -> Path.GetFullPath file
+            | _ -> invalidOp "Each diagnostic basename must identify exactly one existing file.")
+        |> Set.ofList
 
 let private fallbackReportDirectory =
     lazy
@@ -340,13 +357,18 @@ let private orchestrationControls () =
 let private browserArguments selected engine =
     let files =
         match selected with
-        | BrowserScope.Diagnostic specification ->
-            [ @"(?:^|[/\\])" + Regex.Escape specification + "$" ]
+        | BrowserScope.Diagnostic names ->
+            names |> List.map (fun name -> @"(?:^|[/\\])" + Regex.Escape name + "$")
         | _ -> specifications selected
 
     [ "exec"; "--"; "playwright"; "test" ]
     @ files
-    @ [ "--project"; engine; "--forbid-only"; "--max-failures=1" ]
+    @ [ "--project"; engine; "--forbid-only" ]
+    @ [
+        match selected with
+        | BrowserScope.Diagnostic _ -> "--max-failures=0"
+        | _ -> "--max-failures=1"
+    ]
     @ (if selected = BrowserScope.Smoke then
            [ "--global-timeout=120000" ]
        else
@@ -405,19 +427,72 @@ let private diagnosticControls () =
                 (fun () -> selectScope campaign specification engines |> ignore)
                 "Invalid selection cannot reach a fixture"
 
-        let missing = selectScope "diagnostic" "absent.spec.ts" [ "chromium" ]
+        let batch =
+            selectScope "diagnostic" "synthetic-b.spec.ts,synthetic-a.spec.ts" [ "chromium" ]
 
-        Expect.throws
-            (fun () -> expectedFiles root.FullName missing |> ignore)
-            "Unknown file rejects before fixture creation"
+        let batchFiles = expectedFiles root.FullName batch
+
+        Expect.equal
+            batchFiles
+            (Set.ofList [ first; second ])
+            "Every selected basename owns its actual file"
+
+        Expect.equal
+            (specifications batch)
+            [ "synthetic-b.spec.ts"; "synthetic-a.spec.ts" ]
+            "Authored order is retained"
+
+        for invalid in
+            [
+                ",synthetic-a.spec.ts"
+                "synthetic-a.spec.ts,"
+                "synthetic-a.spec.ts,,synthetic-b.spec.ts"
+                "synthetic-a.spec.ts,synthetic-a.spec.ts"
+                "synthetic-a.spec.ts,../synthetic-b.spec.ts"
+                "synthetic-a.spec.ts,--project=webkit"
+                "synthetic-a.spec.ts,synthetic-*.spec.ts"
+                "synthetic-a.spec.ts,synthetic-b.spec.ts\n"
+                "synthetic-a.spec.ts, synthetic-b.spec.ts"
+            ] do
+            Expect.throws
+                (fun () -> selectScope "diagnostic" invalid [ "chromium" ] |> ignore)
+                "Malformed batches fail before setup"
+
+        for campaign in [ BrowserScope.Complete; BrowserScope.Smoke ] do
+            let arguments = browserArguments campaign "chromium"
+            Expect.contains arguments "--max-failures=1" "Qualification and smoke still fail fast"
+
+            Expect.isFalse
+                (List.contains "--max-failures=0" arguments)
+                "Only diagnostics collect every failure"
+
+        let batchArguments = browserArguments batch "chromium"
+
+        Expect.equal
+            (batchArguments |> List.skip 4 |> List.take 2)
+            [ @"(?:^|[/\\])synthetic-b\.spec\.ts$"; @"(?:^|[/\\])synthetic-a\.spec\.ts$" ]
+            "Every selected file becomes an escaped exact selector"
+
+        Expect.contains
+            batchArguments
+            "--max-failures=0"
+            "Diagnostics collect all selected failures"
+
+        for names in [ "absent.spec.ts"; "synthetic-a.spec.ts,absent.spec.ts" ] do
+            let missing = selectScope "diagnostic" names [ "chromium" ]
+
+            Expect.throws
+                (fun () -> expectedFiles root.FullName missing |> ignore)
+                "Every unknown file rejects before fixture creation"
 
         let nested = Path.Combine(directory, "nested")
         Directory.CreateDirectory nested |> ignore
         File.WriteAllText(Path.Combine(nested, "synthetic-a.spec.ts"), "")
 
-        Expect.throws
-            (fun () -> expectedFiles root.FullName selected |> ignore)
-            "Ambiguous basename rejects instead of selecting multiple files"
+        for campaign in [ selected; batch ] do
+            Expect.throws
+                (fun () -> expectedFiles root.FullName campaign |> ignore)
+                "Ambiguous basename rejects instead of selecting multiple files"
 
         Directory.Delete(nested, true)
 
@@ -435,7 +510,7 @@ let private diagnosticControls () =
                 "--project"
                 "chromium"
                 "--forbid-only"
-                "--max-failures=1"
+                "--max-failures=0"
             ]
             "Only the escaped known file is added; hard runner options stay locked"
 
@@ -456,6 +531,29 @@ let private diagnosticControls () =
         config["rootDir"] <- System.Text.Json.Nodes.JsonValue.Create directory
         let broad = node.ToJsonString() |> Encoding.UTF8.GetBytes
 
+        Expect.equal
+            (BrowserCompletion.inspect batchFiles "chromium" broad)
+            (2, "1.2s")
+            "Every selected file must finish successfully"
+
+        for before, after in
+            [
+                "synthetic-b.spec.ts", "extra.spec.ts"
+                "\"status\":\"passed\"", "\"status\":\"skipped\""
+                "\"retry\":0", "\"retry\":1"
+            ] do
+            let changed = node.ToJsonString().Replace(before, after, StringComparison.Ordinal)
+            Expect.notEqual changed (node.ToJsonString()) "Negative mutates the intended report"
+
+            Expect.throws
+                (fun () ->
+                    BrowserCompletion.inspect
+                        batchFiles
+                        "chromium"
+                        (Encoding.UTF8.GetBytes changed)
+                    |> ignore)
+                "Missing, foreign, skipped and retried selected files never pass"
+
         Expect.throws
             (fun () -> BrowserCompletion.inspect files "chromium" broad |> ignore)
             "Unexpected extra executed file cannot qualify a diagnostic"
@@ -464,6 +562,15 @@ let private diagnosticControls () =
         let specs = ((suites[0] |> nonNull)["specs"] |> nonNull).AsArray()
         specs.RemoveAt 1
         (node["stats"] |> nonNull)["expected"] <- System.Text.Json.Nodes.JsonValue.Create 1
+
+        Expect.throws
+            (fun () ->
+                BrowserCompletion.inspect
+                    batchFiles
+                    "chromium"
+                    (Encoding.UTF8.GetBytes(node.ToJsonString()))
+                |> ignore)
+            "A missing selected file is not a partial diagnostic success"
 
         Expect.equal
             (BrowserCompletion.inspect
@@ -543,7 +650,7 @@ let private diagnosticControls () =
             [
                 BrowserScope.Complete
                 BrowserScope.Smoke
-                BrowserScope.Diagnostic "unicode-parity.spec.ts"
+                BrowserScope.Diagnostic [ "unicode-parity.spec.ts" ]
             ] do
             Expect.isTrue
                 (requiresSpecification campaign "unicode-parity.spec.ts")
@@ -558,7 +665,9 @@ let private diagnosticControls () =
             "Complete keeps required work measurement"
 
         Expect.isTrue
-            (requiresSpecification (BrowserScope.Diagnostic "case-work.spec.ts") "case-work.spec.ts")
+            (requiresSpecification
+                (BrowserScope.Diagnostic [ "case-work.spec.ts" ])
+                "case-work.spec.ts")
             "Selected work specification keeps its artifact guard"
     finally
         root.Delete true
@@ -683,7 +792,8 @@ let tests =
                 ((match scope with
                   | BrowserScope.Complete -> "complete browser specification suites on "
                   | BrowserScope.Smoke -> "workflow, localization and Unicode smoke on "
-                  | BrowserScope.Diagnostic specification -> $"diagnostic {specification} on ")
+                  | BrowserScope.Diagnostic names ->
+                      "diagnostic " + String.concat ", " names + " on ")
                  + String.concat ", " engines)
                 (async { do! runSelected qualifyEngine engines |> Async.AwaitTask })
         ]
