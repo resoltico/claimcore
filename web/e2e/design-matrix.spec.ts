@@ -1,5 +1,8 @@
 import {
   dimensions,
+  dimensionCaseTitle,
+  selectDiagnosticDimension,
+  expectedDimensionCounts,
   expectedCaptures,
   expectedRoutes,
   expectedEngineCounts,
@@ -29,6 +32,20 @@ if (!["chromium", "firefox", "webkit"].includes(engine)) {
     "Design matrix requires CLAIMCORE_WEB_E2E_ENGINE=chromium|firefox|webkit and matching --project.",
   );
 }
+const plannedDimensions = dimensions(engine);
+const selectedDimension = selectDiagnosticDimension(
+  plannedDimensions,
+  process.env["CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE"],
+  process.env["CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE"],
+);
+const caseScope =
+  selectedDimension === undefined
+    ? {}
+    : {
+        scope: "diagnostic-case",
+        fullQualification: false,
+        case: dimensionCaseTitle(selectedDimension),
+      };
 let dataset: DesignDataset;
 type FrameCounts = { pageLoads: number; axeAndReflowChecks: number; screenshots: number };
 type EngineCounts = FrameCounts & { dimensions: number };
@@ -43,7 +60,7 @@ type Run = {
 };
 const recordFrame = async (run: Run, frame: string) => {
   try {
-    await checkFrame(run.page, run.dimension, frame);
+    await checkFrame(run.page, run.dimension, frame, run.info);
   } catch (error) {
     await run.page.screenshot({ path: run.info.outputPath(`failed-${frame}.png`), fullPage: true });
     throw error;
@@ -134,9 +151,7 @@ const performRoute = async (route: MatrixRoute, run: Run) => {
   });
 };
 const registerDimension = (dimension: Dimension) => {
-  test(`${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.zoom === undefined ? "" : " at 200% zoom"}`, async ({
-    page,
-  }, info) => {
+  test(dimensionCaseTitle(dimension), async ({ page }, info) => {
     test.setTimeout(240_000);
     expect(info.project.name).toBe(engine);
     page.setDefaultTimeout(15_000);
@@ -158,6 +173,7 @@ const registerDimension = (dimension: Dimension) => {
       });
       await writeMatrixReport(info, {
         engine,
+        ...caseScope,
         dimension,
         expected: {
           pageLoads: expectedRoutes.length,
@@ -177,7 +193,10 @@ const registerDimension = (dimension: Dimension) => {
   });
 };
 const reportEngine = async (info: TestInfo) => {
-  const expected = expectedEngineCounts(engine);
+  const expected =
+    selectedDimension === undefined
+      ? expectedEngineCounts(engine)
+      : expectedDimensionCounts(engine, selectedDimension);
   const actual = completed.reduce<EngineCounts>(
     (total, value) => ({
       dimensions: total.dimensions + 1,
@@ -187,7 +206,11 @@ const reportEngine = async (info: TestInfo) => {
     }),
     { dimensions: 0, pageLoads: 0, axeAndReflowChecks: 0, screenshots: 0 },
   );
-  await writeMatrixReport(info, { engine, expected, actual }, "design-matrix-engine-counts");
+  await writeMatrixReport(
+    info,
+    { engine, ...caseScope, expected, actual },
+    "design-matrix-engine-counts",
+  );
   expect(actual).toEqual(expected);
 };
 assertMatrixPlan(engine);
@@ -210,5 +233,7 @@ test.describe("adopted work surface design matrix", () => {
       await dataset?.close();
     }
   });
-  dimensions(engine).forEach(registerDimension);
+  (selectedDimension === undefined ? plannedDimensions : [selectedDimension]).forEach(
+    registerDimension,
+  );
 });

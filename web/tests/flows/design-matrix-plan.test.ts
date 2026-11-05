@@ -4,6 +4,10 @@ import {
   assertMatrixPlan,
   assertMatrixCounts,
   dimensions,
+  dimensionCaseTitle,
+  selectDiagnosticDimension,
+  expectedDimensionCounts,
+  factReadabilityContext,
   expectedEngineCounts,
   expectedRoutes,
   screenshotDimension,
@@ -135,4 +139,71 @@ it.each([
   expect(() => {
     assertMatrixCounts(engine, old);
   }).toThrow("independently pinned");
+});
+
+it("selects only the exact Native-owned diagnostic case and pins its partial counts", () => {
+  const title = "en 640px green light at 200% zoom";
+  const selected = selectDiagnosticDimension(dimensions("chromium"), title, "diagnostic");
+  expect(selected).toEqual({ width: 640, language: "en", mode: "light", accent: "green", zoom: 2 });
+  expect(dimensionCaseTitle(selected!)).toBe(title);
+  expect(expectedDimensionCounts("chromium", selected!)).toEqual({
+    dimensions: 1,
+    pageLoads: 29,
+    axeAndReflowChecks: 30,
+    screenshots: 0,
+  });
+  expect(selectDiagnosticDimension(dimensions("chromium"), undefined, "complete")).toBeUndefined();
+  expect(expectedEngineCounts("chromium")).toEqual({
+    dimensions: 50,
+    pageLoads: 1450,
+    axeAndReflowChecks: 1500,
+    screenshots: 272,
+  });
+});
+it("refuses unknown duplicate cross-engine and nondiagnostic case selectors", () => {
+  const zoom: Dimension = { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 };
+  const title = "en 640px green light at 200% zoom";
+  expect(() => selectDiagnosticDimension([zoom, zoom], title, "diagnostic")).toThrow("exactly one");
+  expect(() => selectDiagnosticDimension(dimensions("firefox"), title, "diagnostic")).toThrow(
+    "exactly one",
+  );
+  expect(() =>
+    selectDiagnosticDimension(dimensions("chromium"), `${title} private`, "diagnostic"),
+  ).toThrow("exactly one");
+  expect(() => selectDiagnosticDimension(dimensions("chromium"), title, "complete")).toThrow(
+    "diagnostic scope",
+  );
+  expect(() => selectDiagnosticDimension(dimensions("chromium"), "", "diagnostic")).toThrow(
+    "exactly one",
+  );
+});
+it("redacts every failing date into exact field frame and visibility metadata", () => {
+  expect(
+    factReadabilityContext("case-paid", [
+      { field: "incidentDate", inert: false },
+      { field: "paymentDate", inert: true },
+    ]),
+  ).toEqual({
+    frame: "CASE_PAID",
+    fields: [
+      { field: "INCIDENT_DATE", inert: false },
+      { field: "PAYMENT_DATE", inert: true },
+    ],
+    markers: [
+      "E2E_FACT_READABILITY_INCIDENT_DATE_CASE_PAID_EXPOSED",
+      "E2E_FACT_READABILITY_PAYMENT_DATE_CASE_PAID_INERT",
+    ],
+  });
+});
+it("rejects private appended or unknown readability identities", () => {
+  expect(() =>
+    factReadabilityContext("case-paid\nPRIVATE", [{ field: "paymentDate", inert: false }]),
+  ).toThrow("INVALID_METADATA");
+  expect(() =>
+    factReadabilityContext("case-paid", [{ field: "paymentDate_PRIVATE", inert: false }]),
+  ).toThrow("INVALID_METADATA");
+  expect(() =>
+    factReadabilityContext("case-paid", [{ field: "2026-11-04", inert: false }]),
+  ).toThrow("INVALID_METADATA");
+  expect(() => factReadabilityContext("case-paid", [])).toThrow("INVALID_METADATA");
 });

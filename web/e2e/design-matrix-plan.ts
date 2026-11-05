@@ -182,3 +182,68 @@ export const assertMatrixPlan = (engine: string): void => {
     screenshots,
   });
 };
+
+export const dimensionCaseTitle = (dimension: Dimension): string =>
+  `${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.zoom === undefined ? "" : " at 200% zoom"}`;
+
+/** Only the Native-validated diagnostic child selector may narrow the registered matrix plan. */
+export const selectDiagnosticDimension = (
+  plan: ReadonlyArray<Dimension>,
+  title: string | undefined,
+  scope: string | undefined,
+): Dimension | undefined => {
+  if (title === undefined) {
+    return undefined;
+  }
+  if (scope !== "diagnostic") {
+    throw new Error("A matrix case requires the diagnostic scope");
+  }
+  const matches = plan.filter((dimension) => dimensionCaseTitle(dimension) === title);
+  if (matches.length !== 1) {
+    throw new Error("A matrix case must identify exactly one known planned dimension");
+  }
+  return matches[0];
+};
+export const expectedDimensionCounts = (engine: string, dimension: Dimension): MatrixCounts => ({
+  dimensions: 1,
+  pageLoads: expectedRoutes.length,
+  axeAndReflowChecks: expectedRoutes.length + 1,
+  screenshots: expectedCaptures(engine, dimension),
+});
+
+const factDateTokens = {
+  incidentDate: "INCIDENT_DATE",
+  incidentNotificationDate: "INCIDENT_NOTIFICATION_DATE",
+  paymentDecisionDate: "PAYMENT_DECISION_DATE",
+  paymentDate: "PAYMENT_DATE",
+} as const;
+/** Redaction deliberately accepts only static plan/frame identities and known date-field names. */
+export const factReadabilityContext = (
+  frame: string,
+  failures: ReadonlyArray<{ field: string; inert: boolean }>,
+) => {
+  if (
+    ![...expectedRoutes, "cases-filter-panel"].some((known) => known === frame) ||
+    failures.length === 0 ||
+    failures.some(
+      (failure) =>
+        !Object.hasOwn(factDateTokens, failure.field) || typeof failure.inert !== "boolean",
+    )
+  ) {
+    throw new Error("E2E_FACT_READABILITY_INVALID_METADATA");
+  }
+  const frameToken = frame.replaceAll("-", "_").toUpperCase();
+  const fields = failures.map((failure) => ({
+    field: factDateTokens[failure.field as keyof typeof factDateTokens],
+    inert: failure.inert,
+  }));
+  const markers = [
+    ...new Set(
+      fields.map(
+        ({ field, inert }) =>
+          `E2E_FACT_READABILITY_${field}_${frameToken}_${inert ? "INERT" : "EXPOSED"}`,
+      ),
+    ),
+  ];
+  return { frame: frameToken, fields, markers };
+};

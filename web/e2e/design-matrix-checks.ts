@@ -1,4 +1,9 @@
-import { screenshotDimension, capturesFrame, type Dimension } from "./design-matrix-plan";
+import {
+  screenshotDimension,
+  capturesFrame,
+  factReadabilityContext,
+  type Dimension,
+} from "./design-matrix-plan";
 import type { ServiceResponse } from "../src/protocol/types";
 import { checkActionHierarchy } from "./action-hierarchy";
 import { checkAuthorityTable } from "./authority-table-checks";
@@ -459,7 +464,7 @@ const compactActionGeometry = async (page: Page, dimension: Dimension) => {
 const factCardReadability = () => {
   const lines = (range: Range) =>
     new Set([...range.getClientRects()].map((rect) => Math.round(rect.top * 2) / 2)).size;
-  const failures: { field: string; kind: string }[] = [];
+  const failures: { field: string; kind: string; inert: boolean }[] = [];
   for (const date of document.querySelectorAll(
     '.case-fact-card [data-field-name$="Date"] dd bdi',
   )) {
@@ -469,6 +474,7 @@ const factCardReadability = () => {
       failures.push({
         field: date.closest<HTMLElement>("[data-field-name]")!.dataset["fieldName"]!,
         kind: "date-wrap",
+        inert: date.closest("[inert], [aria-hidden=true]") !== null,
       });
     }
   }
@@ -483,6 +489,7 @@ const factCardReadability = () => {
           failures.push({
             field: help.closest(".case-fact-card")!.querySelector("h3")!.textContent,
             kind: "help-word-wrap",
+            inert: help.closest("[inert], [aria-hidden=true]") !== null,
           });
         }
       }
@@ -577,13 +584,30 @@ const primaryByFrame: Readonly<Record<string, string | null>> = {
   "case-erased": null,
   "history-comparison": "CLOSE",
 };
-export const checkFrame = async (page: Page, dimension: Dimension, frame: string) => {
+export const checkFrame = async (
+  page: Page,
+  dimension: Dimension,
+  frame: string,
+  info: TestInfo,
+) => {
   await expectAccessible(page);
   await checkActionHierarchy(page, primaryByFrame[frame]);
   await compactActionGeometry(page, dimension);
   await readableRows(page, dimension);
   await viewTabGeometry(page, dimension);
-  expect(await page.evaluate(factCardReadability)).toEqual([]);
+  const readability = await page.evaluate(factCardReadability);
+  const dates = readability.filter((failure) => failure.kind === "date-wrap");
+  if (dates.length > 0) {
+    const context = factReadabilityContext(
+      frame,
+      dates.map(({ field, inert }) => ({ field, inert })),
+    );
+    await writeFile(info.outputPath("fact-readability.json"), `${JSON.stringify(context)}\n`, {
+      mode: 0o600,
+    });
+    throw new Error(context.markers.join("\n"));
+  }
+  expect(readability).toEqual([]);
   const targets = await page.evaluate(smallTargets);
   const tags = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA", "SUMMARY", "DIV", "SPAN"]);
   const finiteDimension = (value: number) =>
