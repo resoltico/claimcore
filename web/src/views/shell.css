@@ -105,7 +105,7 @@
   align-items: center;
   gap: var(--space-2);
   min-inline-size: 0;
-  flex: 1;
+  flex: 1 1 16rem;
 }
 .shell-search input {
   min-inline-size: 0;
