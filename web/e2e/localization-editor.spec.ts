@@ -1,6 +1,6 @@
 import { registration } from "../tests/support/inputs";
 import { fillBusinessField } from "./typed-entry";
-import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
+import { expectInputRefusal } from "./input-refusal-expectations";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
@@ -15,7 +15,6 @@ import {
   expectKeyboardContained,
   confirmReview,
   pauseJsonReply,
-  businessFormatRefusalText,
   expectBusinessFormatRefusal,
   reviewFrom,
   selectFormat,
@@ -24,6 +23,29 @@ import {
   trackForegroundRequests,
   ui,
 } from "./localization-support";
+
+// Literal GUI-copy oracles distinguish widget hints, optional wire rules and diagnostic registers.
+const widgetHints = {
+  en: {
+    incidentDate: "When the incident happened.",
+    claimantName: "The person or company making the claim.",
+  },
+  lv: {
+    incidentDate: "Kad notika negadījums.",
+    claimantName: "Persona vai uzņēmums, kas iesniedz prasījumu.",
+  },
+  ar: { incidentDate: "متى وقعت الواقعة.", claimantName: "الشخص أو الشركة التي تقدم المطالبة." },
+} as const;
+const calendarGuiIssue = {
+  en: "Enter a real date.",
+  lv: "Ievadiet derīgu datumu.",
+  ar: "أدخل تاريخًا صحيحًا.",
+} as const;
+const calendarRules = {
+  en: "Use ASCII digits in YYYY-MM-DD format, for example 2026-10-06.",
+  lv: "Izmantojiet ASCII ciparus formātā YYYY-MM-DD, piemēram, 2026-10-06.",
+  ar: "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06.",
+} as const;
 
 const unacceptedCase = async (page: Page, reference: string) => {
   const reply = await browserRequest(page, "/api/case.get", {
@@ -66,8 +88,9 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
     ) {
       throw new Error("Expected malformed calendar refusal.");
     }
-    expect(reply.payload.outcome.data).toMatchObject({
+    expect(reply.payload.outcome.data).toEqual({
       code: "INVALID_INPUT",
+      action: "CORRECT_INPUT",
       issues: [{ field: "incidentDate", code: "CALENDAR_DATE_REQUIRED" }],
     });
   }
@@ -89,14 +112,19 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
     page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first(),
     language,
     {
-      meaning: issueMeanings[language].incidentDate,
-      issue: businessFormatRefusalText.CALENDAR_DATE_REQUIRED[language],
+      meaning: widgetHints[language].incidentDate,
+      issue: calendarGuiIssue[language],
     },
   );
-  await expect(page.locator('[data-field-name="incidentDate"] input[type="hidden"]')).toHaveValue(
-    "",
-  );
-  await expect(page.locator('input[data-field-name="claimantName"]')).toHaveValue(
+  const date = page.locator('[data-field-name="incidentDate"]');
+  await expect(date.getByRole("spinbutton").first()).not.toHaveAccessibleDescription(/ASCII|YYYY/u);
+  // The precise rule is available through its actual info tip, not duplicated in the ordinary hint.
+  await date.locator(".field-help > summary").click();
+  await expect(date.locator(".field-help p")).toHaveText(calendarRules[language]);
+  await page.keyboard.press("Escape");
+  await expect(date.locator(".field-help")).not.toHaveAttribute("open");
+  await expect(date.locator('input[type="hidden"]')).toHaveValue("");
+  await expect(page.locator('textarea[data-field-name="claimantName"]')).toHaveValue(
     "A\u0308 / العربية",
   );
   expect(requests).toEqual(["POST /api/operation.preview"]);
@@ -104,7 +132,7 @@ const invalidCalendar = async (page: Page, requests: string[], language: "en" | 
   await expectAccessible(page);
 };
 const policyRefusal = async (page: Page, requests: string[], language: "en" | "lv" | "ar") => {
-  const name = page.locator('input[data-field-name="claimantName"]');
+  const name = page.locator('textarea[data-field-name="claimantName"]');
   const authored = `A\u0308 / العربية${"x".repeat(201)}`;
   await fillBusinessField(page, "incidentDate", "2026-09-01");
   await name.fill(authored);
@@ -133,7 +161,7 @@ const policyRefusal = async (page: Page, requests: string[], language: "en" | "l
       en: "The value must not exceed 200 Unicode characters.",
     };
     await expectInputRefusal(page, name, language, {
-      meaning: issueMeanings[language].claimantName,
+      meaning: widgetHints[language].claimantName,
       issue: policyText[language],
     });
     await expect(name).toHaveAttribute("aria-invalid", "true");
@@ -153,10 +181,10 @@ for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
     await startOpen(page, reference, ui(language, "act.OPEN.label"));
     await malformedCalendarBoundary(page, reference);
-    const name = page.locator('input[data-field-name="claimantName"]');
+    const name = page.locator('textarea[data-field-name="claimantName"]');
     await name.fill("A\u0308 / العربية");
     await fillBusinessField(page, "incidentDate", "");
-    await name.evaluate((element: HTMLInputElement) => {
+    await name.evaluate((element: HTMLTextAreaElement) => {
       element.setSelectionRange(1, 3);
     });
     const originalNode = await name.elementHandle();
@@ -166,6 +194,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await policyRefusal(page, requests, language);
     await expectAccessible(page);
     await unacceptedCase(page, reference);
+    expect(requests.filter((request) => request === "POST /api/operation.execute")).toEqual([]);
   });
 }
 
