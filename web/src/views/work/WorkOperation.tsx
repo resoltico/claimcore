@@ -36,11 +36,9 @@ export const WorkOperation = ({
   onDisclosureRefused,
 }: Props) => {
   const credential = useCredential();
-  const anchor = useRef<HTMLElement | null>(null);
-  useLayoutEffect(() => {
-    anchor.current =
-      completionAnchor === undefined ? null : document.getElementById(completionAnchor);
-  }, [completionAnchor]);
+  const anchor = useRef<HTMLElement | null>(
+    completionAnchor === undefined ? null : document.getElementById(completionAnchor),
+  );
   const previewed = useRef(false);
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);

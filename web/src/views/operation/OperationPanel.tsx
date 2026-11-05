@@ -323,6 +323,12 @@ const targetReference = (review: OperationModel["review"], current: Props["curre
       return current?.caseReference;
   }
 };
+const ReminderTarget = ({ review }: { review: OperationModel["review"] }) =>
+  review?.subject.kind === "REMINDER" && review.subject.before !== null ? (
+    <p>
+      <bdi>{review.subject.before.action}</bdi>
+    </p>
+  ) : null;
 const OperationTarget = ({
   model,
   actor,
@@ -337,9 +343,12 @@ const OperationTarget = ({
   if (model.entry.subject !== "AUTHORITY") {
     const reference = targetReference(model.review, current);
     return reference === undefined ? null : (
-      <p className="operation-target">
-        <IdentifierValue value={reference} />
-      </p>
+      <div className="operation-target">
+        <p>
+          <IdentifierValue value={reference} />
+        </p>
+        <ReminderTarget review={model.review} />
+      </div>
     );
   }
   const actual = review?.kind === "AUTHORITY" ? review.target?.actor : actor;

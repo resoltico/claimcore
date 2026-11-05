@@ -1,4 +1,8 @@
 @media (width < 40rem) {
+  .case-stage-step small,
+  .case-stage-step > bdi {
+    font-size: var(--text-xs);
+  }
   body {
     font-size: var(--text-md);
   }

@@ -95,9 +95,9 @@ export const Dialog = ({
         }}
         shouldCloseOnInteractOutside={() => isDismissable}
         placement="top start"
-        className="ui-completion-popover"
+        className={["ui-dialog", "ui-completion-popover", className].filter(Boolean).join(" ")}
       >
-        <div className={["ui-dialog", className].filter(Boolean).join(" ")}>{contents}</div>
+        {contents}
       </Popover>
     );
   }

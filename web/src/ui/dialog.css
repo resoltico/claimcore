@@ -156,22 +156,22 @@
 
 .ui-completion-popover {
   z-index: var(--layer-dialog);
+  display: flex;
+  flex-direction: column;
   inline-size: min(26rem, calc(100vw - var(--space-4)));
   max-block-size: calc(100dvh - var(--space-4));
-  overflow: hidden;
-}
-.ui-completion-popover .ui-dialog {
-  inline-size: 100%;
-  max-block-size: inherit;
   overflow: hidden;
 }
 .ui-completion-popover [role="dialog"] {
   display: flex;
   flex-direction: column;
-  max-block-size: inherit;
+  min-block-size: 0;
+  flex: 1;
+  overflow: hidden;
 }
 .ui-completion-popover .ui-dialog-body {
   min-block-size: 0;
+  flex: 1;
   overflow: auto;
 }
 .ui-completion-popover .ui-dialog-header,

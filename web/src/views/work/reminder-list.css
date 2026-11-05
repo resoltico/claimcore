@@ -85,7 +85,7 @@
   inline-size: max-content;
   z-index: var(--layer-dialog);
   max-inline-size: calc(100vw - var(--space-4));
-  max-block-size: var(--available-height);
+  max-block-size: min(24rem, calc(100dvh - var(--space-4)));
   overflow: auto;
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-sm);

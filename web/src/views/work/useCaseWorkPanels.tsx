@@ -17,6 +17,7 @@ type Editor = {
   identity: string;
   prefill: FormValues;
   anchor?: string;
+  origin?: string;
 };
 const reminderPrefill = (row: ReminderReadModel, kind: string): FormValues => ({
   "act.reminderId": row.reminder.reminderId,
@@ -59,7 +60,8 @@ export const useCaseWorkPanels = ({
   const filter = useMemo(() => ({ state, includeInactive: true }), [state]);
   const open = (next: Editor) => {
     returnFocus.current =
-      document.activeElement instanceof HTMLElement ? document.activeElement.id : null;
+      next.origin ??
+      (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
     setRecorded(null);
     setEditor({
       ...next,
@@ -154,12 +156,13 @@ export const useCaseWorkPanels = ({
           target={target}
           filter={filter}
           onDisclosureRefused={onChanged}
-          onAct={(row, kind) => {
+          onAct={(row, kind, originId?: string) => {
             open({
               subject: "REMINDER",
               kind: `REMINDER_${kind}`,
               identity: row.reminder.reminderId,
               prefill: reminderPrefill(row, kind),
+              ...(originId === undefined ? {} : { origin: originId }),
             });
           }}
         />

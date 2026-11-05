@@ -123,9 +123,10 @@ export const ReminderQueueWork = ({
         <ReminderList
           key={refresh}
           filter={filter}
-          onAct={(row, kind) => {
+          onAct={(row, kind, originId?: string) => {
             focus.current =
-              document.activeElement instanceof HTMLElement ? document.activeElement.id : null;
+              originId ??
+              (document.activeElement instanceof HTMLElement ? document.activeElement.id : null);
             setDone(null);
             setSelection({ row, kind, anchor: focus.current, readId: crypto.randomUUID() });
           }}
