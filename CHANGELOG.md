@@ -23,6 +23,7 @@
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - Protected Application calls check requester availability before input refusals; malformed calls can need storage. Offline CLI syntax checks remain local.
 - Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
+- Reminder changes require positive expected revisions; zero returns input diagnostics instead of an encoding error. Initial work updates and case opening still accept zero.
 - Irreversible human CLI commands require an exact typed target or matching --confirm; dry-run and structured protocol calls retain their wire contracts.
 - Regenerate work readers and custom stores for summaryChangedAt/summaryRecordedBy; responsibility-only edits preserve the summary's actual author and time.
 - Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
@@ -44,6 +45,7 @@
 - CLI human values use explicit en-GB, lv-LV and Latin-digit ar-AE cultures so money, dates and observation footers agree across supported platforms.
 - Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
+- Contributors can diagnose one published browser spec without replaying the full suite; ordinary acceptance refuses partial scope. Qualify stable source and reuse applicable CI evidence.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
 
 ## [0.15.0] - 2026-11-03
