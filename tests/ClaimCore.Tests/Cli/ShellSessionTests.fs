@@ -304,3 +304,133 @@ let tests =
                 do! failedStatusRetainsUncertainty ()
             }
         ]
+
+
+[<Tests>]
+let reviewOutput =
+    testList
+        "shell review output and editable questions"
+        [
+            testCase
+                "fragmented writes retain persistent scope once and one incomplete question"
+                (fun () ->
+                    use persistent = new MemoryStream()
+                    let write, question = ShellReviewOutput.create persistent
+                    write (Encoding.UTF8.GetBytes "Account scope.\nOperation identity.\n")
+                    write (Encoding.UTF8.GetBytes "Type ")
+                    write (Encoding.UTF8.GetBytes "the exact target: ")
+
+                    Expect.equal
+                        (text persistent)
+                        "Account scope.\nOperation identity.\n"
+                        "Completed scope lines are visible before a read"
+
+                    Expect.equal
+                        (question ())
+                        "Type the exact target: "
+                        "The editor owns only the complete single-line question"
+
+                    Expect.equal
+                        (question ())
+                        ""
+                        "A consumed question cannot repeat on another read"
+
+                    write (Encoding.UTF8.GetBytes "Not recorded.\n")
+
+                    Expect.equal
+                        (text persistent)
+                        "Account scope.\nOperation identity.\nNot recorded.\n"
+                        "Decline feedback is visible without another confirmation read")
+            testCase
+                "single-byte UTF-8 fragments preserve Latvian and Arabic scope and question"
+                (fun () ->
+                    use persistent = new MemoryStream()
+                    let write, question = ShellReviewOutput.create persistent
+                    let scope = "Konts: Ārija.\nالحساب: ليلى.\n"
+                    let prompt = "Apstiprināt / تأكيد: "
+
+                    for value in Encoding.UTF8.GetBytes(scope + prompt) do
+                        write [| value |]
+
+                    Expect.equal
+                        (persistent.ToArray())
+                        (Encoding.UTF8.GetBytes scope)
+                        "Completed lines preserve exact UTF-8 bytes"
+
+                    Expect.equal
+                        (question ())
+                        prompt
+                        "A fragmented question is decoded only when complete"
+
+                    Expect.equal (question ()) "" "The question is consumed once")
+            testCase
+                "authenticated settlement scope precedes exact target consent in the shell adapter"
+                (fun () ->
+                    let context =
+                        match ResponseExamples.defaultReply Api.context with
+                        | ClaimCore.Application.Contracts.Outcome.Succeeded {
+                                                                                Requester = ClaimCore.Application.Contracts.RequesterState.Active value
+                                                                            } -> value
+                        | _ -> failtest "Settlement requires an active context"
+
+                    let operation = Guid.Parse "10000000-0000-4000-8000-000000000004"
+
+                    for answer, accepted in
+                        [ "", false; "yes", false; operation.ToString("D"), true ] do
+                        use persistent = new MemoryStream()
+                        let write, question = ShellReviewOutput.create persistent
+                        let mutable reads = 0
+
+                        let console: InteractiveConsole =
+                            {
+                                IsInteractive = true
+                                Write = write
+                                ReadLine =
+                                    fun () ->
+                                        reads <- reads + 1
+                                        let beforeConsent = text persistent
+
+                                        Expect.stringContains
+                                            beforeConsent
+                                            ("Account "
+                                             + ActorId.format context.ActorId
+                                             + " in installation "
+                                             + context.InstallationId.ToString("D")
+                                             + ".")
+                                            "Authenticated scope is visible before any answer"
+
+                                        Expect.stringContains
+                                            beforeConsent
+                                            ("Operation ID: " + operation.ToString("D"))
+                                            "Exact operation identity remains visible"
+
+                                        Expect.stringContains
+                                            beforeConsent
+                                            "permanently block its operation ID"
+                                            "The irreversible effect is visible"
+
+                                        Expect.equal
+                                            (question ())
+                                            ("Type " + operation.ToString("D") + " to confirm: ")
+                                            "Only the question enters line editing"
+
+                                        Some answer
+                            }
+
+                        Expect.equal
+                            (CliConfirmation.settlement console "en" context operation)
+                            accepted
+                            "Blank and yes cannot confirm; only the exact ID does"
+
+                        Expect.equal reads 1 "There is one input reader"
+
+                        Expect.equal
+                            (question ())
+                            ""
+                            "Scope and question never accumulate for redraw"
+
+                        Expect.equal
+                            ((text persistent).Split("Account ").Length - 1)
+                            1
+                            "Scope is emitted once")
+        ]
