@@ -1,3 +1,11 @@
+import {
+  dimensions,
+  expectedCaptures,
+  expectedRoutes,
+  expectedEngineCounts,
+  assertMatrixPlan,
+  type Dimension,
+} from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { expect, test, type Page, type TestInfo, type Request } from "@playwright/test";
@@ -11,11 +19,8 @@ import {
   checkFrame,
   configureDimension,
   displayLocaleFor,
-  dimensions,
   visitRoute,
   writeMatrixReport,
-  expectedCaptures,
-  type Dimension,
   matrixEvidenceDirectory,
 } from "./design-matrix-checks";
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
@@ -28,37 +33,6 @@ let dataset: DesignDataset;
 type FrameCounts = { pageLoads: number; axeAndReflowChecks: number; screenshots: number };
 type EngineCounts = FrameCounts & { dimensions: number };
 const completed: FrameCounts[] = [];
-const expectedRoutes = [
-  "cases-mine",
-  "cases-notified",
-  "cases-summary",
-  "cases-open-undecided",
-  "cases-decided-unpaid",
-  "cases-recent",
-  "cases-closed",
-  "cases-voided",
-  "cases-all",
-  "cases-filtered",
-  "case-undecided",
-  "case-decided",
-  "case-paid",
-  "case-closed",
-  "case-voided",
-  "case-erased",
-  "editor-open",
-  "editor-decide",
-  "editor-correct",
-  "editor-void",
-  "editor-work",
-  "recovery",
-  "paid-correction-review",
-  "history-comparison",
-  "operation-result",
-  "authority-history",
-  "not-found",
-  "authority-list",
-  "authority-detail",
-] as const;
 type Run = {
   page: Page;
   info: TestInfo;
@@ -203,10 +177,7 @@ const registerDimension = (dimension: Dimension) => {
   });
 };
 const reportEngine = async (info: TestInfo) => {
-  const expected =
-    engine === "chromium"
-      ? { dimensions: 26, pageLoads: 754, axeAndReflowChecks: 780, screenshots: 91 }
-      : { dimensions: 4, pageLoads: 116, axeAndReflowChecks: 120, screenshots: 0 };
+  const expected = expectedEngineCounts(engine);
   const actual = completed.reduce<EngineCounts>(
     (total, value) => ({
       dimensions: total.dimensions + 1,
@@ -219,6 +190,7 @@ const reportEngine = async (info: TestInfo) => {
   await writeMatrixReport(info, { engine, expected, actual }, "design-matrix-engine-counts");
   expect(actual).toEqual(expected);
 };
+assertMatrixPlan(engine);
 test.describe("adopted work surface design matrix", () => {
   test.beforeAll(async ({ browser, baseURL }, info) => {
     test.setTimeout(120_000);

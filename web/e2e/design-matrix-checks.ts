@@ -1,3 +1,4 @@
+import { screenshotDimension, capturesFrame, type Dimension } from "./design-matrix-plan";
 import type { ServiceResponse } from "../src/protocol/types";
 import { checkActionHierarchy } from "./action-hierarchy";
 import { checkAuthorityTable } from "./authority-table-checks";
@@ -9,40 +10,11 @@ import { isAbsolute, relative, resolve, sep } from "node:path";
 import { expect, type Page, type TestInfo, type Response, type Request } from "@playwright/test";
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
-import { accents, preferenceKey } from "../src/presentation/preferences";
+import { preferenceKey } from "../src/presentation/preferences";
 import { installTestLanguage } from "./localization-support";
 import { termLabel } from "../src/presentation/terms";
 import { isResponse } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
-export type Dimension = {
-  language: "en" | "lv" | "ar" | "en-XA";
-  mode: "light" | "dark";
-  accent: "green" | "blue";
-  width: number;
-  zoom?: number;
-};
-export const dimensions = (engine: string): Dimension[] => {
-  const result: Dimension[] = [];
-  const widths = engine === "chromium" ? [320, 390, 768, 1280] : [320, 1280];
-  const languages = engine === "chromium" ? (["en", "lv", "ar"] as const) : (["en", "ar"] as const);
-  const themes = engine === "chromium" ? (["light", "dark"] as const) : (["light"] as const);
-  for (const width of widths) {
-    for (const language of languages) {
-      for (const theme of themes) {
-        for (const accent of accents) {
-          result.push({ width, language, mode: theme, accent });
-        }
-      }
-    }
-  }
-  if (engine === "chromium") {
-    result.push(
-      { width: 320, language: "en-XA", mode: "light", accent: "green" as const },
-      { width: 640, language: "en", mode: "light", accent: "green" as const, zoom: 2 },
-    );
-  }
-  return result;
-};
 export const displayLocaleFor = (language: Dimension["language"]) =>
   (({ en: "en-GB", lv: "lv-LV", ar: "ar-EG", "en-XA": "en-GB" }) as const)[language];
 export const configureDimension = async (page: Page, dimension: Dimension) => {
@@ -632,16 +604,6 @@ export const checkFrame = async (page: Page, dimension: Dimension, frame: string
     expect(await page.evaluate(clippedText)).toEqual([]);
   }
 };
-const screenshotDimension = (dimension: Dimension): boolean =>
-  dimension.zoom === undefined &&
-  ((dimension.language === "en" && [390, 1280].includes(dimension.width)) ||
-    (dimension.language === "en" && dimension.width === 320 && dimension.mode === "light") ||
-    (dimension.language === "ar" && dimension.width === 390 && dimension.mode === "light"));
-export const expectedCaptures = (engine: string, dimension: Dimension): number =>
-  engine === "chromium" && screenshotDimension(dimension)
-    ? 15 +
-      Number(dimension.language === "en" && dimension.width === 390 && dimension.mode === "light")
-    : 0;
 export const matrixEvidenceDirectory = async (): Promise<string> => {
   const configured =
     process.env["CLAIMCORE_DESIGN_SCREENSHOT_DIRECTORY"] ??
@@ -669,36 +631,6 @@ export const matrixEvidenceDirectory = async (): Promise<string> => {
     }
   }
   return root;
-};
-const capturesFrame = (frame: string, dimension: Dimension): boolean => {
-  const baselinePair =
-    frame === "cases-open-undecided" &&
-    dimension.language === "en" &&
-    dimension.width === 390 &&
-    dimension.mode === "light";
-  if (
-    !baselinePair &&
-    ![
-      "cases-all",
-      "cases-mine",
-      "cases-summary",
-      "case-decided",
-      "case-voided",
-      "case-erased",
-      "editor-decide",
-      "authority-list",
-      "authority-detail",
-      "authority-history",
-      "not-found",
-      "recovery",
-      "editor-work",
-      "paid-correction-review",
-      "history-comparison",
-    ].includes(frame)
-  ) {
-    return false;
-  }
-  return true;
 };
 export const captureFrame = async (
   page: Page,
