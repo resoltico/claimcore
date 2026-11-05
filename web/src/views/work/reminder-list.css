@@ -119,3 +119,11 @@
     outline-color: Highlight;
   }
 }
+.case-reminder-controls {
+  margin-block-start: var(--space-2);
+}
+.case-reminder-controls > summary {
+  min-block-size: var(--target-minimum);
+  cursor: pointer;
+  color: var(--accent-text);
+}

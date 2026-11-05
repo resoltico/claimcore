@@ -123,33 +123,11 @@ export const useCaseWorkPanels = ({
           </button>
         ) : null}
       </div>
-      <p className="case-reminder-counts">
-        {p.text("ui.pendingReminders")}: {p.integer(current.work.pendingReminders)} ·{" "}
-        {p.text("ui.overdueReminders")}: {p.integer(current.work.overdueReminders)}
-      </p>
       {current.work.needsNextAction ? (
         <p className="work-attention">{p.text("ui.noPendingReminders")}</p>
       ) : null}
-      <Select
-        label={p.text("ui.reminderState")}
-        value={state}
-        options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
-          value,
-          label: p.term("reminderState", value),
-        }))}
-        onChange={(value) => {
-          if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
-            setState(value);
-          }
-        }}
-      />
       {state === "PENDING" && current.work.pendingReminders === 0 ? (
-        <>
-          <p>{p.text("ui.noReminders")}</p>
-          <button type="button" onClick={onChanged}>
-            {p.text("ui.refreshWork")}
-          </button>
-        </>
+        <p>{p.text("ui.noReminders")}</p>
       ) : (
         <ReminderList
           key={refresh}
@@ -167,6 +145,37 @@ export const useCaseWorkPanels = ({
           }}
         />
       )}
+      <details className="case-reminder-controls">
+        <summary>
+          {p.text("ui.reminderState")} · {p.term("reminderState", state)}
+        </summary>
+        <p className="case-reminder-counts">
+          {p.text("ui.pendingReminders")}: {p.integer(current.work.pendingReminders)} ·{" "}
+          {p.text("ui.overdueReminders")}: {p.integer(current.work.overdueReminders)}
+        </p>
+        <Select
+          label={p.text("ui.reminderState")}
+          value={state}
+          options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
+            value,
+            label: p.term("reminderState", value),
+          }))}
+          onChange={(value) => {
+            if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
+              setState(value);
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            setRefresh((value) => value + 1);
+            onChanged();
+          }}
+        >
+          {p.text("ui.refreshWork")}
+        </button>
+      </details>
     </section>
   ) : null;
   const operation =

@@ -352,8 +352,29 @@
     grid-column: 1;
     grid-row: 3;
   }
+  .workspace-header .shell-search {
+    display: none;
+  }
+  .workspace-shell:has(.case-detail) .shell-business-date {
+    padding: 0;
+    margin-block-start: var(--space-1);
+    border: 0;
+    font-size: var(--text-xs);
+  }
+  .workspace-shell:has(.case-detail) .shell-business-date > svg {
+    display: none;
+  }
   .workspace-shell:has(.case-action-bar) .workspace-mobile-tabs {
     display: none;
+  }
+  .workspace-shell:has(.case-action-bar) {
+    padding-block-end: 0;
+  }
+  .workspace-shell:has(.case-action-bar) > .app-shell {
+    padding-block-end: 0;
+  }
+  .case-detail:has(.case-action-bar) {
+    padding-block-end: calc(var(--space-3) + var(--case-action-bar-height, 0px));
   }
   .workspace-mobile-tabs {
     display: flex;

@@ -238,9 +238,11 @@ export const ReminderList = ({
           {p.text("ui.moreReminders")}
         </button>
       )}
-      <button type="button" disabled={result.loading} onClick={() => void result.load(null)}>
-        {p.text("ui.refreshWork")}
-      </button>
+      {target === undefined ? (
+        <button type="button" disabled={result.loading} onClick={() => void result.load(null)}>
+          {p.text("ui.refreshWork")}
+        </button>
+      ) : null}
     </section>
   );
 };
