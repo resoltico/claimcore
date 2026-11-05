@@ -112,6 +112,7 @@ const PersonContents = ({
       {page.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
       {page.page === null ? null : (
         <a
+          className="actor-detail-link"
           href={`/authority-history?actorId=${encodeURIComponent(page.page.actor.actor.actorId)}`}
           onClick={(event) => {
             followLink(event, () => {

@@ -50,6 +50,7 @@ export const ActorSummary = ({
             <dt>{p.text("ui.people.responsibleFor")}</dt>
             <dd>
               <a
+                className="actor-detail-link"
                 href={href}
                 onClick={(event) => {
                   followLink(event, () => {

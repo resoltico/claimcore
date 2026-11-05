@@ -84,6 +84,11 @@
   min-inline-size: 0;
   overflow-wrap: anywhere;
 }
+.actor-detail-link {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: var(--target-minimum);
+}
 .principal-issuer {
   display: inline-block;
   max-inline-size: 100%;
