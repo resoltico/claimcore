@@ -36,7 +36,7 @@ let tests =
             testCase
                 "all supported locales preserve exact decimal values at admission boundaries"
                 (fun () ->
-                    for language in [ "en"; "lv"; "ar" ] do
+                    for language, displayLocale in [ "en", "en-GB"; "lv", "lv-LV"; "ar", "ar-AE" ] do
                         for amount in [ "0"; "0.0001"; "10.0100"; "999999999999999999.9999" ] do
                             for currency in [ "EUR"; "JPY"; "BHD"; "CLF"; "ZZZ" ] do
                                 let value = Inputs.money amount currency
@@ -47,7 +47,7 @@ let tests =
                                     (Decimal.Parse(
                                         number,
                                         NumberStyles.Number,
-                                        CultureInfo.GetCultureInfo language
+                                        CultureInfo.GetCultureInfo displayLocale
                                     ))
                                     (Money.value value)
                                     "Human grouping and padding never pass through floating point or round the value")

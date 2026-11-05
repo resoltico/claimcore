@@ -10,6 +10,18 @@ open ClaimCore.Json
 
 module internal TextReplyFormat =
 
+    // The CLI has language selection, not a separate display-locale preference.
+    // Explicit regional cultures keep numeric conventions independent of neutral-culture OS defaults.
+    let displayCulture language =
+        let locale =
+            match language with
+            | "en" -> "en-GB"
+            | "lv" -> "lv-LV"
+            | "ar" -> "ar-AE"
+            | _ -> invalidArg (nameof language) "A supported CLI language is required."
+
+        CultureInfo.GetCultureInfo locale
+
     let label language key =
         MessageCatalogs.render language key Map.empty
 
@@ -29,7 +41,7 @@ module internal TextReplyFormat =
 
     let private exactMoney (language: string) canonical code scale =
         let parts = (canonical: string).Split '.'
-        let culture = CultureInfo.GetCultureInfo language
+        let culture = displayCulture language
 
         let whole =
             BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
@@ -58,7 +70,7 @@ module internal TextReplyFormat =
         moneyTotalWithScale language currency total (DecimalTotal.displayScale currency total)
 
     let date (language: string) value =
-        (CalendarDate.value value).ToString("d MMM yyyy", CultureInfo.GetCultureInfo language)
+        (CalendarDate.value value).ToString("d MMM yyyy", displayCulture language)
 
     let country (language: string) code =
         try
