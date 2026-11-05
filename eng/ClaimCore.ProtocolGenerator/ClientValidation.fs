@@ -67,7 +67,10 @@ const wireFormat = (value: string, format: string | null): boolean => {
 };
 const wireUtf8Bytes = (value: string): number => Array.from(value).reduce((bytes, character) => {
   const scalar=character.codePointAt(0)!;
-  return bytes+(scalar<=0x7f?1:scalar<=0x7ff?2:scalar<=0xffff?3:4);
+  if (scalar<=0x7f) { return bytes+1; }
+  if (scalar<=0x7ff) { return bytes+2; }
+  if (scalar<=0xffff) { return bytes+3; }
+  return bytes+4;
 },0);
 const wireString = (minimum: number | null, maximum: number | null, pattern: RegExp | null, format: string | null, maximumUtf8Bytes: number | null = null): WireCheck => (value,draft,path) => {
   if (typeof value !== "string" || !isRepresentable(value)) { return path; }
