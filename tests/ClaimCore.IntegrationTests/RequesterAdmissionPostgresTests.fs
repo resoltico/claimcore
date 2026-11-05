@@ -37,6 +37,13 @@ let private writeSnapshot (database: PostgresFixture.Database) =
                 [||]
                 token
 
+        // The holder's activity snapshot is intentionally captured before the writer starts.
+        // Monitoring it again inside this transaction would keep returning that cached snapshot.
+        let! _ =
+            DatabaseSession.rows connection "SELECT count(*) FROM pg_stat_activity" [||] token
+
+        use! observer = database.OwnerSource.OpenConnectionAsync()
+
         let pending =
             Service.execute caller RequesterAdmissionContract.malformedWrites.Head token
 
@@ -47,7 +54,7 @@ let private writeSnapshot (database: PostgresFixture.Database) =
                 if not blocked then
                     let! rows =
                         DatabaseSession.rows
-                            connection
+                            observer
                             "SELECT EXISTS(SELECT 1 FROM pg_stat_activity WHERE datname=current_database() AND wait_event_type='Lock' AND query LIKE '%lock_ledger_head%')"
                             [||]
                             token

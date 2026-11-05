@@ -145,7 +145,7 @@ let tests =
                         GrowthQualificationTests.writeReadProgress
                             progressDirectory
                             published.Count
-                            11
+                            14
                             lastCompletedReport
                             progress
 
