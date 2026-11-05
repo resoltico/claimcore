@@ -110,10 +110,13 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await expect(page.getByRole("listbox")).toBeVisible();
   await expect(page.getByRole("option").last()).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
   await expect(picker).toBeFocused();
   await page.keyboard.press("ArrowDown");
   await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(page.getByRole("option").and(page.locator(":focus"))).toHaveCount(1);
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
   await expect(picker).toBeFocused();
   await page.keyboard.press("Home");
   await expect(page.getByRole("listbox")).toBeVisible();
@@ -124,8 +127,12 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await expect(picker).toHaveAttribute("value", "de-DE");
   await expect(picker).toBeFocused();
   await page.keyboard.press("ArrowDown");
+  await expect(page.getByRole("listbox")).toBeVisible();
+  await expect(page.getByRole("option").and(page.locator(":focus"))).toHaveCount(1);
   await page.keyboard.press("Home");
+  await expect(page.getByRole("option").first()).toBeFocused();
   await page.keyboard.press("Escape");
+  await expect(page.getByRole("listbox")).toHaveCount(0);
   await expect(picker).toHaveAttribute("value", "de-DE");
   await expect(picker).toBeFocused();
   await clean();
