@@ -79,18 +79,16 @@ it.each([false, true])(
               value: { outcome: { kind: "REJECTED", data: unavailable } },
             },
       );
-    const preview = vi
-      .spyOn(service, "preview")
-      .mockImplementation((prepared) =>
-        Promise.resolve({
-          kind: "outcome",
-          status: 200,
-          value: {
-            operationId: prepared.input.operationId,
-            outcome: { kind: "REJECTED", data: unavailable },
-          },
-        }),
-      );
+    const preview = vi.spyOn(service, "preview").mockImplementation((prepared) =>
+      Promise.resolve({
+        kind: "outcome",
+        status: 200,
+        value: {
+          operationId: prepared.input.operationId,
+          outcome: { kind: "REJECTED", data: unavailable },
+        },
+      }),
+    );
     const execute = vi.spyOn(service, "execute");
     const user = userEvent.setup();
     render(<Workspace />);
