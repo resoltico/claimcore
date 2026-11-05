@@ -384,15 +384,38 @@ it("correlates exact authority principals and ordered effect kinds without deriv
 it("checks deterministic creation identities even for passive receipt observations", () => {
   const opened = { operationId, subject: { kind: "CASE", act: "OPEN", caseId: operationId } };
   expect(receiptCorrelates({ operationId }, opened)).toBe(true);
-  expect(receiptCorrelates({ operationId }, { ...opened, subject: { ...opened.subject, caseId: otherId } })).toBe(false);
+  expect(
+    receiptCorrelates(
+      { operationId },
+      { ...opened, subject: { ...opened.subject, caseId: otherId } },
+    ),
+  ).toBe(false);
   for (const act of ["REGISTER", "ADMIT", "PROVISION_OWNER"]) {
-    for (const targetActor of [ { kind: "DISCLOSED", actor: { actorId: operationId } }, { kind: "WITHHELD", actorId: operationId } ]) {
+    for (const targetActor of [
+      { kind: "DISCLOSED", actor: { actorId: operationId } },
+      { kind: "WITHHELD", actorId: operationId },
+    ]) {
       const created = { operationId, subject: { kind: "AUTHORITY", act, targetActor } };
       expect(receiptCorrelates({ operationId }, created)).toBe(true);
-      const wrong = targetActor.kind === "DISCLOSED" ? { ...targetActor, actor: { actorId: otherId } } : { ...targetActor, actorId: otherId };
-      expect(receiptCorrelates({ operationId }, { ...created, subject: { ...created.subject, targetActor: wrong } })).toBe(false);
+      const wrong =
+        targetActor.kind === "DISCLOSED"
+          ? { ...targetActor, actor: { actorId: otherId } }
+          : { ...targetActor, actorId: otherId };
+      expect(
+        receiptCorrelates(
+          { operationId },
+          { ...created, subject: { ...created.subject, targetActor: wrong } },
+        ),
+      ).toBe(false);
     }
   }
-  const existing = { operationId, subject: { kind: "AUTHORITY", act: "DISABLE", targetActor: { kind: "WITHHELD", actorId: otherId } } };
+  const existing = {
+    operationId,
+    subject: {
+      kind: "AUTHORITY",
+      act: "DISABLE",
+      targetActor: { kind: "WITHHELD", actorId: otherId },
+    },
+  };
   expect(receiptCorrelates({ operationId }, existing)).toBe(true);
 });

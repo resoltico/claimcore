@@ -109,19 +109,31 @@ const coherentSingle = (
     (version["revision"] === 1 && sameIdentity(version["reminderId"], receipt["operationId"]))
   );
 };
-const creationReceiptMatches = (receipt: Record<string, unknown>, subject: Record<string, unknown>): boolean => {
+const creationReceiptMatches = (
+  receipt: Record<string, unknown>,
+  subject: Record<string, unknown>,
+): boolean => {
   if (subject["kind"] === "CASE") {
     return subject["act"] !== "OPEN" || sameIdentity(subject["caseId"], receipt["operationId"]);
   }
-  if (subject["kind"] !== "AUTHORITY" || !["REGISTER", "ADMIT", "PROVISION_OWNER"].includes(String(subject["act"]))) { return true; }
+  if (
+    subject["kind"] !== "AUTHORITY" ||
+    !["REGISTER", "ADMIT", "PROVISION_OWNER"].includes(String(subject["act"]))
+  ) {
+    return true;
+  }
   const target = object(subject["targetActor"]);
-  if (target["kind"] === "DISCLOSED") { return sameIdentity(object(target["actor"])["actorId"], receipt["operationId"]); }
+  if (target["kind"] === "DISCLOSED") {
+    return sameIdentity(object(target["actor"])["actorId"], receipt["operationId"]);
+  }
   return target["kind"] === "WITHHELD" && sameIdentity(target["actorId"], receipt["operationId"]);
 };
 /** Permanent bounded effect relationships are independent of generated structural schemas. */
 const coherentReceipt = (receipt: Record<string, unknown>): boolean => {
   const subject = object(receipt["subject"]);
-  if (!creationReceiptMatches(receipt, subject)) { return false; }
+  if (!creationReceiptMatches(receipt, subject)) {
+    return false;
+  }
   if (subject["kind"] === "WORK") {
     return coherentWorkReceipt(subject);
   }

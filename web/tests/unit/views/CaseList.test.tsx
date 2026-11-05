@@ -11,7 +11,7 @@ const page = (mayOpen: boolean, nextCursor: string | null = "next") =>
   response("case.list", "SUCCEEDED", {
     items: [
       caseSummaryInput({
-        state: {kind: "ACTIVE"},
+        state: { kind: "ACTIVE" },
         caseId: "20000000-0000-4000-8000-000000000001",
         caseReference: "ADVISED-CASE",
         revision: 1,
