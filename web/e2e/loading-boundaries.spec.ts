@@ -32,9 +32,7 @@ test("initial Cases loads only its language and required modules; public bytes a
   await page.waitForLoadState("networkidle");
   expect(assets.some((path) => path.includes("language-en-"))).toBe(true);
   expect(assets.some((path) => /language-(?:lv|ar)-/u.test(path))).toBe(false);
-  expect(assets.some((path) => /workspace~OperationEditor~AuthorityPanel-/u.test(path))).toBe(
-    false,
-  );
+  expect(assets.some((path) => accessModule.test(path))).toBe(false);
   const asset = assets.find((path) => path.endsWith(".js"));
   if (asset === undefined) {
     throw new Error("The published interface must request JavaScript");
@@ -66,14 +64,22 @@ test("a missing language chunk leaves the working pair and direction intact and 
     }),
   );
   await (await settingsNavigation(page)).click();
-  await page.locator('.settings-panel input[name$="-language"][value="lv"]').check();
+  const latvian = page.locator('.settings-panel input[name$="-language"][value="lv"]');
+  const english = page.locator('.settings-panel input[name$="-language"][value="en"]');
+  // Request the failing activation; check() would require a selected state that must roll back.
+  await latvian.click();
   await expect(page.getByRole("alert")).toContainText("The language could not be loaded");
+  await expect(latvian).not.toBeChecked();
+  await expect(english).toBeChecked();
+  await expect(page.getByRole("button", { name: "Retry language", exact: true })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
   await page.unroute(latvianModule);
   // Browsers may retain a failed module fetch in the document's module map.
-  // Explicit reload is available and keeps persisted preferences at the last admitted pair.
-  await reloadDocument(page);
+  // An explicit browser reload clears that map and retains the last admitted pair.
+  const before = await page.evaluate(() => window.performance.timeOrigin);
+  await page.reload({ waitUntil: "domcontentloaded" });
+  await expect.poll(() => page.evaluate(() => window.performance.timeOrigin)).not.toBe(before);
   await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await selectLanguage(page, "lv");
@@ -100,7 +106,11 @@ test("a missing view chunk leaves the workspace available and explicit reload in
   await reloadDocument(page);
   await expect(page.getByRole("heading", { name: "People & access", exact: true })).toBeVisible();
   await expect(page.locator(".authority-panel")).toBeVisible();
-  await page.getByRole("button", { name: "Add person", exact: true }).click();
+  const addPerson = page
+    .getByRole("button", { name: "Add person", exact: true })
+    .and(page.locator(".authority-panel > button"));
+  await expect(addPerson).toHaveCount(1);
+  await addPerson.click();
   await expect(page.locator('[name="target.subject"]')).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
