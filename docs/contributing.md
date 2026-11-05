@@ -313,22 +313,39 @@ the concrete reason described above.
 
 ## Verification
 
-Choose checks by the changed behavior and the claim being made:
+Use three phases, and select the scope before starting a command:
 
-| When | Scope |
-| --- | --- |
-| Editing | Focused tests, builds or named stages for affected behavior; use existing watch commands where helpful. |
-| Broader checkpoint | `bash eng/verify.sh --fast` runs lint, native units and the full frontend stage. |
-| Implementation PR ready for review | `bash eng/verify.sh` runs the ordinary full gate; CI qualifies the declared platform matrix. |
-| Documentation-only change | Check affected links, commands and claims; run relevant documentation checks. Product or generated-output changes need their applicable checks. |
-| Performance investigation | Select the workload and evidence needed; see [Growth](#growth). |
+1. **Edit and diagnose.** Run affected tests and the cheapest check that can reject the change. After a
+   declaration change, regenerate/check contracts and compile the actual consumers and authored fixtures
+   before starting containers. Inspect each command's exit status; a later successful command does not
+   make an earlier failed command pass.
+2. **Check a coherent checkpoint.** Use `bash eng/verify.sh --fast` when the source and consumers agree.
+   For browser work, inspect one populated small-screen case and one RTL view with the full shared axe
+   helper before expanding coverage. Batch stale selector/DTO/route/consent ports; do not discover each
+   one by replaying a complete acceptance suite's already-passing prefix.
+3. **Qualify stable source.** Run the required full stages and platform matrix after relevant changes
+   have stopped. Choose an execution owner: CI can supply the stages/platforms it actually exercises;
+   use local full verification when required or when CI cannot supply that evidence. Avoid repeating the
+   same qualification locally and in CI solely because both are available.
 
-There is no automatic full-gate requirement after each edit or commit. Explicit task
-acceptance criteria still apply. Reuse results only while their relevant source, configuration, dependencies
-and execution conditions remain applicable; rerun affected checks after later changes. Preserve failures
-and their resolution rather than treating a later pass as evidence that the earlier run never failed.
-Required clean or independent verification remains required. Local checks establish only their exercised
-scope and platform; focused runs do not qualify an unrun complete stage or CI matrix.
+| Change or question | First useful check | Expand when |
+| --- | --- | --- |
+| Native behavior | Affected native test list with current compiled inputs | Interactions or a broader checkpoint justify the full stage |
+| Wire/catalog declaration | Generator/check, compiler/type checks, authored corpus | Producers and consumers agree, before published integration |
+| Browser behavior or stale test | Affected unit file or focused published diagnostic | Relevant behavior passes on the current source |
+| Layout or copy | One representative populated frame; full axe and relevant bounds | A final visual set or another engine is needed for the claim |
+| Documentation only | Links, command/behavior claims, existing documentation checks | Product or generated inputs also changed |
+| Performance | An existing targeted workload; see [Growth](#growth) | Evidence or explicit acceptance requires the full comparison |
+
+There is no automatic full-gate requirement after each edit or commit. Reuse passing evidence while its
+relevant source, configuration, dependencies, platform and purpose still apply. After a change, rerun
+what it can invalidate, then complete the final required scope once. Keep security, CSP, admission,
+frozen-byte/ownership and hard resource limits intact. A failed check needs diagnosis; changing the
+method or scope does not turn its previous failure into a pass.
+
+Explicit task acceptance and required clean/independent checks still apply. Track additional requirements
+(such as a full growth comparison or field retest) separately from the ordinary `Gate`. Focused runs,
+smoke selections and partial matrices establish only their reported scope, never unrun qualification.
 
 After [first checkout](#first-checkout), examples for focused iteration are:
 
@@ -436,110 +453,33 @@ CLAIMCORE_UPDATE_GOLDENS=1 bash eng/verify.sh unit
 Update mode refuses when `CI` is set, including an empty value. It writes only declared fixture
 basenames and always refuses the three permanent vector files. It supplies omitted positive fields
 from the builders and prepares CLI frames from their authored arguments; it leaves invalid examples
-unchanged. Run the ordinary gate afterwards. Updating goldens never resolves permanent-format failures.
+unchanged. Rerun the affected byte/contract tests without update mode, then complete the final required
+qualification. Updating goldens never resolves permanent-format failures.
 
 ## Growth
 
-Growth measurements are separate from the ordinary verification gate. They are optional unless required
-by task acceptance criteria or an agreed release plan; a release does not automatically require both
-growth commands. Choose the smallest existing scope that answers the concrete performance question.
-State the reference and workloads for a comparison. Preserve evidence from running work; a policy change
-does not resolve an observed regression or invalidate an agreed acceptance criterion.
+Performance measurements are optional unless a task or release plan requires them. They are separate
+from the ordinary `Gate`. State the concrete question, affected workload and reference before starting;
+use the smallest existing diagnostic that answers it. A correction to UI copy, selectors or formatting
+does not by itself call for a new growth run.
 
-| Purpose | Command | Evidence |
+| Need | Existing command | Claim |
 | --- | --- | --- |
-| Focused write observation | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | One current-source write profile and three cardinality populations; no reads or reference comparison. |
-| Focused comparison | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Three alternating pairs for that write profile and cardinality controls; diagnostic only. |
-| Full comparison | `bash eng/verify.sh growth-compare REF` | Three alternating pairs with relative budgets over shared workloads. |
-| Full observation | `bash eng/verify.sh growth` | The complete current-source workload set; no reference ratios. |
+| One write profile | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | Current-source observation, not full qualification |
+| Investigate a relative regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
+| Required full comparison | `bash eng/verify.sh growth-compare REF` | Three same-host pairs, six complete runs |
 
-Single-profile `growth` can exit zero while its report marks qualification incomplete: only the selected
-observation passed. Diagnostic `growth-compare` returns 2 when its budgets pass, as described below.
-Neither result qualifies unmeasured workloads. Choose a broader run when needed by the question or agreed
-acceptance scope; retain workload identity and all comparison checks when claiming a comparison result.
+A full comparison repeatedly seeds large populations and may take hours. Start it after relevant
+product code and workload fingerprints are stable, alongside independent final checks. Do not run a
+full observation and a full comparison merely for duplicate coverage. Reuse existing results only when
+their inputs, platform and question still apply; changed relevant code requires new evidence. Explicit
+acceptance criteria remain binding, and a diagnostic or incomplete run never becomes a full pass.
 
-Run `bash eng/verify.sh growth-compare REF` to compare against a commit. It captures the candidate's
-HEAD and tracked working changes, retaining the source patch and its SHA-256. It refuses any nonignored
-untracked files: stage intended new source files and move unrelated scratch files outside the checkout.
-It refuses source changes during capture. Both source-stable inputs build in disposable
-detached worktrees with locked restore. The comparison alternates
-reference → candidate three times. Write and cardinality profiles use fresh PostgreSQL containers;
-read profiles share the fresh database for their case population. The compared set
-is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and read profiles
-at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
-authority history and actor-filtered authority history. Reminder-feature measurements comprise seven
-profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
-and global work overview. Plain-sight read profiles also measure `case.views`, `reminder.views` and the
-bounded typed `case.timeline`, including high-child-fanout change decoding and actor enrichment. New
-keys without a reference equivalent remain not applicable for relative ratios; their actual candidate
-measurements are still retained. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
-exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
-are reported as not applicable.
-
-For a targeted diagnostic or an injected-delay control, the existing `CLAIMCORE_GROWTH_PROFILE`
-selector accepts `10000:1`, `100000:1` or `100000:16`. It still runs three alternating pairs and the
-normal growth harness's three cardinality controls, without read workloads. The report states that
-qualification is incomplete: exit 1 means a budget/check failed, and exit 2 means diagnostic budgets
-passed but the required full set was not run. A diagnostic can never return qualification success.
-Reduced runs do not establish a full comparison pass.
-
-Comparison fails when a candidate median's write/read throughput is below 0.85×, or its p95, p99 or verification
-time exceeds 1.30× the reference. Reports retain all six raw runs, medians, ratios and workload
-fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*` (or beneath
-`CLAIMCORE_TEST_REPORT_DIRECTORY`). These are same-host, same-session relative measurements, not an SLA.
-Different workload fingerprints refuse comparison, naming the differing members.
-
-`comparison-progress.json` is an atomic observation of preparation and alternating child runs. It records
-source and harness identities, completed side count and the active owned checkout/report paths; it never
-reports a partial pass. `comparison.json` remains the final verdict, including cleanup failures. Current
-harnesses publish `artifacts/verification/growth/*/read-progress.json` in the checkout with seed/measurement
-phase, counts and the last completed read report. Each completed read report is published immediately;
-`run.json` bookkeeping can lag until the population fixture has been disposed. Incomplete progress is not
-qualification evidence and does not permit skipping outstanding workloads.
-
-Read reports include measured latency samples in observation order, excluding warmups, with the percentile
-index rule recorded beside them. Comparison reports add informational per-pair ratios, run spread and
-available sample evidence for latency percentiles. Missing reference samples are reported rather than
-reconstructed. These observations do not change sampling, budgets or the median comparison rule. Retain
-the source patch, harness patches, build logs and workload fingerprints together when reproducing a
-result; a source hash alone does not identify the assembly loaded by a separate diagnostic.
-
-A reference without workload fingerprints requires a recorded manual review of act cycles, populations,
-authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
-`reference` and `candidate` commit IDs, `candidatePatchSha256` when working changes are present,
-a `workloads` array of reviewed keys (for example
-`write/10000/1`, `write/100000/1`, `write/100000/16`, `cardinality/1000`, `read/search/100000`,
-`read/filtered/100000`), and a `review` explaining the evidence. Missing or mismatched reviews refuse
-before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
-Single-profile diagnostics also require review of `cardinality/1` and `cardinality/100`.
-
-The comparison labels its disposable test containers and, when needed, adapts reference harness selection.
-Every adaptation is retained as a patch in the report. Product code stays at the recorded commit.
-The comparison removes its worktrees, build outputs and labelled containers on success or failure,
-while preserving reports and failure output.
-
-The full `bash eng/verify.sh growth` observation includes nine write-contention profiles,
-three cardinality comparisons and search/filtered, notification-order, summary and explicit-work
-follow-up/summary workloads at 1k, 10k and 100k cases. At the
-100k case population, global and actor-filtered authority-history reads also run after 100k additional
-grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
-their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
-After those common measurements, one open case per thousand receives explicit responsibility and a past
-Pending reminder based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
-independently named cases, account identity, dates and counts before recording their separate latency
-samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one
-case, independently checking queue continuations, bounded current views, unique financial totals and
-global attention. The `reminder-derived-follow-up` and `reminder-derived-work-summary` profiles use the
-independent Work/Reminder seed. Only profiles with matching workload keys and fingerprints yield ratios;
-common read/write/cardinality comparisons retain their budgets.
-[GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
-and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
-incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements
-establish neither an SLA nor constant total-system memory.
-
-The gate bounds managed completed-report retention, not total caches, image or artifact use. Protect active
-runs, measure resource use and reclaim only owned temporary resources. Locked NuGet/npm restore and audits
-still run with caches; shared caches are not disposable task resources.
+Keep the existing throughput, latency, verification and resource limits. Inspect failures and current
+progress before repeating a run; fix a bad prerequisite or method rather than weakening a check.
+For workload definitions, source capture, reference equivalence, reports and cleanup, see
+[Performance measurements](performance.md). The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs)
+owns the exact populations and keys.
 
 ## Dependencies
 

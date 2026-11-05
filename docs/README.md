@@ -7,7 +7,8 @@ Start with the task you want to complete:
 - [People and access](people-and-access.md): add people, handle access requests, update profiles and review roles.
 - [Operating](operating.md): host the service, administer authority and databases, and manage retention.
 - [Integrating](integrating.md): use HTTPS or CLI, validate results and handle delivery recovery.
-- [Contributing](contributing.md): build, verify and change the implementation.
+- [Contributing](contributing.md): build, choose focused checks and qualify the implementation.
+- [Performance measurements](performance.md): select optional growth diagnostics and required comparisons.
 
 The [generated CLI reference](cli.md) owns verbs and flags; [OpenAPI](../contracts/openapi.json) owns wire
 shapes. [Examples](../examples/README.md) provide independent synthetic request files.
