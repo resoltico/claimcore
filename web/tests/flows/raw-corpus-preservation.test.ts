@@ -2,7 +2,7 @@ import { isResponse } from "../../src/protocol/client";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, it } from "vitest";
-import { corpusCases } from "../support/contract-corpus.fixtures";
+import { assertUniqueCorpusIdentities, corpusCases } from "../support/contract-corpus.fixtures";
 import { positiveValue, workBasis } from "../support/inputs";
 
 it("passes every authored wire example through unchanged, including positive frames", () => {
@@ -19,6 +19,23 @@ it("passes every authored wire example through unchanged, including positive fra
       ).toStrictEqual(authored.value);
     }
   }
+});
+it("rejects duplicate authored identities without changing or collapsing their values", () => {
+  const [original] = corpusCases();
+  if (original === undefined) {
+    throw new Error("An authored corpus case is required.");
+  }
+  const duplicate = { ...original, value: { distinct: "raw negative control" } };
+  expect(() => {
+    assertUniqueCorpusIdentities([original, duplicate]);
+  }).toThrow("Duplicate authored corpus identity");
+  expect(duplicate.value).toStrictEqual({ distinct: "raw negative control" });
+  expect(() => {
+    assertUniqueCorpusIdentities([
+      original,
+      { ...duplicate, direction: original.direction === "request" ? "response" : "request" },
+    ]);
+  }).not.toThrow();
 });
 it("completes a nested receipt without adding observation metadata to its activity header", () => {
   const position = { sequence: 5, entryHash: "a".repeat(64) };

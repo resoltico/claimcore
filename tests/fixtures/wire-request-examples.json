@@ -2615,7 +2615,7 @@
       "valid": false
     },
     {
-      "id": "operation.preview.reminder-UPDATE",
+      "id": "operation.preview-reminder-update-revision-0",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": false,
@@ -2637,7 +2637,7 @@
       "name": "operation.preview-reminder-update-revision-0"
     },
     {
-      "id": "operation.preview.reminder-UPDATE",
+      "id": "operation.preview-reminder-update-revision-1",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -2659,7 +2659,7 @@
       "name": "operation.preview-reminder-update-revision-1"
     },
     {
-      "id": "operation.preview.reminder-COMPLETE",
+      "id": "operation.preview-reminder-complete-revision-0",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": false,
@@ -2679,7 +2679,7 @@
       "name": "operation.preview-reminder-complete-revision-0"
     },
     {
-      "id": "operation.preview.reminder-COMPLETE",
+      "id": "operation.preview-reminder-complete-revision-1",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -2699,7 +2699,7 @@
       "name": "operation.preview-reminder-complete-revision-1"
     },
     {
-      "id": "operation.preview.reminder-CANCEL",
+      "id": "operation.preview-reminder-cancel-revision-0",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": false,
@@ -2719,7 +2719,7 @@
       "name": "operation.preview-reminder-cancel-revision-0"
     },
     {
-      "id": "operation.preview.reminder-CANCEL",
+      "id": "operation.preview-reminder-cancel-revision-1",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -2739,7 +2739,7 @@
       "name": "operation.preview-reminder-cancel-revision-1"
     },
     {
-      "id": "operation.preview.reminder-REOPEN",
+      "id": "operation.preview-reminder-reopen-revision-0",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": false,
@@ -2760,7 +2760,7 @@
       "name": "operation.preview-reminder-reopen-revision-0"
     },
     {
-      "id": "operation.preview.reminder-REOPEN",
+      "id": "operation.preview-reminder-reopen-revision-1",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -2781,7 +2781,7 @@
       "name": "operation.preview-reminder-reopen-revision-1"
     },
     {
-      "id": "operation.preview.reminder-COMPLETE_AND_PLAN_NEXT",
+      "id": "operation.preview-reminder-complete_and_plan_next-revision-0",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": false,
@@ -2803,7 +2803,7 @@
       "name": "operation.preview-reminder-complete_and_plan_next-revision-0"
     },
     {
-      "id": "operation.preview.reminder-COMPLETE_AND_PLAN_NEXT",
+      "id": "operation.preview-reminder-complete_and_plan_next-revision-1",
       "endpoint": "operation.preview",
       "direction": "request",
       "valid": true,
@@ -2825,7 +2825,7 @@
       "name": "operation.preview-reminder-complete_and_plan_next-revision-1"
     },
     {
-      "id": "operation.execute.reminder-UPDATE",
+      "id": "operation.execute-reminder-update-revision-0",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": false,
@@ -2847,7 +2847,7 @@
       "name": "operation.execute-reminder-update-revision-0"
     },
     {
-      "id": "operation.execute.reminder-UPDATE",
+      "id": "operation.execute-reminder-update-revision-1",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
@@ -2869,7 +2869,7 @@
       "name": "operation.execute-reminder-update-revision-1"
     },
     {
-      "id": "operation.execute.reminder-COMPLETE",
+      "id": "operation.execute-reminder-complete-revision-0",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": false,
@@ -2889,7 +2889,7 @@
       "name": "operation.execute-reminder-complete-revision-0"
     },
     {
-      "id": "operation.execute.reminder-COMPLETE",
+      "id": "operation.execute-reminder-complete-revision-1",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
@@ -2909,7 +2909,7 @@
       "name": "operation.execute-reminder-complete-revision-1"
     },
     {
-      "id": "operation.execute.reminder-CANCEL",
+      "id": "operation.execute-reminder-cancel-revision-0",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": false,
@@ -2929,7 +2929,7 @@
       "name": "operation.execute-reminder-cancel-revision-0"
     },
     {
-      "id": "operation.execute.reminder-CANCEL",
+      "id": "operation.execute-reminder-cancel-revision-1",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
@@ -2949,7 +2949,7 @@
       "name": "operation.execute-reminder-cancel-revision-1"
     },
     {
-      "id": "operation.execute.reminder-REOPEN",
+      "id": "operation.execute-reminder-reopen-revision-0",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": false,
@@ -2970,7 +2970,7 @@
       "name": "operation.execute-reminder-reopen-revision-0"
     },
     {
-      "id": "operation.execute.reminder-REOPEN",
+      "id": "operation.execute-reminder-reopen-revision-1",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,
@@ -2991,7 +2991,7 @@
       "name": "operation.execute-reminder-reopen-revision-1"
     },
     {
-      "id": "operation.execute.reminder-COMPLETE_AND_PLAN_NEXT",
+      "id": "operation.execute-reminder-complete_and_plan_next-revision-0",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": false,
@@ -3013,7 +3013,7 @@
       "name": "operation.execute-reminder-complete_and_plan_next-revision-0"
     },
     {
-      "id": "operation.execute.reminder-COMPLETE_AND_PLAN_NEXT",
+      "id": "operation.execute-reminder-complete_and_plan_next-revision-1",
       "endpoint": "operation.execute",
       "direction": "request",
       "valid": true,

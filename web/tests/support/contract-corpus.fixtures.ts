@@ -13,8 +13,19 @@ export type CorpusCase = {
   valid: boolean;
   value: unknown;
 };
-export const corpusCases = (): CorpusCase[] =>
-  (["request", "response"] as const).flatMap((direction) => {
+/** A fixture identity must select exactly one authored value within its wire direction. */
+export const assertUniqueCorpusIdentities = (cases: ReadonlyArray<CorpusCase>): void => {
+  const identities = new Set<string>();
+  for (const sample of cases) {
+    const identity = `${sample.direction}:${sample.id}`;
+    if (identities.has(identity)) {
+      throw new Error(`Duplicate authored corpus identity: ${identity}`);
+    }
+    identities.add(identity);
+  }
+};
+export const corpusCases = (): CorpusCase[] => {
+  const cases = (["request", "response"] as const).flatMap((direction) => {
     const raw: unknown = JSON.parse(
       readFileSync(
         resolve(import.meta.dirname, `../../../tests/fixtures/wire-${direction}-examples.json`),
@@ -32,6 +43,10 @@ export const corpusCases = (): CorpusCase[] =>
       value: row["value"],
     }));
   });
+  assertUniqueCorpusIdentities(cases);
+  return cases;
+};
+
 const hasScope = (value: unknown, endpoint: EndpointId, subject: string): boolean => {
   if (!isObject(value) || !isObject(value["outcome"]) || !isObject(value["outcome"]["data"])) {
     return false;
