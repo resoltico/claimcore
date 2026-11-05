@@ -418,7 +418,8 @@ basename and optional `browser_engine=chromium|firefox|webkit` (default Chromium
 This runs only the explicitly partial one-file diagnostic; qualification, growth and `Gate` jobs are
 skipped. Invalid or ambiguous spec names and unknown engines fail before setup. A nondefault engine
 without `browser_spec` fails configuration and blocks qualification jobs; ordinary dispatches keep full
-qualification. The existing diagnostic execution and outer time limits are unchanged.
+qualification. Chromium is also installed for CLI authentication bootstrap when the selected test
+engine differs. The existing diagnostic execution and outer time limits are unchanged.
 
 For broader verification:
 

@@ -54,9 +54,14 @@ def violations(workflow):
         failures.append("Diagnostic engine preflight must precede toolchain setup.")
     if "CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ env.BROWSER_ENGINE }}" not in diagnostic:
         failures.append("Native diagnostic must use the validated engine.")
-    for argument in ['--only-shell "$BROWSER_ENGINE"', '--with-deps "$BROWSER_ENGINE"']:
-        if argument not in diagnostic:
-            failures.append("Browser installation must use the quoted validated engine.")
+    installation = (
+        '          npm --prefix web exec -- playwright install --with-deps --only-shell chromium\n'
+        '          if [[ "$BROWSER_ENGINE" != "chromium" ]]; then\n'
+        '            npm --prefix web exec -- playwright install --with-deps "$BROWSER_ENGINE"\n'
+        '          fi'
+    )
+    if installation not in diagnostic:
+        failures.append("Install the unconditional Chromium CLI bootstrap before the selected non-Chromium engine.")
     return failures
 
 
@@ -116,6 +121,8 @@ def controls(workflow):
         ('if os.environ["BROWSER_ENGINE"] not in {"chromium", "firefox", "webkit"}:', 'if False:'),
         ('options: [chromium, firefox, webkit]', 'options: [chromium, firefox]'),
         ("-${{ inputs.browser_engine || 'chromium' }}", ""),
+        ('          npm --prefix web exec -- playwright install --with-deps --only-shell chromium\n', ''),
+        ('if [[ "$BROWSER_ENGINE" != "chromium" ]]; then', 'if [[ "$BROWSER_ENGINE" == "chromium" ]]; then'),
     ])
     for before, after in changes:
         assert before in workflow

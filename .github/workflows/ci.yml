@@ -388,9 +388,8 @@ jobs:
           npm --prefix web ci
           npm --prefix web run typecheck
           npm --prefix web run build
-          if [[ "$BROWSER_ENGINE" == "chromium" ]]; then
-            npm --prefix web exec -- playwright install --with-deps --only-shell "$BROWSER_ENGINE"
-          else
+          npm --prefix web exec -- playwright install --with-deps --only-shell chromium
+          if [[ "$BROWSER_ENGINE" != "chromium" ]]; then
             npm --prefix web exec -- playwright install --with-deps "$BROWSER_ENGINE"
           fi
       - name: Run the explicitly partial diagnostic
