@@ -155,8 +155,10 @@ export const startOpen = async (
 
 export const startAct = async (page: Page, label: string): Promise<void> => {
   const button = page.getByRole("button", { name: new RegExp(`^${label}:`, "u") });
-  const more = page.locator(".case-more-actions > summary");
-  await button.or(more).first().waitFor({ state: "visible" });
+  const more = page
+    .locator(".case-actions > summary, .case-more-actions > summary")
+    .filter({ visible: true });
+  await button.or(more).filter({ visible: true }).first().waitFor({ state: "visible" });
   if (!(await button.isVisible())) {
     await more.click();
   }
