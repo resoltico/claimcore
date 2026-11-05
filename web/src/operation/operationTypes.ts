@@ -108,6 +108,8 @@ export type OperationState = {
   disclosureRead: EffectIdentity | null;
   conflict: RevisionConflictSnapshot | null;
   disclosureRefused: boolean;
+  /** Ordering fence for ephemeral successful-context observations; never serialized. */
+  disclosureRevision: number;
   values: FormValues;
   dateEntries: DateEntryDrafts;
   baseline: FormValues;
@@ -127,7 +129,12 @@ export type OperationAction =
       id: string;
     }
   | { type: "CLEAR_DATE_ENTRIES" }
-  | { type: "RESTORE_CREATION_DRAFT"; identity: EffectIdentity; editing: OperationPhase }
+  | {
+      type: "RESTORE_CREATION_DRAFT";
+      identity: EffectIdentity;
+      editing: OperationPhase;
+      disclosureRevision: number;
+    }
   | { type: "READ_CONFLICT"; identity: EffectIdentity; conflictId: string }
   | {
       type: "CONFLICT_OBSERVED";

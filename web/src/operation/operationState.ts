@@ -124,6 +124,8 @@ const editFields = (
     fieldErrors: {},
   };
 };
+const disclosureRevision = (state: OperationState, refused: boolean) =>
+  state.disclosureRevision + (refused ? 1 : 0);
 const invalidate = (state: OperationState, refused: boolean): OperationState => {
   const phase = state.operation;
   let operation: OperationPhase;
@@ -148,6 +150,7 @@ const invalidate = (state: OperationState, refused: boolean): OperationState => 
     ...state,
     operation,
     disclosureRefused: state.disclosureRefused || refused,
+    disclosureRevision: disclosureRevision(state, refused),
     disclosureRead: null,
     effects: [],
   };
@@ -276,6 +279,7 @@ const conflictObservation = (
       disclosureRead: null,
       notice: action.notice,
       disclosureRefused: state.disclosureRefused || action.refused,
+      disclosureRevision: state.disclosureRevision + 1,
     };
   }
   return {
@@ -360,6 +364,7 @@ const refuse = (
       state.values,
     ),
     disclosureRefused: state.disclosureRefused || action.disclosure,
+    disclosureRevision: disclosureRevision(state, action.disclosure),
     conflict:
       conflictFromRefusal(action, source, operationEntry(state.entry), sticky) ?? state.conflict,
   };
@@ -496,6 +501,7 @@ const reset = (
     : {
         ...action.state,
         dateEntries: {},
+        disclosureRevision: state.disclosureRevision + 1,
         disclosureRefused: state.disclosureRefused || action.state.disclosureRefused,
         context: state.context,
         disclosureContext: state.disclosureContext,
@@ -587,6 +593,7 @@ const disclosed = (
         disclosureRead: null,
         notice: action.notice,
         disclosureRefused: state.disclosureRefused || action.refused,
+        disclosureRevision: state.disclosureRevision + 1,
       };
 };
 type NavigationAction = Exclude<
@@ -653,12 +660,12 @@ const handoff = (state: OperationState, identity: EffectIdentity): OperationStat
   completing(state, identity) && state.operation.kind === "PREPARING"
     ? { ...state, operation: { ...state.operation, kind: "SUBMITTING" } }
     : state;
-export const isCreationDraftRefresh = (state: OperationState): boolean => {
+export const canRestoreCreationDraft = (state: OperationState): boolean => {
   const previous = state.disclosureContext;
   const next = state.context;
-  const refreshed = previous.epoch !== next.epoch;
+  const masked = previous !== next || state.disclosureRefused;
   return (
-    refreshed &&
+    masked &&
     previous.target === next.target &&
     state.target === next.target &&
     state.entry.subject === "CASE" &&
@@ -674,7 +681,8 @@ const restoreCreationDraft = (
 ): OperationState =>
   current(state, action.identity) &&
   state.operation === action.editing &&
-  isCreationDraftRefresh(state)
+  state.disclosureRevision === action.disclosureRevision &&
+  canRestoreCreationDraft(state)
     ? { ...state, disclosureContext: state.context, disclosureRefused: false }
     : state;
 type DisclosureAction = Extract<

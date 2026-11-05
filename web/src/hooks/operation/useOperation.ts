@@ -33,7 +33,7 @@ import { operationEntry } from "../../protocol/operationCatalog";
 import {
   operationReducer,
   operationView,
-  isCreationDraftRefresh,
+  canRestoreCreationDraft,
   type OperationState,
   type OperationEffect,
   type OperationAction,
@@ -83,6 +83,7 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     disclosureRead: null,
     conflict: null,
     disclosureRefused: false,
+    disclosureRevision: 0,
     values,
     dateEntries: {},
     baseline: values,
@@ -659,29 +660,52 @@ const useVerifiedOperationOwner = (scope: RecoveryScope | undefined) => {
     changed: owner !== null && scope !== undefined && !sameRecoveryScope(owner, scope),
   };
 };
+const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
+  requester?.offers.some((offer) => offer.kind === "OPEN") === true;
 const useCreationDraftRestore = (
   state: OperationState,
   dispatch: Dispatch,
   options: Options,
   ownerVerified: boolean,
-  offered: boolean,
+  requester: ReturnType<typeof useRequesterContext>,
 ) => {
-  // A later refusal cannot reuse this same verified epoch to unmask the draft again.
-  const attempted = useRef<OperationState["context"] | null>(null);
-  const eligible = ownerVerified && offered && isCreationDraftRefresh(state);
+  // Only a new successful context observation supplies proof; stale offers never renew it.
+  const observed = useRef({ requester, revision: state.disclosureRevision, pending: false });
   useLayoutEffect(() => {
-    if (eligible && attempted.current !== state.context) {
-      attempted.current = state.context;
+    if (observed.current.requester !== requester) {
+      observed.current = {
+        requester,
+        revision: state.disclosureRevision,
+        pending: ownerVerified && requesterOffersCreation(requester),
+      };
+    }
+    const proof = observed.current;
+    if (!proof.pending) {
+      return;
+    }
+    if (proof.revision !== state.disclosureRevision || !ownerVerified) {
+      proof.pending = false;
+      return;
+    }
+    if (
+      state.context.target !== targetKey(options) ||
+      state.context.epoch !== options.contextEpoch ||
+      state.context.credential !== options.credential
+    ) {
+      return;
+    }
+    // Context alignment may take another render, but refusal/reset ordering cannot be bypassed.
+    proof.pending = false;
+    if (canRestoreCreationDraft(state)) {
       dispatch({
         type: "RESTORE_CREATION_DRAFT",
         identity: identity(options, state.context.generation),
         editing: state.operation,
+        disclosureRevision: proof.revision,
       });
     }
-  }, [eligible, dispatch, options, state.context, state.operation]);
+  }, [dispatch, options, ownerVerified, requester, state]);
 };
-const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
-  requester?.offers.some((offer) => offer.kind === "OPEN") === true;
 const requesterRecoveryScope = (
   requester: ReturnType<typeof useRequesterContext>,
 ): RecoveryScope | undefined =>
@@ -723,13 +747,7 @@ export const useOperation = (supplied: Options) => {
       dispatch({ type: "CLEAR_DATE_ENTRIES" });
     }
   }, [ownerChanged]);
-  useCreationDraftRestore(
-    state,
-    dispatch,
-    options,
-    ownerVerified,
-    requesterOffersCreation(requester),
-  );
+  useCreationDraftRestore(state, dispatch, options, ownerVerified, requester);
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);
   const view = operationView(state);

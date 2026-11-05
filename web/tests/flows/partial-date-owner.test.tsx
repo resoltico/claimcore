@@ -1,6 +1,8 @@
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
+import { Dashboard } from "../../src/views/Dashboard";
+import { DisclosureRefreshDriver } from "../support/people-drawer.fixtures";
 import { App } from "../../src/App";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -117,6 +119,94 @@ it.each([
       });
     }
     expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("");
+    expect(preview).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+  },
+);
+
+it.each(["NO_ROLES", "DISABLED"] as const)(
+  "keeps partial creation entry inert through %s and returns it only after current access is checked",
+  async (kind) => {
+    const context = stubDashboardContext();
+    mockEndpoint("case.list").mockResolvedValue({
+      kind: "outcome",
+      status: 200,
+      value: {
+        outcome: {
+          kind: "SUCCEEDED",
+          data: {
+            basis: workBasis,
+            items: [],
+            offers: [{ kind: "OPEN" }],
+            exactReference: null,
+            nextCursor: null,
+          },
+        },
+      },
+    });
+    const preview = vi.spyOn(service, "preview");
+    const execute = vi.spyOn(service, "execute");
+    let refresh: () => void = () => {
+      throw new Error("The real cache refresh driver must mount.");
+    };
+    const user = userEvent.setup();
+    render(
+      <>
+        <Dashboard />
+        <DisclosureRefreshDriver
+          capture={(invalidate) => {
+            refresh = invalidate;
+          }}
+        />
+      </>,
+    );
+    await user.click(await screen.findByRole("link", { name: "Open a case" }));
+    const date = await screen.findByRole("group", { name: "Incident date" });
+    await user.click(date.querySelector<HTMLElement>('[data-type="day"]')!);
+    await user.keyboard("12");
+    const [first] = context.mock.results;
+    if (first === undefined || first.type !== "return") {
+      throw new Error("A current context fixture must exist.");
+    }
+    const active = await first.value;
+    if (
+      active.kind !== "outcome" ||
+      active.value.outcome.kind !== "SUCCEEDED" ||
+      active.value.outcome.data.requester.kind !== "ACTIVE"
+    ) {
+      throw new Error("Expected active context.");
+    }
+    const self = active.value.outcome.data.requester;
+    const inactive =
+      kind === "NO_ROLES"
+        ? {
+            kind,
+            self: self.self,
+            installationId: self.installationId,
+            businessDate: self.businessDate,
+            timeZone: self.timeZone,
+          }
+        : { kind, self: { ...self.self, availability: "DISABLED" as const } };
+    context
+      .mockResolvedValueOnce({
+        kind: "outcome",
+        status: 200,
+        value: { outcome: { kind: "SUCCEEDED", data: { requester: inactive } } },
+      })
+      .mockResolvedValue(active);
+    await act(() => Promise.resolve().then(refresh));
+    await screen.findByRole("heading", {
+      name: kind === "NO_ROLES" ? "You don’t have access yet" : "This account is disabled",
+    });
+    expect(screen.queryByRole("group", { name: "Incident date" })).toBeNull();
+    expect(preview).not.toHaveBeenCalled();
+    expect(execute).not.toHaveBeenCalled();
+    await user.click(screen.getByRole("button", { name: "Check access" }));
+    const restored = await screen.findByRole("group", { name: "Incident date" });
+    await waitFor(() => {
+      expect(restored.querySelector('[data-type="day"]')).toHaveAttribute("aria-valuenow", "12");
+    });
+    expect(context).toHaveBeenCalledTimes(3);
     expect(preview).not.toHaveBeenCalled();
     expect(execute).not.toHaveBeenCalled();
   },

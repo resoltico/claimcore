@@ -191,6 +191,7 @@ it("keeps refused disclosure masked after transient read and conflict failures u
     refused: false,
   });
   expect(failed.disclosureRefused).toBe(true);
+  expect(failed.disclosureRevision).toBe(state.disclosureRevision + 1);
   expect(operationReducer(failed, { type: "INVALIDATE", refused: false }).disclosureRefused).toBe(
     true,
   );
@@ -227,6 +228,7 @@ it("keeps refused disclosure masked after transient read and conflict failures u
     },
   );
   expect(conflictFailed.disclosureRefused).toBe(true);
+  expect(conflictFailed.disclosureRevision).toBe(conflict.disclosureRevision + 1);
 });
 
 it("discarding authored intent cannot restore a refused disclosure without a positive observation", () => {
@@ -238,6 +240,7 @@ it("discarding authored intent cannot restore a refused disclosure without a pos
     abandon: false,
   });
   expect(resetState.disclosureRefused).toBe(true);
+  expect(resetState.disclosureRevision).toBe(refusedState.disclosureRevision + 1);
   expect(resetState.disclosureContext).toBe(refusedState.disclosureContext);
   const identity = effect("explicit-current-read");
   const restored = operationReducer(
@@ -279,6 +282,7 @@ it("restores only owned creation entry after a fenced epoch refresh without rest
   const restored = operationReducer(state, {
     type: "RESTORE_CREATION_DRAFT",
     editing: state.operation,
+    disclosureRevision: state.disclosureRevision,
     identity: creationIdentity(state),
   });
   expect(restored.disclosureContext).toBe(state.context);
@@ -299,6 +303,10 @@ it.each([
   "stale-identity",
 ] as const)("does not authorize creation entry from %s", (kind) => {
   let state = creationRefresh();
+  const observedRevision = state.disclosureRevision;
+  if (kind === "same-epoch" || kind === "credential-only") {
+    state = operationReducer(state, { type: "INVALIDATE", refused: true });
+  }
   if (kind === "credential-only") {
     state = { ...state, context: { ...state.context, epoch: state.disclosureContext.epoch } };
   }
@@ -329,6 +337,7 @@ it.each([
   const restored = operationReducer(state, {
     type: "RESTORE_CREATION_DRAFT",
     editing,
+    disclosureRevision: observedRevision,
     identity:
       kind === "stale-identity"
         ? { ...identity, contextGeneration: identity.contextGeneration - 1 }
@@ -449,6 +458,7 @@ it.each(["PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING", "UNRESOLVED", "AC
         type: "RESTORE_CREATION_DRAFT",
         identity,
         editing: active.operation,
+        disclosureRevision: active.disclosureRevision,
       }),
     ).toBe(active);
   },
@@ -485,3 +495,33 @@ it("acceptance clears transient segment buffers without adding them to its froze
   expect(operationView(recorded).prepared).toBe(operationView(active).prepared);
   expect(operationView(recorded).prepared!.bytes).not.toContain("inactive-date-field");
 });
+
+it.each(["read-failed", "reset"] as const)(
+  "rejects a successful context proof superseded by %s even if the current editing phase is supplied",
+  (kind) => {
+    const state = creationRefresh();
+    const observedRevision = state.disclosureRevision;
+    const identity = creationIdentity(state);
+    const after =
+      kind === "reset"
+        ? operationReducer(state, { type: "RESET", state, abandon: false })
+        : operationReducer(
+            { ...state, disclosureRead: identity },
+            {
+              type: "DISCLOSURE_READ_FAILED",
+              identity,
+              notice: { kind: "local", reason: "unreachable" },
+              refused: false,
+            },
+          );
+    expect(after.disclosureRevision).toBe(observedRevision + 1);
+    expect(
+      operationReducer(after, {
+        type: "RESTORE_CREATION_DRAFT",
+        identity,
+        editing: after.operation,
+        disclosureRevision: observedRevision,
+      }),
+    ).toBe(after);
+  },
+);
