@@ -55,6 +55,9 @@ test("authority refusal preserves authored input through Settings and needs a fr
 }) => {
   await openAuthenticated(page);
   await goToView(page, "people");
+  await expect(page.locator("#authority-title")).toBeVisible();
+  // This raw fixture is a separate client; let the app's bounded People/bootstrap reads settle.
+  await page.waitForLoadState("networkidle");
   const source = await syntheticPrincipals();
   const subjectValue = `repair-${randomUUID()}`;
   const profileName = "Authored repair candidate";
@@ -82,6 +85,9 @@ test("authority refusal preserves authored input through Settings and needs a fr
       },
     }),
   });
+  if (rawIssuer.status !== 200) {
+    throw new Error(`E2E_WORK_READBACK_HTTP_${rawIssuer.status}_RAW_ISSUER_PREVIEW`);
+  }
   expect(rawIssuer.status).toBe(200);
   expect(rawIssuer.payload).toMatchObject({
     outcome: {
