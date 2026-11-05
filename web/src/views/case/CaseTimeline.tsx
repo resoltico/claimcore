@@ -1,4 +1,4 @@
-import { useCallback, useId, useState } from "react";
+import { useCallback, useState } from "react";
 import { resolveTimelineHighlights } from "@contracts/client";
 import type {
   CaseSelector,
@@ -48,7 +48,6 @@ const TimelineEntry = ({
   detail: "CURRENT" | "SUMMARY" | "ERASED";
 }) => {
   const p = usePresentation();
-  const headingId = useId();
   const subject = entry.kind === "CASE_FACT" ? "CASE" : entry.kind;
   const definition = productMetadata.catalog.entries.find(
     (candidate) =>
@@ -61,25 +60,23 @@ const TimelineEntry = ({
   return (
     <li className="timeline-entry">
       <details>
-        <summary aria-labelledby={headingId}>
-          <span id={headingId} className="timeline-entry-heading">
-            <strong>
-              {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
-                <TimelineEventView event={entry.changes.overview.event} />
-              ) : (
-                actLabel
-              )}
-            </strong>{" "}
-            <span className="timeline-attribution">
-              <ActorIdentity actor={entry.recordedBy} /> ·{" "}
-              {observedAt === null ? (
-                <RecordedTime value={entry.recordedAt} />
-              ) : (
-                <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
-              )}
-            </span>{" "}
-            <span className="timeline-details-label">{p.text("ui.timeline.details")}</span>
-          </span>
+        <summary className="timeline-entry-heading">
+          <strong>
+            {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
+              <TimelineEventView event={entry.changes.overview.event} />
+            ) : (
+              actLabel
+            )}
+          </strong>{" "}
+          <span className="timeline-attribution">
+            <ActorIdentity actor={entry.recordedBy} /> ·{" "}
+            {observedAt === null ? (
+              <RecordedTime value={entry.recordedAt} />
+            ) : (
+              <RelativeTime value={entry.recordedAt} observedAt={observedAt} />
+            )}
+          </span>{" "}
+          <span className="timeline-details-label">{p.text("ui.timeline.details")}</span>
         </summary>
         {detail === "CURRENT" && entry.changes.kind === "DISCLOSED" ? (
           <TimelineChanges changes={entry.changes} />

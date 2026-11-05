@@ -1,6 +1,8 @@
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
+import { actorRefInput } from "../../../support/inputs";
+import { preferenceKey } from "../../../../src/presentation/preferences";
 import { response } from "../../../support/service-ui.fixtures";
 import { timelineEntry, timelinePage } from "../../../support/timeline.fixtures";
 import { CaseTimeline, TimelineEntries } from "../../../../src/views/case/CaseTimeline";
@@ -228,8 +230,63 @@ it("keeps the visible act, actor and details text in the disclosure's accessible
     <TimelineEntries items={[timelineEntry()]} observedAt={null} detail="CURRENT" />,
   );
   const summary = view.container.querySelector("summary")!;
+  expect(summary).not.toHaveAttribute("aria-label");
+  expect(summary).not.toHaveAttribute("aria-labelledby");
+  expect(summary.querySelector(":scope > strong")).toHaveTextContent("Case opened");
   expect(summary).toHaveAccessibleName(/Case opened/u);
   expect(summary).toHaveAccessibleName(/Timeline recorder/u);
   expect(summary).toHaveAccessibleName(/Show details/u);
   expect(summary).toHaveTextContent("Case opened Timeline recorder");
+});
+
+it("names an Arabic responsibility disclosure from its complete visible event and attribution", () => {
+  localStorage.setItem(
+    preferenceKey,
+    JSON.stringify({
+      version: 3,
+      language: "ar",
+      displayLocale: "ar-EG",
+      mode: "light",
+      accent: "blue",
+    }),
+  );
+  try {
+    const original = timelineEntry();
+    const view = render(
+      <TimelineEntries
+        items={[
+          {
+            ...original,
+            kind: "WORK",
+            act: "UPDATE_WORK",
+            recordedBy: actorRefInput({
+              displayName: { kind: "NAMED", value: "Plain Sight Field Owner" },
+            }),
+            changes: {
+              kind: "DISCLOSED",
+              items: [],
+              overview: {
+                event: {
+                  kind: "RESPONSIBILITY_ASSIGNED",
+                  messageId: "timeline.event.responsibilityAssigned",
+                  person: actorRefInput({ displayName: { kind: "NAMED", value: "Alex Handler" } }),
+                },
+                highlights: [],
+              },
+            },
+          },
+        ]}
+        observedAt={null}
+        detail="CURRENT"
+      />,
+    );
+    const summary = view.container.querySelector("summary")!;
+    expect(summary).not.toHaveAttribute("aria-labelledby");
+    expect(summary).not.toHaveAttribute("aria-label");
+    expect(summary).toHaveAccessibleName(/عُيّن Alex Handler مسؤولًا Plain Sight Field Owner/u);
+    expect(summary).toHaveAccessibleName(/عرض التفاصيل/u);
+    expect(summary.querySelectorAll("bdi")).toHaveLength(2);
+  } finally {
+    localStorage.removeItem(preferenceKey);
+  }
 });
