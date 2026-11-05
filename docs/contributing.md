@@ -393,6 +393,11 @@ file. Selection is validated before fixture startup; reports explicitly state in
 The ordinary acceptance gate refuses diagnostic selection. Use this path to diagnose the affected
 spec instead of restarting complete suites and replaying unrelated passing tests.
 
+For a Linux-only browser failure, dispatch the existing CI workflow with `browser_spec` set to that
+basename (for example `gh workflow run ci.yml --ref BRANCH -f browser_spec=design-matrix.spec.ts`).
+This runs only the explicitly partial Chromium diagnostic; qualification, growth and `Gate` jobs are
+skipped. Invalid or ambiguous spec names fail before setup. Ordinary dispatches keep full qualification.
+
 For broader verification:
 
 ```sh
