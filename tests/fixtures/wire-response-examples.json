@@ -9004,7 +9004,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -9064,7 +9074,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -9175,7 +9206,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               }
             ],
@@ -9369,7 +9407,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -9429,7 +9477,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -9474,7 +9543,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               }
             ],
@@ -9551,7 +9627,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -9611,7 +9697,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -9656,7 +9763,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -9711,7 +9825,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -9771,7 +9895,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -9816,7 +9961,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -9871,7 +10023,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -9931,7 +10093,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -9976,7 +10159,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10031,7 +10221,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -10091,7 +10291,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -10136,7 +10357,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10191,7 +10419,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -10251,7 +10489,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -10296,7 +10555,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10351,7 +10617,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -10411,7 +10687,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -10456,7 +10753,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10511,7 +10815,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -10571,7 +10885,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -10616,7 +10951,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10671,7 +11013,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -10731,7 +11083,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -10776,7 +11149,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10831,7 +11211,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -10891,7 +11281,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -10936,7 +11347,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -10991,7 +11409,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -11051,7 +11479,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -11096,7 +11545,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -11151,7 +11607,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -11211,7 +11677,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -11256,7 +11743,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -11311,7 +11805,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -11371,7 +11875,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -11416,7 +11941,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -11471,7 +12003,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -11531,7 +12073,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -11576,7 +12139,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -11631,7 +12201,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -11691,7 +12271,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -11736,7 +12337,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -11791,7 +12399,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -11851,7 +12469,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -11896,7 +12535,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -11951,7 +12597,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -12011,7 +12667,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -12056,7 +12733,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               },
               {
@@ -12111,7 +12795,17 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_COMPLETED_AND_PLANNED",
+                      "messageId": "timeline.event.reminderCompletedAndPlanned",
+                      "completedAction": "Completed action",
+                      "nextAction": "Next action",
+                      "nextDue": "2026-01-02"
+                    },
+                    "highlights": []
+                  }
                 },
                 "reminderId": "30000000-0000-4000-8000-000000000002",
                 "next": {
@@ -12171,7 +12865,28 @@
                         "after": "Review the supplied evidence"
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
                 }
               },
               {
@@ -12216,7 +12931,14 @@
                         }
                       }
                     }
-                  ]
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
                 }
               }
             ],
@@ -13015,7 +13737,14 @@
                             }
                           }
                         }
-                      ]
+                      ],
+                      "overview": {
+                        "event": {
+                          "kind": "CASE_OPENED",
+                          "messageId": "timeline.event.caseOpened"
+                        },
+                        "highlights": []
+                      }
                     }
                   }
                 ],
@@ -21607,6 +22336,892 @@
           }
         }
       }
+    },
+    {
+      "name": "case.timeline-explicit-reminder-highlight-facets",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": "Before action",
+                          "after": "Updated action"
+                        },
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "ACTION",
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": true
+    },
+    {
+      "name": "case.timeline-missing-overview-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "COMPLETE_AND_PLAN_NEXT",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": null,
+                        "due": null,
+                        "state": {
+                          "before": "PENDING",
+                          "after": "COMPLETED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000003",
+                        "action": {
+                          "before": null,
+                          "after": "Next action"
+                        },
+                        "due": {
+                          "before": null,
+                          "after": "2026-01-02"
+                        },
+                        "state": {
+                          "before": null,
+                          "after": "PENDING"
+                        }
+                      }
+                    }
+                  ]
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": {
+                  "reminderId": "30000000-0000-4000-8000-000000000003",
+                  "revision": 1
+                }
+              },
+              {
+                "kind": "WORK",
+                "operationId": "20000000-0000-4000-8000-000000000002",
+                "position": {
+                  "sequence": 2,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE_WORK",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "RESPONSIBILITY",
+                      "change": {
+                        "before": {
+                          "actorId": "10000000-0000-4000-8000-000000000002",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Previous person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "DISABLED"
+                        },
+                        "after": {
+                          "actorId": "10000000-0000-4000-8000-000000000003",
+                          "displayName": {
+                            "kind": "NAMED",
+                            "value": "Current person"
+                          },
+                          "principalKind": "HUMAN",
+                          "availability": "AVAILABLE"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "HANDLING_SUMMARY",
+                      "change": {
+                        "before": null,
+                        "after": "Review the supplied evidence"
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "RESPONSIBILITY_ASSIGNED",
+                      "messageId": "timeline.event.responsibilityAssigned",
+                      "person": {
+                        "actorId": "10000000-0000-4000-8000-000000000003",
+                        "displayName": {
+                          "kind": "NAMED",
+                          "value": "Current person"
+                        },
+                        "principalKind": "HUMAN",
+                        "availability": "AVAILABLE"
+                      }
+                    },
+                    "highlights": [
+                      {
+                        "kind": "CHANGE",
+                        "index": 1
+                      }
+                    ]
+                  }
+                }
+              },
+              {
+                "kind": "CASE_FACT",
+                "operationId": "20000000-0000-4000-8000-000000000001",
+                "position": {
+                  "sequence": 1,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 1,
+                "act": "OPEN",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "LIFECYCLE",
+                      "change": {
+                        "before": null,
+                        "after": "ACTIVE"
+                      }
+                    },
+                    {
+                      "kind": "CASE_MONEY",
+                      "change": {
+                        "field": "claimedAmount",
+                        "change": {
+                          "before": null,
+                          "after": {
+                            "amount": "1000",
+                            "currency": "EUR"
+                          }
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "status",
+                        "before": null,
+                        "after": {
+                          "kind": "STATUS",
+                          "value": "OPENED"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "caseReference",
+                        "before": null,
+                        "after": {
+                          "kind": "REFERENCE",
+                          "value": "CASE-001"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "claimantName",
+                        "before": null,
+                        "after": {
+                          "kind": "PARTY",
+                          "value": "Synthetic claimant"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "incidentDate",
+                        "before": null,
+                        "after": {
+                          "kind": "DATE",
+                          "value": "2026-01-01"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "incidentCountry",
+                        "before": null,
+                        "after": {
+                          "kind": "COUNTRY",
+                          "value": "LV"
+                        }
+                      }
+                    },
+                    {
+                      "kind": "CASE_FIELD",
+                      "change": {
+                        "field": "incidentDescription",
+                        "before": null,
+                        "after": {
+                          "kind": "TEXT",
+                          "value": "Two paragraphs\nSecond paragraph"
+                        }
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "CASE_OPENED",
+                      "messageId": "timeline.event.caseOpened"
+                    },
+                    "highlights": []
+                  }
+                }
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-unknown-overview-event-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": "Before action",
+                          "after": "Updated action"
+                        },
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "FUTURE_EVENT",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "ACTION",
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-mismatched-event-message-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": "Before action",
+                          "after": "Updated action"
+                        },
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.workRecorded",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "ACTION",
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-negative-highlight-index-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": "Before action",
+                          "after": "Updated action"
+                        },
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": -1,
+                        "facets": [
+                          "ACTION",
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-empty-highlight-facets-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": "Before action",
+                          "after": "Updated action"
+                        },
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": []
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-unknown-highlight-facet-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "DISCLOSED",
+                  "items": [
+                    {
+                      "kind": "REMINDER",
+                      "change": {
+                        "reminderId": "30000000-0000-4000-8000-000000000002",
+                        "action": {
+                          "before": "Before action",
+                          "after": "Updated action"
+                        },
+                        "due": {
+                          "before": "2026-01-01",
+                          "after": "2026-01-02"
+                        },
+                        "state": null
+                      }
+                    }
+                  ],
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "ACTOR"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-withheld-overview-leak-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "WITHHELD",
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "ACTION",
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
+    },
+    {
+      "name": "case.timeline-erased-overview-leak-refused",
+      "endpoint": "case.timeline",
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-01-01T12:00:00.000000Z",
+              "businessDate": "2026-01-01",
+              "timeZone": "Etc/UTC"
+            },
+            "caseId": "40000000-0000-4000-8000-000000000001",
+            "caseReference": "CASE-001",
+            "items": [
+              {
+                "kind": "REMINDER",
+                "operationId": "20000000-0000-4000-8000-000000000003",
+                "position": {
+                  "sequence": 3,
+                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+                },
+                "recordedAt": "2026-01-01T12:00:00.000000Z",
+                "recordedBy": {
+                  "actorId": "10000000-0000-4000-8000-000000000001",
+                  "displayName": {
+                    "kind": "NAMED",
+                    "value": "Synthetic author"
+                  },
+                  "principalKind": "HUMAN",
+                  "availability": "AVAILABLE"
+                },
+                "revision": 2,
+                "act": "UPDATE",
+                "changes": {
+                  "kind": "ERASED",
+                  "overview": {
+                    "event": {
+                      "kind": "REMINDER_CHANGED",
+                      "messageId": "timeline.event.reminderChanged",
+                      "action": "Updated action"
+                    },
+                    "highlights": [
+                      {
+                        "kind": "REMINDER",
+                        "index": 0,
+                        "facets": [
+                          "ACTION",
+                          "DUE"
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "reminderId": "30000000-0000-4000-8000-000000000002",
+                "next": null
+              }
+            ],
+            "nextCursor": null
+          }
+        }
+      },
+      "valid": false
     }
   ]
 }
