@@ -122,6 +122,7 @@ module MessageRegisters =
 
             let gui =
                 key.StartsWith("ui.", StringComparison.Ordinal)
+                || key.StartsWith("timeline.event.", StringComparison.Ordinal)
                 || key.EndsWith(".label", StringComparison.Ordinal)
                 || key.EndsWith(".hint", StringComparison.Ordinal)
                 || roleMeaningKey key

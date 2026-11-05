@@ -32,21 +32,12 @@ module TimelineEventPresentation =
             Arguments = Map.ofList arguments
         }
 
-    let describe =
+    let private withArguments =
         function
-        | TimelineEvent.CaseActRecorded act ->
-            {
-                MessageId = caseKind act |> snd
-                Arguments = Map.empty
-            }
         | TimelineEvent.ResponsibilityAssigned person ->
             description "responsibilityAssigned" [ "person", PresentedValue.Actor person ]
         | TimelineEvent.ResponsibilityCleared person ->
             description "responsibilityCleared" [ "person", PresentedValue.Actor person ]
-        | TimelineEvent.WorkRecorded -> description "workRecorded" []
-        | TimelineEvent.HandlingSummaryAdded -> description "handlingSummaryAdded" []
-        | TimelineEvent.HandlingSummaryChanged -> description "handlingSummaryChanged" []
-        | TimelineEvent.HandlingSummaryCleared -> description "handlingSummaryCleared" []
         | TimelineEvent.ReminderPlanned(action, due) ->
             description
                 "reminderPlanned"
@@ -81,6 +72,24 @@ module TimelineEventPresentation =
                     "nextAction", PresentedValue.Text(ReminderAction.format next)
                     "nextDue", PresentedValue.Date due
                 ]
+        | _ -> invalidArg "event" "Use an event with typed arguments."
+
+    let private withoutArguments =
+        function
+        | TimelineEvent.CaseActRecorded act ->
+            Some
+                {
+                    MessageId = caseKind act |> snd
+                    Arguments = Map.empty
+                }
+        | TimelineEvent.WorkRecorded -> Some(description "workRecorded" [])
+        | TimelineEvent.HandlingSummaryAdded -> Some(description "handlingSummaryAdded" [])
+        | TimelineEvent.HandlingSummaryChanged -> Some(description "handlingSummaryChanged" [])
+        | TimelineEvent.HandlingSummaryCleared -> Some(description "handlingSummaryCleared" [])
+        | _ -> None
+
+    let describe event =
+        withoutArguments event |> Option.defaultWith (fun () -> withArguments event)
 
     /// Message argument contracts are checked before generated catalogs reach either renderer.
     let contracts =

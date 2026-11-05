@@ -30,6 +30,12 @@ let tests =
         [
             testCase "the real catalogs satisfy register and glossary checks" (fun () ->
                 CatalogValidation.validate () |> ignore)
+            testCase "timeline event sentences obey the GUI terminology register" (fun () ->
+                AuthoredMessages.all ()
+                |> update "en" "timeline.event.caseOpened" "A snapshot was recorded."
+                |> fun source ->
+                    rejects "Implementation terminology in GUI copy" (fun () ->
+                        MessageRegisters.validateCopy source))
             testCase "wire hints are refused in every language" (fun () ->
                 for language in [ "en"; "lv"; "ar" ] do
                     AuthoredMessages.all ()
