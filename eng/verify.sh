@@ -56,6 +56,13 @@ for stage in "${stages[@]}"; do
   esac
 done
 
+refuse_diagnostic_acceptance() {
+  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-}" == diagnostic || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" ]]; then
+    echo "Diagnostic browser selection is not an acceptance gate. Use the focused native filter 'FullyQualifiedName~published browser diagnostic' with current built inputs and eng/expecto.acceptance.runsettings." >&2
+    return 64
+  fi
+}
+
 validate_browser_selection() {
   if [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
     case "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}" in
@@ -93,7 +100,7 @@ validate_postgres_selection() {
 for stage in "${stages[@]}"; do
   case "${stage}" in
     browsers) validate_browser_selection ;;
-    acceptance) validate_browser_selection; validate_postgres_selection ;;
+    acceptance) refuse_diagnostic_acceptance; validate_browser_selection; validate_postgres_selection ;;
     integration | postgres | growth) validate_postgres_selection ;;
     *) : ;;
   esac
