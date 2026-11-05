@@ -291,31 +291,74 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
                 fixture.Issuer
                 "--subject"
                 subject
+                "--name"
+                "Safety holder"
             ]
             0
         |> require "ACCEPTED"
 
-    let actorId =
-        registered.GetProperty("subject").GetProperty("targetActorId").GetString()
-        |> nonNull
+    let target = registered.GetProperty("subject").GetProperty "targetActor"
+
+    Expect.equal
+        (target.GetProperty("kind").GetString())
+        "DISCLOSED"
+        "Current owner receives the authorized target reference"
+
+    let targetActor = target.GetProperty "actor"
+    let actorId = targetActor.GetProperty("actorId").GetString() |> nonNull
+
+    Expect.equal
+        actorId
+        operation
+        "Registration keeps its deterministic operation-derived account identity"
+
+    Expect.equal
+        (targetActor.GetProperty("displayName").GetProperty("value").GetString())
+        "Safety holder"
+        "Authored profile owns the readable account name"
 
     let machine =
-        CliCalls.verb fixture owner [ "authority"; "list"; "--limit"; "50" ] 0
+        CliCalls.verb fixture owner [ "authority"; "grants"; actorId; "--limit"; "50" ] 0
         |> require "SUCCEEDED"
 
-    let found =
-        machine.GetProperty("items").EnumerateArray()
-        |> Seq.find (fun value -> value.GetProperty("actorId").GetString() = actorId)
+    let found = machine.GetProperty "actor"
+
+    Expect.equal
+        (found.GetProperty("actor").GetProperty("actorId").GetString())
+        actorId
+        "Technical disclosure is for the already-known registered identity"
 
     Expect.isTrue
         (found.GetProperty("principal").GetProperty("subject").GetString() = subject)
         "The real service and JSON CLI preserve the exact principal identity"
 
+    let listEnvironment = Dictionary<string, string>(owner)
+    listEnvironment["COLUMNS"] <- "100"
+
+    let primary =
+        CliCalls.invoke
+            fixture
+            listEnvironment
+            [ "authority"; "list"; "--limit"; "50"; "--format"; "text" ]
+            Array.empty
+            0
+
+    let primaryText = Encoding.UTF8.GetString primary.StandardOutput
+
+    Expect.isTrue
+        (primaryText.Split('\n')
+         |> Array.exists (fun line -> line.StartsWith("Safety holder", StringComparison.Ordinal)))
+        "Primary rows identify the account by its authored name, never its principal or ID"
+
+    Expect.isFalse
+        (primaryText.Contains("synthetic-\\u{001B}", StringComparison.Ordinal))
+        "The unsafe principal is not the primary name"
+
     let rendered =
         CliCalls.invoke
             fixture
             owner
-            [ "authority"; "list"; "--limit"; "50"; "--format"; "text" ]
+            [ "authority"; "grants"; actorId; "--limit"; "50"; "--format"; "text" ]
             Array.empty
             0
 
@@ -323,7 +366,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     let row =
         text.Split('\n')
-        |> Array.find (fun line -> line.StartsWith(actorId, StringComparison.Ordinal))
+        |> Array.find (fun line -> line.Contains("synthetic-", StringComparison.Ordinal))
 
     for control in [ '\u001B'; '\r'; '\t'; '\b'; '\u0085'; '\u202E' ] do
         Expect.isFalse
@@ -349,8 +392,17 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
     let operation = Guid.NewGuid().ToString("D")
     let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
     let context = CliCalls.verb fixture owner [ "context" ] 0 |> require "SUCCEEDED"
-    let actor = context.GetProperty("actorId").GetString() |> nonNull
-    let installation = context.GetProperty("installationId").GetString() |> nonNull
+    let requester = context.GetProperty "requester"
+
+    Expect.equal
+        (requester.GetProperty("kind").GetString())
+        "ACTIVE"
+        "Settlement is prepared for the active authenticated owner"
+
+    let actor =
+        requester.GetProperty("self").GetProperty("actorId").GetString() |> nonNull
+
+    let installation = requester.GetProperty("installationId").GetString() |> nonNull
     let original = head fixture
 
     for answer, expectedHead in [ "", original; "yes", original; operation, original + 1L ] do

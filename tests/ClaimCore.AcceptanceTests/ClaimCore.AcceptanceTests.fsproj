@@ -28,6 +28,7 @@
     <Compile Include="CliInvocationEvidence.fs" />
     <Compile Include="CliDriverCompletion.fs" />
     <Compile Include="CliCalls.fs" />
+    <Compile Include="AcceptanceReceiptObservations.fs" />
     <Compile Include="PublishedDrainTests.fs" />
     <Compile Include="CliSetupTests.fs" />
     <Compile Include="CliDriverCompletionTests.fs" />

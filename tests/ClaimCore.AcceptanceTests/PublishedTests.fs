@@ -7,6 +7,7 @@ open System.Text.Json
 open Expecto
 open ClaimCore.Domain
 open CliCalls
+open ReceiptObservations
 
 let private verbArguments verb (bytes: byte array) =
     use source = JsonDocument.Parse(ReadOnlyMemory<byte> bytes)
@@ -68,12 +69,6 @@ let private assertDryRun (fixture: PublishedFixture.Fixture) arguments expected 
         (JsonElement.DeepEquals(actual.RootElement, authored.RootElement))
         "Verb prepares the independently authored call frame"
 
-let private exactReply (fixture: PublishedFixture.Fixture) name expected actual =
-    if actual <> expected then
-        FixtureFiles.text fixture.Directory (name + ".expected.json") expected |> ignore
-        FixtureFiles.text fixture.Directory (name + ".actual.json") actual |> ignore
-
-    Expect.isTrue (actual = expected) "Exact reply content agrees; mismatch evidence stays private"
 
 let private walkthrough (fixture: PublishedFixture.Fixture) =
     let files =
@@ -99,10 +94,10 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
             (int64 (index + 1))
             "Example revision"
 
-        let replay =
-            verb fixture fixture.Environment arguments 0 |> require "ALREADY_ACCEPTED"
+        sameRecordedReceipt fixture "walkthrough-replay" receipt (fun () ->
+            verb fixture fixture.Environment arguments 0 |> require "ALREADY_ACCEPTED")
+        |> ignore
 
-        exactReply fixture "walkthrough-replay" (receipt.GetRawText()) (replay.GetRawText())
         position <- receipt.GetProperty("position")
 
     let current =
@@ -177,7 +172,7 @@ let private erasedHistory fixture =
 
         Expect.equal
             names
-            [ "operationId"; "position"; "recordedAt"; "recordedBy"; "subject" ]
+            [ "basis"; "operationId"; "position"; "recordedAt"; "recordedBy"; "subject" ]
             "Receipt retains identity and ledger metadata"
 
 let private erasedView (tombstone: JsonElement) =
@@ -190,8 +185,41 @@ let private erasedView (tombstone: JsonElement) =
 
     Expect.equal
         names
-        [ "advice"; "caseId"; "caseReference"; "mine"; "revision"; "state"; "work" ]
+        [
+            "advice"
+            "attention"
+            "caseId"
+            "caseReference"
+            "headline"
+            "mine"
+            "revision"
+            "stages"
+            "state"
+            "work"
+        ]
         "Erased views contain retained identity, empty work and current read advice"
+
+    Expect.equal
+        (tombstone.GetProperty("headline").GetString())
+        "ERASED"
+        "Headline cannot disclose erased payload"
+
+    Expect.equal
+        (tombstone.GetProperty("attention").GetArrayLength())
+        0
+        "Erased work has no attention flags"
+
+    let stages = tombstone.GetProperty "stages"
+
+    Expect.equal
+        (stages.GetProperty("kind").GetString())
+        "ERASED"
+        "No historical stage data remains"
+
+    Expect.equal
+        (stages.EnumerateObject() |> Seq.length)
+        1
+        "Erased stage display carries no dated or financial payload"
 
     Expect.isFalse
         (tombstone.GetProperty("mine").GetBoolean())
@@ -406,14 +434,14 @@ let private supplementary fixture =
     automation fixture "operation.preview" input 0 |> require "REVIEWED" |> ignore
     let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"
 
-    let observed =
+    sameRecordedReceipt fixture "supplementary-observation" receipt (fun () ->
         automation fixture "operation.observe" {| operationId = input.operationId |} 0
-        |> require "SUCCEEDED"
-
-    exactReply fixture "supplementary-observation" (receipt.GetRawText()) (observed.GetRawText())
+        |> require "SUCCEEDED")
+    |> ignore
 
     let replay =
-        automation fixture "operation.execute" input 0 |> require "ALREADY_ACCEPTED"
+        sameRecordedReceipt fixture "supplementary-replay" receipt (fun () ->
+            automation fixture "operation.execute" input 0 |> require "ALREADY_ACCEPTED")
 
     let actualName =
         replay
@@ -454,3 +482,7 @@ let tests =
     testCaseAsync
         "published walkthrough, exact replay, roles, stewardship, Unicode and checkpoint"
         (async { do! qualify () |> Async.AwaitTask })
+
+
+[<Tests>]
+let receiptContentGuards = ReceiptObservations.contentGuards
