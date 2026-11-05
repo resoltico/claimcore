@@ -364,9 +364,29 @@ is Debug. Build the affected application projects in Release before a direct foc
 so a missing Release input fails before that setup cost.
 Published Web tests also need current frontend assets from `npm --prefix web ci` followed by
 `npm --prefix web run build`; the acceptance stage prepares those assets.
+Reuse installed dependencies while the lockfile/toolchain inputs are unchanged. A test-selector-only
+edit needs its test checks, not another product asset build or dependency installation.
 Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
+
+For a concrete browser failure, select one existing spec and one engine. With current Release
+applications/test assembly and frontend assets already built:
+
+```sh
+CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=chromium \
+CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE=diagnostic \
+CLAIMCORE_ACCEPTANCE_BROWSER_SPEC=design-matrix.spec.ts \
+dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
+  --configuration Release --no-build --no-restore --zero-tests-policy=strict \
+  --filter 'FullyQualifiedName~published browser diagnostic' \
+  -- --settings=eng/expecto.acceptance.runsettings
+```
+
+This starts the same isolated fixture and keeps the existing hard limits, but runs only the selected
+file. Selection is validated before fixture startup; reports explicitly state incomplete qualification.
+The ordinary acceptance gate refuses diagnostic selection. Use this path to diagnose the affected
+spec instead of restarting complete suites and replaying unrelated passing tests.
 
 For broader verification:
 
