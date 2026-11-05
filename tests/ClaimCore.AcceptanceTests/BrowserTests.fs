@@ -354,6 +354,14 @@ let private orchestrationControls () =
 
         Expect.equal (Seq.toList observed) expected "Failure never starts later expensive fixtures"
 
+let private timeoutMinutes =
+    function
+    | BrowserScope.Complete -> 40
+    | BrowserScope.Diagnostic _ -> 20
+    | BrowserScope.Smoke -> 2
+
+let private processTimeout selected = (timeoutMinutes selected + 1) * 60_000
+
 let private browserArguments selected engine =
     let files =
         match selected with
@@ -369,10 +377,7 @@ let private browserArguments selected engine =
         | BrowserScope.Diagnostic _ -> "--max-failures=0"
         | _ -> "--max-failures=1"
     ]
-    @ (if selected = BrowserScope.Smoke then
-           [ "--global-timeout=120000" ]
-       else
-           [])
+    @ [ $"--global-timeout={timeoutMinutes selected * 60_000}" ]
 
 let private diagnosticControls () =
     let root = Directory.CreateTempSubdirectory("claimcore-browser-selection-")
@@ -466,6 +471,31 @@ let private diagnosticControls () =
                 (List.contains "--max-failures=0" arguments)
                 "Only diagnostics collect every failure"
 
+        for campaign, minutes, argument, nativeMilliseconds in
+            [
+                BrowserScope.Complete, 40, "--global-timeout=2400000", 2_460_000
+                selected, 20, "--global-timeout=1200000", 1_260_000
+                BrowserScope.Smoke, 2, "--global-timeout=120000", 180_000
+            ] do
+            Expect.equal
+                (timeoutMinutes campaign)
+                minutes
+                "Each scope owns its explicit execution cap"
+
+            let arguments = browserArguments campaign "chromium"
+
+            Expect.equal
+                (arguments
+                 |> List.filter (fun value ->
+                     value.StartsWith("--global-timeout=", StringComparison.Ordinal)))
+                [ argument ]
+                "Exactly one scope-specific Playwright cap is passed"
+
+            Expect.equal
+                (processTimeout campaign)
+                nativeMilliseconds
+                "Native cleanup allows exactly one additional minute"
+
         let batchArguments = browserArguments batch "chromium"
 
         Expect.equal
@@ -511,6 +541,7 @@ let private diagnosticControls () =
                 "chromium"
                 "--forbid-only"
                 "--max-failures=0"
+                "--global-timeout=1200000"
             ]
             "Only the escaped known file is added; hard runner options stay locked"
 
@@ -701,10 +732,10 @@ let private printFailureSummary root engine bytes =
     Directory.CreateDirectory output |> ignore
     FixtureFiles.text output (engine + ".txt") summary |> ignore
 
-let private runBrowser root engine output start =
+let private runBrowser selected root engine output start =
     try
-        // Leave one minute to report and clean up after Playwright's 20-minute suite bound.
-        PublishedProcesses.run (21 * 60_000) start None
+        // Leave one minute to report and clean up after the scope's Playwright bound.
+        PublishedProcesses.run (processTimeout selected) start None
     with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
         FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore
@@ -750,7 +781,7 @@ let private qualifyEngine engine =
         let start = PublishedProcesses.start "npm" (browserArguments scope engine) values
 
         start.WorkingDirectory <- Path.Combine(fixture.Root, "web")
-        let result = runBrowser fixture.Root engine output start
+        let result = runBrowser scope fixture.Root engine output start
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
 

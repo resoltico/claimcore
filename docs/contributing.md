@@ -380,6 +380,14 @@ Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
 
+Complete published-browser qualification has a 40-minute Playwright execution safety cap for the
+expanded workflow and design-matrix inventory. `BrowserTests.fs` owns scope limits (complete 40,
+diagnostic 20, smoke 2 minutes), passes them explicitly to Playwright, and gives its native process
+one further minute for reporting and cleanup. The complete acceptance project has a 60-minute MTP
+bound and its CI job allows 70 minutes including setup. These capacity bounds do not change per-test
+limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
+is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
+
 For concrete browser failures, select existing specs and one engine. With current Release
 applications/test assembly and frontend assets already built:
 
