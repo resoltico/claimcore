@@ -366,11 +366,19 @@ button.case-action-danger {
   font-size: var(--text-sm);
 }
 
+.case-fact-card {
+  container: case-facts / inline-size;
+}
 .case-fact-card > dl {
   margin-block: var(--space-3) 0;
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: var(--space-2) var(--space-4);
+}
+@container case-facts (width < 14rem) {
+  .case-fact-card > dl {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 .case-fact-card .field-row {
   min-inline-size: 0;
