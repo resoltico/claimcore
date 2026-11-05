@@ -1,4 +1,15 @@
 @media (width < 40rem) {
+  .view-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: calc(var(--focus-width) + var(--focus-offset));
+    scroll-padding-inline: calc(var(--focus-width) + var(--focus-offset));
+  }
+  .view-tab {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    scroll-margin-inline: calc(var(--focus-width) + var(--focus-offset));
+  }
   .case-progress {
     padding-inline: var(--space-1);
   }
