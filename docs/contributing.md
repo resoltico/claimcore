@@ -413,9 +413,12 @@ The ordinary acceptance gate refuses diagnostic selection. Use this path to diag
 spec instead of restarting complete suites and replaying unrelated passing tests.
 
 For a Linux-only browser failure, dispatch the existing CI workflow with `browser_spec` set to that
-basename (for example `gh workflow run ci.yml --ref BRANCH -f browser_spec=design-matrix.spec.ts`).
-This runs only the explicitly partial Chromium diagnostic; qualification, growth and `Gate` jobs are
-skipped. Invalid or ambiguous spec names fail before setup. Ordinary dispatches keep full qualification.
+basename and optional `browser_engine=chromium|firefox|webkit` (default Chromium), for example
+`gh workflow run ci.yml --ref BRANCH -f browser_spec=presentation-foundations.spec.ts -f browser_engine=webkit`.
+This runs only the explicitly partial one-file diagnostic; qualification, growth and `Gate` jobs are
+skipped. Invalid or ambiguous spec names and unknown engines fail before setup. A nondefault engine
+without `browser_spec` fails configuration and blocks qualification jobs; ordinary dispatches keep full
+qualification. The existing diagnostic execution and outer time limits are unchanged.
 
 For broader verification:
 
