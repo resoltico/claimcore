@@ -88,7 +88,9 @@ let private claimsReachContext () =
 let private activeIssuer () =
     task {
         let installation = Guid.NewGuid()
-        use memory = new MemoryStore.Store(installation, DateTimeOffset.UtcNow)
+        // The memory fixture models the ledger's whole-microsecond database timestamps.
+        let observed = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
+        use memory = new MemoryStore.Store(installation, observed)
 
         let principal =
             PrincipalKey.human oidc.Issuer.AbsoluteUri "synthetic-human"
