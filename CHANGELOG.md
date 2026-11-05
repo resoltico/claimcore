@@ -35,6 +35,8 @@
 - People show bounded role summaries and explicit assignment state; optional responsibility counts and links use the viewer's case-read access and preserve known zero.
 - Unavailable case actions carry current core reasons; case trackers use recorded dates and keep absent financial stages unrecorded after closure.
 - Web task drawers use one routine confirmation button; reminder completion stays beside its row, and erasure still requires the exact reference.
+- Activity details stay expanded across Settings visits; case action groups follow the page heading outline.
+- Use Manual filters in Reminders to include inactive work; standard views keep their own selection rules.
 - Case, work, reminder and timeline text use typed core descriptors; case tables adapt to width without truncating money, and retained actor names are safely escaped.
 - Work overview attention includes due-today and ready-to-close cases, matching core case views.
 - Case lists identify exact visible reference matches using installation case-folding and expose the next reminder identity; unavailable cases remain undisclosed.

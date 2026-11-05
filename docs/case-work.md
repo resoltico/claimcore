@@ -98,6 +98,10 @@ to close. A case with several reasons still counts once in Needs attention.
 Open **Reminders** to see actions across cases. Use its standard views and filters to find Pending,
 Overdue, Due today, Upcoming, Completed or Cancelled work. Actionable views use active open cases;
 Completed and Cancelled actions remain reviewable on readable cases whose contents have not been erased.
+
+Choose **Manual filters** to filter independently of a standard reminder view and enable **Include
+inactive work**. Your other filters stay in place. Turn Manual filters off to return to the default
+work view; standard views keep their own boundaries even when other filters are selected.
 A case with both overdue and today actions can appear in both corresponding action queues.
 
 Counts and pages can change as others work. Refresh to see the latest results. Opening a case and then
