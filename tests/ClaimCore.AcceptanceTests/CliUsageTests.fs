@@ -47,8 +47,8 @@ let private examples =
         {
             Name = "misspelled option"
             Arguments = [ "case"; "close"; "REF"; "--expected-revison"; "1" ]
-            Message = "unknownOption"
-            Values = [ "flag", "--expected-revison" ]
+            Message = "unknownOptionFor"
+            Values = [ "flag", "--expected-revison"; "command", "case close" ]
             Suggestion = Some "--expected-revision"
         }
         {
@@ -126,8 +126,8 @@ let private samples =
     [
         "en",
         [
-            "unknownCommand", "Unknown command: «command»."
-            "unknownOption", "Unknown option: «flag»."
+            "unknownCommand", "Unknown command \"«command»\"."
+            "unknownOptionFor", "Unknown option \"«flag»\" for \"«command»\"."
             "suggestion", "Did you mean «suggestion»?"
             "missingOption", "Missing option: «flag»."
             "missingOperand", "Missing operand: «operand»."
@@ -137,15 +137,10 @@ let private samples =
             "notApplicable", "«flag» does not apply with «because»."
             "duplicateOption", "Option supplied more than once: «flag»."
             "missingValue", "Missing value for «flag»."
-            "helpTopic", "Unknown help topic."
             "helpOptions",
             "Help accepts one topic and one supported language; --format is not available."
-            "describeSelector",
-            "Unknown operation to describe. Omit the selector to list operations."
             "describeOptions",
             "Invalid describe options. Use --format text|json; --language is available only with text output."
-            "schemaSelector",
-            "Unknown schema selection. Use a schema name or an endpoint followed by request or response."
             "schemaOptions", "Schema accepts a name or an endpoint and direction, without options."
             "versionOptions", "Version accepts only --json."
             "invocation",
@@ -153,8 +148,8 @@ let private samples =
         ]
         "lv",
         [
-            "unknownCommand", "Nezināma komanda: «command»."
-            "unknownOption", "Nezināma opcija: «flag»."
+            "unknownCommand", "Nezināma komanda \"«command»\"."
+            "unknownOptionFor", "Nezināma opcija \"«flag»\" komandai \"«command»\"."
             "suggestion", "Vai bija domāts «suggestion»?"
             "missingOption", "Trūkst opcijas: «flag»."
             "missingOperand", "Trūkst argumenta: «operand»."
@@ -164,23 +159,18 @@ let private samples =
             "notApplicable", "«flag» nav piemērojams kopā ar «because»."
             "duplicateOption", "Opcija norādīta vairākas reizes: «flag»."
             "missingValue", "Trūkst vērtības opcijai «flag»."
-            "helpTopic", "Nezināma palīdzības tēma."
             "helpOptions",
             "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams."
-            "describeSelector",
-            "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības."
             "describeOptions",
             "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei."
-            "schemaSelector",
-            "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response."
             "schemaOptions", "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām."
             "versionOptions", "Version pieņem tikai --json."
             "invocation", "Nederīgs «command» izsaukums. Šī komanda nepieņem opcijas vai operandus."
         ]
         "ar",
         [
-            "unknownCommand", "أمر غير معروف: «command»."
-            "unknownOption", "خيار غير معروف: «flag»."
+            "unknownCommand", "أمر غير معروف \"«command»\"."
+            "unknownOptionFor", "خيار غير معروف \"«flag»\" للأمر \"«command»\"."
             "suggestion", "هل تقصد «suggestion»؟"
             "missingOption", "الخيار مفقود: «flag»."
             "missingOperand", "المعامل مفقود: «operand»."
@@ -190,13 +180,9 @@ let private samples =
             "notApplicable", "لا ينطبق «flag» مع «because»."
             "duplicateOption", "تم تقديم الخيار أكثر من مرة: «flag»."
             "missingValue", "قيمة الخيار «flag» مفقودة."
-            "helpTopic", "موضوع المساعدة غير معروف."
             "helpOptions", "تقبل المساعدة موضوعًا واحدًا ولغة مدعومة واحدة؛ الخيار --format غير متاح."
-            "describeSelector", "العملية المطلوب وصفها غير معروفة. احذف المحدد لعرض العمليات."
             "describeOptions",
             "خيارات describe غير صالحة. استخدم --format text|json؛ يتاح --language مع الإخراج النصي فقط."
-            "schemaSelector",
-            "اختيار المخطط غير معروف. استخدم اسم مخطط أو نقطة نهاية تتبعها request أو response."
             "schemaOptions", "يقبل schema اسمًا أو نقطة نهاية واتجاهًا، دون خيارات."
             "versionOptions", "يقبل version الخيار --json فقط."
             "invocation", "استدعاء «command» غير صالح. لا يقبل هذا الأمر خيارات أو معاملات."
@@ -252,7 +238,7 @@ let private qualify example () =
                     ("claimcore case " + example.Arguments[1])
                     "Only the matched synopsis follows the errors"
 
-            if example.Message <> "unknownOption" then
+            if example.Message <> "unknownOptionFor" then
                 Expect.equal lines.Length 2 "One problem and one synopsis/suggestion"
     finally
         directory.Delete true
@@ -266,60 +252,98 @@ let tests =
 
 let private hostExamples =
     [
-        "help topic", [ "help"; "unknown-topic" ], "helpTopic", "help [topic]"
-        "help options", [ "help"; "--format"; "json" ], "helpOptions", "help [topic]"
+        "help topic",
+        [ "help"; "unknown-topic" ],
+        "unknownCommand",
+        [ "command", "unknown-topic" ],
+        None
+        "help options",
+        [ "help"; "--format"; "json" ],
+        "helpOptions",
+        [],
+        Some "help [topic | family [verb...]]"
         "describe selector",
         [ "describe"; "case"; "bad" ],
-        "describeSelector",
-        "describe [family verb]"
+        "unknownCommand",
+        [ "command", "case bad" ],
+        None
         "describe options",
         [ "describe"; "--format"; "json" ],
         "describeOptions",
-        "describe [family verb]"
-        "schema selector", [ "schema"; "unknown-schema" ], "schemaSelector", "schema name"
-        "schema options", [ "schema"; "invocation" ], "schemaOptions", "schema name"
-        "version options", [ "version"; "--bad" ], "versionOptions", "version [--json]"
-        "call invocation", [ "call"; "--retry" ], "invocation", "call"
-        "session invocation", [ "session"; "extra" ], "invocation", "session"
+        [],
+        Some "describe [family verb]"
+        "schema selector",
+        [ "schema"; "unknown-schema" ],
+        "unknownCommand",
+        [ "command", "unknown-schema" ],
+        None
+        "schema options", [ "schema"; "invocation" ], "schemaOptions", [], Some "schema name"
+        "version options", [ "version"; "--bad" ], "versionOptions", [], Some "version [--json]"
+        "call invocation", [ "call"; "--retry" ], "invocation", [ "command", "call" ], Some "call"
+        "session invocation",
+        [ "session"; "extra" ],
+        "invocation",
+        [ "command", "session" ],
+        Some "session"
     ]
 
-let private qualifyHost (arguments, key, syntax) () =
+let private qualifyHost (arguments, key, values, syntax) () =
     let directory = Directory.CreateTempSubdirectory("claimcore-cli-host-usage-")
 
     try
         let root = RepositoryRoot.find ()
         let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
 
-        for language in
-            (if key = "schemaSelector" then
-                 [ "en" ]
-             else
-                 LocalizationPolicy.languages) do
+        for language in LocalizationPolicy.languages do
+            let schemaSelector = List.head arguments = "schema" && key = "unknownCommand"
+            let environment = Dictionary<string, string>()
+
+            if schemaSelector then
+                environment["CLAIMCORE_LANGUAGE"] <- language
+
             let result =
                 ProcessRunner.dotnet
                     8_000
                     cli
-                    (if key = "schemaSelector" then
+                    (if schemaSelector then
                          arguments
                      else
                          arguments @ [ "--language"; language ])
-                    (Dictionary<string, string>())
+                    environment
                     None
 
             Expect.equal result.ExitCode 64 "Offline refusal before configuration or stdin"
             Expect.isEmpty result.StandardOutput "No request or reply is emitted"
             let text = Encoding.UTF8.GetString result.StandardError
 
-            let values =
-                if key = "invocation" then
-                    [ "command", List.head arguments ]
-                else
-                    []
+            Expect.stringContains
+                text
+                (expected language key values)
+                "Specific localized problem and original token"
 
-            Expect.stringContains text (expected language key values) "Specific localized problem"
+            match syntax with
+            | Some syntax ->
+                Expect.stringContains text ("claimcore " + syntax) "Correct host-owned syntax"
 
-            Expect.stringContains text ("claimcore " + syntax) "Correct host-owned syntax"
-            Expect.isLessThanOrEqual (text.TrimEnd().Split('\n').Length) 3 "Concise host guidance"
+                Expect.isLessThanOrEqual
+                    (text.TrimEnd().Split('\n').Length)
+                    3
+                    "Concise host guidance"
+            | None ->
+                Expect.stringContains
+                    text
+                    "claimcore help <family>"
+                    "Unknown selectors retain the family repair route"
+
+                for family in [ "case"; "authority"; "work"; "reminder"; "operation"; "context" ] do
+                    Expect.stringContains
+                        text
+                        ("\n" + family + " — ")
+                        "Complete human family index remains available"
+
+                Expect.isFalse
+                    (text.Contains "Unknown command: .")
+                    "Unknown selector is never omitted"
 
             for leaked in [ "Invalid Topic"; "Nederīgs Topic"; "Selector"; "Options"; "Invocation" ] do
                 Expect.isFalse
@@ -331,8 +355,8 @@ let private qualifyHost (arguments, key, syntax) () =
 [<Tests>]
 let hostTests =
     hostExamples
-    |> List.map (fun (name, arguments, key, syntax) ->
-        testCase name (qualifyHost (arguments, key, syntax)))
+    |> List.map (fun (name, arguments, key, values, syntax) ->
+        testCase name (qualifyHost (arguments, key, values, syntax)))
     |> testList "published CLI host usage errors"
     |> testSequenced
 
