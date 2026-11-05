@@ -287,6 +287,7 @@ try {
     [
       path.join(root, "deployment/configure-local.sh"),
       configuration,
+      "Authored deployment owner",
       "Etc/UTC",
       String(webPort),
       String(identityPort),

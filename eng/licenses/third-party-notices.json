@@ -41,6 +41,11 @@
       "file": "Duende-Apache-2.0.txt",
       "sha256": "4ee4cb22a80a0c00799b326949ce89349502418bd08abc0e75f53b55b11441f1",
       "source": "https://raw.githubusercontent.com/DuendeSoftware/foss/ab00474eb5311c3b4431b992e7296e779f5904aa/LICENSE (identical at IdentityModel revision 47a77f2dbda08f418ec95af04fc75529768dc1e2)"
+    },
+    {
+      "file": "Wcwidth-MIT.txt",
+      "sha256": "29f03aba55e0761c5cb75a266839cd5cd25f013514fbe034bfb5a9b7529e8cce",
+      "source": "https://github.com/spectreconsole/wcwidth/blob/64a3f523d5dc27124e04ff9079137ac2c5c72143/LICENSE.md"
     }
   ],
   "packages": [
@@ -274,6 +279,19 @@
       ],
       "packageRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3",
       "licenseRevision": "8b16f418b3d587416d293e9ba34c5d310781cdb3"
+    },
+    {
+      "id": "Wcwidth",
+      "version": "4.0.1",
+      "repository": "https://github.com/spectreconsole/wcwidth",
+      "texts": [
+        "Wcwidth-MIT.txt"
+      ],
+      "assets": [
+        "runtime:Wcwidth.dll"
+      ],
+      "packageRevision": "64a3f523d5dc27124e04ff9079137ac2c5c72143",
+      "licenseRevision": "64a3f523d5dc27124e04ff9079137ac2c5c72143"
     }
   ],
   "host": {
