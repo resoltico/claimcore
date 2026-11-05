@@ -26,7 +26,7 @@ let private schema shape =
     let components = JsonObject()
     components["schemas"] <- definitions
     root["components"] <- components
-    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+    Utf8SchemaValidation.build (root.ToJsonString())
 
 let private examples response () =
     let direction = if response then "response" else "request"

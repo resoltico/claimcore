@@ -38,7 +38,7 @@ let private validator () =
     let root = JsonObject()
     root["components"] <- (document["components"] |> nonNull).DeepClone()
     root["$ref"] <- System.Text.Json.Nodes.JsonValue.Create "#/components/schemas/HistoryReply"
-    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+    Utf8SchemaValidation.build (root.ToJsonString())
 
 let private agrees schema expected text =
     use document = JsonDocument.Parse(text: string)

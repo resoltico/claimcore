@@ -22,7 +22,7 @@ let private validator (document: JsonNode) (selected: JsonNode) =
     let root = JsonObject()
     root["components"] <- (document |> child "components").DeepClone()
     root["allOf"] <- JsonArray(selected)
-    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+    Utf8SchemaValidation.build (root.ToJsonString())
 
 let private evaluates (schema: JsonSchema) bytes =
     use value = JsonDocument.Parse(bytes: byte array)
