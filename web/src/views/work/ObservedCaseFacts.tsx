@@ -24,12 +24,15 @@ export const ObservedCaseFacts = ({ parent }: { parent: CaseSnapshot }) => {
   return (
     <section className="observed-case-facts">
       <p>{p.text("ui.financialEffectObservation")}</p>
-      <CaseFieldsView
-        values={parent.state.fields}
-        revision={parent.revision}
-        fields={financialFields}
-        context={p.text("ui.observedFinancialFacts")}
-      />
+      <details>
+        <summary>{p.text("label.observedCaseFacts")}</summary>
+        <CaseFieldsView
+          values={parent.state.fields}
+          revision={parent.revision}
+          fields={financialFields}
+          context={p.text("ui.observedFinancialFacts")}
+        />
+      </details>
     </section>
   );
 };

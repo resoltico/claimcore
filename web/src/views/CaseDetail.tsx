@@ -212,7 +212,7 @@ const CaseRecordDetails = ({ state }: { state: CaseView }) => {
   const p = usePresentation();
   return (
     <details className="case-technical" data-record-details>
-      <summary>{p.text("ui.technicalDetails")}</summary>
+      <summary>{p.text("label.recordDetails")}</summary>
       <dl>
         <SummaryRecordDetails state={state} />
         <div>

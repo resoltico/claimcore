@@ -21,9 +21,13 @@ const fractionDigits = (currency: string | undefined, own: number): number =>
   Math.max(own, currency === undefined ? 0 : (currencyMinorUnits.get(currency) ?? 0));
 
 /** Integer and fractional text stay exact; Intl supplies grouping and digits; currency padding comes from the core catalog. */
-const decimalText = (value: string, locale: DisplayLocale, currency?: string): string => {
+const decimalText = (
+  value: string,
+  locale: DisplayLocale,
+  minimumFractionDigits: number,
+): string => {
   const [whole = "", own = ""] = value.split(".");
-  const fraction = own.padEnd(fractionDigits(currency, own.length), "0");
+  const fraction = own.padEnd(minimumFractionDigits, "0");
   const integer = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(whole));
   if (fraction === "") {
     return integer;
@@ -38,10 +42,20 @@ const decimalText = (value: string, locale: DisplayLocale, currency?: string): s
 };
 
 export const exactAmount = (value: string, locale: DisplayLocale, currency?: string): string =>
-  isAmountText(value) ? decimalText(value, locale, currency) : value;
+  isAmountText(value)
+    ? decimalText(value, locale, fractionDigits(currency, value.split(".")[1]?.length ?? 0))
+    : value;
 
 export const exactMoney = (value: string, currency: string, locale: DisplayLocale): string =>
-  `${canonicalTotal.test(value) ? decimalText(value, locale, currency) : value} ${currency}`;
+  `${canonicalTotal.test(value) ? decimalText(value, locale, fractionDigits(currency, value.split(".")[1]?.length ?? 0)) : value} ${currency}`;
+
+/** The review's supplied display scale controls padding; exact fractional text is never truncated. */
+export const moneyWithScale = (
+  value: string,
+  currency: string,
+  displayScale: number,
+  locale: DisplayLocale,
+): string => `${decimalText(value, locale, displayScale)} ${currency}`;
 
 export const caseAge = (
   notified: string | null,

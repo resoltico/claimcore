@@ -165,7 +165,7 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
         retryLanguage,
       }}
     >
-      <I18nProvider locale={preferences.displayLocale}>{children}</I18nProvider>
+      <I18nProvider locale={catalogLanguage(preferences.language)}>{children}</I18nProvider>
     </PresentationContext>
   );
 };

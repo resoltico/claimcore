@@ -9,8 +9,8 @@ import { getButton, render, screen } from "../support/presentation-test-support"
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest } from "../../src/protocol/client";
-import type { RequestByEndpoint } from "@contracts/client";
-import type { CurrentCase, CaseReview } from "../../src/api/service";
+import type { ReviewPresentation, RequestByEndpoint } from "@contracts/client";
+import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { wireReply } from "../support/contract-corpus.fixtures";
@@ -104,7 +104,8 @@ const caseReceipt = (request: CaseInput) => {
     subject: {
       kind: "CASE" as const,
       act: request.act.kind,
-      caseId: "20000000-0000-4000-8000-000000000001",
+      caseId:
+        request.act.kind === "OPEN" ? request.operationId : "20000000-0000-4000-8000-000000000001",
       caseReference:
         request.target.kind === "REFERENCE"
           ? request.target.caseReference
@@ -116,27 +117,46 @@ const caseReceipt = (request: CaseInput) => {
     },
   };
 };
-const canonicalChanges = (request: CaseInput): CaseReview["changes"] =>
-  request.act.kind === "DECIDE"
-    ? [
-        {
-          field: "payableAmount",
-          before: null,
-          after: "5",
-        },
-      ]
-    : [];
+const suppliedPresentation = (request: CaseInput): ReviewPresentation => ({
+  changes:
+    request.act.kind === "DECIDE"
+      ? [
+          {
+            key: "payable",
+            labelId: "field.payableAmount.label",
+            before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+            after: { kind: "MONEY", amount: "5", currency: "EUR", displayScale: 4 },
+          },
+        ]
+      : [],
+  unchanged: [],
+});
 const caseReview = (request: CaseInput) => ({
   operationId: request.operationId,
   outcome: {
     kind: "REVIEWED" as const,
     data: {
       review: {
+        presentation: suppliedPresentation(request),
         subject: {
           kind: "CASE" as const,
-          before: null,
+          before:
+            request.act.kind === "OPEN"
+              ? null
+              : {
+                  caseId: "20000000-0000-4000-8000-000000000001",
+                  caseReference:
+                    request.target.kind === "REFERENCE"
+                      ? request.target.caseReference
+                      : "Unexpected ID selector in reference-only form fixture",
+                  revision: request.expectedRevision,
+                  state: currentFor(request.act.kind).state,
+                },
           after: {
-            caseId: "20000000-0000-4000-8000-000000000001",
+            caseId:
+              request.act.kind === "OPEN"
+                ? request.operationId
+                : "20000000-0000-4000-8000-000000000001",
             caseReference:
               request.target.kind === "REFERENCE"
                 ? request.target.caseReference
@@ -153,7 +173,6 @@ const caseReview = (request: CaseInput) => ({
               },
             },
           },
-          changes: canonicalChanges(request),
           context: runtime,
         },
       },
@@ -261,7 +280,9 @@ it.each(acts)(
     const dialog = await screen.findByRole("dialog");
     if (act.kind === "DECIDE") {
       expect(dialog).toHaveTextContent("5.0000");
-      expect([...dialog.querySelectorAll("bdi")].map((node) => node.textContent)).toContain("5");
+      expect([...dialog.querySelectorAll("bdi")].map((node) => node.textContent)).toContain(
+        "5.0000 EUR",
+      );
     }
     if (act.kind === "CORRECT") {
       expect(dialog).toHaveTextContent("Synthetic correction");

@@ -1,43 +1,6 @@
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
-const snapshot = (value: unknown): unknown => {
-  if (!isObject(value)) {
-    return value;
-  }
-  const { state } = value;
-  return {
-    caseId: value["caseId"] ?? "20000000-0000-4000-8000-000000000001",
-    caseReference: value["caseReference"],
-    revision: value["revision"],
-    state: isObject(state)
-      ? Object.fromEntries(Object.entries(state).filter(([key]) => key !== "availableActs"))
-      : state,
-  };
-};
-const reviewData = (kind: string, data: unknown, request: Record<string, unknown>): unknown => {
-  if (
-    kind === "REVIEWED" &&
-    isObject(data) &&
-    isObject(data["review"]) &&
-    isObject(data["review"]["subject"])
-  ) {
-    const { subject } = data["review"];
-    return {
-      ...data,
-      review: {
-        subject: {
-          ...subject,
-          kind: request["kind"],
-          ...(subject["kind"] === "CASE"
-            ? { before: snapshot(subject["before"]), after: snapshot(subject["after"]) }
-            : {}),
-        },
-      },
-    };
-  }
-  return data;
-};
 const responseData = (kind: string, data: unknown, request: Record<string, unknown>): unknown => {
   if (kind === "OUTCOME_UNKNOWN") {
     return null;
@@ -67,7 +30,7 @@ const responseData = (kind: string, data: unknown, request: Record<string, unkno
       },
     };
   }
-  return reviewData(kind, data, request);
+  return data;
 };
 const historyData = (request: unknown, data: unknown): unknown => {
   if (!isObject(data)) {

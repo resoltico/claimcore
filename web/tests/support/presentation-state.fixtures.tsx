@@ -55,6 +55,7 @@ export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   return response("operation.preview", "REVIEWED", {
     review: {
+      presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
         before: {
@@ -80,13 +81,7 @@ export const previewReply = (index = 0): Response => {
             },
           },
         },
-        changes: [
-          {
-            field: "status",
-            before: "OPENED",
-            after: "CLOSED",
-          },
-        ],
+
         context: runtime,
       },
     },

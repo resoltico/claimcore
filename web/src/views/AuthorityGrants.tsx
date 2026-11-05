@@ -5,6 +5,8 @@ import { type ServiceResponse } from "../api/service";
 import { useEndpointPage } from "../hooks/useEndpointPage";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
+import { productMetadata } from "../protocol/productMetadata";
+import { renderCatalogKey } from "../presentation/messages";
 import { CharacterWarning } from "../components/BusinessValue";
 import { IconButton } from "../ui/IconButton";
 import { Dialog } from "../ui/Dialog";
@@ -44,6 +46,13 @@ const GrantItems = ({
           {grant.scope.kind === "CASE" ? (
             <IdentifierValue value={grant.scope.caseReference} />
           ) : null}
+          <p>
+            {renderCatalogKey(
+              p,
+              productMetadata.catalog.roles.find((definition) => definition.role === grant.role)!
+                .meaningId,
+            )}
+          </p>
           {onRevoke === undefined ? null : (
             <Button
               variant="secondary"

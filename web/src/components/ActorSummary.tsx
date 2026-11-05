@@ -64,7 +64,7 @@ export const ActorSummary = ({
         )}
       </dl>
       <details className="actor-record-details">
-        <summary>{p.text("ui.technicalDetails")}</summary>
+        <summary>{p.text("label.recordDetails")}</summary>
         <dl>
           <dt>{p.text("ui.account")}</dt>
           <dd>

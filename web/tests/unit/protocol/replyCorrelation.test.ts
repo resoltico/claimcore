@@ -144,7 +144,10 @@ it("checks the advisory compound pair independently of mere schema parsing", () 
       outcome: {
         kind: "REVIEWED",
         data: {
-          review: { subject: { ...subject, parent: { ...subject.parent, caseId: otherId } } },
+          review: {
+            presentation: { changes: [], unchanged: [] },
+            subject: { ...subject, parent: { ...subject.parent, caseId: otherId } },
+          },
         },
       },
     }),
@@ -157,6 +160,7 @@ it("checks the advisory compound pair independently of mere schema parsing", () 
         kind: "REVIEWED",
         data: {
           review: {
+            presentation: { changes: [], unchanged: [] },
             subject: {
               ...subject,
               effects: { ...subject.effects, next: { ...next.snapshot.view, reminderId: otherId } },
@@ -234,4 +238,161 @@ it("requires create identity to equal its operation during identity-only status 
       },
     ),
   ).toBe(false);
+});
+
+it("correlates case preview identity and exact next version without interpreting its supplied facet", () => {
+  const reviewed = (subject: unknown) => ({
+    operationId,
+    outcome: {
+      kind: "REVIEWED",
+      data: { review: { subject, presentation: { changes: [], unchanged: [] } } },
+    },
+  });
+  const open = {
+    kind: "CASE",
+    operationId,
+    target: { kind: "REFERENCE", caseReference: "ref-1" },
+    expectedRevision: 0,
+    act: { kind: "OPEN" },
+  };
+  const opened = {
+    kind: "CASE",
+    before: null,
+    after: { caseId: operationId, caseReference: "REF-1", revision: 1 },
+  };
+  expect(replyCorrelates("operation.preview", open, reviewed(opened))).toBe(true);
+  expect(
+    replyCorrelates(
+      "operation.preview",
+      open,
+      reviewed({ ...opened, after: { ...opened.after, revision: 999 } }),
+    ),
+  ).toBe(false);
+  expect(
+    replyCorrelates(
+      "operation.preview",
+      open,
+      reviewed({ ...opened, after: { ...opened.after, caseId } }),
+    ),
+  ).toBe(false);
+  expect(
+    replyCorrelates("operation.preview", { ...open, expectedRevision: 1 }, reviewed(opened)),
+  ).toBe(false);
+  const close = {
+    ...open,
+    target: { kind: "ID", caseId },
+    expectedRevision: 4,
+    act: { kind: "CLOSE" },
+  };
+  const before = { caseId, caseReference: "REF-1", revision: 4 };
+  const closed = { kind: "CASE", before, after: { ...before, revision: 5 } };
+  expect(replyCorrelates("operation.preview", close, reviewed(closed))).toBe(true);
+  expect(
+    replyCorrelates(
+      "operation.preview",
+      close,
+      reviewed({ ...closed, after: { ...closed.after, caseReference: "ref-1" } }),
+    ),
+  ).toBe(true);
+  for (const subject of [
+    { ...closed, before: null },
+    { ...closed, before: { ...before, revision: 3 } },
+    { ...closed, before: { ...before, caseId: otherId } },
+    { ...closed, after: { ...closed.after, revision: 999 } },
+    { ...closed, after: { ...closed.after, caseReference: "OTHER" } },
+  ]) {
+    expect(replyCorrelates("operation.preview", close, reviewed(subject))).toBe(false);
+  }
+});
+
+it("correlates exact authority principals and ordered effect kinds without deriving profile or access policy", () => {
+  const target = { kind: "HUMAN", issuer: "https://issuer.example/", subject: "Immutable-A" };
+  const grant = {
+    kind: "AUTHORITY",
+    operationId,
+    target,
+    act: { kind: "GRANT", role: "CASE_READER", scope: { kind: "INSTALLATION" } },
+  };
+  const subject = {
+    kind: "AUTHORITY",
+    target: { actor: { actorId: caseId }, principal: target },
+    effects: [{ kind: "GRANT" }],
+  };
+  const reviewed = (value: unknown) => ({
+    operationId,
+    outcome: {
+      kind: "REVIEWED",
+      data: { review: { subject: value, presentation: { changes: [], unchanged: [] } } },
+    },
+  });
+  expect(replyCorrelates("operation.preview", grant, reviewed(subject))).toBe(true);
+  for (const principal of [
+    { ...target, kind: "SERVICE" },
+    { ...target, issuer: "https://other.example/" },
+    { ...target, subject: "immutable-a" },
+  ]) {
+    expect(
+      replyCorrelates(
+        "operation.preview",
+        grant,
+        reviewed({ ...subject, target: { ...subject.target, principal } }),
+      ),
+    ).toBe(false);
+  }
+  expect(replyCorrelates("operation.preview", grant, reviewed({ ...subject, target: null }))).toBe(
+    false,
+  );
+  expect(
+    replyCorrelates(
+      "operation.preview",
+      grant,
+      reviewed({ ...subject, effects: [{ kind: "DISABLE" }] }),
+    ),
+  ).toBe(false);
+  const admit = {
+    ...grant,
+    act: { kind: "ADMIT", profile: { displayName: "Authored" }, grants: [grant.act, grant.act] },
+  };
+  const effects = [
+    { kind: "REGISTER", principal: target },
+    { kind: "SET_PROFILE" },
+    { kind: "GRANT" },
+    { kind: "GRANT" },
+  ];
+  const admitted = { kind: "AUTHORITY", target: null, effects };
+  expect(replyCorrelates("operation.preview", admit, reviewed(admitted))).toBe(true);
+  for (const changed of [
+    effects.slice(0, 3),
+    [effects[1], effects[0], effects[2], effects[3]],
+    [{ kind: "REGISTER", principal: { ...target, subject: "OTHER" } }, ...effects.slice(1)],
+  ]) {
+    expect(
+      replyCorrelates("operation.preview", admit, reviewed({ ...admitted, effects: changed })),
+    ).toBe(false);
+  }
+  const register = { ...grant, act: { kind: "REGISTER", profile: { displayName: "Authored" } } };
+  expect(
+    replyCorrelates(
+      "operation.preview",
+      register,
+      reviewed({ ...admitted, effects: effects.slice(0, 2) }),
+    ),
+  ).toBe(true);
+  expect(replyCorrelates("operation.preview", register, reviewed(admitted))).toBe(false);
+});
+
+it("checks deterministic creation identities even for passive receipt observations", () => {
+  const opened = { operationId, subject: { kind: "CASE", act: "OPEN", caseId: operationId } };
+  expect(receiptCorrelates({ operationId }, opened)).toBe(true);
+  expect(receiptCorrelates({ operationId }, { ...opened, subject: { ...opened.subject, caseId: otherId } })).toBe(false);
+  for (const act of ["REGISTER", "ADMIT", "PROVISION_OWNER"]) {
+    for (const targetActor of [ { kind: "DISCLOSED", actor: { actorId: operationId } }, { kind: "WITHHELD", actorId: operationId } ]) {
+      const created = { operationId, subject: { kind: "AUTHORITY", act, targetActor } };
+      expect(receiptCorrelates({ operationId }, created)).toBe(true);
+      const wrong = targetActor.kind === "DISCLOSED" ? { ...targetActor, actor: { actorId: otherId } } : { ...targetActor, actorId: otherId };
+      expect(receiptCorrelates({ operationId }, { ...created, subject: { ...created.subject, targetActor: wrong } })).toBe(false);
+    }
+  }
+  const existing = { operationId, subject: { kind: "AUTHORITY", act: "DISABLE", targetActor: { kind: "WITHHELD", actorId: otherId } } };
+  expect(receiptCorrelates({ operationId }, existing)).toBe(true);
 });

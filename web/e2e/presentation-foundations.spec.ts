@@ -1,3 +1,5 @@
+import type { DisplayLocale } from "../src/presentation/preferences";
+import { ui } from "./localization-support";
 import { isRequest, isResponse } from "../src/protocol/client";
 import { writeFile } from "node:fs/promises";
 import { casePath } from "../src/routing/routes";
@@ -148,6 +150,7 @@ const seed = async (
   page: Page,
   options: {
     language?: "en" | "lv" | "ar";
+    displayLocale?: DisplayLocale;
     mode?: "system" | "light" | "dark";
     accent?: "green" | "blue";
   } = {},
@@ -161,9 +164,9 @@ const seed = async (
       JSON.stringify({
         version: 3,
         language: selected.language ?? "en",
-        displayLocale: ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG" } as const)[
-          selected.language ?? "en"
-        ],
+        displayLocale:
+          selected.displayLocale ??
+          ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG" } as const)[selected.language ?? "en"],
         mode: selected.mode ?? "system",
         accent: selected.accent ?? "green",
       }),
@@ -967,6 +970,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           kind: "REVIEWED",
           data: {
             review: {
+              presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "AUTHORITY",
                 basis: presentationBasis,
@@ -1127,6 +1131,17 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
           kind: "REVIEWED",
           data: {
             review: {
+              presentation: {
+                changes: [
+                  {
+                    key: "claimant",
+                    labelId: "field.claimantName.label",
+                    before: { kind: "PARTY", value: "Latest stored name" },
+                    after: { kind: "PARTY", value: "My retained draft" },
+                  },
+                ],
+                unchanged: [],
+              },
               subject: {
                 kind: "CASE",
                 before: { caseId, caseReference: "CASE-1", revision: 3, state: latest.state },
@@ -1145,15 +1160,10 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
                     },
                   },
                 },
-                changes: [
-                  {
-                    field: "claimantName",
-                    before: "Latest stored name",
-                    after: "My retained draft",
-                  },
-                ],
+
                 context: {
                   productVersion: "synthetic-presentation",
+                  observedAt: basis.observedAt,
                   businessDate: basis.businessDate,
                   timeZone: basis.timeZone,
                 },
@@ -1197,182 +1207,270 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
   await clean();
 });
 
-test("atomic admission edits independent grant rows and reviews every core effect under CSP", async ({
-  page,
-  browserName,
-}, testInfo) => {
-  const clean = await observe(page, true);
-  await seed(page, { language: "en", mode: "light", accent: "green" });
-  await page.setViewportSize({ width: 1440, height: 1000 });
-  await page.route("**/api/context", (route) =>
-    route.fulfill({
-      json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              observedAt: "2026-11-04T12:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-              views: ["AUTHORITY", "OPERATIONS"],
-              offers: [
-                { kind: "AUTHORITY_ACT", act: "REGISTER" },
-                { kind: "AUTHORITY_ACT", act: "ADMIT" },
-              ],
-            }),
-          },
-        },
-      },
-    }),
-  );
-  await page.route("**/api/authority.list", (route) =>
-    route.fulfill({
-      json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis: presentationBasis, items: [], nextCursor: null },
-        },
-      },
-    }),
-  );
-  const reads: string[] = [];
-  page.on("request", (request) => {
-    if (
-      request.url().includes("/api/") &&
-      !request.url().endsWith("/api/operation.preview") &&
-      !request.url().endsWith("/api/operation.execute")
-    ) {
-      reads.push(request.url());
-    }
-  });
-  let previews = 0;
-  let writes = 0;
-  page.on("request", (request) => {
-    if (request.url().endsWith("/api/operation.execute")) {
-      writes += 1;
-    }
-  });
-  await page.route("**/api/operation.preview", (route) => {
-    const input: unknown = route.request().postDataJSON();
-    if (
-      !isRequest("operation.preview", input) ||
-      input.kind !== "AUTHORITY" ||
-      input.act.kind !== "ADMIT"
-    ) {
-      throw new Error("Expected actual atomic admission.");
-    }
-    previews += 1;
-    expect(input.act.grants).toEqual([
-      { role: "OWNER", scope: { kind: "INSTALLATION" } },
-      {
-        role: "CASE_READER",
-        scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "SYNTHETIC-1" } },
-      },
-    ]);
-    const reply = {
-      operationId: input.operationId,
-      outcome: {
-        kind: "REVIEWED",
-        data: {
-          review: {
-            subject: {
-              kind: "AUTHORITY",
-              basis: presentationBasis,
-              target: null,
-              accessScope: { kind: "INSTALLATION" },
-              before: { enabled: false, profile: null, grants: [], access: [] },
-              after: {
-                enabled: true,
-                profile: { displayName: "Admission person", contact: null },
-                grants: [],
-                access: [],
-              },
-              effects: [
-                { kind: "REGISTER", principal: input.target },
-                {
-                  kind: "SET_PROFILE",
-                  profile: { displayName: "Admission person", contact: null },
-                },
-                { kind: "GRANT", grant: { role: "OWNER", scope: { kind: "INSTALLATION" } } },
-                {
-                  kind: "GRANT",
-                  grant: {
-                    role: "CASE_READER",
-                    scope: {
-                      kind: "CASE",
-                      caseId: "20000000-0000-4000-8000-000000000001",
-                      caseReference: "SYNTHETIC-1",
-                    },
-                  },
-                },
-              ],
+for (const reviewLanguage of ["en", "ar"] as const) {
+  test(`atomic admission edits independent grant rows and reviews every core effect under CSP in ${reviewLanguage}`, async ({
+    page,
+    browserName,
+  }, testInfo) => {
+    const clean = await observe(page, true);
+    await seed(page, { language: "en", mode: "light", accent: "green" });
+    await page.setViewportSize({ width: 1440, height: 1000 });
+    await page.route("**/api/context", (route) =>
+      route.fulfill({
+        json: {
+          outcome: {
+            kind: "SUCCEEDED",
+            data: {
+              requester: actorContextInput({
+                productVersion: "synthetic-presentation",
+                observedAt: "2026-11-04T12:00:00.000000Z",
+                businessDate: "2026-11-04",
+                timeZone: "Etc/UTC",
+                capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+                views: ["AUTHORITY", "OPERATIONS"],
+                offers: [
+                  { kind: "AUTHORITY_ACT", act: "REGISTER" },
+                  { kind: "AUTHORITY_ACT", act: "ADMIT" },
+                ],
+              }),
             },
           },
         },
-      },
-    };
-    expect(isResponse("operation.preview", reply)).toBe(true);
-    return route.fulfill({ json: reply });
-  });
-  await page.goto("/people", { waitUntil: "commit" });
-  await page.getByRole("button", { name: "Add person", exact: true }).click();
-  await expect(page.locator('[name="target.issuer"]')).toBeDisabled();
-  await page.locator('[name="target.subject"]').fill("admission-person");
-  await page.locator('[name="act.profile.displayName"]').fill("Admission person");
-  await page.getByRole("radio", { name: "Owner", exact: true }).check();
-  await page.getByRole("button", { name: "Add role", exact: true }).click();
-  const second = page.getByRole("group", { name: "Role 2", exact: true });
-  await second.getByRole("radio", { name: "Case reader", exact: true }).check();
-  await second.getByRole("radio", { name: "One case", exact: true }).check();
-  await second.getByRole("textbox", { name: /Case reference/u }).fill("SYNTHETIC-1");
-  await expectAccessible(page);
-  expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
-  expect(reads.filter((url) => url.endsWith("/api/authority.list"))).toHaveLength(1);
-  expect(reads.filter((url) => url.endsWith("/api/session"))).toHaveLength(1);
-  expect(
-    reads.filter(
-      (url) =>
-        !["session", "context", "authority.list", "case.views", "reminder.views"].some((endpoint) =>
-          url.endsWith(`/api/${endpoint}`),
-        ),
-    ),
-  ).toEqual([]);
-  expect(reads.filter((url) => url.endsWith("/api/case.views")).length).toBeLessThanOrEqual(1);
-  expect(reads.filter((url) => url.endsWith("/api/reminder.views")).length).toBeLessThanOrEqual(1);
-  const beforeSettingsReads = [...reads];
-  await page.getByRole("button", { name: "Settings", exact: true }).click();
-  await expect(page).toHaveURL(/\/settings$/u);
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await chooseOption(page, page.getByRole("combobox", { name: "Date and number format" }), "lv-LV");
-  await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
-  await expect(page).toHaveURL(/\/people$/u);
-  await expect(page.locator('[name="target.subject"]')).toHaveValue("admission-person");
-  await expect(
-    page
-      .getByRole("group", { name: "Role 2", exact: true })
-      .getByRole("textbox", { name: /Case reference/u }),
-  ).toHaveValue("SYNTHETIC-1");
-  expect(reads).toEqual(beforeSettingsReads);
-  expect(previews).toBe(0);
-  expect(writes).toBe(0);
-  await page.getByRole("button", { name: "Review changes", exact: true }).click();
-  const review = page.getByRole("dialog");
-  await expect(review.locator(".authority-effects > li")).toHaveCount(4);
-  await expect(review.getByText("SYNTHETIC-1", { exact: true })).toBeVisible();
-  expect(previews).toBe(1);
-  expect(writes).toBe(0);
-  expect(reads).toEqual(beforeSettingsReads);
-  await expectAccessible(page);
-  await clean();
-  if (browserName === "chromium") {
-    await captureCheckpoint(
-      page,
-      testInfo.outputPath("review-admission-en-desktop-green-light.png"),
+      }),
     );
-  }
-});
+    await page.route("**/api/authority.list", (route) =>
+      route.fulfill({
+        json: {
+          outcome: {
+            kind: "SUCCEEDED",
+            data: { basis: presentationBasis, items: [], nextCursor: null },
+          },
+        },
+      }),
+    );
+    const reads: string[] = [];
+    page.on("request", (request) => {
+      if (
+        request.url().includes("/api/") &&
+        !request.url().endsWith("/api/operation.preview") &&
+        !request.url().endsWith("/api/operation.execute")
+      ) {
+        reads.push(request.url());
+      }
+    });
+    let previews = 0;
+    let writes = 0;
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/operation.execute")) {
+        writes += 1;
+      }
+    });
+    await page.route("**/api/operation.preview", (route) => {
+      const input: unknown = route.request().postDataJSON();
+      if (
+        !isRequest("operation.preview", input) ||
+        input.kind !== "AUTHORITY" ||
+        input.act.kind !== "ADMIT"
+      ) {
+        throw new Error("Expected actual atomic admission.");
+      }
+      previews += 1;
+      expect(input.act.grants).toEqual([
+        { role: "OWNER", scope: { kind: "INSTALLATION" } },
+        {
+          role: "CASE_READER",
+          scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "SYNTHETIC-1" } },
+        },
+      ]);
+      const reply = {
+        operationId: input.operationId,
+        outcome: {
+          kind: "REVIEWED",
+          data: {
+            review: {
+              presentation: {
+                changes: [
+                  {
+                    key: "enabled",
+                    labelId: "label.enabled",
+                    before: { kind: "CODE", vocabulary: "boolean", token: "FALSE" },
+                    after: { kind: "CODE", vocabulary: "boolean", token: "TRUE" },
+                  },
+                  {
+                    key: "profileName",
+                    labelId: "field.profile.displayName.label",
+                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                    after: { kind: "PARTY", value: "Admission person" },
+                  },
+                  {
+                    key: "owner.role",
+                    labelId: "field.role.label",
+                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                    after: { kind: "CODE", vocabulary: "role", token: "OWNER" },
+                  },
+                  {
+                    key: "owner.scope",
+                    labelId: "input.scope.label",
+                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                    after: { kind: "CODE", vocabulary: "scope", token: "INSTALLATION" },
+                  },
+                  {
+                    key: "reader.role",
+                    labelId: "field.role.label",
+                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                    after: { kind: "CODE", vocabulary: "role", token: "CASE_READER" },
+                  },
+                  {
+                    key: "reader.scope",
+                    labelId: "input.scope.label",
+                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                    after: { kind: "CODE", vocabulary: "scope", token: "CASE" },
+                  },
+                  {
+                    key: "reader.reference",
+                    labelId: "field.caseReference.label",
+                    before: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                    after: { kind: "REFERENCE", value: "SYNTHETIC-1" },
+                  },
+                ],
+                unchanged: [{ key: "contact", labelId: "field.profile.contact.label" }],
+              },
+              subject: {
+                kind: "AUTHORITY",
+                basis: presentationBasis,
+                target: null,
+                accessScope: { kind: "INSTALLATION" },
+                before: { enabled: false, profile: null, grants: [], access: [] },
+                after: {
+                  enabled: true,
+                  profile: { displayName: "Admission person", contact: null },
+                  grants: [],
+                  access: [],
+                },
+                effects: [
+                  { kind: "REGISTER", principal: input.target },
+                  {
+                    kind: "SET_PROFILE",
+                    profile: { displayName: "Admission person", contact: null },
+                  },
+                  { kind: "GRANT", grant: { role: "OWNER", scope: { kind: "INSTALLATION" } } },
+                  {
+                    kind: "GRANT",
+                    grant: {
+                      role: "CASE_READER",
+                      scope: {
+                        kind: "CASE",
+                        caseId: "20000000-0000-4000-8000-000000000001",
+                        caseReference: "SYNTHETIC-1",
+                      },
+                    },
+                  },
+                ],
+              },
+            },
+          },
+        },
+      };
+      expect(isResponse("operation.preview", reply)).toBe(true);
+      return route.fulfill({ json: reply });
+    });
+    await page.goto("/people", { waitUntil: "commit" });
+    await page.getByRole("button", { name: "Add person", exact: true }).click();
+    await expect(page.locator('[name="target.issuer"]')).toBeDisabled();
+    await page.locator('[name="target.subject"]').fill("admission-person");
+    await page.locator('[name="act.profile.displayName"]').fill("Admission person");
+    await page.getByRole("radio", { name: "Owner", exact: true }).check();
+    await page.getByRole("button", { name: "Add role", exact: true }).click();
+    const second = page.getByRole("group", { name: "Role 2", exact: true });
+    await second.getByRole("radio", { name: "Case reader", exact: true }).check();
+    await second.getByRole("radio", { name: "One case", exact: true }).check();
+    await second.getByRole("textbox", { name: /Case reference/u }).fill("SYNTHETIC-1");
+    await expectAccessible(page);
+    expect(reads.filter((url) => url.endsWith("/api/context"))).toHaveLength(1);
+    expect(reads.filter((url) => url.endsWith("/api/authority.list"))).toHaveLength(1);
+    expect(reads.filter((url) => url.endsWith("/api/session"))).toHaveLength(1);
+    expect(
+      reads.filter(
+        (url) =>
+          !["session", "context", "authority.list", "case.views", "reminder.views"].some(
+            (endpoint) => url.endsWith(`/api/${endpoint}`),
+          ),
+      ),
+    ).toEqual([]);
+    expect(reads.filter((url) => url.endsWith("/api/case.views")).length).toBeLessThanOrEqual(1);
+    expect(reads.filter((url) => url.endsWith("/api/reminder.views")).length).toBeLessThanOrEqual(
+      1,
+    );
+    const beforeSettingsReads = [...reads];
+    await page.getByRole("button", { name: "Settings", exact: true }).click();
+    await expect(page).toHaveURL(/\/settings$/u);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await chooseOption(
+      page,
+      page.getByRole("combobox", { name: "Date and number format" }),
+      "lv-LV",
+    );
+    await page.getByRole("button", { name: "Return to workspace", exact: true }).click();
+    await expect(page).toHaveURL(/\/people$/u);
+    await expect(page.locator('[name="target.subject"]')).toHaveValue("admission-person");
+    await expect(
+      page
+        .getByRole("group", { name: "Role 2", exact: true })
+        .getByRole("textbox", { name: /Case reference/u }),
+    ).toHaveValue("SYNTHETIC-1");
+    expect(reads).toEqual(beforeSettingsReads);
+    expect(previews).toBe(0);
+    expect(writes).toBe(0);
+    await page.getByRole("button", { name: "Review changes", exact: true }).click();
+    const review = page.getByRole("dialog");
+    await expect(review.locator(".authority-effects > li")).toHaveCount(4);
+    await expect(
+      review.locator(".review-values").getByText("SYNTHETIC-1", { exact: true }),
+    ).toBeVisible();
+    await review.locator(".authority-review-effects > summary").click();
+    await expect(
+      review.locator(".authority-effects").getByText("SYNTHETIC-1", { exact: true }),
+    ).toBeVisible();
+    await review.locator(".authority-review-effects > summary").click();
+    if (reviewLanguage === "ar") {
+      await review.locator("[data-open-settings]").click();
+      await page
+        .locator('.settings-panel input[type="radio"][name$="-language"][value="ar"]')
+        .check();
+      await expect(page.locator("html")).toHaveAttribute("lang", "ar");
+      await page
+        .locator('.settings-panel input[type="radio"][name$="-mode"][value="dark"]')
+        .check();
+      await page
+        .locator('.settings-panel input[type="radio"][name$="-accent"][value="blue"]')
+        .check();
+      await chooseOption(
+        page,
+        page.locator('.settings-panel [role="combobox"][id$="-format"]'),
+        "ar-EG",
+      );
+      await page.locator("[data-return-workspace]").click();
+      await page.setViewportSize({ width: 390, height: 844 });
+      await expect(page.getByRole("dialog")).toHaveCount(1);
+      await expect(page.locator("html")).toHaveAttribute("dir", "rtl");
+    }
+    expect(previews).toBe(1);
+    expect(writes).toBe(0);
+    expect(reads).toEqual(beforeSettingsReads);
+    await expectAccessible(page);
+    await clean();
+    if (browserName === "chromium") {
+      await captureCheckpoint(
+        page,
+        testInfo.outputPath(
+          reviewLanguage === "en"
+            ? "review-admission-en-desktop-green-light.png"
+            : "review-admission-ar-mobile-blue-dark.png",
+        ),
+      );
+    }
+  });
+}
 
 test("case panels follow compact reading order while a work draft survives responsive reflow", async ({
   page,
@@ -1570,3 +1668,98 @@ test("People uses core roles and state without row reads and forwards known-zero
   await expectAccessible(page);
   await clean();
 });
+
+for (const [language, displayLocale, dismiss, separator] of [
+  ["en", "lv-LV", "Dismiss", "."],
+  ["ar", "en-GB", "تجاهل", "/"],
+] as const) {
+  test(`interface interactions stay ${language} while date entry uses ${displayLocale} under CSP`, async ({
+    page,
+  }, testInfo) => {
+    const clean = await observe(page, true);
+    await seed(page, { language, displayLocale });
+    await page.setViewportSize({ width: 1000, height: 900 });
+    await page.route("**/api/context", (route) =>
+      route.fulfill({
+        json: {
+          outcome: {
+            kind: "SUCCEEDED",
+            data: {
+              requester: actorContextInput({
+                ...presentationBasis,
+                productVersion: "synthetic-presentation",
+                capabilities: ["REGISTER"],
+                views: ["CASES"],
+                offers: [{ kind: "OPEN" }],
+              }),
+            },
+          },
+        },
+      }),
+    );
+    let writes = 0;
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/operation.execute")) {
+        writes += 1;
+      }
+    });
+    await page.goto("/cases/new", { waitUntil: "commit" });
+    await expect(page.getByRole("dialog")).toHaveCount(1);
+    expect(await page.locator(`button[aria-label="${dismiss}"]`).count()).toBeGreaterThan(0);
+    await expect(page.locator('button[aria-label="Nerādīt"]')).toHaveCount(0);
+    const field = page.locator('[data-field-name="incidentDate"]');
+    await expect(field.locator(".react-aria-DateInput")).toHaveAttribute("lang", displayLocale);
+    expect(
+      await field
+        .locator('[role="spinbutton"]')
+        .evaluateAll((nodes) => nodes.map((node) => node.getAttribute("data-type"))),
+    ).toEqual(["day", "month", "year"]);
+    expect((await field.locator('[data-type="literal"]').allTextContents()).join("")).toContain(
+      separator,
+    );
+    await field.locator("..").locator("button[aria-label]").last().click();
+    const calendar = page.locator(".calendar-popover");
+    await expect(calendar).toBeVisible();
+    await expect(
+      calendar.getByRole("button", { name: ui(language, "ui.nextMonth"), exact: true }),
+    ).toBeVisible();
+    await expect(
+      calendar.getByRole("button", { name: ui(language, "ui.previousMonth"), exact: true }),
+    ).toBeVisible();
+    expect(await calendar.evaluate((node) => getComputedStyle(node).direction)).toBe(
+      language === "ar" ? "rtl" : "ltr",
+    );
+    expect(await page.locator(`button[aria-label="${dismiss}"]`).count()).toBeGreaterThan(1);
+    await expect(page.locator('button[aria-label="Nerādīt"]')).toHaveCount(0);
+    const labels = await field.locator('[role="spinbutton"]').evaluateAll((nodes) =>
+      nodes.map((node) => ({
+        part: node.getAttribute("data-type"),
+        label: node.getAttribute("aria-label"),
+        labelledBy: node.getAttribute("aria-labelledby"),
+      })),
+    );
+    const labelEvidence = testInfo.outputPath("date-segment-interface-labels.json");
+    await writeFile(
+      labelEvidence,
+      JSON.stringify(
+        { language, displayLocale, labels, accessibleDate: await field.ariaSnapshot() },
+        null,
+        2,
+      ),
+    );
+    await testInfo.attach("date-segment-interface-labels", {
+      path: labelEvidence,
+      contentType: "application/json",
+    });
+    await page.keyboard.press("Escape");
+    await expect(calendar).toHaveCount(0);
+    await expect
+      .poll(() =>
+        page.getByRole("dialog").evaluate((node) => node.contains(document.activeElement)),
+      )
+      .toBe(true);
+    expect(writes).toBe(0);
+    await expectAccessible(page);
+    await clean();
+  });
+}

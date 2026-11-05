@@ -16,6 +16,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
       Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
+            presentation: { changes: [], unchanged: [] },
             subject: {
               kind: "CASE",
               before: {
@@ -41,7 +42,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
                         fields,
                       },
               },
-              changes: [],
+
               context: runtime,
             },
           },

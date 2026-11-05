@@ -40,6 +40,7 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
 const preparedResponse = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
         before: null,
@@ -52,7 +53,7 @@ const preparedResponse = () =>
             fields,
           },
         },
-        changes: [],
+
         context: runtime,
       },
     },

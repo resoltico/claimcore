@@ -7,11 +7,7 @@ import { usePresentation } from "../presentation/context";
 type Props = { values: CaseFields; fields: CatalogDocument["fields"] };
 const countryField = (field: Props["fields"][number]) =>
   field.scalar.kind === "TEXT" && typeof field.scalar.format?.unknownCode === "string";
-export const CaseFactRows = ({
-  values,
-  fields,
-  explain = false,
-}: Props & { explain?: boolean }) => {
+export const CaseFactRows = ({ values, fields }: Props) => {
   const p = usePresentation();
   const pairedCurrencies = new Set(
     fields.filter((field) => field.scalar.kind === "AMOUNT").map((field) => field.pairs),
@@ -43,8 +39,6 @@ export const CaseFactRows = ({
                   />
                 )}
                 {currency === undefined ? null : <bdi dir="ltr">{currency}</bdi>}
-
-                {explain ? <small className="field-description">{p.hint(field)}</small> : null}
               </dd>
             </div>
           );

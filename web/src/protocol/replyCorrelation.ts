@@ -109,9 +109,19 @@ const coherentSingle = (
     (version["revision"] === 1 && sameIdentity(version["reminderId"], receipt["operationId"]))
   );
 };
+const creationReceiptMatches = (receipt: Record<string, unknown>, subject: Record<string, unknown>): boolean => {
+  if (subject["kind"] === "CASE") {
+    return subject["act"] !== "OPEN" || sameIdentity(subject["caseId"], receipt["operationId"]);
+  }
+  if (subject["kind"] !== "AUTHORITY" || !["REGISTER", "ADMIT", "PROVISION_OWNER"].includes(String(subject["act"]))) { return true; }
+  const target = object(subject["targetActor"]);
+  if (target["kind"] === "DISCLOSED") { return sameIdentity(object(target["actor"])["actorId"], receipt["operationId"]); }
+  return target["kind"] === "WITHHELD" && sameIdentity(target["actorId"], receipt["operationId"]);
+};
 /** Permanent bounded effect relationships are independent of generated structural schemas. */
 const coherentReceipt = (receipt: Record<string, unknown>): boolean => {
   const subject = object(receipt["subject"]);
+  if (!creationReceiptMatches(receipt, subject)) { return false; }
   if (subject["kind"] === "WORK") {
     return coherentWorkReceipt(subject);
   }
@@ -308,6 +318,76 @@ const previewReminderMatches = (
     ? previewCompoundMatches(request, subject, effects, after)
     : effects["kind"] === "CHANGED";
 };
+const previewCaseMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+): boolean => {
+  const after = object(subject["after"]);
+  if (
+    !caseTargetMatches(request, after) ||
+    !nextRevision(request["expectedRevision"], after["revision"])
+  ) {
+    return false;
+  }
+  if (object(request["act"])["kind"] === "OPEN") {
+    return (
+      request["expectedRevision"] === 0 &&
+      subject["before"] === null &&
+      sameIdentity(request["operationId"], after["caseId"])
+    );
+  }
+  const before = object(subject["before"]);
+  return (
+    caseTargetMatches(request, before) &&
+    before["revision"] === request["expectedRevision"] &&
+    sameIdentity(before["caseId"], after["caseId"]) &&
+    reference(before["caseReference"]) !== null &&
+    reference(before["caseReference"]) === reference(after["caseReference"])
+  );
+};
+const samePrincipal = (expected: unknown, actual: unknown): boolean => {
+  const left = object(expected);
+  const right = object(actual);
+  return (
+    typeof left["kind"] === "string" &&
+    typeof left["issuer"] === "string" &&
+    typeof left["subject"] === "string" &&
+    left["kind"] === right["kind"] &&
+    left["issuer"] === right["issuer"] &&
+    left["subject"] === right["subject"]
+  );
+};
+const authorityEffectKinds = (act: Record<string, unknown>): unknown[] | null => {
+  if (act["kind"] === "REGISTER") {
+    return ["REGISTER", "SET_PROFILE"];
+  }
+  if (act["kind"] === "ADMIT") {
+    const { grants } = act;
+    return Array.isArray(grants) ? ["REGISTER", "SET_PROFILE", ...grants.map(() => "GRANT")] : null;
+  }
+  return [act["kind"]];
+};
+const previewAuthorityMatches = (
+  request: Record<string, unknown>,
+  subject: Record<string, unknown>,
+): boolean => {
+  const act = object(request["act"]);
+  const expected = authorityEffectKinds(act);
+  const { effects } = subject;
+  if (
+    expected === null ||
+    !Array.isArray(effects) ||
+    effects.length !== expected.length ||
+    !effects.every((effect: unknown, index) => object(effect)["kind"] === expected[index])
+  ) {
+    return false;
+  }
+  const registering = act["kind"] === "REGISTER" || act["kind"] === "ADMIT";
+  return registering
+    ? subject["target"] === null &&
+        samePrincipal(request["target"], object(effects[0])["principal"])
+    : samePrincipal(request["target"], object(subject["target"])["principal"]);
+};
 const previewTargetMatches = (
   endpoint: EndpointId,
   request: Record<string, unknown>,
@@ -322,9 +402,9 @@ const previewTargetMatches = (
   }
   switch (request["kind"]) {
     case "AUTHORITY":
-      return true;
+      return previewAuthorityMatches(request, subject);
     case "CASE":
-      return caseTargetMatches(request, object(subject["after"]));
+      return previewCaseMatches(request, subject);
     case "WORK":
       return previewWorkMatches(request, subject);
     case "REMINDER":

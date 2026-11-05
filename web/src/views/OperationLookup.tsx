@@ -55,7 +55,7 @@ const ReceiptBody = ({
           </>
         )}
         <details>
-          <summary>{p.text("ui.technicalDetails")}</summary>
+          <summary>{p.text("label.recordDetails")}</summary>
           <IdentifierValue value={id} />
         </details>
       </section>

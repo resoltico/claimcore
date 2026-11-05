@@ -1,273 +1,48 @@
 import { Button } from "../../ui/Button";
 import { useId, useState, type ReactNode } from "react";
+import { ObservedCaseFacts } from "../work/ObservedCaseFacts";
 import { AuthorityEffects } from "../../components/AuthorityEffects";
+import { ReviewPresentation, UnchangedReview } from "../../components/ReviewPresentation";
+import { CharacterWarning } from "../../components/BusinessValue";
+import { isReviewPresentationComplete } from "../../presentation/review";
 import { operationEntryForInput } from "../../protocol/operationCatalog";
-import { WorkReviewValues, ReminderReviewValues } from "../work/WorkReviewValues";
-import type { OperationInput } from "@contracts/client";
+import type { OperationInput, OperationReview as Review } from "@contracts/client";
 import { useRequesterContext } from "../../hooks/useRequesterContext";
-import { IdentifierValue } from "../../components/IdentifierValue";
-import { lifecycleMessageIds } from "../LifecycleStatus";
 import { Dialog } from "../../ui/Dialog";
 import { ProtocolSummary } from "../../components/ProtocolSummary";
-import { BusinessValue, CharacterWarning } from "../../components/BusinessValue";
 import { usePresentation } from "../../presentation/context";
-import { productMetadata } from "../../protocol/productMetadata";
-import type { FieldCatalogEntry } from "../../api/service";
+import { NoticeView } from "../../presentation/Message";
 import type { OperationModel } from "../../hooks/operation/useOperation";
-import type { OperationReview as Review, CaseReview } from "../../protocol/types";
 import { renderCatalogKey } from "../../presentation/messages";
-import { caseFieldValue } from "../../protocol/caseFields";
+
 type ReviewModel = Pick<
   OperationModel,
   "prepared" | "review" | "phase" | "busy" | "confirmed" | "confirm" | "execute" | "returnToEdit"
 >;
-const ExactReviewValue = ({
-  value,
-  field,
-  currency,
-}: {
-  value: string | null;
-  field: FieldCatalogEntry;
-  currency?: string;
-}) => {
-  const p = usePresentation();
-  return value !== null &&
-    ["AMOUNT", "CURRENCY", "CALENDAR_DATE", "PLANNED_DATE"].includes(field.scalar.kind) ? (
-    <small className="exact-recorded-value">
-      {p.text("ui.exactRecordedValue")}:{" "}
-      <bdi dir="ltr">
-        {value}
-        {currency === undefined ? "" : ` ${currency}`}
-      </bdi>
-    </small>
-  ) : null;
-};
-const reviewCurrency = (
-  field: (typeof productMetadata.catalog.fields)[number],
-  snapshot: CaseReview["before"],
-) =>
-  field.pairs === null || snapshot === null || snapshot.state.kind === "ERASED"
-    ? undefined
-    : (caseFieldValue(snapshot.state.fields, field.pairs) ?? undefined);
-const ReviewValues = ({ review }: { review: CaseReview }) => {
-  const p = usePresentation();
-  return (
-    <>
-      {review.before === null ? null : (
-        <p>
-          {p.text("ui.before", { value: p.text(lifecycleMessageIds[review.before.state.kind]) })}
-        </p>
-      )}
-      <p>{p.text("ui.after", { value: p.text(lifecycleMessageIds[review.after.state.kind]) })}</p>
-      <dl className="review-values">
-        {review.changes.map((change) => {
-          const field = productMetadata.catalog.fields.find(
-            (candidate) => candidate.name === change.field,
-          )!;
-          const beforeCurrency = reviewCurrency(field, review.before);
-          const afterCurrency = reviewCurrency(field, review.after);
-          return (
-            <div key={change.field}>
-              <dt>{p.fieldLabel(change.field)}</dt>
-              <dd className="review-comparison">
-                <div className="review-before">
-                  <BusinessValue
-                    value={change.before}
-                    field={field}
-                    context="ui.before"
-                    {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
-                  />
-                  <ExactReviewValue
-                    value={change.before}
-                    field={field}
-                    {...(beforeCurrency === undefined ? {} : { currency: beforeCurrency })}
-                  />
-                </div>
-                <span className="review-arrow" aria-hidden="true">
-                  {" → "}
-                </span>
-                <div className="review-after">
-                  <BusinessValue
-                    value={change.after}
-                    field={field}
-                    context="ui.after"
-                    {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
-                  />
-                  <ExactReviewValue
-                    value={change.after}
-                    field={field}
-                    {...(afterCurrency === undefined ? {} : { currency: afterCurrency })}
-                  />
-                </div>
-              </dd>
-            </div>
-          );
-        })}
-      </dl>
-    </>
-  );
-};
-type AuthorityReview = Extract<Review["subject"], { kind: "AUTHORITY" }>;
-const ReviewGrants = ({ grants }: { grants: AuthorityReview["after"]["grants"] }) => {
-  const p = usePresentation();
-  return (
-    <ul>
-      {grants.map((grant) => (
-        <li key={JSON.stringify(grant)}>
-          <dl>
-            <dt>{p.text("field.role.label")}</dt>
-            <dd>
-              <span>{p.term("role", grant.role)}</span>
-            </dd>
-            <dt>{p.text("input.scope.label")}</dt>
-            <dd>
-              <span>{p.term("scope", grant.scope.kind)}</span>{" "}
-              {grant.scope.kind === "CASE" ? (
-                <IdentifierValue value={grant.scope.caseReference} />
-              ) : null}
-            </dd>
-          </dl>
-        </li>
-      ))}
-    </ul>
-  );
-};
-const AuthorityValues = ({ review }: { review: AuthorityReview }) => {
-  const p = usePresentation();
-  const states = [
-    ["ui.before", review.before],
-    ["ui.after", review.after],
-  ] as const;
-  return (
-    <>
-      <p>
-        {p.term("scope", review.accessScope.kind)}
-        {review.accessScope.kind === "CASE" ? (
-          <>
-            {" "}
-            <IdentifierValue value={review.accessScope.caseReference} />
-          </>
-        ) : null}
-      </p>
-      <AuthorityEffects effects={review.effects} />
-      <details className="authority-access-details">
-        <summary>{p.text("ui.effectiveAccess")}</summary>
-        {states.map(([label, state]) => (
-          <section key={label}>
-            <h4>{p.text(label, { value: p.text("ui.actor") })}</h4>
-            <dl>
-              <dt>{p.fieldLabel("profile.displayName")}</dt>
-              <dd>
-                {state.profile === null ? (
-                  p.text("ui.notRecorded")
-                ) : (
-                  <bdi>{state.profile.displayName}</bdi>
-                )}
-              </dd>
-              <dt>{p.fieldLabel("profile.contact")}</dt>
-              <dd>
-                {state.profile?.contact === null || state.profile === null ? (
-                  p.text("ui.notRecorded")
-                ) : (
-                  <bdi>{state.profile.contact}</bdi>
-                )}
-              </dd>
-              <dt>{p.text("label.enabled")}</dt>
-              <dd>{p.text(state.enabled ? "ui.yes" : "ui.no")}</dd>
-            </dl>
-            <h5>{p.text("ui.actorGrants")}</h5>
-            <ReviewGrants grants={state.grants} />
-            <h5>{p.text("ui.effectiveAccess")}</h5>
-            <dl>
-              {state.access.map((access) => (
-                <div key={access.capability}>
-                  <dt>{p.term("capability", access.capability)}</dt>
-                  <dd>
-                    <p>{p.text(access.effective ? "ui.effective" : "ui.dormant")}</p>
-                    <p>
-                      {p.text("ui.directRoles")}:{" "}
-                      {access.directRoles.map((role) => p.term("role", role)).join(", ") || "—"}
-                    </p>
-                    <p>
-                      {p.text("ui.inheritedRoles")}:{" "}
-                      {access.installationRoles.map((role) => p.term("role", role)).join(", ") ||
-                        "—"}
-                    </p>
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </section>
-        ))}
-      </details>
-    </>
-  );
-};
 const reviewReference = (review: Review["subject"]): string => {
   if (review.kind === "CASE") {
     return review.after.caseReference;
   }
-  if (review.kind === "WORK" || review.kind === "REMINDER") {
-    return review.caseReference;
-  }
-  return "";
+  return review.kind === "AUTHORITY" ? "" : review.caseReference;
 };
-const ReviewBody = ({ review }: { review: Review["subject"] }) => {
-  switch (review.kind) {
-    case "CASE":
-      return <ReviewValues review={review} />;
-    case "WORK":
-      return <WorkReviewValues review={review} />;
-    case "REMINDER":
-      return <ReminderReviewValues review={review} />;
-    case "AUTHORITY":
-      return <AuthorityValues review={review} />;
-  }
-};
-const ReviewIntent = ({ input, review }: { input: OperationInput; review: Review["subject"] }) => {
+const reviewBasis = (review: Review["subject"]) =>
+  review.kind === "AUTHORITY" ? review.basis : review.context;
+const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
   const p = usePresentation();
-  if (input.kind === "AUTHORITY") {
-    return (
-      <dl className="review-intent">
-        <div>
-          <dt>{p.text("ui.principal")}</dt>
-          <dd>
-            {p.term("principalKind", input.target.kind)} · <bdi>{input.target.subject}</bdi>
-            <CharacterWarning value={input.target.subject} />
-          </dd>
-        </div>
-        <div>
-          <dt>{p.fieldLabel("principal.issuer")}</dt>
-          <dd>
-            <bdi>{input.target.issuer}</bdi>
-            <CharacterWarning value={input.target.issuer} />
-          </dd>
-        </div>
-        {input.act.kind === "GRANT" || input.act.kind === "REVOKE" ? (
-          <div>
-            <dt>{p.fieldLabel("role")}</dt>
-            <dd>{p.term("role", input.act.role)}</dd>
-          </div>
-        ) : null}
-      </dl>
-    );
-  }
-  const reference = reviewReference(review);
+  const basis = reviewBasis(review);
+  const when = p.recordedTime(basis.observedAt, basis.timeZone);
+  const before = review.kind === "AUTHORITY" ? null : review.before;
   return (
-    <p className="review-intent">
-      <bdi dir="ltr" className="identifier-value">
-        {reference}
-      </bdi>{" "}
-      {input.kind === "REMINDER" ? null : (
-        <>
-          · {p.fieldLabel("expectedRevision")}:{" "}
-          <bdi dir="ltr">{p.integer(input.expectedRevision)}</bdi>
-        </>
-      )}
+    <p className="review-basis" title={basis.observedAt}>
+      {before === null
+        ? p.text("ui.review.checked", { when })
+        : p.text("ui.review.basis", { revision: p.integer(before.revision), when })}
     </p>
   );
 };
-const CorrectionIntent = ({
+
+/** Exact authored intent remains distinct from the core-supplied value delta. */
+const AuthoredIntent = ({
   input,
   review,
 }: {
@@ -275,45 +50,61 @@ const CorrectionIntent = ({
   review: Review["subject"];
 }) => {
   const p = usePresentation();
-  if (input.kind !== "CASE" || input.act.kind !== "CORRECT") {
+  if (input.kind !== "CASE") {
     return null;
   }
-  const { groups } = input.act;
-  const prior =
+  if (input.act.kind === "VOID" || input.act.kind === "REINSTATE") {
+    return (
+      <dl className="review-authored-intent">
+        <dt>{p.fieldLabel("reason")}</dt>
+        <dd>
+          <bdi dir="auto">{input.act.reason}</bdi>
+          <CharacterWarning value={input.act.reason} />
+        </dd>
+      </dl>
+    );
+  }
+  if (input.act.kind !== "CORRECT" || input.act.groups.payment.kind !== "REAFFIRM") {
+    return null;
+  }
+  const payment =
     review.kind === "CASE" && review.before !== null && review.before.state.kind !== "ERASED"
       ? review.before.state.fields.payment
       : null;
   return (
-    <dl className="review-groups">
-      {(["registration", "decision", "payment"] as const).map((group) => (
-        <div key={group}>
-          <dt>{p.text(`group.${group}.label`)}</dt>
-          <dd>
-            {p.term("correction", groups[group].kind)}
-            {group === "payment" && groups.payment.kind === "REAFFIRM" && prior !== null ? (
-              <small className="exact-recorded-value">
-                {p.fieldLabel("paymentDate")}: <bdi dir="ltr">{p.date(prior.paymentDate)}</bdi> ·{" "}
-                <bdi dir="ltr">{prior.paymentDate}</bdi>
-              </small>
-            ) : null}
-          </dd>
-        </div>
-      ))}
+    <dl className="review-authored-intent">
+      <dt>{p.text("group.payment.label")}</dt>
+      <dd>
+        {p.term("correction", "REAFFIRM")}
+        {payment === null ? null : (
+          <p>
+            <time dateTime={payment.paymentDate}>{p.date(payment.paymentDate)}</time> ·{" "}
+            <bdi dir="ltr">{payment.paymentDate}</bdi>
+          </p>
+        )}
+      </dd>
     </dl>
   );
 };
-const ReviewBasis = ({ review }: { review: Review["subject"] }) => {
+const ReviewBody = ({ review, input }: { review: Review; input: OperationInput }) => {
   const p = usePresentation();
-  if (review.kind === "AUTHORITY" || review.before === null) {
-    return null;
-  }
+  const basis = reviewBasis(review.subject);
   return (
-    <p className="review-basis">
-      {p.text("ui.review.basis", {
-        revision: p.integer(review.before.revision),
-        when: p.recordedTime(review.context.observedAt, review.context.timeZone),
-      })}
-    </p>
+    <>
+      <ReviewPresentation value={review.presentation} timeZone={basis.timeZone} />
+      <AuthoredIntent input={input} review={review.subject} />
+      <UnchangedReview value={review.presentation} />
+      {review.subject.kind === "AUTHORITY" && review.subject.effects.length > 0 ? (
+        <details className="authority-review-effects">
+          <summary>{p.text("label.effect")}</summary>
+          <AuthorityEffects effects={review.subject.effects} />
+        </details>
+      ) : null}
+      {review.subject.kind === "WORK" || review.subject.kind === "REMINDER" ? (
+        <ObservedCaseFacts parent={review.subject.parent} />
+      ) : null}
+      <ReviewBasis review={review.subject} />
+    </>
   );
 };
 const useReviewChallenge = (model: ReviewModel) => {
@@ -409,6 +200,53 @@ const useReviewControls = (model: ReviewModel, paused: boolean) => {
 };
 const reviewOpen = (phase: ReviewModel["phase"]) =>
   phase === "REVIEWING" || phase === "PREPARING" || phase === "SUBMITTING";
+const ReviewContents = ({
+  review,
+  input,
+  complete,
+  standalone,
+  confirmation,
+}: {
+  review: Review;
+  input: OperationInput;
+  complete: boolean;
+  standalone: boolean;
+  confirmation: ReactNode;
+}) => {
+  const p = usePresentation();
+  const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
+  const act = operationEntryForInput(input);
+  return (
+    <>
+      {standalone ? (
+        <>
+          <h3>{renderCatalogKey(p, act.labelId)}</h3>
+          <p>{renderCatalogKey(p, act.meaningId)}</p>
+        </>
+      ) : null}
+      {complete ? (
+        <ReviewBody review={review} input={input} />
+      ) : (
+        <p role="alert" data-incomplete-review>
+          <NoticeView value={{ kind: "local", reason: "incomplete" }} />
+        </p>
+      )}
+      <details className="review-request">
+        <summary>{p.text("label.recordDetails")}</summary>
+        {complete ? (
+          <ReviewPresentation
+            value={review.presentation}
+            timeZone={reviewBasis(review.subject).timeZone}
+            technical
+          />
+        ) : null}
+        <ProtocolSummary value={display} entry={act} />
+      </details>
+      <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
+      {confirmation}
+    </>
+  );
+};
 export const OperationReview = ({
   model,
   paused = false,
@@ -421,32 +259,20 @@ export const OperationReview = ({
   const p = usePresentation();
   const requester = useRequesterContext();
   const stopped = paused || requester?.maintenance.active === true;
-  const controls = useReviewControls(model, stopped);
+  const complete = model.review === null || isReviewPresentationComplete(model.review.presentation);
+  const controls = useReviewControls(model, stopped || !complete);
   if (model.review === null || model.prepared === null || controls === null) {
     return children?.(null) ?? null;
   }
   const { input } = model.prepared;
-  const display = Object.fromEntries(Object.entries(input).filter(([name]) => name !== "kind"));
-  const act = operationEntryForInput(input);
   const body = (
-    <>
-      {children === undefined ? (
-        <>
-          <h3>{renderCatalogKey(p, act.labelId)}</h3>
-          <p>{renderCatalogKey(p, act.meaningId)}</p>
-        </>
-      ) : null}
-      <ReviewIntent input={input} review={model.review.subject} />
-      <ReviewBody review={model.review.subject} />
-      <CorrectionIntent input={input} review={model.review.subject} />
-      <ReviewBasis review={model.review.subject} />
-      <details className="review-request">
-        <summary>{p.text("ui.technicalDetails")}</summary>
-        <ProtocolSummary value={display} entry={act} />
-      </details>
-      <p className="review-advisory">{p.text("ui.unchangedUntilSubmit")}</p>
-      {controls.body}
-    </>
+    <ReviewContents
+      review={model.review}
+      input={input}
+      complete={complete}
+      standalone={children === undefined}
+      confirmation={controls.body}
+    />
   );
   const actions = (
     <>

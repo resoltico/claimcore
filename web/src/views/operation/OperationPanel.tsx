@@ -303,18 +303,36 @@ const useFieldSelection = (operationId: unknown) => {
   );
   return { onFieldBlur, onMount };
 };
+const targetReference = (review: OperationModel["review"], current: Props["current"]) => {
+  switch (review?.subject.kind) {
+    case "CASE":
+      return review.subject.after.caseReference;
+    case "WORK":
+    case "REMINDER":
+      return review.subject.caseReference;
+    default:
+      return current?.caseReference;
+  }
+};
 const OperationTarget = ({
   model,
   actor,
+  current,
 }: {
+  current: Props["current"];
   model: OperationModel;
   actor: ActorRef | undefined;
 }) => {
   const p = usePresentation();
-  if (model.entry.subject !== "AUTHORITY") {
-    return null;
-  }
   const review = model.review?.subject;
+  if (model.entry.subject !== "AUTHORITY") {
+    const reference = targetReference(model.review, current);
+    return reference === undefined ? null : (
+      <p className="operation-target">
+        <IdentifierValue value={reference} />
+      </p>
+    );
+  }
   const actual = review?.kind === "AUTHORITY" ? review.target?.actor : actor;
   if (actual !== null && actual !== undefined) {
     return (
@@ -325,6 +343,28 @@ const OperationTarget = ({
   }
   return ["ADMIT", "REGISTER"].includes(model.entry.kind) ? null : (
     <p>{p.text("ui.selectedAccount")}</p>
+  );
+};
+const OperationSteps = ({ model }: { model: OperationModel }) => {
+  const p = usePresentation();
+  if (
+    model.priorUncertain ||
+    !["EDITING", "PREVIEWING", "REVIEWING", "PREPARING", "SUBMITTING"].includes(model.phase)
+  ) {
+    return null;
+  }
+  const reviewing = model.phase !== "EDITING" && model.phase !== "PREVIEWING";
+  return (
+    <ol className="operation-steps">
+      <li aria-current={reviewing ? undefined : "step"}>
+        <span aria-hidden="true">1</span>
+        {p.text("ui.enterDetails")}
+      </li>
+      <li aria-current={reviewing ? "step" : undefined}>
+        <span aria-hidden="true">2</span>
+        {p.text("label.reviewTitle")}
+      </li>
+    </ol>
   );
 };
 export const OperationPanel = (props: Props) => {
@@ -350,7 +390,12 @@ export const OperationPanel = (props: Props) => {
         <Dialog
           title={renderCatalogKey(p, entry.labelId)}
           description={renderCatalogKey(p, entry.meaningId)}
-          identity={<OperationTarget model={model} actor={props.actor} />}
+          identity={
+            <>
+              <OperationTarget model={model} actor={props.actor} current={props.current} />
+              <OperationSteps model={model} />
+            </>
+          }
           closeLabel={p.text("ui.close")}
           placement="end"
           headerEnd={

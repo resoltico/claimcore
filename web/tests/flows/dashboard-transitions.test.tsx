@@ -138,6 +138,7 @@ const queueOpenPreview = () => {
     previewForRequest(
       response("operation.preview", "REVIEWED", {
         review: {
+          presentation: { changes: [], unchanged: [] },
           subject: {
             kind: "CASE",
             before: null,
@@ -150,7 +151,7 @@ const queueOpenPreview = () => {
                 fields,
               },
             },
-            changes: [],
+
             context: runtime,
           },
         },

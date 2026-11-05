@@ -35,20 +35,34 @@ export const preview = (
   if (review.subject.kind !== "CASE") {
     throw new Error("Expected independently authored case review.");
   }
+  const expected = input?.kind === "CASE" ? input.expectedRevision : current.revision;
+  const caseId =
+    input?.kind === "CASE" && input.target.kind === "ID" ? input.target.caseId : current.caseId;
+  const after = {
+    ...review.subject.after,
+    caseId,
+    caseReference: reference,
+    revision: expected + 1,
+    state:
+      review.subject.after.state.kind === "ERASED"
+        ? review.subject.after.state
+        : {
+            ...review.subject.after.state,
+            fields: { ...review.subject.after.state.fields, caseReference: reference },
+          },
+  };
   const ownerReview = {
+    ...review,
     subject: {
       ...review.subject,
-      after: {
-        ...review.subject.after,
-        caseReference: reference,
-        state:
-          review.subject.after.state.kind === "ERASED"
-            ? review.subject.after.state
-            : {
-                ...review.subject.after.state,
-                fields: { ...review.subject.after.state.fields, caseReference: reference },
-              },
-      },
+      before:
+        input?.kind === "CASE" && input.act.kind === "OPEN"
+          ? null
+          : { ...after, revision: expected },
+      after:
+        input?.kind === "CASE" && input.act.kind === "OPEN"
+          ? { ...after, caseId: input.operationId }
+          : after,
     },
   };
   return {

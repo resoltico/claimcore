@@ -1,3 +1,4 @@
+import { I18nProvider } from "react-aria-components/I18nProvider";
 import { FieldHelp } from "./FieldHelp";
 import { parseDate } from "@internationalized/date";
 import { DateField, DateInput, DateSegment } from "react-aria-components/DateField";
@@ -38,19 +39,28 @@ const CalendarPopup = ({ field, value, disabled, onChange }: TypedFieldProps) =>
       />
       <Popover className="calendar-popover">
         <Dialog aria-label={p.fieldLabel(field.name)}>
-          <Calendar
-            value={dateValue(value)}
-            onChange={(next) => {
-              onChange(next.toString());
-            }}
-          >
-            <header>
-              <IconButton slot="previous" icon="chevron-start" label={p.text("ui.previousMonth")} />
-              <Heading />
-              <IconButton slot="next" icon="chevron-end" label={p.text("ui.nextMonth")} />
-            </header>
-            <CalendarGrid>{(day) => <CalendarCell date={day} />}</CalendarGrid>
-          </Calendar>
+          <I18nProvider locale={p.displayLocale}>
+            <Calendar
+              aria-label={p.fieldLabel(field.name)}
+              value={dateValue(value)}
+              onChange={(next) => {
+                onChange(next.toString());
+              }}
+            >
+              <header>
+                <IconButton
+                  slot="previous"
+                  icon="chevron-start"
+                  label={p.text("ui.previousMonth")}
+                />
+                <Heading lang={p.displayLocale} />
+                <IconButton slot="next" icon="chevron-end" label={p.text("ui.nextMonth")} />
+              </header>
+              <CalendarGrid lang={p.displayLocale}>
+                {(day) => <CalendarCell date={day} />}
+              </CalendarGrid>
+            </Calendar>
+          </I18nProvider>
         </Dialog>
       </Popover>
     </DialogTrigger>
@@ -76,7 +86,7 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
         <Label>{p.fieldLabel(field.name)}</Label>
         <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
       </div>
-      <DateInput aria-invalid={error !== undefined || undefined}>
+      <DateInput lang={p.displayLocale} aria-invalid={error !== undefined || undefined}>
         {(segment) => <DateSegment segment={segment} />}
       </DateInput>
       <Text slot="description" className="field-description">
@@ -86,9 +96,14 @@ const DateEntry = ({ field, value, inputName, disabled, error, onChange }: Typed
     </DateField>
   );
 };
-export const CatalogDate = (props: TypedFieldProps) => (
-  <div className="date-control">
-    <DateEntry {...props} />
-    <CalendarPopup {...props} />
-  </div>
-);
+export const CatalogDate = (props: TypedFieldProps) => {
+  const p = usePresentation();
+  return (
+    <div className="date-control">
+      <I18nProvider locale={p.displayLocale}>
+        <DateEntry {...props} />
+      </I18nProvider>
+      <CalendarPopup {...props} />
+    </div>
+  );
+};

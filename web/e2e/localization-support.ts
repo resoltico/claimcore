@@ -49,6 +49,10 @@ type PreferenceVisit =
   { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
 export const settingsNavigation = async (page: Page): Promise<Locator> => {
+  const drawerSettings = page.locator('[role="dialog"] [data-open-settings]');
+  if (await drawerSettings.isVisible()) {
+    return drawerSettings;
+  }
   await settledWorkspaceHeader(page);
   const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
   if (compact) {
@@ -83,7 +87,12 @@ const closePreferences = async (page: Page, visit: PreferenceVisit): Promise<voi
     await page.keyboard.press("Escape");
   }
   if (visit.kind === "PAGE") {
-    await page.goBack();
+    const back = page.locator("[data-return-workspace]");
+    if (await back.isVisible()) {
+      await back.click();
+    } else {
+      await page.goBack();
+    }
     await expect(page).toHaveURL(visit.returnUrl);
   }
 };

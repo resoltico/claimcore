@@ -557,7 +557,7 @@ export const CatalogInputs = (props: Props) => {
         .map(renderInput)}
       {technical.length === 0 ? null : (
         <details>
-          <summary>{p.text("ui.technicalDetails")}</summary>
+          <summary>{p.text("label.recordDetails")}</summary>
           {technical.map(renderInput)}
         </details>
       )}

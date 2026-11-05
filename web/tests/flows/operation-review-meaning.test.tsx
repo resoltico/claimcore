@@ -98,6 +98,7 @@ const authorityReviewModel = (kind: "INSTALLATION" | "CASE") => {
     },
   };
   const proposed: Review = {
+    presentation: { changes: [], unchanged: [] },
     subject: {
       kind: "AUTHORITY",
       basis: workBasis,
@@ -251,6 +252,7 @@ it("shows the core's profile values in authority review before consent", () => {
     },
   };
   const proposed: Review = {
+    presentation: { changes: [], unchanged: [] },
     subject: {
       kind: "AUTHORITY",
       basis: workBasis,

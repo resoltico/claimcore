@@ -87,7 +87,7 @@ const HistoryEntries = ({ items }: { items: ReadonlyArray<AuthorityHistoryEntry>
           </dl>
           <HistoryFacts entry={entry} />
           <details>
-            <summary>{p.text("ui.technicalDetails")}</summary>
+            <summary>{p.text("label.recordDetails")}</summary>
             <dl>
               <dt>{p.text("ui.exactUtc")}</dt>
               <dd>

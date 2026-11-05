@@ -49,6 +49,7 @@ const disclosedCurrent = {
 const preview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
         before: disclosedCurrent,
@@ -66,13 +67,7 @@ const preview = () =>
             },
           },
         },
-        changes: [
-          {
-            field: "claimantName",
-            before: currentCanary,
-            after: reviewCanary,
-          },
-        ],
+
         context: runtime,
       },
     },

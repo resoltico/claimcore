@@ -112,6 +112,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       return Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
+            presentation: { changes: [], unchanged: [] },
             subject: {
               kind: "CASE",
               before: {
@@ -135,9 +136,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
                   },
                 },
               },
-              changes: [
-                { field: "claimantName", before: "Latest stored name", after: "My retained draft" },
-              ],
+
               context: {
                 productVersion: "test",
                 observedAt: basis.observedAt,

@@ -1,3 +1,4 @@
+import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
 import { render, screen } from "../../../support/presentation-test-support";
 import { fields } from "../../../support/service-ui.fixtures";
@@ -24,8 +25,10 @@ const parent: CaseSnapshot = {
     },
   },
 };
-it("renders the review's observed financial values and fact revision independently of work revisions", () => {
+it("renders the review's observed financial values and fact revision independently of work revisions", async () => {
   const view = render(<ObservedCaseFacts parent={parent} />);
+  expect(view.container).toHaveTextContent("Others can update them while you review.");
+  await userEvent.setup().click(screen.getByText("Observed case facts at review"));
   expect(screen.getByRole("heading", { name: "Financial details" })).toBeVisible();
   expect(screen.getByText("Version 99")).toBeVisible();
   expect(view.container.querySelector('[data-field-name="claimedAmount"]')).toHaveTextContent(

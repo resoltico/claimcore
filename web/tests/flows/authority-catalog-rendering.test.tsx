@@ -4,12 +4,17 @@ import { workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
-import { AuthorityPanel } from "../../src/views/AuthorityPanel";
+import { useState } from "react";
+import type { OperationReceipt } from "@contracts/client";
+import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useCredential } from "../../src/session/SessionContext";
+import { OperationPanel, OperationDiscard } from "../../src/views/operation/OperationPanel";
+import { prepareRequest } from "../../src/protocol/preparedRequest";
+import { authorityReview, authorityAcceptance } from "../support/authority-operation.fixtures";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest } from "../../src/protocol/client";
 import type { RequestByEndpoint } from "@contracts/client";
 import { installationOffers } from "../support/installation-advice.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
 import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
 afterEach(() => vi.unstubAllGlobals());
 type AuthorityInput = Extract<
@@ -22,18 +27,34 @@ const authorityActs = productMetadata.catalog.entries
   .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "AUTHORITY")
   .map((entry) => entry as typeof entry & { kind: AuthorityInput["act"]["kind"] });
 const authorityReceipt = (request: AuthorityInput) => {
-  const source = wireReply("operation.execute", "AUTHORITY");
-  if (source.outcome.kind !== "ACCEPTED" || source.outcome.data.subject.kind !== "AUTHORITY") {
-    throw new Error("Missing frozen authority alternative.");
+  const value = authorityAcceptance(prepareRequest("operation.execute", request));
+  if (value.kind !== "outcome" || value.value.outcome.kind !== "ACCEPTED") {
+    throw new Error("Authority acceptance fixture required");
   }
-  return {
-    ...source.outcome.data,
-    operationId: request.operationId,
-    subject: {
-      ...source.outcome.data.subject,
-      act: request.act.kind,
-    },
-  };
+  return value.value.outcome.data;
+};
+const AuthorityBinding = () => {
+  const credential = useCredential();
+  const [recorded, setRecorded] = useState<OperationReceipt | null>(null);
+  const model = useOperation({
+    subject: "AUTHORITY",
+    kind: "REGISTER",
+    current: null,
+    credential,
+    onLockChange: () => undefined,
+    onRecorded: setRecorded,
+  });
+  return (
+    <>
+      <OperationDiscard model={model} />
+      <OperationPanel
+        model={model}
+        current={null}
+        offered={authorityActs.map((entry) => entry.kind)}
+      />
+      {recorded === null ? null : <p role="status">{recorded.operationId}</p>}
+    </>
+  );
 };
 const contextReply = (): Response =>
   response("context", {
@@ -61,48 +82,7 @@ const contextReply = (): Response =>
 const authorityPreview = (parsed: AuthorityInput) =>
   response("operation.preview", {
     operationId: parsed.operationId,
-    outcome: {
-      kind: "REVIEWED",
-      data: {
-        review: {
-          subject: {
-            kind: "AUTHORITY",
-            basis: workBasis,
-            effects:
-              parsed.act.kind === "ADMIT"
-                ? [
-                    { kind: "REGISTER", principal: parsed.target },
-                    {
-                      kind: "SET_PROFILE",
-                      profile: {
-                        displayName: parsed.act.profile.displayName,
-                        contact: parsed.act.profile.contact ?? null,
-                      },
-                    },
-                    ...parsed.act.grants.map((grant) => ({
-                      kind: "GRANT" as const,
-                      grant: { role: grant.role, scope: { kind: "INSTALLATION" as const } },
-                    })),
-                  ]
-                : [],
-            target: null,
-            accessScope: { kind: "INSTALLATION" },
-            before: {
-              enabled: false,
-              profile: null,
-              access: [],
-              grants: [],
-            },
-            after: {
-              enabled: true,
-              profile: null,
-              access: [],
-              grants: [],
-            },
-          },
-        },
-      },
-    },
+    outcome: { kind: "REVIEWED", data: { review: authorityReview(parsed) } },
   });
 const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
   vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
@@ -175,13 +155,11 @@ it.each(authorityActs)(
     expect(authorityActs).toHaveLength(8);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
-    render(<AuthorityPanel onLockChange={vi.fn()} />);
+    render(<AuthorityBinding />);
     await authorAuthority(act.kind);
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));
-    await screen.findByRole("heading", {
-      name: "Review changes",
-    });
+    await waitForReviewConfirm();
     const before = screen.getByRole("dialog").textContent;
     await waitForReviewConfirm();
     if (act.kind === "ERASE_PROFILE") {
@@ -224,7 +202,7 @@ it.each(authorityActs)(
 it("requires an explicit role and disables service-incompatible roles from catalog admission", async () => {
   const calls: Dispatch<AuthorityInput>[] = [];
   vi.stubGlobal("fetch", authorityTransport(calls));
-  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  render(<AuthorityBinding />);
   const user = userEvent.setup();
   const control = await screen.findByRole("combobox", { name: "Authority action" });
   await user.click(control);
@@ -248,7 +226,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
 it("disallows new case-scoped Owner grants and preserves revocation choices", async () => {
   const calls: Dispatch<AuthorityInput>[] = [];
   vi.stubGlobal("fetch", authorityTransport(calls));
-  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  render(<AuthorityBinding />);
   await authorAuthority("GRANT");
   const user = userEvent.setup();
   await user.click(screen.getByRole("radio", { name: "Owner" }));
