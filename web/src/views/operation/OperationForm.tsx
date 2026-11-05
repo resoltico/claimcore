@@ -35,6 +35,9 @@ const ActPicker = ({ model, offered, onAct }: OperationFormProps) => {
     />
   );
 };
+const isLocalCaseCreation = ({ model, current }: Pick<OperationFormProps, "model" | "current">) =>
+  model.entry.subject === "CASE" && model.entry.kind === "OPEN" && current === null;
+
 const OperationInputs = ({
   model,
   current,
@@ -44,8 +47,7 @@ const OperationInputs = ({
 }: OperationFormProps) => {
   const p = usePresentation();
   const allowed = offered.includes(model.entry.kind);
-  const retainCreationInputs =
-    model.entry.subject === "CASE" && model.entry.kind === "OPEN" && current === null;
+  const retainCreationInputs = isLocalCaseCreation({ model, current });
   const act = operationEntry(model.entry);
   return (
     <>
@@ -71,7 +73,12 @@ const OperationInputs = ({
           values={model.values}
           {...(fixedTarget === undefined ? {} : { fixedTarget })}
           {...(fixedPaths === undefined ? {} : { fixedPaths })}
-          disabled={model.busy || model.revalidating || model.phase === "REVIEWING" || !allowed}
+          disabled={
+            model.busy ||
+            model.revalidating ||
+            model.phase === "REVIEWING" ||
+            (!allowed && !retainCreationInputs)
+          }
           fieldErrors={model.fieldErrors}
           onChange={model.edit}
           onFieldsChange={model.editFields}

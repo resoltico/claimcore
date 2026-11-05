@@ -256,3 +256,88 @@ it("does not restore masked creation entry from a fresh no-OPEN observation, the
   expect(preview).toHaveBeenCalledOnce();
   expect(execute).not.toHaveBeenCalled();
 });
+it("retains editable local creation fields through Settings without enabling the unavailable OPEN act", async () => {
+  const context = mockEndpoint("context").mockResolvedValue(contextReply(true));
+  const preview = vi
+    .spyOn(service, "preview")
+    .mockImplementation((prepared) => Promise.resolve(reviewed(prepared)));
+  const execute = vi.spyOn(service, "execute").mockResolvedValue({
+    kind: "deliveryFailure",
+    notice: { kind: "local", reason: "invalidInput" },
+    dispatched: false,
+  });
+  render(<App />);
+  const { user } = await openDraft();
+  await freshContext(context, false);
+  expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
+  const claimant = screen.getByRole("textbox", { name: "Claimant name" });
+  expect(claimant).not.toBeDisabled();
+  await user.type(claimant, " revised{Enter}");
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  expect(preview).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+  await user.click(screen.getByRole("button", { name: "Settings" }));
+  await screen.findByRole("heading", { name: "Settings", level: 1 });
+  await user.click(screen.getByRole("button", { name: "Return to workspace" }));
+  const date = await screen.findByRole("group", { name: "Incident date" });
+  await waitFor(() => {
+    expect(date.querySelector('[data-type="day"]')).toHaveAttribute("aria-valuenow", "12");
+  });
+  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("");
+  expect(screen.getByRole("textbox", { name: "Case reference" })).toHaveValue("CURRENT-OFFER");
+  expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(
+    "Owned creation draft revised",
+  );
+  expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
+  expect(preview).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+  await freshContext(context, true);
+  expect(
+    screen.getByRole("group", { name: "Incident date" }).querySelector('[data-type="day"]'),
+  ).toHaveAttribute("aria-valuenow", "12");
+  expect(document.querySelector('input[name="act.values.incidentDate"]')).toHaveValue("");
+  expect(screen.getByRole("button", { name: "Review changes" })).not.toBeDisabled();
+  expect(preview).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+});
+it("keeps creation authoring locked during preparation, submission and an unknown outcome", async () => {
+  const context = mockEndpoint("context").mockResolvedValue(contextReply(true));
+  const preparing = Promise.withResolvers<Awaited<ReturnType<typeof service.preview>>>();
+  const submitting = Promise.withResolvers<Awaited<ReturnType<typeof service.execute>>>();
+  const preview = vi.spyOn(service, "preview").mockReturnValue(preparing.promise);
+  const execute = vi.spyOn(service, "execute").mockReturnValue(submitting.promise);
+  render(<App />);
+  const { user } = await openDraft();
+  await completeRegistration(user);
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  expect(screen.getByRole("textbox", { name: "Claimant name" })).toBeDisabled();
+  await freshContext(context, false);
+  expect(screen.getByRole("textbox", { name: "Claimant name" })).toBeDisabled();
+  const prepared = preview.mock.calls[0]?.[0];
+  if (prepared === undefined) {
+    throw new Error("An actual prepared request is required.");
+  }
+  await act(async () => {
+    preparing.resolve(reviewed(prepared));
+    await preparing.promise;
+  });
+  await freshContext(context, true);
+  const confirm = await screen.findByRole("button", { name: "Open a case" });
+  await user.click(confirm);
+  expect(execute).toHaveBeenCalledOnce();
+  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  await act(async () => {
+    submitting.resolve({
+      kind: "deliveryFailure",
+      notice: { kind: "local", reason: "unreachable" },
+    });
+    await submitting.promise;
+  });
+  await waitFor(() => {
+    expect(screen.getByRole("dialog")).toHaveTextContent("unknown");
+  });
+  await freshContext(context, false);
+  expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();
+  expect(preview).toHaveBeenCalledOnce();
+  expect(execute).toHaveBeenCalledOnce();
+});
