@@ -126,20 +126,25 @@ let private expectedFiles root selected =
         | [ file ] -> Set.singleton (Path.GetFullPath file)
         | _ -> invalidOp "Diagnostic specification must identify exactly one existing file."
 
+let private fallbackReportDirectory =
+    lazy
+        Path.Combine(
+            ClaimCore.TestSupport.RepositoryRoot.find (),
+            "artifacts",
+            "verification",
+            "native." + Guid.NewGuid().ToString("N")
+        )
+
+let private reportDirectory () =
+    match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+    | null -> fallbackReportDirectory.Value
+    | value -> value
+
 let private report selected files output engine =
     let count, duration =
         BrowserCompletion.read files engine (Path.Combine(output, "playwright.json"))
 
-    let directory =
-        match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-        | null ->
-            Path.Combine(
-                ClaimCore.TestSupport.RepositoryRoot.find (),
-                "artifacts",
-                "verification",
-                "native." + Guid.NewGuid().ToString("N")
-            )
-        | value -> value
+    let directory = reportDirectory ()
 
     Directory.CreateDirectory directory |> ignore
     let measurement = Path.Combine(output, "loading-measurements.json")
@@ -479,6 +484,17 @@ let private diagnosticControls () =
         Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", reports)
 
         try
+            Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", null)
+            let fallback = reportDirectory ()
+            Expect.equal (reportDirectory ()) fallback "Default evidence destination stays stable"
+            report selected files output "chromium"
+
+            Expect.isTrue
+                (File.Exists(Path.Combine(fallback, "browser-chromium.json")))
+                "Direct diagnostics retain evidence without caller environment setup"
+
+            Directory.Delete(fallback, true)
+            Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", reports)
             report selected files output "chromium"
 
             use summary =
@@ -572,12 +588,9 @@ let private printFailureSummary root engine bytes =
 
     Console.WriteLine summary
 
-    match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-    | null -> ()
-    | directory ->
-        let output = Path.Combine(directory, "browser-failure")
-        Directory.CreateDirectory output |> ignore
-        FixtureFiles.text output (engine + ".txt") summary |> ignore
+    let output = Path.Combine(reportDirectory (), "browser-failure")
+    Directory.CreateDirectory output |> ignore
+    FixtureFiles.text output (engine + ".txt") summary |> ignore
 
 let private runBrowser root engine output start =
     try
@@ -599,6 +612,8 @@ let private qualifyEngine engine =
         let root = ClaimCore.TestSupport.RepositoryRoot.find ()
         // Resolve the exact inventory before any expensive fixture or authentication starts.
         let files = expectedFiles root scope
+        // Refuse an unusable evidence destination before starting the expensive fixture.
+        Directory.CreateDirectory(reportDirectory ()) |> ignore
 
         Console.WriteLine(
             $"Starting published {engine} {scopeDescription scope}; isolated fixture, one worker, zero retries."
@@ -633,9 +648,7 @@ let private qualifyEngine engine =
         if result.ExitCode <> 0 then
             printFailureSummary fixture.Root engine result.StandardOutput
 
-            match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-            | null -> ()
-            | directory -> BrowserLayoutReports.retain output directory engine
+            BrowserLayoutReports.retain output (reportDirectory ()) engine
 
         Expect.equal
             result.ExitCode

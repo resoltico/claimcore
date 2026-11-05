@@ -373,6 +373,7 @@ jobs:
           npm --prefix web exec -- playwright install --with-deps --only-shell chromium
       - name: Run the explicitly partial diagnostic
         env:
+          CLAIMCORE_TEST_REPORT_DIRECTORY: ${{ github.workspace }}/artifacts/verification/native.browser-diagnostic
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: chromium
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: diagnostic
           CLAIMCORE_ACCEPTANCE_BROWSER_SPEC: ${{ inputs.browser_spec }}
