@@ -5128,6 +5128,11 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
+            "basis": {
+              "observedAt": "2026-11-04T12:00:00.000000Z",
+              "businessDate": "2026-11-04",
+              "timeZone": "Europe/Riga"
+            },
             "items": [
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
@@ -5614,6 +5619,11 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
+            "basis": {
+              "observedAt": "2026-11-04T12:00:00.000000Z",
+              "businessDate": "2026-11-04",
+              "timeZone": "Europe/Riga"
+            },
             "items": [
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
@@ -12311,6 +12321,11 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
+            "basis": {
+              "observedAt": "2026-11-04T12:00:00.000000Z",
+              "businessDate": "2026-11-04",
+              "timeZone": "Europe/Riga"
+            },
             "items": [
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
@@ -13020,6 +13035,11 @@
         "outcome": {
           "kind": "SUCCEEDED",
           "data": {
+            "basis": {
+              "observedAt": "2026-11-04T12:00:00.000000Z",
+              "businessDate": "2026-11-04",
+              "timeZone": "Europe/Riga"
+            },
             "items": [
               {
                 "actorId": "10000000-0000-4000-8000-000000000001",
@@ -21560,6 +21580,30 @@
                 "unchanged": []
               }
             }
+          }
+        }
+      }
+    },
+    {
+      "name": "case-assignees-basis-required",
+      "endpoint": "case.assignees",
+      "valid": false,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "items": [
+              {
+                "actorId": "10000000-0000-4000-8000-000000000001",
+                "displayName": {
+                  "kind": "NAMED",
+                  "value": "حساب متاح"
+                },
+                "principalKind": "HUMAN",
+                "availability": "AVAILABLE"
+              }
+            ],
+            "nextCursor": null
           }
         }
       }
