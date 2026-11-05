@@ -6,6 +6,7 @@
 - Supply an authored owner display name during provisioning and a profile when registering people; identity-provider claims do not supply profile names.
 - Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
 - Regenerate clients for named ActorRefs in work and assignee reads; reusable refs omit contacts and reflect current profile erasure.
+- Assignee pages require snapshot basis alongside named candidates and cursors; update strict readers.
 - Update work review/receipt readers for responsible ActorRefs; authority receipt targets now use Disclosed/Withheld projection under current authority-read rights.
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
 - Case and reminder state refusals use NOT_OFFERED and REMINDER_NOT_OFFERED; DECISION_REQUIRED is retired. Invalid corrections keep targeted input diagnostics.

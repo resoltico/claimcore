@@ -297,8 +297,10 @@ value. Empty or unchanged work refuses. Summary edits work on active open/closed
 changes require active open state. Only current human ReadCase + ManageCaseWork rights permit writes.
 Service CASE_HANDLER financial/read rights remain valid and do not include ManageCaseWork.
 
-`case.assignees` is a bounded case-scoped read of eligible human ActorIds/subjects, without issuer
-or grant-directory disclosure. Explicitly selected accounts are rechecked at execution. Later disable or
+`case.assignees` returns a required snapshot `basis`, current named `ActorRef` items and a continuation
+cursor for eligible humans. It discloses neither principal subjects/issuers nor the grant directory.
+The basis comes from the same authorized read as the candidates. Explicitly selected accounts are
+rechecked at execution. Later disable or
 revocation retains factual responsibility and reports the account unavailable; assignment grants no
 access. Every reminder inherits current responsibility. Case/work views distinguish work and financial
 revisions and last-change attribution.
@@ -348,7 +350,12 @@ CRLF conversion happens before review/freezing, never after prepared request con
 Typed case activity orders fact/work/reminder events by ledger sequence. Dedicated fact history
 compares consecutive case revisions; current terminal reminder access is distinct from prior-version
 ReadHistoryFull disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
-effects. Native/IndexedDB journals remain identity-only and never reconstruct business text after restart.
+effects. Creation receipts also bind the new CaseId, ReminderId or ActorId to the operation UUID.
+An authority receipt for an existing principal carries its ActorId, which does not establish a match to
+an authored issuer/subject. Clients correlate its operation UUID, family and act; they do not scan the
+actor directory or infer identity from a display name. Authority previews bind the exact principal and
+ordered effects before consent. Native/IndexedDB journals remain identity-only and never reconstruct
+business text after restart.
 
 OPEN and DECIDE retain complete inputs. AMEND_REGISTRATION takes typed optional facts, with
 `claimed: {amount,currency}` as a complete money assertion. CORRECT uses registration KEEP/UPDATE,
