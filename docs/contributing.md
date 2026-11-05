@@ -323,6 +323,9 @@ Use three phases, and select the scope before starting a command:
    For browser work, inspect one populated small-screen case and one RTL view with the full shared axe
    helper before expanding coverage. Batch stale selector/DTO/route/consent ports; do not discover each
    one by replaying a complete acceptance suite's already-passing prefix.
+   After a qualification failure, stop full reruns. Diagnose the failed path, inspect related consumers
+   for the same cause, and pass the affected focused checks before resuming qualification. Repeat a
+   full run for diagnosis only when the failure requires its conditions; state that reason first.
 3. **Qualify stable source.** Run the required full stages and platform matrix after relevant changes
    have stopped. Choose an execution owner: CI can supply the stages/platforms it actually exercises;
    use local full verification when required or when CI cannot supply that evidence. Avoid repeating the
@@ -351,6 +354,8 @@ CI enforces the order: published browsers wait for frontend checks, and a full c
 successful ordinary `Gate`. The workflow stage rejects regressions in those dependencies and partial
 browser qualification before starting tools or containers. The matrix plan also checks its required
 tuples and counts during cheap frontend tests and spec collection, before creating its dataset.
+Direct local commands do not enforce prior check completion; apply the same sequencing when invoking
+them. CI dependency checks prevent those workflow regressions, not every possible manual misuse.
 
 After [first checkout](#first-checkout), examples for focused iteration are:
 
@@ -500,7 +505,9 @@ does not by itself call for a new growth run.
 | Required full comparison | `bash eng/verify.sh growth-compare REF` | Three same-host pairs, six complete runs |
 
 A full comparison repeatedly seeds large populations and may take hours. Start it after relevant
-product code and workload fingerprints are stable, alongside independent final checks. Do not run a
+product code and workload fingerprints are stable and ordinary correctness qualification has passed
+for those inputs. CI enforces this with the ordinary `Gate` dependency; for a local comparison, first
+confirm applicable passing correctness evidence. Do not run a
 full observation and a full comparison merely for duplicate coverage. Reuse existing results only when
 their inputs, platform and question still apply; changed relevant code requires new evidence. Explicit
 acceptance criteria remain binding, and a diagnostic or incomplete run never becomes a full pass.

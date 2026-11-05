@@ -6,6 +6,11 @@ growth commands. Choose the smallest existing scope that answers the concrete pe
 State the reference and workloads for a comparison. Preserve evidence from running work; a policy change
 does not resolve an observed regression or invalidate an agreed acceptance criterion.
 
+Before a full comparison, complete the [verification prerequisites](contributing.md#verification):
+stable relevant source and workload inputs, with applicable ordinary correctness qualification passing.
+CI enforces the successful `Gate` dependency; direct local commands rely on the caller to establish
+these prerequisites. Diagnose a failed path with focused checks before repeating expensive coverage.
+
 | Purpose | Command | Evidence |
 | --- | --- | --- |
 | Focused write observation | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | One current-source write profile and three cardinality populations; no reads or reference comparison. |
