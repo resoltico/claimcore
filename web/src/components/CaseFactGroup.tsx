@@ -1,3 +1,4 @@
+import "./CaseFactGroup.css";
 import { FieldHelp } from "./FieldHelp";
 import { CountryValue } from "./CountryValue";
 import type { CaseFields, CatalogDocument } from "../api/service";

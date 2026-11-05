@@ -32,7 +32,7 @@ export const CaseFieldsView = ({ values, revision, fields, context }: CaseFields
   const headingId = useId();
   const snapshotFields = fields.filter((field) => field.section !== "work");
   return (
-    <section aria-labelledby={headingId} className="case-fields">
+    <section aria-labelledby={headingId} className="case-fields case-fields-view">
       <div className="section-heading">
         <h2 id={headingId}>{context}</h2>
         <span>{p.text("ui.revision", { revision: p.integer(revision) })}</span>

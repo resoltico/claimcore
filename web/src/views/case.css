@@ -30,34 +30,6 @@
   gap: var(--space-4);
   min-inline-size: 0;
 }
-.case-fact-card {
-  background: var(--bg-surface);
-  border: var(--border-width) solid var(--border-control);
-  padding: var(--space-4);
-  border-radius: var(--radius-md);
-  min-inline-size: 0;
-}
-.case-fact-card :is(h2, h3) {
-  margin-block-start: 0;
-}
-.case-fact-card > summary {
-  font-weight: bold;
-  min-block-size: var(--target-primary);
-  cursor: pointer;
-}
-.case-fact-card dl {
-  margin-block-end: 0;
-}
-.case-fields dd {
-  margin-inline-start: 0;
-  overflow-wrap: anywhere;
-}
-.case-fields dt {
-  color: var(--text-secondary);
-}
-.case-fields .field-row {
-  padding-block: var(--space-2);
-}
 .case-actions {
   padding: var(--space-4);
   border: var(--border-width) solid var(--border-control);
@@ -141,11 +113,6 @@ button.case-action-danger {
   gap: var(--space-2);
 }
 
-.case-fact-card .field-row {
-  grid-template-columns: minmax(0, 1fr);
-  gap: var(--space-1);
-}
-
 .case-header-state {
   display: flex;
   flex-wrap: wrap;
@@ -173,10 +140,6 @@ button.case-action-danger {
 .field-row:hover .copy-icon,
 .field-row:focus-within .copy-icon {
   opacity: 1;
-}
-.case-fact-card .section-heading {
-  gap: var(--space-2);
-  align-items: center;
 }
 .explain-fields {
   font-size: var(--text-xs);
@@ -243,15 +206,6 @@ button.case-action-danger {
   border: 0;
   background: transparent;
   box-shadow: none;
-}
-.case-fact-card .section-heading {
-  gap: var(--space-2);
-}
-.case-fact-card .field-row {
-  border: 0;
-}
-.case-fact-card .field-row dd {
-  font-weight: 550;
 }
 
 .assignee-available,
@@ -366,33 +320,6 @@ button.case-action-danger {
   font-size: var(--text-sm);
 }
 
-.case-fact-card {
-  container: case-facts / inline-size;
-}
-.case-fact-card > dl {
-  margin-block: var(--space-3) 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--space-2) var(--space-4);
-}
-@container case-facts (width < 14rem) {
-  .case-fact-card > dl {
-    grid-template-columns: minmax(0, 1fr);
-  }
-}
-.case-fact-card .field-row {
-  min-inline-size: 0;
-  padding-block: var(--space-1);
-}
-.case-fact-card .field-row:has(.plain-text-value) {
-  grid-column: 1 / -1;
-}
-.case-fact-card .field-row dt {
-  display: block;
-  font-size: var(--text-sm);
-}
-
-.case-fact-card .section-heading :is(h2, h3),
 .case-work .section-heading h2,
 .case-reminders .section-heading h2 {
   margin: 0;
@@ -401,16 +328,6 @@ button.case-action-danger {
 .case-work .section-heading,
 .case-reminders .section-heading {
   margin-block-end: var(--space-3);
-}
-.case-fact-card {
-  position: relative;
-}
-.case-fact-card .field-help {
-  position: static;
-}
-.case-fact-card .field-help[open] p {
-  inset-inline: var(--space-4);
-  inline-size: auto;
 }
 .case-section-actions {
   margin-inline-start: auto;
@@ -443,7 +360,6 @@ button.case-action-danger {
   background: var(--bg-raised);
   box-shadow: var(--shadow-2);
 }
-.case-work .case-edit-link,
-.case-fact-card > .section-heading > .case-edit-link {
+.case-work .case-edit-link {
   margin-inline-start: auto;
 }
