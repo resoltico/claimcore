@@ -383,8 +383,9 @@ neither behavior nor integration. Use named stages when the whole affected suite
 Complete published-browser qualification has a 40-minute Playwright execution safety cap for the
 expanded workflow and design-matrix inventory. `BrowserTests.fs` owns scope limits (complete 40,
 diagnostic 20, smoke 2 minutes), passes them explicitly to Playwright, and gives its native process
-one further minute for reporting and cleanup. The complete acceptance project has a 60-minute MTP
-bound and its CI job allows 70 minutes including setup. These capacity bounds do not change per-test
+one further minute for reporting and cleanup. The acceptance project has a 60-minute MTP bound for one
+explicit engine, with 70 minutes including CI setup. The default local invocation sequences all three
+engines once under a 150-minute project bound. These capacity bounds do not change per-test
 limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
 is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
 

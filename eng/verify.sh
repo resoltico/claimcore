@@ -275,9 +275,13 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  local project
+  local project acceptance_timeout=60m
+  if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
+    # The default local invocation includes all three bounded engine runs and native cases.
+    acceptance_timeout=150m
+  fi
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release 60m eng/expecto.acceptance.runsettings
+    tests "${project}" Release "${acceptance_timeout}" eng/expecto.acceptance.runsettings
   done
 }
 
