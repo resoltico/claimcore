@@ -98,8 +98,9 @@ test("a missing view chunk leaves the workspace available and explicit reload in
   await expect(page.getByRole("button", { name: "Retry loading", exact: true })).toBeVisible();
   await page.unroute(accessModule);
   await reloadDocument(page);
-  await expect(page.getByRole("heading", { name: "Access", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "People & access", exact: true })).toBeVisible();
   await expect(page.locator(".authority-panel")).toBeVisible();
+  await page.getByRole("button", { name: "Add person", exact: true }).click();
   await expect(page.locator('[name="target.subject"]')).toBeVisible();
   await expect(page.getByRole("alert")).toHaveCount(0);
 });
@@ -121,10 +122,10 @@ test("offline Settings navigation guard preserves raw entry, review identity and
   await page.context().setOffline(true);
   const editorUrl = page.url();
   await (await settingsNavigation(page)).click();
-  const guard = page.getByRole("dialog", { name: "Discard these draft changes?", exact: true });
-  await expect(guard).toBeVisible();
-  await guard.getByRole("button", { name: "Keep editing", exact: true }).click();
-  await expect(guard).toHaveCount(0);
+  await expect(page).toHaveURL((url) => url.pathname === "/settings");
+  await expect(page.locator(".settings-panel")).toBeVisible();
+  await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
+  await page.locator("[data-return-workspace]").click();
   await expect(page).toHaveURL(editorUrl);
   await expect(page.locator(".settings-panel")).toHaveCount(0);
   await expect(amount).toHaveValue("1,234");
@@ -137,10 +138,13 @@ test("offline Settings navigation guard preserves raw entry, review identity and
     operationId: identity.operationId,
     act: { values: { claimedAmount: "1234", claimedCurrency: "EUR" } },
   });
-  const review = page.getByRole("dialog", { name: "Review changes", exact: true });
-  await review.getByText("I confirm these changes.", { exact: true }).click();
+  const review = page
+    .getByRole("dialog")
+    .filter({ has: page.locator("button[data-confirm-operation]") });
+  await review.locator("button[data-confirm-operation]").focus();
   await expect(review.locator('.settings-panel, [role="combobox"][id$="-format"]')).toHaveCount(0);
   await expect(review).toContainText(identity.operationId);
-  await expect(review.getByRole("checkbox")).toBeChecked();
+  await expect(review.getByRole("checkbox")).toHaveCount(0);
+  await expect(review.locator("button[data-confirm-operation]")).toBeEnabled();
   expect(executions).toEqual([]);
 });

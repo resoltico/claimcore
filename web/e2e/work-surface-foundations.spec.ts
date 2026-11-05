@@ -39,7 +39,16 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
-  await expect(page.locator(".success-toast")).toContainText("revision 2.");
+  await expect(page.locator(".success-toast")).toContainText("Case closed.");
+  const details = page.locator("[data-record-details]");
+  await details.locator(":scope > summary").click();
+  await expect(
+    details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Revision", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("2");
+  await details.locator(":scope > summary").click();
 };
 
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
@@ -59,8 +68,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     dismissed.resolve();
   });
   try {
-    await page.getByText("I confirm these changes.", { exact: true }).click();
-    await page.getByRole("button", { name: "Record changes", exact: true }).click();
+    await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     const { reply } = await execution.ready;
     expect(reply.outcome.kind).toBe("ACCEPTED");
     expect(reply.operationId).toBe(identity.operationId);

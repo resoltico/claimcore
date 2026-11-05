@@ -16,8 +16,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     await startAct(page, "Close the case");
     await reviewDraft(page);
     await redirectResponse.arm("/api/operation.execute", status);
-    await page.getByText("I confirm these changes.", { exact: true }).click();
-    await page.getByRole("button", { name: "Record changes" }).click();
+    await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     await expect(page.getByRole("alert")).toContainText("unknown");
     const evidence = await redirectResponse.evidence();
     expect(evidence.originals).toBe(1);

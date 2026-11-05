@@ -172,8 +172,7 @@ test("tab loss after transaction commit and before notification leaves identity 
       executions += 1;
     }
   });
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect
     .poll(() =>
       page.evaluate(
@@ -250,8 +249,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     expect(isResponse("operation.execute", value) && value.outcome.kind === "ACCEPTED").toBe(true);
     await route.abort("connectionfailed");
   });
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const replacement = await context.newPage();
   await page.close();

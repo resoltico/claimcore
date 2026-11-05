@@ -10,20 +10,28 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
 }) => {
   await openAuthenticated(page);
   await openCase(page, `DRAFT-${randomUUID()}`);
-  await startAct(page, "Amend registration");
+  await startAct(page, "Update claim details");
   await expect(page.getByRole("combobox", { name: "Case action", exact: true })).toHaveCount(0);
-  await page.getByRole("button", { name: "Back to case", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
   await startAct(page, "Close the case");
   await expect(page.getByRole("heading", { name: "Close the case" })).toBeVisible();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
-  await page.getByRole("button", { name: "Back to case", exact: true }).click();
-  await startAct(page, "Amend registration");
-  const selectedFacts = page.locator(".operation-editor form input[data-selects-fields]");
+  await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toHaveCount(0);
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
+  await startAct(page, "Update claim details");
+  const selectedFacts = page.locator(".operation-form-card input[data-selects-fields]");
   await selectedFacts.first().waitFor({ state: "visible" });
   for (const selected of await selectedFacts.all()) {
     await selected.check();
   }
-  const fields = page.locator(".operation-editor form [data-field-name]");
+  const fields = page.locator(".operation-form-card [data-field-name]");
   await expect(fields).toHaveCount(8);
   await expect(
     page.getByRole("textbox", { name: "Incident description", exact: true }),
@@ -31,10 +39,18 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
   for (const name of Object.keys(registration())) {
     await fillBusinessField(page, name, "");
   }
-  await page.getByRole("button", { name: "Back to case", exact: true }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
   await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toBeVisible();
   await page.getByRole("button", { name: "Keep editing" }).click();
-  await page.getByRole("button", { name: "Back to case" }).click();
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
   await expect(page.getByRole("dialog", { name: "Discard these draft changes?" })).toBeVisible();
   await page
     .getByRole("dialog", { name: "Discard these draft changes?" })
@@ -44,33 +60,41 @@ test("protects exact routed amendment edits on Back while untouched drafts leave
   await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
     "1,200.50",
   );
-  await startAct(page, "Amend registration");
-  await page.getByRole("button", { name: "Back to case" }).click();
+  await startAct(page, "Update claim details");
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
 });
 
-test("review blocks authoring and accepted OPEN returns to the recorded case with a revision notice", async ({
+test("review blocks authoring and accepted OPEN returns to the recorded case with its catalog completion notice", async ({
   page,
 }) => {
   await openAuthenticated(page);
   await startOpen(page, `RECEIPT-${randomUUID()}`);
   await reviewDraft(page);
-  for (const input of await page
-    .locator(
-      '.operation-editor form input:not([type="hidden"]), .operation-editor form [role="spinbutton"]',
-    )
-    .all()) {
-    await expect(input).toBeDisabled();
-  }
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await page.getByRole("button", { name: "Record changes" }).click();
+  await expect(page.locator(".operation-form-card")).toHaveCount(0);
+  await expect(page.getByRole("dialog").getByRole("textbox")).toHaveCount(0);
+  await expect(page.getByRole("dialog").locator("button[data-confirm-operation]")).toBeEnabled();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   const detail = page.locator("#case-detail-title");
   await expect(detail).toBeVisible();
   await expect(detail).toBeFocused();
-  await expect(page.locator(".success-toast")).toContainText("Open a case recorded at revision 1.");
-  await expect(page.locator(".operation-editor form")).toHaveCount(0);
+  await expect(page.locator(".success-toast")).toContainText("Case opened.");
+  const details = page.locator("[data-record-details]");
+  await details.locator(":scope > summary").click();
+  await expect(
+    details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Revision", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("1");
+  await details.locator(":scope > summary").click();
+  await expect(page.locator(".operation-form-card")).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Back to cases", exact: true })).toBeVisible();
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  await expect(page.getByRole("button", { name: /^Amend registration:/u })).toBeVisible();
+  await expect(page.getByRole("button", { name: /^Update claim details:/u })).toBeVisible();
 });
