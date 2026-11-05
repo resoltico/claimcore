@@ -125,49 +125,106 @@ module TimelineCodecs =
                     (record id |> field "change" id reminderDifference)
             ]
 
+    let private unitEvent kind value =
+        variant
+            kind
+            (fun () -> value)
+            (fun event -> if event = value then Some() else None)
+            (record ()
+             |> fixedField "messageId" (TimelineEventPresentation.describe value).MessageId)
+
+    let private personEvent kind create project =
+        variant
+            kind
+            create
+            project
+            (record id
+             |> fixedField
+                 "messageId"
+                 ("timeline.event."
+                  + (if kind = "RESPONSIBILITY_ASSIGNED" then
+                         "responsibilityAssigned"
+                     else
+                         "responsibilityCleared"))
+             |> field "person" id ActorCodecs.actorRef)
+
+    let private actionEvent kind key create project =
+        variant
+            kind
+            create
+            project
+            (record id
+             |> fixedField "messageId" ("timeline.event." + key)
+             |> field "action" id reminderAction)
+
+    let private plannedEvent kind key create project =
+        variant
+            kind
+            create
+            project
+            (record (fun action due -> action, due)
+             |> fixedField "messageId" ("timeline.event." + key)
+             |> field "action" fst reminderAction
+             |> field "due" snd calendarDate)
+
+    let private reminderEvents =
+        [
+            yield
+                plannedEvent
+                    "REMINDER_PLANNED"
+                    "reminderPlanned"
+                    TimelineEvent.ReminderPlanned
+                    (function
+                     | TimelineEvent.ReminderPlanned(action, due) -> Some(action, due)
+                     | _ -> None)
+            yield
+                actionEvent
+                    "REMINDER_CHANGED"
+                    "reminderChanged"
+                    TimelineEvent.ReminderChanged
+                    (function
+                     | TimelineEvent.ReminderChanged value -> Some value
+                     | _ -> None)
+            yield
+                actionEvent
+                    "REMINDER_COMPLETED"
+                    "reminderCompleted"
+                    TimelineEvent.ReminderCompleted
+                    (function
+                     | TimelineEvent.ReminderCompleted value -> Some value
+                     | _ -> None)
+            yield
+                actionEvent
+                    "REMINDER_CANCELLED"
+                    "reminderCancelled"
+                    TimelineEvent.ReminderCancelled
+                    (function
+                     | TimelineEvent.ReminderCancelled value -> Some value
+                     | _ -> None)
+            yield
+                plannedEvent
+                    "REMINDER_REOPENED"
+                    "reminderReopened"
+                    TimelineEvent.ReminderReopened
+                    (function
+                     | TimelineEvent.ReminderReopened(action, due) -> Some(action, due)
+                     | _ -> None)
+            yield
+                variant
+                    "REMINDER_COMPLETED_AND_PLANNED"
+                    TimelineEvent.ReminderCompletedAndPlanned
+                    (function
+                    | TimelineEvent.ReminderCompletedAndPlanned(completed, next, due) ->
+                        Some(completed, next, due)
+                    | _ -> None)
+                    (record (fun completed next due -> completed, next, due)
+                     |> fixedField "messageId" "timeline.event.reminderCompletedAndPlanned"
+                     |> field "completedAction" (fun (value, _, _) -> value) reminderAction
+                     |> field "nextAction" (fun (_, value, _) -> value) reminderAction
+                     |> field "nextDue" (fun (_, _, value) -> value) calendarDate)
+        ]
+
     let private event =
-        let unitEvent kind value =
-            variant
-                kind
-                (fun () -> value)
-                (fun event -> if event = value then Some() else None)
-                (record ()
-                 |> fixedField "messageId" (TimelineEventPresentation.describe value).MessageId)
-
-        let person kind create project =
-            variant
-                kind
-                create
-                project
-                (record id
-                 |> fixedField
-                     "messageId"
-                     ("timeline.event."
-                      + (if kind = "RESPONSIBILITY_ASSIGNED" then
-                             "responsibilityAssigned"
-                         else
-                             "responsibilityCleared"))
-                 |> field "person" id ActorCodecs.actorRef)
-
-        let action kind key create project =
-            variant
-                kind
-                create
-                project
-                (record id
-                 |> fixedField "messageId" ("timeline.event." + key)
-                 |> field "action" id reminderAction)
-
-        let planned kind key create project =
-            variant
-                kind
-                create
-                project
-                (record (fun action due -> action, due)
-                 |> fixedField "messageId" ("timeline.event." + key)
-                 |> field "action" fst reminderAction
-                 |> field "due" snd calendarDate)
-
         tagged
             "TimelineEvent"
             [
@@ -177,70 +234,24 @@ module TimelineCodecs =
                             (TimelineEventPresentation.caseKind act |> fst)
                             (TimelineEvent.CaseActRecorded act)
                 yield
-                    person "RESPONSIBILITY_ASSIGNED" TimelineEvent.ResponsibilityAssigned (function
-                        | TimelineEvent.ResponsibilityAssigned value -> Some value
-                        | _ -> None)
+                    personEvent
+                        "RESPONSIBILITY_ASSIGNED"
+                        TimelineEvent.ResponsibilityAssigned
+                        (function
+                         | TimelineEvent.ResponsibilityAssigned value -> Some value
+                         | _ -> None)
                 yield
-                    person "RESPONSIBILITY_CLEARED" TimelineEvent.ResponsibilityCleared (function
-                        | TimelineEvent.ResponsibilityCleared value -> Some value
-                        | _ -> None)
+                    personEvent
+                        "RESPONSIBILITY_CLEARED"
+                        TimelineEvent.ResponsibilityCleared
+                        (function
+                         | TimelineEvent.ResponsibilityCleared value -> Some value
+                         | _ -> None)
                 yield unitEvent "WORK_RECORDED" TimelineEvent.WorkRecorded
                 yield unitEvent "HANDLING_SUMMARY_ADDED" TimelineEvent.HandlingSummaryAdded
                 yield unitEvent "HANDLING_SUMMARY_CHANGED" TimelineEvent.HandlingSummaryChanged
                 yield unitEvent "HANDLING_SUMMARY_CLEARED" TimelineEvent.HandlingSummaryCleared
-                yield
-                    planned
-                        "REMINDER_PLANNED"
-                        "reminderPlanned"
-                        TimelineEvent.ReminderPlanned
-                        (function
-                         | TimelineEvent.ReminderPlanned(action, due) -> Some(action, due)
-                         | _ -> None)
-                yield
-                    action
-                        "REMINDER_CHANGED"
-                        "reminderChanged"
-                        TimelineEvent.ReminderChanged
-                        (function
-                         | TimelineEvent.ReminderChanged value -> Some value
-                         | _ -> None)
-                yield
-                    action
-                        "REMINDER_COMPLETED"
-                        "reminderCompleted"
-                        TimelineEvent.ReminderCompleted
-                        (function
-                         | TimelineEvent.ReminderCompleted value -> Some value
-                         | _ -> None)
-                yield
-                    action
-                        "REMINDER_CANCELLED"
-                        "reminderCancelled"
-                        TimelineEvent.ReminderCancelled
-                        (function
-                         | TimelineEvent.ReminderCancelled value -> Some value
-                         | _ -> None)
-                yield
-                    planned
-                        "REMINDER_REOPENED"
-                        "reminderReopened"
-                        TimelineEvent.ReminderReopened
-                        (function
-                         | TimelineEvent.ReminderReopened(action, due) -> Some(action, due)
-                         | _ -> None)
-                yield
-                    variant
-                        "REMINDER_COMPLETED_AND_PLANNED"
-                        TimelineEvent.ReminderCompletedAndPlanned
-                        (function
-                        | TimelineEvent.ReminderCompletedAndPlanned(completed, next, due) ->
-                            Some(completed, next, due)
-                        | _ -> None)
-                        (record (fun completed next due -> completed, next, due)
-                         |> fixedField "messageId" "timeline.event.reminderCompletedAndPlanned"
-                         |> field "completedAction" (fun (value, _, _) -> value) reminderAction
-                         |> field "nextAction" (fun (_, value, _) -> value) reminderAction
-                         |> field "nextDue" (fun (_, _, value) -> value) calendarDate)
+                yield! reminderEvents
             ]
 
     let private highlight =

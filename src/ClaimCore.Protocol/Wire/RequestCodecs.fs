@@ -16,6 +16,10 @@ module RequestCodecs =
         |> Codec.vocabulary (Vocabulary.name vocabulary)
 
     let revision = integer 0L JsonValue.MaximumInteger
+
+    let reminderRevision =
+        integer (Revision.value Revision.first) JsonValue.MaximumInteger
+
     let sequence = integer 1L JsonValue.MaximumInteger
 
     let private inputGroup group create values =
@@ -204,10 +208,7 @@ module RequestCodecs =
     let private reminderTargetFields =
         record (fun id revision -> id, revision)
         |> field "reminderId" fst uuid
-        |> field
-            "expectedRevision"
-            snd
-            (integer (Revision.value Revision.first) JsonValue.MaximumInteger)
+        |> field "expectedRevision" snd reminderRevision
 
     let private reminderPlanFields targetFields =
         record (fun (id, revision) plan -> id, revision, plan)

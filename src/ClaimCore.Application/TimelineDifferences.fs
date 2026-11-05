@@ -18,8 +18,10 @@ module internal TimelineDifferences =
                     After = after
                 }
 
-    let private actor references id =
-        references |> Map.tryFind id |> Option.map Ok |> Option.defaultValue fault
+    let actor (references: Map<ActorId, ActorRef>) id =
+        match Map.tryFind id references with
+        | Some reference when reference.ActorId = id -> Ok reference
+        | _ -> fault
 
     let private actorOption references =
         function

@@ -493,7 +493,7 @@ module Grammar =
         let target =
             Codec.record (fun id revision -> id, revision)
             |> Codec.field "reminderId" fst Codec.uuid
-            |> Codec.optionalField "expectedRevision" snd RequestCodecs.revision
+            |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
 
         intent RequestCodecs.caseSelector (RequestCodecs.reminderActWith target) arguments
 

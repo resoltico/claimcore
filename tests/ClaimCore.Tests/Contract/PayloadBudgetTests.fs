@@ -312,6 +312,147 @@ let private timelineBudget () =
         (Codec.decode Limits.MaximumResponseBytes Api.caseTimeline.Output bytes)
         "The actual maximal page decodes under the public limit"
 
+let private reminderOverviewBudget () =
+    let required =
+        function
+        | Ok value -> value
+        | Error problem -> failtestf "Budget fixture refused: %A" problem
+
+    let actor =
+        {
+            ActorRef.ActorId = CaseFixtures.actorId id
+            DisplayName =
+                DisplayName.Named(
+                    PartyName.parse (String(char 1, PartyName.MaximumBytes)) |> required
+                )
+            PrincipalKind = PrincipalKind.Human
+            Availability = ActorAvailability.Available
+        }
+
+    let oldAction =
+        ReminderAction.parse (String(char 2, ReminderAction.MaximumBytes)) |> required
+
+    let nextAction =
+        ReminderAction.parse (String(char 3, ReminderAction.MaximumBytes)) |> required
+
+    let first = ReminderId.ofOperationId (CaseFixtures.operationId id)
+
+    let next =
+        ReminderId.ofOperationId (
+            CaseFixtures.operationId (Guid.Parse "f0000000-0000-4000-8000-000000000001")
+        )
+
+    let due = CaseFixtures.date "2026-11-05"
+
+    let updated =
+        TimelineChange.Reminder
+            {
+                ReminderId = first
+                Action =
+                    Some
+                        {
+                            Before = Some oldAction
+                            After = Some nextAction
+                        }
+                Due = Some { Before = Some due; After = Some due }
+                State = None
+            }
+
+    let completed =
+        TimelineChange.Reminder
+            {
+                ReminderId = first
+                Action = None
+                Due = None
+                State =
+                    Some
+                        {
+                            Before = Some ReminderState.Pending
+                            After = Some ReminderState.Completed
+                        }
+            }
+
+    let planned =
+        TimelineChange.Reminder
+            {
+                ReminderId = next
+                Action =
+                    Some
+                        {
+                            Before = None
+                            After = Some nextAction
+                        }
+                Due = Some { Before = None; After = Some due }
+                State =
+                    Some
+                        {
+                            Before = None
+                            After = Some ReminderState.Pending
+                        }
+            }
+
+    for kind, event, changes, highlights, version in
+        [
+            ReminderActKind.Update,
+            TimelineEvent.ReminderChanged nextAction,
+            [ updated ],
+            [ TimelineHighlight.Reminder(0, [ TimelineFacet.Action; TimelineFacet.Due ]) ],
+            None
+            ReminderActKind.CompleteAndPlanNext,
+            TimelineEvent.ReminderCompletedAndPlanned(oldAction, nextAction, due),
+            [ completed; planned ],
+            [],
+            Some(next, Revision.first)
+        ] do
+        let entry =
+            {
+                CaseTimelineEntry.OperationId = CaseFixtures.operationId id
+                Position = (receipt SnapshotDisclosure.Withheld).Position
+                Subject = TimelineSubject.Reminder(kind, first, Revision.first, version)
+                RecordedAt = instant
+                RecordedBy = actor
+                Changes =
+                    TimelineDisclosure.create
+                        changes
+                        {
+                            Event = event
+                            Highlights = highlights
+                        }
+                    |> required
+                    |> TimelineChanges.Disclosed
+            }
+
+        let reply =
+            Outcome.Succeeded
+                {
+                    CaseTimelinePage.Basis = Inputs.workBasis
+                    CaseId = CaseFixtures.caseId id
+                    Reference = CaseFixtures.reference reference
+                    Items = List.replicate Paging.MaximumPageSize entry
+                    NextCursor = None
+                }
+
+        let bytes = Codec.encode Api.caseTimeline.Output reply
+
+        let bound =
+            Paging.MaximumPageSize
+            * (18 * ReminderAction.MaximumBytes + 6 * PartyName.MaximumBytes + 4096)
+            + 4096
+
+        Expect.isLessThan
+            bytes.Length
+            bound
+            "Full changes plus duplicated event action context obey permanent JSON-escaped bounds"
+
+        Expect.isLessThan
+            bound
+            Limits.MaximumResponseBytes
+            "Event action context does not require raising the response cap"
+
+        Expect.isOk
+            (Codec.decode Limits.MaximumResponseBytes Api.caseTimeline.Output bytes)
+            "Both maximal fifty-entry reminder pages decode"
+
 [<Tests>]
 let tests =
     testList
@@ -324,4 +465,7 @@ let tests =
             testCase
                 "fifty typed timeline differences fit the unchanged response budget"
                 timelineBudget
+            testCase
+                "fifty maximal reminder event contexts fit alongside full differences"
+                reminderOverviewBudget
         ]

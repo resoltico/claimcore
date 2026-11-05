@@ -136,6 +136,8 @@
     <Compile Include="Domain/CaseDecisionTests.fs" />
     <Compile Include="Application/HistoricalEffectTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
+    <Compile Include="Application/TimelineOverviewTests.fs" />
+    <Compile Include="Application/TimelineOverviewReadTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />
     <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />

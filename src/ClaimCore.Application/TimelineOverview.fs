@@ -23,22 +23,24 @@ module internal TimelineOverview =
             else
                 None)
 
+    let private payableChange =
+        function
+        | TimelineChange.CaseMoney value -> value.FieldName = BusinessField.PayableAmount
+        | _ -> false
+
+    let private paymentDateChange =
+        function
+        | TimelineChange.CaseField value -> value.FieldName = BusinessField.PaymentDate
+        | _ -> false
+
     let private caseHighlights act changes =
         match act with
         | CaseActKind.AmendRegistration
         | CaseActKind.Correct -> select (fun _ -> true) changes
         | CaseActKind.Decide
-        | CaseActKind.WithdrawDecision ->
-            changes
-            |> select (function
-                | TimelineChange.CaseMoney value -> value.FieldName = BusinessField.PayableAmount
-                | _ -> false)
+        | CaseActKind.WithdrawDecision -> select payableChange changes
         | CaseActKind.RecordPayment
-        | CaseActKind.ClearPayment ->
-            changes
-            |> select (function
-                | TimelineChange.CaseField value -> value.FieldName = BusinessField.PaymentDate
-                | _ -> false)
+        | CaseActKind.ClearPayment -> select paymentDateChange changes
         | CaseActKind.Open
         | CaseActKind.Close
         | CaseActKind.Reopen

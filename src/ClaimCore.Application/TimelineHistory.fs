@@ -179,10 +179,10 @@ module internal TimelineHistory =
 
                                 match
                                     subject entry.Subject,
-                                    Map.tryFind entry.ActorId actors,
+                                    TimelineDifferences.actor actors entry.ActorId,
                                     changes
                                 with
-                                | Ok subject, Some author, Ok changes ->
+                                | Ok subject, Ok author, Ok changes ->
                                     Ok
                                         {
                                             CaseTimelineEntry.OperationId = entry.OperationId
