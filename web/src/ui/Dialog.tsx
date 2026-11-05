@@ -1,6 +1,7 @@
 import "./dialog.css";
-import type { ReactNode } from "react";
+import type { ReactNode, RefObject } from "react";
 import { Dialog as AriaDialog } from "react-aria-components/Dialog";
+import { Popover } from "react-aria-components/ComboBox";
 import { Heading } from "react-aria-components/Heading";
 import { Modal, ModalOverlay } from "react-aria-components/Modal";
 import { Button } from "./Button";
@@ -18,6 +19,7 @@ type Props = {
   onOpenChange: (open: boolean) => void;
   placement?: "center" | "bottom" | "end";
   className?: string;
+  anchorRef?: RefObject<HTMLElement | null>;
 };
 
 const DialogFooter = ({
@@ -56,35 +58,58 @@ export const Dialog = ({
   onOpenChange,
   placement = "center",
   className = "",
-}: Props) => (
-  <ModalOverlay
-    className={`ui-dialog-overlay ui-dialog-overlay--${placement}`}
-    isOpen={isOpen}
-    isDismissable={isDismissable}
-    isKeyboardDismissDisabled={!isDismissable}
-    onOpenChange={onOpenChange}
-  >
-    <Modal className={["ui-dialog", className].filter(Boolean).join(" ")}>
-      <AriaDialog aria-label={title}>
-        {({ close }) => (
-          <>
-            <header className="ui-dialog-header">
-              <div className="ui-dialog-heading">
-                <Heading slot="title" className="ui-dialog-title">
-                  <bdi>{title}</bdi>
-                </Heading>
-                {headerEnd}
-              </div>
-              {identity}
-              {description === undefined ? null : <p>{description}</p>}
-            </header>
-            <div className="ui-dialog-body">{children}</div>
-            <DialogFooter dismissable={isDismissable} label={closeLabel} close={close}>
-              {footer}
-            </DialogFooter>
-          </>
-        )}
-      </AriaDialog>
-    </Modal>
-  </ModalOverlay>
-);
+  anchorRef,
+}: Props) => {
+  const contents = (
+    <AriaDialog aria-label={title}>
+      {({ close }) => (
+        <>
+          <header className="ui-dialog-header">
+            <div className="ui-dialog-heading">
+              <Heading slot="title" className="ui-dialog-title">
+                <bdi>{title}</bdi>
+              </Heading>
+              {headerEnd}
+            </div>
+            {identity}
+            {description === undefined ? null : <p>{description}</p>}
+          </header>
+          <div className="ui-dialog-body">{children}</div>
+          <DialogFooter dismissable={isDismissable} label={closeLabel} close={close}>
+            {footer}
+          </DialogFooter>
+        </>
+      )}
+    </AriaDialog>
+  );
+  if (anchorRef !== undefined) {
+    return (
+      <Popover
+        triggerRef={anchorRef}
+        isOpen={isOpen}
+        isKeyboardDismissDisabled={!isDismissable}
+        onOpenChange={(next) => {
+          if (!next && isDismissable) {
+            onOpenChange(false);
+          }
+        }}
+        shouldCloseOnInteractOutside={() => isDismissable}
+        placement="top start"
+        className="ui-completion-popover"
+      >
+        <div className={["ui-dialog", className].filter(Boolean).join(" ")}>{contents}</div>
+      </Popover>
+    );
+  }
+  return (
+    <ModalOverlay
+      className={`ui-dialog-overlay ui-dialog-overlay--${placement}`}
+      isOpen={isOpen}
+      isDismissable={isDismissable}
+      isKeyboardDismissDisabled={!isDismissable}
+      onOpenChange={onOpenChange}
+    >
+      <Modal className={["ui-dialog", className].filter(Boolean).join(" ")}>{contents}</Modal>
+    </ModalOverlay>
+  );
+};

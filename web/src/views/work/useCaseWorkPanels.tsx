@@ -6,10 +6,18 @@ import type { FormValues } from "../../protocol/forms";
 import { usePresentation } from "../../presentation/context";
 import { ReminderList } from "./ReminderList";
 import { WorkOperation } from "./WorkOperation";
+import { renderCatalogKey } from "../../presentation/messages";
+import { operationEntryForInput } from "../../protocol/operationCatalog";
 import { CaseWork } from "../case/CaseWork";
 
 type ReminderState = ReminderReadModel["reminder"]["state"];
-type Editor = { subject: "WORK" | "REMINDER"; kind: string; identity: string; prefill: FormValues };
+type Editor = {
+  subject: "WORK" | "REMINDER";
+  kind: string;
+  identity: string;
+  prefill: FormValues;
+  anchor?: string;
+};
 const reminderPrefill = (row: ReminderReadModel, kind: string): FormValues => ({
   "act.reminderId": row.reminder.reminderId,
   "act.expectedRevision": String(row.reminder.revision),
@@ -36,7 +44,7 @@ export const useCaseWorkPanels = ({
   const [state, setState] = useState<ReminderState>("PENDING");
   const [editor, setEditor] = useState<Editor | null>(null);
   const [refresh, setRefresh] = useState(0);
-  const [recorded, setRecorded] = useState<"WORK" | "REMINDER" | null>(null);
+  const [recorded, setRecorded] = useState<string | null>(null);
   const returnFocus = useRef<string | null>(null);
   const focusPending = useRef(false);
   useEffect(() => {
@@ -53,7 +61,12 @@ export const useCaseWorkPanels = ({
     returnFocus.current =
       document.activeElement instanceof HTMLElement ? document.activeElement.id : null;
     setRecorded(null);
-    setEditor(next);
+    setEditor({
+      ...next,
+      ...(next.kind === "REMINDER_COMPLETE" && returnFocus.current !== null
+        ? { anchor: returnFocus.current }
+        : {}),
+    });
   };
   const close = () => {
     setEditor(null);
@@ -63,7 +76,10 @@ export const useCaseWorkPanels = ({
     if (receipt.subject.kind !== "WORK" && receipt.subject.kind !== "REMINDER") {
       return;
     }
-    setRecorded(receipt.subject.kind);
+    setRecorded(
+      operationEntryForInput({ kind: receipt.subject.kind, act: { kind: receipt.subject.act } })
+        .doneId,
+    );
     setRefresh((value) => value + 1);
     setEditor(null);
     focusPending.current = true;
@@ -81,80 +97,75 @@ export const useCaseWorkPanels = ({
             }
           : {})}
       />
-      {recorded === null ? null : (
-        <p role="status">
-          {p.text(recorded === "WORK" ? "ui.workRecorded" : "ui.reminderRecorded")}
-        </p>
-      )}
+      {recorded === null ? null : <p role="status">{renderCatalogKey(p, recorded)}</p>}
     </>
   ) : null;
-  const nextActions =
-    disclosureAvailable && editor === null ? (
-      <section className="case-reminders" aria-labelledby="case-reminders-title">
-        <div className="section-heading">
-          <h2 id="case-reminders-title">{p.text("ui.nextActions")}</h2>
-          {reminderCreateOffered(current.work, editor !== null) ? (
-            <button
-              id="case-reminder-add"
-              type="button"
-              onClick={() => {
-                open({
-                  subject: "REMINDER",
-                  kind: "REMINDER_CREATE",
-                  identity: "create",
-                  prefill: {},
-                });
-              }}
-            >
-              {p.text("ui.newReminder")}
-            </button>
-          ) : null}
-        </div>
-        <p className="case-reminder-counts">
-          {p.text("ui.pendingReminders")}: {p.integer(current.work.pendingReminders)} ·{" "}
-          {p.text("ui.overdueReminders")}: {p.integer(current.work.overdueReminders)}
-        </p>
-        {current.work.needsNextAction ? (
-          <p className="work-attention">{p.text("ui.noPendingReminders")}</p>
-        ) : null}
-        <Select
-          label={p.text("ui.reminderState")}
-          value={state}
-          options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
-            value,
-            label: p.term("reminderState", value),
-          }))}
-          onChange={(value) => {
-            if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
-              setState(value);
-            }
-          }}
-        />
-        {state === "PENDING" && current.work.pendingReminders === 0 ? (
-          <>
-            <p>{p.text("ui.noReminders")}</p>
-            <button type="button" onClick={onChanged}>
-              {p.text("ui.refreshWork")}
-            </button>
-          </>
-        ) : (
-          <ReminderList
-            key={refresh}
-            target={target}
-            filter={filter}
-            onDisclosureRefused={onChanged}
-            onAct={(row, kind) => {
+  const nextActions = disclosureAvailable ? (
+    <section className="case-reminders" aria-labelledby="case-reminders-title">
+      <div className="section-heading">
+        <h2 id="case-reminders-title">{p.text("ui.nextActions")}</h2>
+        {reminderCreateOffered(current.work, editor !== null) ? (
+          <button
+            id="case-reminder-add"
+            type="button"
+            onClick={() => {
               open({
                 subject: "REMINDER",
-                kind: `REMINDER_${kind}`,
-                identity: row.reminder.reminderId,
-                prefill: reminderPrefill(row, kind),
+                kind: "REMINDER_CREATE",
+                identity: "create",
+                prefill: {},
               });
             }}
-          />
-        )}
-      </section>
-    ) : null;
+          >
+            {p.text("ui.newReminder")}
+          </button>
+        ) : null}
+      </div>
+      <p className="case-reminder-counts">
+        {p.text("ui.pendingReminders")}: {p.integer(current.work.pendingReminders)} ·{" "}
+        {p.text("ui.overdueReminders")}: {p.integer(current.work.overdueReminders)}
+      </p>
+      {current.work.needsNextAction ? (
+        <p className="work-attention">{p.text("ui.noPendingReminders")}</p>
+      ) : null}
+      <Select
+        label={p.text("ui.reminderState")}
+        value={state}
+        options={(["PENDING", "COMPLETED", "CANCELLED"] as const).map((value) => ({
+          value,
+          label: p.term("reminderState", value),
+        }))}
+        onChange={(value) => {
+          if (value === "PENDING" || value === "COMPLETED" || value === "CANCELLED") {
+            setState(value);
+          }
+        }}
+      />
+      {state === "PENDING" && current.work.pendingReminders === 0 ? (
+        <>
+          <p>{p.text("ui.noReminders")}</p>
+          <button type="button" onClick={onChanged}>
+            {p.text("ui.refreshWork")}
+          </button>
+        </>
+      ) : (
+        <ReminderList
+          key={refresh}
+          target={target}
+          filter={filter}
+          onDisclosureRefused={onChanged}
+          onAct={(row, kind) => {
+            open({
+              subject: "REMINDER",
+              kind: `REMINDER_${kind}`,
+              identity: row.reminder.reminderId,
+              prefill: reminderPrefill(row, kind),
+            });
+          }}
+        />
+      )}
+    </section>
+  ) : null;
   const operation =
     editor === null ? null : (
       <WorkOperation
@@ -163,6 +174,7 @@ export const useCaseWorkPanels = ({
         subject={editor.subject}
         kind={editor.kind}
         targetIdentity={editor.identity}
+        {...(editor.anchor === undefined ? {} : { completionAnchor: editor.anchor })}
         prefill={editor.prefill}
         onClose={close}
         onRecorded={accepted}

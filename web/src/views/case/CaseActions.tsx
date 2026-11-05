@@ -58,6 +58,10 @@ const useActionBar = () => {
     }
     const measure = () => {
       detail.style.setProperty("--case-action-bar-height", `${bar.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        "--case-action-bar-height",
+        `${bar.offsetHeight}px`,
+      );
     };
     measure();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
@@ -65,6 +69,7 @@ const useActionBar = () => {
     return () => {
       observer?.disconnect();
       detail.style.removeProperty("--case-action-bar-height");
+      document.documentElement.style.removeProperty("--case-action-bar-height");
     };
   }, []);
   return ref;

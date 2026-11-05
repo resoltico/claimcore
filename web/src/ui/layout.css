@@ -291,6 +291,9 @@
     grid-column: 1;
     grid-row: 3;
   }
+  .workspace-shell:has(.case-action-bar) .workspace-mobile-tabs {
+    display: none;
+  }
   .workspace-mobile-tabs {
     display: flex;
     position: fixed;

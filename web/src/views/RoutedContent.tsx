@@ -158,12 +158,20 @@ const NewCaseEditor = ({
     onMutationLockChange={setLocked}
   />
 );
-const AreaContent = ({ route }: { route: Route }) => {
+const AreaContent = ({
+  route,
+  setLocked,
+  caseAvailable,
+}: {
+  route: Route;
+  setLocked: (locked: boolean) => void;
+  caseAvailable: boolean;
+}) => {
   switch (route.screen) {
     case "settings":
       return <SettingsPage />;
     case "reminders":
-      return <ReminderQueue />;
+      return <ReminderQueue onLockChange={setLocked} disclosureAvailable={caseAvailable} />;
     case "recovery":
       return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
     case "authorityHistory":
@@ -227,6 +235,6 @@ export const RoutedContent = ({
     case "people":
       return <AuthorityPanel onLockChange={setLocked} disclosureAvailable={authorityAvailable} />;
     default:
-      return <AreaContent route={route} />;
+      return <AreaContent route={route} setLocked={setLocked} caseAvailable={caseAvailable} />;
   }
 };

@@ -7,7 +7,7 @@ import { useContentRoute } from "../../hooks/SettingsDetourContext";
 import { navigate } from "../../routing/navigation";
 import { parseReminderQuery, remindersPath, type ReminderQuery } from "../../routing/reminderQuery";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "../WorkspaceViews";
-import { ReminderList } from "./ReminderList";
+import { ReminderQueueWork } from "./ReminderQueueWork";
 const DefaultReminderView = ({
   query,
   view,
@@ -57,7 +57,13 @@ const ReminderSearch = ({
     </form>
   );
 };
-const ReadyReminderQueue = ({ query }: { query: ReminderQuery }) => {
+type QueueProps = { onLockChange?: (locked: boolean) => void; disclosureAvailable?: boolean };
+const noLockChange = () => undefined;
+const ReadyReminderQueue = ({
+  query,
+  onLockChange = noLockChange,
+  disclosureAvailable = true,
+}: { query: ReminderQuery } & QueueProps) => {
   const p = usePresentation();
   const views = useWorkspaceViews();
   const source = query.text ?? "";
@@ -152,12 +158,16 @@ const ReadyReminderQueue = ({ query }: { query: ReminderQuery }) => {
           </div>
         }
       >
-        <ReminderList filter={query} />
+        <ReminderQueueWork
+          filter={query}
+          onLockChange={onLockChange}
+          disclosureAvailable={disclosureAvailable}
+        />
       </ViewTabs>
     </section>
   );
 };
-export const ReminderQueue = () => {
+export const ReminderQueue = (props: QueueProps) => {
   const route = useContentRoute();
   const query = useMemo(
     () => parseReminderQuery(route.screen === "reminders" ? route.query : ""),
@@ -171,5 +181,5 @@ export const ReminderQueue = () => {
     }
     return <WorkspaceViewsStatus area="reminders" />;
   }
-  return <ReadyReminderQueue query={query} />;
+  return <ReadyReminderQueue query={query} {...props} />;
 };

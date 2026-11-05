@@ -98,6 +98,7 @@ type Props = Omit<OperationFormProps, "onAct"> & {
   disclosureAvailable?: boolean;
   open?: boolean;
   actor?: ActorRef;
+  completionAnchor?: React.RefObject<HTMLElement | null>;
 };
 type DiscardProps = {
   model: OperationModel;
@@ -149,9 +150,11 @@ const DiscardDialog = ({ model, onClose, pending, setPending }: DialogProps) => 
 const UnavailableDisclosure = ({
   model,
   available = true,
+  mayPreview = false,
 }: {
   model: OperationModel;
   available?: boolean;
+  mayPreview?: boolean;
 }) => {
   const p = usePresentation();
   let reload = null;
@@ -162,7 +165,7 @@ const UnavailableDisclosure = ({
           {p.text("ui.reloadCurrentCase")}
         </button>
       );
-    } else if (!model.disclosureRefused) {
+    } else if (mayPreview) {
       reload = (
         <button
           type="button"
@@ -255,7 +258,13 @@ const OperationSurface = ({
     return <UnknownOperation model={model} />;
   }
   if (!hasCurrentDisclosure(model, disclosureAvailable)) {
-    return <UnavailableDisclosure model={model} available={disclosureAvailable} />;
+    return (
+      <UnavailableDisclosure
+        model={model}
+        available={disclosureAvailable}
+        mayPreview={model.ownerVerified && props.offered.includes(model.entry.kind)}
+      />
+    );
   }
   return review === null ? <EnterOperation {...props} /> : review.body;
 };
@@ -425,6 +434,11 @@ export const OperationPanel = (props: Props) => {
           }
           closeLabel={p.text("ui.close")}
           placement="end"
+          {...(props.completionAnchor === undefined ||
+          model.priorUncertain ||
+          !hasCurrentDisclosure(model, disclosureAvailable)
+            ? {}
+            : { anchorRef: props.completionAnchor })}
           headerEnd={
             <div className="actions">
               {settings === null ? null : (

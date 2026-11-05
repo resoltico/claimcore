@@ -14,6 +14,7 @@ type Props = {
   subject: "WORK" | "REMINDER";
   kind: string;
   targetIdentity?: string;
+  completionAnchor?: string;
   prefill?: FormValues;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt) => void;
@@ -27,6 +28,7 @@ export const WorkOperation = ({
   subject,
   kind,
   targetIdentity,
+  completionAnchor,
   prefill,
   onClose,
   onRecorded,
@@ -34,6 +36,12 @@ export const WorkOperation = ({
   onDisclosureRefused,
 }: Props) => {
   const credential = useCredential();
+  const anchor = useRef<HTMLElement | null>(null);
+  useLayoutEffect(() => {
+    anchor.current =
+      completionAnchor === undefined ? null : document.getElementById(completionAnchor);
+  }, [completionAnchor]);
+  const previewed = useRef(false);
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
   const accepted = useCallback(
@@ -56,6 +64,17 @@ export const WorkOperation = ({
     onLockChange,
     onDisclosureRefused,
   });
+  useEffect(() => {
+    if (
+      kind === "REMINDER_COMPLETE" &&
+      !previewed.current &&
+      model.ownerVerified &&
+      model.disclosureCurrent
+    ) {
+      previewed.current = true;
+      void model.preview();
+    }
+  }, [kind, model]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -85,6 +104,7 @@ export const WorkOperation = ({
         offered={offered}
         onClose={navigation.close}
         fixedTarget
+        {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
       />
     </>
