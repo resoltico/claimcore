@@ -1,3 +1,4 @@
+import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
@@ -290,3 +291,71 @@ it("names an Arabic responsibility disclosure from its complete visible event an
     localStorage.removeItem(preferenceKey);
   }
 });
+
+it.each([
+  { kind: "REFERENCE", caseReference: "CASE-1" },
+  { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+] as const)(
+  "retains the same expanded row for equivalent $kind selectors and reloads changed selectors",
+  async (selector) => {
+    const next = {
+      release: (): void => {
+        throw new Error("No changed-target read started.");
+      },
+    };
+    const fetch = vi
+      .fn<typeof globalThis.fetch>()
+      .mockResolvedValueOnce(
+        response("case.timeline", "SUCCEEDED", timelinePage([timelineEntry()])),
+      )
+      .mockImplementation(
+        () =>
+          new Promise((resolve) => {
+            next.release = () => {
+              resolve(
+                response("case.timeline", "SUCCEEDED", {
+                  ...timelinePage([timelineEntry()]),
+                  caseId: "20000000-0000-4000-8000-000000000002",
+                  caseReference: "CASE-2",
+                }),
+              );
+            };
+          }),
+      );
+    vi.stubGlobal("fetch", fetch);
+    const view = render(<CaseTimeline target={selector} />);
+    await screen.findByText("Timeline recorder");
+    const original = view.container.querySelector("details")!;
+    await userEvent.setup().click(original.querySelector("summary")!);
+    expect(original).toHaveAttribute("open");
+    await act(async () => {
+      view.rerender(<CaseTimeline target={{ ...selector }} />);
+      await Promise.resolve();
+    });
+    expect(view.container.querySelector("details")).toBe(original);
+    expect(original).toHaveAttribute("open");
+    expect(fetch).toHaveBeenCalledTimes(1);
+
+    const changed =
+      selector.kind === "ID"
+        ? { kind: "ID" as const, caseId: "20000000-0000-4000-8000-000000000002" }
+        : { kind: "REFERENCE" as const, caseReference: "CASE-2" };
+    await act(async () => {
+      view.rerender(<CaseTimeline target={changed} />);
+      await Promise.resolve();
+    });
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect(JSON.parse(requestText(fetch.mock.calls[1]?.[1]?.body))).toEqual({
+      target: changed,
+      limit: 50,
+    });
+    expect(original.isConnected).toBe(false);
+    await act(async () => {
+      next.release();
+      await Promise.resolve();
+    });
+    await screen.findByText("Timeline recorder");
+    expect(view.container.querySelector("details")).not.toBe(original);
+    expect(view.container.querySelector("details")).not.toHaveAttribute("open");
+  },
+);

@@ -74,6 +74,9 @@
   border-block-start: var(--border-width) solid var(--border-control);
   margin-block-start: var(--space-4);
 }
+.case-stewardship > :is(h2, h3) {
+  font-size: var(--text-md);
+}
 button.primary.case-action-danger,
 button.case-action-danger {
   background: var(--danger-bg);

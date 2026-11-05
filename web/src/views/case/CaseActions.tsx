@@ -32,8 +32,14 @@ const ActButton = ({ act, primary, onAct }: Action) => {
   );
 };
 type GroupProps = Omit<Action, "act"> & { acts: ReadonlyArray<ActKind> };
-const ActionGroups = ({ acts, primary, onAct }: GroupProps) => {
+const ActionGroups = ({
+  acts,
+  primary,
+  onAct,
+  headingLevel,
+}: GroupProps & { headingLevel: 2 | 3 }) => {
   const p = usePresentation();
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   const buttons = (items: ReadonlyArray<ActKind>) =>
     items.map((act) => <ActButton key={act} act={act} primary={primary} onAct={onAct} />);
   return (
@@ -41,7 +47,7 @@ const ActionGroups = ({ acts, primary, onAct }: GroupProps) => {
       <div className="actions">{buttons(acts.filter((act) => !stewardship(act)))}</div>
       {acts.some((act) => stewardship(act)) ? (
         <section className="case-stewardship">
-          <h3>{p.term("actFamily", "STEWARDSHIP")}</h3>
+          <Heading>{p.term("actFamily", "STEWARDSHIP")}</Heading>
           <div className="actions">{buttons(acts.filter((act) => stewardship(act)))}</div>
         </section>
       ) : null}
@@ -59,7 +65,14 @@ export const CaseActionAlternatives = ({
   if (current.advice.maintenance.active || requester?.maintenance.active === true) {
     return null;
   }
-  return <ActionGroups acts={current.advice.acts.filter(isCaseAct)} primary={null} onAct={onAct} />;
+  return (
+    <ActionGroups
+      acts={current.advice.acts.filter(isCaseAct)}
+      primary={null}
+      onAct={onAct}
+      headingLevel={2}
+    />
+  );
 };
 const useActionBar = () => {
   const ref = useRef<HTMLElement>(null);
@@ -108,6 +121,7 @@ const CompactActions = ({ acts, primary, onAct }: GroupProps) => {
               acts={acts.filter((act) => act !== primary)}
               primary={primary}
               onAct={onAct}
+              headingLevel={3}
             />
           </div>
         </details>
@@ -160,6 +174,7 @@ export const CaseActions = ({
           acts={acts.filter((act) => act !== primary)}
           primary={primary}
           onAct={onAct}
+          headingLevel={2}
         />
       </div>
     </details>

@@ -150,6 +150,8 @@ export const TimelineEntries = ({
   </ol>
 );
 export type TimelineFilter = "ALL" | "FACTS" | "WORK";
+const selectorValue = (target: CaseSelector): string =>
+  target.kind === "ID" ? target.caseId : target.caseReference;
 const filterLabels = {
   ALL: "ui.timeline.all",
   FACTS: "ui.timeline.facts",
@@ -167,14 +169,19 @@ export const CaseTimeline = ({
   const p = usePresentation();
   const [localFilter, setLocalFilter] = useState<TimelineFilter>("ALL");
   const filter = selection?.value ?? localFilter;
+  const targetKind = target.kind;
+  const targetValue = selectorValue(target);
   const input = useCallback(
     (cursor: string | null) => ({
-      target,
+      target:
+        targetKind === "ID"
+          ? { kind: targetKind, caseId: targetValue }
+          : { kind: targetKind, caseReference: targetValue },
       limit: 50,
       ...(filter === "ALL" ? {} : { filter }),
       ...(cursor === null ? {} : { cursor }),
     }),
-    [target, filter],
+    [targetKind, targetValue, filter],
   );
   const result = useEndpointPage<"case.timeline", CaseTimelineEntry, CaseTimelinePage>(
     "case.timeline",
