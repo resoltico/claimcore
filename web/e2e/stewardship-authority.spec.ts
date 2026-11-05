@@ -1,4 +1,4 @@
-import { goToView, showExactLookup, chooseChoice, chooseOption } from "./workspace-navigation";
+import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
@@ -13,27 +13,50 @@ import { confirmReview } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
 
-const stewardAct = async (page: Page, label: string, reason?: string) => {
+const stewardAct = async (page: Page, reference: string, label: string, reason?: string) => {
   await startAct(page, label);
+  const dialog = page.getByRole("dialog", { name: label, exact: true });
   if (reason !== undefined) {
-    await page.getByLabel("Reason", { exact: true }).fill(reason);
+    await dialog.getByLabel("Reason", { exact: true }).fill(reason);
   }
-  if (label === "Erase case payload") {
-    await expect(page.getByText(/WAL, backups and copies elsewhere are not erased/u)).toBeVisible();
+  if (label === "Erase case") {
+    await expect(dialog).toContainText("Copies held elsewhere remain.");
   }
-  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  const previewed = page.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === "/api/operation.preview",
+  );
+  await dialog.getByRole("button", { name: "Review changes", exact: true }).click();
+  const preview = await previewed;
   await confirmReview(page);
-  const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.execute"));
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  const action = dialog.locator("button[data-confirm-operation]");
+  if (label === "Erase case") {
+    await expect(dialog).toContainText(
+      "This permanently removes the case details, work and reminders from ClaimCore.",
+    );
+    const challenge = dialog.getByRole("textbox", { name: "Case reference (exact)", exact: true });
+    await expect(action).toBeDisabled();
+    await challenge.fill(`${reference}-WRONG`);
+    await expect(action).toBeDisabled();
+    await challenge.fill(reference);
+  }
+  await expect(action).toBeEnabled();
+  const pending = page.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === "/api/operation.execute",
+  );
+  await action.click();
   const reply = await pending;
+  expect(reply.request().postData()).toBe(preview.request().postData());
   const value: unknown = await reply.json();
-  expect(isResponse("operation.execute", value)).toBe(true);
   if (!isResponse("operation.execute", value)) {
     throw new Error("Missing stewardship response.");
   }
   expect(value.outcome.kind).toBe("ACCEPTED");
+  if (value.outcome.kind === "ACCEPTED") {
+    expect(value.outcome.data.subject).toMatchObject({ kind: "CASE", caseReference: reference });
+  }
   await expect(page.locator("#case-detail-title")).toBeVisible();
 };
+
 test("browser renders void, reinstatement and live payload erasure through authoritative preview", async ({
   page,
   browser,
@@ -50,10 +73,10 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
     await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
-    await stewardAct(steward, "Void case record", "Synthetic entry error");
+    await stewardAct(steward, reference, "Void case record", "Synthetic entry error");
     await expect(steward.getByRole("status").filter({ hasText: "Voided" })).toBeVisible();
-    await stewardAct(steward, "Reinstate case record", "Synthetic correction");
-    await stewardAct(steward, "Erase case payload");
+    await stewardAct(steward, reference, "Reinstate case record", "Synthetic correction");
+    await stewardAct(steward, reference, "Erase case");
     await expect(steward.getByText(/Erased — only/u)).toBeVisible();
     await expect(steward.locator(".case-fields")).toHaveCount(0);
     await expectAccessible(steward);
@@ -63,12 +86,16 @@ test("browser renders void, reinstatement and live payload erasure through autho
 });
 const authorityTarget = async (page: Page, issuer: string, subject: string) => {
   await chooseChoice(page, "target.kind", "SERVICE");
-  await page.locator('[name="target.issuer"]').fill(issuer);
+  await expect(page.locator('[name="target.issuer"]')).toHaveValue(issuer);
+  await expect(page.locator('[name="target.issuer"]')).toBeDisabled();
   await page.locator('[name="target.subject"]').fill(subject);
 };
 const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") => {
-  const previewed = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.preview"));
-  await page.getByRole("button", { name: "Review changes", exact: true }).click();
+  const dialog = page.getByRole("dialog");
+  const previewed = page.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === "/api/operation.preview",
+  );
+  await dialog.getByRole("button", { name: "Review changes", exact: true }).click();
   const previewResponse = await previewed;
   const preview: unknown = await previewResponse.json();
   if (!isResponse("operation.preview", preview)) {
@@ -76,8 +103,9 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   }
   expect(preview.outcome.kind).toBe(expected === "ACCEPTED" ? "REVIEWED" : "REJECTED");
   if (expected === "REJECTED") {
-    await expect(page.getByRole("dialog")).toHaveCount(0);
-    return;
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByRole("alert")).toBeVisible();
+    return null;
   }
   if (
     preview.outcome.kind !== "REVIEWED" ||
@@ -85,30 +113,58 @@ const submitAuthority = async (page: Page, expected: "ACCEPTED" | "REJECTED") =>
   ) {
     throw new Error("Expected authority review.");
   }
-  await page.getByRole("checkbox", { name: "I confirm this exact request.", exact: true }).check();
-  const pending = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.execute"));
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await confirmReview(page);
+  const pending = page.waitForResponse(
+    (reply) => new URL(reply.url()).pathname === "/api/operation.execute",
+  );
+  await dialog.locator("button[data-confirm-operation]").click();
   const reply = await pending;
   expect(reply.request().postData()).toBe(previewResponse.request().postData());
   const value: unknown = await reply.json();
-  if (!isResponse("operation.execute", value)) {
-    throw new Error("Missing authority response.");
+  if (
+    !isResponse("operation.execute", value) ||
+    value.outcome.kind !== "ACCEPTED" ||
+    value.outcome.data.subject.kind !== "AUTHORITY"
+  ) {
+    throw new Error("Missing accepted authority response.");
   }
-  expect(value.outcome.kind).toBe("ACCEPTED");
-  if (value.outcome.kind === "ACCEPTED") {
-    await expect(
-      page
-        .getByRole("status")
-        .filter({ hasText: new RegExp(`^${value.outcome.data.operationId}$`, "u") }),
-    ).toBeVisible();
-    await expect.poll(() => recoveryRecords(page)).toEqual([]);
-    await page.getByRole("button", { name: "Start another operation", exact: true }).click();
-  }
+  await expect(
+    page
+      .getByRole("status")
+      .filter({ hasText: new RegExp(`^${value.outcome.data.operationId}$`, "u") }),
+  ).toBeVisible();
+  await expect.poll(() => recoveryRecords(page)).toEqual([]);
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  return value.outcome.data;
 };
-const selectAuthorityAct = async (page: Page, act: "GRANT" | "DISABLE") => {
-  const picker = page.getByRole("combobox", { name: "Authority action", exact: true });
-  await chooseOption(page, picker, act);
+const openAdmission = async (
+  page: Page,
+  issuer: string,
+  subject: string,
+  name: string,
+  reference: string,
+) => {
+  await page.getByRole("button", { name: "Add person", exact: true }).first().click();
+  const dialog = page.getByRole("dialog", { name: "Add person", exact: true });
+  await authorityTarget(page, issuer, subject);
+  await dialog.locator('[name="act.profile.displayName"]').fill(name);
+  const grants = dialog.locator('fieldset[id="field-act.grants"]');
+  await grants.locator('input[type="radio"][name$=".role"][value="CASE_READER"]').check();
+  await grants.locator('input[type="radio"][name$=".scope.kind"][value="CASE"]').check();
+  await grants.locator('[name$=".scope.target.caseReference"]').fill(reference);
 };
+const openActor = async (page: Page, actorId: string, name: string) => {
+  await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
+  await expect(page.getByRole("dialog", { name, exact: true })).toBeVisible();
+};
+const beginActorAct = async (page: Page, name: string, label: string) => {
+  await page
+    .getByRole("dialog", { name, exact: true })
+    .getByRole("button", { name: new RegExp(`^${label}:`, "u") })
+    .click();
+  await expect(page.getByRole("dialog", { name: label, exact: true })).toBeVisible();
+};
+
 const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: string) => {
   const response = await browserRequest(page, "/api/operation.preview", {
     method: "POST",
@@ -129,7 +185,7 @@ const assertHumanOnlyBoundary = async (page: Page, issuer: string, subject: stri
     outcome: { kind: "REJECTED", data: { code: "HUMAN_PRINCIPAL_REQUIRED" } },
   });
 };
-test("browser registers service principals, changes scoped grants and enablement, and renders core refusal", async ({
+test("browser admits service principals, reaffirms scoped grants and enablement, and renders core refusal", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -138,26 +194,66 @@ test("browser registers service principals, changes scoped grants and enablement
   await openCase(page, reference);
   await goToView(page, "people");
   const subject = `browser-service-${randomUUID()}`;
-  await authorityTarget(page, source.issuer, subject);
-  await submitAuthority(page, "ACCEPTED");
-  await selectAuthorityAct(page, "GRANT");
-  await authorityTarget(page, source.issuer, subject);
+  const name = `Authored browser service ${randomUUID()}`;
+  // D2 admission records profile and the original case-only grant atomically; no extra installation access is added.
+  await openAdmission(page, source.issuer, subject, name, reference);
+  const admitted = await submitAuthority(page, "ACCEPTED");
+  if (
+    admitted === null ||
+    admitted.subject.kind !== "AUTHORITY" ||
+    admitted.subject.targetActor.kind !== "DISCLOSED"
+  ) {
+    throw new Error("Missing disclosed admitted service target.");
+  }
+  const { actorId } = admitted.subject.targetActor.actor;
+  await openActor(page, actorId, name);
+  await beginActorAct(page, name, "Grant role");
   await chooseChoice(page, "act.role", "CASE_READER");
   await chooseChoice(page, "act.scope.kind", "CASE");
   await page.locator('[name="act.scope.target.caseReference"]').fill(reference);
   await submitAuthority(page, "ACCEPTED");
-  await selectAuthorityAct(page, "DISABLE");
-  await authorityTarget(page, source.issuer, subject);
+  await openActor(page, actorId, name);
+  await beginActorAct(page, name, "Disable account");
   await submitAuthority(page, "ACCEPTED");
-  await selectAuthorityAct(page, "GRANT");
-  await authorityTarget(page, source.issuer, subject);
+  await openActor(page, actorId, name);
+  await beginActorAct(page, name, "Grant role");
   const owner = page.locator('input[name="act.role"][value="OWNER"]');
   await expect(owner).toBeDisabled();
   await expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
   await assertHumanOnlyBoundary(page, source.issuer, subject);
-  await page.locator('[name="target.subject"]').fill(`unregistered-${randomUUID()}`);
-  await chooseChoice(page, "act.role", "CASE_READER");
+  // Arbitrary-target grant entry is no longer exposed; keep the literal missing-principal boundary through the real API.
+  const missing = await browserRequest(page, "/api/operation.preview", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": await sessionToken(page),
+    },
+    body: JSON.stringify({
+      kind: "AUTHORITY",
+      operationId: randomUUID(),
+      target: { kind: "SERVICE", issuer: source.issuer, subject: `unregistered-${randomUUID()}` },
+      act: { kind: "GRANT", role: "CASE_READER", scope: { kind: "INSTALLATION" } },
+    }),
+  });
+  expect(missing.status).toBe(200);
+  expect(missing.payload).toMatchObject({
+    outcome: { kind: "REJECTED", data: { code: "RESOURCE_UNAVAILABLE" } },
+  });
+  // Close the untouched grant and person drawers through their actual controls, then exercise a rendered admission refusal.
+  await page
+    .getByRole("dialog")
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
+  await page
+    .getByRole("dialog", { name, exact: true })
+    .getByRole("button", { name: "Close", exact: true })
+    .first()
+    .click();
+  await openAdmission(page, source.issuer, subject, name, reference);
   await submitAuthority(page, "REJECTED");
-  await expect(page.getByRole("alert")).toBeVisible();
+  await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
+    "This principal is already registered.",
+  );
   await expectAccessible(page);
 });

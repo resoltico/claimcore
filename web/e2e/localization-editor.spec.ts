@@ -169,7 +169,7 @@ for (const language of ["en", "lv", "ar"] as const) {
   });
 }
 
-test("an in-flight language activation preserves an open review, consent and frozen bytes", async ({
+test("an in-flight language activation preserves an open review awaiting explicit consent and frozen bytes", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -198,19 +198,22 @@ test("an in-flight language activation preserves an open review, consent and fro
     const dialog = page.getByRole("dialog");
     await expect(dialog).toBeVisible();
     const originalDialog = await dialog.elementHandle();
-    const confirmation = dialog.getByRole("checkbox");
+    const confirmation = dialog.locator("button[data-confirm-operation]");
+    await expect(confirmation).toHaveAccessibleName("Open a case");
+    await expect(dialog.getByRole("checkbox")).toHaveCount(0);
     await confirmReview(page);
     await expectKeyboardContained(page, dialog);
     await expect(dialog.locator(".settings-panel")).toHaveCount(0);
     languageRelease.resolve();
     await expect(page.locator("html")).toHaveAttribute("lang", "lv");
     expect(await dialog.evaluate((element, prior) => element === prior, originalDialog)).toBe(true);
-    await expect(confirmation).toBeChecked();
+    await expect(confirmation).toBeEnabled();
+    await expect(confirmation).toHaveAccessibleName(ui("lv", "act.OPEN.label"));
     await expect(dialog).toContainText(identity.operationId);
     expect(requests).toEqual(["POST /api/operation.preview"]);
     await expectAccessible(page);
     await dialog.getByRole("button", { name: ui("lv", "ui.returnToEdit"), exact: true }).click();
-    await expect(page.locator('.operation-editor button[type="submit"]')).toBeFocused();
+    await expect(dialog.locator('button[type="submit"]')).toBeFocused();
   } finally {
     languageRelease.resolve();
     releasePreview?.();
