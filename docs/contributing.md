@@ -206,6 +206,9 @@ producer. Custom output directories contain only contract artifacts. Core messag
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
 Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
+Shared UI components import the styles their markup requires. Styles imported only by a lazy view are
+not available on cold entry to another view. Check shared fact rendering through direct Recovery and
+review routes as well as the case workspace; a prior visit can mask a missing stylesheet dependency.
 Published failure/recovery journeys exercise missing chunks, document replacement and offline draft
 preservation in each supported browser engine. Build or schema checks alone do not cover these paths.
 
