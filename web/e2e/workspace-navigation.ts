@@ -64,6 +64,14 @@ export const showOperationLookup = async (page: Page): Promise<Locator> => {
 export const chooseOption = async (page: Page, control: Locator, value: string): Promise<void> => {
   await expect(control).toBeEnabled();
   if ((await control.getAttribute("aria-expanded")) !== "true") {
+    // Finish the automation's scroll before opening a scroll-dismissed popup.
+    await control.scrollIntoViewIfNeeded();
+    await control.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()));
+        }),
+    );
     await control.click();
   }
   const listbox = page.getByRole("listbox");
