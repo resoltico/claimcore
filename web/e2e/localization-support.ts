@@ -273,21 +273,33 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
 export { noHorizontalOverflow } from "./layout-support";
 
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {
-  await dialog.getByRole("checkbox").focus();
+  const challenge = dialog.locator(".irreversible-confirmation input");
+  const start =
+    (await challenge.count()) === 1 ? challenge : dialog.locator("button[data-confirm-operation]");
+  await start.focus();
   for (let index = 0; index < 12; index += 1) {
     await page.keyboard.press("Tab");
     expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   }
 };
 
+/** Assert the actual consent surface without submitting; callers explicitly press the act button. */
 export const confirmReview = async (page: Page): Promise<void> => {
   const dialog = page.getByRole("dialog");
-  const checkbox = dialog.getByRole("checkbox");
-  await dialog
-    .locator("label")
-    .filter({ has: page.getByRole("checkbox") })
-    .click();
-  await expect(checkbox).toBeChecked();
+  const action = dialog.locator("button[data-confirm-operation]");
+  await expect(action).toHaveCount(1);
+  await expect(action).toBeVisible();
+  const challenge = dialog.locator(".irreversible-confirmation input");
+  if ((await challenge.count()) === 1) {
+    // A destructive caller must author the known exact target itself; a generic helper cannot consent to it.
+    await expect(challenge).toBeVisible();
+    await expect(action).toBeDisabled();
+    await challenge.focus();
+    return;
+  }
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await expect(action).toBeEnabled();
+  await action.focus();
 };
 
 export const businessFormatRefusalText = {

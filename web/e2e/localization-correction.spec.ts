@@ -72,6 +72,12 @@ const expectRecordedClaimantWarning = async (page: Page, language: "en" | "lv" |
   const field = page.locator(".case-detail").locator('.field-row[data-field-name="claimantName"]');
   await expectClaimantWarning(field, language);
 };
+// Literal widget-hint oracles remain independent of the browser's message lookup.
+const correctionHint = {
+  en: "Choose which details to change.",
+  lv: "Izvēlieties maināmo informāciju.",
+  ar: "اختر التفاصيل التي تريد تغييرها.",
+} as const;
 const preserveChoice = async (page: Page, modes: Modes) => {
   const requests = trackForegroundRequests(page);
   for (const language of ["ar", "en", "lv", "en"] as const) {
@@ -84,9 +90,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
       const control = choiceGroup(page, `act.groups.${group}.kind`);
       await expect(control.locator(`input[value="${modes[group]}"]`)).toBeChecked();
       await expect(control).toHaveAccessibleName(ui(language, "label.action"));
-      await expect(control).toHaveAccessibleDescription(
-        inputMessage(language, `group.${group}.hint`),
-      );
+      await expect(control).toHaveAccessibleDescription(correctionHint[language]);
     }
     if (modes.registration === "UPDATE") {
       await expect(
@@ -114,7 +118,7 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
   await expect(payment).toHaveAttribute("aria-invalid", "true");
   await expect(payment).toHaveAttribute(
     "aria-describedby",
-    "act.groups.payment.kind-meaning act.groups.payment.kind-error",
+    "act.groups.payment.kind-hint act.groups.payment.kind-error",
   );
   const description = page.locator('[id="act.groups.payment.kind-error"]');
   for (const [language, text] of [
@@ -126,13 +130,13 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
     await expect(description).toContainText(text);
     await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
     await expect(payment).toHaveAccessibleDescription(
-      `${inputMessage(language, "group.payment.hint")} ${inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
+      `${correctionHint[language]} ${inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
     );
     await expect(payment).toHaveAttribute("aria-invalid", "true");
   }
   await chooseChoice(page, "act.groups.payment.kind", "CLEAR");
   await expect(payment).not.toHaveAttribute("aria-invalid");
-  await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
+  await expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-hint");
 };
 const expectCorrectionIssue = (reply: ServiceResponse<"operation.preview">, code: string) => {
   expect(reply.outcome.kind).toBe("REJECTED");
