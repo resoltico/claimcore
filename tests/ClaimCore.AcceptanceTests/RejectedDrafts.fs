@@ -132,9 +132,22 @@ let private principalRefusals fixture =
                             issuer = issuer
                             subject = subject
                         |}
-                    act = {| kind = "REGISTER" |}
+                    act =
+                        {|
+                            kind = "REGISTER"
+                            profile =
+                                {|
+                                    displayName = "Refusal fixture"
+                                    contact = null
+                                |}
+                        |}
                 |}
                 2
+
+        Expect.equal
+            (reply.GetProperty("delivery").GetString())
+            "DELIVERED"
+            "The unchanged invalid principal reaches Core through a structurally complete raw call"
 
         let refusal = require "REJECTED" reply
         assertIssues expected refusal
