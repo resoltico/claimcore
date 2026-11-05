@@ -1,6 +1,6 @@
 import "./select.css";
 import "./button.css";
-import { useId, useRef, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode, type KeyboardEvent } from "react";
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Popover } from "react-aria-components/ComboBox";
 import { Icon } from "./icons";
@@ -39,6 +39,14 @@ export const Select = ({
   const [draft, setDraft] = useState(value);
   const [focus, setFocus] = useState<true | "first" | "last">(true);
   const typeahead = useRef({ text: "", at: 0 });
+  const cancelOnEscape = (event: KeyboardEvent<HTMLElement>) => {
+    if (open && event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
+      setOpen(false);
+      trigger.current?.focus();
+    }
+  };
   const selected = options.find((option) => option.value === value);
   const begin = (strategy: true | "first" | "last", pending = value) => {
     if (disabled || options.length === 0) {
@@ -88,6 +96,7 @@ export const Select = ({
             begin(true);
           }
         }}
+        onKeyDownCapture={cancelOnEscape}
         onKeyDown={(event) => {
           if (["ArrowDown", "ArrowUp", "Home", "End"].includes(event.key)) {
             event.preventDefault();
@@ -135,47 +144,49 @@ export const Select = ({
           setOpen(next);
         }}
       >
-        <ListBox
-          id={listId}
-          className="ui-select-options"
-          aria-labelledby={labelId}
-          items={options}
-          selectionMode="single"
-          selectionBehavior="replace"
-          disallowEmptySelection
-          selectedKeys={[draft]}
-          // eslint-disable-next-line jsx-a11y/no-autofocus -- Focus follows explicit popup opening; the listbox is absent on initial load.
-          autoFocus={focus}
-          escapeKeyBehavior="none"
-          onSelectionChange={(keys) => {
-            if (keys !== "all") {
-              const [key] = [...keys];
-              if (typeof key === "string") {
-                setDraft(key);
-              }
-            }
-          }}
-        >
-          {(option) => (
-            <ListBoxItem
-              id={option.value}
-              textValue={option.label}
-              lang={option.lang}
-              className="ui-select-option"
-              onPress={() => {
-                if (!disabled) {
-                  if (option.value !== value) {
-                    onChange(option.value);
-                  }
-                  setOpen(false);
-                  trigger.current?.focus();
+        <div onKeyDownCapture={cancelOnEscape}>
+          <ListBox
+            id={listId}
+            className="ui-select-options"
+            aria-labelledby={labelId}
+            items={options}
+            selectionMode="single"
+            selectionBehavior="replace"
+            disallowEmptySelection
+            selectedKeys={[draft]}
+            // eslint-disable-next-line jsx-a11y/no-autofocus -- Focus follows explicit popup opening; the listbox is absent on initial load.
+            autoFocus={focus}
+            escapeKeyBehavior="none"
+            onSelectionChange={(keys) => {
+              if (keys !== "all") {
+                const [key] = [...keys];
+                if (typeof key === "string") {
+                  setDraft(key);
                 }
-              }}
-            >
-              {option.label}
-            </ListBoxItem>
-          )}
-        </ListBox>
+              }
+            }}
+          >
+            {(option) => (
+              <ListBoxItem
+                id={option.value}
+                textValue={option.label}
+                lang={option.lang}
+                className="ui-select-option"
+                onPress={() => {
+                  if (!disabled) {
+                    if (option.value !== value) {
+                      onChange(option.value);
+                    }
+                    setOpen(false);
+                    trigger.current?.focus();
+                  }
+                }}
+              >
+                {option.label}
+              </ListBoxItem>
+            )}
+          </ListBox>
+        </div>
       </Popover>
     </div>
   );

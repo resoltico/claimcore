@@ -2,6 +2,7 @@ import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { Dialog } from "../../../src/ui/Dialog";
 import { Select } from "../../../src/ui/Select";
 import { IconSprite } from "../../../src/ui/icons";
 
@@ -135,3 +136,103 @@ it("opens at the requested boundary and cancels without committing the focused c
   await user.keyboard("{ArrowDown}{Enter}");
   expect(changed).toHaveBeenCalledExactlyOnceWith("lv-LV");
 });
+
+const NestedExample = ({
+  changed,
+  parentChanged,
+}: {
+  changed: (value: string) => void;
+  parentChanged: (open: boolean) => void;
+}) => {
+  const [open, setOpen] = useState(true);
+  return (
+    <Dialog
+      title="Settings"
+      closeLabel="Close"
+      isOpen={open}
+      isDismissable
+      onOpenChange={(next) => {
+        parentChanged(next);
+        setOpen(next);
+      }}
+    >
+      <Example changed={changed} />
+      <button type="button">Outside picker</button>
+    </Dialog>
+  );
+};
+it("owns Escape while its popup is open even when focus has returned to the trigger", async () => {
+  const user = userEvent.setup();
+  const changed = vi.fn();
+  const parentChanged = vi.fn();
+  render(<NestedExample changed={changed} parentChanged={parentChanged} />);
+  const trigger = screen.getByRole("combobox", { name: "Format" });
+  await user.click(trigger);
+  await waitFor(() => {
+    expect(screen.getByRole("option", { name: "English" })).toHaveFocus();
+  });
+  trigger.focus();
+  expect(trigger).toHaveFocus();
+  expect(screen.getByRole("listbox")).toBeVisible();
+  await user.keyboard("{Escape}");
+  await waitFor(() => {
+    expect(screen.queryByRole("listbox")).toBeNull();
+  });
+  expect(trigger).toHaveFocus();
+  expect(trigger).toHaveValue("en-GB");
+  expect(changed).not.toHaveBeenCalled();
+  expect(parentChanged).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog", { name: "Settings" })).toBeVisible();
+  await user.keyboard("{Escape}");
+  await waitFor(() => {
+    expect(parentChanged).toHaveBeenCalledExactlyOnceWith(false);
+  });
+  expect(screen.queryByRole("dialog")).toBeNull();
+});
+it("cancels a focused option without committing or dismissing the parent dialog", async () => {
+  const user = userEvent.setup();
+  const changed = vi.fn();
+  const parentChanged = vi.fn();
+  render(<NestedExample changed={changed} parentChanged={parentChanged} />);
+  const trigger = screen.getByRole("combobox", { name: "Format" });
+  await user.click(trigger);
+  await waitFor(() => {
+    expect(screen.getByRole("option", { name: "English" })).toHaveFocus();
+  });
+  await user.keyboard("{End}");
+  expect(screen.getByRole("option", { name: "Deutsch" })).toHaveFocus();
+  await user.keyboard("{Escape}");
+  await waitFor(() => {
+    expect(trigger).toHaveFocus();
+  });
+  expect(screen.queryByRole("listbox")).toBeNull();
+  expect(trigger).toHaveValue("en-GB");
+  expect(changed).not.toHaveBeenCalled();
+  expect(parentChanged).not.toHaveBeenCalled();
+  expect(screen.getByRole("dialog", { name: "Settings" })).toBeVisible();
+});
+it.each(["pointer", "Tab"] as const)(
+  "keeps the outside %s focus destination when the popup closes",
+  async (method) => {
+    const user = userEvent.setup();
+    const changed = vi.fn();
+    const parentChanged = vi.fn();
+    render(<NestedExample changed={changed} parentChanged={parentChanged} />);
+    await user.click(screen.getByRole("combobox", { name: "Format" }));
+    await waitFor(() => {
+      expect(screen.getByRole("option", { name: "English" })).toHaveFocus();
+    });
+    const outside = screen.getByRole("button", { name: "Outside picker" });
+    if (method === "pointer") {
+      await user.click(outside);
+    } else {
+      await user.keyboard("{Tab}");
+    }
+    await waitFor(() => {
+      expect(screen.queryByRole("listbox")).toBeNull();
+    });
+    expect(outside).toHaveFocus();
+    expect(changed).not.toHaveBeenCalled();
+    expect(parentChanged).not.toHaveBeenCalled();
+  },
+);
