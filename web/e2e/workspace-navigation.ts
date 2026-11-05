@@ -22,7 +22,9 @@ export const compactSettingsNavigation = async (page: Page): Promise<Locator> =>
 };
 /** Desktop account controls live in the sidebar footer. Compact sign out lives in Settings. */
 export const showAccountActions = async (page: Page): Promise<void> => {
-  const drawerSettings = page.locator('[role="dialog"] [data-open-settings]');
+  const drawerSettings = page.locator(
+    '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
+  );
   if (await drawerSettings.isVisible()) {
     await drawerSettings.click();
     return;

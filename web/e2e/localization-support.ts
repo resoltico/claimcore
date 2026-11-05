@@ -53,7 +53,9 @@ type PreferenceVisit =
   { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
 export const settingsNavigation = async (page: Page): Promise<Locator> => {
-  const drawerSettings = page.locator('[role="dialog"] [data-open-settings]');
+  const drawerSettings = page.locator(
+    '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
+  );
   if (await drawerSettings.isVisible()) {
     return drawerSettings;
   }

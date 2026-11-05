@@ -35,12 +35,13 @@ const prepareAdmission = async (page: Page, issuer: string, subject: string) => 
     await dialog.locator('button[type="submit"]').click();
     const captured = await pending.ready;
     const identity = reviewFrom(captured.reply, captured.bytes);
-    expect(JSON.parse(captured.bytes.toString("utf8"))).toMatchObject({
+    expect(JSON.parse(captured.bytes.toString("utf8"))).toEqual({
+      operationId: identity.operationId,
       kind: "AUTHORITY",
       target: { kind: "SERVICE", issuer, subject },
       act: {
         kind: "ADMIT",
-        profile: { displayName: "Authored uncertain service", contact: null },
+        profile: { displayName: "Authored uncertain service" },
         grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
       },
     });
@@ -75,6 +76,13 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
     data: { code: "RESOURCE_UNAVAILABLE" },
   });
   pending.release();
+  await expect(page.locator(".authority-rows > tr")).toHaveCount(0);
+  const resume = page.getByRole("button", {
+    name: ui("en", "ui.continueAuthorityRequest"),
+    exact: true,
+  });
+  await expect(resume).toBeEnabled();
+  await resume.click();
   await expect(
     page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
   ).toBeEnabled();

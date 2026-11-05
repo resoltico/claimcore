@@ -1,4 +1,4 @@
-import { chooseChoice, chooseOption } from "./workspace-navigation";
+import { chooseChoice } from "./workspace-navigation";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { casePath } from "../src/routing/routes";
@@ -14,6 +14,7 @@ import {
   workConfirmButton,
   reviewReminderCompletion,
   selectReminderAction,
+  selectCaseReminderState,
 } from "./work-workflow";
 
 const plan = async (page: Parameters<typeof openCase>[0], action: string, due: string) => {
@@ -116,22 +117,14 @@ test("supports multiple independently revised reminders, terminal records, reope
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
   await expect(page.locator(".case-reminders .work-attention")).toBeVisible();
-  await chooseOption(
-    page,
-    page.locator('[aria-labelledby="case-reminders-title"] [role="combobox"]'),
-    "COMPLETED",
-  );
+  await selectCaseReminderState(page, "COMPLETED");
   await expect(page.locator(".reminder-list li")).toHaveCount(1);
   await expect(page.locator(".reminder-list li .reminder-timing")).toHaveCount(0);
   await selectReminderAction(page, page.locator(".reminder-row"), "REOPEN");
   await fillBusinessField(page, "reminderDueDate", "9999-12-30");
   await reviewDraft(page);
   await recordWorkReview(page, "REMINDER");
-  await chooseOption(
-    page,
-    page.locator('[aria-labelledby="case-reminders-title"] [role="combobox"]'),
-    "PENDING",
-  );
+  await selectCaseReminderState(page, "PENDING");
   await expect(page.locator(".reminder-list li")).toHaveCount(1);
   const current = await workRequest(page, "case.get", {
     target: { kind: "REFERENCE", caseReference: reference },
@@ -598,8 +591,9 @@ test("published reminder rows show server timing in case and queue views across 
     }
   }
   await page.goto("/reminders");
-  await page.getByRole("searchbox").fill(reference);
-  await page.getByRole("search").getByRole("button").click();
+  const reminderSearch = page.getByRole("search", { name: ui("ar", "ui.reminders"), exact: true });
+  await reminderSearch.getByRole("searchbox").fill(reference);
+  await reminderSearch.getByRole("button").click();
   await expect(page.locator(".reminder-list li")).toHaveCount(3);
   for (const [index, label] of ["متأخر", "اليوم", "قادم"].entries()) {
     const item = page.locator(".reminder-list li").filter({ hasText: actions[index]! });
@@ -625,8 +619,8 @@ test("published reminder rows show server timing in case and queue views across 
     await stewardContext.close();
   }
   await page.reload();
-  await page.getByRole("searchbox").fill(reference);
-  await page.getByRole("search").getByRole("button").click();
+  await reminderSearch.getByRole("searchbox").fill(reference);
+  await reminderSearch.getByRole("button").click();
   await expect(page.locator(".reminder-list li")).toHaveCount(0);
   await page.getByRole("checkbox", { name: ui("ar", "ui.includeInactiveWork") }).check();
   await expect(page.locator(".reminder-list li")).toHaveCount(3);

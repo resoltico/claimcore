@@ -1,3 +1,4 @@
+import { chooseOption } from "./workspace-navigation";
 import { ui } from "./localization-support";
 import type { ReviewIdentity } from "./case-workflow";
 import { expect, type Page, type Locator, type Request } from "@playwright/test";
@@ -9,6 +10,18 @@ import { expectCaseReadsSettled } from "./case-readiness";
 
 export const workConfirmButton = (page: Page) =>
   page.getByRole("dialog").locator("button[data-confirm-operation]");
+
+/** Reveal the existing native disclosure before choosing a non-default case reminder view. */
+export const selectCaseReminderState = async (
+  page: Page,
+  state: "PENDING" | "COMPLETED" | "CANCELLED",
+): Promise<void> => {
+  const controls = page.locator(".case-reminder-controls");
+  if ((await controls.getAttribute("open")) === null) {
+    await controls.locator(":scope > summary").click();
+  }
+  await chooseOption(page, controls.getByRole("combobox"), state);
+};
 
 const languageOf = async (page: Page) => {
   const language = await page.locator("html").getAttribute("lang");

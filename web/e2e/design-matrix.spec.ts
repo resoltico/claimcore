@@ -1,4 +1,4 @@
-import { chooseChoice, settledWorkspaceHeader, chooseOption } from "./workspace-navigation";
+import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { expect, test, type Page, type TestInfo, type Request } from "@playwright/test";
 import {
@@ -126,21 +126,22 @@ const paidCorrectionReview = async (run: Run) => {
   };
   run.page.on("request", observe);
   try {
-    await run.page.locator('.operation-editor form button[type="submit"]').click();
+    await run.page.getByRole("dialog").locator('button[type="submit"]').click();
     await expect(run.page.locator(".ui-dialog")).toBeVisible();
-    await expect(run.page.locator(".ui-dialog button.primary")).toBeDisabled();
-    await expect(run.page.locator(".ui-dialog").getByRole("checkbox")).not.toBeChecked();
+    await expect(
+      run.page.getByRole("dialog").locator("button[data-confirm-operation]"),
+    ).toBeEnabled();
+    await expect(run.page.getByRole("dialog").getByRole("checkbox")).toHaveCount(0);
     expect(executions).toBe(0);
   } finally {
     run.page.off("request", observe);
   }
 };
 const historyComparison = async (page: Page) => {
-  await chooseOption(page, page.locator('.case-history [role="combobox"]'), "FULL");
-  const first = page.locator(".history-list > li > details").first();
+  const first = page.locator(".case-timeline > .timeline-entry").first();
   await expect(first).toBeVisible();
-  await first.locator(":scope > summary").click();
-  await expect(first.locator(".history-changes")).toBeVisible();
+  await first.locator(":scope > details > summary").click();
+  await expect(first.locator("details .timeline-changes")).toBeVisible();
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {

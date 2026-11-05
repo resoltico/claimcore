@@ -1,6 +1,6 @@
 import { expect, type Page } from "@playwright/test";
 export const checkAuthorityTable = async (page: Page, desktop: boolean) => {
-  const table = page.locator(".authority-table");
+  const table = page.getByRole("table").and(page.locator(".authority-table"));
   if ((await table.count()) === 0) {
     return;
   }

@@ -82,53 +82,51 @@ export type MatrixRoute = {
   expectedReference?: string;
 };
 const views = [
-  {
-    id: "open-undecided",
-    input: { lifecycle: ["ACTIVE"], status: ["OPENED"], progress: ["UNDECIDED"] },
-  },
-  { id: "decided-unpaid", input: { lifecycle: ["ACTIVE"], progress: ["DECIDED"] } },
-  { id: "recent", input: { order: "RECENT" } },
-  { id: "closed", input: { status: ["CLOSED"] } },
-  { id: "voided", input: { lifecycle: ["VOIDED"] } },
-  { id: "all", input: {} },
+  { id: "open-undecided", path: "/cases?view=UNDECIDED", input: { view: "UNDECIDED" } },
+  { id: "decided-unpaid", path: "/cases?view=DECIDED_UNPAID", input: { view: "DECIDED_UNPAID" } },
+  { id: "recent", path: "/cases?view=ALL&order=RECENT", input: { view: "ALL", order: "RECENT" } },
+  { id: "closed", path: "/cases?view=CLOSED", input: { view: "CLOSED" } },
+  { id: "voided", path: "/cases?view=VOIDED", input: { view: "VOIDED" } },
+  { id: "all", path: "/cases?view=ALL", input: { view: "ALL" } },
 ] as const;
 const worklistRoutes = (marker: string, mineReference: string): MatrixRoute[] => [
   {
     id: "cases-mine",
     expectedReference: mineReference,
-    path: "/cases?view=mine",
+    path: "/cases?view=MINE",
     ready: "#case-list-title",
     endpoint: "case.list",
-    expectedInput: { limit: 50, assignment: "MINE" },
+    expectedInput: { limit: 50, view: "MINE" },
   },
   {
     id: "cases-notified",
-    path: "/cases?view=all&order=NOTIFIED",
+    path: "/cases?view=ALL&order=NOTIFIED",
     ready: "#case-list-title",
     endpoint: "case.list",
-    expectedInput: { limit: 50, order: "NOTIFIED" },
+    expectedInput: { limit: 50, view: "ALL", order: "NOTIFIED" },
   },
   {
     id: "cases-summary",
-    path: `/cases?q=${marker}`,
+    path: `/cases?view=ALL&q=${marker}`,
     ready: "#case-list-title",
     endpoint: "case.list",
-    expectedInput: { limit: 50, text: marker },
+    expectedInput: { limit: 50, view: "ALL", text: marker },
     summaryExpanded: true,
   },
   ...views.map((view) => ({
     id: `cases-${view.id}`,
-    path: `/cases?view=${view.id}`,
+    path: view.path,
     ready: "#case-list-title",
     endpoint: "case.list" as const,
     expectedInput: { limit: 50, ...view.input },
   })),
   {
     id: "cases-filtered",
-    path: `/cases?${new URLSearchParams({ lifecycle: "ACTIVE", status: "OPENED", progress: "UNDECIDED", order: "RECENT", q: marker })}`,
+    path: `/cases?${new URLSearchParams({ view: "ALL", lifecycle: "ACTIVE", status: "OPENED", progress: "UNDECIDED", order: "RECENT", q: marker })}`,
     ready: "#case-list-title",
     endpoint: "case.list",
     expectedInput: {
+      view: "ALL",
       lifecycle: ["ACTIVE"],
       status: ["OPENED"],
       progress: ["UNDECIDED"],
@@ -147,7 +145,7 @@ const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
     endpoint: "case.get" as const,
     expectedInput: { target: { kind: "REFERENCE", caseReference: references[state] } },
   })),
-  { id: "editor-open", path: "/cases/new", ready: "#operation-title" },
+  { id: "editor-open", path: "/cases/new", ready: '[role="dialog"] .ui-dialog-title' },
   ...(["DECIDE", "CORRECT", "VOID"] as const).map((act) => ({
     id: `editor-${act.toLowerCase()}`,
     path: actPath(
@@ -157,7 +155,7 @@ const caseRoutes = (references: Record<CaseState, string>): MatrixRoute[] => [
       },
       act,
     ),
-    ready: "#operation-title",
+    ready: '[role="dialog"] .ui-dialog-title',
     endpoint: "case.get" as const,
   })),
   {
@@ -179,7 +177,7 @@ const routes = (data: {
   {
     id: "paid-correction-review",
     path: actPath({ kind: "REFERENCE", caseReference: data.references.paid }, "CORRECT"),
-    ready: "#operation-title",
+    ready: '[role="dialog"] .ui-dialog-title',
     endpoint: "case.get",
   },
   {
@@ -211,7 +209,7 @@ const routes = (data: {
   {
     id: "authority-detail",
     path: `/people/${encodeURIComponent(data.actorId)}`,
-    ready: "#actor-grants-title",
+    ready: '[role="dialog"] .ui-dialog-title',
     endpoint: "authority.grants",
   },
 ];
@@ -446,9 +444,11 @@ const unavailableCaseWork = async (page: Page, issuer: string, reference: string
     throw new Error("Unavailable work must remain readable to its actual reader");
   }
   expect(current.outcome.data.revision).toBe(2);
-  expect(current.outcome.data.work.responsible).toMatchObject({
-    account: { actorId },
-    available: false,
+  expect(current.outcome.data.work.responsible).toEqual({
+    actorId,
+    principalKind: "HUMAN",
+    availability: "DISABLED",
+    displayName: { kind: "NAMED", value: "Synthetic matrix account" },
   });
   expect(current.outcome.data.mine).toBe(false);
 };
@@ -466,6 +466,9 @@ export const prepareDesignDataset = async (
   let restore = () => Promise.resolve();
   try {
     await openAuthenticated(page);
+    // This independent fixture client begins only after the app's bootstrap reads settle.
+    await expect(page.locator('.worklist[aria-busy="false"]')).toBeVisible();
+    await expect(page.locator('.summary-band[aria-busy="true"]')).toHaveCount(0);
     const stewardship = await ownerStewardship(page);
     ({ restore } = stewardship);
     await stewardship.enable();

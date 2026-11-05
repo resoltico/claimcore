@@ -126,11 +126,13 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
           new URL(response.url()).pathname === "/signin-oidc" && response.status() === 302,
         { timeout: freshLoginWorkflowTimeout },
       ),
-      login(signedOutPage, "Case detail"),
+      login(signedOutPage, null),
     ]);
     await expect(signedOutPage).toHaveURL(destination.href);
     await expect(signedOutPage.locator("#case-detail-title")).toBeVisible();
-    await expect(signedOutPage.locator("#case-detail-title")).toContainText(reference);
+    await expect(signedOutPage.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+      reference,
+    );
   } finally {
     await anonymous.close();
   }

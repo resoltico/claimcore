@@ -35,35 +35,49 @@ const checkCaseActions = async (page: Page, expected?: string | null) => {
   }
 };
 
-const checkSavedViewSelection = async (page: Page) => {
-  const selected = page.locator('.saved-views button[aria-pressed="true"]');
-  if ((await selected.count()) === 0) {
+const checkViewSelection = async (page: Page) => {
+  const tabs = page.locator('.view-tabs [role="tab"]');
+  if ((await tabs.count()) === 0) {
     return;
   }
-  const fill = await background(selected);
-  for (const button of await page.locator('.saved-views button[aria-pressed="false"]').all()) {
-    expect(
-      await background(button),
-      "The selected saved view must remain visually distinct",
-    ).not.toBe(fill);
+  const current = page.locator('.view-tabs [role="tab"][aria-selected="true"]');
+  await expect(current).toHaveCount(1);
+  const style = await current.evaluate((element) => ({
+    color: getComputedStyle(element).color,
+    border: getComputedStyle(element).borderBottomColor,
+  }));
+  for (const tab of await page.locator('.view-tabs [role="tab"][aria-selected="false"]').all()) {
+    const other = await tab.evaluate((element) => ({
+      color: getComputedStyle(element).color,
+      border: getComputedStyle(element).borderBottomColor,
+    }));
+    expect(other.border, "The selected core view keeps its distinct underline").not.toBe(
+      style.border,
+    );
+    expect(other.color, "The selected core view keeps its distinct label").not.toBe(style.color);
   }
 };
 
 export const checkActionHierarchy = async (page: Page, expected?: string | null) => {
   await checkCaseActions(page, expected);
-  await checkSavedViewSelection(page);
-  const primary = page.locator("main button.primary, main button[type=submit]").first();
+  await checkViewSelection(page);
+  const dialog = page.getByRole("dialog");
+  const task = (await dialog.count()) === 0 ? page.locator("main") : dialog;
+  const primary = task
+    .locator("button.primary, button.ui-button--primary, button[data-confirm-operation]")
+    .filter({ visible: true })
+    .first();
   if ((await primary.count()) === 0) {
     return;
   }
   const fill = await background(primary);
-  for (const button of await page.locator(".workspace-header button").all()) {
+  for (const button of await page.locator(".workspace-header").getByRole("button").all()) {
     expect(
       await background(button),
       "Shell controls must not compete with the page action",
     ).not.toBe(fill);
   }
-  const form = page.locator(".operation-editor form");
+  const form = task.locator(".operation-form-card");
   for (const button of await form.locator("button:not([type=submit])").all()) {
     expect(await background(button), "Back and input controls must remain secondary").not.toBe(
       fill,

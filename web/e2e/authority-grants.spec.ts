@@ -18,7 +18,7 @@ const expectAuthorityControlsContained = async (page: Page) => {
     let left = panelBounds.right;
     let right = panelBounds.left;
     for (const control of element.querySelectorAll(
-      'input:not([type="checkbox"]), button[role="combobox"]',
+      'input:not([type="checkbox"]), button, a[href], summary',
     )) {
       const bounds = control.getBoundingClientRect();
       if (
@@ -43,7 +43,7 @@ const expectAuthorityControlsContained = async (page: Page) => {
 const checkPresentation = async (page: Page, complete: boolean, count: number, name: string) => {
   const view = page.getByRole("dialog");
   await page.setViewportSize({ width: 320, height: 800 });
-  await expect(view.getByRole("heading")).toBeVisible();
+  await expect(view.getByRole("heading", { name, exact: true })).toBeVisible();
   await noHorizontalOverflow(page, "narrow");
   await expectAuthorityControlsContained(page);
   for (const language of ["lv", "ar", "en"] as const) {

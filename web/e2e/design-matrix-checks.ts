@@ -10,6 +10,7 @@ import { expect, type Page, type TestInfo, type Response, type Request } from "@
 import { expectAccessible } from "./session-helpers";
 import { noHorizontalOverflow } from "./layout-support";
 import { accents, preferenceKey } from "../src/presentation/preferences";
+import { termLabel } from "../src/presentation/terms";
 import { isResponse } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
 export type Dimension = {
@@ -42,7 +43,7 @@ export const dimensions = (engine: string): Dimension[] => {
   return result;
 };
 export const displayLocaleFor = (language: Dimension["language"]) =>
-  ({ en: "en-GB", lv: "lv-LV", ar: "ar-EG", "en-XA": "en-GB" })[language];
+  (({ en: "en-GB", lv: "lv-LV", ar: "ar-EG", "en-XA": "en-GB" }) as const)[language];
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   await retainResponseBodies(page);
   await page.setViewportSize({ width: dimension.width, height: 900 });
@@ -65,7 +66,13 @@ export const configureDimension = async (page: Page, dimension: Dimension) => {
 };
 const ready = async (page: Page, route: MatrixRoute) => {
   await expect(page.locator(route.ready)).toBeVisible();
-  await expect(page.locator("h1")).toHaveCount(1);
+  const dialog = page.getByRole("dialog");
+  if ((await dialog.count()) > 0) {
+    await expect(dialog).toHaveCount(1);
+    await expect(dialog.locator(".ui-dialog-title")).toBeVisible();
+  } else {
+    await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+  }
   await expect(page.locator(".worklist-skeleton")).toHaveCount(0);
   await expect(page.locator("main [role=alert]")).toHaveCount(0);
   if (route.id.startsWith("case-") && route.id !== "case-erased") {
@@ -80,12 +87,10 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator(".summary-band[role=status], .summary-band[role=alert]")).toHaveCount(
       0,
     );
-    await expect(page.locator('.saved-views button[aria-pressed="true"]')).toHaveCount(
-      route.filtered === true || route.summaryExpanded === true ? 0 : 1,
-    );
+    await expect(page.locator('.view-tabs [role="tab"][aria-selected="true"]')).toHaveCount(1);
   }
   if (route.id.startsWith("case-")) {
-    await expect(page.locator(".history-list > li").first()).toBeVisible();
+    await expect(page.locator(".case-timeline > .timeline-entry").first()).toBeVisible();
     await expect(page.locator(".assigned-marker")).toHaveCount(
       route.id === "case-undecided" ? 1 : 0,
     );
@@ -97,19 +102,60 @@ const ready = async (page: Page, route: MatrixRoute) => {
     await expect(page.locator('a[id^="actor-grants-"]').first()).toBeVisible();
   }
   if (route.id === "authority-detail") {
-    await expect(page.locator('[aria-labelledby="actor-grants-title"] li')).toHaveCount(1);
+    await expect(page.locator('[role="dialog"] .actor-grant-items > li')).toHaveCount(1);
   }
-  await expect(page.locator("h1")).toBeFocused();
+  if ((await dialog.count()) > 0) {
+    await expect
+      .poll(() => dialog.evaluate((element) => element.contains(document.activeElement)))
+      .toBe(true);
+  } else {
+    await expect(page.getByRole("heading", { level: 1 })).toBeFocused();
+  }
 };
 const assertListPresentation = async (
   page: Page,
   payload: ServiceResponse<"case.list">,
   route: MatrixRoute,
+  dimension: Dimension,
 ) => {
   if (payload.outcome.kind !== "SUCCEEDED") {
     return;
   }
   await expect(page.locator(".worklist-row")).toHaveCount(payload.outcome.data.items.length);
+  for (const item of payload.outcome.data.items) {
+    const row = page.locator(`.worklist-row:has(a[href="/cases/id/${item.caseId}"])`);
+    const work = row.locator(".worklist-next-action");
+    await expect(work.locator("[data-attention]")).toHaveCount(item.attention.length);
+    expect(
+      await work
+        .locator("[data-attention]")
+        .evaluateAll((elements) =>
+          elements.map((element) => element.getAttribute("data-attention")),
+        ),
+    ).toEqual(item.attention);
+    if (item.nextAction === null) {
+      await expect(work.locator(":scope > bdi")).toHaveCount(0);
+      await expect(work.locator("time")).toHaveCount(0);
+    } else {
+      await expect(work).toBeVisible();
+      await expect(work.locator(":scope > bdi")).toHaveText(item.nextAction.action);
+      const due = work.locator("time");
+      await expect(due).toHaveAttribute("datetime", item.nextAction.due);
+      await expect(due).toHaveAttribute("data-due", item.nextAction.dueState);
+      const meaning = termLabel(
+        {
+          language: dimension.language,
+          displayLocale: displayLocaleFor(dimension.language),
+          mode: dimension.mode,
+          accent: dimension.accent,
+        },
+        "due",
+        item.nextAction.dueState,
+      );
+      await expect(due).toHaveAttribute("title", meaning);
+      expect(await due.getAttribute("aria-label")).toContain(meaning);
+    }
+  }
   if (route.expectedReference === undefined) {
     return;
   }
@@ -125,12 +171,17 @@ const assertCasePresentation = async (
   route: MatrixRoute,
 ) => {
   if (payload.outcome.kind === "SUCCEEDED" && route.id.startsWith("case-")) {
-    await expect(page.locator("#case-detail-title")).toContainText(
+    await expect(page.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
       payload.outcome.data.caseReference,
     );
   }
 };
-const assertReadResponse = async (page: Page, reply: Response, route: MatrixRoute) => {
+const assertReadResponse = async (
+  page: Page,
+  reply: Response,
+  route: MatrixRoute,
+  dimension: Dimension,
+) => {
   expect(reply.status()).toBe(200);
   const payload: unknown = await reply.json();
   if (route.endpoint === undefined || !isResponse(route.endpoint, payload)) {
@@ -138,7 +189,7 @@ const assertReadResponse = async (page: Page, reply: Response, route: MatrixRout
   }
   expect(payload.outcome.kind).toBe("SUCCEEDED");
   if (route.endpoint === "case.list" && isResponse("case.list", payload)) {
-    await assertListPresentation(page, payload, route);
+    await assertListPresentation(page, payload, route, dimension);
   }
   if (route.endpoint === "case.get" && isResponse("case.get", payload)) {
     await assertCasePresentation(page, payload, route);
@@ -148,12 +199,29 @@ const assertReadResponse = async (page: Page, reply: Response, route: MatrixRout
     isResponse("authority.grants", payload) &&
     payload.outcome.kind === "SUCCEEDED"
   ) {
-    const { principal } = payload.outcome.data.actor;
-    await expect(page.locator('[name="target.subject"]')).toHaveValue(principal.subject);
-    await expect(page.locator('[name="target.issuer"]')).toHaveValue(principal.issuer);
-    await expect(page.locator(`[name="target.kind"][value="${principal.kind}"]`)).toBeChecked();
-    await expect(page.locator('[name="target.subject"]')).toBeDisabled();
-    await expect(page.locator("#act-picker")).toHaveAttribute("value", "GRANT");
+    const { principal, actor } = payload.outcome.data.actor;
+    const panel = page.getByRole("dialog");
+    const details = panel.locator(".actor-record-details");
+    await expect(details).not.toHaveAttribute("open");
+    await details.locator(":scope > summary").click();
+    await expect(details.locator("bdi")).toHaveText([
+      principal.issuer,
+      principal.subject,
+      actor.actorId,
+    ]);
+    await expect(panel.locator(".ui-dialog-header > p")).toHaveText(
+      termLabel(
+        {
+          language: dimension.language,
+          displayLocale: displayLocaleFor(dimension.language),
+          mode: dimension.mode,
+          accent: dimension.accent,
+        },
+        "principalKind",
+        principal.kind,
+      ),
+    );
+    await details.locator(":scope > summary").click();
   }
   if (route.expectedInput !== undefined) {
     expect(reply.request().postDataJSON()).toEqual(route.expectedInput);
@@ -181,7 +249,7 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
       : page.waitForResponse((value) => new URL(value.url()).pathname === `/api/${route.endpoint}`);
   await page.goto(route.path, { waitUntil: "domcontentloaded" });
   if (response !== null) {
-    await assertReadResponse(page, await response, route);
+    await assertReadResponse(page, await response, route, dimension);
   }
   if (dimension.zoom !== undefined) {
     await page.evaluate((zoom) => {
@@ -190,8 +258,8 @@ export const visitRoute = async (page: Page, route: MatrixRoute, dimension: Dime
   }
   await ready(page, route);
   if (route.id === "editor-work") {
-    await page.locator(".case-work .section-heading button").click();
-    await expect(page.locator("#work-operation-title")).toBeVisible();
+    await page.locator("#case-work-update").click();
+    await expect(page.getByRole("dialog").locator(".operation-form-card")).toBeVisible();
   }
   if (route.summaryExpanded === true) {
     await expect(page.locator(".summary-band")).toBeVisible();
@@ -250,8 +318,41 @@ const smallTargets = () => {
       !element.matches(":disabled, [aria-disabled=true]")
     );
   };
+  const expandedRowRect = (element: Element): DOMRect | null => {
+    if (!element.matches("a.row-link") || getComputedStyle(element).position !== "static") {
+      return null;
+    }
+    const row = element.closest(".worklist-row");
+    if (row === null || getComputedStyle(row).position !== "relative") {
+      return null;
+    }
+    const pseudo = getComputedStyle(element, "::after");
+    const stretched =
+      pseudo.content === '""' &&
+      pseudo.position === "absolute" &&
+      pseudo.pointerEvents !== "none" &&
+      [pseudo.top, pseudo.right, pseudo.bottom, pseudo.left].every((value) => value === "0px");
+    const width = Number.parseFloat(pseudo.width);
+    const height = Number.parseFloat(pseudo.height);
+    if (!stretched || !Number.isFinite(width) || !Number.isFinite(height)) {
+      return null;
+    }
+    const box = row.getBoundingClientRect();
+    const style = getComputedStyle(row);
+    return new DOMRect(
+      box.left + Number.parseFloat(style.borderLeftWidth) * scale,
+      box.top + Number.parseFloat(style.borderTopWidth) * scale,
+      width * scale,
+      height * scale,
+    );
+  };
   const hitRects = (element: Element) => {
     const rects = [element.getBoundingClientRect()];
+    // The native link's inset pseudo-element is the actual whole-card pointer target.
+    const expanded = expandedRowRect(element);
+    if (expanded !== null) {
+      rects.push(expanded);
+    }
     if (element instanceof HTMLInputElement && ["checkbox", "radio"].includes(element.type)) {
       for (const label of element.labels ?? []) {
         const box = label.getBoundingClientRect();
@@ -341,7 +442,7 @@ const compactActionGeometry = async (page: Page, dimension: Dimension) => {
   await page.evaluate(() => {
     window.scrollTo(0, document.documentElement.scrollHeight);
   });
-  const footer = await page.locator(".case-history > button").last().boundingBox();
+  const footer = await page.locator(".case-timeline > .timeline-entry").last().boundingBox();
   const boundary = await bar.boundingBox();
   if (footer !== null && boundary !== null) {
     expect(footer.y + footer.height).toBeLessThanOrEqual(boundary.y + 1);
@@ -386,36 +487,81 @@ const factCardReadability = () => {
 };
 const readableRows = async (page: Page, dimension: Dimension) => {
   await checkAuthorityTable(page, dimension.width >= 1024);
-  const hiddenFacts = await page.locator(".worklist-row:not(.erased-row)").evaluateAll((rows) =>
-    rows.flatMap((row, index) =>
-      [".worklist-person > small", ".worklist-payable", ".worklist-work", ".worklist-changed"]
-        .filter((selector) => {
-          const element = row.querySelector(selector);
-          if (element === null) {
-            return true;
-          }
-          const box = element.getBoundingClientRect();
-          return (
-            box.width <= 0 || box.height <= 0 || getComputedStyle(element).visibility !== "visible"
-          );
-        })
-        .map((selector) => ({ row: index, selector })),
-    ),
+  const failures = await page.locator(".worklist-row:not(.erased-row)").evaluateAll(
+    (rows, compact) =>
+      rows.flatMap((row, index) => {
+        const visible = (element: Element | null) =>
+          element !== null &&
+          element.getBoundingClientRect().width > 0 &&
+          element.getBoundingClientRect().height > 0 &&
+          getComputedStyle(element).visibility === "visible";
+        const required = [
+          ".reference",
+          ".worklist-person > bdi",
+          ".worklist-badges",
+          ".worklist-money",
+          ...(row.querySelector(
+            ".worklist-next-action > bdi, .worklist-next-action > small, .worklist-next-action .case-attention",
+          ) === null
+            ? []
+            : [".worklist-next-action"]),
+          ...(compact
+            ? []
+            : [
+                ".worklist-person > small",
+                ".worklist-payable",
+                ".worklist-responsible",
+                ".worklist-changed",
+              ]),
+        ];
+        const hidden = compact
+          ? [
+              ".worklist-person > small",
+              ".worklist-payable",
+              ".worklist-responsible",
+              ".worklist-changed",
+              ".case-stage-mini",
+            ]
+          : [];
+        const party = row.querySelector(".worklist-person");
+        return [
+          ...required
+            .filter((selector) => !visible(row.querySelector(selector)))
+            .map((selector) => ({ row: index, selector, problem: "required-hidden" })),
+          ...hidden
+            .filter((selector) => visible(row.querySelector(selector)))
+            .map((selector) => ({ row: index, selector, problem: "compact-secondary-visible" })),
+          ...(party !== null && getComputedStyle(party).textAlign !== "start"
+            ? [{ row: index, selector: ".worklist-person", problem: "party-alignment" }]
+            : []),
+          ...[...row.querySelectorAll(".worklist-person bdi")]
+            .filter((element) => getComputedStyle(element).display !== "inline")
+            .map(() => ({
+              row: index,
+              selector: ".worklist-person bdi",
+              problem: "isolate-block",
+            })),
+        ];
+      }),
+    dimension.width < 1024,
   );
   expect(
-    hiddenFacts,
-    "Every queue presentation retains insurer, payable money, work and change observations",
+    failures,
+    "Core party values stay isolated; compact W4 and desktop retain their declared content",
   ).toEqual([]);
 };
-const savedViewGeometry = async (page: Page) => {
-  const tops = await page
-    .locator(".saved-views button")
-    .evaluateAll((buttons) =>
-      buttons.map((button) => Math.round(button.getBoundingClientRect().top)),
-    );
-  if (tops.length > 0) {
-    expect([...new Set(tops)]).toHaveLength(1);
+const viewTabGeometry = async (page: Page, dimension: Dimension) => {
+  const tabs = page.locator('.view-tabs [role="tab"]');
+  if (dimension.width >= 640 || (await tabs.count()) === 0) {
+    return;
   }
+  const tops = await tabs.evaluateAll((elements) =>
+    elements.map((element) => Math.round(element.getBoundingClientRect().top)),
+  );
+  expect(
+    [...new Set(tops)],
+    "Compact core view tabs remain one horizontally scrollable line",
+  ).toHaveLength(1);
 };
 const primaryByFrame: Readonly<Record<string, string | null>> = {
   "case-undecided": "DECIDE",
@@ -431,7 +577,7 @@ export const checkFrame = async (page: Page, dimension: Dimension, frame: string
   await checkActionHierarchy(page, primaryByFrame[frame]);
   await compactActionGeometry(page, dimension);
   await readableRows(page, dimension);
-  await savedViewGeometry(page);
+  await viewTabGeometry(page, dimension);
   expect(await page.evaluate(factCardReadability)).toEqual([]);
   const targets = await page.evaluate(smallTargets);
   const tags = new Set(["BUTTON", "A", "INPUT", "SELECT", "TEXTAREA", "SUMMARY", "DIV", "SPAN"]);

@@ -17,7 +17,7 @@ import { isResponse } from "../src/protocol/client";
 import { currentCase } from "./localization-correction-workflow";
 import { pauseJsonReply, selectFormat, settingsNavigation } from "./localization-support";
 
-test("records future planned work and scoped responsibility, then finds My cases", async ({
+test("records future planned work and scoped responsibility, then finds the case in Mine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -47,6 +47,9 @@ test("records future planned work and scoped responsibility, then finds My cases
   );
   const started = performance.now();
   await page.locator("#case-work-update").click();
+  await expect(
+    page.getByRole("dialog").locator('input[name="act.values.responsibleActor.kind"][value="SET"]'),
+  ).toBeVisible();
   const renderMilliseconds = performance.now() - started;
   await page.waitForLoadState("networkidle");
   const resources = await page.evaluate(
@@ -121,7 +124,8 @@ test("records future planned work and scoped responsibility, then finds My cases
   ).toHaveText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");
-  await page.getByRole("tab", { name: /^My cases(?: \d+)?$/u }).click();
+  await page.getByRole("tab", { name: /^Mine(?:\s|$)/u }).click();
+  await expect(page).toHaveURL((url) => url.searchParams.get("view") === "MINE");
   await expect(page.getByRole("link", { name: reference, exact: true })).toBeVisible();
 });
 
@@ -149,7 +153,9 @@ for (const [entered, expected] of [
     await page.locator("[data-return-workspace]").click();
     await expect(page).toHaveURL(editorUrl);
     await expect(page.locator(".settings-panel")).toHaveCount(0);
-    await expect(page.locator('[data-field-name="claimedAmount"]')).toHaveValue("1,234");
+    await expect(
+      page.getByRole("dialog").locator('input[data-field-name="claimedAmount"]'),
+    ).toHaveValue("1,234");
     const preview = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes", exact: true }).click();
     const captured = await preview.ready;
