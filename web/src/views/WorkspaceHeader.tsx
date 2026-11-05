@@ -10,6 +10,7 @@ import { navigate, guardedDeparture } from "../routing/navigation";
 import { followLink } from "../routing/followLink";
 import type { Route } from "../routing/routes";
 import { Icon } from "../ui/icons";
+import { Button } from "../ui/Button";
 import "./shell.css";
 
 const areas = [
@@ -214,9 +215,9 @@ const ShellSearch = ({ locked }: { locked: boolean }) => {
         }}
         placeholder={p.text("ui.shell.searchCases")}
       />
-      <button type="submit" disabled={locked}>
+      <Button type="submit" variant="secondary" isDisabled={locked}>
         {p.text("ui.search")}
-      </button>
+      </Button>
     </form>
   );
 };

@@ -114,6 +114,12 @@
 .shell-search button {
   flex-shrink: 0;
 }
+.shell-search button.ui-button--secondary[type="submit"],
+.shell-search button.ui-button--secondary[type="submit"]:hover {
+  background: var(--button-bg);
+  color: var(--button-text);
+  box-shadow: none;
+}
 .shell-open-case {
   display: inline-flex;
   align-items: center;
