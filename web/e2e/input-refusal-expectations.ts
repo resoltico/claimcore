@@ -1,24 +1,37 @@
 import { expect, type Page, type Locator } from "@playwright/test";
 
-// Independent localized meaning and summary samples; specific issue samples remain with each scenario.
+// Independent GUI widget-hint and summary samples; specific issue samples remain with each scenario.
 export const issueMeanings = {
   en: {
-    incidentDate: "Date on which the incident occurred.",
-    claimedAmount: "Amount requested by the claimant.",
-    claimedCurrency: "Currency in which the amount is claimed.",
-    claimantName: "Name of the person or company making the claim.",
+    incidentDate: "When the incident happened.",
+    claimedAmount: "How much the claimant is asking for.",
+    claimedCurrency: "The currency of the claimed amount.",
+    claimantName: "The person or company making the claim.",
   },
   lv: {
-    incidentDate: "Datums, kurā notika negadījums.",
-    claimedAmount: "Prasītāja pieprasītā summa.",
-    claimedCurrency: "Valūta, kurā summa pieprasīta.",
-    claimantName: "Prasījumu iesniegušās personas vārds vai uzņēmuma nosaukums.",
+    incidentDate: "Kad notika negadījums.",
+    claimedAmount: "Summa, ko pieprasa prasītājs.",
+    claimedCurrency: "Izvēlieties valūtu pieprasītajai summai.",
+    claimantName: "Persona vai uzņēmums, kas iesniedz prasījumu.",
   },
   ar: {
-    incidentDate: "التاريخ الذي وقعت فيه الواقعة.",
+    incidentDate: "متى وقعت الواقعة.",
     claimedAmount: "المبلغ الذي يطلبه المطالب.",
-    claimedCurrency: "العملة التي يُطالب بها المبلغ.",
-    claimantName: "اسم الشخص أو الشركة التي تقدّم المطالبة.",
+    claimedCurrency: "اختر العملة التي طُلب بها المبلغ.",
+    claimantName: "الشخص أو الشركة التي تقدم المطالبة.",
+  },
+} as const;
+// GUI variants deliberately differ from the wire-format rules retained by CLI/help.
+export const guiFormatIssues = {
+  CALENDAR_DATE_REQUIRED: {
+    en: "Enter a real date.",
+    lv: "Ievadiet derīgu datumu.",
+    ar: "أدخل تاريخًا صحيحًا.",
+  },
+  CURRENCY_FORMAT: {
+    en: "Enter a three-letter currency code, for example EUR.",
+    lv: "Ievadiet trīs burtu valūtas kodu, piemēram, EUR.",
+    ar: "أدخل رمز عملة من ثلاثة أحرف، مثل EUR.",
   },
 } as const;
 const summaries = {
