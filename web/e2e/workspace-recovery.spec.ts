@@ -128,11 +128,13 @@ test("authority refusal preserves authored input through Settings and needs a fr
   await expect(profile).toHaveValue(profileName);
   await expect(editor.locator("button[data-confirm-operation]")).toHaveCount(0);
   const refused: unknown = response.request().postDataJSON();
-  expect(refused).toMatchObject({
+  expect(refused).toEqual({
+    kind: "AUTHORITY",
+    operationId: operationId(refused),
     target: { kind: "HUMAN", issuer: source.issuer, subject: "" },
     act: {
       kind: "ADMIT",
-      profile: { displayName: profileName, contact: null },
+      profile: { displayName: profileName },
       grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
     },
   });
@@ -155,11 +157,13 @@ test("authority refusal preserves authored input through Settings and needs a fr
     throw new Error("Expected a fresh authority review after correction.");
   }
   const corrected: unknown = reviewedResponse.request().postDataJSON();
-  expect(corrected).toMatchObject({
+  expect(corrected).toEqual({
+    kind: "AUTHORITY",
+    operationId: operationId(corrected),
     target: { kind: "HUMAN", issuer: source.issuer, subject: subjectValue },
     act: {
       kind: "ADMIT",
-      profile: { displayName: profileName, contact: null },
+      profile: { displayName: profileName },
       grants: [{ role: "CASE_READER", scope: { kind: "INSTALLATION" } }],
     },
   });

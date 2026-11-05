@@ -3,7 +3,14 @@ import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type Locator } from "@playwright/test";
 import { openAuthenticated, browserRequest, sessionToken } from "./session-helpers";
 import { syntheticPrincipals } from "./authority-setup";
-import { selectLanguage, ui, trackForegroundRequests } from "./localization-support";
+import {
+  selectLanguage,
+  ui,
+  trackForegroundRequests,
+  installTestLanguage,
+} from "./localization-support";
+import { createPresenter } from "../src/presentation/presenter";
+import { actorName } from "../src/presentation/actorName";
 import { inputMessage } from "./input-accessibility-messages";
 import { isResponse } from "../src/protocol/client";
 
@@ -135,13 +142,26 @@ for (const language of ["en", "lv", "ar"] as const) {
     ) {
       throw new Error("Expected the current owner context.");
     }
-    const { actorId } = own.payload.outcome.data.requester;
+    const { requester } = own.payload.outcome.data;
+    const { actorId } = requester;
+    installTestLanguage(language);
+    const p = createPresenter({
+      language,
+      displayLocale: "en-GB",
+      mode: "system",
+      accent: "green",
+    });
+    const person = page.getByRole("dialog", { name: actorName(p, requester.self), exact: true });
     await page.goto(`/people/${encodeURIComponent(actorId)}`, { waitUntil: "commit" });
     for (const kind of ["GRANT", "REVOKE"] as const) {
-      const person = page.getByRole("dialog");
       await expect(person).toBeVisible();
-      const name = `${ui(language, `act.${kind}.label`)}: ${ui(language, `act.${kind}.meaning`)}`;
-      await person.getByRole("button", { name, exact: true }).click();
+      const name = p.text("ui.actDescription", {
+        label: p.authorityLabel(kind),
+        meaning: p.authorityMeaning(kind),
+      });
+      const action = person.getByRole("button", { name, exact: true });
+      await expect(action).toHaveText(ui(language, `act.${kind}.label`));
+      await action.click();
       const dialog = page.getByRole("dialog", {
         name: ui(language, `act.${kind}.label`),
         exact: true,
@@ -177,6 +197,11 @@ for (const language of ["en", "lv", "ar"] as const) {
         await guard
           .getByRole("button", { name: ui(language, "ui.discardAndLeave"), exact: true })
           .click();
+        await expect(guard).toHaveCount(0);
+        await expect(person).toBeVisible();
+        await expect(page).toHaveURL(
+          (url) => url.pathname === `/people/${encodeURIComponent(actorId)}`,
+        );
       }
     }
     expect(requests.filter((request) => request === "POST /api/operation.execute")).toEqual([]);
