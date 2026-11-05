@@ -167,7 +167,7 @@ const AreaContent = ({ route }: { route: Route }) => {
     case "recovery":
       return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
     case "authorityHistory":
-      return <AuthorityHistory actorId="" />;
+      return <AuthorityHistory key={route.actorId} actorId={route.actorId} />;
     case "missing":
       return <MissingPage />;
     default:

@@ -1,8 +1,9 @@
+import { workBasis } from "../../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import type { AuthorityHistoryEntry } from "@contracts/client";
 import { render, screen } from "../../../support/presentation-test-support";
-import { context, response } from "../../../support/service-ui.fixtures";
+import { context } from "../../../support/service-ui.fixtures";
 import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { AuthorityHistory } from "../../../../src/views/authority/AuthorityHistory";
 import { preferenceKey } from "../../../../src/presentation/preferences";
@@ -16,6 +17,19 @@ const owner: AuthorityHistoryEntry = {
     principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-owner" },
   },
 };
+const historyResponse = (
+  entries: ReadonlyArray<AuthorityHistoryEntry>,
+  nextCursor: string | null = null,
+) =>
+  new Response(
+    JSON.stringify({
+      outcome: {
+        kind: "SUCCEEDED",
+        data: { basis: { ...workBasis, timeZone: "Europe/Riga" }, entries, nextCursor },
+      },
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
 afterEach(() => vi.unstubAllGlobals());
 it.each([
   {
@@ -55,11 +69,7 @@ it.each([
         accent: "green" as const,
       }),
     );
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        response("authority.history", "SUCCEEDED", { entries: [owner], nextCursor: null }),
-      );
+    const fetch = vi.fn().mockResolvedValue(historyResponse([owner]));
     vi.stubGlobal("fetch", fetch);
     const view = render(
       <RequesterContext
@@ -83,22 +93,18 @@ it("keeps the selected actor filter when appending an older authority history pa
   const older: AuthorityHistoryEntry = { ...owner, sequence: 30, act: { kind: "DISABLE" } };
   const fetch = vi
     .fn()
-    .mockResolvedValueOnce(
-      response("authority.history", "SUCCEEDED", { entries: [owner], nextCursor: "older-page" }),
-    )
-    .mockResolvedValueOnce(
-      response("authority.history", "SUCCEEDED", { entries: [older], nextCursor: null }),
-    );
+    .mockResolvedValueOnce(historyResponse([owner], "older-page"))
+    .mockResolvedValueOnce(historyResponse([older]));
   vi.stubGlobal("fetch", fetch);
-  const view = render(<AuthorityHistory actorId={context.actorId} />);
+  const view = render(<AuthorityHistory actorId={context.self.actorId} />);
   const more = await screen.findByRole("button", { name: "Load more history" });
   await userEvent.setup().click(more);
-  await screen.findByText("Disable actor", { exact: true });
+  await screen.findByText("Disable account", { exact: true });
   expect(view.container.querySelectorAll("li")).toHaveLength(2);
   expect(fetch).toHaveBeenLastCalledWith(
     "/api/authority.history",
     expect.objectContaining({
-      body: JSON.stringify({ limit: 50, actorId: context.actorId, cursor: "older-page" }),
+      body: JSON.stringify({ limit: 50, actorId: context.self.actorId, cursor: "older-page" }),
     }),
   );
   expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();

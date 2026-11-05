@@ -10,7 +10,7 @@ export type Route =
   | { screen: "caseAct"; target: CaseSelector; act: string }
   | { screen: "recovery"; operationId: string }
   | { screen: "people"; actorId: string }
-  | { screen: "authorityHistory" }
+  | { screen: "authorityHistory"; actorId: string }
   | { screen: "missing" };
 
 const opaque = (value: string): string =>
@@ -79,7 +79,15 @@ const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | nu
     return { screen: "cases", query };
   }
   if (segments[0] === "authority-history") {
-    return { screen: "authorityHistory" };
+    const actors = new URLSearchParams(query).getAll("actorId");
+    const actorId = actors[0] ?? "";
+    if (
+      actors.length > 1 ||
+      (actors.length === 1 && !isRequest("authority.history", { limit: 50, actorId }))
+    ) {
+      return { screen: "missing" };
+    }
+    return { screen: "authorityHistory", actorId };
   }
   return segments[0] === "reminders" ? { screen: "reminders", query } : null;
 };

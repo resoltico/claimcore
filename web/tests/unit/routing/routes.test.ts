@@ -98,9 +98,29 @@ it("distinguishes default entry and the separate public areas", () => {
   });
   expect(parseRoute(new URL("/authority-history", location.origin))).toEqual({
     screen: "authorityHistory",
+    actorId: "",
   });
   expect(parseRoute(new URL("/recovery", location.origin))).toEqual({
     screen: "recovery",
     operationId: "",
+  });
+});
+
+it("preserves the explicit history actor instead of broadening to all actors", () => {
+  const actorId = "10000000-0000-4000-8000-000000000001";
+  expect(parseRoute(new URL(`/authority-history?actorId=${actorId}`, location.origin))).toEqual({
+    screen: "authorityHistory",
+    actorId,
+  });
+});
+it.each([
+  "actorId=",
+  "actorId=not-an-actor",
+  "actorId=%0A10000000-0000-4000-8000-000000000001",
+  "actorId=10000000-0000-4000-8000-000000000001&actorId=10000000-0000-4000-8000-000000000002",
+  "actorId=10000000-0000-4000-8000-000000000001&actorId=10000000-0000-4000-8000-000000000001",
+])("rejects a supplied ambiguous or invalid history actor: %s", (query) => {
+  expect(parseRoute(new URL(`/authority-history?${query}`, location.origin))).toEqual({
+    screen: "missing",
   });
 });
