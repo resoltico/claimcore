@@ -423,6 +423,25 @@ const compactActionGeometry = async (page: Page, dimension: Dimension) => {
   if (dimension.width >= 640 || (await bar.count()) === 0) {
     return;
   }
+  if ((await page.getByRole("dialog").count()) > 0) {
+    const controls = bar.locator("button, summary, a[href]");
+    expect(await controls.count()).toBeGreaterThan(0);
+    await expect(bar.getByRole("button")).toHaveCount(0);
+    await expect(bar.getByRole("link")).toHaveCount(0);
+    const exposed = await controls.evaluateAll(
+      (elements) =>
+        elements.filter((element) => {
+          const rect = element.getBoundingClientRect();
+          const hit = document.elementFromPoint(rect.x + rect.width / 2, rect.y + rect.height / 2);
+          return hit !== null && element.contains(hit);
+        }).length,
+    );
+    expect(
+      exposed,
+      "The active modal excludes background case actions from pointer interaction",
+    ).toBe(0);
+    return;
+  }
   const viewport = await page.evaluate(() => window.innerHeight);
   const primaryButton = bar.locator(".case-primary-action button");
   const primary = (await primaryButton.count()) === 0 ? null : await primaryButton.boundingBox();
