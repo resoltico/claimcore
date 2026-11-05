@@ -292,7 +292,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
                 "--subject"
                 subject
                 "--name"
-                "Safety holder"
+                "Safety"
             ]
             0
         |> require "ACCEPTED"
@@ -314,7 +314,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     Expect.equal
         (targetActor.GetProperty("displayName").GetProperty("value").GetString())
-        "Safety holder"
+        "Safety"
         "Authored profile owns the readable account name"
 
     let machine =
@@ -345,14 +345,25 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     let primaryText = Encoding.UTF8.GetString primary.StandardOutput
 
-    Expect.isTrue
-        (primaryText.Split('\n')
-         |> Array.exists (fun line -> line.StartsWith("Safety holder", StringComparison.Ordinal)))
-        "Primary rows identify the account by its authored name, never its principal or ID"
+    let primaryRows = primaryText.Split('\n')
 
-    Expect.isFalse
-        (primaryText.Contains("synthetic-\\u{001B}", StringComparison.Ordinal))
-        "The unsafe principal is not the primary name"
+    let nameFirst =
+        primaryRows
+        |> Array.exists (fun line -> line.StartsWith("Safety  ", StringComparison.Ordinal))
+
+    let identityFirst =
+        primaryRows
+        |> Array.exists (fun line ->
+            line.StartsWith("synthetic-", StringComparison.Ordinal)
+            || line.StartsWith(actorId, StringComparison.Ordinal))
+
+    if not nameFirst || identityFirst then
+        FixtureFiles.write fixture.Directory "account-primary-name.stdout" primary.StandardOutput
+        |> ignore
+
+    Expect.isTrue nameFirst "Primary rows identify the account by its exact authored name"
+
+    Expect.isFalse identityFirst "Neither the unsafe principal nor ID is the leading name"
 
     let rendered =
         CliCalls.invoke
@@ -370,8 +381,8 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     for control in [ '\u001B'; '\r'; '\t'; '\b'; '\u0085'; '\u202E' ] do
         Expect.isFalse
-            (row.Contains control)
-            "Captured real human output emits no untrusted terminal instructions"
+            (primaryText.Contains control || text.Contains control)
+            "Neither human table nor technical card emits untrusted terminal instructions"
 
     Expect.isTrue
         (row.Contains(
