@@ -633,6 +633,10 @@ let private qualifyEngine engine =
         if result.ExitCode <> 0 then
             printFailureSummary fixture.Root engine result.StandardOutput
 
+            match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+            | null -> ()
+            | directory -> BrowserLayoutReports.retain output directory engine
+
         Expect.equal
             result.ExitCode
             0

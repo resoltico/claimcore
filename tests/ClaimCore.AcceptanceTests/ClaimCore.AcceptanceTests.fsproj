@@ -50,6 +50,8 @@
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserCompletion.fs" />
+    <Compile Include="BrowserLayoutReports.fs" />
+    <Compile Include="BrowserLayoutReportsTests.fs" />
     <Compile Include="BrowserTests.fs" />
     <Compile Include="DeploymentConfigurationTests.fs" />
     <Compile Include="LocalConfigurationProfilesTests.fs" />
