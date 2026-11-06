@@ -1,9 +1,10 @@
 import { showExactLookup } from "./workspace-navigation";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
 import { openCase } from "./case-workflow";
-import { openAuthenticated, expectAccessible } from "./session-helpers";
+import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import {
   seedPresentation,
   selectLanguage,
@@ -11,6 +12,12 @@ import {
   expectKeyboardContained,
   ui,
 } from "./localization-support";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
 
 test("stewardship review preserves exact reason through pseudolocale, Arabic RTL and narrow keyboard interaction", async ({
   page,
@@ -26,7 +33,7 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
   try {
     const steward = await context.newPage();
     await seedPresentation(steward, "en-XA", "ar-EG");
-    await openAuthenticated(steward, "⟦Cààsëës⟧", "narrow-authenticated-state.json");
+    await openAuthenticated(steward, "⟦Cààsëës⟧", stewardCookies);
     const lookup = await showExactLookup(steward);
     await lookup.fill(reference);
     await lookup.press("Enter");

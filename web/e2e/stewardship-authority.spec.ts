@@ -1,4 +1,5 @@
 import type { CaseAct, AuthorityAct } from "@contracts/client";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import type { Language } from "../src/presentation/preferences";
 import { defaults } from "../src/presentation/preferences";
 import { createPresenter } from "../src/presentation/presenter";
@@ -10,12 +11,19 @@ import { openCase, startAct } from "./case-workflow";
 import {
   expectAccessible,
   openAuthenticated,
+  authenticateSteward,
   browserRequest,
   sessionToken,
 } from "./session-helpers";
 import { confirmReview, installTestLanguage } from "./localization-support";
 import { syntheticPrincipals } from "./authority-setup";
 import { recoveryRecords } from "./recovery-storage";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
 
 const stewardAct = async (
   page: Page,
@@ -82,7 +90,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
   });
   try {
     const steward = await context.newPage();
-    await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
+    await openAuthenticated(steward, "Cases", stewardCookies);
     await (await showExactLookup(steward)).fill(reference);
     await steward.getByRole("button", { name: "Open by exact reference", exact: true }).click();
     await stewardAct(steward, reference, "VOID", "Synthetic entry error");

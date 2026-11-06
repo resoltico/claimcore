@@ -49,6 +49,7 @@
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
 - Contributors can diagnose selected browser specs without replaying full suites; diagnostic batches collect failures but never qualify acceptance. Reuse applicable CI evidence.
 - Published-client fixtures drain Web logs for their full lifetime and retain bounded tails; capture metadata identifies truncation and incomplete cleanup.
+- Secondary-principal browser specs obtain real OIDC sessions at file setup, preserving authentication expiry and login admission during long suites.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
 
 ## [0.15.0] - 2026-11-03

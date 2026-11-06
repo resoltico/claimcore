@@ -1,8 +1,9 @@
 import { chooseChoice, goToView } from "./workspace-navigation";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page, type BrowserContext } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
-import { openAuthenticated, expectAccessible } from "./session-helpers";
+import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import {
   seedPresentation,
   selectLanguage,
@@ -11,6 +12,12 @@ import {
   ui,
   reviewFrom,
 } from "./localization-support";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
 
 const ownerGrant = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
@@ -145,7 +152,7 @@ test("authority review and uncertainty survive locale changes while refusal clea
     });
     const steward = await context.newPage();
     await seedPresentation(steward, "en-XA", "ar-EG");
-    await openAuthenticated(steward, "⟦Cààsëës⟧", "narrow-authenticated-state.json");
+    await openAuthenticated(steward, "⟦Cààsëës⟧", stewardCookies);
     const subject = `authority-uncertain-${randomUUID()}`;
     await goToView(steward, "people");
     const priorActor = steward.locator(".authority-rows .actor-subject").first();

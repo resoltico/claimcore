@@ -391,6 +391,9 @@ explicit engine, with 70 minutes including CI setup. The default local invocatio
 engines once under a 150-minute project bound. These capacity bounds do not change per-test
 limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
 is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
+Secondary-principal specs acquire real OIDC sessions in their own `beforeAll` setup under the existing
+login-admission wait. Keep those cookies within the spec that acquired them so authentication
+deadlines remain meaningful during long runs.
 
 For concrete browser failures, select existing specs and one engine. With current Release
 applications/test assembly and frontend assets already built:

@@ -1,4 +1,4 @@
-import { chooseOption } from "./workspace-navigation";
+import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { ui } from "./localization-support";
 import type { ReviewIdentity } from "./case-workflow";
 import { expect, type Page, type Locator, type Request } from "@playwright/test";
@@ -91,9 +91,15 @@ export const selectReminderAction = async (
   kind: "UPDATE" | "CANCEL" | "REOPEN" | "COMPLETE_AND_PLAN_NEXT",
 ) => {
   const language = await languageOf(page);
-  await row.getByRole("button", { name: ui(language, "label.availableActs"), exact: true }).click();
+  const trigger = row.getByRole("button", {
+    name: ui(language, "label.availableActs"),
+    exact: true,
+  });
+  await settlePopupTriggerScroll(trigger);
+  await trigger.click();
   const menu = page.getByRole("menu", { name: ui(language, "label.availableActs"), exact: true });
   await expect(menu).toHaveCount(1);
+  await expect(menu).toBeVisible();
   await menu
     .getByRole("menuitem", { name: ui(language, `act.REMINDER_${kind}.label`), exact: true })
     .click();

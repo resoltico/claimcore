@@ -8,7 +8,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, test, type BrowserContext, type Page, type Response } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type Response,
+} from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -111,23 +118,28 @@ export const openApplication = async (page: Page, heading: string | RegExp): Pro
 export const openAuthenticated = async (
   page: Page,
   casesHeading: string | RegExp = "Cases",
-  stateFile:
-    "authenticated-state.json" | "narrow-authenticated-state.json" = "authenticated-state.json",
+  sessionCookies?: Cookies,
 ): Promise<void> => {
-  const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
-  if (output === undefined) {
-    throw new Error("Private browser output was not configured.");
+  let cookies = sessionCookies;
+  if (cookies === undefined) {
+    const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
+    if (output === undefined) {
+      throw new Error("Private browser output was not configured.");
+    }
+    const state: unknown = JSON.parse(
+      await readFile(resolve(output, "authenticated-state.json"), "utf8"),
+    );
+    if (
+      typeof state !== "object" ||
+      state === null ||
+      !("cookies" in state) ||
+      !Array.isArray(state.cookies)
+    ) {
+      throw new Error("E2E_AUTH_STATE_INVALID");
+    }
+    cookies = state.cookies as Cookies;
   }
-  const state: unknown = JSON.parse(await readFile(resolve(output, stateFile), "utf8"));
-  if (
-    typeof state !== "object" ||
-    state === null ||
-    !("cookies" in state) ||
-    !Array.isArray(state.cookies)
-  ) {
-    throw new Error("E2E_AUTH_STATE_INVALID");
-  }
-  await page.context().addCookies(state.cookies as Cookies);
+  await page.context().addCookies(cookies);
   await openApplication(page, casesHeading);
 };
 
@@ -379,6 +391,25 @@ export const login = async (
   await progress("oidc-callback-returned");
   await expect(authenticated).toBeVisible();
   await progress("login-ready");
+};
+
+/** Secondary-principal suites own a real session acquired when their workflows begin. */
+export const authenticateSteward = async (
+  browser: Browser,
+  baseURL: string | undefined,
+): Promise<Cookies> => {
+  if (baseURL === undefined) {
+    throw new Error("E2E_STEWARD_SESSION_BASE_URL_REQUIRED");
+  }
+  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  try {
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "commit" });
+    await login(page, "Cases", "Sign in", "synthetic-steward");
+    return await context.cookies();
+  } finally {
+    await context.close();
+  }
 };
 
 export const logout = async (page: Page): Promise<void> => {

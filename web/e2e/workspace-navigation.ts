@@ -80,22 +80,26 @@ export const showOperationLookup = async (page: Page): Promise<Locator> => {
   return input;
 };
 
+/** Deliver the automation's scroll before opening a popup that dismisses on scroll. */
+export const settlePopupTriggerScroll = async (control: Locator): Promise<void> => {
+  await control.scrollIntoViewIfNeeded();
+  await control.evaluate(
+    () =>
+      new Promise<void>((resolve) => {
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            resolve();
+          });
+        });
+      }),
+  );
+};
+
 /** Select a visible closed value through the shared CSP-safe listbox. */
 export const chooseOption = async (page: Page, control: Locator, value: string): Promise<void> => {
   await expect(control).toBeEnabled();
   if ((await control.getAttribute("aria-expanded")) !== "true") {
-    // Finish the automation's scroll before opening a scroll-dismissed popup.
-    await control.scrollIntoViewIfNeeded();
-    await control.evaluate(
-      () =>
-        new Promise<void>((resolve) => {
-          requestAnimationFrame(() => {
-            requestAnimationFrame(() => {
-              resolve();
-            });
-          });
-        }),
-    );
+    await settlePopupTriggerScroll(control);
     await control.click();
   }
   const listbox = page.getByRole("listbox");

@@ -1,11 +1,12 @@
 import { chooseChoice } from "./workspace-navigation";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
 import { casePath } from "../src/routing/routes";
 import { isResponse } from "@contracts/client";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
-import { openAuthenticated, expectAccessible } from "./session-helpers";
+import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import { openCase, reviewDraft, startOpen, recordReviewed, startAct } from "./case-workflow";
 import { fillBusinessField } from "./typed-entry";
 import {
@@ -16,6 +17,12 @@ import {
   selectReminderAction,
   selectCaseReminderState,
 } from "./work-workflow";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
 
 const plan = async (page: Parameters<typeof openCase>[0], action: string, due: string) => {
   await page.getByRole("button", { name: "Add reminder", exact: true }).click();
@@ -628,7 +635,7 @@ test("published reminder rows show server timing in case and queue views across 
   });
   try {
     const steward = await stewardContext.newPage();
-    await openAuthenticated(steward, "Cases", "narrow-authenticated-state.json");
+    await openAuthenticated(steward, "Cases", stewardCookies);
     const voided = await workRequest(steward, "operation.execute", {
       kind: "CASE",
       operationId: randomUUID(),

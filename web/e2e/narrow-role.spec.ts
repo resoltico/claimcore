@@ -1,9 +1,12 @@
 import { showCaseActionMenu, caseActionButton } from "./case-workflow";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { showExactLookup } from "./workspace-navigation";
 import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
   openAuthenticated,
+  authenticateSteward,
+  logout,
   browserRequest,
   sessionToken,
   expectAccessible,
@@ -14,6 +17,20 @@ import {
   type NarrowRole,
   type RoleFixture,
 } from "./narrow-role-fixture";
+import { isResponse } from "../src/protocol/client";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>> | undefined;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
+
+const openNarrowSession = (page: Page, heading: string): Promise<void> => {
+  if (stewardCookies === undefined) {
+    throw new Error("E2E_NARROW_SPEC_SESSION_NOT_INITIALIZED");
+  }
+  return openAuthenticated(page, heading, stewardCookies);
+};
 
 const findCase = async (page: Page, reference: string) => {
   await (await showExactLookup(page)).fill(reference);
@@ -134,11 +151,7 @@ for (const [name, role, scoped] of cases) {
     await test.step("Apply scoped role", () => setup ?? Promise.resolve());
     const narrow = await context.newPage();
     await test.step("Open narrow actor session", () =>
-      openAuthenticated(
-        narrow,
-        role === null ? "You don’t have access yet" : "Cases",
-        "narrow-authenticated-state.json",
-      ));
+      openNarrowSession(narrow, role === null ? "You don’t have access yet" : "Cases"));
     await test.step("Check enabled actor context", () => expectContextAccess(narrow));
     if (role === "CASE_READER" || role === "CASE_HANDLER" || role === "DATA_STEWARD") {
       await test.step("Read current case and enforce history scope", () =>
@@ -151,3 +164,36 @@ for (const [name, role, scoped] of cases) {
     await test.step("Check narrow view accessibility", () => expectAccessible(narrow));
   });
 }
+
+test("a fresh steward session does not restore a revoked ticket", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  const revoked = await authenticateSteward(browser, baseURL);
+  const context = page.context();
+  await openAuthenticated(page, "Cases", revoked);
+  await logout(page);
+  const expectAuthenticated = async (expected: boolean) => {
+    const reply = await browserRequest(page, "/api/session");
+    expect(reply.status).toBe(200);
+    if (!isResponse("session", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+      throw new Error("E2E_STEWARD_SESSION_RESPONSE_INVALID");
+    }
+    expect(reply.payload.outcome.data.authenticated).toBe(expected);
+  };
+  await context.addCookies(revoked);
+  await page.goto("/", { waitUntil: "commit" });
+  await expect(page.locator(".login-card h1")).toBeVisible();
+  await expectAuthenticated(false);
+
+  const fresh = await authenticateSteward(browser, baseURL);
+  await openAuthenticated(page, "Cases", fresh);
+  await expectAuthenticated(true);
+
+  await context.addCookies(revoked);
+  await page.goto("/", { waitUntil: "commit" });
+  await expect(page.locator(".login-card h1")).toBeVisible();
+  await expectAuthenticated(false);
+});
