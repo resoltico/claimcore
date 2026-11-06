@@ -1,8 +1,8 @@
 # Engineering commands
 
 Use focused checks while editing and `bash eng/verify.sh --fast` for a broader checkpoint. Run
-`bash eng/verify.sh` before marking an implementation PR ready for review; CI still qualifies its full
-platform matrix. See the [verification policy](../docs/contributing.md#verification) for scope and reuse.
+the applicable final stages once, choosing CI or local execution as their owner. See the
+[verification policy](../docs/contributing.md#verification) for scope and evidence reuse.
 Select [growth measurements](../docs/contributing.md#growth) for a concrete performance question or an
 explicit task or release requirement. Neither growth command is part of the ordinary gate. A full
 comparison isolates the reference commit and a stable candidate snapshot, including tracked working
@@ -25,7 +25,11 @@ The [source release procedure](../docs/contributing.md#source-releases) explains
 [release workflow](../.github/workflows/release.yml).
 CI success records executed checks, without granting release approval.
 
-The unit stage runs assembly-scoped ArchUnitNET controls in Debug. Contract generation also validates
+The unit stage builds only its Debug dependency closure and runs assembly-scoped ArchUnitNET controls.
+CI owns non-browser published acceptance once (`acceptance-native`) and each complete engine separately
+(`acceptance-browser`); `acceptance` runs both locally. Collection and TRX scope checks preserve their
+complete disjoint union without repeating the native walkthrough in every browser job.
+Contract generation also validates
 semantic catalog structure, typed term namespaces, declared producer arguments and renderer/core wording ownership. Browser production builds use only app/protocol sources;
 the frontend verification stage still checks the whole TypeScript solution and runs all browser unit tests.
 The [independent oracle](../tests/fixtures/oracle/generate_vectors.py) derives durable bytes and hashes from

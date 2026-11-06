@@ -6,7 +6,6 @@ import { openAuthenticated } from "./session-helpers";
 import { selectLanguage, settingsNavigation } from "./localization-support";
 
 const accessModule = /\/assets\/workspace~AuthorityPanel-[^/]+\.js$/u;
-const latvianModule = /\/assets\/language-lv-[^/]+\.js$/u;
 
 const reloadDocument = async (page: Page) => {
   const before = await page.evaluate(() => window.performance.timeOrigin);
@@ -31,7 +30,7 @@ test("initial Cases loads only its language and required modules; public bytes a
   await openAuthenticated(page);
   await page.waitForLoadState("networkidle");
   expect(assets.some((path) => path.includes("language-en-"))).toBe(true);
-  expect(assets.some((path) => /language-(?:lv|ar)-/u.test(path))).toBe(false);
+  expect(assets.filter((path) => /\/language-/u.test(path))).toHaveLength(1);
   expect(assets.some((path) => accessModule.test(path))).toBe(false);
   const asset = assets.find((path) => path.endsWith(".js"));
   if (asset === undefined) {
@@ -51,40 +50,46 @@ test("initial Cases loads only its language and required modules; public bytes a
   }
 });
 
-test("a missing language chunk leaves the working pair and direction intact and supports explicit recovery", async ({
-  page,
-}) => {
-  await openAuthenticated(page);
-  await page.route(latvianModule, (route) =>
-    route.fulfill({
-      status: 404,
-      contentType: "text/plain",
-      headers: { "Cache-Control": "no-store" },
-      body: "SYNTHETIC_MISSING_LANGUAGE_CHUNK",
-    }),
-  );
-  await (await settingsNavigation(page)).click();
-  const latvian = page.locator('.settings-panel input[name$="-language"][value="lv"]');
-  const english = page.locator('.settings-panel input[name$="-language"][value="en"]');
-  // Request the failing activation; check() would require a selected state that must roll back.
-  await latvian.click();
-  await expect(page.getByRole("alert")).toContainText("The language could not be loaded");
-  await expect(latvian).not.toBeChecked();
-  await expect(english).toBeChecked();
-  await expect(page.getByRole("button", { name: "Retry language", exact: true })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
-  await page.unroute(latvianModule);
-  // Browsers may retain a failed module fetch in the document's module map.
-  // An explicit browser reload clears that map and retains the last admitted pair.
-  const before = await page.evaluate(() => window.performance.timeOrigin);
-  await page.reload({ waitUntil: "domcontentloaded" });
-  await expect.poll(() => page.evaluate(() => window.performance.timeOrigin)).not.toBe(before);
-  await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await selectLanguage(page, "lv");
-  await expect(page.locator("html")).toHaveAttribute("lang", "lv");
-});
+for (const language of ["lv", "zh-Hant"] as const) {
+  test(`a missing ${language} chunk leaves the working pair and direction intact and supports explicit recovery`, async ({
+    page,
+  }) => {
+    const languageModule = new RegExp(`/assets/language-${language}-[^/]+\\.js$`, "u");
+    await openAuthenticated(page);
+    await page.route(languageModule, (route) =>
+      route.fulfill({
+        status: 404,
+        contentType: "text/plain",
+        headers: { "Cache-Control": "no-store" },
+        body: "SYNTHETIC_MISSING_LANGUAGE_CHUNK",
+      }),
+    );
+    await (await settingsNavigation(page)).click();
+    const selected = page.locator(`.settings-panel input[name$="-language"][value="${language}"]`);
+    const english = page.locator('.settings-panel input[name$="-language"][value="en"]');
+    // Request the failing activation; check() would require a selected state that must roll back.
+    await selected.click();
+    await expect(page.getByRole("alert")).toContainText("The language could not be loaded");
+    await expect(selected).not.toBeChecked();
+    await expect(english).toBeChecked();
+    await expect(page.getByRole("button", { name: "Retry language", exact: true })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.locator("html")).toHaveAttribute("dir", "ltr");
+    await page.getByRole("button", { name: "Retry language", exact: true }).click();
+    await expect(page.getByRole("alert")).toContainText("The language could not be loaded");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await page.unroute(languageModule);
+    // Browsers may retain a failed module fetch in the document's module map.
+    // An explicit browser reload clears that map and retains the last admitted pair.
+    const before = await page.evaluate(() => window.performance.timeOrigin);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await expect.poll(() => page.evaluate(() => window.performance.timeOrigin)).not.toBe(before);
+    await expect(page.getByRole("heading", { name: "Settings", exact: true })).toBeVisible();
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await selectLanguage(page, language);
+    await expect(page.locator("html")).toHaveAttribute("lang", language);
+  });
+}
 
 test("a missing view chunk leaves the workspace available and explicit reload installs the current view", async ({
   page,

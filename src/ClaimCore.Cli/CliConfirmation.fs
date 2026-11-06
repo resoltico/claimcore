@@ -20,6 +20,12 @@ module internal CliConfirmation =
             match language with
             | "lv" -> [ "j"; "jā" ]
             | "ar" -> [ "نعم" ]
+            | "ko" -> [ "예"; "네" ]
+            | "ja" -> [ "はい" ]
+            | "zh-Hans" -> [ "是"; "确认" ]
+            | "zh-Hant" -> [ "是"; "確認" ]
+            | "es" -> [ "s"; "sí" ]
+            | "de" -> [ "j"; "ja" ]
             | _ -> [ "y"; "yes" ]
 
         answer

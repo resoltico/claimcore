@@ -592,7 +592,7 @@ let tests =
                     "Every real reply has exactly one actual observation"
 
                 Expect.equal
-                    (lines |> Array.filter ((=) "1 results.") |> Array.length)
+                    (lines |> Array.filter ((=) "Results: 1.") |> Array.length)
                     2
                     "Each real page has its own count")
             testCase "only declared paged readers accept CSV and all options" (fun () ->

@@ -106,3 +106,25 @@ The gate bounds managed completed-report retention, not total caches, image or a
 runs, measure resource use and reclaim only owned temporary resources. Locked NuGet/npm restore and audits
 still run with caches; shared caches are not disposable task resources.
 
+
+## Open plain-sight search comparison
+
+The [completed same-host comparison](https://github.com/resoltico/claimcore/actions/runs/41993384662)
+compared `60b3c8ca` with `30de1b32` and passed 50 of 52 relative checks. At 100,000 cases, search p95
+rose from 2.598 ms to 3.700 ms (1.424×; maximum 1.30×), and throughput fell from 464.177 to 335.288
+requests/second (0.722×; minimum 0.85×). These two failures remain open. The passing ordinary CI for
+[PR #144](https://github.com/resoltico/claimcore/pull/144) does not supersede them.
+
+A bounded source/SQL investigation on 2026-11-06 confirmed that `Queries.exactReference` adds one
+`FindCaseByReference` statement for a syntactically valid search, including the absent `needle` query.
+An absent match returns before the additional per-target authority read. A found match still needs that
+read, independently of the current page/filter; removing it would change visibility or disclosure.
+
+A disposable PostgreSQL 18.6 probe used the current baseline's exact cases table and unique reference
+index with 100,000 synthetic erased rows. Two `EXPLAIN (ANALYZE, BUFFERS)` absent-reference selects
+used `cases_reference_key`, returned zero rows and reported 0.017/0.024 ms execution time. This checks
+the missing-index/scan hypothesis only: it uses a reduced projection, not the growth dataset, and omits
+network/driver, authorization and decoding costs. It cannot attribute the historical 1.102 ms p95
+increase or establish a new latency/throughput pass. No product search change or threshold change was
+made. A future acceptance decision needs deployment requirements; any claimed relative repair still
+needs a stable same-host comparison against the recorded workload and budgets.

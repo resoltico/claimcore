@@ -37,7 +37,7 @@ let tests =
                     rejects "Implementation terminology in GUI copy" (fun () ->
                         MessageRegisters.validateCopy source))
             testCase "wire hints are refused in every language" (fun () ->
-                for language in [ "en"; "lv"; "ar" ] do
+                for language in ClaimCore.Protocol.LocalizationPolicy.languages do
                     AuthoredMessages.all ()
                     |> update language "field.incidentDate.hint" "Use YYYY-MM-DD."
                     |> fun source ->

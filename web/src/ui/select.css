@@ -15,18 +15,30 @@
   overflow-wrap: anywhere;
 }
 .ui-select-popover {
+  --select-max-block-size: 24rem;
+  display: flex;
+  flex-direction: column;
   z-index: var(--layer-dialog);
   inline-size: var(--trigger-width, auto);
   max-inline-size: calc(100vw - var(--space-4));
-  max-block-size: min(24rem, var(--available-height, 24rem));
-  overflow: auto;
+  max-block-size: var(--select-max-block-size);
+  overflow: hidden;
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-sm);
   background: var(--bg-raised);
   color: var(--text-primary);
   box-shadow: var(--shadow-2);
 }
+.ui-select-collection {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+}
+/* The collection owns scrolling so react-aria keeps focused choices inside its viewport. */
 .ui-select-options {
+  max-block-size: var(--select-max-block-size);
+  min-block-size: 0;
+  overflow: auto;
   min-inline-size: 0;
   max-inline-size: 100%;
   padding: var(--space-1);

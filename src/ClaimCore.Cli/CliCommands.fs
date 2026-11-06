@@ -85,28 +85,41 @@ module CliCommands =
         | CliCommand.Recovery -> CliTopic.Help HelpTopic.Recovery
         | CliCommand.Configure -> CliTopic.Help HelpTopic.Configure
 
+    let private languageChoices = String.concat "|" LocalizationPolicy.languages
+
     /// Bootstrap syntax is host-owned; business operation syntax comes from OperationCatalog.
     let synopses =
         function
         | CliCommand.Describe ->
-            [ "describe [family verb] [--format text|json] [--language en|lv|ar]" ]
+            [
+                "describe [family verb] [--format text|json] [--language "
+                + languageChoices
+                + "]"
+            ]
         | CliCommand.Schema -> [ "schema name"; "schema endpoint request|response" ]
         | CliCommand.Version -> [ "version [--json]"; "--version [--json]" ]
-        | CliCommand.Help -> [ "help [topic | family [verb...]] [--language en|lv|ar]" ]
+        | CliCommand.Help ->
+            [ "help [topic | family [verb...]] [--language " + languageChoices + "]" ]
         | CliCommand.Call -> [ "call" ]
         | CliCommand.Session -> [ "session" ]
         | CliCommand.Shell -> [ "shell" ]
         | CliCommand.Recovery ->
             [
-                "recovery list [--format text|json] [--language en|lv|ar]"
-                "recovery check ATTEMPT_ID [--format text|json] [--language en|lv|ar]"
-                "recovery settle ATTEMPT_ID [--format text|json] [--language en|lv|ar]"
+                "recovery list [--format text|json] [--language " + languageChoices + "]"
+                "recovery check ATTEMPT_ID [--format text|json] [--language "
+                + languageChoices
+                + "]"
+                "recovery settle ATTEMPT_ID [--format text|json] [--language "
+                + languageChoices
+                + "]"
             ]
         | CliCommand.Configure ->
             [
                 "configure --show"
-                "configure --language en|lv|ar"
-                "configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH] [--language en|lv|ar]"
+                "configure --language " + languageChoices
+                "configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH] [--language "
+                + languageChoices
+                + "]"
             ]
 
     let private protocolSynopses =

@@ -105,6 +105,9 @@ module TypeScript =
             "export const presentationDisplayOptions = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.displayOptions)
             + " as const;"
+            "export const presentationLanguageAliases = "
+            + JsonSerializer.Serialize(LocalizationPolicy.languageAliases |> Map.toSeq |> dict)
+            + " as const;"
             "export const presentationPseudolanguage = "
             + quote ClaimCore.Protocol.LocalizationPolicy.pseudolanguage
             + ";"

@@ -52,6 +52,12 @@ let main arguments =
 
     let runtimeCore = MessageGeneration.catalogSource ()
     let runtimeChrome = MessageGeneration.chromeCatalogSource ()
+    let loaders = MessageGeneration.catalogLoaderSource ()
+
+    let loadersPath =
+        chromePath
+        |> Option.map (fun path ->
+            Path.Combine(Path.GetDirectoryName path |> nonNull, "catalog-loaders.ts"))
 
     let bootChrome =
         MessageGeneration.chromeBootstrapSource (CatalogValidation.validate ())
@@ -71,6 +77,7 @@ let main arguments =
                 chromeRuntimePath, runtimeChrome
                 chromeBootPath, bootChrome
                 coreRuntimePath, runtimeCore
+                loadersPath, loaders
             ]
             |> List.forall (fun (path, bytes) ->
                 path
@@ -101,6 +108,7 @@ let main arguments =
                 chromeRuntimePath, runtimeChrome
                 chromeBootPath, bootChrome
                 coreRuntimePath, runtimeCore
+                loadersPath, loaders
             ] do
             path |> Option.iter (fun path -> File.WriteAllBytes(path, bytes))
 

@@ -6,6 +6,8 @@ import {
   presentationPseudolanguage,
   presentationAccents,
   presentationModes,
+  presentationLanguageAliases,
+  presentationDisplayOptions,
 } from "@contracts/client";
 export const languages = presentationLanguages;
 export const displayLocales = presentationDisplayLocales;
@@ -57,13 +59,26 @@ const canonicalTag = (value: unknown): string | null => {
     return null;
   }
 };
+const matchingLanguage = (tag: string): Language | undefined => {
+  const aliases: Readonly<Record<string, Language>> = presentationLanguageAliases;
+  let candidate = tag;
+  while (candidate.length > 0) {
+    const range = candidate;
+    const exact = languages.find((language) => language === range);
+    if (exact !== undefined) {
+      return exact;
+    }
+    if (Object.hasOwn(aliases, candidate)) {
+      return aliases[candidate];
+    }
+    const separator = candidate.lastIndexOf("-");
+    candidate = separator < 0 ? "" : candidate.slice(0, separator);
+  }
+  return undefined;
+};
 export const resolveLanguage = (value: unknown): Language => {
   const tag = canonicalTag(value);
-  if (tag === presentationPseudolanguage) {
-    return tag;
-  }
-  const base = tag?.split("-")[0];
-  return languages.find((language) => language === base) ?? defaults.language;
+  return (tag === null ? undefined : matchingLanguage(tag)) ?? defaults.language;
 };
 export const resolveDisplayLocale = (value: unknown): DisplayLocale => {
   const tag = canonicalTag(value);
@@ -72,12 +87,14 @@ export const resolveDisplayLocale = (value: unknown): DisplayLocale => {
 export const negotiatePreferences = (requested: ReadonlyArray<string>): Preferences => {
   const tags = requested.map(canonicalTag).filter((tag) => tag !== null);
   const language = tags
-    .map((tag) => tag.split("-")[0])
-    .find((base) => languages.some((candidate) => candidate === base));
+    .map(matchingLanguage)
+    .find((candidate) => candidate !== undefined && candidate !== presentationPseudolanguage);
   const displayLocale = tags
     .map(
       (tag) =>
         displayLocales.find((locale) => locale === tag) ??
+        presentationDisplayOptions.find((option) => option.language === matchingLanguage(tag))
+          ?.value ??
         displayLocales.find((locale) => locale.split("-")[0] === tag.split("-")[0]),
     )
     .find((locale) => locale !== undefined);

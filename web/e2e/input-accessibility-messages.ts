@@ -1,8 +1,7 @@
-import type { catalogs } from "../src/generated/core-catalogs";
 import type { MessageKey } from "../src/presentation/types";
 
 // Handwritten accessible-label and guidance expectations, independent of the browser renderer.
-const samples: Record<keyof typeof catalogs, Readonly<Record<string, string>>> = {
+const samples: Record<"en" | "lv" | "ar", Readonly<Record<string, string>>> = {
   en: {
     "field.principal.issuer.label": "Identity issuer",
     "field.principal.issuer.hint": "The sign-in provider for this account.",
@@ -54,7 +53,7 @@ const samples: Record<keyof typeof catalogs, Readonly<Record<string, string>>> =
     "group.payment.hint": "اختر التفاصيل التي تريد تغييرها.",
   },
 };
-export const inputMessage = (language: keyof typeof catalogs, key: MessageKey): string => {
+export const inputMessage = (language: keyof typeof samples, key: MessageKey): string => {
   const sample = samples[language][key];
   if (sample === undefined) {
     throw new Error("An independent accessible-message sample is required.");

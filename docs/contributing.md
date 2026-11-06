@@ -205,6 +205,8 @@ Check mode refuses missing, stale or extra outputs and does not repair them. Rev
 producer. Custom output directories contain only contract artifacts. Core message metadata is locale-neutral;
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
+The shared language policy owns interface tags, aliases, direction and regional defaults. CLI-specific
+.NET date patterns belong to `TextReplyFormat`; browser formatting uses `Intl`.
 Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
 Shared UI components import the styles their markup requires. Styles imported only by a lazy view are
 not available on cold entry to another view. Check shared fact rendering through direct Recovery and
@@ -255,10 +257,19 @@ message map rather than displaying CLI syntax. Consequence and completion identi
 renderers must not infer them from effect names.
 
 The machine-readable [glossary](../src/ClaimCore.Protocol/Messages/Localization/glossary.json) owns the
-EN/LV/AR seed terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
+supported-language terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
 registers, banned GUI tokens and glossary alignment during generation and `--check`. Add a negative
-control when changing these checks. Latvian and Arabic linguistic changes need native-speaker review;
-record outstanding review in the PR until a reviewer has supplied it.
+control when changing these checks. New and changed translations need native-speaker review;
+record outstanding review in the PR until a reviewer has supplied it. Catalog parity checks establish
+complete keys and safe arguments, not linguistic approval.
+
+[LocalizationPolicy](../src/ClaimCore.Protocol/Messages/Localization/LocalizationPolicy.fs) owns supported
+language tags, Chinese script/region aliases, direction and default CLI display conventions. Korean uses
+South Korean conventions; Spanish and German use contemporary standard wording. Chinese has separate
+Simplified (`zh-Hans`) and Traditional (`zh-Hant`) catalogs. Explicit scripts take precedence over region;
+unqualified Chinese defaults to Simplified, while Taiwan, Hong Kong and Macao select Traditional.
+Browser date/number formats remain independent of text language. Add all three authored catalogs and
+glossary terms when adding a language; generation derives static catalogs and lazy-loading declarations.
 
 ## Theme and layout
 
@@ -360,6 +371,16 @@ tuples and counts during cheap frontend tests and spec collection, before creati
 Direct local commands do not enforce prior check completion; apply the same sequencing when invoking
 them. CI dependency checks prevent those workflow regressions, not every possible manual misuse.
 
+Routine layout qualification uses representative risk cases rather than a Cartesian product of language,
+theme, accent and viewport. Chromium visits all 29 scenes in 14 contexts, covering every text language,
+long German text, CJK, RTL, pseudolocalization, mobile/tablet/desktop and 200% zoom. Firefox and WebKit
+visit all scenes in desktop LTR and narrow RTL contexts. The separate theme/contrast, forced-colors,
+input, security and workflow tests still apply. Language-switch coverage exercises every language and
+display format without multiplying their independent choices. Review additional combinations when a
+specific defect or deliberate UI qualification requires them; expanding the language registry must not
+silently multiply the whole workflow suite. This replaces the original overhaul's exhaustive layout
+matrix for ordinary development; its historical results remain evidence for the source they tested.
+
 After [first checkout](#first-checkout), examples for focused iteration are:
 
 ```sh
@@ -371,6 +392,12 @@ npm --prefix web run test:unit:watch -- tests/unit/protocol/preparedRequest.test
 ```
 
 Build current native inputs before using `--no-build`; choose the affected test suite or frontend file.
+CLI description and topic unit tests cover the complete language/operation and language/topic products.
+Publication checks every operation/input and help topic once in English; the independent literal
+samples in `CliUsageTests.localizedDiscovery` check packaged core/CLI wording for every real language.
+All-language summaries, repair guidance and consent/usage tests retain their separate protections.
+This avoids starting a process for every independent language/command combination.
+
 Published-process tests also require current Release application outputs, even when their test assembly
 is Debug. Build the affected application projects in Release before a direct focused invocation;
 `eng/verify.sh` prepares these inputs for its stages. Publication runs before owned database startup,
@@ -386,9 +413,10 @@ neither behavior nor integration. Use named stages when the whole affected suite
 Complete published-browser qualification has a 40-minute Playwright execution safety cap for the
 expanded workflow and design-matrix inventory. `BrowserTests.fs` owns scope limits (complete 40,
 diagnostic 20, smoke 2 minutes), passes them explicitly to Playwright, and gives its native process
-one further minute for reporting and cleanup. The acceptance project has a 60-minute MTP bound for one
-explicit engine, with 70 minutes including CI setup. The default local invocation sequences all three
-engines once under a 150-minute project bound. These capacity bounds do not change per-test
+one further minute for reporting and cleanup. Complete non-browser acceptance has a 40-minute MTP
+bound; each complete browser scope has 45 minutes (50/55 minutes respectively including CI setup).
+The default local command runs native acceptance once, then sequences all three engines under a separate
+130-minute browser-project bound. These capacity bounds do not change per-test
 limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
 is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
 Secondary-principal specs acquire real OIDC sessions in their own `beforeAll` setup under the existing
@@ -465,24 +493,37 @@ execute in order and stop at failure:
 | integration | PostgreSQL then Web suites |
 | postgres / web | The corresponding isolated suite |
 | browsers | Install the locked Playwright engines and required system dependencies |
-| acceptance | Published service/CLI, deployment configuration and real browsers |
+| acceptance-native | Complete published service/CLI and deployment cases, once |
+| acceptance-browser | Complete browser scope for selected engines, with isolated fixture/bootstrap/readback |
+| acceptance | Native scope once, followed by complete browser scope |
 | growth | Separate synthetic contention and verifier qualification |
 | growth-compare REF | Three alternating same-host pairs against a committed reference, with relative budgets |
 
-Pure tests run in Debug without optimization for visible compiled negative controls; production is built
-in Release. Shared store-contract scenarios run against both the memory double and PostgreSQL. Native
+Pure tests restore and build their actual Debug dependency closure without optimization for visible
+compiled negative controls. They do not require a solution-wide Release build; each Release consumer
+builds its own current prerequisites. Shared store-contract scenarios run against both the memory
+double and PostgreSQL. Native
 projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
 skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
-PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
+PostgreSQL/growth split. CI runs complete non-browser published acceptance once and assigns each
+complete browser engine to a separate job. Both owners are required by Gate. Before fixtures,
+`eng/acceptance-scope.py` collects the full native test inventory and partitions it into disjoint native
+and browser subsets; afterward it checks the executed TRX names/outcomes against that scope, including
+missing, repeated and skipped cases. A complete subset does not claim the other subset ran.
+
+```sh
+bash eng/verify.sh acceptance-native
+CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=firefox bash eng/verify.sh browsers acceptance-browser
+```
 
 Acceptance uses [its own run settings](../eng/expecto.acceptance.runsettings) with one worker so
 container startup and teardown cannot overlap browser authentication in another fixture. These
 fixtures share host networking. Keep these settings when running focused acceptance cases; unit and
 store tests retain their separate concurrency settings.
 
-Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
-engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
-mode explicitly reports incomplete qualification. Native report directories under
+Default acceptance runs native cases once, then complete Chromium, Firefox and WebKit suites with zero
+retries. Ordinary acceptance stages refuse partial diagnostic/smoke scope. Direct smoke invocations
+remain explicitly incomplete. All three complete engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Native report directories under
 `artifacts/verification/` retain TRX and browser summaries. Automatic pruning retains the ten newest
 explicitly successful completed native runs; failed, active and historical runs without a known outcome
 are preserved. Review retained failures before manually removing their exact owned directories.
@@ -540,7 +581,7 @@ does not by itself call for a new growth run.
 | Need | Existing command | Claim |
 | --- | --- | --- |
 | One write profile | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | Current-source observation, not full qualification |
-| Investigate a relative regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
+| Investigate a write regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
 | Required full comparison | `bash eng/verify.sh growth-compare REF` | Three same-host pairs, six complete runs |
 
 A full comparison repeatedly seeds large populations and may take hours. Start it after relevant

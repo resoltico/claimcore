@@ -51,14 +51,14 @@ fi
 # Validate all arguments before restoring inputs or running a partial gate.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance | growth) ;;
+    lint | unit | frontend | workflows | integration | postgres | web | browsers | acceptance | acceptance-native | acceptance-browser | growth) ;;
     *) echo "unknown stage: ${stage}" >&2; exit 64 ;;
   esac
 done
 
 refuse_diagnostic_acceptance() {
-  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-}" == diagnostic || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_CASE+x}" ]]; then
-    echo "Diagnostic browser selection is not an acceptance gate. Use the focused native filter 'FullyQualifiedName~published browser diagnostic' with current built inputs and eng/expecto.acceptance.runsettings." >&2
+  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-complete}" != complete || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_CASE+x}" ]]; then
+    echo "Partial browser selection is not an acceptance gate. Use the focused native filter 'FullyQualifiedName~published browser diagnostic' with current built inputs and eng/expecto.acceptance.runsettings." >&2
     return 64
   fi
 }
@@ -101,7 +101,7 @@ for stage in "${stages[@]}"; do
   case "${stage}" in
     workflows) python3 eng/check-verification-sequencing.py ;;
     browsers) validate_browser_selection ;;
-    acceptance) refuse_diagnostic_acceptance; validate_browser_selection; validate_postgres_selection ;;
+    acceptance | acceptance-native | acceptance-browser) refuse_diagnostic_acceptance; validate_browser_selection; validate_postgres_selection ;;
     integration | postgres | growth) validate_postgres_selection ;;
     *) : ;;
   esac
@@ -111,7 +111,7 @@ done
 # validates its pinned images and owns its isolated resources.
 for stage in "${stages[@]}"; do
   case "${stage}" in
-    workflows | integration | postgres | web | acceptance | growth)
+    workflows | integration | postgres | web | acceptance | acceptance-native | acceptance-browser | growth)
       if ! command -v docker >/dev/null 2>&1 || ! docker info --format '{{.ServerVersion}}' >/dev/null; then
         echo "Selected stages require a running Docker daemon; start Docker and retry." >&2
         exit 69
@@ -132,9 +132,18 @@ tests() { # <project> [configuration] [timeout] [settings]
   local test_command=(dotnet test --project "$1" --configuration "${2:-Release}" --no-build --no-restore
     --zero-tests-policy=strict --timeout="${3:-30m}"
     --report-trx --report-trx-filename="${report_directory}/results.trx")
-  if [[ -n "${5:-}" ]]; then test_command+=(--filter "$5"); fi
-  CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
-    -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
+  local filter="${5:-}"
+  if [[ -n "${6:-}" ]]; then
+    filter="$(python3 eng/acceptance-scope.py collect "$1" "$6" "${report_directory}/scope.json")" || result=$?
+  fi
+  if [[ -n "${filter}" ]]; then test_command+=(--filter "${filter}"); fi
+  if [[ ${result} -eq 0 ]]; then
+    CLAIMCORE_TEST_REPORT_DIRECTORY="${report_directory}" "${test_command[@]}" \
+      -- --settings="${PWD}/${4:-eng/expecto.runsettings}" || result=$?
+  fi
+  if [[ ${result} -eq 0 && -n "${6:-}" ]]; then
+    python3 eng/acceptance-scope.py check "${report_directory}/scope.json" "${report_directory}/results.trx" || result=$?
+  fi
   if [[ ${result} -eq 0 ]]; then
     touch "${report_directory}/.claimcore-native-passed"
   else
@@ -191,9 +200,10 @@ unit() {
   bash eng/test-native-reports.sh
   python3 eng/test-growth-comparison.py
   python3 eng/test-growth-progress.py
-  build_native
+  python3 eng/acceptance-scope.py self-test
   local project
   for project in "${unit_projects[@]}"; do
+    restore_native "${project}"
     dotnet build "${project}" --configuration Debug --no-restore -p:Optimize=false
     tests "${project}" Debug 15m
   done
@@ -271,18 +281,31 @@ browsers() {
   fi
 }
 
-acceptance() {
-  build_native
+acceptance-native() {
+  build_native "${acceptance_projects[0]}"
+  build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
   build_frontend
-  # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  local project acceptance_timeout=60m
-  if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
-    # The default local invocation includes all three bounded engine runs and native cases.
-    acceptance_timeout=150m
-  fi
+  local project
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release "${acceptance_timeout}" eng/expecto.acceptance.runsettings
+    tests "${project}" Release 40m eng/expecto.acceptance.runsettings '' native
   done
+}
+
+acceptance-browser() {
+  build_native "${acceptance_projects[0]}"
+  build_native src/ClaimCore.Database/ClaimCore.Database.fsproj
+  build_frontend
+  # One native case sequences selected engines with their own fixture/bootstrap/readback.
+  local project browser_timeout=45m
+  if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then browser_timeout=130m; fi
+  for project in "${acceptance_projects[@]}"; do
+    tests "${project}" Release "${browser_timeout}" eng/expecto.acceptance.runsettings '' browser
+  done
+}
+
+acceptance() {
+  acceptance-native
+  acceptance-browser
 }
 
 for stage in "${stages[@]}"; do

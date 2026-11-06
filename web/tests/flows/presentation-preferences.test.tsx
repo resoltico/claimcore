@@ -21,7 +21,7 @@ import {
 afterEach(() => vi.restoreAllMocks());
 
 it("resolves explicit language and display-format preferences independently with deterministic fallbacks", () => {
-  for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "de-DE"]) {
+  for (const input of [undefined, null, 42, "", "invalid_tag", "x".repeat(65), "it-IT"]) {
     expect(resolveLanguage(input)).toBe("en");
   }
   expect(

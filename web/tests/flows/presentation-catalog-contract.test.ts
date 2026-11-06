@@ -1,3 +1,4 @@
+import { presentationLanguageOptions } from "@contracts/client";
 import { expect, it } from "vitest";
 import { definition } from "../support/service-ui.fixtures";
 import { renderCatalogKey } from "../../src/presentation/messages";
@@ -17,7 +18,7 @@ it("renders every admitted diagnostic identity in every real language", () => {
         rule.enum?.[0] ?? String(rule.minimum ?? 0),
       ]),
     );
-    for (const language of ["en", "lv", "ar"] as const) {
+    for (const { value: language } of presentationLanguageOptions) {
       const value = renderCatalogKey(
         { language, displayLocale: "en-GB", mode: "system" as const, accent: "green" as const },
         id,

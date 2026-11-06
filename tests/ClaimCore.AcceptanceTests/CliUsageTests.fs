@@ -204,7 +204,9 @@ let private qualify example () =
         let root = RepositoryRoot.find ()
         let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
 
-        for language in LocalizationPolicy.languages do
+        // These full error oracles are independently authored for EN/LV/AR.
+        // The separate publication smoke test covers every supported language.
+        for KeyValue(language, _) in samples do
             let result =
                 ProcessRunner.dotnet
                     8_000
@@ -294,7 +296,7 @@ let private qualifyHost (arguments, key, values, syntax) () =
         let root = RepositoryRoot.find ()
         let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
 
-        for language in LocalizationPolicy.languages do
+        for KeyValue(language, _) in samples do
             let schemaSelector = List.head arguments = "schema" && key = "unknownCommand"
             let environment = Dictionary<string, string>()
 
@@ -359,6 +361,70 @@ let hostTests =
         testCase name (qualifyHost (arguments, key, values, syntax)))
     |> testList "published CLI host usage errors"
     |> testSequenced
+
+[<Tests>]
+let localizedDiscovery =
+    testCase "published help and operation discovery render every supported language" (fun () ->
+        // Hand-authored literals keep these process checks independent of catalog lookups.
+        let languages =
+            [
+                "en", "Case facts and decisions", "Open a case", "Amount claimed"
+                "lv", "Lietu fakti un lēmumi", "Atvērt lietu", "Pieprasītā summa"
+                "ar", "وقائع الملفات والقرارات", "فتح ملف", "المبلغ المطالب به"
+                "ko", "건 정보 및 결정", "건 등록", "청구 금액"
+                "ja", "案件情報と決定", "案件を登録", "請求額"
+                "zh-Hans", "档案资料与决定", "新建理赔档案", "索赔金额"
+                "zh-Hant", "檔案資料與決定", "新建理賠檔案", "索賠金額"
+                "es",
+                "Datos del expediente y decisiones",
+                "Abrir un expediente",
+                "Importe reclamado"
+                "de", "Falldaten und Entscheidungen", "Fall eröffnen", "Geforderter Betrag"
+            ]
+
+        Expect.equal
+            (languages |> List.map (fun (language, _, _, _) -> language) |> Set.ofList)
+            (LocalizationPolicy.languages |> Set.ofList)
+            "Every real language has independent help and description samples"
+
+        let directory =
+            Directory.CreateTempSubdirectory("claimcore-cli-localized-discovery-")
+
+        try
+            let root = RepositoryRoot.find ()
+            let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
+
+            for language, family, act, amount in languages do
+                for arguments, literals in
+                    [
+                        [ "help"; "--language"; language ], [ family; "claimcore help" ]
+                        [ "describe"; "case"; "open"; "--format"; "text"; "--language"; language ],
+                        [ act; amount; "claimcore case open"; "--claimed-amount" ]
+                    ] do
+                    let result =
+                        ProcessRunner.dotnet
+                            8_000
+                            cli
+                            arguments
+                            (Dictionary<string, string>())
+                            None
+
+                    Expect.equal result.ExitCode 0 (language + " discovery succeeds offline")
+                    Expect.isEmpty result.StandardError (language + " discovery emits no errors")
+                    let text = Encoding.UTF8.GetString result.StandardOutput
+
+                    for literal in literals do
+                        Expect.stringContains
+                            text
+                            literal
+                            (language + " independent language sample")
+
+                    for key in [ "cli.family.case"; "act.OPEN.label"; "field.claimedAmount.label" ] do
+                        Expect.isFalse
+                            (text.Contains(key, StringComparison.Ordinal))
+                            (language + " discovery never exposes untranslated keys")
+        finally
+            directory.Delete true)
 
 [<Tests>]
 let closedFlagsBeforeInput =

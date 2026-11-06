@@ -44,13 +44,19 @@
 - CLI language follows explicit flag, environment, profile and POSIX locale precedence; configure --show reports the effective choice and source.
 - CLI --dry-run rejects malformed writes locally with exit 2 and ordered input issues; structured refusals retain the existing frame shape with NOT_SENT delivery.
 - CLI money keeps meaningful precision and adds ISO minor units for known currencies; canonical JSON and CSV amounts stay unchanged.
-- CLI human values use explicit en-GB, lv-LV and Latin-digit ar-AE cultures so money, dates and observation footers agree across supported platforms.
+- CLI human values use explicit regional cultures, including Latin-digit ar-AE, so money, dates and observation footers agree across supported platforms.
 - Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
 - First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
 - Contributors can diagnose selected browser specs without replaying full suites; diagnostic batches collect failures but never qualify acceptance. Reuse applicable CI evidence.
 - Published-client fixtures drain Web logs for their full lifetime and retain bounded tails; capture metadata identifies truncation and incomplete cleanup.
 - Secondary-principal browser specs obtain real OIDC sessions at file setup, preserving authentication expiry and login admission during long suites.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
+- CLI and web add draft Korean, Japanese, Spanish, German and Simplified/Traditional Chinese translations; Chinese selection preserves script and regional defaults.
+- Choose regional date/number formats independently in the web; CLI dates use Gregorian conventions for the selected language and retain exact money values.
+- Long pickers keep focused options in view instead of scrolling the page and closing before a choice can be made.
+- Contributor browser and published CLI checks cover each language and interface risk without multiplying independent language, command, theme and viewport choices.
+
+- Native units build their Debug closure; CI runs complete non-browser published acceptance once and qualifies each browser engine separately.
 
 ## [0.15.0] - 2026-11-03
 

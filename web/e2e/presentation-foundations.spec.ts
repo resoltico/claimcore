@@ -8,8 +8,12 @@ import {
   caseFields,
   operationId as entryOperationId,
 } from "../tests/support/service-foundation.fixtures";
-import { expect, test, type Page } from "@playwright/test";
-import { type RequestByEndpoint, type RequesterState } from "@contracts/client";
+import { expect, test, type Page, type Locator } from "@playwright/test";
+import {
+  presentationLanguageOptions,
+  type RequestByEndpoint,
+  type RequesterState,
+} from "@contracts/client";
 import {
   actorContextInput,
   caseSummaryInput,
@@ -17,7 +21,7 @@ import {
   caseViewInput,
 } from "../tests/support/inputs";
 import { contrastRatio } from "../src/theme/contrast";
-import { chooseOption } from "./workspace-navigation";
+import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
 
 const presentationBasis = {
@@ -26,6 +30,27 @@ const presentationBasis = {
   timeZone: "Etc/UTC",
 };
 
+const expectChoiceInView = async (option: Locator) => {
+  // Match the layout suite's one CSS pixel allowance for fractional scroll offsets.
+  await expect
+    .poll(() =>
+      option.evaluate((element) => {
+        const item = element.getBoundingClientRect();
+        const clips = [
+          element.closest('[role="listbox"]'),
+          element.closest(".ui-select-popover"),
+        ].map((parent) => parent!.getBoundingClientRect());
+        return Math.max(
+          0,
+          Math.max(0, ...clips.map((rect) => rect.top)) - item.top,
+          Math.max(0, ...clips.map((rect) => rect.left)) - item.left,
+          item.bottom - Math.min(innerHeight, ...clips.map((rect) => rect.bottom)),
+          item.right - Math.min(innerWidth, ...clips.map((rect) => rect.right)),
+        );
+      }),
+    )
+    .toBeLessThanOrEqual(1);
+};
 const signInSettings = async (page: Page) => {
   await page.goto("/", { waitUntil: "commit" });
   await page.locator(".login-footer button").click();
@@ -75,7 +100,16 @@ test("keeps presentation controls in Settings and applies persisted choices with
   });
   await trigger.click();
   const panel = page.locator(".settings-panel");
-  await expect(panel.locator('input[type="radio"]')).toHaveCount(8);
+  await expect(panel.locator('input[name$="-language"]')).toHaveCount(
+    presentationLanguageOptions.length,
+  );
+  expect(
+    await panel
+      .locator('input[name$="-language"]')
+      .evaluateAll((radios) => radios.map((radio) => radio.getAttribute("value"))),
+  ).toEqual(presentationLanguageOptions.map((option) => option.value));
+  await expect(panel.locator('input[name$="-mode"]')).toHaveCount(3);
+  await expect(panel.locator('input[name$="-accent"]')).toHaveCount(2);
   await expect(panel.locator('[aria-live="polite"]')).toBeEmpty();
   await chooseOption(
     page,
@@ -109,6 +143,7 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await page.keyboard.press("End");
   await expect(page.getByRole("listbox")).toBeVisible();
   await expect(page.getByRole("option").last()).toBeFocused();
+  await expectChoiceInView(page.getByRole("option").last());
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await expect(picker).toBeFocused();
@@ -121,6 +156,7 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await page.keyboard.press("Home");
   await expect(page.getByRole("listbox")).toBeVisible();
   await expect(page.getByRole("option").first()).toBeFocused();
+  await expectChoiceInView(page.getByRole("option").first());
   await page.keyboard.type("Deutsch");
   await expect(page.getByRole("option", { name: "Deutsch — Deutschland" })).toBeFocused();
   await page.keyboard.press("Enter");
@@ -188,7 +224,7 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
 });
 
 for (const language of ["en", "lv", "ar"] as const) {
-  test(`sign-in Settings dialog contains accent contents at 320px and 200% text in ${language}`, async ({
+  test(`sign-in Settings dialog keeps choices and accents visible at 320px and 200% text in ${language}`, async ({
     page,
   }) => {
     const clean = await observe(page);
@@ -198,6 +234,16 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "200%";
     });
+    const picker = page.locator('.settings-panel [role="combobox"][id$="-format"]');
+    await settlePopupTriggerScroll(picker);
+    await picker.focus();
+    await page.keyboard.press("End");
+    await expect(page.getByRole("option").last()).toBeFocused();
+    await expectChoiceInView(page.getByRole("option").last());
+    await page.keyboard.press("Home");
+    await expect(page.getByRole("option").first()).toBeFocused();
+    await expectChoiceInView(page.getByRole("option").first());
+    await page.keyboard.press("Escape");
     await page.locator(".settings-accents").scrollIntoViewIfNeeded();
     const bounds = await page.locator(".accent-card").evaluateAll((cards) =>
       cards.map((card) => {

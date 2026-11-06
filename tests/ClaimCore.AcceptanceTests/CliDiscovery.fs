@@ -79,7 +79,8 @@ let private configurationGuidance (fixture: PublishedFixture.Fixture) =
     let invoke args =
         ProcessRunner.dotnet 8000 fixture.Cli args (Dictionary<string, string>()) None
 
-    for language in LocalizationPolicy.languages do
+    // Every language's alias equality is covered by ConfigurationHelpTests.helpAlias.
+    for language in [ "en" ] do
         let alias = invoke [ "help"; id; "--language"; language ]
         let topic = invoke [ "help"; "configuration"; "--language"; language ]
         Expect.equal alias.ExitCode 0 "Actual diagnostic ID resolves offline"
@@ -223,7 +224,9 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let invoke args input =
         ProcessRunner.dotnet 8_000 fixture.Cli args environment input
 
-    for language in LocalizationPolicy.languages do
+    // CliInvocationTests checks the full topic/language product; publication checks all topics
+    // once, and the summaries/repair routes below exercise every language's packaged resources.
+    for language in [ "en" ] do
         for topic in CliTopic.all do
             let result = invoke [ "help"; CliTopic.token topic; "--language"; language ] None
 

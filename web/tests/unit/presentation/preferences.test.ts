@@ -4,6 +4,8 @@ import {
   loadPreferences,
   parsePreferences,
   resolveLanguage,
+  negotiatePreferences,
+  resolveDisplayLocale,
 } from "../../../src/presentation/preferences";
 
 it("refuses nontext language values even when Intl could interpret an array-like object", () => {
@@ -44,4 +46,40 @@ it("resets version-one settings and accepts only the current stored record", () 
   expect(parsePreferences('{"version":1,"language":"lv","displayLocale":"ar-EG"}')).toEqual(
     defaults,
   );
+});
+
+it.each([
+  ["ko-KR", "ko"],
+  ["ja-JP", "ja"],
+  ["es-MX", "es"],
+  ["de-CH", "de"],
+  ["zh", "zh-Hans"],
+  ["zh-CN", "zh-Hans"],
+  ["zh-SG", "zh-Hans"],
+  ["zh-TW", "zh-Hant"],
+  ["zh-HK", "zh-Hant"],
+  ["zh-MO", "zh-Hant"],
+  ["zh-Hant-CN", "zh-Hant"],
+  ["zh-Hans-TW", "zh-Hans"],
+])("resolves %s to %s without discarding script identity", (tag, language) => {
+  expect(resolveLanguage(tag)).toBe(language);
+  expect(negotiatePreferences(["it-IT", tag]).language).toBe(language);
+});
+it("keeps regional formatting separate from text and respects script in detected defaults", () => {
+  expect(negotiatePreferences(["zh-Hant-CN"])).toMatchObject({
+    language: "zh-Hant",
+    displayLocale: "zh-TW",
+  });
+  expect(negotiatePreferences(["zh-HK"])).toMatchObject({
+    language: "zh-Hant",
+    displayLocale: "zh-HK",
+  });
+  expect(negotiatePreferences(["es-MX"])).toMatchObject({ language: "es", displayLocale: "es-MX" });
+  expect(resolveDisplayLocale("de-CH")).toBe("de-CH");
+  expect(negotiatePreferences(["fr-CA"])).toMatchObject({ language: "en", displayLocale: "fr-FR" });
+  expect(
+    parsePreferences(
+      '{"version":3,"language":"ja","displayLocale":"de-CH","mode":"system","accent":"green"}',
+    ),
+  ).toMatchObject({ language: "ja", displayLocale: "de-CH" });
 });

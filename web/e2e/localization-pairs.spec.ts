@@ -11,9 +11,10 @@ import {
   openLabel,
 } from "./localization-support";
 import { displayLocales, languages, preferenceKey } from "../src/presentation/preferences";
-import { endpoints } from "@contracts/client";
+import { endpoints, presentationLanguageOptions } from "@contracts/client";
 import { isResponse } from "../src/protocol/client";
 import type { ServiceResponse } from "../src/protocol/types";
+import type { CatalogLanguage } from "../src/presentation/languageCatalog";
 import type { Language } from "../src/presentation/preferences";
 
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
@@ -51,11 +52,7 @@ const openPairPage = async (page: Page, source: Language, authenticated: boolean
   await expect(list.locator(':scope > p[role="alert"]')).toHaveCount(0);
 };
 
-const visibleLanguage = async (
-  page: Page,
-  language: "en" | "lv" | "ar",
-  authenticated: boolean,
-) => {
+const visibleLanguage = async (page: Page, language: CatalogLanguage, authenticated: boolean) => {
   await expectPreferences(page, { language });
   if (authenticated) {
     await expect(
@@ -79,34 +76,32 @@ const visibleLanguage = async (
   }
 };
 
+// Every language enters and leaves a live document, and each display format is exercised once.
+// Text and numeric-format preferences are independent, so crossing every pair adds no new policy path.
+const realLanguages = presentationLanguageOptions.map((option) => option.value);
+const transitions = displayLocales.map((displayLocale, index) => ({
+  source: languages[index % languages.length]!,
+  target: realLanguages[(index + 1) % realLanguages.length]!,
+  displayLocale,
+}));
 for (const authenticated of [false, true]) {
-  for (const displayLocale of displayLocales) {
-    for (const source of languages) {
-      for (const target of ["en", "lv", "ar"] as const) {
-        test(`updates visible ${authenticated ? "authenticated" : "anonymous"} text from ${source} to ${target} with ${displayLocale}`, async ({
-          page,
-        }) => {
-          await seedPresentation(page, source, displayLocale);
-          await openPairPage(page, source, authenticated);
-          const requests = trackForegroundRequests(page);
-          await selectLanguage(page, target);
-          await visibleLanguage(page, target, authenticated);
-          await expectPreferences(page, { displayLocale });
-          expect(
-            await page.evaluate(
-              (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
-              preferenceKey,
-            ),
-          ).toEqual({
-            version: 3,
-            language: target,
-            displayLocale,
-            mode: "system",
-            accent: "green" as const,
-          });
-          expect(requests).toHaveLength(0);
-        });
-      }
-    }
+  for (const { source, target, displayLocale } of transitions) {
+    test(`updates visible ${authenticated ? "authenticated" : "anonymous"} text from ${source} to ${target} with ${displayLocale}`, async ({
+      page,
+    }) => {
+      await seedPresentation(page, source, displayLocale);
+      await openPairPage(page, source, authenticated);
+      const requests = trackForegroundRequests(page);
+      await selectLanguage(page, target);
+      await visibleLanguage(page, target, authenticated);
+      await expectPreferences(page, { displayLocale });
+      expect(
+        await page.evaluate(
+          (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
+          preferenceKey,
+        ),
+      ).toEqual({ version: 3, language: target, displayLocale, mode: "system", accent: "green" });
+      expect(requests).toHaveLength(0);
+    });
   }
 }
