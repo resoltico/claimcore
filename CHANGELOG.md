@@ -63,7 +63,7 @@
 - Case lists retain summary integrity failures and reuse validated visible exact matches; outside-page lookup and disclosure checks remain.
 - Reuse immutable CLI cultures and bounded browser locale resources while preserving Gregorian dates, exact amounts and captured input formats.
 - Pointer presses begun on disabled buttons, including those disabled by a fieldset, cannot trigger a delayed submission after reenabling.
-- Source tooling uses npm 12.2.2, Playwright 1.65, jsdom 31 and updated lint/build packages; restore locked dependencies and reinstall Playwright browsers.
+- Source tooling uses npm 12.2.2, jsdom 31 and updated lint/build packages; restore locked dependencies and install the pinned Playwright browsers.
 - Evaluation deployments use Keycloak 26.8.2 security fixes and refreshed pinned base images; pull/rebuild the declared Compose inputs.
 
 ## [0.15.0] - 2026-11-03

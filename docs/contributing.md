@@ -612,6 +612,8 @@ owns the exact populations and keys.
 
 [Directory.Packages.props](../Directory.Packages.props) pins direct .NET packages and selected production
 transitives that track the runtime security train; reviewed lockfiles record the complete resolution. Node/npm and [package-lock.json](../web/package-lock.json) own the frontend graph.
+The Playwright core override derives its version from `@playwright/test`, keeping the runner and
+Axe's peer API types aligned.
 Audit all dependencies, retain image digests and use locked restore/npm ci. Dependency changes must update
 consumers, lockfiles, licensing evidence and qualification together.
 
