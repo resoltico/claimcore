@@ -1,19 +1,19 @@
-import { actorContextInput } from "../support/inputs";
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
+import { chooseOption, optionValues } from "../support/choice-entry";
+import { workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
-import {
-  getButton,
-  fireEvent,
-  render,
-  screen,
-  waitFor,
-} from "../support/presentation-test-support";
-import { AuthorityPanel } from "../../src/views/AuthorityPanel";
+import { getButton, render, screen, waitFor } from "../support/presentation-test-support";
+import { useState } from "react";
+import type { OperationReceipt, RequestByEndpoint } from "@contracts/client";
+import { useOperation } from "../../src/hooks/operation/useOperation";
+import { useCredential } from "../../src/session/SessionContext";
+import { OperationPanel, OperationDiscard } from "../../src/views/operation/OperationPanel";
+import { prepareRequest } from "../../src/protocol/preparedRequest";
+import { authorityReview, authorityAcceptance } from "../support/authority-operation.fixtures";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { isRequest } from "../../src/protocol/client";
-import type { RequestByEndpoint } from "@contracts/client";
 import { installationOffers } from "../support/installation-advice.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
 import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
 afterEach(() => vi.unstubAllGlobals());
 type AuthorityInput = Extract<
@@ -26,56 +26,62 @@ const authorityActs = productMetadata.catalog.entries
   .filter((entry) => entry.endpoint === "operation.execute" && entry.subject === "AUTHORITY")
   .map((entry) => entry as typeof entry & { kind: AuthorityInput["act"]["kind"] });
 const authorityReceipt = (request: AuthorityInput) => {
-  const source = wireReply("operation.execute", "AUTHORITY");
-  if (source.outcome.kind !== "ACCEPTED" || source.outcome.data.subject.kind !== "AUTHORITY") {
-    throw new Error("Missing frozen authority alternative.");
+  const value = authorityAcceptance(prepareRequest("operation.execute", request));
+  if (value.kind !== "outcome" || value.value.outcome.kind !== "ACCEPTED") {
+    throw new Error("Authority acceptance fixture required");
   }
-  return {
-    ...source.outcome.data,
-    operationId: request.operationId,
-    subject: {
-      ...source.outcome.data.subject,
-      act: request.act.kind,
-    },
-  };
+  return value.value.outcome.data;
+};
+const AuthorityBinding = () => {
+  const credential = useCredential();
+  const [recorded, setRecorded] = useState<OperationReceipt | null>(null);
+  const model = useOperation({
+    subject: "AUTHORITY",
+    kind: "REGISTER",
+    current: null,
+    credential,
+    onLockChange: () => undefined,
+    onRecorded: setRecorded,
+  });
+  return (
+    <>
+      <OperationDiscard model={model} />
+      <OperationPanel
+        model={model}
+        current={null}
+        offered={authorityActs.map((entry) => entry.kind)}
+      />
+      {recorded === null ? null : <p role="status">{recorded.operationId}</p>}
+    </>
+  );
 };
 const contextReply = (): Response =>
   response("context", {
     outcome: {
       kind: "SUCCEEDED",
-      data: actorContextInput({
-        ...runtime,
-        capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-        views: ["AUTHORITY", "OPERATIONS"],
-        offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-      }),
+      data: {
+        requester: actorContextInput({
+          ...runtime,
+          capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+          views: ["AUTHORITY", "OPERATIONS"],
+          offers: installationOffers([
+            "REGISTER",
+            "ADMIT",
+            "GRANT",
+            "REVOKE",
+            "ENABLE",
+            "DISABLE",
+            "SET_PROFILE",
+            "ERASE_PROFILE",
+          ]),
+        }),
+      },
     },
   });
 const authorityPreview = (parsed: AuthorityInput) =>
   response("operation.preview", {
     operationId: parsed.operationId,
-    outcome: {
-      kind: "REVIEWED",
-      data: {
-        review: {
-          subject: {
-            kind: "AUTHORITY",
-            target: null,
-            accessScope: { kind: "INSTALLATION" },
-            before: {
-              enabled: false,
-              access: [],
-              grants: [],
-            },
-            after: {
-              enabled: true,
-              access: [],
-              grants: [],
-            },
-          },
-        },
-      },
-    },
+    outcome: { kind: "REVIEWED", data: { review: authorityReview(parsed) } },
   });
 const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
   vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
@@ -87,10 +93,7 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
         response("authority.list", {
           outcome: {
             kind: "SUCCEEDED",
-            data: {
-              items: [],
-              nextCursor: null,
-            },
+            data: { basis: workBasis, items: [], nextCursor: null },
           },
         }),
       );
@@ -125,28 +128,22 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
     );
   });
 const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
+  const user = userEvent.setup();
+  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  await user.click(control);
   await waitFor(() => {
-    expect(
-      screen
-        .getByLabelText("Authority action", {
-          exact: true,
-        })
-        .querySelectorAll("option"),
-    ).toHaveLength(5);
+    expect(optionValues(control)).toHaveLength(8);
   });
-  fireEvent.change(
-    screen.getByLabelText("Authority action", {
-      exact: true,
-    }),
-    {
-      target: {
-        value: kind,
-      },
-    },
-  );
+  await chooseOption(user, control, kind);
   input("target.issuer", "https://issuer.example/");
   input("target.subject", "synthetic-catalogue-human");
   input("target.kind", "HUMAN");
+  if (kind === "REGISTER" || kind === "SET_PROFILE" || kind === "ADMIT") {
+    input("act.profile.displayName", "Synthetic profile name");
+  }
+  if (kind === "ADMIT") {
+    await user.click(screen.getByRole("radio", { name: "Case reader" }));
+  }
   if (kind === "GRANT" || kind === "REVOKE") {
     input("act.role", "CASE_READER");
   }
@@ -154,23 +151,23 @@ const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
 it.each(authorityActs)(
   "renders, reviews and submits real authority act $kind through production transport",
   async (act) => {
-    expect(authorityActs).toHaveLength(5);
+    expect(authorityActs).toHaveLength(8);
     const calls: Dispatch<AuthorityInput>[] = [];
     vi.stubGlobal("fetch", authorityTransport(calls));
-    render(<AuthorityPanel onLockChange={vi.fn()} />);
+    render(<AuthorityBinding />);
     await authorAuthority(act.kind);
     const user = userEvent.setup();
     await user.click(getButton("Review changes"));
-    await screen.findByRole("heading", {
-      name: "Review changes",
-    });
+    await waitForReviewConfirm();
     const before = screen.getByRole("dialog").textContent;
-    await user.click(
-      screen.getByRole("checkbox", {
-        name: "I confirm this exact request.",
-      }),
-    );
-    await user.click(getButton("Record changes"));
+    await waitForReviewConfirm();
+    if (act.kind === "ERASE_PROFILE") {
+      await user.type(
+        screen.getByRole("textbox", { name: "Exact operation ID" }),
+        calls[0]!.input.operationId,
+      );
+    }
+    await user.click(reviewConfirm());
     await waitFor(() => {
       expect(calls).toHaveLength(2);
       expect(calls[1]!.bytes).toBe(calls[0]!.bytes);
@@ -204,14 +201,14 @@ it.each(authorityActs)(
 it("requires an explicit role and disables service-incompatible roles from catalog admission", async () => {
   const calls: Dispatch<AuthorityInput>[] = [];
   vi.stubGlobal("fetch", authorityTransport(calls));
-  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  render(<AuthorityBinding />);
   const user = userEvent.setup();
+  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  await user.click(control);
   await waitFor(() => {
-    expect(
-      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-    ).toHaveLength(5);
+    expect(optionValues(control)).toHaveLength(8);
   });
-  await user.selectOptions(screen.getByLabelText("Authority action", { exact: true }), "GRANT");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "GRANT");
   const group = screen.getByRole("radiogroup", { name: "Role" });
   expect(group.querySelector("input:checked")).toBeNull();
   const owner = screen.getByRole("radio", { name: "Owner" });
@@ -228,7 +225,7 @@ it("requires an explicit role and disables service-incompatible roles from catal
 it("disallows new case-scoped Owner grants and preserves revocation choices", async () => {
   const calls: Dispatch<AuthorityInput>[] = [];
   vi.stubGlobal("fetch", authorityTransport(calls));
-  render(<AuthorityPanel onLockChange={vi.fn()} />);
+  render(<AuthorityBinding />);
   await authorAuthority("GRANT");
   const user = userEvent.setup();
   await user.click(screen.getByRole("radio", { name: "Owner" }));
@@ -240,7 +237,7 @@ it("disallows new case-scoped Owner grants and preserves revocation choices", as
     /No capability applies at this scope/u,
   );
   expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
-  await user.selectOptions(screen.getByLabelText("Authority action", { exact: true }), "REVOKE");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "REVOKE");
   await user.click(screen.getByRole("button", { name: "Discard and change action" }));
   expect(screen.getByRole("radio", { name: "Owner" })).not.toBeDisabled();
   expect(calls).toHaveLength(0);

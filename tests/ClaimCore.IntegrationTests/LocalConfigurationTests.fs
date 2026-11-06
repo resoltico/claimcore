@@ -47,6 +47,7 @@ let private configure directory =
 
     config.ArgumentList.Add(Path.Combine(root, "deployment/configure-local.sh"))
     config.ArgumentList.Add(configuration directory)
+    config.ArgumentList.Add("Authored local owner")
     config.ArgumentList.Add("Etc/UTC")
     config.ArgumentList.Add("7443")
     config.ArgumentList.Add("7444")
@@ -62,7 +63,12 @@ let private admittedOwner directory =
         |> Result.defaultWith (fun _ -> failtest "Generated owner file must be admitted as private")
 
     try
-        let operationId, principal = Inputs.decodeOwner bytes
+        let operationId, principal, profile = Inputs.decodeOwner bytes
+
+        Expect.isTrue
+            (not (String.IsNullOrWhiteSpace profile.DisplayName))
+            "Setup authors an explicit owner profile"
+
         Expect.isTrue (operationId <> Guid.Empty) "Generated operation identity is nonzero"
         Expect.isTrue (PrincipalKey.isHuman principal) "Generated owner is a human principal"
         let identity = PrincipalKey.toInput principal

@@ -19,7 +19,9 @@ export const OperationErrors = ({ model }: { model: OperationModel }) => {
   }
   const entry = operationEntry(model.entry);
   const errors = Object.entries(model.fieldErrors).flatMap(([path, notice]) => {
-    const input = entry.inputs.find((candidate) => candidate.path.join(".") === path);
+    const input = [...entry.inputs, ...entry.collections].find(
+      (candidate) => candidate.path.join(".") === path,
+    );
     const label = input === undefined ? path : renderCatalogKey(p, input.labelId);
     const notices =
       notice.kind === "issues"

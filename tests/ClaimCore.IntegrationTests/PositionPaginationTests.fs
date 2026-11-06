@@ -250,7 +250,15 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
         Expect.equal proxy.ReadCalls 2 "History performs no separate actor read"
 
         let! authority =
-            (Service.actors actor ({ AfterCursor = None; Limit = 1 }) (CancellationToken.None))
+            (Service.actors
+                actor
+                ({
+                    Role = None
+                    Text = None
+                    AfterCursor = None
+                    Limit = 1
+                })
+                (CancellationToken.None))
 
         match authority with
         | Outcome.Succeeded _ -> ()

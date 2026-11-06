@@ -42,7 +42,12 @@ module CliCommand =
     let vocabulary = Vocabulary.ofUnion<CliCommand> "command" TokenCasing.CamelCase None
     let all = Vocabulary.all vocabulary
     let token = Vocabulary.token vocabulary
-    let parse = Vocabulary.tryParse vocabulary
+
+    let parse value =
+        if value = "--version" then
+            Some CliCommand.Version
+        else
+            Vocabulary.tryParse vocabulary value
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module HelpTopic =
@@ -86,8 +91,8 @@ module CliCommands =
         | CliCommand.Describe ->
             [ "describe [family verb] [--format text|json] [--language en|lv|ar]" ]
         | CliCommand.Schema -> [ "schema name"; "schema endpoint request|response" ]
-        | CliCommand.Version -> [ "version [--json]" ]
-        | CliCommand.Help -> [ "help [topic] [--language en|lv|ar]" ]
+        | CliCommand.Version -> [ "version [--json]"; "--version [--json]" ]
+        | CliCommand.Help -> [ "help [topic | family [verb...]] [--language en|lv|ar]" ]
         | CliCommand.Call -> [ "call" ]
         | CliCommand.Session -> [ "session" ]
         | CliCommand.Shell -> [ "shell" ]
@@ -100,7 +105,8 @@ module CliCommands =
         | CliCommand.Configure ->
             [
                 "configure --show"
-                "configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH]"
+                "configure --language en|lv|ar"
+                "configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH] [--language en|lv|ar]"
             ]
 
     let private protocolSynopses =

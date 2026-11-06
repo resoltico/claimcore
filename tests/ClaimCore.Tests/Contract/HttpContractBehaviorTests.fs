@@ -22,7 +22,7 @@ let private validator (document: JsonNode) (selected: JsonNode) =
     let root = JsonObject()
     root["components"] <- (document |> child "components").DeepClone()
     root["allOf"] <- JsonArray(selected)
-    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+    Utf8SchemaValidation.build (root.ToJsonString())
 
 let private evaluates (schema: JsonSchema) bytes =
     use value = JsonDocument.Parse(bytes: byte array)
@@ -172,7 +172,11 @@ let private responseLabels () =
 
 let private reachable () =
     let definitions =
-        Map.ofList [ "Used", Schema.String(None, None, None, None); "Unused", Schema.Boolean ]
+        Map.ofList
+            [
+                "Used", Schema.String(None, None, None, None, None)
+                "Unused", Schema.Boolean
+            ]
 
     Expect.equal
         (SchemaJson.reachable definitions [ Schema.Ref "Used" ] |> Map.keys |> Seq.toList)
@@ -206,7 +210,7 @@ let private diagnosticRevisions () =
     let schema = validator document selected
 
     let value =
-        """{"code":"REVISION_CONFLICT","action":"READ_CURRENT","actualRevision":0}"""
+        """{"code":"REVISION_CONFLICT","action":"REVIEW_LATEST","actualRevision":0,"changes":{"kind":"WITHHELD"}}"""
 
     for revision, expected in [ "0", true; "1", true; "-1", false ] do
         let changed =

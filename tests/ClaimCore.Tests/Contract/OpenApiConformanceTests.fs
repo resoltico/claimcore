@@ -58,7 +58,7 @@ let private schema (document: JsonNode) endpoint response =
     root["$schema"] <- JsonValue.Create "https://json-schema.org/draft/2020-12/schema"
     root["components"] <- (document |> child "components").DeepClone()
     root["allOf"] <- JsonArray(selected.DeepClone())
-    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+    Utf8SchemaValidation.build (root.ToJsonString())
 
 let private fixture name =
     File.ReadAllText(Path.Combine(RepositoryRoot.find (), "tests/fixtures", name))
@@ -91,7 +91,7 @@ let private corpus response filename () =
             Expect.equal
                 (evaluate selected value)
                 expected
-                "Independent validator judges the frozen example."
+                ("Independent validator judges the frozen example: " + example.GetRawText())
 
             let altered = JsonNode.Parse(value.GetRawText()) |> nonNull
             altered["unexpectedMember"] <- JsonValue.Create true

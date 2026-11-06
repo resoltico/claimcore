@@ -20,23 +20,31 @@ const current: CurrentCase = caseViewInput({
   state: { kind: "ACTIVE", fields },
   advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), history: [] },
 });
-it("renders grouped facts with missing decision and payment and retains help and exact copying", async () => {
+it("renders grouped facts with label help, paired money and no duplicate record fields", async () => {
   const user = userEvent.setup();
-  const view = render(
-    <CaseFacts values={fields} fields={definition.catalog.fields} revision={2} />,
-  );
+  const view = render(<CaseFacts values={fields} fields={definition.catalog.fields} />);
   expect(screen.getAllByText("Not recorded")).toHaveLength(3);
   expect(view.container.querySelectorAll(".case-fact-card")).toHaveLength(3);
-  await user.click(screen.getAllByRole("button", { name: "Explain fields" })[1]!);
-  expect(screen.getAllByRole("button", { name: /Copy/u }).length).toBeGreaterThan(1);
+  expect(view.container.querySelector('[data-field-name="caseReference"]')).toBeNull();
+  expect(view.container.querySelector('[data-field-name="status"]')).toBeNull();
+  const money = view.container.querySelector('[data-field-name="claimedAmount"]')!;
+  expect(money).toHaveTextContent("EUR");
+  expect(view.container.querySelector('[data-field-name="claimedCurrency"]')).toBeNull();
+  expect(view.container.querySelector('[data-field-name="incidentCountry"]')).toHaveTextContent(
+    "Latvia LV",
+  );
+  const hint = view.container.querySelector('[data-field-name="claimantName"] details')!;
+  await user.click(hint.querySelector("summary")!);
+  expect(hint).toHaveAttribute("open");
+  expect(screen.queryByRole("button", { name: "Explain fields" })).toBeNull();
   expect(view.container.querySelector('[data-field-name="claimantName"]')).toHaveTextContent(
     fields.registration.claimantName,
   );
 });
 it("marks exactly one current progress step", () => {
-  const view = render(<CaseProgress current={current} definition={definition.catalog} />);
+  const view = render(<CaseProgress value={current.stages} />);
   expect(view.container.querySelectorAll('[aria-current="step"]')).toHaveLength(1);
-  expect(view.container.querySelector('[aria-current="step"]')).toHaveTextContent("Undecided");
+  expect(view.container.querySelector('[aria-current="step"]')).toHaveTextContent("Opened");
 });
 it("separates core-classified stewardship and does not invent a primary for incompatible offers", async () => {
   const user = userEvent.setup();
@@ -44,25 +52,12 @@ it("separates core-classified stewardship and does not invent a primary for inco
   const view = render(<CaseActions current={current} onAct={onAct} />);
   expect(view.container.querySelector(".case-stewardship")).toHaveTextContent("Void");
   expect(view.container.querySelector("button.primary")).toBeNull();
-  await user.click(screen.getByRole("button", { name: /Erase case payload/u }));
+  await user.click(view.container.querySelector(".case-actions > summary")!);
+  await user.click(screen.getByRole("button", { name: /Erase case/u }));
   expect(onAct).toHaveBeenCalledWith("ERASE");
   expect(screen.queryByRole("button", { name: /Reinstate/u })).toBeNull();
 });
 
-it("keeps compact grouped facts visible with one explanation toggle per group", async () => {
-  compact.value = true;
-  const user = userEvent.setup();
-  const view = render(
-    <CaseFacts values={fields} fields={definition.catalog.fields} revision={2} />,
-  );
-  const cards = view.container.querySelectorAll("section.case-fact-card");
-  expect(cards).toHaveLength(3);
-  const toggle = cards[0]!.querySelector("button")!;
-  expect(toggle).toHaveAttribute("aria-pressed", "false");
-  await user.click(toggle);
-  expect(toggle).toHaveAttribute("aria-pressed", "true");
-  expect(view.container.querySelectorAll(".case-fact-card button.explain-fields")).toHaveLength(3);
-});
 it("keeps every compact advised action reachable even without a primary", async () => {
   compact.value = true;
   const user = userEvent.setup();
@@ -70,6 +65,6 @@ it("keeps every compact advised action reachable even without a primary", async 
   const view = render(<CaseActions current={current} onAct={onAct} />);
   expect(view.container.querySelector(".case-primary-action")?.textContent).toBe("");
   await user.click(view.container.querySelector(".case-more-actions > summary")!);
-  await user.click(screen.getByRole("button", { name: /Erase case payload/u }));
+  await user.click(screen.getByRole("button", { name: /Erase case/u }));
   expect(onAct).toHaveBeenCalledWith("ERASE");
 });

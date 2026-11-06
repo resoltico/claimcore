@@ -1,16 +1,31 @@
 import { authorityPrimaryAction } from "../../operation/authorityActionPriority";
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
-import type { ActorSummary, PrincipalInput } from "@contracts/client";
+import type { ActorReviewItem, PrincipalInput } from "@contracts/client";
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
-import { useRoute } from "../../routing/useRoute";
+import { useContentRoute } from "../SettingsDetourContext";
 import type { OperationModel } from "./useOperation";
-type Snapshot = { key: string; actor: ActorSummary; offered: ReadonlyArray<string> };
-type Intent = { epoch: string; actor: ActorSummary; kind: string };
+type Snapshot = { key: string; actor: ActorReviewItem; offered: ReadonlyArray<string> };
+type Intent = { epoch: string; actor: ActorReviewItem; kind: string; values: FormValues };
 const targetValues = (principal: PrincipalInput): FormValues => ({
   "target.kind": principal.kind,
   "target.issuer": principal.issuer,
   "target.subject": principal.subject,
+});
+const actorValues = (
+  actor: ActorReviewItem,
+  kind: string,
+  values: FormValues = {},
+): FormValues => ({
+  ...values,
+  ...targetValues(actor.principal),
+  ...(kind === "SET_PROFILE"
+    ? {
+        "act.profile.displayName":
+          actor.actor.displayName.kind === "NAMED" ? actor.actor.displayName.value : "",
+        "act.profile.contact": actor.contact ?? "",
+      }
+    : {}),
 });
 const matches = (values: FormValues, principal: PrincipalInput) =>
   values["target.kind"] === principal.kind &&
@@ -21,16 +36,12 @@ const retained = (model: OperationModel) =>
 const sameSnapshot = (left: Snapshot | null, right: Snapshot) =>
   left !== null &&
   left.key === right.key &&
-  left.actor.actorId === right.actor.actorId &&
-  left.actor.enabled === right.actor.enabled &&
-  left.actor.principal.kind === right.actor.principal.kind &&
-  left.actor.principal.issuer === right.actor.principal.issuer &&
-  left.actor.principal.subject === right.actor.principal.subject &&
+  left.actor === right.actor &&
   left.offered.join(",") === right.offered.join(",");
 const useActorDisclosure = (revision: number, available: boolean) => {
   const credential = useCredential();
-  const route = useRoute();
-  const actorId = route.screen === "authority" && route.actorId !== "" ? route.actorId : null;
+  const route = useContentRoute();
+  const actorId = route.screen === "people" && route.actorId !== "" ? route.actorId : null;
   const epoch = `${credential}:${revision}`;
   const key = `${epoch}:${actorId ?? ""}`;
   const current = useRef({ key, available });
@@ -43,11 +54,19 @@ const useActorDisclosure = (revision: number, available: boolean) => {
   }
   const source = available && snapshot?.key === key ? snapshot : null;
   const observe = useCallback(
-    (actor: ActorSummary, offered: ReadonlyArray<string>) => {
-      if (current.current.key !== key || !current.current.available || actor.actorId !== actorId) {
+    (actor: ActorReviewItem, offered: ReadonlyArray<string>) => {
+      if (
+        current.current.key !== key ||
+        !current.current.available ||
+        actor.actor.actorId !== actorId
+      ) {
         return;
       }
-      const next = { key, actor, offered: offered.filter((kind) => kind !== "REGISTER") };
+      const next = {
+        key,
+        actor,
+        offered: offered.filter((kind) => kind !== "REGISTER" && kind !== "ADMIT"),
+      };
       setSnapshot((prior) => (sameSnapshot(prior, next) ? prior : next));
     },
     [key, actorId],
@@ -70,53 +89,61 @@ const useActorDefault = (model: OperationModel, source: Snapshot | null, fixed: 
     if (source === null) {
       if (model.phase !== "ACCEPTED" && seeded.current === id) {
         seeded.current = null;
-        model.discard(false, "REGISTER");
+        model.discard(false, "ADMIT");
       }
       return;
     }
     const kind = authorityPrimaryAction(source.offered);
     if (kind !== undefined) {
-      model.discard(false, kind, targetValues(source.actor.principal));
+      model.discard(false, kind, actorValues(source.actor, kind));
     }
   }, [source, fixed, model]);
 };
-const resetPrincipal = (
-  intent: Intent | null,
-  kind: string,
-  epoch: string,
-  available: boolean,
-  fallback: PrincipalInput | undefined,
-) =>
-  intent?.kind === kind && intent.epoch === epoch && available ? intent.actor.principal : fallback;
+const currentIntent = (intent: Intent | null, kind: string, epoch: string, available: boolean) =>
+  intent?.kind === kind && intent.epoch === epoch && available ? intent : null;
+const resetValues = (intent: Intent | null, source: Snapshot | null, kind: string): FormValues => {
+  if (intent !== null) {
+    return actorValues(intent.actor, kind, intent.values);
+  }
+  return source === null ? {} : actorValues(source.actor, kind);
+};
 const useActorConsent = (
   model: OperationModel,
   source: Snapshot | null,
   epoch: string,
   available: boolean,
   fixed: boolean,
+  admissionPrincipal: PrincipalInput | null,
 ) => {
   const [intent, setIntent] = useState<Intent | null>(null);
-  const begin = (kind: string) => {
+  const begin = (kind: string, values: FormValues = {}) => {
     if (source === null || !source.offered.includes(kind) || model.busy) {
       return;
     }
     if (retained(model)) {
-      setIntent({ epoch, actor: source.actor, kind });
+      setIntent({ epoch, actor: source.actor, kind, values });
       model.requestDiscard(kind);
     } else {
-      model.discard(false, kind, targetValues(source.actor.principal));
+      model.discard(false, kind, actorValues(source.actor, kind, values));
     }
   };
   const discard = (
     acknowledged = false,
-    kind = source === null ? "REGISTER" : (authorityPrimaryAction(source.offered) ?? "REGISTER"),
+    kind = source === null ? "ADMIT" : (authorityPrimaryAction(source.offered) ?? "ADMIT"),
   ) => {
-    const fallback = fixed && source !== null ? source.actor.principal : undefined;
-    const principal = resetPrincipal(intent, kind, epoch, available, fallback);
+    const fallback =
+      admissionPrincipal ?? (fixed && source !== null ? source.actor.principal : undefined);
+    const pending = currentIntent(intent, kind, epoch, available);
+    const principal = pending?.actor.principal ?? fallback;
     model.discard(
       acknowledged,
       kind,
-      principal === undefined ? undefined : targetValues(principal),
+      principal === undefined
+        ? undefined
+        : {
+            ...resetValues(pending, source, kind),
+            ...targetValues(principal),
+          },
     );
     setIntent(null);
   };
@@ -138,16 +165,35 @@ const targetMode = (model: OperationModel, actorId: string | null, fixed: boolea
   }
   return "unbound";
 };
-export const useAuthorityTarget = (model: OperationModel, revision: number, available: boolean) => {
+const actorBound = (model: OperationModel, source: Snapshot | null) =>
+  source !== null &&
+  matches(model.values, source.actor.principal) &&
+  model.entry.kind !== "REGISTER" &&
+  model.entry.kind !== "ADMIT";
+export const useAuthorityTarget = (
+  model: OperationModel,
+  revision: number,
+  available: boolean,
+  admissionPrincipal: PrincipalInput | null = null,
+) => {
   const { source, epoch, actorId, observe } = useActorDisclosure(revision, available);
-  const fixed =
-    source !== null &&
-    matches(model.values, source.actor.principal) &&
-    model.entry.kind !== "REGISTER";
+  const admissionBound =
+    admissionPrincipal !== null &&
+    model.entry.kind === "ADMIT" &&
+    matches(model.values, admissionPrincipal);
+  const fixed = admissionBound || actorBound(model, source);
   useActorDefault(model, source, fixed);
-  const consent = useActorConsent(model, source, epoch, available, fixed);
+  const consent = useActorConsent(
+    model,
+    source,
+    epoch,
+    available,
+    fixed,
+    admissionBound ? admissionPrincipal : null,
+  );
   return {
     ...consent,
+    admissionBound,
     observe,
     offered: source?.offered ?? [],
     primary: authorityPrimaryAction(source?.offered ?? []),

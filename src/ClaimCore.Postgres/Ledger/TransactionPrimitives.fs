@@ -36,10 +36,10 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Reference value) -> Some value
                     | _ -> invalidArg (nameof query) "Expected a reference position."
 
-                key + " > $12 COLLATE \"C\"",
+                key + " > $13 COLLATE \"C\"",
                 key + " ASC",
                 [| DatabaseSession.parameter reference |],
-                "$13"
+                "$14"
             | CaseListOrder.Recent, position ->
                 let reference, changedAt =
                     match position with
@@ -47,12 +47,12 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Recent(time, reference)) -> Some reference, Some time
                     | _ -> invalidArg (nameof query) "Expected a recent position."
 
-                "(c.changed_at < $13::timestamptz OR (c.changed_at = $13 AND "
+                "(c.changed_at < $14::timestamptz OR (c.changed_at = $14 AND "
                 + key
-                + " > $12 COLLATE \"C\"))",
+                + " > $13 COLLATE \"C\"))",
                 "c.changed_at DESC," + key + " ASC",
                 [| DatabaseSession.parameter reference; DatabaseSession.parameter changedAt |],
-                "$14"
+                "$15"
             | CaseListOrder.Notified, position ->
                 let reference, date =
                     match position with
@@ -60,17 +60,17 @@ module internal TransactionPages =
                     | Some(CaseListPosition.Notified(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a notification position."
 
-                "(($13::date IS NULL AND c.notified_on IS NULL AND "
+                "(($14::date IS NULL AND c.notified_on IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.notified_on > $13::date OR c.notified_on IS NULL OR (c.notified_on=$13::date AND "
+                + " > $13 COLLATE \"C\") OR ($14::date IS NOT NULL AND (c.notified_on > $14::date OR c.notified_on IS NULL OR (c.notified_on=$14::date AND "
                 + key
-                + " > $12 COLLATE \"C\"))))",
+                + " > $13 COLLATE \"C\"))))",
                 "c.notified_on ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
-                "$14"
+                "$15"
 
             | CaseListOrder.FollowUp, position ->
                 let reference, date =
@@ -79,20 +79,20 @@ module internal TransactionPages =
                     | Some(CaseListPosition.FollowUp(date, reference)) -> Some reference, date
                     | _ -> invalidArg (nameof query) "Expected a follow-up position."
 
-                "(($13::date IS NULL AND c.follow_up IS NULL AND "
+                "(($14::date IS NULL AND c.follow_up IS NULL AND "
                 + key
-                + " > $12 COLLATE \"C\") OR ($13::date IS NOT NULL AND (c.follow_up > $13::date OR c.follow_up IS NULL OR (c.follow_up=$13::date AND "
+                + " > $13 COLLATE \"C\") OR ($14::date IS NOT NULL AND (c.follow_up > $14::date OR c.follow_up IS NULL OR (c.follow_up=$14::date AND "
                 + key
-                + " > $12 COLLATE \"C\"))))",
+                + " > $13 COLLATE \"C\"))))",
                 "c.follow_up ASC NULLS LAST," + key + " ASC",
                 [|
                     DatabaseSession.parameter reference
                     DatabaseSession.parameter (date |> Option.map CalendarDate.format)
                 |],
-                "$14"
+                "$15"
 
         let sql =
-            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} AND ($12::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
+            $"SELECT {Projections.caseColumns} FROM claimcore.cases c WHERE {CaseSelectionSql.predicate query.Selection} AND ($13::text IS NULL OR {after}) ORDER BY {sorting} LIMIT {limit}"
 
         let parameters =
             Array.concat
@@ -188,15 +188,26 @@ module internal TransactionPages =
                 |> page query.Limit (fun entry -> entry.Sequence)
         }
 
-    let actors connection after limit token =
+    let actors connection text role after limit token =
         task {
             let! rows =
                 DatabaseSession.rows
                     connection
-                    "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) ORDER BY actor_id LIMIT $2"
+                    "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE ($1::uuid IS NULL OR actor_id>$1) AND ($3::text IS NULL OR (display_name_search LIKE '%'||$3||'%' ESCAPE chr(92) OR contact_search LIKE '%'||$3||'%' ESCAPE chr(92))) AND ($4::text IS NULL OR EXISTS(SELECT 1 FROM claimcore.grants assigned WHERE assigned.actor_id=actors.actor_id AND assigned.role=$4)) ORDER BY actor_id LIMIT $2"
                     [|
                         DatabaseSession.parameter (after |> Option.map ActorId.value)
                         box (limit + 1)
+                        DatabaseSession.parameter (
+                            text
+                            |> Option.map (fun query ->
+                                DirectorySearchText.value query
+                                |> fun value ->
+                                    value
+                                        .Replace("\\", "\\\\")
+                                        .Replace("%", "\\%")
+                                        .Replace("_", "\\_"))
+                        )
+                        DatabaseSession.parameter (role |> Option.map DurableNames.role)
                     |]
                     token
 
@@ -274,10 +285,19 @@ type private ReadTx
         member _.AssignedAccounts pairs =
             WorkStorage.accounts connection pairs token
 
+        member _.ResponsibilityCounts(selection, actors) =
+            ResponsibilityCountStorage.counts connection selection actors token
+
         member _.ReminderPage query = WorkStorage.page connection query token
 
         member _.WorkOverview(selection, mine) =
             WorkStorage.overview connection selection mine token
+
+        member _.CaseViewCounts selection =
+            ViewCountStorage.cases connection selection token
+
+        member _.ReminderViewCounts selection =
+            ViewCountStorage.reminders connection selection token
 
         member _.ActivityPage query =
             task {
@@ -300,7 +320,16 @@ type private ReadTx
                     |> TransactionPages.page query.Limit _.Sequence
             }
 
-        member _.FindEntry id =
+        member _.CaseStageFacts caseId =
+            TimelineStorage.stages connection caseId token
+
+        member _.TimelinePage query =
+            TimelineStorage.page connection installation query token
+
+        member _.PreviousEntries entries =
+            TimelineStorage.previous connection installation entries token
+
+        member _.FindOperation id =
             StoredEntries.operation connection installation id token
 
         member _.NonAcceptance(key: FenceKey) =
@@ -343,13 +372,18 @@ type private ReadTx
         member _.AuthorityHistoryPage query =
             TransactionPages.authorityHistory connection installation query token
 
+        member _.AccessRequestPage query =
+            AccessRequests.page connection query token
+
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after
+                 Text = text
+                 Role = role
                  Limit = limit
              })
             =
-            TransactionPages.actors connection after limit token
+            TransactionPages.actors connection text role after limit token
 
         member _.GrantPage
             ({
@@ -365,7 +399,7 @@ type private ReadTx
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT a.actor_id,a.subject FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
+                        "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a WHERE a.enabled AND a.principal_kind='HUMAN' AND ($4::uuid IS NULL OR a.actor_id>$4) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($2::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=$1) AND g.role=ANY($3::text[])) ORDER BY a.actor_id LIMIT $5"
                         [|
                             box (CaseId.value query.CaseId)
                             box (query.ReadRoles |> List.map DurableNames.role |> List.toArray)
@@ -379,14 +413,33 @@ type private ReadTx
 
                 return
                     rows
-                    |> List.map (fun row ->
-                        {
-                            AccountSubject.ActorId =
-                                DatabaseSession.value<Guid> 0 row
-                                |> DatabaseSession.admitted ActorId.create
-                            Subject = DatabaseSession.value<string> 1 row
-                        })
+                    |> List.map (Projections.actorRow >> Actor.currentReference)
                     |> TransactionPages.page query.Limit _.ActorId
+            }
+
+        member _.ActorRoleSummaries ids =
+            Projections.actorRoleSummaries connection ids token
+
+        member _.ActorRefs ids =
+            task {
+                if ids.IsEmpty then
+                    return Map.empty
+                else
+                    let! rows =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE actor_id=ANY($1::uuid[])"
+                            [|
+                                box (ids |> List.distinct |> List.map ActorId.value |> List.toArray)
+                            |]
+                            token
+
+                    return
+                        rows
+                        |> List.map (fun row ->
+                            let actor = Projections.actorRow row in
+                            actor.ActorId, Actor.currentReference actor)
+                        |> Map.ofList
             }
 
         member _.FindActor id =
@@ -394,7 +447,7 @@ type private ReadTx
                 let! rows =
                     DatabaseSession.rows
                         connection
-                        "SELECT actor_id,principal_kind,issuer,subject,enabled FROM claimcore.actors WHERE actor_id=$1"
+                        "SELECT actor_id,principal_kind,issuer,subject,enabled,display_name,contact FROM claimcore.actors WHERE actor_id=$1"
                         [| box (ActorId.value id) |]
                         token
 
@@ -426,12 +479,14 @@ type private ReadTx
             }
 
 /// Construction is private and occurs only after lock_ledger_head returns in IStore.Write.
-type private WriteTx(connection, installation, head, observedAt, nonce, token) =
+type private WriteTx(connection, installation, head, observedAt, token) =
     inherit ReadTx(connection, installation, observedAt, token)
 
     interface IWriteTx with
         member _.Head = head
-        member _.Nonce = nonce
+
+        member _.NewPayloadNonce() =
+            System.Security.Cryptography.RandomNumberGenerator.GetBytes 32
 
         member _.Append entry =
             task {
@@ -452,6 +507,13 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
         member _.ProjectWorkChange projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.workChange connection projection token
+
+        member _.DismissAccessRequest principal =
+            task {
+                let! _ = AccessRequests.lockPrincipal connection principal token
+                let! _ = AccessRequests.delete connection principal token
+                return ()
+            }
 
         member _.ProjectAuthority projection =
             FailureDiagnostics.phase FailurePhase.Projection
@@ -480,6 +542,49 @@ type private WriteTx(connection, installation, head, observedAt, nonce, token) =
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
     interface IStore with
+        member _.Context query =
+            Transactions.write source settings query.CancellationToken (fun connection ->
+                task {
+                    // READ COMMITTED is essential: the advisory-lock statement may wait behind registration.
+                    // The following single authority query must acquire a fresh snapshot after that wait.
+                    let! _ =
+                        AccessRequests.lockPrincipal
+                            connection
+                            query.Principal
+                            query.CancellationToken
+
+                    let! observed =
+                        DatabaseSession.rows
+                            connection
+                            "SELECT clock_timestamp()"
+                            [||]
+                            query.CancellationToken
+
+                    let observedAt = DatabaseSession.instant 0 observed.Head
+
+                    let! facts =
+                        Projections.globalReadFacts
+                            connection
+                            query.Principal
+                            query.CancellationToken
+
+                    if facts.Authority.Actor.IsNone then
+                        do!
+                            AccessRequests.refresh
+                                connection
+                                query.Principal
+                                query.Claims
+                                observedAt
+                                query.CancellationToken
+
+                    return
+                        {
+                            ContextFacts.Facts = facts
+                            ObservedAt = observedAt
+                        },
+                        true
+                })
+
         member _.Read
             ({
                  ReadOperation.Work = work
@@ -497,12 +602,12 @@ type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
             =
             Transactions.write source settings token (fun connection ->
                 task {
-                    let! head, observedAt, nonce = Transactions.head connection token
+                    let! head, observedAt = Transactions.head connection token
                     FailureDiagnostics.phase FailurePhase.Read
 
                     let! verdict =
                         work (
-                            WriteTx(connection, installationId, head, observedAt, nonce, token)
+                            WriteTx(connection, installationId, head, observedAt, token)
                             :> IWriteTx
                         )
 

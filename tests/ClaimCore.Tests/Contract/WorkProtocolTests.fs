@@ -128,7 +128,7 @@ let tests =
                     "Independent summary expectations"
 
                 let operation = CatalogOperation.Act(ActKind.Work WorkActKind.UpdateWork)
-                let inputs, _ = OperationCatalog.derive operation
+                let inputs = (OperationCatalog.derive operation).Inputs
 
                 let summary =
                     inputs
@@ -144,7 +144,7 @@ let tests =
 let optionalSelector =
     testCase "optional reminder selector is absent until its reference is authored" (fun () ->
         let operation = CatalogOperation.Query QueryEndpoint.ReminderList
-        let _, constants = OperationCatalog.derive operation
+        let constants = (OperationCatalog.derive operation).Constants
 
         let selector =
             constants |> List.find (fun value -> value.Path = [ "target"; "kind" ])

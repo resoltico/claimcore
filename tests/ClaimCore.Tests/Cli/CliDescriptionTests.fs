@@ -8,7 +8,7 @@ open ClaimCore.Cli
 
 let private descriptions () =
     for language in LocalizationPolicy.languages do
-        for operation in OperationCatalog.all do
+        for operation in CommandGrammar.operations do
             let selection = CliDescription.Operation(CommandGrammar.words operation)
 
             let output =

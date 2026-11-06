@@ -114,6 +114,20 @@ type CaseSnapshot =
         State: CaseState<CaseFields>
     }
 
+[<RequireQualifiedAccess>]
+type CaseFieldValue =
+    | Business of Admitted
+    | Reference of CaseReference
+    | Status of CaseStatus
+
+[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
+module CaseFieldValue =
+    let format =
+        function
+        | CaseFieldValue.Business value -> FieldValue.format value
+        | CaseFieldValue.Reference value -> CaseReference.format value
+        | CaseFieldValue.Status value -> CaseStatus.token value
+
 module CaseFields =
     let declarations = BusinessField.declarations
     let ofGroup = BusinessField.ofGroup
@@ -123,23 +137,10 @@ module CaseFields =
         @ (decision |> Option.map Decision.values |> Option.defaultValue [])
         @ (payment |> Option.map Payment.values |> Option.defaultValue [])
 
-    let value field (fields: CaseFields) =
+    let typedValue field (fields: CaseFields) =
         match field with
-        | BusinessField.CaseReference -> Some(CaseReference.format fields.CaseReference)
-        | BusinessField.Status -> Some(CaseStatus.token fields.Status)
-        | BusinessField.ClaimantName ->
-            Registration.claimant fields.Registration
-            |> Admitted.Name
-            |> FieldValue.format
-            |> Some
-        | BusinessField.InsurerName ->
-            Registration.insurer fields.Registration
-            |> Admitted.Name
-            |> FieldValue.format
-            |> Some
-        | BusinessField.IncidentDescription ->
-            Registration.description fields.Registration
-            |> Option.map (Admitted.Description >> FieldValue.format)
+        | BusinessField.CaseReference -> Some(CaseFieldValue.Reference fields.CaseReference)
+        | BusinessField.Status -> Some(CaseFieldValue.Status fields.Status)
         | BusinessField.ResponsibleActor
         | BusinessField.HandlingSummary -> None
         | _ ->
@@ -148,7 +149,16 @@ module CaseFields =
                 fields.Decision
                 (PaymentProgress.payment fields.Progress)
             |> List.tryFind (fst >> (=) field)
-            |> Option.map (snd >> FieldValue.format)
+            |> Option.map (snd >> CaseFieldValue.Business)
+
+    let value field fields =
+        typedValue field fields |> Option.map CaseFieldValue.format
+
+    let listedValues (declarations: FieldDescriptor list) fields =
+        declarations
+        |> List.filter _.Listed
+        |> List.map (fun declaration -> declaration.Field, typedValue declaration.Field fields)
+        |> Map.ofList
 
     let values fields =
         declarations |> List.map (fun row -> row.Field, value row.Field fields)

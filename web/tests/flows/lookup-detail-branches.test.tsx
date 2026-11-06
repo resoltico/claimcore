@@ -33,7 +33,7 @@ it("does not request history or acts for a missing case", async () => {
   expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
   expect(
     screen.queryByRole("heading", {
-      name: "Case history",
+      name: "Activity",
     }),
   ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
@@ -108,7 +108,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
     release = resolve;
   });
   fetch.mockResolvedValueOnce(readableCurrent());
-  fetch.mockResolvedValueOnce(response("case.history", "REJECTED", unavailable));
+  fetch.mockResolvedValueOnce(response("case.timeline", "REJECTED", unavailable));
   fetch.mockReturnValueOnce(revalidation);
   render(
     <CaseDetail
@@ -123,24 +123,22 @@ it("shows a typed unavailable history refusal after revalidating readable curren
     expect(fetch).toHaveBeenCalledTimes(3);
   });
   await waitFor(() => {
-    expect(
-      screen.queryByRole("region", {
-        name: "Current case",
-      }),
-    ).toBeNull();
+    expect(document.querySelector(".case-fields")).toBeNull();
   });
   await act(async () => {
     release?.(readableCurrent());
     await revalidation;
   });
   expect(
-    await screen.findByRole("region", {
-      name: "Current case",
+    await waitFor(() => {
+      const facts = document.querySelector(".case-fields");
+      expect(facts).not.toBeNull();
+      return facts;
     }),
   ).toBeVisible();
   expect(
     screen.getByRole("heading", {
-      name: "Case history",
+      name: "Activity",
     }),
   ).toBeVisible();
   expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
@@ -226,12 +224,12 @@ it("requires an exact nonempty reference without silently trimming lookup", asyn
   );
   const selected = vi.fn();
   const user = userEvent.setup();
-  render(<CaseList onSelect={selected} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={selected} />);
   const find = screen.getByRole("button", {
     name: "Open by exact reference",
   });
   expect(find).toBeDisabled();
-  await user.type(screen.getByLabelText("Handler's case reference (exact)"), " REF ");
+  await user.type(screen.getByLabelText("Case reference (exact)"), " REF ");
   await user.click(find);
   expect(selected).toHaveBeenCalledWith({ kind: "REFERENCE", caseReference: " REF " });
   expect(globalThis.fetch).toHaveBeenCalledTimes(1);

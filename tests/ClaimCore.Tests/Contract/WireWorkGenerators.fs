@@ -2,6 +2,7 @@ module ClaimCore.Tests.WireWorkGenerators
 
 open System
 open ClaimCore.Domain
+open ClaimCore.Protocol
 open ClaimCore.Application.Contracts
 open Hedgehog
 open Hedgehog.FSharp
@@ -190,21 +191,22 @@ let private workReview (review: WorkReview) =
                 revision (min (SafeInteger.Maximum - 1L) (Revision.value review.Before.Revision))
         }
 
-    let work =
-        if review.Proposed.Work <> before.Work then
-            review.Proposed.Work
+    let summary =
+        if
+            (review.Proposed.Responsible |> Option.map _.ActorId)
+            <> (before.Responsible |> Option.map _.ActorId)
+            || review.Proposed.Summary <> before.Summary
+        then
+            review.Proposed.Summary
         else
             let first = HandlingSummary.parse "Wire handling change" |> accepted
 
-            let summary =
-                if before.Work.Summary = Some first then
+            Some(
+                if before.Summary = Some first then
                     HandlingSummary.parse "Another wire handling change" |> accepted
                 else
                     first
-
-            { review.Proposed.Work with
-                Summary = Some summary
-            }
+            )
 
     { review with
         Parent = parent
@@ -213,7 +215,7 @@ let private workReview (review: WorkReview) =
             { review.Proposed with
                 CaseId = parent.CaseId
                 Revision = nextVersion before.Revision
-                Work = work
+                Summary = summary
             }
     }
 
@@ -295,17 +297,59 @@ let private reminderReview operation (review: ReminderReview) =
             Effects = ReminderEffects.CompletedAndPlanned(completed, created next)
         }
 
-let coherentPreview (reply: PreviewReply) =
+let coherentPreview (reply: PresentedPreviewReply) =
     let outcome =
         match reply.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Work review)) ->
-            Outcome.Succeeded(Previewed.Reviewed(OperationReview.Work(workReview review)))
-        | Outcome.Succeeded(Previewed.Reviewed(OperationReview.Reminder review)) ->
-            let operation = OperationId.create reply.OperationId |> Option.get
+        | Outcome.Succeeded(PresentedPreviewed.Reviewed review) ->
+            let subject =
+                match review.Subject with
+                | PresentedReviewSubject.Work value -> PresentedReviewSubject.Work(workReview value)
+                | PresentedReviewSubject.Reminder value ->
+                    let operation = OperationId.create reply.OperationId |> Option.get
+                    PresentedReviewSubject.Reminder(reminderReview operation value)
+                | subject -> subject
 
-            Outcome.Succeeded(
-                Previewed.Reviewed(OperationReview.Reminder(reminderReview operation review))
-            )
+            Outcome.Succeeded(PresentedPreviewed.Reviewed { review with Subject = subject })
         | outcome -> outcome
 
     { reply with Outcome = outcome }
+
+/// Selectors vary independently while retaining the structural relationship to the full items.
+/// This generates valid wire references, not the application's business highlight policy.
+let internal timelineHighlights items =
+    items
+    |> List.mapi (fun index change ->
+        gen {
+            let! includeItem = Gen.bool
+
+            if not includeItem then
+                return None
+            else
+                match change with
+                | TimelineChange.Reminder difference ->
+                    let available =
+                        [
+                            if difference.Action.IsSome then
+                                yield TimelineFacet.Action
+                            if difference.Due.IsSome then
+                                yield TimelineFacet.Due
+                            if difference.State.IsSome then
+                                yield TimelineFacet.State
+                        ]
+
+                    if available.IsEmpty then
+                        return None
+                    else
+                        let! mask = Gen.int32 (Range.constant 1 ((1 <<< available.Length) - 1))
+
+                        let facets =
+                            available
+                            |> List.indexed
+                            |> List.choose (fun (offset, facet) ->
+                                if mask &&& (1 <<< offset) <> 0 then Some facet else None)
+
+                        return Some(TimelineHighlight.Reminder(index, facets))
+                | _ -> return Some(TimelineHighlight.Change index)
+        })
+    |> sequence
+    |> Gen.map (List.choose (fun value -> value))

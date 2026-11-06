@@ -173,7 +173,7 @@ let private subject =
         }
 
 let private updateSql =
-    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14,creation_reference=$15,parent_case_id=$16,next_reminder_id=$17 WHERE sequence=$1"
+    "UPDATE claimcore.ledger SET previous_hash=$2,entry_hash=$3,subject_kind=$4,act=$5,operation_id=$6,actor_id=$7,recorded_at=$8,subject_id=$9,case_revision=$10,business_date=$11,payload_commitment=$12,payload=$13,payload_nonce=$14,creation_reference=$15,parent_case_id=$16,next_reminder_id=$17,effect_index=$18,effect_count=$19,authority_operation=$20 WHERE sequence=$1"
 
 let private parameters (value: LedgerRow) =
     let metadata = value.Metadata
@@ -202,6 +202,12 @@ let private parameters (value: LedgerRow) =
         DatabaseSession.parameter (metadata.CreationReference |> Option.map CaseReference.format)
         DatabaseSession.parameter (target.Parent |> Option.map CaseId.value)
         DatabaseSession.parameter (target.Next |> Option.map ReminderId.value)
+        box (LedgerEffects.index metadata.Effects)
+        box (LedgerEffects.count metadata.Effects)
+        DatabaseSession.parameter (
+            LedgerEffects.authorityOperation metadata.Effects
+            |> Option.map DurableNames.authorityAct
+        )
     |]
 
 let guardedSql (database: PostgresFixture.Database) statement parameters =
@@ -321,10 +327,19 @@ let caseSubject change (value: LedgerRow) =
 let authoritySubject change (value: LedgerRow) =
     match value.Metadata.Subject with
     | RecordedTarget.Authority current ->
+        let changed: AuthorityEntryMetadata = change current
+
+        let effects =
+            if LedgerEffects.count value.Metadata.Effects = 1 then
+                LedgerEffects.authority changed.Act 1 0
+            else
+                value.Metadata.Effects
+
         { value with
             Metadata =
                 { value.Metadata with
-                    Subject = RecordedTarget.Authority(change current)
+                    Subject = RecordedTarget.Authority changed
+                    Effects = effects
                 }
         }
     | _ -> failtest "Authority fixture is required"

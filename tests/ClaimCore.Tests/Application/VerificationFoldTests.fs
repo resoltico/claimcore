@@ -28,6 +28,7 @@ let private actor principal grants : ActorAuthority =
                 ActorId = (CaseFixtures.actorId id)
                 Principal = principal
                 Enabled = true
+                Profile = None
             }
         Grants = grants
     }
@@ -51,6 +52,7 @@ let private row payload =
 
     let metadata: LedgerMetadata =
         {
+            Effects = LedgerEffects.authority AuthorityKind.ProvisionOwner 2 0
             CreationReference = None
             InstallationId = installation
             Sequence = CaseFixtures.sequence 1L
@@ -69,6 +71,7 @@ let private row payload =
 
     let entry: StoredEntry =
         {
+            Effects = metadata.Effects
             CreationReference = None
             Sequence = CaseFixtures.sequence 1L
             EntryHash = LedgerEntry.hash metadata
@@ -125,6 +128,7 @@ let requestEffectAgreement =
 
             let metadata =
                 { metadata with
+                    Effects = LedgerEffects.single
                     CreationReference = Some reference
                     Subject =
                         RecordedTarget.Case
@@ -138,6 +142,7 @@ let requestEffectAgreement =
 
             let entry =
                 { entry with
+                    Effects = LedgerEffects.single
                     CreationReference = Some reference
                     Subject =
                         EntryTarget.Case(
@@ -194,6 +199,23 @@ let private history: CaseHistory =
 
 let private ledgerChecks =
     [
+        VerificationFinding.OperationEffectGroup,
+        fun () ->
+            let entry, _ = row [| 1uy |]
+
+            LedgerVerification.complete
+                None
+                { state with
+                    PendingEffects =
+                        Some
+                            {
+                                Root = entry
+                                NextIndex = 1
+                                Nonces = []
+                                Grants = Set.empty
+                            }
+                }
+            |> unitResult
         VerificationFinding.Link,
         fun () ->
             LedgerVerification.link
@@ -356,11 +378,11 @@ let private authorityChecks =
                         EntryTarget.Authority((CaseFixtures.actorId id), AuthorityKind.Register)
                 }
 
-            let request: AuthorityRequestRecord =
+            let request: AuthorityEffectRecord =
                 {
                     OperationId = id
-                    Target = PrincipalKey.toInput human
-                    Act = ClaimCore.Domain.AuthorityAct.Register
+                    TargetActorId = CaseFixtures.actorId id
+                    Effect = AuthorityEffect.Register(PrincipalKey.toInput human)
                 }
 
             AuthorityFold.apply
@@ -373,6 +395,18 @@ let private authorityChecks =
         VerificationFinding.AuthorityProjection,
         fun () ->
             ProjectionVerification.authority (Map.ofList [ (CaseFixtures.actorId id), owner ]) [] []
+        VerificationFinding.AuthorityProfileProjection,
+        fun () ->
+            let profile = ActorProfile.parse Inputs.actorProfile |> accepted
+
+            ProjectionVerification.authority
+                (Map.ofList [ CaseFixtures.actorId id, owner ])
+                [
+                    { owner.Actor with
+                        Profile = Some profile
+                    }
+                ]
+                [ CaseFixtures.actorId id, Role.Owner, None ]
     ]
 
 let private finding expected run =
@@ -389,8 +423,8 @@ let private acceptedIdentityPrecedence () =
                     AuthorityRecord.encode
                         {
                             OperationId = id
-                            Target = PrincipalKey.toInput human
-                            Act = AuthorityAct.ProvisionOwner
+                            TargetActorId = CaseFixtures.actorId id
+                            Effect = AuthorityEffect.ProvisionOwner(PrincipalKey.toInput human)
                         }
                 Snapshot = Array.empty
             }
@@ -437,6 +471,7 @@ let private invalidProjectionRows () =
             ActorId = (CaseFixtures.actorId id)
             Principal = human
             Enabled = true
+            Profile = None
         }
 
     let actors = Map.ofList [ CaseFixtures.actorId id, owner ]

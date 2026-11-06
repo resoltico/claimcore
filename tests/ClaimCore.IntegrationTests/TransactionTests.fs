@@ -65,7 +65,7 @@ let private instantOrdering (database: PostgresFixture.Database) =
         let waiter =
             Transactions.write database.RuntimeSource Transactions.timeouts token (fun connection ->
                 task {
-                    let! _, instant, _ = Transactions.head connection token
+                    let! _, instant = Transactions.head connection token
                     return instant, false
                 })
 
@@ -156,14 +156,14 @@ let tests =
 
                         Expect.equal
                             positions
-                            [| 4L .. 23L |]
+                            [| 5L .. 24L |]
                             "Each locked decision saw the current sequence"
 
                         let! verified = Verification.verify database.OwnerSource None token
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
-                            (CaseFixtures.sequence (23L))
+                            (CaseFixtures.sequence (24L))
                             "All links recompute"
                     }))
             testCaseAsync
@@ -228,7 +228,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            (CaseFixtures.sequence (3L))
+                            (CaseFixtures.sequence (4L))
                             "Neither waiter wrote"
 
                         let! _ =
@@ -309,8 +309,7 @@ let tests =
                                         token
                                         (fun connection ->
                                             task {
-                                                let! head, _, _ =
-                                                    Transactions.head connection token in
+                                                let! head, _ = Transactions.head connection token in
 
                                                 return head.Sequence, false
                                             })
@@ -353,7 +352,7 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position head).Sequence
-                            (CaseFixtures.sequence (3L))
+                            (CaseFixtures.sequence (4L))
                             "Failed commit did not append"
 
                         do! sql database "DROP TRIGGER reject_commit ON claimcore.cases"
@@ -371,7 +370,7 @@ let tests =
                 (run (fun database ->
                     task {
                         let insert =
-                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),4,'AUTHORITY','REGISTER','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'))"
+                            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,payload_commitment,payload,payload_nonce,effect_index,effect_count,authority_operation) VALUES (2,decode(repeat('00',32),'hex'),decode(repeat('11',32),'hex'),5,'AUTHORITY','ENABLE','80000000-0000-4000-8000-000000000001','80000000-0000-4000-8000-000000000001',clock_timestamp(),'80000000-0000-4000-8000-000000000001',decode(repeat('00',32),'hex'),decode(repeat('00',9),'hex'),decode(repeat('00',32),'hex'),0,1,'ENABLE')"
 
                         use! connection = database.RuntimeSource.OpenConnectionAsync()
 

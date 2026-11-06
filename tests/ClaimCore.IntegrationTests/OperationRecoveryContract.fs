@@ -70,7 +70,12 @@ let internal passiveStatusAndRolelessAuthorship fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 10) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 10)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 CancellationToken.None
 
         acceptedAuthority registered
@@ -114,6 +119,7 @@ let internal passiveStatusAndRolelessAuthorship fixture =
 
         let readOnly =
             { new IStore with
+                member _.Context query = fixture.Store.Context query
                 member _.Read operation = fixture.Store.Read operation
 
                 member _.Write _ =
@@ -260,7 +266,7 @@ let internal acceptanceAndFenceContradiction fixture =
                                             InstallationId = fixture.InstallationId
                                             Head = tx.Head
                                             Instant = tx.ObservedAt
-                                            Nonce = tx.Nonce
+                                            Nonce = tx.NewPayloadNonce()
                                             ActorId = key.ActorId
                                             OperationId = key.OperationId
                                             Subject = EntryTarget.NonAcceptance key.OperationId

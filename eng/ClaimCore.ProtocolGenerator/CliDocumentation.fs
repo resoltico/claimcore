@@ -33,26 +33,18 @@ module CliDocumentation =
         let escape (text: string) =
             text.Replace("|", "\\|").Replace("\n", " ")
 
-        let scalarGuidance (input: CatalogDerivedInput) =
-            let guidance =
-                match input.Name with
-                | InteractionInput.Target(InputTarget.Field field) -> ScalarGuidance.forField field
-                | (InteractionInput.Target InputTarget.Reason) -> Some ScalarGuidance.forReason
-                | (InteractionInput.Target InputTarget.Text) -> Some ScalarGuidance.forSearchText
-                | _ -> None
+        let rule input =
+            let guidance = ScalarGuidance.forInput input
 
-            guidance
-            |> Option.map (fun guidance ->
-                let arguments =
-                    guidance.Arguments
-                    |> Map.map (fun _ value ->
-                        match value with
-                        | GuidanceArgument.Count count ->
-                            count.ToString(System.Globalization.CultureInfo.InvariantCulture)
-                        | GuidanceArgument.Code code -> code)
+            let arguments =
+                guidance.Arguments
+                |> Map.map (fun _ value ->
+                    match value with
+                    | GuidanceArgument.Count count ->
+                        count.ToString(System.Globalization.CultureInfo.InvariantCulture)
+                    | GuidanceArgument.Code code -> code)
 
-                " " + Template.render english[guidance.Key] arguments)
-            |> Option.defaultValue ""
+            Template.render english[guidance.Key] arguments
 
         let describe operation =
             let inputs, _ = CommandGrammar.derive operation
@@ -93,17 +85,30 @@ module CliDocumentation =
                         + "` | "
                         + escape (message input.Binding.LabelId)
                         + " — "
-                        + escape (
-                            (input.Binding.MeaningId
-                             |> Option.map message
-                             |> Option.defaultValue "")
-                            + scalarGuidance input
-                        )
+                        + escape (rule input.Name)
                         + " | "
                         + escape choices
                         + " | "
                         + escape defaultValue
                         + " |")
+                yield!
+                    CommandGrammar.collections operation
+                    |> List.map (fun definition ->
+                        let binding = definition.Binding
+
+                        "| `"
+                        + CommandGrammar.collectionFlag definition
+                        + " "
+                        + CommandGrammar.collectionPlaceholder definition
+                        + "...` | "
+                        + escape (message binding.LabelId)
+                        + " — "
+                        + escape (rule definition.Name)
+                        + " | "
+                        + string binding.MinimumItems
+                        + "–"
+                        + string binding.MaximumItems
+                        + " | |")
                 ""
             ]
 
@@ -119,18 +124,19 @@ module CliDocumentation =
             "Value-taking verb options also accept `--name=value`; use `--text=--literal` when search text begins with `--`. Switches keep their valueless spelling."
             ""
             "Case worklist filters `--lifecycle`, `--status` and `--progress` may repeat to select a set. Omit a filter to include all values. `--text` searches current claimant, responsible insurer, case reference, incident description and handling summary; `--assignment mine|unassigned` selects responsibility within current access; `--due` selects actionable due state using the returned business-date basis; `--order reference|recent|notified|follow-up` selects the page order. Cursors bind all filters and order."
-            "`case list --format csv`, `reminder list --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all`, `case history --all`, `case activity --all` and `reminder list --all` follow continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Case-list text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached."
+            "`case list --format csv`, `reminder list --format csv`, `case timeline --format csv` and `authority history --format csv` emit UTF-8 RFC 4180 CSV without a BOM, with wire-path headers and CRLF record endings. Null values are empty cells. `case list --all`, `case timeline --all` and `reminder list --all` follow continuation cursors until the end; each page is its own authorized snapshot. Concurrent ordering/filter changes can move, duplicate or omit rows; `--all` does not pin a snapshot export. Case-list text and CSV use one header; JSON emits one frame per page. A refusal or failure stops traversal and reports the cursor reached."
+            "Timeline CSV emits one row per disclosed changed field, or a metadata-only row when no changes are disclosed. `changes.kind` distinguishes `DISCLOSED`, `WITHHELD` and `ERASED`. `field` uses core semantic names; reminder fields include the reminder ID. `before` and `after` contain canonical scalars: money is `amount CURRENCY`, and actor changes use ActorIds. Recorded actor names and name kinds are separate columns."
             "CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values."
-            "When stdin and stdout are terminals and text output is selected, omitting the relevant `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision, retaining a supplied operation ID or generating one when omitted, then asks for confirmation. Only an affirmative answer executes the same reviewed request. A concurrent change is still refused by the service. Omitted correction groups mean KEEP and the review shows every group action."
+            "Interactive text commands check authored syntax before any read. For existing-case changes, omitting `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision. New-case OPEN previews without an existing-case lookup. Ordinary authority verbs preview after reading the authenticated context. A supplied operation ID is retained; otherwise one ID is allocated after valid syntax. Confirmation executes the exact reviewed request; declining prints Not recorded and exits 0. The service rechecks current permissions and state. Omitted correction groups mean KEEP; the review shows changed values and one Unchanged summary."
             ""
-            "For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; there is no skip-confirmation flag."
+            "For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; irreversible writes require exact target confirmation. Type the case reference for case ERASE, or the operation ID for ERASE_PROFILE and SETTLE. Redirected commands require `--confirm TARGET`; a mismatching target is a usage error. This local option is never sent in the wire request. Recovery settlement follows the same operation-ID rule."
             ""
             "Human data text visibly escapes terminal controls, line/paragraph separators and directional formatting as `\\u{XXXX}` (uppercase hexadecimal). Literal backslashes are doubled, so displayed escapes are distinct from exact stored values. Arabic text and joining characters remain readable. This applies to redirected text too; JSON/NDJSON retain exact decoded values and CSV keeps its export rules."
             "Narrative LF paragraph breaks are trusted layout around independently escaped data segments. Optional incident description and handling summary each admit 600 Unicode scalar values, preserving authored whitespace and spelling. Reminder action text is a separate 200-scalar single-line value. Empty or whitespace-only supplied text is invalid; omission keeps an existing value and `--clear-incident-description` or `--clear-handling-summary` explicitly clears it."
             "Use the field's `-file PATH`, `-stdin` or `-editor` option for longer text, for example `--handling-summary-file summary.txt` or `--action-file action.txt`. Sources are exclusive. File/stdin/editor input converts CRLF to LF before preparation; direct protocol CR is refused. User-supplied files are preserved. Editor entry requires a terminal and `VISUAL` or `EDITOR` naming one executable, without shell expressions or arguments. Owned temporary files/directories use 0600/0700 permissions; cleanup failure prevents request preparation and reports a diagnostic."
             "Work starts empty at revision zero after OPEN. Work edits preserve financial fact revisions; reminder edits preserve both fact and work revisions. `reminder get` reads one current record, including completed/cancelled records, using parent and reminder identities. `reminder list` defaults to pending actions on active open accessible cases. Due filtering there selects individual reminder dates; case `--due` uses the earliest pending reminder. Past-due reminders remain pending. No-plan attention is a warning, not a refusal or automatic reminder."
             "`reminder complete-and-plan-next` is one atomic two-effect operation: complete one pending reminder and create exactly one next pending reminder whose ID equals the operation ID. Human output refreshes the core work view after acceptance, including missing-plan attention; JSON/NDJSON contain only the requested structured reply. Initial OPEN and subsequent reminder planning are explicitly separate operations. Work overview counts cover accessible actionable cases independently of page/search and report their server date, zone and observation instant; suspended clients do not deliver alarms."
-            "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values."
+            "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values. Human money, dates and observation footers use en-GB for English, lv-LV for Latvian and Latin-digit ar-AE for Arabic. Canonical JSON and CSV values are unchanged."
             ""
             "Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON."
             ""
@@ -175,7 +181,7 @@ module CliDocumentation =
                     + supported (List.contains code ClaimCore.Database.Command.supportedExitCodes)
                     + " |")
             ""
-            yield! OperationCatalog.all |> List.collect describe
+            yield! CommandGrammar.operations |> List.collect describe
         ]
         |> String.concat "\n"
         |> fun text -> Encoding.UTF8.GetBytes(text + "\n")

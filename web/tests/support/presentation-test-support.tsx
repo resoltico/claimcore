@@ -1,3 +1,5 @@
+import { WorkspaceViewsContext } from "../../src/views/WorkspaceViews";
+import { testWorkspaceViews } from "./view-counts.fixtures";
 import { JournalContext } from "../../src/recovery/JournalContext";
 import { testJournal } from "./recovery.fixtures";
 import { RequesterContext } from "../../src/hooks/useRequesterContext";
@@ -41,7 +43,9 @@ export const TestProviders = ({ children }: { children: ReactNode }) => (
         }}
       >
         <EndpointProvider>
-          <RequesterContext value={requester}>{children}</RequesterContext>
+          <RequesterContext value={requester}>
+            <WorkspaceViewsContext value={testWorkspaceViews}>{children}</WorkspaceViewsContext>
+          </RequesterContext>
         </EndpointProvider>
       </SessionContext>
     </PresentationProvider>

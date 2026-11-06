@@ -1,7 +1,7 @@
 import type { ApiResult } from "../protocol/types";
 import { localNotice } from "../protocol/notices";
 
-const responseDeadlineMs = 20_000;
+export const responseDeadlineMs = 20_000;
 
 /** Transport cancellation bounds consumption; a dispatched mutation remains uncertain. */
 export const withinResponseDeadline = async <T>(

@@ -1,7 +1,13 @@
+import { isCaseAct } from "../../src/operation/metadata";
+import { blockedCaseActs } from "./blocked-case-acts.fixtures";
 import type { CaseSummary as Summary } from "../../src/protocol/types";
 import type {
-  ActorContext,
+  RequesterState_ACTIVE,
+  ActorRef,
+  CaseStageDisplay,
+  CaseStageOutline,
   CaseView,
+  ListedCaseFields,
   Principal,
   Registration,
   Decision,
@@ -24,6 +30,8 @@ const unscheduledWork: CaseWorkView = {
   recordedBy: null,
   revision: 0,
   summary: null,
+  summaryChangedAt: null,
+  summaryRecordedBy: null,
   nextAction: null,
   pendingReminders: 0,
   overdueReminders: 0,
@@ -40,13 +48,34 @@ type LiveStateSeed = {
   kind: "ACTIVE" | "VOIDED";
   fields: CaseFields;
 };
-type AdviceSeed = Omit<CaseView["advice"], "maintenance"> &
-  Partial<Pick<CaseView["advice"], "maintenance">>;
-type CaseViewSeed = Omit<CaseView, "mine" | "caseId" | "work" | "state" | "advice"> &
-  Partial<Pick<CaseView, "mine" | "caseId" | "work">> & {
+type AdviceSeed = Omit<CaseView["advice"], "maintenance" | "recommended" | "blocked"> &
+  Partial<Pick<CaseView["advice"], "maintenance" | "recommended" | "blocked">>;
+type CaseViewSeed = Omit<
+  CaseView,
+  "mine" | "caseId" | "work" | "state" | "advice" | "headline" | "attention" | "stages"
+> &
+  Partial<Pick<CaseView, "mine" | "caseId" | "work" | "headline" | "attention" | "stages">> & {
     state: LiveStateSeed | { kind: "ERASED" };
     advice: AdviceSeed;
   };
+// This read-model fixture represents an opened case. Stage-specific tests supply literal projections.
+const openedStages: CaseStageDisplay = {
+  kind: "TRACKER",
+  current: "OPENED",
+  steps: [
+    {
+      stage: "OPENED",
+      completed: true,
+      date: "2026-09-01",
+      amount: { amount: "12.34", currency: "EUR" },
+    },
+    { stage: "DECIDED", completed: false, date: null, amount: null },
+    { stage: "PAID", completed: false, date: null, amount: null },
+    { stage: "CLOSED", completed: false, date: null, amount: null },
+  ],
+};
+const stageDisplayInput = (kind: unknown): CaseStageDisplay =>
+  kind === "VOIDED" || kind === "ERASED" ? { kind } : openedStages;
 type LiveViewSeed = CaseViewSeed & { state: LiveStateSeed };
 export function caseViewInput(
   value: LiveViewSeed,
@@ -57,7 +86,19 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
   return {
     ...value,
-    advice: { ...value.advice, maintenance: value.advice.maintenance ?? initialMaintenance },
+    advice: {
+      recommended: null,
+      blocked: blockedCaseActs(
+        value.advice.acts,
+        value.headline ?? "UNDECIDED",
+        value.advice.maintenance?.active,
+      ),
+      ...value.advice,
+      maintenance: value.advice.maintenance ?? initialMaintenance,
+    },
+    headline: value.headline ?? "UNDECIDED",
+    attention: value.attention ?? [],
+    stages: value.stages ?? stageDisplayInput(state.kind),
     state,
     work: value.work ?? {
       ...unscheduledWork,
@@ -68,13 +109,47 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
     caseId: value.caseId ?? "20000000-0000-4000-8000-000000000001",
   };
 }
-type ActorContextSeed = Omit<
-  ActorContext,
-  "hasScopedCases" | "actorId" | "installationId" | "maintenance"
-> &
-  Partial<Pick<ActorContext, "hasScopedCases" | "actorId" | "installationId" | "maintenance">>;
-export const actorContextInput = <T extends ActorContextSeed>(value: T) => ({
+export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
+  actorId: inventory.cliSamples.actorId,
+  displayName: { kind: "NAMED", value: "Named account" },
+  principalKind: "HUMAN",
+  availability: "AVAILABLE",
   ...value,
+});
+
+type RequesterState_ACTIVESeed = Omit<
+  RequesterState_ACTIVE,
+  | "hasScopedCases"
+  | "actorId"
+  | "installationId"
+  | "maintenance"
+  | "self"
+  | "kind"
+  | "observedAt"
+  | "issuer"
+  | "roles"
+> &
+  Partial<
+    Pick<
+      RequesterState_ACTIVE,
+      | "hasScopedCases"
+      | "actorId"
+      | "installationId"
+      | "maintenance"
+      | "self"
+      | "kind"
+      | "observedAt"
+      | "issuer"
+      | "roles"
+    >
+  >;
+export const actorContextInput = <T extends RequesterState_ACTIVESeed>(value: T) => ({
+  ...value,
+  observedAt: value.observedAt ?? `${value.businessDate}T12:00:00.000000Z`,
+  issuer: value.issuer ?? "https://issuer.example/",
+  roles: value.roles ?? [],
+  kind: "ACTIVE" as const,
+  self: value.self ?? actorRefInput(),
   maintenance: value.maintenance ?? initialMaintenance,
   hasScopedCases: value.hasScopedCases ?? false,
   actorId: value.actorId ?? inventory.cliSamples.actorId,
@@ -124,31 +199,35 @@ export const principal = (changes: Partial<Principal> = {}): Principal => ({
 
 // Response seeds are inputs to browser behavior, not generated expectations for product code.
 
-type LiveSummary = Extract<Summary["state"], { kind: "ACTIVE" | "VOIDED" }>;
 type SummarySeed = Partial<Omit<Summary, "state">> & {
-  state?: { kind: "ERASED" } | (Pick<LiveSummary, "kind" | "status"> & Partial<LiveSummary>);
+  state?: { kind: "ERASED" } | { kind: "ACTIVE" | "VOIDED"; fields?: ListedCaseFields };
+};
+export const listedFieldsInput: ListedCaseFields = {
+  claimantName: "Synthetic claimant",
+  insurerName: "Synthetic insurer",
+  claimedAmount: "12.34",
+  claimedCurrency: "EUR",
+  payableAmount: null,
+  payableCurrency: null,
 };
 export const caseSummaryInput = (changes: SummarySeed = {}): Summary => {
-  const state = changes.state ?? { kind: "ACTIVE", status: "OPENED" };
-  const live: Omit<LiveSummary, "kind" | "status"> = {
-    work: {
-      ...unscheduledWork,
-      due: state.kind === "ACTIVE" && state.status === "OPENED" ? "UNSCHEDULED" : "INACTIVE",
-    },
-    claimantName: "Synthetic claimant",
-    insurerName: "Synthetic insurer",
-    claimed: { amount: "12.34", currency: "EUR" },
-    payable: null,
-    progress: "UNDECIDED",
-    incidentNotificationDate: "2026-09-02",
-  };
+  const state = changes.state ?? { kind: "ACTIVE" };
   return {
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: "SYNTHETIC-001",
     revision: 1,
     changedAt: "2026-09-01T12:00:00.000000Z",
+    headline: "UNDECIDED",
+    attention: [],
+    nextAction: null,
+    responsible: null,
+    pendingReminders: 0,
+    stages: state.kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null,
     ...changes,
-    state: state.kind === "ERASED" ? state : { ...live, ...state },
+    state:
+      state.kind === "ERASED"
+        ? state
+        : { kind: state.kind, fields: state.fields ?? listedFieldsInput },
   };
 };
 
@@ -175,16 +254,111 @@ const childGroup = (key: string, payload: Group | undefined): Group | undefined 
 const isAdviceOrContext = (value: Record<string, unknown>): boolean =>
   (Object.hasOwn(value, "acts") && Object.hasOwn(value, "history")) ||
   (Object.hasOwn(value, "installationId") && Object.hasOwn(value, "capabilities"));
-const completeRead = (completed: Record<string, unknown>): unknown => {
-  if (isAdviceOrContext(completed)) {
-    return { maintenance: initialMaintenance, ...completed };
+const isCaseReadSeed = (value: Record<string, unknown>): boolean =>
+  ["state", "caseReference", "revision"].every((key) => Object.hasOwn(value, key)) &&
+  (Object.hasOwn(value, "advice") || Object.hasOwn(value, "changedAt"));
+const completeCaseRead = (completed: Record<string, unknown>) => {
+  const { state } = completed;
+  const kind = isObject(state) ? state["kind"] : undefined;
+  let stages: CaseStageDisplay | CaseStageOutline | null = stageDisplayInput(kind);
+  if (Object.hasOwn(completed, "changedAt")) {
+    stages = kind === "ACTIVE" ? { current: "OPENED", completed: ["OPENED"] } : null;
   }
+  const data = { headline: "UNDECIDED", attention: [], stages, ...completed };
+  return Object.hasOwn(completed, "changedAt")
+    ? { nextAction: null, responsible: null, pendingReminders: 0, ...data }
+    : data;
+};
+const completeAuthorityRead = (completed: Record<string, unknown>): unknown => {
+  if (
+    Object.hasOwn(completed, "actor") &&
+    Object.hasOwn(completed, "principal") &&
+    Object.hasOwn(completed, "contact")
+  ) {
+    const { actor } = completed;
+    return {
+      state: isObject(actor) && actor["availability"] === "DISABLED" ? "DISABLED" : "NO_ROLES",
+      roles: [],
+      ...completed,
+    };
+  }
+  if (
+    completed["kind"] === "AUTHORITY" &&
+    Object.hasOwn(completed, "before") &&
+    Object.hasOwn(completed, "after") &&
+    Object.hasOwn(completed, "accessScope")
+  ) {
+    return { basis: workBasis, effects: [], ...completed };
+  }
+  return null;
+};
+const adviceActs = (value: unknown) => (Array.isArray(value) ? value.filter(isCaseAct) : []);
+const completeObservation = (
+  completed: Record<string, unknown>,
+): Record<string, unknown> | null => {
+  if (
+    Object.hasOwn(completed, "productVersion") &&
+    Object.hasOwn(completed, "businessDate") &&
+    Object.hasOwn(completed, "timeZone") &&
+    !Object.hasOwn(completed, "capabilities")
+  ) {
+    return { observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`, ...completed };
+  }
+  if (
+    !Object.hasOwn(completed, "detail") &&
+    ["operationId", "recordedAt", "recordedBy", "subject"].every((key) =>
+      Object.hasOwn(completed, key),
+    )
+  ) {
+    return { basis: workBasis, ...completed };
+  }
+  return null;
+};
+const completeAdvice = (completed: Record<string, unknown>): Record<string, unknown> | null => {
+  if (isAdviceOrContext(completed)) {
+    return {
+      maintenance: initialMaintenance,
+      ...(Object.hasOwn(completed, "capabilities")
+        ? {
+            observedAt: `${String(completed["businessDate"])}T12:00:00.000000Z`,
+            issuer: "https://issuer.example/",
+            roles: [],
+          }
+        : {}),
+      ...(Object.hasOwn(completed, "acts")
+        ? {
+            recommended: null,
+            blocked: blockedCaseActs(adviceActs(completed["acts"])),
+          }
+        : {}),
+      ...completed,
+    };
+  }
+  return null;
+};
+const completeRead = (completed: Record<string, unknown>): unknown => {
+  const observed = completeObservation(completed);
+  if (observed !== null) {
+    return observed;
+  }
+  const advice = completeAdvice(completed);
+  if (advice !== null) {
+    return advice;
+  }
+  const authority = completeAuthorityRead(completed);
+  if (authority !== null) {
+    return authority;
+  }
+  if (isCaseReadSeed(completed)) {
+    return completeCaseRead(completed);
+  }
+
   if (
     Object.hasOwn(completed, "items") &&
     Object.hasOwn(completed, "offers") &&
     Object.hasOwn(completed, "nextCursor")
   ) {
-    return { basis: workBasis, ...completed };
+    return { basis: workBasis, exactReference: null, ...completed };
   }
   if (
     Object.hasOwn(completed, "counts") &&

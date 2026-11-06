@@ -50,8 +50,8 @@ let internal scalarText =
                 "\f"
                 "\r"
                 "\u001f"
-                " "
-                " "
+                "\u2028"
+                "\u2029"
                 " "
             ]
 
@@ -153,6 +153,27 @@ let internal responseString field =
     else
         Map.tryFind field responseStrings |> Option.defaultValue scalarText
 
+let private presentationIdentifier field (context: string) =
+    match field with
+    | "LabelId"
+    | "messageId"
+    | "reasonId" -> true
+    | "Key" ->
+        [ "PresentedChange."; "PresentedField." ]
+        |> List.exists (fun owner -> context.Contains(owner, StringComparison.Ordinal))
+    | _ -> false
+
+let private generatedResponseString field (context: string) =
+    if presentationIdentifier field context then
+        Gen.string (Range.constant 1 256) (Gen.char 'a' 'z')
+    elif context.EndsWith("ActorContext.Issuer", StringComparison.Ordinal) then
+        guid
+        |> Gen.map (fun value -> "https://issuer-" + value.ToString("N") + ".example/")
+    elif context.EndsWith("AccountSubject.Subject", StringComparison.Ordinal) then
+        scalarText
+    else
+        responseString field
+
 let internal generatedString response (source: Seeds) context =
     let field = name context
 
@@ -163,10 +184,8 @@ let internal generatedString response (source: Seeds) context =
         Gen.item (source.Tokens[context] |> Seq.distinct |> Seq.toArray)
     elif field = "Cursor" || field = "AfterCursor" then
         scalarText
-    elif response && context.EndsWith("AccountSubject.Subject", StringComparison.Ordinal) then
-        scalarText
     elif response then
-        responseString field
+        generatedResponseString field context
     else
         arbitraryText
 
@@ -176,6 +195,13 @@ let internal integer response context =
     let low, high =
         if context.Contains("InstallationOffer.Open", StringComparison.Ordinal) then
             0L, 0L
+        elif
+            field = "expectedRevision"
+            && context.Contains("ReminderAct`1.", StringComparison.Ordinal)
+        then
+            1L, JsonValue.MaximumInteger
+        elif field = "DisplayScale" then
+            0L, 4L
         elif field = "Limit" then
             1L, 50L
         elif
@@ -198,11 +224,17 @@ let internal integer response context =
                         "MaximumPageSize"
                         "MaximumIntegerDigits"
                         "maximumPageSize"
+                        "maximumGrants"
                         "integerDigits"
                     ])
         then
             1L, int64 Int32.MaxValue
-        elif not response || field = "ExpectedRevision" || field = "expectedRevision" then
+        elif
+            not response
+            || field = "CaseCount"
+            || field = "ExpectedRevision"
+            || field = "expectedRevision"
+        then
             0L, JsonValue.MaximumInteger
         else
             1L, JsonValue.MaximumInteger

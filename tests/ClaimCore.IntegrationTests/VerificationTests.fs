@@ -22,7 +22,7 @@ open ClaimCore.IntegrationTests.StoredDataFindingScenarios
 let private requestEffectAgreement (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        let sequence = CaseFixtures.sequence 4L
+        let sequence = CaseFixtures.sequence 5L
         let! original = row database sequence
         let request, snapshot = livePayload original
 
@@ -148,7 +148,7 @@ let tests =
                 "a self-consistent rehashed OPEN cannot assert a CLOSED result"
                 (run requestEffectAgreement)
             for occurrences in [ 2; 3 ] do
-                for earlier in [ None; Some 4L; Some 5L ] do
+                for earlier in [ None; Some 5L; Some 6L ] do
                     testCaseAsync
                         ($"duplicate identity with {occurrences} occurrences and corruption {earlier}")
                         (run (duplicateIdentity earlier occurrences))

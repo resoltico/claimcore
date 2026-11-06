@@ -1,5 +1,11 @@
+import { capabilityRoleRequirements } from "@contracts/client";
+import { isTerm, termLabel } from "./terms";
 import type { Notice } from "../protocol/notices";
-import { diagnosticParameters as requirements, diagnosticMessageKeys } from "@contracts/messages";
+import {
+  diagnosticParameters as requirements,
+  diagnosticMessageKeys,
+  diagnosticGuiMessageKeys,
+} from "@contracts/messages";
 import { calendarDate, exactInteger } from "./format";
 import { renderCatalogKey, renderKey, translate } from "./messages";
 import type { MessageKey } from "./types";
@@ -23,6 +29,38 @@ const contextFields = new Set([
   "issues",
   "relatedDate",
 ]);
+const requiredRoleNames = (preferences: Preferences, capability: string): string => {
+  const rolePolicies: Readonly<Record<string, ReadonlyArray<string>>> = capabilityRoleRequirements;
+  const roles = rolePolicies[capability];
+  if (roles === undefined || roles.length === 0) {
+    return translate(preferences, "notice.unknownDiagnostic");
+  }
+  const labels = roles.map((role) =>
+    isTerm("role", role)
+      ? termLabel(preferences, "role", role)
+      : translate(preferences, "notice.unknownDiagnostic"),
+  );
+  return labels.reduce((first, second) =>
+    renderKey(preferences, "notice.alternativeRoles", { first, second }),
+  );
+};
+const diagnosticEnum = (
+  preferences: Preferences,
+  code: string,
+  key: string,
+  value: string,
+): string => {
+  if (code === "NOT_AUTHORIZED" && key === "required") {
+    return requiredRoleNames(preferences, value);
+  }
+  if (code === "NOT_OFFERED" && key === "state" && isTerm("headline", value)) {
+    return termLabel(preferences, "headline", value);
+  }
+  if (code === "REMINDER_NOT_OFFERED" && key === "state" && isTerm("reminderState", value)) {
+    return termLabel(preferences, "reminderState", value);
+  }
+  return value;
+};
 const diagnosticText = (
   preferences: Preferences,
   diagnostic: Extract<Notice, { kind: "diagnostic" }>["diagnostic"],
@@ -34,7 +72,13 @@ const diagnosticText = (
   const supplied: Readonly<Record<string, unknown>> =
     diagnostic.code === "INVALID_INPUT" && "issues" in diagnostic
       ? { issueCount: diagnostic.issues.length }
-      : Object.fromEntries(Object.entries(diagnostic).filter(([key]) => !contextFields.has(key)));
+      : Object.fromEntries(
+          Object.entries(diagnostic).filter(
+            ([key]) =>
+              !contextFields.has(key) &&
+              !(diagnostic.code === "REVISION_CONFLICT" && key === "changes"),
+          ),
+        );
   const suppliedKeys = Object.keys(supplied).sort().join(",");
   if (
     messageKey === undefined ||
@@ -55,12 +99,16 @@ const diagnosticText = (
     return translate(preferences, "notice.unknownDiagnostic");
   }
   const parameters = Object.fromEntries(
-    Object.entries(supplied).map(([k, v]) => [
-      k,
-      typeof v === "string" ? v : exactInteger(String(v), preferences.displayLocale),
-    ]),
+    Object.entries(supplied).map(([key, value]) => {
+      if (typeof value !== "string") {
+        return [key, exactInteger(String(value), preferences.displayLocale)];
+      }
+      const displayed = diagnosticEnum(preferences, diagnostic.code, key, value);
+      return [key, displayed];
+    }),
   );
-  const message = renderKey(preferences, messageKey, parameters);
+  const displayedKey = diagnosticGuiMessageKeys[diagnostic.code];
+  const message = renderKey(preferences, displayedKey, parameters);
   if ("relatedDate" in diagnostic && diagnostic.relatedDate !== undefined) {
     const related = diagnostic.relatedDate;
     return `${message} (${renderCatalogKey(preferences, `field.${related.field}.label`)}: ${calendarDate(related.value, preferences.displayLocale)})`;

@@ -71,6 +71,8 @@ let checks installation instant =
                      Snapshot = Some root
                      ChangedAt = None
                      RecordedBy = None
+                     SummaryChangedAt = None
+                     SummaryRecordedBy = None
                      MissingPayloadAt = None
                      PresentPayloadAt = None
                  })

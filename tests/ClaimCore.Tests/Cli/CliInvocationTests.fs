@@ -128,15 +128,23 @@ let grammarTests =
         [ testCase "preparation is exact and malformed flags fail" verbPreparation ]
 
 let private nonLedgerVerbExamples =
-    OperationCatalog.all
+    CommandGrammar.operations
     |> List.filter (fun operation -> operation.SelectedAct.IsNone)
     |> List.map (fun operation ->
         ClaimCore.Tests.CliExamples.queryArguments operation,
         ActorEndpoint.token operation.Endpoint)
 
 let private assertNonLedgerVerbCoverage registry mapped =
-    // Session routes are browser transport; preview is selected by a mutation verb option.
-    let excluded = Set.ofList [ "session"; "session.logout"; "operation.preview" ]
+    // Session routes are browser transport; preview is selected by an act option. Retired human history/activity verbs remain explicit API calls.
+    let excluded =
+        Set.ofList
+            [
+                "session"
+                "session.logout"
+                "operation.preview"
+                "case.history"
+                "case.activity"
+            ]
 
     let eligible =
         registry
@@ -282,6 +290,17 @@ let private localizedReplyRendering () =
 
                 Expect.isGreaterThan rendered.Length 1 "Every admitted reply has human output"
 
+                Expect.isFalse
+                    (rendered.Contains "{\"" || rendered.Contains "[{\"")
+                    "Human replies never fall back to serialized business objects"
+
+                Expect.isFalse
+                    (System.Text.RegularExpressions.Regex.IsMatch(
+                        rendered,
+                        @"(?:^|\s|:)(?:label|field|act|role|capability|view|headline|caseStage|requesterState|accountState|cli)\.[A-Za-z0-9_.]+"
+                    ))
+                    "Every human descriptor uses translated labels and sentences"
+
 [<Tests>]
 let renderingTests =
     testList
@@ -318,6 +337,7 @@ let private authorityPreviewInvocation verb =
                 "--preview"
             ]
             @ role
+            @ (if verb = "register" then [ "--name"; "Authored" ] else [])
         )
 
     Frames.admit prepared.Bytes |> Result.defaultWith (fun _ -> failtest "Prepared")
@@ -342,17 +362,50 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                 (Previewed.Reviewed >> Outcome.Succeeded) (
                     OperationReview.Authority
                         {
+                            Basis = ClaimCore.TestSupport.Inputs.workBasis
+                            Effects =
+                                (if enabledBefore <> enabledAfter then
+                                     [
+                                         if enabledAfter then
+                                             AuthorityReviewEffect.Enable
+                                         else
+                                             AuthorityReviewEffect.Disable
+                                     ]
+                                 elif grantBefore <> grantAfter then
+                                     [
+                                         if grantAfter then
+                                             AuthorityReviewEffect.Grant
+                                                 {
+                                                     Role = Role.CaseReader
+                                                     Scope = GrantScope.Installation
+                                                 }
+                                         else
+                                             AuthorityReviewEffect.Revoke
+                                                 {
+                                                     Role = Role.CaseReader
+                                                     Scope = GrantScope.Installation
+                                                 }
+                                     ]
+                                 else
+                                     [
+                                         if enabledAfter then
+                                             AuthorityReviewEffect.Enable
+                                         else
+                                             AuthorityReviewEffect.Disable
+                                     ])
                             Target = None
                             AccessScope = GrantScope.Installation
                             Before =
                                 {
                                     Enabled = enabledBefore
+                                    Profile = None
                                     Access = []
                                     Grants = grants grantBefore
                                 }
                             After =
                                 {
                                     Enabled = enabledAfter
+                                    Profile = None
                                     Access = []
                                     Grants = grants grantAfter
                                 }
@@ -366,7 +419,11 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
             OperationId = Some response.OperationId
             Delivery = DeliveryState.Delivered
             Result =
-                FrameResult.Reply(ClaimCore.Tests.CliReplies.ofValue Api.operationPreview response)
+                FrameResult.Reply(
+                    ClaimCore.Tests.CliReplies.ofValue
+                        Api.operationPreview
+                        (PresentedPreviewReply.ofCore response)
+                )
         }
 
     frame
@@ -384,9 +441,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             match language with
             | "en" ->
                 [
-                    "Register actor"
-                    "Enable actor"
-                    "Disable actor"
+                    "Register account"
+                    "Enable account"
+                    "Disable account"
                     "Grant role"
                     "Revoke role"
                 ],
@@ -395,9 +452,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 "Installation"
             | "lv" ->
                 [
-                    "Reģistrēt dalībnieku"
-                    "Iespējot dalībnieku"
-                    "Atspējot dalībnieku"
+                    "Reģistrēt kontu"
+                    "Iespējot kontu"
+                    "Atspējot kontu"
                     "Piešķirt lomu"
                     "Atsaukt lomu"
                 ],
@@ -405,7 +462,7 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 "Lietu lasītājs",
                 "Instalācija"
             | "ar" ->
-                [ "تسجيل جهة"; "تفعيل الجهة"; "تعطيل الجهة"; "منح دور"; "سحب دور" ],
+                [ "تسجيل حساب"; "تمكين الحساب"; "تعطيل الحساب"; "منح دور"; "سحب دور" ],
                 "شخص",
                 "قارئ الحالات",
                 "التثبيت"
@@ -422,24 +479,35 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
             "Authority preview identifies the exact act and principal using core labels"
 
         if enabledBefore <> enabledAfter then
+            let yes, no =
+                match language with
+                | "lv" -> "Jā", "Nē"
+                | "ar" -> "نعم", "لا"
+                | _ -> "Yes", "No"
+
             let expected =
-                (if enabledBefore then "true" else "false")
-                + " → "
-                + (if enabledAfter then "true" else "false")
+                (if enabledBefore then yes else no) + " → " + (if enabledAfter then yes else no)
 
             Expect.stringContains rendered expected "The enabled transition is displayed"
 
         if grantBefore <> grantAfter then
-            let expected =
+            let absent = MessageCatalogs.render language "label.notRecorded" Map.empty
+
+            let expected role =
                 if grantBefore then
-                    reader + "  " + installation + "  — → —"
+                    role + " → " + absent
                 else
-                    "— → " + reader + "  " + installation + "  —"
+                    absent + " → " + role
 
             Expect.stringContains
                 rendered
-                expected
-                "The role and installation scope are displayed in the correct direction"
+                (expected reader)
+                "The role is displayed in the correct direction"
+
+            Expect.stringContains
+                rendered
+                (expected installation)
+                "The scope is displayed in the correct direction"
 
 [<Tests>]
 let authorityTextTests =
@@ -524,12 +592,22 @@ let recoveryCommands =
 
                     let context =
                         match ClaimCore.TestSupport.ResponseExamples.defaultReply Api.context with
-                        | Outcome.Succeeded value -> value
+                        | Outcome.Succeeded {
+                                                Requester = RequesterState.Active value
+                                            } -> value
                         | _ -> failtest "Settlement needs an authenticated context fixture"
 
-                    for language, yes in [ "en", "yes"; "lv", "jā"; "ar", "نعم" ] do
+                    for language in [ "en"; "lv"; "ar" ] do
                         for answer, expected in
-                            [ None, false; Some "", false; Some "no", false; Some yes, true ] do
+                            [
+                                None, false
+                                Some "", false
+                                Some "yes", false
+                                Some "jā", false
+                                Some "نعم", false
+                                Some(operation.ToString("D") + " "), false
+                                Some(operation.ToString("D")), true
+                            ] do
                             let captured = StringBuilder()
 
                             let console: InteractiveConsole =
@@ -545,7 +623,7 @@ let recoveryCommands =
                             Expect.equal
                                 (CliConfirmation.settlement console language context operation)
                                 expected
-                                "Explicit localized affirmation is required"
+                                "Only the exact operation ID confirms irreversible settlement"
 
                             Expect.stringContains
                                 (captured.ToString())

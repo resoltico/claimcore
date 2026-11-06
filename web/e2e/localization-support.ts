@@ -1,12 +1,17 @@
 import { expect, type Page, type Locator, type APIResponse } from "@playwright/test";
-import { settledWorkspaceHeader } from "./workspace-navigation";
+import {
+  chooseOption,
+  compactSettingsNavigation,
+  settledWorkspaceHeader,
+} from "./workspace-navigation";
 import type { EndpointId } from "@contracts/client";
 import { endpoints } from "@contracts/client";
 import type { ServiceResponse } from "../src/protocol/types";
 import { strictJsonBytes } from "../src/api/responseBytes";
 import { isHostFailure, isResponse } from "../src/protocol/client";
+import { catalogLanguage, installLanguage } from "../src/presentation/languageCatalog";
 import { preferenceKey } from "../src/presentation/preferences";
-import type { Language, DisplayLocale } from "../src/presentation/preferences";
+import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
 import enCore from "../../src/ClaimCore.Protocol/Messages/Localization/en.json" with { type: "json" };
 import lvCore from "../../src/ClaimCore.Protocol/Messages/Localization/lv.json" with { type: "json" };
 import arCore from "../../src/ClaimCore.Protocol/Messages/Localization/ar.json" with { type: "json" };
@@ -29,43 +34,97 @@ export const seedPresentation = async (
     ({ key, preferences }) => {
       localStorage.setItem(key, JSON.stringify(preferences));
     },
-    { key: preferenceKey, preferences: { version: 2, language, displayLocale, theme: "SYSTEM" } },
+    {
+      key: preferenceKey,
+      preferences: {
+        version: 3,
+        language,
+        displayLocale,
+        mode: "system",
+        accent: "green" as const,
+      },
+    },
+  );
+};
+/** Admit the same complete catalog pair for Node-side presentation expectations. */
+export const installTestLanguage = (language: Language): void => {
+  const selected = catalogLanguage(language);
+  installLanguage(
+    selected,
+    { en: enCore, lv: lvCore, ar: arCore }[selected],
+    { en: enChrome, lv: lvChrome, ar: arChrome }[selected],
   );
 };
 export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
   ({ en, lv, ar })[language][key];
 export const openLabel = (language: "en" | "lv" | "ar"): string =>
   ({ en, lv, ar })[language]["act.OPEN.label"];
-const openPreferences = async (page: Page): Promise<boolean> => {
-  const controls = page.locator('select[id$="-language"]:visible');
-  await controls
-    .or(page.locator(".workspace-header:visible"))
-    .first()
-    .waitFor({ state: "visible" });
-  if (await controls.count()) {
-    return false;
+type PreferenceVisit =
+  { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
+/** Expose the real Settings navigation without accepting a draft/uncertainty guard. */
+export const settingsNavigation = async (page: Page): Promise<Locator> => {
+  const drawerSettings = page.locator(
+    '[role="dialog"] [data-open-settings], [role="dialog"] button:has(use[href="#claimcore-icon-settings"])',
+  );
+  if (await drawerSettings.isVisible()) {
+    return drawerSettings;
   }
   await settledWorkspaceHeader(page);
-  const settings = page.locator("[data-settings-button]");
-  if (!(await settings.isVisible())) {
-    await page.locator(".workspace-header button[aria-expanded]").click();
+  const compact = await page.evaluate(() => window.matchMedia("(width < 40rem)").matches);
+  if (compact) {
+    return compactSettingsNavigation(page);
   }
-  await settings.click();
-  return true;
+  const account = page.locator(".workspace-sidebar .account-menu");
+  if ((await account.getAttribute("open")) === null) {
+    await account.locator(":scope > summary").click();
+  }
+  const link = account.locator('a[href="/settings"]');
+  return link;
 };
-// Role lookup includes inert background controls; require the active native control.
-export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
-  const opened = await openPreferences(page);
-  const control = page
-    .getByRole("combobox")
-    .and(page.locator("select:not([inert], [inert] *)"))
-    .and(page.locator('select[id$="-language"]'));
-  await expect(control).toHaveCount(1);
-  await control.selectOption(language);
-  await expect(control).toHaveValue(language);
-  if (opened) {
+const openPreferences = async (page: Page): Promise<PreferenceVisit> => {
+  const panel = page.locator(".settings-panel");
+  if (await panel.isVisible()) {
+    return { kind: "CURRENT" };
+  }
+  const footer = page.locator(".login-footer button");
+  if (await footer.isVisible()) {
+    await footer.click();
+    await expect(panel).toBeVisible();
+    return { kind: "DIALOG" };
+  }
+  const navigation = await settingsNavigation(page);
+  const returnUrl = page.url();
+  await navigation.click();
+  await expect(page).toHaveURL((url) => url.pathname === "/settings");
+  await expect(panel).toBeVisible();
+  return { kind: "PAGE", returnUrl };
+};
+const closePreferences = async (page: Page, visit: PreferenceVisit): Promise<void> => {
+  if (visit.kind === "DIALOG") {
     await page.keyboard.press("Escape");
   }
+  if (visit.kind === "PAGE") {
+    const back = page.locator("[data-return-workspace]");
+    if (await back.isVisible()) {
+      await back.click();
+    } else {
+      await page.goBack();
+    }
+    await expect(page).toHaveURL(visit.returnUrl);
+  }
+};
+/** Request through Settings; callers may hold a language asset before awaiting activation. */
+export const requestLanguage = async (page: Page, language: Language): Promise<void> => {
+  const visit = await openPreferences(page);
+  const control = page.locator(
+    `.settings-panel input[type="radio"][name$="-language"][value="${language}"]`,
+  );
+  await control.check();
+  await expect(control).toBeChecked();
+  await closePreferences(page, visit);
+};
+export const selectLanguage = async (page: Page, language: Language): Promise<void> => {
+  await requestLanguage(page, language);
   await expect(page.locator("html")).toHaveAttribute(
     "lang",
     language === "en-XA" ? "en" : language,
@@ -73,37 +132,40 @@ export const selectLanguage = async (page: Page, language: Language): Promise<vo
   await expect(page.locator("html")).toHaveAttribute("dir", language === "ar" ? "rtl" : "ltr");
 };
 export const selectFormat = async (page: Page, locale: DisplayLocale): Promise<void> => {
-  const opened = await openPreferences(page);
-  const control = page
-    .getByRole("combobox")
-    .and(page.locator("select:not([inert], [inert] *)"))
-    .and(page.locator('select[id$="-format"]'));
-  await expect(control).toHaveCount(1);
-  await control.selectOption(locale);
-  await expect(control).toHaveValue(locale);
-  if (opened) {
-    await page.keyboard.press("Escape");
-  }
+  const visit = await openPreferences(page);
+  const control = page.locator('.settings-panel [role="combobox"][id$="-format"]');
+  await chooseOption(page, control, locale);
+  await expect(control).toHaveAttribute("value", locale);
+  await closePreferences(page, visit);
+};
+export const selectMode = async (page: Page, mode: Preferences["mode"]): Promise<void> => {
+  const visit = await openPreferences(page);
+  const control = page.locator(
+    `.settings-panel input[type="radio"][name$="-mode"][value="${mode}"]`,
+  );
+  await control.check();
+  await expect(control).toBeChecked();
+  await closePreferences(page, visit);
 };
 export const expectPreferences = async (
   page: Page,
   expected: { language?: Language; displayLocale?: DisplayLocale },
 ) => {
-  const opened = await openPreferences(page);
+  const visit = await openPreferences(page);
   if (expected.language !== undefined) {
-    await expect(page.locator('select[id$="-language"]')).toHaveValue(expected.language);
+    await expect(
+      page.locator(
+        `.settings-panel input[type="radio"][name$="-language"][value="${expected.language}"]`,
+      ),
+    ).toBeChecked();
   }
   if (expected.displayLocale !== undefined) {
-    await expect(page.locator('select[id$="-format"]')).toHaveValue(expected.displayLocale);
+    await expect(page.locator('.settings-panel [role="combobox"][id$="-format"]')).toHaveAttribute(
+      "value",
+      expected.displayLocale,
+    );
   }
-  if (expected.language !== undefined && expected.language !== "en-XA") {
-    await expect(
-      page.getByText(ui(expected.language, "ui.preferencesHint"), { exact: true }),
-    ).toBeVisible();
-  }
-  if (opened) {
-    await page.keyboard.press("Escape");
-  }
+  await closePreferences(page, visit);
 };
 // Session checks and autonomous work-date observations run independently of foreground editing.
 // Keep every other endpoint, including all mutations, in exact request-count assertions.
@@ -228,21 +290,33 @@ export const pauseJsonReply = <K extends EndpointId>(page: Page, endpoint: K, dr
 export { noHorizontalOverflow } from "./layout-support";
 
 export const expectKeyboardContained = async (page: Page, dialog: Locator): Promise<void> => {
-  await dialog.getByRole("checkbox").focus();
+  const challenge = dialog.locator(".irreversible-confirmation input");
+  const start =
+    (await challenge.count()) === 1 ? challenge : dialog.locator("button[data-confirm-operation]");
+  await start.focus();
   for (let index = 0; index < 12; index += 1) {
     await page.keyboard.press("Tab");
     expect(await dialog.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   }
 };
 
+/** Assert the actual consent surface without submitting; callers explicitly press the act button. */
 export const confirmReview = async (page: Page): Promise<void> => {
   const dialog = page.getByRole("dialog");
-  const checkbox = dialog.getByRole("checkbox");
-  await dialog
-    .locator("label")
-    .filter({ has: page.getByRole("checkbox") })
-    .click();
-  await expect(checkbox).toBeChecked();
+  const action = dialog.locator("button[data-confirm-operation]");
+  await expect(action).toHaveCount(1);
+  await expect(action).toBeVisible();
+  const challenge = dialog.locator(".irreversible-confirmation input");
+  if ((await challenge.count()) === 1) {
+    // A destructive caller must author the known exact target itself; a generic helper cannot consent to it.
+    await expect(challenge).toBeVisible();
+    await expect(action).toBeDisabled();
+    await challenge.focus();
+    return;
+  }
+  await expect(dialog.getByRole("checkbox")).toHaveCount(0);
+  await expect(action).toBeEnabled();
+  await action.focus();
 };
 
 export const businessFormatRefusalText = {

@@ -29,8 +29,11 @@ module Service =
             InstallationId = installationId
             Store = store
             Calendar = calendar
+            Claims = RequesterClaims.empty
             Principal = principal
         }
+
+    let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
     let private mutationResult =
         function
@@ -50,6 +53,7 @@ module Service =
     let private admitAuthority = Authority.parse
 
     let private write
+        (services: ServiceContext)
         (ct: CancellationToken)
         admit
         (persist: 'request -> Task<Result<Verdict<OperationReceipt>, StoreFailure>>)
@@ -59,15 +63,15 @@ module Service =
                 return ExecuteResult.Failed CoreFault.StoreUnavailable
             else
                 match admit () with
-                | Error refusal -> return ExecuteResult.Rejected refusal
+                | Error refusal ->
+                    let! result = RequestRefusals.write services ct refusal
+                    return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
                 | Ok request ->
                     let! result = persist request
                     return result |> Result.map mutationResult |> Result.defaultWith mutationFailure
         }
 
     let private advisory (services: ServiceContext) instant act before after =
-        let productVersion = services.ProductVersion
-        let calendar = services.Calendar
         let before = before |> Option.map Case.snapshot
         let after = Case.snapshot after
 
@@ -75,15 +79,11 @@ module Service =
             Before = before
             Proposed = after
             Changes = CaseChanges.review act before after
-            Context =
-                {
-                    ProductVersion = productVersion
-                    EffectiveBusinessDate = calendar.DateAt instant
-                    TimeZoneId = calendar.TimeZoneId
-                }
+            Context = ServiceContext.runtime services instant
         }
 
     let private review
+        (services: ServiceContext)
         (ct: CancellationToken)
         admit
         (read: 'request -> Task<Result<'view, StoreFailure>>)
@@ -95,7 +95,7 @@ module Service =
                 return Outcome.Failed CoreFault.StoreUnavailable
             else
                 match admit () with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services ct refusal
                 | Ok request ->
                     let! result = read request
 
@@ -117,7 +117,7 @@ module Service =
                 return Outcome.Failed CoreFault.StoreUnavailable
             else
                 match admitCase request with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services ct refusal
                 | Ok request ->
                     let! result =
                         services.Store.Read
@@ -132,11 +132,35 @@ module Service =
                                                     (CaseExecution.operationId request)
                                                     (CaseExecution.target request)
 
-                                            match CaseExecution.complete request view.Case with
-                                            | Error refusal -> return Outcome.Rejected refusal
-                                            | Ok admitted ->
+                                            match CaseExecution.complete services request view with
+                                            | Error refusal ->
+                                                let! refusal =
+                                                    ConflictReads.refusal
+                                                        services
+                                                        tx
+                                                        view.Actor
+                                                        view.Case
+                                                        ChangeEntity.Case
+                                                        (CaseExecution.expected request)
+                                                        refusal
+
                                                 return
-                                                    CaseExecution.review services admitted view
+                                                    refusal
+                                                    |> Result.map Outcome.Rejected
+                                                    |> Result.defaultWith Outcome.Failed
+                                            | Ok admitted ->
+                                                let! proposed =
+                                                    ConflictReads.verdict
+                                                        services
+                                                        tx
+                                                        view.Actor
+                                                        view.Case
+                                                        ChangeEntity.Case
+                                                        (Revision.value admitted.ExpectedRevision)
+                                                        (CaseExecution.review services admitted view)
+
+                                                return
+                                                    proposed
                                                     |> Verdict.outcome
                                                         (fun (before, after) ->
                                                             advisory
@@ -157,6 +181,7 @@ module Service =
 
     let private previewAuthority (services: ServiceContext) request ct =
         review
+            services
             ct
             (fun () -> admitAuthority request)
             (fun (admitted: AuthorityCommand) ->
@@ -170,12 +195,12 @@ module Service =
                                     (Authority.factsNeeded admitted.Act)
                                     admitted.OperationId
                                     admitted.Target
-                                    (AuthorityRequests.targetCase admitted)
+                                    (AuthorityRequests.targetCases admitted)
                         CancellationToken = ct
                     })
             (AuthorityExecution.review services)
-            (fun _ (view: AuthorityExecutionFacts) (_, projection) ->
-                AuthorityReviews.describe view projection |> OperationReview.Authority)
+            (fun _ (view: AuthorityExecutionFacts) proposal ->
+                AuthorityReviews.describe services view proposal |> OperationReview.Authority)
 
     let preview (services: ServiceContext) input ct =
         task {
@@ -185,13 +210,11 @@ module Service =
                 | OperationInput.Authority request -> previewAuthority services request ct
                 | OperationInput.Work request ->
                     match WorkExecution.prepareWork request with
-                    | Error refusal ->
-                        System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal)
+                    | Error refusal -> RequestRefusals.read services ct refusal
                     | Ok prepared -> WorkExecution.preview services prepared ct
                 | OperationInput.Reminder request ->
                     match WorkExecution.prepareReminder request with
-                    | Error refusal ->
-                        System.Threading.Tasks.Task.FromResult(Outcome.Rejected refusal)
+                    | Error refusal -> RequestRefusals.read services ct refusal
                     | Ok prepared -> WorkExecution.preview services prepared ct
 
             return
@@ -206,16 +229,19 @@ module Service =
             let! outcome =
                 match input with
                 | OperationInput.Case request ->
-                    write ct (fun () -> admitCase request) (fun command ->
+                    write services ct (fun () -> admitCase request) (fun command ->
                         CaseExecution.run services command ct)
                 | OperationInput.Work request ->
-                    write ct (fun () -> WorkExecution.prepareWork request) (fun prepared ->
+                    write services ct (fun () -> WorkExecution.prepareWork request) (fun prepared ->
                         WorkExecution.run services prepared ct)
                 | OperationInput.Reminder request ->
-                    write ct (fun () -> WorkExecution.prepareReminder request) (fun prepared ->
-                        WorkExecution.run services prepared ct)
+                    write
+                        services
+                        ct
+                        (fun () -> WorkExecution.prepareReminder request)
+                        (fun prepared -> WorkExecution.run services prepared ct)
                 | OperationInput.Authority request ->
-                    write ct (fun () -> admitAuthority request) (fun command ->
+                    write services ct (fun () -> admitAuthority request) (fun command ->
                         AuthorityExecution.run services command ct)
 
             return
@@ -235,11 +261,14 @@ module Service =
     let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
     let workOverview = WorkQueries.overview
+    let caseViews = ViewQueries.cases
+    let reminderViews = ViewQueries.reminders
     let activity = WorkQueries.activity
 
     let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
+    let timeline = TimelineQueries.read
     let history = Queries.history
 
     let observe services (input: OperationLookup) ct =
@@ -279,5 +308,8 @@ module Service =
     let grants = Queries.grants
     let authorityHistory = Queries.authorityHistory
 
-    let provisionOwner services operationId token =
-        AuthorityExecution.provisionStore services operationId token
+    let provisionOwner services operationId profile token =
+        AuthorityExecution.provisionStore services operationId profile token
+
+    let accessRequests = AccessRequestQueries.page
+    let dismissAccessRequest = AccessRequestQueries.dismiss

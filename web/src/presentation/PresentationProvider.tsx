@@ -15,7 +15,7 @@ import { createPresenter } from "./presenter";
 import { catalogLanguage, languageLoaded, loadLanguage } from "./languageCatalog";
 import { bootMessages } from "../generated/chrome-boot";
 import {
-  loadPreferences,
+  loadPreferenceState,
   savePreferences,
   changePreferences,
   languageDirection,
@@ -30,9 +30,10 @@ type State = {
   pending: Language | null;
   failed: Language | null;
   persistenceFailed: boolean;
-  changed: boolean;
+  changed: PreferenceChange | null;
+  detected: boolean;
 };
-const activate = (current: State, language: Language): State => {
+const activate = (current: State, language: Language, initiated: boolean): State => {
   const preferences = changePreferences(current.preferences, { kind: "LANGUAGE", language });
   return {
     ...current,
@@ -40,26 +41,29 @@ const activate = (current: State, language: Language): State => {
     ready: true,
     pending: null,
     failed: null,
-    persistenceFailed: !savePreferences(preferences),
-    changed: true,
+    persistenceFailed: initiated ? !savePreferences(preferences) : current.persistenceFailed,
+    changed: initiated ? { kind: "LANGUAGE", language } : current.changed,
+    detected: initiated ? false : current.detected,
   };
 };
 export const PresentationProvider = ({ children }: { children: ReactNode }) => {
-  const initial = useMemo(() => loadPreferences(), []);
+  const initialState = useMemo(() => loadPreferenceState(), []);
+  const initial = initialState.preferences;
   const [state, setState] = useState<State>(() => ({
     preferences: initial,
     ready: languageLoaded(initial.language),
     pending: languageLoaded(initial.language) ? null : initial.language,
     failed: null,
     persistenceFailed: false,
-    changed: false,
+    changed: null,
+    detected: initialState.detected,
   }));
   const generation = useRef(0);
-  const beginLoad = useCallback((language: Language, identity: number) => {
+  const beginLoad = useCallback((language: Language, identity: number, initiated: boolean) => {
     void loadLanguage(language)
       .then(() => {
         if (identity === generation.current) {
-          setState((current) => activate(current, language));
+          setState((current) => activate(current, language, initiated));
         }
       })
       .catch(() => {
@@ -72,17 +76,17 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
     (language: Language) => {
       const identity = ++generation.current;
       if (languageLoaded(language)) {
-        setState((current) => activate(current, language));
+        setState((current) => activate(current, language, true));
         return;
       }
       setState((current) => ({ ...current, pending: language, failed: null }));
-      beginLoad(language, identity);
+      beginLoad(language, identity, true);
     },
     [beginLoad],
   );
   useEffect(() => {
     if (!languageLoaded(initial.language)) {
-      beginLoad(initial.language, ++generation.current);
+      beginLoad(initial.language, ++generation.current, false);
     }
     return () => {
       generation.current += 1;
@@ -96,11 +100,8 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
   useLayoutEffect(() => {
     document.documentElement.lang = catalogLanguage(preferences.language);
     document.documentElement.dir = languageDirection(preferences.language);
-    if (preferences.theme === "SYSTEM") {
-      delete document.documentElement.dataset["theme"];
-    } else {
-      document.documentElement.dataset["theme"] = preferences.theme.toLowerCase();
-    }
+    document.documentElement.dataset["mode"] = preferences.mode;
+    document.documentElement.dataset["accent"] = preferences.accent;
   }, [preferences]);
   const setPreferences = (change: PreferenceChange): void => {
     if (change.kind === "LANGUAGE") {
@@ -113,7 +114,8 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
         ...current,
         preferences: next,
         persistenceFailed: !savePreferences(next),
-        changed: true,
+        changed: change,
+        detected: false,
       };
     });
   };
@@ -157,12 +159,13 @@ export const PresentationProvider = ({ children }: { children: ReactNode }) => {
         setPreferences,
         persistenceFailed: state.persistenceFailed,
         changed: state.changed,
+        detectedLanguage: state.detected,
         requestedLanguage: state.pending,
         languageFailure: state.failed,
         retryLanguage,
       }}
     >
-      <I18nProvider locale={preferences.displayLocale}>{children}</I18nProvider>
+      <I18nProvider locale={catalogLanguage(preferences.language)}>{children}</I18nProvider>
     </PresentationContext>
   );
 };

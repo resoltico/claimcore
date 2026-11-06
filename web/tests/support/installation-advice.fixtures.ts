@@ -1,5 +1,5 @@
 import type { InstallationOffer } from "@contracts/client";
-type Act = "REGISTER" | "GRANT" | "REVOKE" | "ENABLE" | "DISABLE";
+type Act = Extract<InstallationOffer, { kind: "AUTHORITY_ACT" }>["act"];
 export const installationOffers = (
   acts: ReadonlyArray<Act | "OPEN">,
 ): ReadonlyArray<InstallationOffer> =>

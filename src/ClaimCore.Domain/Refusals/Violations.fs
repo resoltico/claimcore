@@ -22,5 +22,7 @@ type Violation =
     | OperationIdRequired
     | ExpectedRevisionRange
     | PageLimitRange of maximumPageSize: int
+    | GrantCountRange of maximumGrants: int
+    | DuplicateGrant
     | PaymentClearRequired
     | PaymentAcknowledgementRequired

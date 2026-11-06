@@ -26,14 +26,18 @@ module internal AuthorityHistoryRows =
         | AuthorityHistoryFacts.Granted value
         | AuthorityHistoryFacts.Revoked value -> grant value
         | AuthorityHistoryFacts.Enabled
+        | AuthorityHistoryFacts.ProfileSet _
+        | AuthorityHistoryFacts.ProfileErased
         | AuthorityHistoryFacts.Disabled -> List.replicate 6 ""
 
     let values (entry: AuthorityHistoryEntry) =
         [
             Sequence.format entry.Sequence
             TextReplyFormat.instant entry.RecordedAt
-            ActorId.format entry.RecordedBy
-            ActorId.format entry.TargetActorId
+            ActorId.format entry.RecordedBy.ActorId
+            TextReplyFormat.actorName LocalizationPolicy.defaultLanguage entry.RecordedBy
+            ActorId.format entry.Target.ActorId
+            TextReplyFormat.actorName LocalizationPolicy.defaultLanguage entry.Target
             AuthorityKind.token (AuthorityHistoryFacts.kind entry.Facts)
         ]
         @ facts entry.Facts
@@ -50,8 +54,10 @@ module internal AuthorityHistoryRows =
                 [
                     "sequence"
                     "recordedAt"
-                    "recordedBy"
-                    "targetActorId"
+                    "recordedBy.actorId"
+                    "recordedBy.displayName"
+                    "target.actorId"
+                    "target.displayName"
                     "act"
                     "principal.kind"
                     "principal.issuer"

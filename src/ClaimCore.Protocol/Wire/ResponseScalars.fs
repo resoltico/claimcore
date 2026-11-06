@@ -37,7 +37,7 @@ module ResponseScalars =
     let private grammar minimum maximum pattern format =
         let anchored = "^(?:" + pattern + ")(?![\\s\\S])"
         let expression = Regex(anchored, RegexOptions.CultureInvariant)
-        let schema = Schema.String(Some anchored, format, Some minimum, maximum)
+        let schema = Schema.String(Some anchored, format, Some minimum, maximum, None)
         nonempty |> constrained schema expression.IsMatch
 
     let reference =
@@ -65,7 +65,8 @@ module ResponseScalars =
                 Some("^" + CalendarDate.Grammar + "(?![\\s\\S])"),
                 Some "date",
                 Some dateCharacters,
-                Some dateCharacters
+                Some dateCharacters,
+                None
             ))
             (fun value -> CalendarDate.parse value |> Result.isOk)
 
@@ -84,9 +85,28 @@ module ResponseScalars =
     let calendarDate = parsed CalendarDate.parse CalendarDate.format date
     let caseReference = parsed CaseReference.parse CaseReference.format reference
     let countryCode = parsed CountryCode.parse CountryCode.format country
-    let partyName = parsed PartyName.parse PartyName.format nonempty
-    let handlingSummary = parsed HandlingSummary.parse HandlingSummary.format nonempty
-    let reminderAction = parsed ReminderAction.parse ReminderAction.format nonempty
+
+    let partyName =
+        parsed PartyName.parse PartyName.format (boundedUtf8Text 1 PartyName.MaximumBytes)
+
+    let handlingSummary =
+        parsed
+            HandlingSummary.parse
+            HandlingSummary.format
+            (boundedUtf8Text 1 HandlingSummary.MaximumBytes)
+
+    let reminderAction =
+        parsed
+            ReminderAction.parse
+            ReminderAction.format
+            (boundedUtf8Text 1 ReminderAction.MaximumBytes)
+
+    let money =
+        (record Money.create: Fields<Money, _>)
+        |> field "amount" Money.amount (parsed Amount.parse Amount.format amount)
+        |> field "currency" Money.currencyValue (parsed Currency.parse Currency.format currency)
+        |> build
+        |> named "Money"
 
 
 
@@ -110,3 +130,20 @@ module ResponseScalars =
             WriteFields = fun value -> fields.WriteFields value @ [ name, codec.Write() ]
             Properties = fields.Properties @ [ name, codec.Schema ]
         }
+
+    let workDateBasis =
+        (record (fun observed date zone ->
+            {
+                WorkDateBasis.ObservedAt = observed
+                BusinessDate = date
+                TimeZoneId = zone
+            })
+        : Fields<WorkDateBasis, _>)
+        |> field "observedAt" _.ObservedAt instant
+        |> field
+            "businessDate"
+            _.BusinessDate
+            (calendarDate |> map CalendarDate.value CalendarDate.ofDate)
+        |> field "timeZone" _.TimeZoneId nonempty
+        |> build
+        |> named "WorkDateBasis"

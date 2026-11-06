@@ -232,7 +232,7 @@ let authorityEntries = 100000
 let authorityOperationStart = 2000000
 let authorityRole = Role.Auditor
 let authorityOwner = CaseFixtures.actorId (StoreFixtures.id 1)
-let readProfileCount = readPopulations.Length * 11 + 2
+let readProfileCount = readPopulations.Length * 14 + 2
 
 let authorityFingerprint cases target =
     fingerprint

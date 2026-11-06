@@ -16,7 +16,8 @@ type Schema =
         pattern: string option *
         format: string option *
         minimumLength: int option *
-        maximumLength: int option
+        maximumLength: int option *
+        maximumUtf8Bytes: int option
     | Integer of minimum: int64 * maximum: int64
     | Boolean
     | Null
@@ -24,8 +25,18 @@ type Schema =
     | OneOf of variants: Schema list * discriminator: (string * (string * string) list) option
     | Ref of string
     | Vocabulary of name: string * shape: Schema
+    /// A closed enum is partitioned between a scalar array and a keyed-record array.
+    | EnumPartition of
+        shape: Schema *
+        values: string list *
+        selected: string *
+        rejected: string *
+        rejectedKey: string
 
 module Schema =
+    [<Literal>]
+    let MaximumUtf8BytesKeyword = "x-claimcore-maxUtf8Bytes"
+
     /// Distinct string literals are disjoint, so their oneOf is exactly one enum.
     let tryLiteralSet variants =
         let values =

@@ -137,7 +137,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         accepted reopened |> ignore
         do! sql database "DROP INDEX claimcore.ledger_accepted_operation" [||]
 
-        for sequence in [ 5L .. int64 (3 + occurrences) ] do
+        for sequence in [ 6L .. int64 (4 + occurrences) ] do
             do!
                 rewrite database (CaseFixtures.sequence (sequence)) (fun value ->
                     let request, snapshot = livePayload value
@@ -160,7 +160,7 @@ let internal duplicateIdentity earlierFailure occurrences (database: PostgresFix
         | None -> ()
 
         let! result = Verification.verify database.OwnerSource None token
-        let sequence = earlierFailure |> Option.defaultValue 5L
+        let sequence = earlierFailure |> Option.defaultValue 6L
 
         let expected =
             if earlierFailure.IsSome then

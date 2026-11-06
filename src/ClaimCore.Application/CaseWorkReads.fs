@@ -5,11 +5,17 @@ open ClaimCore.Application.Contracts
 
 /// Current account labels/availability are batched for the page under its read snapshot.
 module internal CaseWorkReads =
-    let basis (services: ServiceContext) observed =
+    let facts (record: StoredCase) (work: CaseWorkView) : CaseWorkFacts =
         {
-            ObservedAt = observed
-            BusinessDate = services.Calendar.DateAt observed
-            TimeZoneId = services.Calendar.TimeZoneId
+            State =
+                record.Snapshot.State
+                |> CaseState.map (fun fields ->
+                    fields.Status, CaseProgress.ofPayment fields.Progress)
+            Responsible =
+                work.Responsible
+                |> Option.map (fun assigned ->
+                    assigned.ActorId, assigned.Availability = ActorAvailability.Available)
+            NextPendingDue = work.FollowUp
         }
 
     let private agrees (record: StoredCase) erased (summary: CaseWorkSummary option) =
@@ -31,12 +37,15 @@ module internal CaseWorkReads =
                     value.CaseId = record.CaseId && value.Revision = summary.Work.Revision))
             && (summary.Next
                 |> Option.forall (fun value -> Reminder.caseId value = record.CaseId))
+            && (payload |> Option.bind _.Work.Summary |> Option.isSome) =
+                summary.Work.SummaryChangedAt.IsSome
+            && summary.Work.SummaryChangedAt.IsSome = summary.Work.SummaryRecordedBy.IsSome
             && record.Index.Responsible = responsible
             && record.Index.FollowUp = followUp
             && record.Index.WorkSearchText =
                 (payload
                  |> Option.bind _.Work.Summary
-                 |> Option.map (HandlingSummary.format >> CaseSearch.normalize))
+                 |> Option.map (HandlingSummary.format >> TextSearch.normalize))
 
     let viewsFromSummaries
         (tx: IReadTx)
@@ -54,6 +63,16 @@ module internal CaseWorkReads =
                         snapshot.Work.Responsible |> Option.map (fun actor -> id, actor)))
 
             let! accounts = tx.AssignedAccounts assignments
+
+            let authorIds =
+                summaries
+                |> Map.values
+                |> Seq.collect (fun summary ->
+                    [ summary.Work.RecordedBy; summary.Work.SummaryRecordedBy ] |> List.choose id)
+                |> Seq.distinct
+                |> Seq.toList
+
+            let! authors = tx.ActorRefs authorIds
             let mutable result = Ok Map.empty
 
             for record in records do
@@ -71,7 +90,9 @@ module internal CaseWorkReads =
                         |> Option.map _.Work
                         |> Option.defaultValue CaseWork.empty
 
-                    let responsible = accounts |> Map.tryFind record.CaseId
+                    let responsible =
+                        work.Responsible
+                        |> Option.bind (fun actor -> Map.tryFind (record.CaseId, actor) accounts)
 
                     if work.Responsible.IsSome && responsible.IsNone then
                         result <- Error CoreFault.StoreIntegrityError
@@ -105,8 +126,34 @@ module internal CaseWorkReads =
                                 if erased then
                                     None
                                 else
-                                    summary |> Option.bind _.Work.RecordedBy
+                                    summary
+                                    |> Option.bind (fun value ->
+                                        value.Work.RecordedBy
+                                        |> Option.bind (fun id ->
+                                            match Map.tryFind id authors with
+                                            | Some actor -> Some actor
+                                            | None ->
+                                                result <- Error CoreFault.StoreIntegrityError
+                                                None))
                             Summary = if erased then None else work.Summary
+                            SummaryChangedAt =
+                                if erased then
+                                    None
+                                else
+                                    summary |> Option.bind _.Work.SummaryChangedAt
+                            SummaryRecordedBy =
+                                if erased then
+                                    None
+                                else
+                                    summary
+                                    |> Option.bind (fun value ->
+                                        value.Work.SummaryRecordedBy
+                                        |> Option.bind (fun id ->
+                                            match Map.tryFind id authors with
+                                            | Some actor -> Some actor
+                                            | None ->
+                                                result <- Error CoreFault.StoreIntegrityError
+                                                None))
                             NextAction = if erased then None else next |> Option.map Reminder.action
                             PendingReminders = if erased then 0L else pending
                             OverdueReminders =

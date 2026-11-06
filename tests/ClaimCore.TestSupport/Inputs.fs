@@ -1,11 +1,17 @@
 module ClaimCore.TestSupport.Inputs
 
 open ClaimCore.Domain
+open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Json
+
+let activeContext (reply: ContextReply) =
+    match reply.Requester with
+    | RequesterState.Active context -> context
+    | other -> failtestf "Fixture requires ACTIVE requester, observed %A" other
 
 let private accepted result =
     result
@@ -48,6 +54,8 @@ let unscheduledWork: CaseWorkView =
         ChangedAt = None
         RecordedBy = None
         Summary = None
+        SummaryChangedAt = None
+        SummaryRecordedBy = None
         NextAction = None
         PendingReminders = 0L
         OverdueReminders = 0L
@@ -82,6 +90,33 @@ let workView (state: CaseState<CaseFields>) : CaseWorkView =
         CanAssign = actionable
         CanCreateReminder = actionable
     }
+
+/// A complete stage value for transport-only fixtures; behavior tests use literal expected stages.
+let stageDisplay state =
+    CaseStages.describe
+        state
+        (Some(CalendarDate.ofDate workBasis.BusinessDate))
+        (Some(CalendarDate.ofDate workBasis.BusinessDate))
+        None
+    |> Result.defaultWith invalidOp
+
+/// A complete transport fixture; policy tests assert literal reasons from the actual service.
+let caseAdvice state =
+    let headline =
+        state
+        |> CaseState.map (fun (fields: CaseFields) ->
+            fields.Status, CaseProgress.ofPayment fields.Progress)
+        |> CaseHeadline.ofState
+
+    let blocked =
+        CaseActKind.all
+        |> List.map (fun act ->
+            {
+                CaseActRefusal.Act = act
+                Reason = Refusal.Case(CaseRefusal.NotOffered headline)
+            })
+
+    CaseAdvice.create [] None [] blocked |> Result.defaultWith invalidOp
 
 /// Builders construct inputs only. Expected outputs and oracle values must stay literal.
 let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
@@ -277,8 +312,14 @@ let paymentStateFrom values =
     Payment.replace values (admittedPayment payment) |> accepted
 
 let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest =
-    AuthorityRequests.input operationId target act
-    |> Result.defaultWith (fun _ -> failtest "Owner provisioning is not an authored test input.")
+    match act with
+    | AuthorityAct.ProvisionOwner _ -> failtest "Owner provisioning is not an authored test input."
+    | _ ->
+        {
+            OperationId = operationId
+            Target = PrincipalKey.toInput target
+            Act = act
+        }
 
 /// Inventory supplies the alternatives and expected tokens; codecs construct inputs only.
 let caseActs registration decision payment reason =
@@ -333,19 +374,74 @@ let caseActs registration decision payment reason =
 
         act, token)
 
+// Explicit authored fixture names; identity-provider claims never supply an actor profile.
+let actorProfile: ActorProfileInput =
+    {
+        DisplayName = "Synthetic account"
+        Contact = None
+    }
+
+let ownerProfile: ActorProfileInput =
+    {
+        DisplayName = "Synthetic owner"
+        Contact = None
+    }
+
+let actorReference id =
+    ActorRef.create id PrincipalKind.Human ActorAvailability.Available None
+
+let namedActorReference id name =
+    let profile =
+        ActorProfile.parse { DisplayName = name; Contact = None }
+        |> Result.defaultWith (fun _ -> failtest "Invalid authored fixture name")
+
+    ActorRef.create id PrincipalKind.Human ActorAvailability.Available (Some profile)
+
 let authorityActs grants =
     Inventory.tokens "authorityActs"
     |> List.collect (fun token ->
         let kind = AuthorityKind.parse token |> Option.get
 
         match kind with
-        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner, token ]
-        | AuthorityKind.Register -> [ AuthorityAct.Register, token ]
+        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner ownerProfile, token ]
+        | AuthorityKind.Register -> [ AuthorityAct.Register actorProfile, token ]
+        | AuthorityKind.Admit ->
+            if List.isEmpty grants then
+                []
+            else
+                [
+                    AuthorityAct.Admit
+                        {
+                            Profile = actorProfile
+                            Grants = List.truncate AuthorityAdmission.MaximumGrants grants
+                        },
+                    token
+                ]
+        | AuthorityKind.SetProfile -> [ AuthorityAct.SetProfile actorProfile, token ]
+        | AuthorityKind.EraseProfile -> [ AuthorityAct.EraseProfile, token ]
         | AuthorityKind.Enable -> [ AuthorityAct.Enable, token ]
         | AuthorityKind.Disable -> [ AuthorityAct.Disable, token ]
         | AuthorityKind.Grant -> grants |> List.map (fun grant -> AuthorityAct.Grant grant, token)
         | AuthorityKind.Revoke ->
             grants |> List.map (fun grant -> AuthorityAct.Revoke grant, token))
+
+/// Durable alternatives are independent of authored operation alternatives (ADMIT is not an effect).
+let authorityEffects grants =
+    let profile =
+        ActorProfile.parse actorProfile
+        |> Result.defaultWith (fun _ -> failtest "Profile fixture")
+
+    [
+        yield AuthorityEffect.Register principal, "REGISTER"
+        yield AuthorityEffect.ProvisionOwner principal, "PROVISION_OWNER"
+        yield AuthorityEffect.SetProfile profile, "SET_PROFILE"
+        yield AuthorityEffect.EraseProfile, "ERASE_PROFILE"
+        yield AuthorityEffect.Enable, "ENABLE"
+        yield AuthorityEffect.Disable, "DISABLE"
+        for grant in grants do
+            yield AuthorityEffect.Grant grant, "GRANT"
+            yield AuthorityEffect.Revoke grant, "REVOKE"
+    ]
 
 // Positive JSON seeds are authored overrides, not expectations. Missing fields come from the
 // same input builders; unknown members and supplied values are never discarded or normalized.

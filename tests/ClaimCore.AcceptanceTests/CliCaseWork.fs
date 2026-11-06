@@ -2,6 +2,8 @@ module internal ClaimCore.AcceptanceTests.CliCaseWork
 
 open System
 open System.IO
+open System.Globalization
+open System.Text.RegularExpressions
 open System.Text
 open System.Text.Json
 open Expecto
@@ -14,7 +16,15 @@ let qualify (fixture: PublishedFixture.Fixture) =
     let context =
         human fixture "synthetic-owner" "context" {| |} 0 |> require "SUCCEEDED"
 
-    let actor = context.GetProperty("actorId").GetString() |> nonNull
+    let requester = context.GetProperty "requester"
+
+    Expect.equal
+        (requester.GetProperty("kind").GetString())
+        "ACTIVE"
+        "Authorized owner has an active requester context"
+
+    let actor =
+        requester.GetProperty("self").GetProperty("actorId").GetString() |> nonNull
 
     let fact act revision flags =
         verb
@@ -249,11 +259,19 @@ let qualify (fixture: PublishedFixture.Fixture) =
 
     Expect.equal last.ExitCode 0 "The last truthful completion is accepted"
 
+    let refreshed = Encoding.UTF8.GetString last.StandardOutput
+
+    let currentCoverage =
+        refreshed.Contains("Attention: No next action", StringComparison.Ordinal)
+        && Regex.IsMatch(refreshed, "(?m)^Pending reminders[ ]*: 0\r?$")
+
+    if not currentCoverage then
+        FixtureFiles.write fixture.Directory "last-completion-human.stdout" last.StandardOutput
+        |> ignore
+
     Expect.isTrue
-        (Encoding.UTF8
-            .GetString(last.StandardOutput)
-            .Contains("This actionable case has no pending next action.", StringComparison.Ordinal))
-        "Human output refreshes core coverage after last completion"
+        currentCoverage
+        "Human output refreshes core attention and zero pending count after last completion"
 
     let afterWork = current ()
 
@@ -271,6 +289,15 @@ let qualify (fixture: PublishedFixture.Fixture) =
         (afterWork.GetProperty("work").GetProperty("pendingReminders").GetInt64())
         0L
         "Terminal reminders do not provide coverage"
+
+    Expect.isTrue
+        (afterWork.GetProperty("work").GetProperty("needsNextAction").GetBoolean())
+        "Core still identifies the actionable case's missing plan"
+
+    Expect.isTrue
+        (afterWork.GetProperty("attention").EnumerateArray()
+         |> Seq.exists (fun value -> value.GetString() = "NO_NEXT_ACTION"))
+        "The refreshed attention comes from the core current view"
 
     fact "amend-registration" 1 [ "--claimant-name"; "CLI selected fact" ] |> ignore
 
@@ -523,7 +550,15 @@ let qualify (fixture: PublishedFixture.Fixture) =
                             (rendered.Contains(suppressed, StringComparison.Ordinal))
                             "Inactive work has no actionable timing label"
 
-                Expect.stringContains rendered due "Human output preserves retained due date"
+                let displayedDue =
+                    DateOnly
+                        .ParseExact(due, "yyyy-MM-dd", CultureInfo.InvariantCulture)
+                        .ToString("d MMM yyyy", CultureInfo.GetCultureInfo "en")
+
+                Expect.stringContains
+                    rendered
+                    displayedDue
+                    "Human output preserves the retained date in the declared human format"
 
                 Expect.stringContains
                     rendered

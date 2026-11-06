@@ -41,20 +41,9 @@ type CaseRefusal =
     | WorkNoChanges
     | AssigneeUnavailable
     | CaseAlreadyExists
-    | CaseErased
-    | CaseVoided
-    | AlreadyVoided
-    | NotVoided
-    | CaseClosed
-    | AlreadyClosed
-    | AlreadyOpened
-    | AmendmentRequiresUndecided
+    | NotOffered of state: CaseHeadline
     | CorrectionNoChanges
     | CorrectionRequiresExistingValue
-    | DecisionRequired
-    | PaymentAlreadyRecorded
-    | PaymentNotRecorded
-    | DecisionAlreadyPaid
     | ZeroDecisionCannotBePaid
 
 [<RequireQualifiedAccess>]
@@ -68,12 +57,12 @@ type AuthorityRefusal =
 [<RequireQualifiedAccess>]
 type AccessRefusal =
     | ResourceUnavailable
-    | ActNotPermitted
+    | NotAuthorized of required: Capability
 
 [<RequireQualifiedAccess>]
 type Refusal =
     | InvalidInput of InputIssues
-    | RevisionConflict of actualRevision: Revision
+    | RevisionConflict of RevisionConflictInfo
     | Case of CaseRefusal
     | Reminder of ReminderRuleRefusal
     | Authority of AuthorityRefusal
@@ -84,5 +73,8 @@ type Refusal =
     | RegisterMaintenance
 
 module Refusal =
+    let revisionConflict revision =
+        Refusal.RevisionConflict(RevisionConflictInfo.at revision)
+
     let invalidInput (target, violation) =
         Refusal.InvalidInput(InputIssues.singleton target violation)

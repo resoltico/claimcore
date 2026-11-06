@@ -1,3 +1,4 @@
+import { reviewConfirm } from "../support/review-controls";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { getButton, render, screen } from "../support/presentation-test-support";
@@ -5,7 +6,7 @@ import { editor, current } from "../support/presentation-state.fixtures";
 import { fields, response, runtime } from "../support/service-ui.fixtures";
 const stateLabels = {
   ACTIVE: "Active",
-  VOIDED: "Voided as a data-entry error",
+  VOIDED: "Voided",
   ERASED: "Erased",
 };
 const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "ERASED") => {
@@ -15,6 +16,17 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
       Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
+            presentation: {
+              changes: [
+                {
+                  key: "recordState",
+                  labelId: "input.lifecycle.label",
+                  before: { kind: "CODE", vocabulary: "lifecycle", token: before },
+                  after: { kind: "CODE", vocabulary: "lifecycle", token: after },
+                },
+              ],
+              unchanged: [],
+            },
             subject: {
               kind: "CASE",
               before: {
@@ -40,7 +52,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
                         fields,
                       },
               },
-              changes: [],
+
               context: runtime,
             },
           },
@@ -66,7 +78,7 @@ it.each([
   },
   {
     act: "ERASE",
-    label: "Erase case payload",
+    label: "Erase case",
     before: "ACTIVE",
     after: "ERASED",
     reason: null,
@@ -88,7 +100,7 @@ it.each([
     if (reason !== null) {
       await user.type(
         screen.getByRole("textbox", {
-          name: "Stewardship reason",
+          name: "Reason",
         }),
         reason,
       );
@@ -99,12 +111,21 @@ it.each([
     if (reason !== null) {
       expect(dialog).toHaveTextContent(reason);
     }
-    expect(dialog).toHaveTextContent(`Before: ${stateLabels[before]}`);
-    expect(dialog).toHaveTextContent(`After: ${stateLabels[after]}`);
+    expect(dialog.querySelector(".review-before")).toHaveTextContent(stateLabels[before]);
+    expect(dialog.querySelector(".review-after")).toHaveTextContent(stateLabels[after]);
     if (act === "ERASE") {
-      expect(dialog).toHaveTextContent("WAL, backups and copies elsewhere are not erased.");
+      expect(dialog).toHaveTextContent("Copies held elsewhere remain.");
     }
-    expect(getButton("Record changes")).toBeDisabled();
+    if (act === "ERASE") {
+      expect(reviewConfirm()).toBeDisabled();
+      const confirmation = screen.getByRole("textbox", { name: "Case reference (exact)" });
+      await user.type(confirmation, fields.caseReference.toLowerCase());
+      expect(reviewConfirm()).toBeDisabled();
+      await user.clear(confirmation);
+      await user.type(confirmation, fields.caseReference);
+    }
+    expect(reviewConfirm()).not.toBeDisabled();
+    expect(screen.queryByRole("checkbox")).toBeNull();
     expect(vi.mocked(fetch)).toHaveBeenCalledOnce();
   },
 );

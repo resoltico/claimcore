@@ -1,3 +1,4 @@
+import { timelinePage } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { caseAdvice } from "../support/case-advice.fixtures";
@@ -40,7 +41,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
     },
   },
 };
-const refused: ApiResult<ServiceResponse<"case.history">> = {
+const refused: ApiResult<ServiceResponse<"case.timeline">> = {
   kind: "outcome",
   status: 200,
   value: {
@@ -50,18 +51,13 @@ const refused: ApiResult<ServiceResponse<"case.history">> = {
     },
   },
 };
-const empty: ApiResult<ServiceResponse<"case.history">> = {
+const empty: ApiResult<ServiceResponse<"case.timeline">> = {
   kind: "outcome",
   status: 200,
   value: {
     outcome: {
       kind: "SUCCEEDED",
-      data: {
-        caseId: "20000000-0000-4000-8000-000000000001",
-        caseReference: fields.caseReference,
-        entries: [],
-        nextCursor: null,
-      },
+      data: timelinePage(),
     },
   },
 };
@@ -73,7 +69,7 @@ it("invalidates the pending current read synchronously on a second history refus
     .mockResolvedValueOnce(current)
     .mockReturnValueOnce(earlier.promise)
     .mockReturnValueOnce(latest.promise);
-  mockEndpoint("case.history")
+  mockEndpoint("case.timeline")
     .mockResolvedValueOnce(empty)
     .mockResolvedValueOnce(refused)
     .mockReturnValueOnce(history.promise);
@@ -87,14 +83,11 @@ it("invalidates the pending current read synchronously on a second history refus
       onAct={vi.fn()}
     />,
   );
-  const picker = await screen.findByRole("combobox", {
-    name: "History detail",
-  });
-  await user.selectOptions(picker, "FULL");
+  await user.click(await screen.findByRole("button", { name: "Facts" }));
   await waitFor(() => {
     expect(get).toHaveBeenCalledTimes(2);
   });
-  await user.selectOptions(picker, "SUMMARY");
+  await user.click(screen.getByRole("button", { name: "Everything" }));
   await act(async () => {
     history.release(refused);
     await Promise.resolve();

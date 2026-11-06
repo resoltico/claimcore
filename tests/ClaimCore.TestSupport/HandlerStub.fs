@@ -54,7 +54,7 @@ let view reference =
     |> Result.map Case.snapshot
     |> Result.defaultWith (fun _ -> invalidOp "Synthetic case failed admission.")
 
-let receipt id (reference: string) =
+let receipt id (reference: string) : OperationReceipt =
     {
         OperationId = CaseFixtures.operationId id
         Position = position
@@ -71,16 +71,50 @@ let receipt id (reference: string) =
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = CaseFixtures.actorId operationId
+        RecordedBy = Inputs.actorReference (CaseFixtures.actorId operationId)
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 10, 13)
+                TimeZoneId = "Etc/UTC"
+            }
     }
 
 let authorityReceipt (request: ClaimCore.Domain.AuthorityRequest) =
-    { receipt request.OperationId "WEB-001" with
+    let original = receipt request.OperationId "WEB-001"
+    let kind = AuthorityAct.kind request.Act
+
+    let kinds =
+        match request.Act with
+        | AuthorityAct.Register _ -> [ AuthorityKind.Register; AuthorityKind.SetProfile ]
+        | AuthorityAct.ProvisionOwner _ ->
+            [ AuthorityKind.ProvisionOwner; AuthorityKind.SetProfile ]
+        | AuthorityAct.Admit value ->
+            AuthorityKind.Register
+            :: AuthorityKind.SetProfile
+            :: List.replicate value.Grants.Length AuthorityKind.Grant
+        | _ -> [ kind ]
+
+    let effects =
+        kinds
+        |> List.mapi (fun index kind ->
+            {
+                AuthorityReceiptEffect.Act = kind
+                Position =
+                    LedgerPosition.create
+                        (Sequence.create (int64 index + 1L) |> Option.get)
+                        original.Position.EntryHash
+            })
+
+    { original with
+        Position = (List.last effects).Position
         Subject =
             ReceiptSubject.Authority
                 {
-                    TargetActorId = CaseFixtures.actorId operationId
-                    Act = request.Act |> fun value -> AuthorityAct.kind value
+                    TargetActor =
+                        AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId operationId)
+                    Act = kind
+                    Effects = effects
                 }
     }
 
@@ -151,10 +185,11 @@ type Stub() =
 
                 this.Invoke
                     "operation.preview"
-                    {
-                        PreviewReply.OperationId = OperationInput.operationId input
-                        Outcome = outcome
-                    })
+                    (PresentedPreviewReply.ofCore
+                        {
+                            PreviewReply.OperationId = OperationInput.operationId input
+                            Outcome = outcome
+                        }))
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             Route.bind Api.operationExecute (fun _ input token ->
                 task {

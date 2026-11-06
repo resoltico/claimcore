@@ -14,6 +14,7 @@ COPY contracts ./contracts
 COPY src/ClaimCore.Protocol/Messages/Localization ./src/ClaimCore.Protocol/Messages/Localization
 COPY web/tsconfig.base.json web/tsconfig.app.json web/tsconfig.protocol.json web/vite.config.ts web/index.html ./web/
 COPY web/src ./web/src
+COPY web/public ./web/public
 COPY web/locales ./web/locales
 COPY web/scripts ./web/scripts
 COPY LICENSE ./

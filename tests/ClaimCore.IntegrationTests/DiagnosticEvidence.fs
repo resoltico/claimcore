@@ -46,6 +46,33 @@ let internal scalarEvidence () =
             let! outcome = execute actor pending
             results.Add(refused outcome)
 
+        // Malformed existing-case acts now require the authoritative readable snapshot and capability.
+        let! scalarCase = execute actor (openRequest 480 "REACH-1")
+        accepted scalarCase |> ignore
+
+        let! scalarSteward =
+            grant
+                actor
+                (id 481)
+                owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority scalarSteward
+
+        for index, request in List.indexed (progressRequests ()) do
+            let! outcome =
+                execute
+                    actor
+                    { request with
+                        OperationId = id (482 + index)
+                    }
+
+            results.Add(refused outcome)
+
         let! workOpening = execute actor (openRequest 490 "REACH-WORK")
         accepted workOpening |> ignore
 
@@ -166,7 +193,7 @@ let internal stateScenarios () =
             { keep with
                 Registration = Amendment.Update(Inputs.registrationUpdate registration)
             }
-        [], correction { keep with Decision = Change.Clear }
+        [ closed ], correction { keep with Decision = Change.Clear }
         [], payment
         [], (AuthoredCaseAct.Bare BareAct.ClearPayment)
         [ decided; payment ], payment
@@ -188,6 +215,17 @@ let internal stateScenarios () =
         correction
             { keep with
                 Decision = Change.Update(Inputs.decisionUpdate decision)
+            }
+        [ decided; payment ],
+        correction
+            { keep with
+                Decision =
+                    Change.Update(
+                        Inputs.decisionUpdate (
+                            Inputs.decisionWith [ BusinessField.PayableAmount, "0" ] decision
+                        )
+                    )
+                Payment = PaymentChange.Reaffirm
             }
     ]
 
@@ -282,10 +320,15 @@ let internal authorityEvidence actor =
                 (OperationInput.Authority(authorityRequest (id n) target act))
                 (ct))
 
-        let! registered = send 30 owner AuthorityAct.Register
+        let! registered =
+            send 30 owner (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
         let! unknown = send 31 service (AuthorityAct.Disable)
         let! last = send 32 owner (AuthorityAct.Disable)
-        let! admitted = send 33 service AuthorityAct.Register
+
+        let! admitted =
+            send 33 service (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
         acceptedAuthority admitted
 
         let! human =
@@ -337,7 +380,12 @@ let internal identityEvidence actor =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 35) reader AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 35)
+                        reader
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (ct))
 
         acceptedAuthority registered
@@ -378,7 +426,9 @@ let internal principalEvidence (actor: ServiceContext) =
                             Issuer = issuer
                             Subject = subject
                         }
-                    Act = ClaimCore.Domain.AuthorityAct.Register
+                    Act =
+                        (ClaimCore.Domain.AuthorityAct.Register
+                            ClaimCore.TestSupport.Inputs.actorProfile)
                 }
 
             let! outcome = (Service.execute actor (OperationInput.Authority request) (ct))
@@ -386,6 +436,92 @@ let internal principalEvidence (actor: ServiceContext) =
             evidence.Add(refused outcome)
 
         return List.ofSeq evidence
+    }
+
+let private invalidTextSamples =
+    [
+        ""
+        String(char 0xD800, 1)
+        " padded"
+        String('x', 201)
+        "x\u0001y"
+        "x\u200by"
+    ]
+
+let private profileAndDirectoryEvidence actor =
+    task {
+        let results = ResizeArray<_>()
+
+        let target =
+            PrincipalKey.human "https://issuer.example/" "profile-diagnostics"
+            |> Result.defaultWith (string >> failtest)
+
+        for index, raw in List.indexed invalidTextSamples do
+            for contact in [ false; true ] do
+                let profile =
+                    if contact then
+                        {
+                            ActorProfileInput.DisplayName = "Valid name"
+                            Contact = Some raw
+                        }
+                    else
+                        {
+                            ActorProfileInput.DisplayName = raw
+                            Contact = None
+                        }
+
+                let! reply =
+                    Service.execute
+                        actor
+                        (OperationInput.Authority(
+                            authorityRequest
+                                (id (600 + index * 2 + (if contact then 1 else 0)))
+                                target
+                                (AuthorityAct.Register profile)
+                        ))
+                        ct
+
+                results.Add(refused reply)
+
+            let! reply =
+                Service.actors
+                    actor
+                    {
+                        ActorListRequest.Text = Some raw
+                        Role = None
+                        AfterCursor = None
+                        Limit = 10
+                    }
+                    ct
+
+            results.Add(queryRefused reply)
+
+        let assignment =
+            {
+                Role = Role.CaseReader
+                Scope = GrantTarget.Installation
+            }
+
+        for index, grants in
+            List.indexed [ []; List.replicate 49 assignment; [ assignment; assignment ] ] do
+            let! reply =
+                Service.execute
+                    actor
+                    (OperationInput.Authority(
+                        authorityRequest
+                            (id (650 + index))
+                            target
+                            (AuthorityAct.Admit
+                                {
+                                    Profile = Inputs.actorProfile
+                                    Grants = grants
+                                })
+                    ))
+                    ct
+
+            results.Add(refused reply)
+
+        return List.ofSeq results
     }
 
 let internal boundaryEvidence () =
@@ -408,6 +544,7 @@ let internal boundaryEvidence () =
         let! queries = queryEvidence actor
         let! authority = authorityEvidence actor
         let! principals = principalEvidence actor
+        let! profiles = profileAndDirectoryEvidence actor
 
         let! resolved =
             (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 42 }) (ct))
@@ -431,4 +568,5 @@ let internal boundaryEvidence () =
             @ queries
             @ authority
             @ principals
+            @ profiles
     }

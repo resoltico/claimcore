@@ -18,6 +18,55 @@ let internal tests factory =
         "ledger store contract"
         [
             testCaseAsync
+                "input refusal ordering retains readable private and absent target policy"
+                (withFixture factory RequesterAdmissionContract.targetPrivacy)
+            testCaseAsync
+                "unavailable callers cannot receive early business input refusals"
+                (withFixture factory RequesterAdmissionContract.lifecycle)
+            testCaseAsync
+                "summary attribution follows text edits rather than assignment updates"
+                (withFixture factory (fun fixture ->
+                    task { let! _ = SummaryAttributionContract.lifecycle fixture in return () }))
+            testCaseAsync
+                "directory text contact and typed role filters share bounded paging"
+                (withFixture factory ActorNameSearchContract.contactAndRole)
+            testCaseAsync
+                "current-name search is normalized literal bounded and cursor-bound"
+                (withFixture factory ActorNameSearchContract.lookup)
+            testCaseAsync
+                "all7 role summaries stay bounded and deterministic"
+                (withFixture factory PeopleDirectoryContract.maximumRoles)
+            testCaseAsync
+                "bounded People summaries preserve disabled review and scoped counts"
+                (withFixture factory PeopleDirectoryContract.summaries)
+            testCaseAsync
+                "assignment state does not weaken corrupt service scope vetoes"
+                (withFixture factory PeopleDirectoryContract.corruptAssignment)
+            testCaseAsync
+                "admission effect failures restore projections and exact waiting hints"
+                (withFixture factory AdmitContract.atomicWrites)
+            testCaseAsync
+                "admission preserves typed effects names authority scopes and erased replay"
+                (withFixture factory AdmitContract.lifecycle)
+            testCaseAsync
+                "admission rejects normalized duplicates and preserves role admission"
+                (withFixture factory AdmitContract.boundary)
+            testCaseAsync
+                "admission accepts exactly48 distinct grants with50 independent effects"
+                (withFixture factory AdmitContract.maximum)
+            testCaseAsync
+                "profile groups and erasure projections roll back atomically"
+                (withFixture factory ActorProfilesContract.atomicWrites)
+            testCaseAsync
+                "profile erasure preserves identity grants accepted existence and later re-profile"
+                (withFixture factory ActorProfilesContract.lifecycle)
+            testCaseAsync
+                "registration separates identity and authored profile with independent salts"
+                (withFixture factory ActorProfilesContract.registrationIsolation)
+            testCaseAsync
+                "state refusals report current state after capability and disclosure gates"
+                (withFixture factory ReminderConcurrencyContract.notOffered)
+            testCaseAsync
                 "different and same reminder revisions retain financial preview isolation"
                 (withFixture factory ReminderConcurrencyContract.independentRevisions)
             testCaseAsync

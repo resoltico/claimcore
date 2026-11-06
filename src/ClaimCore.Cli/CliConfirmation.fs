@@ -28,6 +28,44 @@ module internal CliConfirmation =
             |> List.exists (fun word ->
                 String.Equals(answer.Trim(), word, StringComparison.OrdinalIgnoreCase)))
 
+    let exactTarget (console: InteractiveConsole) language target =
+        if not console.IsInteractive then
+            false
+        else
+            MessageCatalogs.renderCli
+                language
+                (CliMessage.TypeConfirmationTarget(TerminalText.data target))
+            |> Encoding.UTF8.GetBytes
+            |> console.Write
+
+            console.ReadLine()
+            |> Option.exists (fun answer -> String.Equals(answer, target, StringComparison.Ordinal))
+
+    let irreversibleTarget invocation =
+        match Frames.value Api.operationExecute invocation with
+        | Some(OperationInput.Case request) when
+            Consequence.ofAct (ActKind.Case(CaseAct.kind request.Act)) = Consequence.Irreversible
+            ->
+            match request.Target with
+            | CaseSelector.Reference reference -> Some reference
+            | CaseSelector.Id _ -> invalidOp "Human irreversible commands require a case reference."
+        | Some(OperationInput.Authority request) when
+            AuthorityAct.kind request.Act = AuthorityKind.EraseProfile
+            ->
+            Some(request.OperationId.ToString("D"))
+        | _ ->
+            Frames.value Api.operationResolve invocation
+            |> Option.map (fun input -> input.OperationId.ToString("D"))
+
+    let validate isInteractive (prepared: PreparedVerb) =
+        irreversibleTarget prepared.Invocation
+        |> Option.bind (fun target ->
+            match prepared.Confirmation with
+            | Some value when value <> target ->
+                Some(UsageError.InvalidChoice("--confirm", value, [ target ]))
+            | None when not isInteractive -> Some(UsageError.MissingOption "--confirm")
+            | _ -> None)
+
     let settlement
         (console: InteractiveConsole)
         language
@@ -59,11 +97,11 @@ module internal CliConfirmation =
             + "\n"
             + MessageCatalogs.render
                 language
-                (OperationCatalog.confirmationId operation |> Option.get)
+                (OperationCatalog.consequenceId operation |> Option.get)
                 Map.empty
             + "\n"
-            + MessageCatalogs.renderCli language CliMessage.ReviewConfirmation
+
             |> Encoding.UTF8.GetBytes
             |> console.Write
 
-            confirmed language (console.ReadLine())
+            exactTarget console language (operationId.ToString("D"))

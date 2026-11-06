@@ -8,6 +8,7 @@ open System
 [<RequireQualifiedAccess>]
 type VerificationFinding =
     | Link
+    | OperationEffectGroup
     | EntryHash
     | Commitment
     | PayloadFormat
@@ -33,6 +34,7 @@ type VerificationFinding =
     | CasePayableCurrencyProjection
     | FenceProjection
     | AuthorityProjection
+    | AuthorityProfileProjection
     | Head
     | ExpectedPosition
 

@@ -1,10 +1,12 @@
 import { caseViewInput } from "./inputs";
 import { caseAdvice } from "./case-advice.fixtures";
-import { screen } from "@testing-library/react";
+import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { vi } from "vitest";
 import type { OperationDraft, CurrentCase } from "../../src/api/service";
-import { PresentationControls } from "../../src/presentation/PresentationControls";
+import { SettingsWorkspace } from "../../src/views/SettingsWorkspace";
+import { useRoute } from "../../src/routing/useRoute";
+import type userEvent from "@testing-library/user-event";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
 export const current: CurrentCase = caseViewInput({
@@ -20,20 +22,28 @@ export const current: CurrentCase = caseViewInput({
     fields,
   },
 });
+const EditorWorkspace = (overrides: Partial<ComponentProps<typeof OperationEditor>>) => {
+  const route = useRoute();
+  return (
+    <SettingsWorkspace route={route}>
+      {() => (
+        <OperationEditor
+          definition={definition}
+          current={current}
+          initialAct="CLOSE"
+          onClose={vi.fn()}
+          onCommitted={vi.fn()}
+          onMutationLockChange={vi.fn()}
+          {...overrides}
+        />
+      )}
+    </SettingsWorkspace>
+  );
+};
 export const editor = (overrides: Partial<ComponentProps<typeof OperationEditor>> = {}) => (
-  <>
-    <PresentationControls />
-    <OperationEditor
-      definition={definition}
-      current={current}
-      initialAct="CLOSE"
-      onClose={vi.fn()}
-      onCommitted={vi.fn()}
-      onMutationLockChange={vi.fn()}
-      {...overrides}
-    />
-  </>
+  <EditorWorkspace {...overrides} />
 );
+
 export const draftAt = (index: number): OperationDraft => {
   const body = vi.mocked(globalThis.fetch).mock.calls[index]?.[1]?.body;
   if (typeof body !== "string") {
@@ -45,6 +55,7 @@ export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   return response("operation.preview", "REVIEWED", {
     review: {
+      presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
         before: {
@@ -57,6 +68,7 @@ export const previewReply = (index = 0): Response => {
           },
         },
         after: {
+          caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: {
             ...fields,
             status: "CLOSED",
@@ -70,13 +82,7 @@ export const previewReply = (index = 0): Response => {
             },
           },
         },
-        changes: [
-          {
-            field: "status",
-            before: "OPENED",
-            after: "CLOSED",
-          },
-        ],
+
         context: runtime,
       },
     },
@@ -95,10 +101,36 @@ export const deferredResponse = () => {
     reject,
   };
 };
-export const languageControl = (): HTMLSelectElement => {
-  const result = screen.getAllByRole("combobox").find((item) => item.id.endsWith("-language"));
-  if (!(result instanceof HTMLSelectElement)) {
-    throw new Error("Expected the accessible language selector.");
+const languageControl = (language: string): HTMLInputElement => {
+  const result = screen
+    .getAllByRole("radio")
+    .find(
+      (item) =>
+        item instanceof HTMLInputElement &&
+        item.name.endsWith("-language") &&
+        item.value === language,
+    );
+  if (!(result instanceof HTMLInputElement)) {
+    throw new Error("Expected the accessible language radio.");
   }
   return result;
+};
+/** Follow the same permitted Settings detour used by the actual Dashboard. */
+export const setEditorLanguage = async (
+  user: ReturnType<typeof userEvent.setup>,
+  language: string,
+) => {
+  const open = document.querySelector<HTMLButtonElement>("[data-open-settings]");
+  if (open === null) {
+    throw new Error("Expected current drawer Settings action.");
+  }
+  await user.click(open);
+  const control = await waitFor(() => languageControl(language));
+  await user.click(control);
+  const back = document.querySelector<HTMLButtonElement>("[data-return-workspace]");
+  if (back === null) {
+    throw new Error("Expected Settings return action.");
+  }
+  await user.click(back);
+  await screen.findByRole("dialog");
 };

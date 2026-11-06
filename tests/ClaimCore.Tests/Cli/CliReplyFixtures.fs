@@ -19,7 +19,7 @@ let authorityRequest: AuthorityRequest =
                 Issuer = "https://issuer.example/"
                 Subject = "synthetic"
             }
-        Act = AuthorityAct.Register
+        Act = (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
     }
 
 let snapshot =
@@ -47,7 +47,7 @@ let snapshot =
         State = CaseState.Active(fields)
     }
 
-let receipt =
+let receipt: OperationReceipt =
     {
         OperationId = (CaseFixtures.operationId (id))
         Position =
@@ -62,15 +62,18 @@ let receipt =
         Subject =
             ReceiptSubject.Case
                 {
-                    CaseId =
-                        CaseFixtures.caseId (
-                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
-                        )
+                    CaseId = CaseId.ofOperationId (CaseFixtures.operationId id)
                     Reference = CaseFixtures.reference "x"
                     Revision = CaseFixtures.revision 1L
                     Act = CaseActKind.Open
                     Snapshot = SnapshotDisclosure.Withheld
                 }
         RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = (CaseFixtures.actorId (id))
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 1, 1)
+                TimeZoneId = "Etc/UTC"
+            }
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
     }

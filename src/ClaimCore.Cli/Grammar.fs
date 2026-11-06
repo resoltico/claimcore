@@ -19,6 +19,7 @@ type PreparedVerb =
     {
         Invocation: Invocation
         DryRun: bool
+        Confirmation: string option
         Format: VerbFormat
         All: bool
         Language: string
@@ -66,12 +67,6 @@ module Grammar =
                 group |> Seq.sortByDescending priority |> Seq.truncate 1)
         |> Seq.toList
 
-    let private constant =
-        function
-        | BindingValue.Text value -> JsonValue.String value
-        | BindingValue.Integer value -> JsonValue.Integer value
-        | BindingValue.Boolean value -> JsonValue.Boolean value
-
     let private scalarValue
         newId
         (item: CatalogDerivedInput)
@@ -83,7 +78,7 @@ module Grammar =
         | Some value -> Some(atom name item.Atom value problems)
         | None when item.Binding.Source = InputSource.OperationIdentity ->
             Some(JsonValue.String(newId ()))
-        | None when item.Binding.Default.IsSome -> Some(constant item.Binding.Default.Value)
+        | None when item.Binding.Default.IsSome -> Some(bindingValue item.Binding.Default.Value)
         | None when item.Binding.Required ->
             problems.Add(
                 if item.Argument = CatalogArgument.Operand then
@@ -112,46 +107,9 @@ module Grammar =
         let mutable position = 0
         let mutable body = JsonValue.Object []
 
-        let rec at path value =
-            match path with
-            | [] -> Some value
-            | key :: rest -> JsonValue.tryMember key value |> Option.bind (at rest)
-
-        let rec insert path value current =
-            match path, current with
-            | [], _ -> value
-            | key :: rest, JsonValue.Object fields ->
-                let previous =
-                    fields
-                    |> List.tryFind (fst >> (=) key)
-                    |> Option.map snd
-                    |> Option.defaultValue (JsonValue.Object [])
-
-                let next = insert rest value previous
-
-                JsonValue.Object(
-                    if fields |> List.exists (fst >> (=) key) then
-                        fields
-                        |> List.map (fun (name, old) -> name, if name = key then next else old)
-                    else
-                        fields @ [ key, next ]
-                )
-            | _ -> invalidOp "A catalog path must traverse objects."
-
-        let applies (branches: BindingCondition list) =
-            branches
-            |> List.forall (fun branch -> at branch.Path body = Some(JsonValue.String branch.Value))
-
+        let applies branches = VerbOptions.applies branches body
         let assign path value = body <- insert path value body
-
-        let fixedValues () =
-            for item in constants do
-                if
-                    applies item.Branches
-                    && (not item.RequiresParent
-                        || (at (item.Path |> List.take (item.Path.Length - 1)) body).IsSome)
-                then
-                    assign item.Path (constant item.Value)
+        let fixedValues () = body <- assignConstants constants body
 
         fixedValues ()
 
@@ -238,6 +196,21 @@ module Grammar =
 
                 fixedValues ()
 
+        for definition in CommandGrammar.collections entry do
+            if applies definition.Binding.Branches then
+                let name = CommandGrammar.collectionFlag definition
+                used.Add name |> ignore
+
+                let values =
+                    match options.TryGetValue name with
+                    | true, values -> values |> List.rev |> List.choose id
+                    | _ -> []
+
+                if definition.Binding.Required || options.ContainsKey name then
+                    assign
+                        definition.Binding.Path
+                        (CollectionArguments.build definition values problems)
+
         for value in operands |> List.skip (min position operands.Length) do
             problems.Add(UsageError.ExtraOperand value)
 
@@ -267,18 +240,23 @@ module Grammar =
 
     let private prepareWith incomplete admit finish newId arguments =
         let found =
-            (Catalog.document.Entries |> List.map OperationCatalog.operation)
-            |> List.tryPick (fun entry ->
-                let words = CommandGrammar.words entry
-
-                if List.truncate words.Length arguments = words then
-                    Some(entry, List.skip words.Length arguments)
-                else
-                    None)
+            CommandGrammar.tryOperation arguments
+            |> Option.map (fun entry ->
+                entry, List.skip (CommandGrammar.words entry).Length arguments)
 
         match found with
         | None ->
-            let value = String.concat " " (List.truncate 2 arguments)
+            let count =
+                if
+                    arguments
+                    |> List.tryHead
+                    |> Option.exists (fun word -> List.contains word CommandGrammar.families)
+                then
+                    2
+                else
+                    1
+
+            let value = String.concat " " (List.truncate count arguments)
 
             Error
                 [
@@ -286,7 +264,7 @@ module Grammar =
                         value,
                         suggestions
                             value
-                            ((Catalog.document.Entries |> List.map OperationCatalog.operation)
+                            (CommandGrammar.operations
                              |> List.map (CommandGrammar.words >> String.concat " "))
                     )
                 ]
@@ -300,14 +278,20 @@ module Grammar =
             let clearFlags =
                 named
                 |> List.choose (fun input ->
-                    if input.Binding.AllowsNull then
+                    if CommandGrammar.canClear entry input then
                         Some(
                             "--clear-" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
                         )
                     else
                         None)
 
-            let flags = (named |> List.map (fun input -> flag input.Name)) @ clearFlags
+            let collectionFlags =
+                CommandGrammar.collections entry |> List.map CommandGrammar.collectionFlag
+
+            let flags =
+                (named |> List.map (fun input -> flag input.Name))
+                @ clearFlags
+                @ collectionFlags
 
             let switches =
                 (named
@@ -324,10 +308,13 @@ module Grammar =
                     | CatalogAtom.Choices _ -> Some(flag input.Name)
                     | _ -> None)
 
+            let repeated = repeated @ collectionFlags
+
             let options, operands =
                 tokenize
-                    ("--dry-run" :: "--preview" :: "--all" :: "--format" :: "--language" :: flags)
-                    ("--dry-run" :: "--preview" :: "--all" :: switches)
+                    (CommandGrammar.globalFlags @ flags)
+                    ((CommandGrammar.globalOptions entry |> List.map fst) @ flags)
+                    (CommandGrammar.globalSwitches @ switches)
                     repeated
                     arguments
                     problems
@@ -354,34 +341,12 @@ module Grammar =
                 | _ -> fallback
 
             let format = option "--format" "text"
+
             let language = option "--language" "en"
 
-            let listing =
-                List.contains
-                    entry.Endpoint
-                    [
-                        ActorEndpoint.Query QueryEndpoint.CaseList
-                        ActorEndpoint.Query QueryEndpoint.ReminderList
-                        ActorEndpoint.Query QueryEndpoint.CaseActivity
-                        ActorEndpoint.Query QueryEndpoint.CaseHistory
-                    ]
+            let listing = CommandGrammar.supportsAll entry
 
-            let csvListing =
-                List.contains
-                    entry.Endpoint
-                    [
-                        ActorEndpoint.Query QueryEndpoint.CaseList
-                        ActorEndpoint.Query QueryEndpoint.ReminderList
-                    ]
-
-            let formats =
-                if
-                    csvListing
-                    || entry.Endpoint = ActorEndpoint.Query QueryEndpoint.AuthorityHistory
-                then
-                    [ "text"; "json"; "csv" ]
-                else
-                    [ "text"; "json" ]
+            let formats = CommandGrammar.formats entry
 
             if not (List.contains format formats) then
                 problems.Add(UsageError.InvalidChoice("--format", format, formats))
@@ -397,6 +362,17 @@ module Grammar =
             if not (List.contains language LocalizationPolicy.languages) then
                 problems.Add(
                     UsageError.InvalidChoice("--language", language, LocalizationPolicy.languages)
+                )
+
+            if
+                options.ContainsKey "--confirm"
+                && CatalogOperation.consequence entry <> Consequence.Irreversible
+            then
+                problems.Add(
+                    UsageError.NotApplicable(
+                        "--confirm",
+                        String.concat " " (CommandGrammar.words entry)
+                    )
                 )
 
             let found = errors problems
@@ -452,6 +428,9 @@ module Grammar =
                         (options.ContainsKey "--all")
                         language
                         (options.ContainsKey "--preview")
+                        (match options.TryGetValue "--confirm" with
+                         | true, [ Some value ] -> Some value
+                         | _ -> None)
 
     let prepare newId arguments =
         let admit endpoint body =
@@ -459,13 +438,14 @@ module Grammar =
             |> Option.defaultWith (fun () -> invalidOp "Unknown catalog endpoint")
             |> fun endpoint -> endpoint.ReadInput body
 
-        let finish input dryRun format all language _ =
+        let finish input dryRun format all language _ confirmation =
             Frames.fromInput input
             |> Result.mapError (fun _ -> [ UsageError.RequestTooLarge Limits.MaximumRequestBytes ])
             |> Result.map (fun invocation ->
                 {
                     Invocation = invocation
                     DryRun = dryRun
+                    Confirmation = confirmation
                     Format = format
                     All = all
                     Language = language
@@ -474,24 +454,27 @@ module Grammar =
         prepareWith false admit finish newId arguments
 
     /// Authored intent is admitted without inventing an executable operation or revision.
-    let private intent actCodec arguments =
+    let private intent targetCodec actCodec arguments =
         let codec =
             Codec.record (fun reference act operation -> reference, act, operation)
-            |> Codec.field "target" (fun (target, _, _) -> target) RequestCodecs.caseSelector
+            |> Codec.field "target" (fun (target, _, _) -> target) targetCodec
             |> Codec.field "act" (fun (_, act, _) -> act) actCodec
             |> Codec.optionalField "operationId" (fun (_, _, operation) -> operation) Codec.uuid
             |> Codec.build
 
         let admit _ body =
-            // The enclosing subject tag is a catalog constant, not part of case intent.
+            // The enclosing subject tag is a catalog constant, not part of authored intent.
             let fields =
                 match body with
-                | JsonValue.Object fields -> fields |> List.filter (fst >> (<>) WireMembers.Kind)
+                | JsonValue.Object fields ->
+                    fields
+                    |> List.filter (fun (name, _) ->
+                        name <> WireMembers.Kind && name <> WireMembers.ExpectedRevision)
                 | _ -> []
 
             codec.Read "$" (JsonValue.Object fields)
 
-        let finish input _ _ _ language preview = Ok(input, language, preview)
+        let finish input _ _ _ language preview _ = Ok(input, language, preview)
 
         prepareWith
             true
@@ -500,13 +483,20 @@ module Grammar =
             (fun () -> invalidOp "Intent does not allocate an operation ID.")
             arguments
 
-    let internal caseIntent arguments = intent RequestCodecs.caseAct arguments
-    let internal workIntent arguments = intent RequestCodecs.workAct arguments
+    let internal caseIntent arguments =
+        intent RequestCodecs.caseSelector RequestCodecs.caseAct arguments
+
+    let internal workIntent arguments =
+        intent RequestCodecs.caseSelector RequestCodecs.workAct arguments
 
     let internal reminderIntent arguments =
         let target =
             Codec.record (fun id revision -> id, revision)
             |> Codec.field "reminderId" fst Codec.uuid
-            |> Codec.optionalField "expectedRevision" snd RequestCodecs.revision
+            |> Codec.optionalField "expectedRevision" snd RequestCodecs.reminderRevision
 
-        intent (RequestCodecs.reminderActWith target) arguments
+        intent RequestCodecs.caseSelector (RequestCodecs.reminderActWith target) arguments
+
+
+    let internal authorityIntent arguments =
+        intent RequestCodecs.principal RequestCodecs.authorityAct arguments

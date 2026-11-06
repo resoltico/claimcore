@@ -7,27 +7,29 @@ open ClaimCore.Json
 module internal PrincipalCodecs =
     open Codec
 
-    let key =
+    let issuer =
         let maximumIssuer = PrincipalKey.MaximumIssuerCharacters
 
-        let issuerSchema =
+        let schema =
             Schema.String(
                 Some("^" + PrincipalKey.issuerScheme + "://[^/?#@\\s]+/[^?#\\s]*$"),
                 None,
                 Some 1,
-                Some maximumIssuer
+                Some maximumIssuer,
+                None
             )
 
-        let issuer =
-            boundedText 1 maximumIssuer |> constrained issuerSchema PrincipalKey.isIssuer
+        boundedText 1 maximumIssuer |> constrained schema PrincipalKey.isIssuer
 
+    let key =
         let fields kind maximumSubject =
-            record (fun issuer subject ->
+            (record (fun issuer subject ->
                 {
                     PrincipalInput.Kind = kind
                     Issuer = issuer
                     Subject = subject
                 })
+            : Fields<PrincipalInput, _>)
             |> field "issuer" _.Issuer issuer
             |> field "subject" _.Subject (boundedText 1 maximumSubject)
 

@@ -7,14 +7,28 @@ open System
 
 type AuthorityState =
     {
+        Profile: ActorProfile option
         Enabled: bool
         Grants: ScopedGrant list
         Access: CapabilityAccess list
     }
 
+[<RequireQualifiedAccess>]
+type AuthorityReviewEffect =
+    | Register of PrincipalKey
+    | ProvisionOwner of PrincipalKey
+    | SetProfile of ActorProfile
+    | EraseProfile
+    | Grant of ScopedGrant
+    | Revoke of ScopedGrant
+    | Enable
+    | Disable
+
 type AuthorityReview =
     {
-        Target: Actor option
+        Basis: WorkDateBasis
+        Effects: AuthorityReviewEffect list
+        Target: ActorReviewItem option
         AccessScope: GrantScope
         Before: AuthorityState
         After: AuthorityState
@@ -24,8 +38,8 @@ type WorkReview =
     {
         Parent: CaseSnapshot
         Reference: CaseReference
-        Before: CaseWorkSnapshot
-        Proposed: CaseWorkSnapshot
+        Before: CaseWorkReadModel
+        Proposed: CaseWorkReadModel
         Context: RuntimeContext
     }
 

@@ -1,6 +1,13 @@
-import { chooseRoleForReview } from "../support/authority-input.fixtures";
+import {
+  openPersonEditor,
+  chooseAdmissionRole,
+  DisclosureRefreshDriver,
+} from "../support/people-drawer.fixtures";
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
+import { actorContextInput, workBasis } from "../support/inputs";
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { authorityPreview } from "../support/authority-operation.fixtures";
+import { authorityPreview, authorityAcceptance } from "../support/authority-operation.fixtures";
 import { act, fireEvent, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen, TestSession } from "../support/presentation-test-support";
@@ -9,19 +16,29 @@ import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { wireReply } from "../support/contract-corpus.fixtures";
+beforeEach(() => {
+  stubViewCounts();
+});
 
 beforeEach(() => {
   authorityPreview();
 });
 afterEach(() => vi.restoreAllMocks());
 const disclosedActor = {
-  actorId: "10000000-0000-4000-8000-000000000001",
+  actor: {
+    actorId: "10000000-0000-4000-8000-000000000001",
+    displayName: { kind: "NAMED", value: "synthetic-disclosed" },
+    principalKind: "SERVICE",
+    availability: "AVAILABLE",
+  },
+  contact: null,
+  state: "NO_ROLES",
+  roles: [],
   principal: {
     kind: "SERVICE",
     issuer: "https://issuer.example/",
     subject: "synthetic-disclosed",
   },
-  enabled: true,
 } as const;
 const success = <K extends "context" | "authority.list">(
   endpoint: K,
@@ -39,14 +56,19 @@ const success = <K extends "context" | "authority.list">(
         outcome: {
           ...value.outcome,
           data: {
-            ...value.outcome.data,
-            views: ["CASES", "AUTHORITY", "OPERATIONS"],
-            offers: [
-              {
-                kind: "AUTHORITY_ACT",
-                act: "REGISTER",
-              },
-            ],
+            requester: actorContextInput({
+              productVersion: "0.15.0",
+              businessDate: workBasis.businessDate,
+              timeZone: workBasis.timeZone,
+              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+              views: ["CASES", "AUTHORITY", "OPERATIONS"],
+              offers: [
+                {
+                  kind: "AUTHORITY_ACT",
+                  act: "ADMIT",
+                },
+              ],
+            }),
           },
         },
       },
@@ -60,6 +82,7 @@ const success = <K extends "context" | "authority.list">(
       outcome: {
         ...value.outcome,
         data: {
+          basis: workBasis,
           items: [disclosedActor],
           nextCursor: null,
         },
@@ -85,32 +108,33 @@ const unavailable = (): ApiResult<ServiceResponse<"operation.execute">> => ({
       kind: "REJECTED",
       data: {
         code: "RESOURCE_UNAVAILABLE",
-        action: "NONE_REQUIRED",
+        action: "ASK_FOR_ACCESS",
       },
     },
   },
 });
 const author = async () => {
+  await openPersonEditor();
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
   });
   for (const [name, value] of [
-    ["target.issuer", "https://issuer.example/"],
     ["target.subject", "synthetic-authored"],
+    ["act.profile.displayName", "Synthetic registered person"],
   ]) {
     fireEvent.change(document.querySelector(`[name="${name}"]`)!, { target: { value } });
   }
 };
 const prepare = async () => {
   await author();
-  chooseRoleForReview();
+  await chooseAdmissionRole();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox"));
+  await waitForReviewConfirm();
 };
 const listPrincipal = () => "synthetic-disclosed";
 const emptyOffers = () => {
   const response = wireReply("context");
-  if (response.outcome.kind !== "SUCCEEDED") {
+  if (response.outcome.kind !== "SUCCEEDED" || response.outcome.data.requester.kind !== "ACTIVE") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -118,7 +142,10 @@ const emptyOffers = () => {
     status: 200,
     value: {
       ...response,
-      outcome: { ...response.outcome, data: { ...response.outcome.data, offers: [] } },
+      outcome: {
+        ...response.outcome,
+        data: { requester: { ...response.outcome.data.requester, offers: [] } },
+      },
     },
   };
 };
@@ -140,7 +167,7 @@ it.each([false, true])(
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await screen.findByText(listPrincipal());
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    fireEvent.click(reviewConfirm());
     await waitFor(() => {
       expect(context).toHaveBeenCalledTimes(2);
     });
@@ -180,7 +207,7 @@ it("aborts prior authority reads and ignores their late completion after an unce
     .mockResolvedValue(unavailable());
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  fireEvent.click(reviewConfirm());
   fireEvent.click(await screen.findByRole("button", { name: "Send again" }));
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
@@ -190,7 +217,8 @@ it("aborts prior authority reads and ignores their late completion after an unce
     priorFinish?.(success("authority.list"));
   });
   expect(screen.queryByText(listPrincipal())).toBeNull();
-  expect(screen.getByRole("button", { name: "Send again" })).toBeVisible();
+  fireEvent.click(await screen.findByRole("button", { name: "Continue current request" }));
+  expect(await screen.findByRole("button", { name: "Send again" })).toBeVisible();
   expect(execute.mock.calls[1]![0]).toBe(execute.mock.calls[0]![0]);
   expect(execute.mock.calls[1]![0].bytes).toBe(execute.mock.calls[0]![0].bytes);
 });
@@ -218,7 +246,7 @@ const revalidatingReads = async () => {
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await screen.findByText(listPrincipal());
   await prepare();
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  fireEvent.click(reviewConfirm());
   await waitFor(() => {
     expect(listing).toHaveBeenCalledTimes(2);
   });
@@ -227,14 +255,15 @@ const revalidatingReads = async () => {
 it("keeps discard actionable when readonly restoration completes during a pointer press", async () => {
   const { finishContext, finishListing } = await revalidatingReads();
   const user = userEvent.setup();
-  const discard = screen.getByRole("button", { name: "Discard and leave" });
+  await user.click(screen.getByRole("button", { name: "Continue current request" }));
+  const discard = screen.getAllByRole("button", { name: "Close" })[0]!;
   expect(discard).not.toBeDisabled();
   await user.pointer({ target: discard, keys: "[MouseLeft>]" });
   await finishRead(() => {
     finishContext?.(emptyOffers());
     finishListing?.(success("authority.list"));
   });
-  expect(screen.getByRole("button", { name: "Discard and leave" })).toBe(discard);
+  expect(screen.getAllByRole("button", { name: "Close" })[0]).toBe(discard);
   await user.pointer({ keys: "[/MouseLeft]" });
   const dialog = screen.getByRole("dialog");
   expect(dialog).toBeVisible();
@@ -280,6 +309,7 @@ const loseManagement = async (
   returned: boolean,
   context: ReturnType<typeof mockEndpoint<"context">>,
   listing: ReturnType<typeof mockEndpoint<"authority.list">>,
+  refresh: () => void,
 ) => {
   if (reviewed) {
     await prepare();
@@ -287,15 +317,15 @@ const loseManagement = async (
       await user.click(screen.getByRole("button", { name: "Return to editing" }));
       context.mockResolvedValue(emptyOffers());
       listing.mockResolvedValue(refused());
-      await user.click(screen.getByRole("button", { name: "Reload actors" }));
+      await act(() => Promise.resolve().then(refresh));
     } else {
-      await user.click(screen.getByRole("button", { name: "Record changes" }));
+      await user.click(reviewConfirm());
     }
   } else {
     await author();
     context.mockResolvedValue(emptyOffers());
     listing.mockResolvedValue(refused());
-    await user.click(screen.getByRole("button", { name: "Reload actors" }));
+    await act(() => Promise.resolve().then(refresh));
   }
 };
 it.each([
@@ -318,46 +348,52 @@ it.each([
       context.mockResolvedValue(emptyOffers());
       return Promise.resolve(unavailable());
     });
+    let refresh: () => void = () => {
+      throw new Error("Refresh driver not mounted");
+    };
     render(
       <TestSession logout={logout}>
+        <DisclosureRefreshDriver
+          capture={(invalidate) => {
+            refresh = invalidate;
+          }}
+        />
         <Dashboard />
       </TestSession>,
     );
-    await user.click(await screen.findByRole("link", { name: "Access" }));
-    await loseManagement(user, reviewed, returned, context, listing);
+    await user.click(await screen.findByRole("link", { name: "People & access" }));
+    await loseManagement(user, reviewed, returned, context, listing, () => {
+      refresh();
+    });
     await waitFor(() => {
-      expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 3);
+      // External cache invalidation refreshes the global context as well as the
+      // Authority workspace; its ensuing refusal revalidation remains bounded.
+      expect(context).toHaveBeenCalledTimes(reviewed && !returned ? 2 : 4);
     });
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
-    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
-    await user.click(screen.getByRole("button", { name: "Discard and leave" }));
+    // Leaving the area requests discard through the global navigation boundary,
+    // even when current disclosure has removed the operation drawer entirely.
+    await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
     await user.click(
       within(screen.getByRole("dialog")).getByRole("button", { name: "Discard and leave" }),
     );
     expect(screen.getByRole("button", { name: "Sign out" })).not.toBeDisabled();
-    expect(screen.getByRole("link", { name: "Cases" })).not.toHaveAttribute(
+    expect(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u })).not.toHaveAttribute(
       "aria-disabled",
       "true",
     );
     expect(screen.queryByText("synthetic-authored")).toBeNull();
-    await user.click(screen.getByRole("link", { name: "Cases" }));
+    await user.click(screen.getByRole("link", { name: /^Cases(?: \d+)?$/u }));
     await user.click(screen.getByRole("button", { name: "Sign out" }));
     expect(logout).toHaveBeenCalledOnce();
   },
 );
-const authorityReceipt = () => {
-  const accepted = wireReply("operation.execute", "AUTHORITY");
-  if (accepted.outcome.kind !== "ACCEPTED" || accepted.outcome.data.subject.kind !== "AUTHORITY") {
-    throw new Error("Missing authority receipt fixture");
-  }
-  return { ...accepted.outcome.data, subject: accepted.outcome.data.subject };
-};
-const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
-  const receipt = authorityReceipt();
-  return vi
+const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
+  vi
     .spyOn(service, "execute")
     .mockImplementationOnce((prepared) =>
       Promise.resolve(
@@ -379,27 +415,19 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") => {
             },
       ),
     )
-    .mockImplementation((prepared) =>
-      Promise.resolve({
-        kind: "outcome",
-        status: 200,
+    .mockImplementation((prepared) => {
+      const accepted = authorityAcceptance(prepared);
+      if (accepted.kind !== "outcome" || accepted.value.outcome.kind !== "ACCEPTED") {
+        throw new Error("Expected authored acceptance");
+      }
+      return Promise.resolve({
+        ...accepted,
         value: {
           operationId: prepared.input.operationId,
-          outcome: {
-            kind: "ALREADY_ACCEPTED",
-            data: {
-              ...receipt,
-              operationId: prepared.input.operationId,
-              subject: {
-                ...receipt.subject,
-                act: prepared.input.kind === "AUTHORITY" ? prepared.input.act.kind : "REGISTER",
-              },
-            },
-          },
+          outcome: { kind: "ALREADY_ACCEPTED" as const, data: accepted.value.outcome.data },
         },
-      }),
-    );
-};
+      });
+    });
 it.each(["lost", "unknown"] as const)(
   "removes the obsolete %s attempt alert after exact authority replay acceptance",
   async (first) => {
@@ -408,7 +436,7 @@ it.each(["lost", "unknown"] as const)(
     const execute = authorityRecoveryDelivery(first);
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await prepare();
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    fireEvent.click(reviewConfirm());
     const retry = await screen.findByRole("button", { name: "Send again" });
     expect(screen.getByRole("alert")).toBeVisible();
     const [pending] = execute.mock.calls[0]!;

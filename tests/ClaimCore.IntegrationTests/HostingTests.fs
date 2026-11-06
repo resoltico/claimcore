@@ -380,8 +380,8 @@ let tests =
 
                         Expect.equal
                             (VerificationSupport.position verified).Sequence
-                            (CaseFixtures.sequence (4L))
-                            "Admitted transaction still committed exactly once"
+                            (CaseFixtures.sequence 5L)
+                            "Two owner effects and two grants precede exactly one admitted transaction"
                     }))
             testCase "unsupported major and minor metadata have the shared runtime fault" (fun () ->
                 InstallationCheck.serverVersion (System.Version(18, 6))

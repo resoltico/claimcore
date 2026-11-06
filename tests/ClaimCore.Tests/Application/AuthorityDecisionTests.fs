@@ -78,28 +78,65 @@ let private humanOnly () =
         "Bootstrap also requires a human"
 
 let private replay () =
-    let request = admitted 103 other AuthorityAct.Register
+    let request =
+        admitted 103 other (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
     let view = authorityView worker AuthorityView.empty None
 
     let entry, receipt =
         match executeAuthority installation owner request view with
-        | Verdict.Proceed(entry, AuthorityProjection.Register(target, principal), receipt) ->
+        | Verdict.Proceed(entries,
+                          [ AuthorityProjection.Register(target, principal)
+                            AuthorityProjection.SetProfile _ ],
+                          receipt) ->
             Expect.equal
                 target
                 (ActorId.ofOperationId (request.OperationId))
                 "Registration owns the target identity"
 
             Expect.equal principal other "Exact authored principal"
-            entry, receipt
+            entries, receipt
         | _ -> failtest "Expected actor registration"
 
     let target = actor other (ActorId.ofOperationId (request.OperationId)) [] []
-    let existing = authorityView worker target (Some(LedgerEntries.stored entry))
 
-    Expect.equal
-        (executeAuthority installation owner request existing)
-        (Verdict.Replay receipt)
-        "Executor target and position survive replay"
+    let existing =
+        authorityView
+            worker
+            target
+            (Some(
+                entry
+                |> List.map LedgerEntries.stored
+                |> StoredOperation.create
+                |> Result.defaultWith (string >> failtest)
+            ))
+
+    let currentReceipt =
+        match receipt.Subject with
+        | ReceiptSubject.Authority subject ->
+            { receipt with
+                Subject =
+                    ReceiptSubject.Authority
+                        { subject with
+                            TargetActor =
+                                AuthorityTargetDisclosure.Disclosed
+                                    {
+                                        ActorId = ActorId.ofOperationId request.OperationId
+                                        DisplayName = DisplayName.Erased
+                                        PrincipalKind = PrincipalKind.Human
+                                        Availability = ActorAvailability.Available
+                                    }
+                        }
+            }
+        | _ -> failtest "Expected authority acceptance"
+
+    match executeAuthority installation owner request existing with
+    | Verdict.Replay actual ->
+        expectReceipt
+            actual
+            currentReceipt
+            "Executor and position survive; target name follows the current empty profile"
+    | other -> failtestf "Expected authority replay: %A" other
 
     let changed =
         AuthorityRequests.input
@@ -147,30 +184,90 @@ let private provision () =
         match
             provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner initial
         with
-        | Verdict.Proceed(entry, AuthorityProjection.ProvisionOwner(target, principal), receipt) ->
+        | Verdict.Proceed(entries,
+                          [ AuthorityProjection.ProvisionOwner(target, principal)
+                            AuthorityProjection.SetProfile _ ],
+                          receipt) ->
             Expect.equal
                 (target, principal)
                 ((CaseFixtures.actorId (id 104)), owner)
                 "Bootstrap has explicit identity"
 
-            entry, receipt
+            entries, receipt
         | _ -> failtest "Expected explicit bootstrap"
 
     Expect.equal
-        entry.Subject
+        entry.Head.Subject
         (EntryTarget.Authority((CaseFixtures.actorId (id 104)), AuthorityKind.ProvisionOwner))
         "Bootstrap records its distinct durable kind"
 
     let target = actor owner ((CaseFixtures.actorId (id 104))) [ Role.Owner ] []
-    let view = authorityView target target (Some(LedgerEntries.stored entry))
 
-    Expect.equal
-        (provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner view)
-        (Verdict.Replay receipt)
-        "Bootstrap exact replay is idempotent"
+    let target =
+        { target with
+            Actor =
+                target.Actor
+                |> Option.map (fun actor ->
+                    { actor with
+                        Profile =
+                            Some(
+                                ActorProfile.parse Inputs.ownerProfile
+                                |> Result.defaultWith (string >> failtest)
+                            )
+                    })
+        }
+
+    let view =
+        authorityView
+            target
+            target
+            (Some(
+                entry
+                |> List.map LedgerEntries.stored
+                |> StoredOperation.create
+                |> Result.defaultWith (string >> failtest)
+            ))
+
+    let currentReceipt =
+        match receipt.Subject with
+        | ReceiptSubject.Authority subject ->
+            Expect.equal
+                subject.TargetActor
+                (AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId (id 104)))
+                "Initial bootstrap has no pre-existing authority read grant"
+
+            { receipt with
+                Subject =
+                    ReceiptSubject.Authority
+                        { subject with
+                            TargetActor =
+                                AuthorityTargetDisclosure.Disclosed
+                                    {
+                                        ActorId = CaseFixtures.actorId (id 104)
+                                        DisplayName =
+                                            DisplayName.Named(
+                                                PartyName.parse Inputs.ownerProfile.DisplayName
+                                                |> Result.defaultWith (string >> failtest)
+                                            )
+                                        PrincipalKind = PrincipalKind.Human
+                                        Availability = ActorAvailability.Available
+                                    }
+                        }
+            }
+        | _ -> failtest "Expected owner provisioning acceptance"
+
+    match provisionAuthority installation ((CaseFixtures.operationId (id 104))) owner view with
+    | Verdict.Replay actual ->
+        expectReceipt
+            actual
+            currentReceipt
+            "Bootstrap replay preserves acceptance and uses current authority-read rights"
+    | other -> failtestf "Expected bootstrap replay: %A" other
 
 let private reviewAndFences () =
-    let request = admitted 105 other AuthorityAct.Register
+    let request =
+        admitted 105 other (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
     let view = authorityView worker AuthorityView.empty None
 
     match
@@ -179,7 +276,9 @@ let private reviewAndFences () =
             request
             view.Read
     with
-    | Verdict.Proceed(_, AuthorityProjection.Register _) -> ()
+    | Verdict.Proceed {
+                          Change = AuthorityChange.Registered _
+                      } -> ()
     | _ -> failtest "Review must be a pure proposal"
 
     Expect.equal
@@ -215,6 +314,9 @@ let private reviewAndFences () =
             InstallationOffer.AuthorityAct AuthorityKind.Revoke
             InstallationOffer.AuthorityAct AuthorityKind.Enable
             InstallationOffer.AuthorityAct AuthorityKind.Disable
+            InstallationOffer.AuthorityAct AuthorityKind.SetProfile
+            InstallationOffer.AuthorityAct AuthorityKind.EraseProfile
+            InstallationOffer.AuthorityAct AuthorityKind.Admit
         ]
         "Installation offers contain only ordinary operations; owner provisioning uses its dedicated bootstrap boundary"
 
@@ -228,6 +330,7 @@ let private meaninglessScope () =
                     ActorId = CaseFixtures.actorId (id 2)
                     Principal = other
                     Enabled = true
+                    Profile = None
                 }
             Grants = []
         }
@@ -235,7 +338,7 @@ let private meaninglessScope () =
     let facts: AuthorityFacts =
         {
             TargetActor = Some target
-            TargetCaseId = Some caseId
+            TargetCases = Map.ofList [ GrantTarget.CaseId caseId, caseId ]
             EnabledHumanOwners = Some 2
             ActorCount = Some 2
             Requester = worker
@@ -353,6 +456,7 @@ let private accessExplanation () =
                                 ActorId = CaseFixtures.actorId (id 3)
                                 Principal = service
                                 Enabled = true
+                                Profile = None
                             }
                         Grants =
                             [
@@ -362,7 +466,7 @@ let private accessExplanation () =
                                 }
                             ]
                     }
-            TargetCaseId = Some caseId
+            TargetCases = Map.ofList [ GrantTarget.CaseId caseId, caseId ]
             EnabledHumanOwners = Some 2
             ActorCount = Some 3
             Requester = worker

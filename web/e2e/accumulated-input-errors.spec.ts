@@ -41,7 +41,9 @@ test("one submit reports every invalid input in summary order and links to its f
     await expect(control).toHaveAttribute("aria-invalid", "true");
     await expect(control).toHaveAttribute("aria-describedby", /\S/u);
   }
-  await expect(incident).toHaveAccessibleDescription(/calendar date/u);
+  await expect(incident).toHaveAccessibleDescription(
+    "When the incident happened. Enter a real date.",
+  );
   await expect(amount).toHaveAccessibleDescription(/decimal/u);
   await expect(currency).toHaveAccessibleDescription(/currency/u);
   const summary = page.locator("[data-error-summary]");
@@ -50,7 +52,8 @@ test("one submit reports every invalid input in summary order and links to its f
   await expect(summary.getByRole("link").first()).toContainText("Incident date");
   await summary.getByRole("link").first().click();
   await expect(incident).toBeFocused();
-  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(page.getByRole("dialog", { name: "Open a case", exact: true })).toBeVisible();
+  await expect(page.locator("[data-confirm-operation]")).toHaveCount(0);
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await expectAccessible(page);
 });

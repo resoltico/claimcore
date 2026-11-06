@@ -22,7 +22,7 @@ module internal WorkQueries =
             | Some visibility, Some requester ->
                 Ok
                     {
-                        CaseSelection.DateBasis = CaseWorkReads.basis services tx.ObservedAt
+                        CaseSelection.DateBasis = ServiceContext.basis services tx.ObservedAt
                         Visibility = visibility
                         ActorId = requester.ActorId
                         ReadRoles = Authority.readRoles services.Principal
@@ -94,12 +94,13 @@ module internal WorkQueries =
             match
                 CaseExecution.validateSelector request.Target, ReminderId.create request.ReminderId
             with
-            | Error refusal, _ -> return Outcome.Rejected refusal
+            | Error refusal, _ -> return! RequestRefusals.read services token refusal
             | _, None ->
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired)
-                    )
+                return!
+                    RequestRefusals.read
+                        services
+                        token
+                        (Refusal.invalidInput (InputTarget.ReminderId, Violation.ReminderIdRequired))
             | Ok(), Some id ->
                 let! result =
                     services.Store.Read(
@@ -129,47 +130,58 @@ module internal WorkQueries =
                                                 && CaseState.lifecycle parent.Snapshot.State
                                                    <> Lifecycle.Erased
                                                 ->
-                                                let reminder = value.Snapshot.Value
+                                                let! authors = tx.ActorRefs [ value.RecordedBy ]
 
-                                                let lifecycle =
-                                                    CaseState.lifecycle parent.Snapshot.State
+                                                match Map.tryFind value.RecordedBy authors with
+                                                | None ->
+                                                    return
+                                                        Outcome.Failed CoreFault.StoreIntegrityError
+                                                | Some author ->
+                                                    let reminder = value.Snapshot.Value
 
-                                                let status =
-                                                    CaseState.fields parent.Snapshot.State
-                                                    |> Option.map _.Status
+                                                    let lifecycle =
+                                                        CaseState.lifecycle parent.Snapshot.State
 
-                                                let basis =
-                                                    CaseWorkReads.basis services tx.ObservedAt
+                                                    let status =
+                                                        CaseState.fields parent.Snapshot.State
+                                                        |> Option.map _.Status
 
-                                                let active = CaseState.isActionable lifecycle status
+                                                    let basis =
+                                                        ServiceContext.basis services tx.ObservedAt
 
-                                                return
-                                                    Outcome.Succeeded
-                                                        {
-                                                            ReminderRead.Basis = basis
-                                                            Item =
-                                                                {
-                                                                    Reminder = reminder
-                                                                    Reference =
-                                                                        parent.Snapshot.Reference
-                                                                    RecordedAt = value.RecordedAt
-                                                                    RecordedBy = value.RecordedBy
-                                                                    Acts =
-                                                                        reminderActs
-                                                                            services.Principal
-                                                                            view.Actor
-                                                                            view.Maintenance.Active
-                                                                            lifecycle
-                                                                            status
-                                                                            reminder
-                                                                    Active = active
-                                                                    Timing =
-                                                                        ReminderDue.at
-                                                                            basis.BusinessDate
-                                                                            active
-                                                                            reminder
-                                                                }
-                                                        }
+                                                    let active =
+                                                        CaseState.isActionable lifecycle status
+
+                                                    return
+                                                        Outcome.Succeeded
+                                                            {
+                                                                ReminderRead.Basis = basis
+                                                                Item =
+                                                                    {
+                                                                        Reminder = reminder
+                                                                        Reference =
+                                                                            parent.Snapshot
+                                                                                .Reference
+                                                                        RecordedAt =
+                                                                            value.RecordedAt
+                                                                        RecordedBy = author
+                                                                        Acts =
+                                                                            reminderActs
+                                                                                services.Principal
+                                                                                view.Actor
+                                                                                view.Maintenance
+                                                                                    .Active
+                                                                                lifecycle
+                                                                                status
+                                                                                reminder
+                                                                        Active = active
+                                                                        Timing =
+                                                                            ReminderDue.at
+                                                                                basis.BusinessDate
+                                                                                active
+                                                                                reminder
+                                                                    }
+                                                            }
                                             | _ -> return QueryResults.unavailable
                                         | _ -> return QueryResults.unavailable
                                     }
@@ -183,7 +195,7 @@ module internal WorkQueries =
     let reminders (services: ServiceContext) (request: ReminderListRequest) token =
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return QueryResults.invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let text =
                     match request.Text with
@@ -200,7 +212,7 @@ module internal WorkQueries =
                     |> Option.defaultValue (Ok())
 
                 match Admission.map2 (fun () text -> text) selector text with
-                | Error refusal -> return Outcome.Rejected refusal
+                | Error refusal -> return! RequestRefusals.read services token refusal
                 | Ok text ->
                     let! result =
                         services.Store.Read(
@@ -262,7 +274,14 @@ module internal WorkQueries =
                                                     }
 
                                                 let state =
-                                                    defaultArg request.State ReminderState.Pending
+                                                    match request.State, request.View with
+                                                    | None, None -> Some ReminderState.Pending
+                                                    | value, _ -> value
+
+                                                let includeInactive =
+                                                    defaultArg
+                                                        request.IncludeInactive
+                                                        request.View.IsSome
 
                                                 let parentId = parent |> Option.map _.CaseId
 
@@ -276,7 +295,12 @@ module internal WorkQueries =
                                                             parentId
                                                             |> Option.map CaseId.format
                                                             |> Option.defaultValue ""
-                                                            ReminderState.token state
+                                                            state
+                                                            |> Option.map DurableNames.reminderState
+                                                            |> Option.defaultValue ""
+                                                            request.View
+                                                            |> Option.map DurableNames.reminderView
+                                                            |> Option.defaultValue ""
                                                             request.Due
                                                             |> Option.map ReminderDue.token
                                                             |> Option.defaultValue ""
@@ -286,7 +310,7 @@ module internal WorkQueries =
                                                             text
                                                             |> Option.map CaseSearchText.value
                                                             |> Option.defaultValue ""
-                                                            string request.IncludeInactive
+                                                            string includeInactive
                                                         ]
 
                                                 match
@@ -306,10 +330,10 @@ module internal WorkQueries =
                                                                 Selection = selection
                                                                 TargetCaseId = parentId
                                                                 State = state
+                                                                View = request.View
                                                                 Due = request.Due
                                                                 Text = text
-                                                                IncludeInactive =
-                                                                    request.IncludeInactive
+                                                                IncludeInactive = includeInactive
                                                                 After =
                                                                     after
                                                                     |> Option.map (fun (due, id) ->
@@ -329,13 +353,26 @@ module internal WorkQueries =
                                                             |> List.distinct
                                                         )
 
+                                                    let! authors =
+                                                        tx.ActorRefs(
+                                                            page.Items
+                                                            |> List.map _.Stored.RecordedBy
+                                                            |> List.distinct
+                                                        )
+
                                                     let items =
                                                         page.Items
                                                         |> List.map (fun row ->
-                                                            match row.Stored.Snapshot with
-                                                            | None ->
+                                                            match
+                                                                row.Stored.Snapshot,
+                                                                Map.tryFind
+                                                                    row.Stored.RecordedBy
+                                                                    authors
+                                                            with
+                                                            | None, _
+                                                            | _, None ->
                                                                 Error CoreFault.StoreIntegrityError
-                                                            | Some reminder ->
+                                                            | Some reminder, Some author ->
                                                                 let active =
                                                                     CaseState.isActionable
                                                                         row.Lifecycle
@@ -348,8 +385,7 @@ module internal WorkQueries =
                                                                         Reference = row.Reference
                                                                         RecordedAt =
                                                                             row.Stored.RecordedAt
-                                                                        RecordedBy =
-                                                                            row.Stored.RecordedBy
+                                                                        RecordedBy = author
                                                                         Acts =
                                                                             reminderActs
                                                                                 services.Principal
@@ -398,7 +434,7 @@ module internal WorkQueries =
     let activity (services: ServiceContext) (request: CaseActivityRequest) token =
         task {
             if not (QueryResults.validLimit request.Limit) then
-                return QueryResults.invalidLimit ()
+                return! RequestRefusals.invalidLimit services token
             else
                 let! result =
                     services.Store.Read(
@@ -447,7 +483,51 @@ module internal WorkQueries =
                                                             Limit = request.Limit
                                                         }
 
-                                                let mutable items = Ok []
+                                                let! authors =
+                                                    tx.ActorRefs(
+                                                        page.Items
+                                                        |> List.map _.ActorId
+                                                        |> List.distinct
+                                                    )
+
+                                                let validated =
+                                                    page.Items
+                                                    |> List.fold
+                                                        (fun result entry ->
+                                                            result
+                                                            |> Result.bind (fun entries ->
+                                                                LedgerEntries.validate
+                                                                    services.InstallationId
+                                                                    entry
+                                                                |> Result.map (fun entry ->
+                                                                    entry :: entries)))
+                                                        (Ok [])
+
+                                                let! accounts =
+                                                    task {
+                                                        match validated with
+                                                        | Ok entries when
+                                                            request.Detail = HistoryDetail.Full
+                                                            && CaseState.lifecycle
+                                                                parent.Snapshot.State
+                                                               <> Lifecycle.Erased
+                                                            ->
+                                                            let! work = tx.FindWork parent.CaseId
+
+                                                            let relations =
+                                                                LedgerEntries.workRelations
+                                                                    services.Principal
+                                                                    view.Actor
+                                                                    (Some parent)
+                                                                    work
+                                                                    entries
+
+                                                            return! tx.AssignedAccounts relations
+                                                        | _ -> return Map.empty
+                                                    }
+
+                                                let mutable items =
+                                                    validated |> Result.map (fun _ -> [])
 
                                                 for entry in page.Items do
                                                     let subject =
@@ -486,6 +566,16 @@ module internal WorkQueries =
                                                             services.Principal
                                                             entry.OperationId
 
+                                                    let current =
+                                                        match current with
+                                                        | ReceiptCurrent.Work(parent, work, _) ->
+                                                            ReceiptCurrent.Work(
+                                                                parent,
+                                                                work,
+                                                                accounts
+                                                            )
+                                                        | _ -> current
+
                                                     let detail =
                                                         LedgerEntries.validate
                                                             services.InstallationId
@@ -495,8 +585,14 @@ module internal WorkQueries =
                                                                 request.Detail = HistoryDetail.Full
                                                             then
                                                                 LedgerEntries.receipt
+                                                                    (ServiceContext.basis
+                                                                        services
+                                                                        tx.ObservedAt)
                                                                     services.Principal
                                                                     view.Actor
+                                                                    (Map.tryFind
+                                                                        entry.ActorId
+                                                                        authors)
                                                                     current
                                                                     validated
                                                                 |> Result.map Some
@@ -506,8 +602,12 @@ module internal WorkQueries =
                                                     items <-
                                                         items
                                                         |> Result.bind (fun items ->
-                                                            match subject, detail with
-                                                            | Ok subject, Ok detail ->
+                                                            match
+                                                                subject,
+                                                                detail,
+                                                                Map.tryFind entry.ActorId authors
+                                                            with
+                                                            | Ok subject, Ok detail, Some author ->
                                                                 Ok(
                                                                     {
                                                                         CaseActivity.OperationId =
@@ -519,13 +619,15 @@ module internal WorkQueries =
                                                                         Subject = subject
                                                                         RecordedAt =
                                                                             entry.RecordedAt
-                                                                        RecordedBy = entry.ActorId
+                                                                        RecordedBy = author
                                                                         Detail = detail
                                                                     }
                                                                     :: items
                                                                 )
-                                                            | Error fault, _
-                                                            | _, Error fault -> Error fault)
+                                                            | Error fault, _, _
+                                                            | _, Error fault, _ -> Error fault
+                                                            | _, _, None ->
+                                                                Error CoreFault.StoreIntegrityError)
 
                                                 return
                                                     items

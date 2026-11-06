@@ -15,9 +15,9 @@ import { chooseChoice, goToView } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { isResponse } from "../src/protocol/client";
 import { currentCase } from "./localization-correction-workflow";
-import { pauseJsonReply, selectFormat } from "./localization-support";
+import { pauseJsonReply, selectFormat, settingsNavigation } from "./localization-support";
 
-test("records future planned work and scoped responsibility, then finds My cases", async ({
+test("records future planned work and scoped responsibility, then finds the case in Mine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -31,10 +31,14 @@ test("records future planned work and scoped responsibility, then finds My cases
     },
     body: "{}",
   });
-  if (!isResponse("context", context.payload) || context.payload.outcome.kind !== "SUCCEEDED") {
+  if (
+    !isResponse("context", context.payload) ||
+    context.payload.outcome.kind !== "SUCCEEDED" ||
+    context.payload.outcome.data.requester.kind !== "ACTIVE"
+  ) {
     throw new Error("Work context unavailable");
   }
-  const { actorId, businessDate } = context.payload.outcome.data;
+  const { actorId, businessDate } = context.payload.outcome.data.requester;
   const tomorrow = new Date(`${businessDate}T12:00:00Z`);
   tomorrow.setUTCDate(tomorrow.getUTCDate() + 1);
   const planned = tomorrow.toISOString().slice(0, 10);
@@ -42,10 +46,10 @@ test("records future planned work and scoped responsibility, then finds My cases
     () => window.performance.getEntriesByType("resource").length,
   );
   const started = performance.now();
-  await page
-    .locator(".case-work")
-    .getByRole("button", { name: "Update case work", exact: true })
-    .click();
+  await page.locator("#case-work-update").click();
+  await expect(
+    page.getByRole("dialog").locator('input[name="act.values.responsibleActor.kind"][value="SET"]'),
+  ).toBeVisible();
   const renderMilliseconds = performance.now() - started;
   await page.waitForLoadState("networkidle");
   const resources = await page.evaluate(
@@ -110,30 +114,48 @@ test("records future planned work and scoped responsibility, then finds My cases
   }
   expect(accepted.outcome.data.revision).toBe(1);
   expect(accepted.outcome.data.work.revision).toBe(1);
-  expect(accepted.outcome.data.work.responsible?.account.actorId).toBe(actorId);
+  expect(accepted.outcome.data.work.responsible?.actorId).toBe(actorId);
   expect(accepted.outcome.data.work.followUpDate).toBe(planned);
-  await expect(page.locator(".case-work")).toContainText("Upcoming");
+  await expect(
+    page
+      .locator(".reminder-list .reminder-row")
+      .filter({ hasText: "Request the remaining documents" })
+      .locator(".reminder-timing"),
+  ).toHaveText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");
-  await page.getByRole("button", { name: "My cases", exact: true }).click();
+  await page.getByRole("tab", { name: /^Mine(?:\s|$)/u }).click();
+  await expect(page).toHaveURL((url) => url.searchParams.get("view") === "MINE");
   await expect(page.getByRole("link", { name: reference, exact: true })).toBeVisible();
 });
 
-for (const [entered, display, expected] of [
-  ["en-GB", "lv-LV", "1234"],
-  ["lv-LV", "en-GB", "1.234"],
+for (const [entered, expected] of [
+  ["en-GB", "1234"],
+  ["lv-LV", "1.234"],
 ] as const) {
-  test(`keeps ${entered} amount meaning after switching to ${display} in a connected partial editor`, async ({
+  test(`preserves the Settings detour and ${entered} amount meaning in a partial editor`, async ({
     page,
   }) => {
     await openAuthenticated(page);
     const reference = `ENTRY-${randomUUID()}`;
     await openCase(page, reference);
     await selectFormat(page, entered);
-    await startAct(page, "Amend registration");
+    await startAct(page, "AMEND_REGISTRATION", "en");
     await page.locator('input[data-selects-fields~="claimedAmount"]').check();
     await fillBusinessField(page, "claimedAmount", "1,234");
-    await selectFormat(page, display);
+    const editorUrl = page.url();
+    await (await settingsNavigation(page)).click();
+    await expect(page).toHaveURL((url) => url.pathname === "/settings");
+    await expect(page.locator(".settings-panel")).toBeVisible();
+    await expect(
+      page.getByRole("dialog", { name: "Discard these draft changes?", exact: true }),
+    ).toHaveCount(0);
+    await page.locator("[data-return-workspace]").click();
+    await expect(page).toHaveURL(editorUrl);
+    await expect(page.locator(".settings-panel")).toHaveCount(0);
+    await expect(
+      page.getByRole("dialog").locator('input[data-field-name="claimedAmount"]'),
+    ).toHaveValue("1,234");
     const preview = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes", exact: true }).click();
     const captured = await preview.ready;

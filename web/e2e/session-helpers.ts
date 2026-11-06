@@ -1,3 +1,4 @@
+import { showAccountActions } from "./workspace-navigation";
 import {
   loginNavigationTimeout,
   loginAdmissionAttempt,
@@ -7,7 +8,14 @@ import { readFile, writeFile } from "node:fs/promises";
 import { isAbsolute, resolve } from "node:path";
 
 import { AxeBuilder } from "@axe-core/playwright";
-import { expect, test, type BrowserContext, type Page, type Response } from "@playwright/test";
+import {
+  expect,
+  test,
+  type Browser,
+  type BrowserContext,
+  type Page,
+  type Response,
+} from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -110,27 +118,44 @@ export const openApplication = async (page: Page, heading: string | RegExp): Pro
 export const openAuthenticated = async (
   page: Page,
   casesHeading: string | RegExp = "Cases",
-  stateFile:
-    "authenticated-state.json" | "narrow-authenticated-state.json" = "authenticated-state.json",
+  sessionCookies?: Cookies,
 ): Promise<void> => {
-  const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
-  if (output === undefined) {
-    throw new Error("Private browser output was not configured.");
+  let cookies = sessionCookies;
+  if (cookies === undefined) {
+    const output = process.env["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"];
+    if (output === undefined) {
+      throw new Error("Private browser output was not configured.");
+    }
+    const state: unknown = JSON.parse(
+      await readFile(resolve(output, "authenticated-state.json"), "utf8"),
+    );
+    if (
+      typeof state !== "object" ||
+      state === null ||
+      !("cookies" in state) ||
+      !Array.isArray(state.cookies)
+    ) {
+      throw new Error("E2E_AUTH_STATE_INVALID");
+    }
+    cookies = state.cookies as Cookies;
   }
-  const state: unknown = JSON.parse(await readFile(resolve(output, stateFile), "utf8"));
-  if (
-    typeof state !== "object" ||
-    state === null ||
-    !("cookies" in state) ||
-    !Array.isArray(state.cookies)
-  ) {
-    throw new Error("E2E_AUTH_STATE_INVALID");
-  }
-  await page.context().addCookies(state.cookies as Cookies);
+  await page.context().addCookies(cookies);
   await openApplication(page, casesHeading);
 };
 
 export const expectAccessible = async (page: Page): Promise<void> => {
+  const preferenceSelector =
+    'input[name$="-language"], input[name$="-mode"], input[name$="-accent"], [role="combobox"][id$="-format"]';
+  const allPreferences = page.locator(preferenceSelector);
+  const count = await allPreferences.count();
+  await expect(page.locator(".settings-panel").locator(preferenceSelector)).toHaveCount(count);
+  if (count > 0) {
+    const settingsPage = new URL(page.url()).pathname === "/settings";
+    const signInDialog =
+      (await page.locator(".login-shell").count()) > 0 &&
+      (await page.getByRole("dialog").locator(".settings-panel").count()) > 0;
+    expect(settingsPage || signInDialog).toBe(true);
+  }
   const result = await new AxeBuilder({ page }).analyze();
   if (result.violations.length === 0) {
     return;
@@ -331,13 +356,10 @@ export const login = async (
   await retainResponseBodies(page);
   const authenticated =
     workspaceHeading === null
-      ? page.getByRole("button", { name: "Sign out", exact: true })
+      ? page.locator(".workspace-header")
       : page.getByRole("heading", { name: workspaceHeading, exact: true });
   try {
-    await authenticated
-      .or(page.getByRole("heading", { name: "ClaimCore", exact: true }))
-      .first()
-      .waitFor({ timeout: 5_000 });
+    await authenticated.or(page.locator(".login-card h1")).first().waitFor({ timeout: 5_000 });
   } catch {
     const main = await page.evaluate(() => document.querySelector("main")?.className ?? "none");
     const kind = ["loading", "login-shell", "app-shell"].includes(main) ? main : "other";
@@ -371,14 +393,41 @@ export const login = async (
   await progress("login-ready");
 };
 
+/** Secondary-principal suites own a real session acquired when their workflows begin. */
+export const authenticateSteward = async (
+  browser: Browser,
+  baseURL: string | undefined,
+): Promise<Cookies> => {
+  if (baseURL === undefined) {
+    throw new Error("E2E_STEWARD_SESSION_BASE_URL_REQUIRED");
+  }
+  const context = await browser.newContext({ baseURL, ignoreHTTPSErrors: true });
+  try {
+    const page = await context.newPage();
+    await page.goto("/", { waitUntil: "commit" });
+    await login(page, "Cases", "Sign in", "synthetic-steward");
+    return await context.cookies();
+  } finally {
+    await context.close();
+  }
+};
+
 export const logout = async (page: Page): Promise<void> => {
   const responseEvent = page.waitForResponse(
     (response) => new URL(response.url()).pathname === "/api/session.logout",
   );
-  await page.getByRole("button", { name: "Sign out" }).click();
+  await showAccountActions(page);
+  const signOut = page.getByRole("button", { name: "Sign out", exact: true });
+  if (!(await signOut.isVisible())) {
+    await page.locator('a[href="/settings"]').click();
+    await expect(page.locator(".settings-panel")).toBeVisible();
+  }
+  await signOut.click();
   const response = await responseEvent;
   expect(response.status()).toBe(200);
-  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const reply = await browserRequest(page, "/api/session");
   if (!isResponse("session", reply.payload)) {
@@ -407,11 +456,12 @@ export const installationId = async (page: Page, token: string): Promise<string>
   if (
     reply.status !== 200 ||
     !isResponse("context", reply.payload) ||
-    reply.payload.outcome.kind !== "SUCCEEDED"
+    reply.payload.outcome.kind !== "SUCCEEDED" ||
+    reply.payload.outcome.data.requester.kind !== "ACTIVE"
   ) {
     throw new Error(
       `Synthetic installation context HTTP ${reply.status} ${contextFailureCode(reply.status, reply.payload)} (context).`,
     );
   }
-  return reply.payload.outcome.data.installationId;
+  return reply.payload.outcome.data.requester.installationId;
 };

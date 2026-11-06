@@ -44,6 +44,27 @@ module internal ShellIdle =
                 return! pending
         }
 
+/// Completed review lines are persistent output; only the unfinished question belongs to line editing.
+module internal ShellReviewOutput =
+    let create (output: Stream) =
+        let pending = ResizeArray<byte>()
+
+        let write (bytes: byte array) =
+            for value in bytes do
+                pending.Add value
+
+                if value = 10uy then
+                    output.Write(pending.ToArray())
+                    output.Flush()
+                    pending.Clear()
+
+        let take () =
+            let current = Encoding.UTF8.GetString(pending.ToArray())
+            pending.Clear()
+            current
+
+        write, take
+
 type internal ShellSession
     (clock: TimeProvider, console: ShellConsole, processor: RemoteFrameProcessor) =
     let gate = obj ()
@@ -56,14 +77,14 @@ type internal ShellSession
     let mutable interruptionCode: int option = None
 
     let reviewConsole =
-        let mutable prompt = ""
+        let write, question = ShellReviewOutput.create console.Errors
 
         {
             IsInteractive = console.ReviewInteractive
-            Write = fun bytes -> prompt <- Encoding.UTF8.GetString bytes
+            Write = write
             ReadLine =
                 fun () ->
-                    let pending = console.Read false prompt
+                    let pending = console.Read false (question ())
 
                     let line =
                         ShellIdle.read clock (clock.GetTimestamp()) pending (fun () ->
@@ -87,14 +108,14 @@ type internal ShellSession
         task {
             token.ThrowIfCancellationRequested()
 
-            match CliInvocations.admit words with
+            match CliInvocations.admitConfigured words with
             | Ok(CliInvocation.Verb arguments) ->
                 return! VerbRunner.run verbConsole processor arguments token
             | Ok(CliInvocation.Call | CliInvocation.Session | CliInvocation.Shell | CliInvocation.Recovery _ | CliInvocation.Configure _) ->
                 return
                     CliDiscovery.unsupported
                         console.Errors
-                        "en"
+                        (CliInvocations.usageLanguage words)
                         words
                         (UsageError.NotApplicable("command", "shell"))
             | Ok invocation ->
@@ -157,12 +178,14 @@ type internal ShellSession
                 status (CliInvocations.usageLanguage words) code
                 return None
             | Error _ ->
+                let language = CliLanguage.effective ()
+
                 CliDiscovery.writeText
                     console.Errors
-                    (MessageCatalogs.renderCli "en" CliMessage.InvalidShellLine
+                    (MessageCatalogs.renderCli language CliMessage.InvalidShellLine
                      + Environment.NewLine)
 
-                status "en" (ExitCode.value ExitCode.Usage)
+                status language (ExitCode.value ExitCode.Usage)
                 lastActivity <- clock.GetTimestamp()
                 return None
         }

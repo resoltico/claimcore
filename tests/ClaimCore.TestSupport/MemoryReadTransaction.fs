@@ -13,6 +13,21 @@ open ClaimCore.Application.Contracts
 
 open ClaimCore.TestSupport.MemoryStoreState
 
+let private roleSummaries (state: State) id =
+    state.Grants
+    |> Seq.choose (fun (actor, role, scope) -> if actor = id then Some(role, scope) else None)
+    |> Seq.groupBy fst
+    |> Seq.map (fun (role, scopes) ->
+        let scopes = scopes |> Seq.map snd |> Seq.toList
+
+        {
+            ActorRoleSummary.Role = role
+            Installation = List.contains None scopes
+            CaseCount = scopes |> List.filter Option.isSome |> List.length |> int64
+        })
+    |> Seq.toList
+
+
 let private selected (state: State) (selection: CaseSelection) (record: StoredCase) =
     let scopedRead =
         state.Grants
@@ -29,6 +44,25 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
             && List.contains role selection.ForbiddenRoles)
 
     (selection.Visibility = CaseVisibility.Every || scopedRead)
+    && (selection.Filter.View
+        |> Option.forall (fun view ->
+            CaseView.matches
+                selection.DateBasis.BusinessDate
+                selection.ActorId
+                view
+                {
+                    State =
+                        record.Snapshot.State
+                        |> CaseState.map (fun fields ->
+                            fields.Status, CaseProgress.ofPayment fields.Progress)
+                    Responsible =
+                        record.Index.Responsible
+                        |> Option.map (fun actor ->
+                            actor,
+                            (assignedAccount state record.CaseId actor).Availability =
+                                ActorAvailability.Available)
+                    NextPendingDue = record.Index.FollowUp
+                }))
     && (selection.Filter.Assignment
         |> Option.forall (function
             | CaseAssignment.Mine -> record.Index.Responsible = Some selection.ActorId
@@ -44,6 +78,8 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
                 record.Index.FollowUp
                 =
                 due))
+    && (selection.Filter.ResponsibleActor
+        |> Option.forall (fun actor -> record.Index.Responsible = Some actor))
     && not forbidden
     && CaseListFilter.matches
         selection.Filter
@@ -56,6 +92,20 @@ let private selected (state: State) (selection: CaseSelection) (record: StoredCa
              | None -> text
              | Some summary -> text + "\u001f" + summary))
 
+
+let private viewFacts state (record: StoredCase) : CaseWorkFacts =
+    {
+        State =
+            record.Snapshot.State
+            |> CaseState.map (fun fields -> fields.Status, CaseProgress.ofPayment fields.Progress)
+        Responsible =
+            record.Index.Responsible
+            |> Option.map (fun actor ->
+                actor,
+                (assignedAccount state record.CaseId actor).Availability =
+                    ActorAvailability.Available)
+        NextPendingDue = record.Index.FollowUp
+    }
 
 let private total money =
     money
@@ -145,6 +195,10 @@ let private authorityView state principal caseId =
 
     { view with
         HasScopedCases = caseId.IsNone && assigned
+        HasAssignedRoles =
+            actor
+            |> Option.exists (fun actor ->
+                state.Grants |> Seq.exists (fun (id, _, _) -> id = actor.ActorId))
     }
 
 
@@ -178,6 +232,10 @@ type internal Reader
             Task.FromResult
                 {
                     GlobalReadFacts.Authority = authorityView state principal None
+                    AssignedRoles =
+                        (authorityView state principal None).Actor
+                        |> Option.map (fun actor -> roleSummaries state actor.ActorId)
+                        |> Option.defaultValue []
                     Maintenance = state.Maintenance
                 }
 
@@ -261,9 +319,33 @@ type internal Reader
 
             Task.FromResult(
                 pairs
-                |> List.map (fun (caseId, actorId) -> caseId, assignedAccount state caseId actorId)
+                |> List.map (fun (caseId, actorId) ->
+                    (caseId, actorId), assignedAccount state caseId actorId)
                 |> Map.ofList
             )
+
+        member _.ResponsibilityCounts(selection, actors) =
+            read ()
+
+            if actors.Length > Paging.MaximumPageSize then
+                invalidArg (nameof actors) "Use at most one admitted actor page."
+
+            let state = get ()
+
+            let assigned =
+                state.Cases
+                |> Map.values
+                |> Seq.filter (selected state selection)
+                |> Seq.choose _.Index.Responsible
+                |> Seq.countBy id
+                |> Map.ofSeq
+
+            actors
+            |> List.distinct
+            |> List.map (fun actor ->
+                actor, (Map.tryFind actor assigned |> Option.defaultValue 0 |> int64))
+            |> Map.ofList
+            |> Task.FromResult
 
         member _.ReminderPage query =
             read ()
@@ -282,11 +364,19 @@ type internal Reader
 
                     selected state query.Selection parent
                     && (query.TargetCaseId |> Option.forall ((=) row.CaseId))
-                    && Reminder.state value = query.State
+                    && (query.State |> Option.forall ((=) (Reminder.state value)))
+                    && (query.View
+                        |> Option.forall (fun view ->
+                            ReminderView.matches
+                                query.Selection.DateBasis.BusinessDate
+                                query.Selection.ActorId
+                                view
+                                (viewFacts state parent)
+                                value))
                     && (query.IncludeInactive || actionable)
                     && (query.Text
                         |> Option.forall (fun text ->
-                            (CaseSearch.normalize (ReminderAction.format (Reminder.action value)))
+                            (TextSearch.normalize (ReminderAction.format (Reminder.action value)))
                                 .Contains(CaseSearchText.value text, StringComparison.Ordinal)))
                     && (query.Due
                         |> Option.forall (fun due ->
@@ -337,6 +427,66 @@ type internal Reader
                     rows
             )
 
+        member _.CaseViewCounts selection =
+            read ()
+            let state = get ()
+
+            let rows =
+                state.Cases
+                |> Map.values
+                |> Seq.filter (selected state selection)
+                |> Seq.map (viewFacts state)
+                |> Seq.toList
+
+            CaseView.all
+            |> List.map (fun view ->
+                {
+                    CaseViewCount.View = view
+                    Count =
+                        rows
+                        |> List.filter (
+                            CaseView.matches
+                                selection.DateBasis.BusinessDate
+                                selection.ActorId
+                                view
+                        )
+                        |> List.length
+                        |> int64
+                })
+            |> Task.FromResult
+
+        member _.ReminderViewCounts selection =
+            read ()
+            let state = get ()
+
+            let rows =
+                state.Reminders
+                |> Map.values
+                |> Seq.choose (fun row ->
+                    match Map.tryFind row.CaseId state.Cases, row.Snapshot with
+                    | Some parent, Some reminder when selected state selection parent ->
+                        Some(viewFacts state parent, reminder)
+                    | _ -> None)
+                |> Seq.toList
+
+            ReminderView.all
+            |> List.map (fun view ->
+                {
+                    ReminderViewCount.View = view
+                    Count =
+                        rows
+                        |> List.filter (fun (parent, reminder) ->
+                            ReminderView.matches
+                                selection.DateBasis.BusinessDate
+                                selection.ActorId
+                                view
+                                parent
+                                reminder)
+                        |> List.length
+                        |> int64
+                })
+            |> Task.FromResult
+
         member _.WorkOverview(selection, mine) =
             read ()
             let state = get ()
@@ -375,7 +525,8 @@ type internal Reader
                     let unavailable =
                         parent.Index.Responsible
                         |> Option.exists (fun actor ->
-                            not (assignedAccount state parent.CaseId actor).Available)
+                            (assignedAccount state parent.CaseId actor).Availability
+                            <> ActorAvailability.Available)
 
                     pending.IsEmpty, overdue, unassigned, unavailable)
 
@@ -394,8 +545,15 @@ type internal Reader
                     UnassignedCases = count (fun (_, _, unassigned, _) -> unassigned)
                     UnavailableAssigneeCases = count (fun (_, _, _, unavailable) -> unavailable)
                     AttentionCases =
-                        count (fun (missing, overdue, unassigned, unavailable) ->
-                            missing || overdue > 0 || unassigned || unavailable)
+                        rows
+                        |> List.filter (fun parent ->
+                            CaseView.matches
+                                selection.DateBasis.BusinessDate
+                                selection.ActorId
+                                CaseView.NeedsAttention
+                                (viewFacts state parent))
+                        |> List.length
+                        |> int64
                 }
 
         member _.ActivityPage query =
@@ -421,9 +579,125 @@ type internal Reader
 
             Task.FromResult(page query.Limit _.Sequence rows)
 
-        member _.FindEntry id =
+        member _.CaseStageFacts caseId =
             read ()
-            Task.FromResult(Map.tryFind id (get ()).Entries |> Option.map copyEntry)
+
+            let entries =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.choose (fun entry ->
+                    match entry.Subject with
+                    | EntryTarget.Case(id, revision, act, date) when id = caseId ->
+                        Some(revision, act, date)
+                    | _ -> None)
+                |> Seq.sortByDescending (fun (revision, _, _) -> revision)
+                |> Seq.toList
+
+            let opened =
+                entries
+                |> List.tryFind (fun (revision, act, _) ->
+                    revision = Revision.first && act = CaseActKind.Open)
+
+            let closed = entries |> List.tryFind (fun (_, act, _) -> act = CaseActKind.Close)
+
+            match entries, opened with
+            | (revision, act, _) :: _, Some(_, _, opened) ->
+                Some
+                    {
+                        CaseStageFacts.Revision = revision
+                        LastAct = act
+                        OpenedOn = CalendarDate.ofDate opened
+                        ClosedOn =
+                            closed |> Option.map (fun (_, _, date) -> CalendarDate.ofDate date)
+                    }
+            | _ -> None
+            |> Task.FromResult
+
+        member _.TimelinePage(query: TimelinePageQuery) =
+            read ()
+
+            let rows =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry ->
+                    let parent, facts =
+                        match entry.Subject with
+                        | EntryTarget.Case(id, _, _, _) -> Some id, true
+                        | EntryTarget.Work work -> Some work.CaseId, false
+                        | EntryTarget.Reminder reminder -> Some reminder.CaseId, false
+                        | _ -> None, false
+
+                    parent = Some query.CaseId
+                    && (query.Range
+                        |> Option.forall (fun range -> TimelineHistory.inRange range entry.Subject))
+                    && (query.BeforeSequence
+                        |> Option.forall (fun before -> entry.Sequence < before))
+                    && (query.Filter
+                        |> Option.forall (function
+                            | TimelineFilter.Facts -> facts
+                            | TimelineFilter.Work -> not facts)))
+                |> Seq.sortByDescending _.Sequence
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            Task.FromResult(page query.Limit _.Sequence rows)
+
+        member _.PreviousEntries entries =
+            read ()
+
+            if entries.Length > Paging.MaximumPageSize then
+                invalidArg (nameof entries) "Use at most one admitted timeline page."
+
+            let sameEntity subject candidate =
+                match subject, candidate with
+                | EntryTarget.Case(id, revision, _, _), EntryTarget.Case(other, prior, _, _) ->
+                    id = other && Revision.value prior + 1L = Revision.value revision
+                | EntryTarget.Work work, EntryTarget.Work other ->
+                    work.CaseId = other.CaseId
+                    && Revision.value other.Revision + 1L = Revision.value work.Revision
+                | EntryTarget.Reminder reminder, EntryTarget.Reminder other ->
+                    (reminder.ReminderId = other.ReminderId
+                     && Revision.value other.Revision + 1L = Revision.value reminder.Revision)
+                    || (Revision.value reminder.Revision = 2L
+                        && other.NextReminderId = Some reminder.ReminderId)
+                | _ -> false
+
+            entries
+            |> List.choose (fun entry ->
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun previous ->
+                    previous.Sequence < entry.Sequence
+                    && sameEntity entry.Subject previous.Subject)
+                |> Seq.toList
+                |> function
+                    | [] -> None
+                    | [ previous ] -> Some previous
+                    | _ -> raise CorruptProjection
+                |> Option.map (fun previous -> entry.Sequence, copyEntry previous))
+            |> Map.ofList
+            |> Task.FromResult
+
+        member _.FindOperation id =
+            read ()
+
+            let entries =
+                (get ()).Entries
+                |> Map.values
+                |> Seq.filter (fun entry -> entry.OperationId = id)
+                |> Seq.sortBy (fun entry -> LedgerEffects.index entry.Effects)
+                |> Seq.map copyEntry
+                |> Seq.toList
+
+            let operation =
+                match entries with
+                | [] -> None
+                | entries ->
+                    StoredOperation.create entries
+                    |> Result.map Some
+                    |> Result.defaultWith (fun _ -> raise CorruptProjection)
+
+            Task.FromResult operation
 
         member _.NonAcceptance(key: FenceKey) =
             read ()
@@ -473,16 +747,38 @@ type internal Reader
                     && permitted query.WorkRoles actor.ActorId)
                 |> Seq.sortBy _.ActorId
                 |> Seq.truncate (query.Limit + 1)
-                |> Seq.map (fun actor ->
-                    let _, _, subject = PrincipalKey.parts actor.Principal
-
-                    {
-                        AccountSubject.ActorId = actor.ActorId
-                        Subject = subject
-                    })
+                |> Seq.map Actor.currentReference
                 |> Seq.toList
 
             Task.FromResult(page query.Limit _.ActorId rows)
+
+        member _.ActorRoleSummaries ids =
+            read ()
+            let state = get ()
+
+            ids
+            |> List.distinct
+            |> List.choose (fun id ->
+                if not (Map.containsKey id state.Actors) then
+                    None
+                else
+                    let roles = roleSummaries state id
+
+                    Some(id, roles))
+            |> Map.ofList
+            |> Task.FromResult
+
+        member _.ActorRefs ids =
+            read ()
+            let state = get ()
+
+            ids
+            |> List.distinct
+            |> List.choose (fun id ->
+                Map.tryFind id state.Actors
+                |> Option.map (fun actor -> id, Actor.currentReference actor))
+            |> Map.ofList
+            |> Task.FromResult
 
         member _.FindActor id =
             read ()
@@ -681,9 +977,57 @@ type internal Reader
 
             Task.FromResult(page query.Limit (fun entry -> entry.Sequence) rows)
 
+        member _.AccessRequestPage query =
+            read ()
+
+            let key principal =
+                let kind, issuer, subject = PrincipalKey.parts principal
+                issuer, DurableNames.principalKind kind, subject
+
+            let compare left right =
+                let dates = compare right.LastSeen left.LastSeen
+
+                if dates <> 0 then
+                    dates
+                else
+                    compare (key left.Principal) (key right.Principal)
+
+            let items =
+                get().Requests
+                |> Map.values
+                |> Seq.filter (fun value -> value.LastSeen >= query.ObservedAt.AddDays(-30))
+                |> Seq.sortWith compare
+                |> Seq.filter (fun value ->
+                    query.After
+                    |> Option.forall (fun after ->
+                        compare
+                            value
+                            {
+                                AccessRequest.Principal = after.Principal
+                                FirstSeen = after.LastSeen
+                                LastSeen = after.LastSeen
+                                Claims = RequesterClaims.empty
+                            }
+                            >
+                            0))
+                |> Seq.toList
+
+            Task.FromResult(
+                page
+                    query.Limit
+                    (fun value ->
+                        {
+                            AccessRequestPosition.LastSeen = value.LastSeen
+                            Principal = value.Principal
+                        })
+                    items
+            )
+
         member _.ActorPage
             ({
                  ActorPageQuery.AfterActorId = after
+                 Text = text
+                 Role = role
                  Limit = limit
              })
             =
@@ -693,9 +1037,28 @@ type internal Reader
                 (get ()).Actors
                 |> Map.values
                 |> Seq.filter (fun actor ->
+                    text
+                    |> Option.forall (fun query ->
+                        actor.Profile
+                        |> Option.exists (fun profile ->
+                            DirectorySearchText.matches
+                                query
+                                (PartyName.format profile.DisplayName)
+                            || (profile.Contact
+                                |> Option.exists (fun contact ->
+                                    DirectorySearchText.matches
+                                        query
+                                        (ContactText.format contact))))))
+                |> Seq.filter (fun actor ->
                     after
                     |> Option.forall (fun after ->
                         compareId ActorId.format actor.ActorId after > 0))
+                |> Seq.filter (fun actor ->
+                    role
+                    |> Option.forall (fun expected ->
+                        (get ()).Grants
+                        |> Seq.exists (fun (id, assigned, _) ->
+                            id = actor.ActorId && assigned = expected)))
                 |> Seq.sortWith (fun a b -> compareId ActorId.format a.ActorId b.ActorId)
                 |> Seq.toList
 

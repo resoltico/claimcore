@@ -22,6 +22,18 @@ type SchemaInput =
 type BindingNode =
     | Input of SchemaInput
     | Constant of BindingAssignment
+    | Collection of SchemaCollection
+
+and SchemaCollection =
+    {
+        Member: BindingMember
+        Path: string list
+        Required: bool
+        Branches: BindingCondition list
+        MinimumItems: int
+        MaximumItems: int
+        Rows: BindingNode list
+    }
 
 /// Interaction policy accompanies a structural input; it cannot manufacture a wire path or kind.
 type BindingAnnotation =
@@ -40,6 +52,19 @@ type OperationInputDefinition =
         Binding: CatalogInput
     }
 
+type OperationCollectionDefinition =
+    {
+        Name: InteractionInput
+        Binding: CatalogCollection
+    }
+
+type OperationBindings =
+    {
+        Inputs: OperationInputDefinition list
+        Collections: OperationCollectionDefinition list
+        Constants: BindingAssignment list
+    }
+
 module Bindings =
     type private Position =
         {
@@ -50,6 +75,7 @@ module Bindings =
             Branches: BindingCondition list
             References: Set<string>
             Vocabulary: string option
+            CollectionDepth: int
         }
 
     let private refuse detail =
@@ -127,18 +153,10 @@ module Bindings =
     let walk definitions selections schema =
         let rec visit (position: Position) schema =
             match schema with
+            | Schema.EnumPartition _ -> refuse "set partition constraints are response-only"
             | Schema.Vocabulary(name, schema) ->
                 visit { position with Vocabulary = Some name } schema
-            | Schema.Ref name ->
-                if Set.contains name position.References then
-                    refuse ("recursive request definition " + name)
-
-                visit
-                    { position with
-                        Definition = name
-                        References = Set.add name position.References
-                    }
-                    (definition definitions name)
+            | Schema.Ref name -> referenced position name
             | Schema.Object(properties, optional) -> objects position properties optional
             | Schema.OneOf(_, Some(tag, mapping)) -> tagged position tag mapping
             | Schema.OneOf(cases, None) -> untagged position cases schema
@@ -146,10 +164,67 @@ module Bindings =
             | Schema.Integer _ -> [ input position BindingKind.Integer schema ]
             | Schema.Boolean -> [ input position BindingKind.Boolean schema ]
             | Schema.Const token -> [ constant position (BindingValue.Text token) ]
-            | Schema.Array(items, _, _) ->
+            | Schema.Array(items, minimum, maximum) -> arrays position items minimum maximum schema
+            | Schema.Null -> refuse "request input is not a finite scalar or tagged object"
+
+        and referenced position name =
+            if Set.contains name position.References then
+                refuse ("recursive request definition " + name)
+
+            visit
+                { position with
+                    Definition = name
+                    References = Set.add name position.References
+                }
+                (definition definitions name)
+
+        and arrays position items minimum maximum schema =
+            match resolved definitions items with
+            | Schema.Object _ ->
+                if position.CollectionDepth <> 0 then
+                    refuse "nested record collections are not supported"
+
+                let minimum, maximum =
+                    match minimum, maximum with
+                    | minimum, maximum when
+                        minimum >= 1 && maximum >= minimum && maximum < Int32.MaxValue
+                        ->
+                        minimum, maximum
+                    | _ -> refuse "record collections require nonempty finite bounds"
+
+                let memberKey =
+                    position.Member
+                    |> Option.defaultWith (fun () ->
+                        refuse "record collection requires an authored member")
+
+                let rows =
+                    visit
+                        { position with
+                            Path = []
+                            Branches = []
+                            Required = true
+                            Member = None
+                            References = Set.empty
+                            Vocabulary = None
+                            CollectionDepth = 1
+                        }
+                        items
+
+                [
+                    BindingNode.Collection
+                        {
+                            Member = memberKey
+                            Path = position.Path
+                            Required = position.Required
+                            Branches = position.Branches
+                            MinimumItems = minimum
+                            MaximumItems = maximum
+                            Rows = rows
+                        }
+                ]
+            | _ ->
                 let name, choices = finiteChoices definitions items
                 [ input position (BindingKind.Choices(name, choices)) schema ]
-            | Schema.Null -> refuse "request input is not a finite scalar or tagged object"
 
         and untagged position cases schema =
             match cases with
@@ -237,15 +312,24 @@ module Bindings =
                 Branches = []
                 References = Set.empty
                 Vocabulary = None
+                CollectionDepth = 0
             }
             schema
 
-    let keys nodes =
+    let rec keys nodes =
         nodes
-        |> List.choose (function
-            | BindingNode.Input value -> Some value.Member
-            | _ -> None)
+        |> List.collect (function
+            | BindingNode.Input value -> [ value.Member ]
+            | BindingNode.Collection value -> value.Member :: (keys value.Rows |> Set.toList)
+            | BindingNode.Constant _ -> [])
         |> Set.ofList
+
+    let rec inputWidth nodes =
+        nodes
+        |> List.sumBy (function
+            | BindingNode.Input _ -> 1
+            | BindingNode.Collection value -> 1 + value.MaximumItems * inputWidth value.Rows
+            | BindingNode.Constant _ -> 0)
 
     let validateRegistry annotations actual =
         let declared = annotations |> Map.keys |> Set.ofSeq
@@ -263,9 +347,12 @@ module Bindings =
         | Schema.Integer(minimum, maximum), BindingValue.Integer value ->
             value >= minimum && value <= maximum
         | Schema.Boolean, BindingValue.Boolean _ -> true
-        | Schema.String(pattern, _, minimum, maximum), BindingValue.Text value ->
+        | Schema.String(pattern, _, minimum, maximum, maximumUtf8Bytes), BindingValue.Text value ->
             (minimum |> Option.forall (fun bound -> value.Length >= bound))
             && (maximum |> Option.forall (fun bound -> value.Length <= bound))
+            && (maximumUtf8Bytes
+                |> Option.forall (fun bound ->
+                    System.Text.Encoding.UTF8.GetByteCount value <= bound))
             && (pattern
                 |> Option.forall (fun pattern ->
                     Regex.IsMatch(value, pattern, RegexOptions.CultureInvariant)))
@@ -284,6 +371,7 @@ module Bindings =
         | InteractionInput.Target InputTarget.Reason -> Some InputTarget.Reason
         | InteractionInput.Target InputTarget.Role -> Some InputTarget.Role
         | InteractionInput.Target InputTarget.Text -> Some InputTarget.Text
+        | InteractionInput.Target InputTarget.DirectorySearch -> Some InputTarget.DirectorySearch
         | InteractionInput.Target(InputTarget.ReminderId as target)
         | InteractionInput.Target(InputTarget.ReminderAction as target)
         | InteractionInput.Target(InputTarget.ReminderDueDate as target)
@@ -304,14 +392,14 @@ module Bindings =
             && annotation.Source <> InputSource.OperationIdentity
             && annotation.Default.IsNone
 
-    let private bindInput annotation input =
+    let private bindInput annotation input : OperationInputDefinition =
         annotation.Default |> Option.iter (validateValue input)
 
         {
             Name = annotation.Name
             Binding =
                 {
-                    Identity = String.concat "." input.Path
+                    CatalogInput.Identity = String.concat "." input.Path
                     Field = target annotation.Name
                     Path = input.Path
                     Kind = input.Kind
@@ -322,7 +410,8 @@ module Bindings =
                         | _ -> None
                     Branches = input.Branches
                     LabelId = InteractionInput.messageKey annotation.Name "label"
-                    MeaningId = Some(InteractionInput.messageKey annotation.Name "meaning")
+                    HintId = Some(InteractionInput.messageKey annotation.Name "hint")
+                    RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
                     Order = 0
                     Prefill = annotation.Prefill
                     Required = authoredRequired input annotation
@@ -343,39 +432,101 @@ module Bindings =
                 }
         }
 
-    let bind annotations nodes =
+    let rec bind annotations nodes =
         validateRegistry annotations (keys nodes)
 
-        let inputs, constants =
-            nodes
-            |> List.fold
-                (fun (inputs, constants) node ->
-                    match node with
-                    | BindingNode.Constant value -> inputs, constants @ [ value ]
-                    | BindingNode.Input input ->
-                        let annotation = Map.find input.Member annotations
+        let folder
+            (
+                state:
+                    OperationInputDefinition list *
+                    OperationCollectionDefinition list *
+                    BindingAssignment list
+            )
+            node
+            =
+            let inputs, collections, constants = state
 
-                        match annotation.Fixed with
-                        | Some value ->
-                            validateValue input value
+            match node with
+            | BindingNode.Constant value -> inputs, collections, constants @ [ value ]
+            | BindingNode.Collection row ->
+                let annotation = Map.find row.Member annotations
 
-                            inputs,
-                            constants
-                            @ [
-                                {
-                                    Path = input.Path
-                                    Value = value
-                                    Branches = input.Branches
-                                    Vocabulary = BindingKind.vocabulary input.Kind
-                                    RequiresParent = false
-                                }
-                            ]
-                        | None -> inputs @ [ bindInput annotation input ], constants)
-                ([], [])
+                if
+                    annotation.Source <> InputSource.Authored
+                    || annotation.Default.IsSome
+                    || annotation.Fixed.IsSome
+                    || annotation.Implicit.IsSome
+                    || annotation.Prefill.IsSome
+                then
+                    refuse "record collections require directly authored rows"
 
-        inputs
-        |> List.mapi (fun order input ->
-            { input with
-                Binding = { input.Binding with Order = order }
-            }),
-        constants
+                let field =
+                    match annotation.Name with
+                    | InteractionInput.Target field -> field
+                    | _ -> refuse "record collection requires a semantic input target"
+
+                let rowKeys = keys row.Rows
+
+                let child =
+                    bind
+                        (annotations |> Map.filter (fun key _ -> Set.contains key rowKeys))
+                        row.Rows
+
+                if not child.Collections.IsEmpty then
+                    refuse "nested record collections are not supported"
+
+                let collection: OperationCollectionDefinition =
+                    {
+                        Name = annotation.Name
+                        Binding =
+                            {
+                                CatalogCollection.Identity = String.concat "." row.Path
+                                Field = field
+                                Path = row.Path
+                                Branches = row.Branches
+                                LabelId = InteractionInput.messageKey annotation.Name "label"
+                                HintId = Some(InteractionInput.messageKey annotation.Name "hint")
+                                RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
+                                Order = collections.Length
+                                Required = row.Required
+                                MinimumItems = row.MinimumItems
+                                MaximumItems = row.MaximumItems
+                                RowInputs = child.Inputs |> List.map _.Binding
+                                RowConstants = child.Constants
+                            }
+                    }
+
+                inputs, collections @ [ collection ], constants
+            | BindingNode.Input input ->
+                let annotation = Map.find input.Member annotations
+
+                match annotation.Fixed with
+                | Some value ->
+                    validateValue input value
+
+                    inputs,
+                    collections,
+                    constants
+                    @ [
+                        {
+                            Path = input.Path
+                            Value = value
+                            Branches = input.Branches
+                            Vocabulary = BindingKind.vocabulary input.Kind
+                            RequiresParent = false
+                        }
+                    ]
+                | None -> inputs @ [ bindInput annotation input ], collections, constants
+
+        let inputs, collections, constants = List.fold folder ([], [], []) nodes
+
+        {
+            OperationBindings.Inputs =
+                inputs
+                |> List.mapi (fun order (input: OperationInputDefinition) ->
+                    { input with
+                        Binding = { input.Binding with Order = order }
+                    })
+            Collections = collections
+            Constants = constants
+        }

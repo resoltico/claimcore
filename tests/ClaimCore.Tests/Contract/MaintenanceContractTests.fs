@@ -14,10 +14,11 @@ let tests =
             Codec.decode
                 Limits.MaximumResponseBytes
                 ResponseCodecs.caseAdvice
-                (Encoding.UTF8.GetBytes(text: string))
+                (Encoding.UTF8.GetBytes(Fixtures.completeAdviceWire text))
 
         let valid =
-            read """{"acts":[],"history":["FULL"],"maintenance":{"active":true,"generation":3}}"""
+            read
+                """{"acts":[],"history":["FULL"],"recommended":null,"maintenance":{"active":true,"generation":3}}"""
 
         match valid with
         | Ok advice ->
@@ -36,9 +37,10 @@ let tests =
 
         Expect.isError
             (read
-                """{"acts":["CLOSE"],"history":["FULL"],"maintenance":{"active":true,"generation":3}}""")
+                """{"acts":["CLOSE"],"history":["FULL"],"recommended":null,"maintenance":{"active":true,"generation":3}}""")
             "A structurally valid write offer contradicts maintenance and is rejected semantically"
 
         Expect.isError
-            (read """{"acts":[],"history":[],"maintenance":{"active":true,"generation":0}}""")
+            (read
+                """{"acts":[],"history":[],"recommended":null,"maintenance":{"active":true,"generation":0}}""")
             "An active interval requires a positive generation")

@@ -31,7 +31,7 @@ SELECT pg_temp.expect('owner cannot delete a ledger row',
     'DELETE FROM claimcore.ledger WHERE sequence = 3', 'CC003');
 SELECT pg_temp.expect('owner cannot truncate the ledger',
     'TRUNCATE claimcore.ledger CASCADE', 'CC003');
-SELECT (SELECT sequence FROM claimcore.ledger_head) = 3
+SELECT (SELECT sequence FROM claimcore.ledger_head) = 4
    AND (SELECT entry_hash FROM claimcore.ledger_head)
        = (SELECT entry_hash FROM claimcore.ledger ORDER BY sequence DESC LIMIT 1)
    AS head_matches \gset

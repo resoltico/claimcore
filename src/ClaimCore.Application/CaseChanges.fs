@@ -8,11 +8,12 @@ module internal CaseChanges =
     let private values =
         function
         | None -> Map.empty
-        | Some fields -> CaseFields.values fields |> Map.ofList
+        | Some fields ->
+            CaseFields.declarations
+            |> List.map (fun field -> field.Field, CaseFields.typedValue field.Field fields)
+            |> Map.ofList
 
-    let fields before after =
-        let previous, next = values before, values after
-
+    let private differences previous next : CaseFieldDifference list =
         CaseFields.declarations
         |> List.choose (fun field ->
             let before = Map.tryFind field.Field previous |> Option.flatten
@@ -28,22 +29,49 @@ module internal CaseChanges =
                         After = after
                     })
 
-    let review act (before: CaseSnapshot option) (after: CaseSnapshot) =
-        match (CaseActKind.describe (CaseAct.kind act)).Effect with
-        | CaseEffect.ChangeLifecycle
-        | CaseEffect.ErasePayload -> []
-        | CaseEffect.RecordFacts
-        | CaseEffect.ChangeStatus ->
-            fields
-                (before |> Option.bind (fun snapshot -> CaseState.fields snapshot.State))
-                (CaseState.fields after.State)
+    let fields before after : FieldDiff list =
+        differences (values before) (values after)
+        |> List.map (fun change ->
+            {
+                FieldDiff.FieldName = change.FieldName
+                Before = Option.map CaseFieldValue.format change.Before
+                After = Option.map CaseFieldValue.format change.After
+            })
+
+    let review (_act: ValidCaseAct) (before: CaseSnapshot option) (after: CaseSnapshot) =
+        let snapshotValues (snapshot: CaseSnapshot) =
+            values (CaseState.fields snapshot.State)
+            |> Map.add
+                BusinessField.CaseReference
+                (Some(CaseFieldValue.Reference snapshot.Reference))
+
+        let priorLifecycle =
+            before |> Option.map (fun snapshot -> CaseState.lifecycle snapshot.State)
+
+        let nextLifecycle = CaseState.lifecycle after.State
+
+        {
+            CaseReviewChanges.Lifecycle =
+                if priorLifecycle = Some nextLifecycle then
+                    None
+                else
+                    Some
+                        {
+                            Before = priorLifecycle
+                            After = nextLifecycle
+                        }
+            Fields =
+                differences
+                    (before |> Option.map snapshotValues |> Option.defaultValue Map.empty)
+                    (snapshotValues after)
+        }
 
     let private live =
         function
         | LiveCase.Active fields -> Lifecycle.Active, fields
         | LiveCase.Voided fields -> Lifecycle.Voided, fields
 
-    let private compared before after =
+    let internal compared before after =
         let afterLifecycle, afterFields = live after
         let beforeLifecycle = before |> Option.map (live >> fst)
 

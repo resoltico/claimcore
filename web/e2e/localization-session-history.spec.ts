@@ -1,3 +1,4 @@
+import { showAccountActions } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
@@ -18,9 +19,8 @@ test("updates visible detail and expanded history immediately with independent f
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
-  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
   const history = page
-    .locator(".history-list > li > details")
+    .locator(".case-timeline > .timeline-entry > details")
     .filter({ hasText: opening.operationId });
   await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
@@ -32,21 +32,27 @@ test("updates visible detail and expanded history immediately with independent f
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.caseDetail"), exact: true }),
+      page.getByRole("heading", { name: "Synthetic claimant", exact: true }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.acceptedHistory"), exact: true }),
+      page.getByRole("heading", { name: ui(language, "ui.timeline.title"), exact: true }),
     ).toBeVisible();
-    await expect(page.getByText(ui(language, "ui.historyHint"), { exact: true })).toBeVisible();
+
     await expect(
-      page.getByRole("heading", { name: ui(language, "ui.continueCase"), exact: true }),
+      page
+        .locator(".case-actions > summary")
+        .filter({ hasText: ui(language, "ui.moreCaseActions") }),
     ).toBeVisible();
     await expect(history).toHaveAttribute("open", "");
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);
     await expectPreferences(page, { displayLocale: "ar-EG" });
-    await expect(history.locator('.field-row[data-field-name="claimedAmount"] bdi')).toHaveText(
-      "١٬٢٠٠٫٥٠",
-    );
+    await expect(
+      history
+        .locator("..")
+        .locator(".timeline-change")
+        .filter({ has: page.getByText(ui(language, "field.claimedAmount.label"), { exact: true }) })
+        .locator("ins"),
+    ).toContainText("١٬٢٠٠٫٥٠");
   }
   expect(requests).toHaveLength(0);
 });
@@ -60,6 +66,7 @@ test("preserves language and independent display preferences through real logout
   await login(page);
   await selectFormat(page, "lv-LV");
   await selectLanguage(page, "ar");
+  await showAccountActions(page);
   await expect(
     page.getByRole("button", { name: ui("ar", "ui.signOut"), exact: true }),
   ).toBeVisible();
@@ -82,7 +89,13 @@ test("preserves language and independent display preferences through real logout
       (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
       preferenceKey,
     ),
-  ).toEqual({ version: 2, language: "ar", displayLocale: "lv-LV", theme: "SYSTEM" });
+  ).toEqual({
+    version: 3,
+    language: "ar",
+    displayLocale: "lv-LV",
+    mode: "system",
+    accent: "green" as const,
+  });
   await selectLanguage(page, "en");
   await logout(page);
 });

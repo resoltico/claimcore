@@ -15,9 +15,22 @@ on:
         description: Optional commit or ref for a full same-host growth comparison
         type: string
         default: ""
+      browser_spec:
+        description: Optional one-spec browser diagnostic; skips qualification jobs
+        type: string
+        default: ""
+      browser_case:
+        description: Optional one literal test title within browser_spec; never qualification
+        type: string
+        default: ""
+      browser_engine:
+        description: Engine for browser_spec diagnostics only
+        type: choice
+        default: chromium
+        options: [chromium, firefox, webkit]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.comparison_ref || 'verification' }}-${{ inputs.browser_spec || 'complete' }}-${{ inputs.browser_engine || 'chromium' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
 
 permissions:
@@ -31,6 +44,7 @@ env:
 
 jobs:
   configuration:
+    if: inputs.browser_spec == ''
     name: Derive qualified database and Node inputs
     runs-on: ubuntu-24.04
     timeout-minutes: 5
@@ -38,6 +52,18 @@ jobs:
       postgresql: ${{ steps.inputs.outputs.postgresql }}
       node_image: ${{ steps.inputs.outputs.node_image }}
     steps:
+      - name: Validate qualification engine selection before setup
+        env:
+          BROWSER_ENGINE: ${{ inputs.browser_engine || 'chromium' }}
+          BROWSER_CASE: ${{ inputs.browser_case }}
+        run: |
+          python3 - <<'PYTHON'
+          import os
+          if os.environ["BROWSER_CASE"]:
+              raise ValueError("browser_case requires browser_spec")
+          if os.environ["BROWSER_ENGINE"] != "chromium":
+              raise ValueError("browser_engine requires browser_spec; ordinary qualification selects all engines")
+          PYTHON
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
@@ -66,6 +92,7 @@ jobs:
           PYTHON
 
   lint:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Native format, lint, browser boundaries and workflow hygiene
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -83,6 +110,7 @@ jobs:
           advanced-security: false
 
   unit:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Pure tests and compiled architecture (${{ matrix.rid }})
     strategy:
       fail-fast: true
@@ -144,6 +172,7 @@ jobs:
             artifacts/verification/native.*/cli-failure/**
 
   integration:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: PostgreSQL ${{ matrix.major }} store tests
     needs: [configuration]
     strategy:
@@ -178,7 +207,7 @@ jobs:
 
   growth:
     name: Manual PostgreSQL ${{ matrix.major }} growth qualification
-    if: github.event_name == 'workflow_dispatch' && inputs.growth
+    if: github.event_name == 'workflow_dispatch' && inputs.growth && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     needs: [configuration]
     strategy:
       fail-fast: true
@@ -197,6 +226,7 @@ jobs:
       - run: bash eng/verify.sh growth
 
   web:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Web host and identity tests
     runs-on: ubuntu-24.04
     timeout-minutes: 20
@@ -224,6 +254,7 @@ jobs:
             artifacts/verification/native.*/cli-failure/**
 
   frontend:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Frontend checks (SDK-free Node container)
     needs: [configuration]
     runs-on: ubuntu-24.04
@@ -261,6 +292,7 @@ jobs:
             '
 
   acceptance:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     name: Published clients (${{ matrix.engine }}, complete)
     needs: [frontend]
     strategy:
@@ -268,8 +300,8 @@ jobs:
       matrix:
         engine: [chromium, firefox, webkit]
     runs-on: ubuntu-24.04
-    # Allow 10 minutes for setup/reporting around acceptance's existing 40-minute MTP bound.
-    timeout-minutes: 50
+    # Allow 10 minutes for setup/reporting around the complete acceptance project's 60-minute MTP bound.
+    timeout-minutes: 70
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -320,13 +352,97 @@ jobs:
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/service-captures/*.json
             artifacts/verification/native.*/cli-failure/**
+
+  browser_diagnostic:
+    name: One-spec browser diagnostic (not qualification)
+    if: github.event_name == 'workflow_dispatch' && inputs.browser_spec != ''
+    runs-on: ubuntu-24.04
+    timeout-minutes: 50
+    env:
+      BROWSER_ENGINE: ${{ inputs.browser_engine || 'chromium' }}
+      BROWSER_CASE: ${{ inputs.browser_case }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - name: Validate the selected existing spec before setup
+        env:
+          BROWSER_SPEC: ${{ inputs.browser_spec }}
+          COMPARISON_REF: ${{ inputs.comparison_ref }}
+          GROWTH: ${{ inputs.growth }}
+        run: |
+          python3 - <<'PYTHON'
+          import os, pathlib, re, unicodedata
+          case = os.environ["BROWSER_CASE"]
+          if case and (len(case) > 256 or case != case.strip() or any(unicodedata.category(c) == "Cc" for c in case)):
+              raise ValueError("Choose one bounded unpadded literal case without controls")
+          if os.environ["BROWSER_ENGINE"] not in {"chromium", "firefox", "webkit"}:
+              raise ValueError("Select chromium, firefox or webkit")
+          name = os.environ["BROWSER_SPEC"]
+          if os.environ["COMPARISON_REF"] or os.environ["GROWTH"] == "true":
+              raise ValueError("Choose a diagnostic or qualification, not both")
+          if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts", name):
+              raise ValueError("Select one existing specification basename")
+          matches = [p for p in pathlib.Path("web/e2e").rglob("*.spec.ts") if p.name == name]
+          if len(matches) != 1:
+              raise ValueError("Specification must identify exactly one existing file")
+          PYTHON
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- same pinned repository toolchain as qualification.
+      - name: Build current diagnostic inputs
+        run: |
+          set -euo pipefail
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libnss3-tools
+          dotnet restore ClaimCore.slnx --locked-mode
+          dotnet build ClaimCore.slnx --configuration Release --no-restore
+          dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
+            --configuration Release --no-build --no-restore --zero-tests-policy=strict --timeout=2m \
+            --filter 'FullyQualifiedName~owned service logs|FullyQualifiedName~bounded child failures' \
+            -- --settings=eng/expecto.acceptance.runsettings
+          npm --prefix web ci
+          npm --prefix web run typecheck
+          npm --prefix web run build
+          npm --prefix web exec -- playwright install --with-deps --only-shell chromium
+          if [[ "$BROWSER_ENGINE" != "chromium" ]]; then
+            npm --prefix web exec -- playwright install --with-deps "$BROWSER_ENGINE"
+          fi
+      - name: Run the explicitly partial diagnostic
+        env:
+          CLAIMCORE_TEST_REPORT_DIRECTORY: ${{ github.workspace }}/artifacts/verification/native.browser-diagnostic
+          CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ env.BROWSER_ENGINE }}
+          CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: diagnostic
+          CLAIMCORE_ACCEPTANCE_BROWSER_SPEC: ${{ inputs.browser_spec }}
+        run: |
+          unset CLAIMCORE_ACCEPTANCE_BROWSER_CASE
+          if [[ -n "$BROWSER_CASE" ]]; then
+            export CLAIMCORE_ACCEPTANCE_BROWSER_CASE="$BROWSER_CASE"
+          fi
+          dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
+            --configuration Release --no-build --no-restore --zero-tests-policy=strict --timeout=40m \
+            --filter 'FullyQualifiedName~published browser diagnostic' \
+            -- --settings=eng/expecto.acceptance.runsettings
+      - name: Retain sanitized diagnostic evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: browser-diagnostic
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/browser-*.json
+            artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/service-captures/*.json
 
   comparison:
     name: Manual same-host growth comparison
-    if: github.event_name == 'workflow_dispatch' && inputs.comparison_ref != ''
+    needs: [gate]
+    if: github.event_name == 'workflow_dispatch' && inputs.comparison_ref != '' && needs.gate.result == 'success' && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
     runs-on: ubuntu-24.04
-    timeout-minutes: 180
+    # Three complete same-host pairs require six isolated growth runs.
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -362,7 +478,7 @@ jobs:
 
   gate:
     name: Gate
-    if: always()
+    if: always() && inputs.browser_spec == ''
     needs: [configuration, lint, unit, integration, web, frontend, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5

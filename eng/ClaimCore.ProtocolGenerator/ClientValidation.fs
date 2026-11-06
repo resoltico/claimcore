@@ -65,10 +65,17 @@ const wireFormat = (value: string, format: string | null): boolean => {
   }
   return true;
 };
-const wireString = (minimum: number | null, maximum: number | null, pattern: RegExp | null, format: string | null): WireCheck => (value,draft,path) => {
+const wireUtf8Bytes = (value: string): number => Array.from(value).reduce((bytes, character) => {
+  const scalar=character.codePointAt(0)!;
+  if (scalar<=0x7f) { return bytes+1; }
+  if (scalar<=0x7ff) { return bytes+2; }
+  if (scalar<=0xffff) { return bytes+3; }
+  return bytes+4;
+},0);
+const wireString = (minimum: number | null, maximum: number | null, pattern: RegExp | null, format: string | null, maximumUtf8Bytes: number | null = null): WireCheck => (value,draft,path) => {
   if (typeof value !== "string" || !isRepresentable(value)) { return path; }
   if (draft) { return null; }
-  return wireLength(value,minimum,maximum) && (pattern === null || pattern.test(value)) && wireFormat(value,format) ? null : path;
+  return wireLength(value,minimum,maximum) && (pattern === null || pattern.test(value)) && wireFormat(value,format) && (maximumUtf8Bytes === null || wireUtf8Bytes(value)<=maximumUtf8Bytes) ? null : path;
 };
 const wireInteger = (minimum: number,maximum: number): WireCheck => (value,draft,path) => typeof value === "number" && Number.isSafeInteger(value) && (draft || (value >= minimum && value <= maximum)) ? null : path;
 const wireBoolean: WireCheck = (value,_draft,path) => typeof value === "boolean" ? null : path;
@@ -91,6 +98,15 @@ const wireArray = (check: WireCheck, minimum: number,maximum: number): WireCheck
   }
   return null;
 };
+const wireEnumPartition = (check: WireCheck, values: ReadonlyArray<string>, selected: string, rejected: string, key: string): WireCheck => (value,draft,path) => {
+  const issue = check(value,draft,path);
+  if (issue !== null) { return issue; }
+  if (!isObject(value) || !Array.isArray(value[selected]) || !Array.isArray(value[rejected])) { return path; }
+  const offered = value[selected] as unknown[];
+  const unavailable = (value[rejected] as unknown[]).map(item => isObject(item) ? item[key] : undefined);
+  if (new Set(unavailable).size !== unavailable.length || values.some(token => offered.includes(token) === unavailable.includes(token))) { return [...path,rejected]; }
+  return null;
+};
 const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, branches: Readonly<Record<string,WireCheck>>): WireCheck => (value,draft,path) => {
   const issues = checks.map(check => check(value,draft,path));
   if (issues.filter(issue => issue===null).length === 1) { return null; }
@@ -101,6 +117,50 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
   }
   return path;
 };
+// Relational response grammar: selectors reference only already supplied disclosed differences.
+const hasTimelineDisclosureShape = (value:unknown,structural:WireCheck,draft:boolean,path:WireIssue):value is TimelineChanges_DISCLOSED => structural(value,draft,path)===null;
+const timelineFacetOrder: Readonly<Record<TimelineFacet,number>> = {ACTION:0,DUE:1,STATE:2};
+const timelineFacetAvailable = (facet:TimelineFacet,change:ReminderDifference):boolean => {
+  switch(facet) { case "ACTION":return change.action!==null;case "DUE":return change.due!==null;case "STATE":return change.state!==null; }
+};
+const timelineFacetsValid = (facets:ReadonlyArray<TimelineFacet>,change:ReminderDifference):boolean => {
+  if(facets.length===0) { return false; } let previous=-1;
+  for(const facet of facets) { const rank=timelineFacetOrder[facet];if(rank<=previous||!timelineFacetAvailable(facet,change)) { return false; } previous=rank; }
+  return true;
+};
+const timelineReferenceValid = (reference:TimelineHighlight,item:TimelineChange|undefined):boolean => {
+  if(item===undefined) { return false; }
+  if(reference.kind==="CHANGE") { return item.kind!=="REMINDER"; }
+  return item.kind==="REMINDER"&&timelineFacetsValid(reference.facets,item.change);
+};
+const timelineReferencesIssue = (disclosure:TimelineChanges_DISCLOSED,path:WireIssue):WireIssue|null => {
+  let previous=-1;
+  for(const [ordinal,reference] of disclosure.overview.highlights.entries()) {
+    if(reference.index<=previous||!timelineReferenceValid(reference,disclosure.items.at(reference.index))) { return [...path,"overview","highlights",String(ordinal)]; }
+    previous=reference.index;
+  }
+  return null;
+};
+const wireTimelineDisclosure = (structural:WireCheck):WireCheck => (value,draft,path) => {
+  if(!hasTimelineDisclosureShape(value,structural,draft,path)) { return path; }
+  return draft?null:timelineReferencesIssue(value,path);
+};
+const resolveTimelineHighlight = (disclosure:TimelineChanges_DISCLOSED,reference:TimelineHighlight):TimelineChange => {
+  const item=disclosure.items.at(reference.index);
+  if(item===undefined) { throw new Error("Invalid timeline highlight reference."); }
+  if(reference.kind==="CHANGE") { return item; }
+  if(item.kind!=="REMINDER") { throw new Error("Invalid reminder highlight reference."); }
+  return {kind:"REMINDER",change:{reminderId:item.change.reminderId,
+    action:reference.facets.includes("ACTION")?item.change.action:null,
+    due:reference.facets.includes("DUE")?item.change.due:null,
+    state:reference.facets.includes("STATE")?item.change.state:null}};
+};
+/** Resolve Core-selected references mechanically; no renderer chooses business importance or values. */
+export const resolveTimelineHighlights = (disclosure:TimelineChanges_DISCLOSED):ReadonlyArray<TimelineChange> => {
+  if(check_TimelineChanges_DISCLOSED(disclosure,false,[])!==null) { throw new Error("Invalid timeline highlight references."); }
+  return disclosure.overview.highlights.map(reference=>resolveTimelineHighlight(disclosure,reference));
+};
+
 """
 
     let private optionNumber value =
@@ -110,12 +170,24 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         function
         | Schema.Ref name -> "check_" + identifier name
         | Schema.Vocabulary(_, schema) -> check schema
+        | Schema.EnumPartition(schema, values, selected, rejected, key) ->
+            "wireEnumPartition("
+            + check schema
+            + ",["
+            + (values |> List.map quote |> String.concat ",")
+            + "],"
+            + quote selected
+            + ","
+            + quote rejected
+            + ","
+            + quote key
+            + ")"
         | Schema.Null -> "wireNull"
         | Schema.Boolean -> "wireBoolean"
         | Schema.Const value -> "wireConstant(" + quote value + ")"
         | Schema.Integer(minimum, maximum) -> $"wireInteger({minimum},{maximum})"
-        | Schema.String(pattern, format, minimum, maximum) ->
-            stringCheck pattern format minimum maximum
+        | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->
+            stringCheck pattern format minimum maximum maximumUtf8Bytes
         | Schema.Array(items, minimum, maximum) -> $"wireArray({check items},{minimum},{maximum})"
         | Schema.Object(properties, optional) ->
             properties
@@ -131,7 +203,7 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
             |> fun fields -> "wireObject([" + fields + "])"
         | Schema.OneOf(variants, discriminator) -> unionCheck variants discriminator
 
-    and private stringCheck pattern format minimum maximum =
+    and private stringCheck pattern format minimum maximum maximumUtf8Bytes =
         if
             format
             |> Option.exists (fun value ->
@@ -149,6 +221,8 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
         + pattern
         + ","
         + (format |> Option.map quote |> Option.defaultValue "null")
+        + ","
+        + optionNumber maximumUtf8Bytes
         + ")"
 
     and private unionCheck variants discriminator =
@@ -215,7 +289,10 @@ const wireUnion = (checks: ReadonlyArray<WireCheck>, selector: string | null, br
                 "function check_"
                 + identifier name
                 + "(value:unknown,draft:boolean,path:WireIssue):WireIssue|null { return ("
-                + check schema
+                + (if name = "TimelineChanges.DISCLOSED" then
+                       "wireTimelineDisclosure(" + check schema + ")"
+                   else
+                       check schema)
                 + ")(value,draft,path); }")
 
         [

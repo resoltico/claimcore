@@ -65,9 +65,9 @@ INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (
 -- ---------------------------------------------------------------------------------------------
 -- The ledger: the single record of everything ClaimCore has accepted.
 --
--- Every accepted case act and every accepted authority act is exactly one row. Rows form one
+-- Accepted operations have one root and bounded, consecutive effect rows. Rows form one
 -- gapless, hash-linked sequence. `entry_hash` is SHA-256 over the length-framed metadata
--- preimage defined by RecordFormat/LedgerEntry.fs (entry format 4). The preimage covers `payload_commitment`,
+-- preimage defined by RecordFormat/LedgerEntry.fs (entry format 5). The preimage covers `payload_commitment`,
 -- never `payload`, so erasing a case's payload leaves the chain verifiable.
 --
 -- `subject_id` is the case for CASE rows and the target actor for AUTHORITY rows.
@@ -76,12 +76,23 @@ CREATE TABLE claimcore.ledger (
     sequence bigint PRIMARY KEY CHECK (sequence BETWEEN 1 AND 9007199254740991),
     previous_hash bytea NOT NULL CHECK (octet_length(previous_hash) = 32),
     entry_hash bytea NOT NULL UNIQUE CHECK (octet_length(entry_hash) = 32),
-    entry_format smallint NOT NULL CHECK (entry_format = 4),
+    entry_format smallint NOT NULL CHECK (entry_format = 5),
     subject_kind text NOT NULL CHECK (subject_kind IN ('CASE', 'AUTHORITY', 'CONTROL', 'WORK', 'REMINDER')),
     act text NOT NULL,
     -- Caller-chosen identity of the accepted operation. Uniqueness is the idempotency guarantee.
     operation_id uuid NOT NULL
         CHECK (operation_id <> '00000000-0000-0000-0000-000000000000'),
+    effect_index integer NOT NULL CHECK (effect_index BETWEEN 0 AND 49),
+    effect_count integer NOT NULL CHECK (effect_count BETWEEN 1 AND 50 AND effect_index < effect_count),
+    authority_operation text,
+    CONSTRAINT ledger_operation_shape CHECK (
+        (subject_kind = 'AUTHORITY' AND authority_operation IS NOT NULL AND authority_operation ~ '^[A-Z][A-Z_]{0,39}$'
+         AND ((authority_operation IN ('REGISTER','PROVISION_OWNER') AND effect_count=2
+               AND ((effect_index=0 AND act=authority_operation) OR (effect_index=1 AND act='SET_PROFILE')))
+              OR (authority_operation='ADMIT' AND effect_count BETWEEN 3 AND 50 AND ((effect_index=0 AND act='REGISTER') OR (effect_index=1 AND act='SET_PROFILE') OR (effect_index>=2 AND act='GRANT')))
+              OR (authority_operation NOT IN ('REGISTER','PROVISION_OWNER','ADMIT') AND effect_count=1 AND effect_index=0 AND act=authority_operation)))
+        OR (subject_kind <> 'AUTHORITY' AND effect_index=0 AND effect_count=1 AND authority_operation IS NULL)
+    ),
     actor_id uuid NOT NULL CHECK (actor_id <> '00000000-0000-0000-0000-000000000000'),
     recorded_at timestamptz NOT NULL CHECK (
         recorded_at BETWEEN TIMESTAMPTZ '0001-01-01T00:00:00Z'
@@ -96,7 +107,8 @@ CREATE TABLE claimcore.ledger (
     -- SHA-256(payload_nonce || payload). Retained forever; reveals nothing once the nonce is gone.
     payload_commitment bytea NOT NULL CHECK (octet_length(payload_commitment) = 32),
     -- Length-framed canonical request and resulting snapshot (RecordFormat). Both columns become
-    -- NULL together when, and only when, the case is erased. Authority payloads are never erased.
+    -- NULL together after case erasure, or for SET_PROFILE effects after a later profile erasure.
+    -- Identity and grant payloads are retained; profile erasure never removes them.
     payload bytea,
     payload_nonce bytea,
     creation_reference text,
@@ -122,7 +134,7 @@ CREATE TABLE claimcore.ledger (
             AND parent_case_id IS NULL AND next_reminder_id IS NULL
             AND case_revision IS NULL
             AND business_date IS NULL
-            AND payload IS NOT NULL
+            AND (payload IS NOT NULL OR act='SET_PROFILE')
             AND act ~ '^[A-Z][A-Z_]{0,39}$')
     ),
     CONSTRAINT ledger_payload_shape CHECK (
@@ -136,7 +148,65 @@ CREATE TABLE claimcore.ledger (
 );
 
 -- Retained authoritative references cannot be reused even if a projection is damaged.
-CREATE UNIQUE INDEX ledger_accepted_operation ON claimcore.ledger (operation_id) WHERE subject_kind <> 'CONTROL';
+CREATE UNIQUE INDEX ledger_accepted_operation ON claimcore.ledger (operation_id,effect_index) WHERE subject_kind <> 'CONTROL';
+-- Commit-time completeness keeps partial roots and mixed groups from becoming accepted operations.
+CREATE FUNCTION claimcore.complete_ledger_operation()
+RETURNS trigger LANGUAGE plpgsql SET search_path = pg_catalog AS $$
+DECLARE
+    root claimcore.ledger%ROWTYPE;
+    actual_count bigint;
+    coherent boolean;
+    nonce_count bigint;
+    live_nonce_count bigint;
+BEGIN
+    IF NEW.subject_kind='AUTHORITY' AND NEW.act='SET_PROFILE'
+       AND (SELECT payload IS NULL FROM claimcore.ledger WHERE sequence=NEW.sequence)
+       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
+                      AND erased.act='ERASE_PROFILE' AND erased.subject_id=NEW.subject_id AND erased.sequence>NEW.sequence) THEN
+        RAISE EXCEPTION 'profile payload has no later erasure' USING ERRCODE='CC004';
+    END IF;
+    IF NEW.subject_kind = 'CONTROL' OR NEW.effect_count = 1 THEN RETURN NULL; END IF;
+    -- Deferred INSERT events retain the original nonce even if this transaction later erases its profile.
+    IF NEW.payload_nonce IS NOT NULL AND EXISTS(
+        SELECT 1 FROM claimcore.ledger sibling WHERE sibling.operation_id=NEW.operation_id
+          AND sibling.subject_kind<>'CONTROL' AND sibling.sequence<>NEW.sequence
+          AND sibling.payload_nonce=NEW.payload_nonce
+    ) THEN
+        RAISE EXCEPTION 'operation effects reuse a payload nonce' USING ERRCODE='CC004';
+    END IF;
+
+    SELECT * INTO root FROM claimcore.ledger
+      WHERE operation_id = NEW.operation_id AND subject_kind <> 'CONTROL' AND effect_index = 0;
+    IF NOT FOUND THEN
+        RAISE EXCEPTION 'operation effect has no root' USING ERRCODE = 'CC004';
+    END IF;
+    IF NEW.effect_index <> 0 THEN
+        IF NEW.effect_count IS DISTINCT FROM root.effect_count OR NEW.actor_id IS DISTINCT FROM root.actor_id
+           OR NEW.recorded_at IS DISTINCT FROM root.recorded_at OR NEW.subject_id IS DISTINCT FROM root.subject_id
+           OR NEW.authority_operation IS DISTINCT FROM root.authority_operation
+           OR NEW.sequence <> root.sequence + NEW.effect_index THEN
+            RAISE EXCEPTION 'operation effect differs from its root' USING ERRCODE = 'CC004';
+        END IF;
+        RETURN NULL;
+    END IF;
+    SELECT count(*), bool_and(effect_count=root.effect_count
+          AND actor_id=root.actor_id AND recorded_at=root.recorded_at
+          AND sequence=root.sequence+effect_index
+          AND (root.effect_count=1 OR (subject_kind='AUTHORITY' AND subject_id=root.subject_id
+              AND authority_operation=root.authority_operation))), count(DISTINCT payload_nonce), count(payload_nonce)
+      INTO actual_count, coherent, nonce_count, live_nonce_count
+      FROM claimcore.ledger WHERE operation_id=NEW.operation_id AND subject_kind<>'CONTROL';
+    IF actual_count <> root.effect_count OR coherent IS NOT TRUE
+       OR (nonce_count <> live_nonce_count) THEN
+        RAISE EXCEPTION 'operation effects are incomplete or inconsistent' USING ERRCODE = 'CC004';
+    END IF;
+    RETURN NULL;
+END;
+$$;
+CREATE CONSTRAINT TRIGGER ledger_operation_complete
+    AFTER INSERT ON claimcore.ledger DEFERRABLE INITIALLY DEFERRED
+    FOR EACH ROW EXECUTE FUNCTION claimcore.complete_ledger_operation();
+
 CREATE UNIQUE INDEX ledger_nonacceptance ON claimcore.ledger (actor_id,operation_id) WHERE subject_kind = 'CONTROL';
 
 CREATE UNIQUE INDEX ledger_creation_reference ON claimcore.ledger (upper(creation_reference COLLATE "C")) WHERE creation_reference IS NOT NULL;
@@ -222,18 +292,21 @@ BEGIN
         RAISE EXCEPTION 'ledger rows are never removed' USING ERRCODE = 'CC003';
     END IF;
 
-    IF OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
+    IF (OLD.subject_kind NOT IN ('CASE','WORK','REMINDER')
+        AND NOT (OLD.subject_kind='AUTHORITY' AND OLD.act='SET_PROFILE'
+                 AND EXISTS(SELECT 1 FROM claimcore.ledger erased WHERE erased.subject_kind='AUTHORITY'
+                            AND erased.act='ERASE_PROFILE' AND erased.subject_id=OLD.subject_id AND erased.sequence>OLD.sequence)))
        OR NEW.payload IS NOT NULL
        OR NEW.payload_nonce IS NOT NULL
        OR (NEW.sequence, NEW.previous_hash, NEW.entry_hash, NEW.entry_format, NEW.subject_kind,
-           NEW.act, NEW.operation_id, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
+           NEW.act, NEW.operation_id, NEW.effect_index, NEW.effect_count, NEW.authority_operation, NEW.actor_id, NEW.recorded_at, NEW.subject_id,
            NEW.case_revision, NEW.business_date, NEW.creation_reference, NEW.parent_case_id, NEW.next_reminder_id, NEW.payload_commitment)
           IS DISTINCT FROM
           (OLD.sequence, OLD.previous_hash, OLD.entry_hash, OLD.entry_format, OLD.subject_kind,
-           OLD.act, OLD.operation_id, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
+           OLD.act, OLD.operation_id, OLD.effect_index, OLD.effect_count, OLD.authority_operation, OLD.actor_id, OLD.recorded_at, OLD.subject_id,
            OLD.case_revision, OLD.business_date, OLD.creation_reference, OLD.parent_case_id, OLD.next_reminder_id, OLD.payload_commitment)
     THEN
-        RAISE EXCEPTION 'ledger rows change only by case erasure' USING ERRCODE = 'CC003';
+        RAISE EXCEPTION 'ledger rows change only by authorized payload erasure' USING ERRCODE = 'CC003';
     END IF;
 
     RETURN NEW;
@@ -272,8 +345,29 @@ BEGIN
      WHERE ((subject_kind = 'CASE' AND subject_id = target_case_id) OR (subject_kind IN ('WORK','REMINDER') AND parent_case_id = target_case_id)) AND payload IS NOT NULL;
 
     GET DIAGNOSTICS erased = ROW_COUNT;
-    UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL WHERE case_id=target_case_id;
+    UPDATE claimcore.case_work SET snapshot=NULL,responsible_actor=NULL,handling_summary=NULL,search_text=NULL,summary_changed_at=NULL,summary_recorded_by=NULL WHERE case_id=target_case_id;
     UPDATE claimcore.reminders SET snapshot=NULL,state=NULL,action=NULL,due=NULL,search_text=NULL WHERE case_id=target_case_id;
+    RETURN erased;
+END;
+$$;
+
+-- A retained erase frontier authorizes only earlier SET_PROFILE bytes, never a later re-profile.
+CREATE FUNCTION claimcore.erase_profile_payload(target_actor_id uuid)
+RETURNS bigint LANGUAGE plpgsql SECURITY DEFINER SET search_path=pg_catalog AS $$
+DECLARE frontier bigint; erased bigint;
+BEGIN
+    SELECT max(sequence) INTO frontier FROM claimcore.ledger
+     WHERE subject_kind='AUTHORITY' AND act='ERASE_PROFILE' AND subject_id=target_actor_id;
+    IF frontier IS NULL THEN
+        RAISE EXCEPTION 'actor has no accepted ERASE_PROFILE entry' USING ERRCODE='CC002';
+    END IF;
+    UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL
+     WHERE subject_kind='AUTHORITY' AND act='SET_PROFILE' AND subject_id=target_actor_id
+       AND sequence<frontier AND payload IS NOT NULL;
+    GET DIAGNOSTICS erased=ROW_COUNT;
+    UPDATE claimcore.actors SET display_name=NULL,contact=NULL,display_name_search=NULL,contact_search=NULL WHERE actor_id=target_actor_id
+       AND NOT EXISTS(SELECT 1 FROM claimcore.ledger later WHERE later.subject_kind='AUTHORITY'
+                      AND later.act='SET_PROFILE' AND later.subject_id=target_actor_id AND later.sequence>frontier);
     RETURN erased;
 END;
 $$;
@@ -340,8 +434,31 @@ CREATE TABLE claimcore.actors (
     issuer text NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
     subject text NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
     enabled boolean NOT NULL,
+    display_name text CHECK (display_name IS NULL OR (octet_length(display_name) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(display_name))),
+    contact text CHECK (contact IS NULL OR (octet_length(contact) BETWEEN 1 AND 1024 AND claimcore.is_interchange_text(contact))),
+    display_name_search text CHECK (display_name_search IS NULL OR (octet_length(display_name_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(display_name_search))),
+    contact_search text CHECK (contact_search IS NULL OR (octet_length(contact_search) BETWEEN 1 AND 32768 AND claimcore.is_interchange_text(contact_search))),
+    CONSTRAINT actor_profile_shape CHECK ((display_name IS NOT NULL OR contact IS NULL) AND ((display_name IS NULL)=(display_name_search IS NULL)) AND ((contact IS NULL)=(contact_search IS NULL))),
     UNIQUE (issuer, principal_kind, subject)
 );
+
+CREATE INDEX actors_display_name ON claimcore.actors USING gin (display_name_search public.gin_trgm_ops);
+CREATE INDEX actors_contact ON claimcore.actors USING gin (contact_search public.gin_trgm_ops);
+
+-- Bounded authentication hints, never ledger authority. Identity includes principal kind.
+CREATE TABLE claimcore.access_request (
+    principal_kind text NOT NULL CHECK (principal_kind IN ('HUMAN','SERVICE')),
+    issuer text COLLATE "C" NOT NULL CHECK (char_length(issuer) BETWEEN 1 AND 2048 AND claimcore.is_interchange_text(issuer)),
+    subject text COLLATE "C" NOT NULL CHECK (char_length(subject) BETWEEN 1 AND 512 AND claimcore.is_interchange_text(subject)),
+    first_seen timestamptz NOT NULL,
+    last_seen timestamptz NOT NULL CHECK (last_seen>=first_seen),
+    name text CHECK (name IS NULL OR (char_length(name) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(name))),
+    preferred_username text CHECK (preferred_username IS NULL OR (char_length(preferred_username) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(preferred_username))),
+    email text CHECK (email IS NULL OR (char_length(email) BETWEEN 1 AND 200 AND claimcore.is_interchange_text(email))),
+    PRIMARY KEY (issuer,principal_kind,subject)
+);
+CREATE INDEX access_request_seen ON claimcore.access_request(last_seen DESC,issuer,principal_kind,subject);
+
 
 ALTER TABLE claimcore.cases ADD CONSTRAINT cases_responsible_actor
     FOREIGN KEY (responsible_actor) REFERENCES claimcore.actors (actor_id);
@@ -359,6 +476,9 @@ CREATE TABLE claimcore.case_work (
     search_text text,
     changed_at timestamptz,
     recorded_by uuid REFERENCES claimcore.actors(actor_id),
+    summary_changed_at timestamptz,
+    summary_recorded_by uuid REFERENCES claimcore.actors(actor_id),
+    CHECK ((handling_summary IS NULL AND summary_changed_at IS NULL AND summary_recorded_by IS NULL) OR (handling_summary IS NOT NULL AND summary_changed_at IS NOT NULL AND summary_recorded_by IS NOT NULL)),
     CHECK ((revision=0 AND changed_at IS NULL AND recorded_by IS NULL AND responsible_actor IS NULL AND handling_summary IS NULL) OR (revision>0 AND changed_at IS NOT NULL AND recorded_by IS NOT NULL)),
     CHECK (snapshot IS NOT NULL OR (responsible_actor IS NULL AND handling_summary IS NULL AND search_text IS NULL))
 );
@@ -381,6 +501,7 @@ CREATE INDEX reminders_parent ON claimcore.reminders(case_id,state,due,reminder_
 CREATE INDEX reminders_pending_due ON claimcore.reminders(due,reminder_id) WHERE state='PENDING';
 CREATE INDEX reminders_state_due ON claimcore.reminders(state,due,reminder_id) WHERE snapshot IS NOT NULL;
 CREATE INDEX ledger_case_activity ON claimcore.ledger(parent_case_id,sequence DESC) WHERE subject_kind IN ('WORK','REMINDER');
+CREATE INDEX ledger_reminder_next ON claimcore.ledger(next_reminder_id,sequence DESC) WHERE next_reminder_id IS NOT NULL;
 
 CREATE TABLE claimcore.grants (
     actor_id uuid NOT NULL REFERENCES claimcore.actors (actor_id),
@@ -436,8 +557,10 @@ GRANT SELECT ON claimcore.baseline_identity, claimcore.installation, claimcore.l
 GRANT SELECT, INSERT ON claimcore.ledger TO claimcore_runtime;
 GRANT SELECT, INSERT, UPDATE ON claimcore.cases, claimcore.case_work, claimcore.reminders, claimcore.actors TO claimcore_runtime;
 GRANT SELECT, INSERT, DELETE ON claimcore.grants TO claimcore_runtime;
+GRANT SELECT,INSERT,UPDATE,DELETE ON claimcore.access_request TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.lock_ledger_head() TO claimcore_runtime;
 GRANT EXECUTE ON FUNCTION claimcore.erase_case_payload(uuid) TO claimcore_runtime;
+GRANT EXECUTE ON FUNCTION claimcore.erase_profile_payload(uuid) TO claimcore_runtime;
 
 GRANT EXECUTE ON FUNCTION claimcore.is_interchange_text(text) TO claimcore_runtime;
 

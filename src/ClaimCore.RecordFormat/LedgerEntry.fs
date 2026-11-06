@@ -49,6 +49,7 @@ type RecordedTarget =
 
 type LedgerMetadata =
     {
+        Effects: LedgerEffects
         InstallationId: Guid
         Sequence: Sequence
         PreviousHash: byte array
@@ -106,6 +107,9 @@ module LedgerEntry =
         | AuthorityKind.Revoke -> 35uy
         | AuthorityKind.Enable -> 36uy
         | AuthorityKind.Disable -> 37uy
+        | AuthorityKind.SetProfile -> 38uy
+        | AuthorityKind.EraseProfile -> 39uy
+        | AuthorityKind.Admit -> 40uy
 
     let encodePayload (payload: LedgerPayload) =
         Array.concat
@@ -248,6 +252,15 @@ module LedgerEntry =
         if metadata.InstallationId = Guid.Empty || metadata.Sequence < Sequence.first then
             invalidArg (nameof metadata) "Invalid ledger identity or sequence."
 
+        let effectsMatch =
+            match metadata.Subject with
+            | RecordedTarget.Authority target ->
+                LedgerEffects.describesAuthority target.Act metadata.Effects
+            | _ -> metadata.Effects = LedgerEffects.single
+
+        if not effectsMatch then
+            invalidArg (nameof metadata) "Effect grouping does not describe this ledger subject."
+
         let ticks = metadata.RecordedAt.UtcTicks - DateTimeOffset.UnixEpoch.UtcTicks
 
         if not (RecordedInstant.hasMicrosecondPrecision metadata.RecordedAt) then
@@ -265,6 +278,13 @@ module LedgerEntry =
                 metadata.PreviousHash
                 [| subject.Kind; subject.Act |]
                 (OperationId.value metadata.OperationId).ToByteArray(bigEndian = true)
+                u32 (uint32 (LedgerEffects.index metadata.Effects))
+                u32 (uint32 (LedgerEffects.count metadata.Effects))
+                [|
+                    LedgerEffects.authorityOperation metadata.Effects
+                    |> Option.map authorityCode
+                    |> Option.defaultValue 0uy
+                |]
                 (ActorId.value metadata.ActorId).ToByteArray(bigEndian = true)
                 i64 (ticks / TimeSpan.TicksPerMicrosecond)
                 subject.Identifier

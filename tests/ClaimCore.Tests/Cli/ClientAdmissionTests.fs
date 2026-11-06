@@ -6,6 +6,10 @@ open System
 open System.IO
 open System.Text
 open System.Text.Json
+open System.Net.Http
+open System.Net.Http.Headers
+open System.Threading
+open System.Threading.Tasks
 open Expecto
 open ClaimCore.Protocol
 open ClaimCore.Domain
@@ -89,6 +93,118 @@ let private exactUuid () =
             expected
             "Unbounded UUID format consumes exactly one canonical nonempty UUID"
 
+let private reminderRevisionAdmission () =
+    let operationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
+    let reminderId = "30000000-0000-4000-8000-000000000001"
+
+    let raw revision =
+        sprintf
+            """{"endpoint":"operation.execute","input":{"kind":"REMINDER","operationId":"%s","target":{"kind":"REFERENCE","caseReference":"CASE-001"},"act":{"kind":"COMPLETE","reminderId":"%s","expectedRevision":%d}}}"""
+            (operationId.ToString("D"))
+            reminderId
+            revision
+        |> Encoding.UTF8.GetBytes
+
+    let refusal =
+        Codec.encode
+            Api.operationExecute.Output
+            {
+                OperationId = operationId
+                Outcome = ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+            }
+
+    let mutable exchanges = 0
+
+    use handler =
+        new CliTransportFixture.Handler(fun _ ->
+            exchanges <- exchanges + 1
+            Task.FromResult(CliTransportFixture.response 200 refusal))
+
+    use client = new HttpClient(handler, false)
+
+    let access: RemoteServiceCall.Access =
+        {
+            InstallationId = Some(Guid.Parse "90000000-0000-4000-8000-000000000001")
+            Service = Uri "https://localhost/"
+            Authorization = AuthenticationHeaderValue("Bearer", "synthetic-validation-test")
+        }
+
+    let invoke frame beforeSend cancelled =
+        RemoteServiceCall.send client access frame beforeSend cancelled
+
+    let zeroCode, zeroBytes, _ = CliTransportFixture.call (raw 0) invoke
+    let zero = Frames.decode zeroBytes |> Fixtures.accepted
+    Expect.equal zeroCode 2 "An invalid raw reminder frame refuses cleanly"
+    Expect.equal zero.Delivery DeliveryState.NotSent "Invalid revision never dispatches"
+
+    match zero.Result with
+    | FrameResult.LocalFailure CliFailure.InvalidFrame -> ()
+    | other -> failtestf "Expected existing invalid-frame refusal: %A" other
+
+    Expect.equal exchanges 0 "Actual in-memory HTTP handler sees no exchange"
+    let oneCode, oneBytes, _ = CliTransportFixture.call (raw 1) invoke
+    let one = Frames.decode oneBytes |> Fixtures.accepted
+    Expect.equal oneCode 2 "A genuine delivered service refusal retains its exit code"
+    Expect.equal one.Delivery DeliveryState.Delivered "Positive revision reaches the transport"
+
+    match one.Result with
+    | FrameResult.Reply reply ->
+        Expect.equal
+            (Frames.outcome reply.Wire)
+            (Some "REJECTED")
+            "Transport reply is not substituted by local failure"
+    | other -> failtestf "Expected genuine service response: %A" other
+
+    Expect.equal exchanges 1 "Revision one dispatches exactly once"
+
+    let arguments revision =
+        [
+            "reminder"
+            "complete"
+            "CASE-001"
+            "--reminder-id"
+            reminderId
+            "--expected-reminder-revision"
+            revision
+            "--dry-run"
+        ]
+
+    let targeted =
+        function
+        | Error [ UsageError.InvalidValue("--expected-reminder-revision", "0") ] -> ()
+        | other -> failtestf "Expected targeted reminder option refusal: %A" other
+
+    Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "0")
+    |> targeted
+
+    Grammar.reminderIntent (arguments "0") |> targeted
+
+    Expect.isOk
+        (Grammar.prepare (fun () -> operationId.ToString("D")) (arguments "1"))
+        "The valid human command stays preparable"
+
+    for arguments in
+        [
+            CliExamples.complete [ "case"; "open"; "INITIAL-CASE" ] @ [ "--dry-run" ]
+            [
+                "work"
+                "update"
+                "INITIAL-WORK"
+                "--expected-work-revision"
+                "0"
+                "--handling-summary"
+                "Initial handling"
+                "--dry-run"
+            ]
+        ] do
+        let prepared =
+            Grammar.prepare (fun () -> operationId.ToString("D")) arguments
+            |> Fixtures.accepted
+
+        Expect.isOk
+            (Frames.admit prepared.Bytes)
+            "Case creation and initial work retain legitimate zero revisions"
+
 [<Tests>]
 let tests =
     testList
@@ -99,4 +215,7 @@ let tests =
                 "wire admission leaves authoritative identity policy unchanged"
                 authoritativeIdentityAdmission
             testCase "UUID codec requires exact canonical input" exactUuid
+            testCase
+                "reminder revisions zero and one preserve local admission and no-exchange boundaries"
+                reminderRevisionAdmission
         ]

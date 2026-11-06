@@ -43,6 +43,14 @@ module AuthorityHistoryCodecs =
                     | AuthorityHistoryFacts.Revoked value -> Some value
                     | _ -> None)
                     ResponseCodecs.authorityGrantFields
+                variant
+                    "SET_PROFILE"
+                    AuthorityHistoryFacts.ProfileSet
+                    (function
+                    | AuthorityHistoryFacts.ProfileSet profile -> Some profile
+                    | _ -> None)
+                    (record id |> field "profile" id (nullable ActorCodecs.profile))
+                unitVariant "ERASE_PROFILE" AuthorityHistoryFacts.ProfileErased
                 unitVariant (AuthorityKind.token AuthorityKind.Enable) AuthorityHistoryFacts.Enabled
                 unitVariant
                     (AuthorityKind.token AuthorityKind.Disable)
@@ -56,25 +64,27 @@ module AuthorityHistoryCodecs =
                 AuthorityHistoryEntry.Sequence = sequence
                 RecordedAt = instant
                 RecordedBy = executor
-                TargetActorId = target
+                Target = target
                 Facts = facts
             })
         : Fields<AuthorityHistoryEntry, _>)
         |> field "sequence" _.Sequence sequence
         |> field "recordedAt" _.RecordedAt instant
-        |> field "recordedBy" _.RecordedBy actorId
-        |> field "targetActorId" _.TargetActorId actorId
+        |> field "recordedBy" _.RecordedBy ActorCodecs.actorRef
+        |> field "target" _.Target ActorCodecs.actorRef
         |> field "act" _.Facts facts
         |> build
         |> named "AuthorityHistoryEntry"
 
     let page =
-        (record (fun entries next ->
+        (record (fun basis entries next ->
             {
-                AuthorityHistoryPage.Entries = entries
+                AuthorityHistoryPage.Basis = basis
+                Entries = entries
                 NextCursor = next
             })
         : Fields<AuthorityHistoryPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "entries" _.Entries (list Paging.MaximumPageSize entry)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build

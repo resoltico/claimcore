@@ -9,9 +9,10 @@ open ClaimCore.Application.Contracts
 module internal Resolution =
     let resolve
         (services: ServiceContext)
+        observedAt
         operation
         (actor: AuthorityView)
-        (entry: StoredEntry option)
+        (entry: StoredOperation option)
         (current: ReceiptCurrent)
         =
         let installation = services.InstallationId
@@ -25,8 +26,15 @@ module internal Resolution =
             | Some entry when entry.OperationId <> operation ->
                 Verdict.Fail CoreFault.StoreIntegrityError
             | Some entry when entry.ActorId = owner.ActorId ->
-                LedgerEntries.validate installation entry
-                |> Result.bind (LedgerEntries.receipt principal actor current)
+                LedgerEntries.validateOperation installation entry
+                |> Result.bind (
+                    LedgerEntries.receiptOperation
+                        (ServiceContext.basis services observedAt)
+                        principal
+                        actor
+                        (Some(Actor.currentReference owner))
+                        current
+                )
                 |> Result.map Verdict.Replay
                 |> Result.defaultWith Verdict.Fail
             | _ -> Verdict.Proceed owner.ActorId
@@ -40,13 +48,22 @@ module internal Resolution =
 
         task {
             if operationId.IsNone then
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (
+                let! result =
+                    RequestRefusals.write
+                        services
+                        token
+                        (Refusal.invalidInput (
                             InputTarget.OperationId,
                             Violation.OperationIdRequired
-                        )
-                    )
+                        ))
+
+                return
+                    match result with
+                    | Ok verdict ->
+                        Verdict.outcome (fun () -> Resolved.NotAccepted) Resolved.Accepted verdict
+                    | Error(StoreFailure.Cancelled | StoreFailure.CommitOutcomeUnknown) ->
+                        Outcome.Failed CoreFault.StoreUnavailable
+                    | Error failure -> Queries.failure failure
             else
                 let operationId = operationId.Value
 
@@ -67,11 +84,21 @@ module internal Resolution =
                                                 operationId
                                                 entry
 
-                                        match fenced with
-                                        | Error fault -> return Verdict.Fail fault
-                                        | Ok fenced ->
+                                        let! named =
+                                            ReceiptReads.existing services tx actor current entry
+
+                                        match fenced, named with
+                                        | Error fault, _
+                                        | _, Error fault -> return Verdict.Fail fault
+                                        | Ok fenced, Ok current ->
                                             match
-                                                resolve services operationId actor entry current
+                                                resolve
+                                                    services
+                                                    tx.ObservedAt
+                                                    operationId
+                                                    actor
+                                                    entry
+                                                    current
                                             with
                                             | Verdict.Proceed actor ->
                                                 if fenced then
@@ -95,7 +122,8 @@ module internal Resolution =
                                                                             Head = tx.Head
                                                                             Instant =
                                                                                 tx.ObservedAt
-                                                                            Nonce = tx.Nonce
+                                                                            Nonce =
+                                                                                tx.NewPayloadNonce()
                                                                             ActorId = actor
                                                                             OperationId =
                                                                                 operationId

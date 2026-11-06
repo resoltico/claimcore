@@ -98,7 +98,20 @@ let private matrix =
             (Inventory.tokens "caseActs").Length
             "Complete act vocabulary"
 
-        for _, view in states do
+        let refusedStates =
+            Map.ofList
+                [
+                    "erased", CaseHeadline.Erased
+                    "voided", CaseHeadline.Voided
+                    "open undecided", CaseHeadline.Undecided
+                    "open decided", CaseHeadline.Decided
+                    "open paid", CaseHeadline.Paid
+                    "closed undecided", CaseHeadline.Closed
+                    "closed decided", CaseHeadline.Closed
+                    "closed paid", CaseHeadline.Closed
+                ]
+
+        for name, view in states do
             let current = view |> Option.map (retained 1L)
             let revision = if view.IsSome then 1L else 0L
 
@@ -109,6 +122,21 @@ let private matrix =
                     (Result.isOk result)
                     (TransitionOracle.allows view act)
                     "Independent transition expectation"
+
+                let creates =
+                    match act with
+                    | AuthoredCaseAct.Open _ -> true
+                    | _ -> false
+
+                if
+                    view.IsSome
+                    && not (TransitionOracle.allows view act)
+                    && (not creates || name = "erased")
+                then
+                    Expect.equal
+                        (result |> Result.map ignore)
+                        (Error(Refusal.Case(CaseRefusal.NotOffered(Map.find name refusedStates))))
+                        "Every inapplicable act reports the literal observed headline without replacing permission failures"
 
             match current with
             | None -> ()
@@ -125,19 +153,22 @@ let private allKeep = AuthoredCaseAct.Correct Inputs.correction
 let private allKeepStates =
     [
         "absent", None, 0L, (Refusal.Access AccessRefusal.ResourceUnavailable)
-        "erased", Some(retained 1L CaseState.Erased), 1L, (Refusal.Case CaseRefusal.CaseErased)
+        "erased",
+        Some(retained 1L CaseState.Erased),
+        1L,
+        (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
         "stale",
         Some(retained 1L (live CaseStatus.Opened true false)),
         0L,
-        Refusal.RevisionConflict(CaseFixtures.revision 1L)
+        Refusal.revisionConflict (CaseFixtures.revision 1L)
         "voided",
         Some(retained 1L (CaseState.Voided(fields CaseStatus.Opened true false))),
         1L,
-        (Refusal.Case CaseRefusal.CaseVoided)
+        (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
         "ineligible",
         Some(retained 1L (live CaseStatus.Opened false false)),
         1L,
-        (Refusal.Case CaseRefusal.CorrectionRequiresExistingValue)
+        (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
         "eligible",
         Some(retained 1L (live CaseStatus.Opened true false)),
         1L,

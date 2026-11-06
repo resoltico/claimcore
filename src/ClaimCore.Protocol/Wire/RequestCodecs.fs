@@ -16,6 +16,10 @@ module RequestCodecs =
         |> Codec.vocabulary (Vocabulary.name vocabulary)
 
     let revision = integer 0L JsonValue.MaximumInteger
+
+    let reminderRevision =
+        integer (Revision.value Revision.first) JsonValue.MaximumInteger
+
     let sequence = integer 1L JsonValue.MaximumInteger
 
     let private inputGroup group create values =
@@ -204,7 +208,7 @@ module RequestCodecs =
     let private reminderTargetFields =
         record (fun id revision -> id, revision)
         |> field "reminderId" fst uuid
-        |> field "expectedRevision" snd revision
+        |> field "expectedRevision" snd reminderRevision
 
     let private reminderPlanFields targetFields =
         record (fun (id, revision) plan -> id, revision, plan)
@@ -458,18 +462,70 @@ module RequestCodecs =
                     (record id |> field "target" id caseSelector)
             ]
 
+    let actorProfileInput =
+        (record (fun name contact ->
+            {
+                ActorProfileInput.DisplayName = name
+                Contact = Option.flatten contact
+            })
+        : Fields<ActorProfileInput, _>)
+        |> field "displayName" _.DisplayName text
+        |> optionalField
+            "contact"
+            (fun profile -> profile.Contact |> Option.map Some)
+            (nullable text)
+        |> build
+        |> named "ActorProfileInput"
+
     let private authorityVariantsWith role scope =
         let grant =
-            record (fun role scope ->
+            (record (fun role scope ->
                 {
                     AuthoredGrant.Role = role
                     Scope = scope
                 })
+            : Fields<AuthoredGrant, _>)
             |> field WireMembers.Role _.Role role
             |> field WireMembers.Scope _.Scope scope
 
+        let grantRow = grant |> build |> named "AuthorityGrantInput"
+
+        let grants =
+            Codec.list AuthorityAdmission.MaximumGrants grantRow
+            |> constrained
+                (Schema.Array(grantRow.Schema, 1, AuthorityAdmission.MaximumGrants))
+                (List.isEmpty >> not)
+
         [
-            unitVariant (AuthorityKind.token AuthorityKind.Register) AuthorityAct.Register
+            variant
+                (AuthorityKind.token AuthorityKind.Admit)
+                AuthorityAct.Admit
+                (function
+                | AuthorityAct.Admit value -> Some value
+                | _ -> None)
+                ((record (fun profile grants ->
+                    {
+                        AuthorityAdmission.Profile = profile
+                        Grants = grants
+                    })
+                 : Fields<AuthorityAdmission<AuthoredGrant, ActorProfileInput>, _>)
+                 |> field "profile" _.Profile actorProfileInput
+                 |> field "grants" _.Grants grants)
+            variant
+                (AuthorityKind.token AuthorityKind.Register)
+                AuthorityAct.Register
+                (function
+                | AuthorityAct.Register profile -> Some profile
+                | _ -> None)
+                (record id |> field "profile" id actorProfileInput)
+            variant
+                (AuthorityKind.token AuthorityKind.SetProfile)
+                AuthorityAct.SetProfile
+                (function
+                | AuthorityAct.SetProfile profile -> Some profile
+                | _ -> None)
+                (record id |> field "profile" id actorProfileInput)
+            unitVariant (AuthorityKind.token AuthorityKind.EraseProfile) AuthorityAct.EraseProfile
             variant
                 (AuthorityKind.token AuthorityKind.Grant)
                 AuthorityAct.Grant
@@ -637,17 +693,65 @@ module RequestCodecs =
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.AssigneeRequest QueryEndpoint.CaseAssignees
 
-    let private pageFields =
+    let actorListRequest =
+        let fields
+            : ReadFields<
+                ActorListRequest,
+                string option -> Role option -> string option -> int -> ActorListRequest
+               > =
+            {
+                Inputs = [ ReadInput.DirectorySearch; ReadInput.ActorRole ]
+                Fields =
+                    record (fun text role cursor limit ->
+                        {
+                            ActorListRequest.Text = text
+                            Role = role
+                            AfterCursor = cursor
+                            Limit = limit
+                        })
+            }
+
+        {
+            Inputs = fields.Inputs
+            Fields =
+                fields.Fields
+                |> optionalField "text" _.Text text
+                |> optionalField "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        }
+        |> pageWith Paging.MaximumActorCursorCharacters _.AfterCursor _.Limit
+        |> finishRead RequestSchemas.ActorListRequest QueryEndpoint.AuthorityList
+
+    let accessRequestsRequest =
         (read (fun cursor limit ->
             {
                 PageRequest.AfterCursor = cursor
                 Limit = limit
             })
         : ReadFields<PageRequest, _>)
-        |> page _.AfterCursor _.Limit
+        |> pageWith Paging.MaximumAccessRequestCursorCharacters _.AfterCursor _.Limit
+        |> finishRead RequestSchemas.AccessRequestsRequest QueryEndpoint.AuthorityRequests
 
-    let pageRequest =
-        pageFields |> finishRead RequestSchemas.PageRequest QueryEndpoint.AuthorityList
+    let accessRequestDismissRequest =
+        let payload: ReadFields<PrincipalInput, PrincipalInput> =
+            {
+                Inputs = [ ReadInput.PrincipalOperand ]
+                Fields =
+                    (record (fun kind issuer subject ->
+                        {
+                            PrincipalInput.Kind = kind
+                            Issuer = issuer
+                            Subject = subject
+                        })
+                    : Fields<PrincipalInput, _>)
+                    |> field "kind" _.Kind (VocabularyCodec.create PrincipalKind.vocabulary)
+                    |> field "issuer" _.Issuer text
+                    |> field "subject" _.Subject text
+            }
+
+        payload
+        |> finishRead
+            RequestSchemas.AccessRequestDismissRequest
+            QueryEndpoint.AuthorityRequestsDismiss
 
     let private optionalChoices name get vocabulary fields =
         fields
@@ -682,10 +786,12 @@ module RequestCodecs =
             (VocabularyCodec.create CaseListOrder.vocabulary)
 
     let private filterFields =
-        (record (fun (filter: CaseListFilter<string>) assignment due ->
+        (record (fun (filter: CaseListFilter<string>) assignment due view responsibleActor ->
             { filter with
                 Assignment = assignment
                 Due = due
+                View = view
+                ResponsibleActor = responsibleActor
             })
         : Fields<CaseListFilter<string>, _>)
         |> flatten id baseFilterFields
@@ -694,6 +800,11 @@ module RequestCodecs =
             _.Assignment
             (VocabularyCodec.create CaseAssignment.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create CaseDue.vocabulary)
+        |> optionalField "view" _.View (VocabularyCodec.create CaseView.vocabulary)
+        |> optionalField
+            "responsibleActor"
+            _.ResponsibleActor
+            (uuid |> map (ActorId.create >> Option.get) ActorId.value)
 
     let caseListRequest =
         let paging =
@@ -741,6 +852,34 @@ module RequestCodecs =
         |> detail _.Detail
         |> page _.AfterCursor _.Limit
         |> finishRead RequestSchemas.HistoryRequest QueryEndpoint.CaseHistory
+
+    let timelineRequest =
+        let fields =
+            (read (fun target filter cursor limit ->
+                {
+                    CaseTimelineRequest.Target = target
+                    Filter = filter
+                    AfterCursor = cursor
+                    Limit = defaultArg limit Paging.DefaultPageSize
+                })
+            : ReadFields<CaseTimelineRequest, _>)
+            |> caseOperand _.Target
+
+        {
+            Inputs = fields.Inputs @ [ ReadInput.TimelineFilter; ReadInput.Page ]
+            Fields =
+                fields.Fields
+                |> optionalField
+                    "filter"
+                    _.Filter
+                    (VocabularyCodec.create TimelineFilter.vocabulary)
+                |> optionalField "cursor" _.AfterCursor (boundedText 1 512)
+                |> optionalField
+                    "limit"
+                    (fun request -> Some request.Limit)
+                    (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
+        }
+        |> finishRead "CaseTimelineRequest" QueryEndpoint.CaseTimeline
 
     let observeRequest =
         (read (fun operation ->
@@ -796,20 +935,22 @@ module RequestCodecs =
         |> finishRead RequestSchemas.AuthorityHistoryRequest QueryEndpoint.AuthorityHistory
 
     let reminderListRequest =
-        (record (fun target state due assignment search cursor limit inactive ->
+        (record (fun target state view due assignment search cursor limit inactive ->
             {
                 ReminderListRequest.Target = target
+                View = view
                 State = state
                 Due = due
                 Assignment = assignment
                 Text = search
                 AfterCursor = cursor
                 Limit = limit
-                IncludeInactive = defaultArg inactive false
+                IncludeInactive = inactive
             })
         : Fields<ReminderListRequest, _>)
         |> optionalField "target" _.Target caseSelector
         |> optionalField "state" _.State (VocabularyCodec.create ReminderState.vocabulary)
+        |> optionalField "view" _.View (VocabularyCodec.create ReminderView.vocabulary)
         |> optionalField "due" _.Due (VocabularyCodec.create ReminderDue.vocabulary)
         |> optionalField
             "assignment"
@@ -818,10 +959,7 @@ module RequestCodecs =
         |> optionalField "text" _.Text text
         |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumCaseCursorCharacters)
         |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
-        |> optionalField
-            "includeInactive"
-            (fun value -> if value.IncludeInactive then Some true else None)
-            boolean
+        |> optionalField "includeInactive" _.IncludeInactive boolean
         |> build
         |> named "ReminderListRequest"
 

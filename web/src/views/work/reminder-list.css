@@ -1,0 +1,129 @@
+.reminder-list .reminder-list-items {
+  display: grid;
+  gap: 0;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.reminder-list .reminder-row {
+  display: grid;
+  grid-template-columns: var(--target-primary) minmax(0, 1fr) var(--target-primary);
+  align-items: start;
+  column-gap: var(--space-1);
+  padding-block: var(--space-2);
+  border-block-end: var(--border-width) solid var(--border-subtle);
+}
+.reminder-complete-slot {
+  grid-column: 1;
+  grid-row: 1;
+}
+.reminder-overflow-slot {
+  grid-column: 3;
+  grid-row: 1;
+}
+.reminder-content {
+  grid-column: 2;
+  grid-row: 1;
+  min-inline-size: 0;
+}
+.reminder-row .reminder-action {
+  margin: var(--space-1) 0;
+  overflow-wrap: anywhere;
+  font-weight: 600;
+}
+.reminder-meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: var(--space-1) var(--space-2);
+}
+.reminder-meta .reminder-state {
+  color: var(--text-secondary);
+}
+.reminder-timing {
+  display: inline-block;
+  padding-inline: var(--space-1);
+  border-radius: var(--radius-sm);
+}
+.reminder-timing[data-timing="OVERDUE"] {
+  color: var(--danger-text);
+  background: var(--danger-bg);
+}
+.reminder-timing[data-timing="TODAY"] {
+  color: var(--warning-text);
+  background: var(--warning-bg);
+}
+.reminder-row[data-muted] .reminder-action,
+.reminder-row[data-muted] .reminder-meta {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.reminder-row .reminder-complete,
+.reminder-row .reminder-overflow {
+  inline-size: var(--target-primary);
+  padding: var(--space-1);
+  border-color: transparent;
+  background: transparent;
+  color: var(--text-primary);
+}
+.reminder-circle {
+  display: block;
+  inline-size: 1.25rem;
+  block-size: 1.25rem;
+  border: var(--border-width) solid var(--border-control);
+  border-radius: 50%;
+}
+.reminder-record-details {
+  margin-block-start: var(--space-1);
+  color: var(--text-secondary);
+}
+.reminder-record-details summary {
+  cursor: pointer;
+}
+.reminder-actions-popover {
+  /* Position changes must not change shrink-to-fit width and retrigger overlay sizing. */
+  inline-size: max-content;
+  z-index: var(--layer-dialog);
+  max-inline-size: calc(100vw - var(--space-4));
+  max-block-size: min(24rem, calc(100dvh - var(--space-4)));
+  overflow: auto;
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-sm);
+  background: var(--bg-raised);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-2);
+}
+.reminder-actions-menu {
+  padding: var(--space-1);
+  outline: none;
+}
+.reminder-actions-item {
+  min-block-size: var(--target-primary);
+  display: flex;
+  align-items: center;
+  padding: var(--space-2) var(--space-3);
+  border: var(--border-width) solid transparent;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  overflow-wrap: anywhere;
+}
+.reminder-actions-item[data-focused] {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: calc(-1 * var(--focus-width));
+}
+@media (forced-colors: active) {
+  .reminder-circle {
+    border-color: ButtonText;
+  }
+  .reminder-actions-item[data-focused] {
+    outline-color: Highlight;
+  }
+}
+.case-reminder-controls {
+  margin-block-start: var(--space-2);
+}
+.case-reminder-controls > summary {
+  min-block-size: var(--target-minimum);
+  cursor: pointer;
+  color: var(--accent-text);
+}

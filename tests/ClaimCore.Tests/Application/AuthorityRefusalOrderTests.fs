@@ -66,7 +66,9 @@ let private ordering () =
     let revoke role scope =
         Attempt.Authored(AuthorityAct.Revoke { Role = role; Scope = scope })
 
-    let register = Attempt.Authored AuthorityAct.Register
+    let register =
+        Attempt.Authored(AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+
     let enable = Attempt.Authored AuthorityAct.Enable
     let disable = Attempt.Authored AuthorityAct.Disable
 
@@ -392,7 +394,18 @@ let private ordering () =
             { view.Read with
                 EnabledHumanOwners = Some owners
                 ActorCount = Some actors
-                TargetCase = current
+                TargetCases =
+                    current
+                    |> Option.map (fun record ->
+                        Map.ofList
+                            [
+                                GrantTarget.CaseId record.CaseId, record
+                                GrantTarget.CaseReference(
+                                    CaseReference.format record.Snapshot.Reference
+                                ),
+                                record
+                            ])
+                    |> Option.defaultValue Map.empty
             }
 
         let actual =

@@ -55,7 +55,8 @@ type CatalogInput =
         AdviceGroup: RecordGroup option
         Branches: BindingCondition list
         LabelId: string
-        MeaningId: string option
+        HintId: string option
+        RuleId: string option
         Order: int
         Prefill: string list option
         Required: bool
@@ -64,6 +65,24 @@ type CatalogInput =
         Default: BindingValue option
         DiagnosticTargets: string list
         Source: InputSource
+    }
+
+/// One bounded record collection. Row paths and conditions are relative to a single item.
+type CatalogCollection =
+    {
+        Identity: string
+        Field: InputTarget
+        Path: string list
+        Branches: BindingCondition list
+        LabelId: string
+        HintId: string option
+        RuleId: string option
+        Order: int
+        Required: bool
+        MinimumItems: int
+        MaximumItems: int
+        RowInputs: CatalogInput list
+        RowConstants: BindingAssignment list
     }
 
 [<RequireQualifiedAccess>]
@@ -98,15 +117,15 @@ type CatalogOperation =
     member this.Subject =
         match this with
         | CatalogOperation.Act(ActKind.Case _)
-        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory | QueryEndpoint.CaseActivity) ->
+        | CatalogOperation.Query(QueryEndpoint.CaseAssignees | QueryEndpoint.CaseGet | QueryEndpoint.CaseList | QueryEndpoint.CaseViews | QueryEndpoint.CaseSummary | QueryEndpoint.CaseHistory | QueryEndpoint.CaseActivity | QueryEndpoint.CaseTimeline) ->
             CatalogSubject.Case
         | CatalogOperation.Act(ActKind.Work _)
         | CatalogOperation.Query QueryEndpoint.WorkOverview -> CatalogSubject.Work
         | CatalogOperation.Act(ActKind.Reminder _)
-        | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet) ->
+        | CatalogOperation.Query(QueryEndpoint.ReminderList | QueryEndpoint.ReminderGet | QueryEndpoint.ReminderViews) ->
             CatalogSubject.Reminder
         | CatalogOperation.Act(ActKind.Authority _)
-        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory) ->
+        | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory | QueryEndpoint.AuthorityRequests | QueryEndpoint.AuthorityRequestsDismiss) ->
             CatalogSubject.Authority
         | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Status | QueryEndpoint.Resolve) ->
             CatalogSubject.Operation
@@ -161,17 +180,25 @@ module CatalogOperation =
             None, [], InteractionEffect.FinalNonAcceptance
         | _ -> None, [], InteractionEffect.Read
 
+    let consequence =
+        function
+        | CatalogOperation.Act act -> Consequence.ofAct act
+        | CatalogOperation.Query query -> Consequence.ofQuery query
+
 
 type CatalogEntry =
     {
         LabelId: string
         MeaningId: string
-        ConfirmationId: string option
+        ConsequenceId: string option
+        DoneId: string option
         Family: ActFamily option
         AffectedSections: CaseSection list
         Effect: InteractionEffect
+        Consequence: Consequence
         Kind: CatalogOperation
         Inputs: CatalogInput list
+        Collections: CatalogCollection list
         Constants: BindingAssignment list
     }
 
@@ -186,16 +213,20 @@ type FieldPresentationDefinition =
         Section: CaseSection option
         Pairs: BusinessField option
         LabelId: string
-        MeaningId: string
+        HintId: string
+        RuleId: string
         Scalar: ScalarRule
         AllowsAbsence: bool
+        Prominence: Prominence
+        Listed: bool
     }
 
 type InputPresentationDefinition =
     {
         Name: string
         LabelId: string
-        MeaningId: string option
+        HintId: string option
+        RuleId: string option
         Scalar: ScalarRule option
     }
 
@@ -215,6 +246,7 @@ type PresentationLimits =
 type RolePresentationDefinition =
     {
         Role: Role
+        MeaningId: string
         AdmittedPrincipalKinds: PrincipalKind list
         AdmittedScopes: ScopeKind list
     }
@@ -226,6 +258,8 @@ type CapabilityPresentationDefinition =
         AdmittedScopes: ScopeKind list
     }
 
+type CurrencyMinorUnitDefinition = { Currency: string; MinorUnits: int }
+
 type CatalogDocument =
     {
         Fields: FieldPresentationDefinition list
@@ -236,6 +270,7 @@ type CatalogDocument =
         Roles: RolePresentationDefinition list
         Capabilities: CapabilityPresentationDefinition list
         ProductVersion: string
+        MoneyMinorUnits: CurrencyMinorUnitDefinition list
     }
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

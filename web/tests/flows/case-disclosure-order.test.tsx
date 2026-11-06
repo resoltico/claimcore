@@ -1,10 +1,9 @@
+import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
-import { historyVariants } from "../support/contract-corpus.fixtures";
 import { act } from "@testing-library/react";
 import { expect, it, vi } from "vitest";
-import type { HistoryEntry } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { render, screen, TestSession, waitFor } from "../support/presentation-test-support";
 import { definition, fields, response, unavailable } from "../support/service-ui.fixtures";
@@ -47,29 +46,15 @@ const readable = (historyDetails: ReadonlyArray<"SUMMARY" | "FULL"> = ["SUMMARY"
       },
     }),
   );
-const pageEntry = (
-  entry: Extract<
-    HistoryEntry,
-    {
-      kind: "SUMMARY";
-    }
-  >,
-  page: number,
-) => ({
-  kind: entry.kind,
-  change: {
-    ...entry.change,
-    operationId: `10000000-0000-4000-8000-00000000000${page}`,
-  },
-});
-const history = (nextCursor: string | null = null, page = 1) => {
-  const { summary } = historyVariants();
-  const entries = [pageEntry(summary, page)];
-  return response("case.history", "SUCCEEDED", {
-    entries,
-    nextCursor,
-  });
-};
+const history = (nextCursor: string | null = null, page = 1) =>
+  response(
+    "case.timeline",
+    "SUCCEEDED",
+    timelinePage(
+      [timelineEntry({ position: { sequence: page, entryHash: String(page).repeat(64) } })],
+      nextCursor,
+    ),
+  );
 const refusal = (kind: string) =>
   kind === "access"
     ? response("case.get", "REJECTED", unavailable)
@@ -113,7 +98,7 @@ it.each(["access", "session"])(
     });
     expect(
       screen.queryByRole("heading", {
-        name: "Case history",
+        name: "Activity",
       }),
     ).toBeNull();
     expect(fetch).toHaveBeenCalledTimes(1);
@@ -126,7 +111,7 @@ it("does not invent SUMMARY access for a readable case without history advice", 
   await screen.findAllByText(fields.registration.claimantName);
   expect(
     screen.queryByRole("heading", {
-      name: "Case history",
+      name: "Activity",
     }),
   ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(1);
@@ -162,7 +147,7 @@ for (const replacement of ["session", "refresh"]) {
     await screen.findByRole("alert");
     expect(
       screen.queryByRole("heading", {
-        name: "Case history",
+        name: "Activity",
       }),
     ).toBeNull();
     expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
@@ -182,10 +167,10 @@ it("keeps authorized history pagination and discards a draining page on session 
   const view = render(detail());
   await user.click(
     await screen.findByRole("button", {
-      name: "Load more history",
+      name: "Load 50 more",
     }),
   );
-  expect(document.querySelectorAll(".history-list li")).toHaveLength(1);
+  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(1);
   const signal = fetch.mock.calls[2]?.[1]?.signal;
   const body = fetch.mock.calls[2]?.[1]?.body;
   if (typeof body !== "string") {
@@ -196,14 +181,14 @@ it("keeps authorized history pagination and discards a draining page on session 
   };
   expect(request.cursor).toBe("continuation");
   view.rerender(detail("replacement"));
-  expect(document.querySelectorAll(".history-list li")).toHaveLength(0);
+  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(0);
   expect(signal?.aborted).toBe(false);
   await act(async () => {
     nextPage.release(history());
     await nextPage.promise;
   });
   await screen.findByRole("alert");
-  expect(document.querySelectorAll(".history-list li")).toHaveLength(0);
+  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(0);
   expect(fetch).toHaveBeenCalledTimes(4);
 });
 it("appends an authorized next history page without dropping current advice", async () => {
@@ -217,16 +202,16 @@ it("appends an authorized next history page without dropping current advice", as
   render(detail());
   await user.click(
     await screen.findByRole("button", {
-      name: "Load more history",
+      name: "Load 50 more",
     }),
   );
   await waitFor(() => {
-    expect(document.querySelectorAll(".history-list li")).toHaveLength(2);
+    expect(document.querySelectorAll(".case-timeline li")).toHaveLength(2);
   });
   expect(screen.getAllByText(fields.registration.claimantName)[0]).toBeVisible();
   expect(
     screen.queryByRole("button", {
-      name: "Load more history",
+      name: "Load 50 more",
     }),
   ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(3);

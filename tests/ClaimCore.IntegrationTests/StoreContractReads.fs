@@ -121,7 +121,12 @@ let internal assignedReader (actor: ServiceContext) =
         let! registered =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 15) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 15)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -147,7 +152,12 @@ let internal registerReader (owner: ServiceContext) target =
         let! registered =
             (Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 2) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 2)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority registered

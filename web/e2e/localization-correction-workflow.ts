@@ -9,7 +9,6 @@ import { browserRequest, sessionToken, installationId } from "./session-helpers"
 import { isResponse } from "../src/protocol/client";
 import { endpoints } from "@contracts/client";
 import { selectLanguage } from "./localization-support";
-import type { Language } from "../src/presentation/preferences";
 
 export type Modes = Readonly<{
   registration: "KEEP" | "UPDATE";
@@ -127,19 +126,25 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
     const { recordedBy: acceptedActor } = receipt;
     const acceptedRevision = receipt.subject.revision;
     if (recordedBy !== undefined) {
-      expect(acceptedActor).toBe(recordedBy);
+      expect(acceptedActor.actorId).toBe(recordedBy);
     }
-    recordedBy = acceptedActor;
+    recordedBy = acceptedActor.actorId;
     revision = acceptedRevision;
   }
   await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
-  await expect(page.locator(".case-header-state").getByText(`Revision ${revision}`)).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
+  const details = page.locator(".case-technical");
+  await details.locator(":scope > summary").click();
+  const factRevision = details
+    .locator("dl > div")
+    .filter({ has: page.getByText("Revision", { exact: true }) });
+  await expect(factRevision.locator("dd")).toHaveText(String(revision));
+  await details.locator(":scope > summary").click();
 };
-export const chooseGroups = async (page: Page, modes: Modes, language: Language) => {
-  await startAct(page, "Correct case facts");
+export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);
+  await startAct(page, "CORRECT", language);
   for (const [group, mode] of Object.entries(modes)) {
     await chooseChoice(page, `act.groups.${group}.kind`, mode);
   }

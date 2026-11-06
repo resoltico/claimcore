@@ -35,7 +35,12 @@ let private authorityAndCursor () =
         (Queries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            page
+            {
+                ActorListRequest.Role = None
+                Text = None
+                AfterCursor = page.AfterCursor
+                Limit = page.Limit
+            }
             read)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Authority precedes token parsing"
@@ -44,7 +49,12 @@ let private authorityAndCursor () =
         (Queries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            page
+            {
+                ActorListRequest.Role = None
+                Text = None
+                AfterCursor = page.AfterCursor
+                Limit = page.Limit
+            }
             worker)
         (Error Refusal.InvalidCursor)
         "Authorized malformed cursor refuses"
@@ -184,7 +194,8 @@ let private resources () =
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
             read
-            (Inputs.workView current.Snapshot.State))
+            (Inputs.workView current.Snapshot.State)
+            (Inputs.stageDisplay current.Snapshot.State))
         expected
         "Inaccessible live case"
 
@@ -192,7 +203,8 @@ let private resources () =
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
             { read with Case = None }
-            (Inputs.workView current.Snapshot.State))
+            (Inputs.workView current.Snapshot.State)
+            (Inputs.stageDisplay current.Snapshot.State))
         expected
         "Absent case is indistinguishable"
 
@@ -208,7 +220,8 @@ let private resources () =
         (Queries.caseResult
             (DecisionFixtures.services installation calendar owner)
             { read with Case = Some erased }
-            (Inputs.workView erased.Snapshot.State))
+            (Inputs.workView erased.Snapshot.State)
+            (Inputs.stageDisplay erased.Snapshot.State))
         expected
         "Erased beyond view is indistinguishable"
 
@@ -223,52 +236,64 @@ let private context () =
             instant
             RegisterMaintenance.initial
             view
+            []
     with
-    | Outcome.Succeeded value ->
+    | Outcome.Succeeded {
+                            Requester = RequesterState.NoRoles value
+                        } ->
         Expect.equal
-            value.ActorId
+            value.Self.ActorId
             (CaseFixtures.actorId (id 1))
-            "Context identifies its admitted requester"
-
-        Expect.isEmpty value.Capability "Enabled actor has context without implied capabilities"
+            "Roleless context identifies only its caller"
 
         Expect.equal
-            value.View
-            [ View.Operations ]
-            "Roleless valid actors retain their own recovery area"
-
-        Expect.isEmpty value.Offers "No offers before grants"
-
-        Expect.equal
-            value.Runtime.EffectiveBusinessDate
+            value.BusinessDate
             (calendar.DateAt instant)
             "Supplied instant owns business date"
 
-        Expect.equal value.Runtime.TimeZoneId calendar.TimeZoneId "Stored zone is retained"
-    | _ -> failtest "Enabled ungranted actor needs context"
+        Expect.equal value.TimeZone calendar.TimeZoneId "Stored zone is retained"
+    | other -> failtestf "Enabled ungranted actor needs NO_ROLES context, got %A" other
 
-    Expect.equal
-        (Queries.contextResult
+    match
+        Queries.contextResult
             (DecisionFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
-            AuthorityView.empty)
-        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Unregistered actor has no context"
+            AuthorityView.empty
+            []
+    with
+    | Outcome.Succeeded {
+                            Requester = RequesterState.NotRegistered value
+                        } ->
+        let _, issuer, subject = PrincipalKey.parts owner
+
+        Expect.equal
+            (value.Issuer, value.Subject)
+            (issuer, subject)
+            "Unregistered context reveals only caller identity"
+    | other -> failtestf "Unregistered caller needs own requester state: %A" other
 
     let disabled =
         { ungranted with
             Actor = ungranted.Actor |> Option.map (fun value -> { value with Enabled = false })
         }
 
-    Expect.equal
-        (Queries.contextResult
+    match
+        Queries.contextResult
             (DecisionFixtures.services installation calendar owner)
             instant
             RegisterMaintenance.initial
-            disabled)
-        (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Disabled actor has no context"
+            disabled
+            []
+    with
+    | Outcome.Succeeded {
+                            Requester = RequesterState.Disabled self
+                        } ->
+        Expect.equal
+            self.ActorId
+            (CaseFixtures.actorId (id 1))
+            "Disabled context identifies only its caller"
+    | other -> failtestf "Disabled caller needs own requester state: %A" other
 
     let _, entry, current, _ = created 462 "SCOPED-AUDITOR"
 
@@ -290,7 +315,12 @@ let private context () =
         (Queries.selectActors
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
             owner
-            { AfterCursor = None; Limit = 50 }
+            {
+                Role = None
+                Text = None
+                AfterCursor = None
+                Limit = 50
+            }
             scoped)
         (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
         "Scoped audit cannot enumerate installation actors"

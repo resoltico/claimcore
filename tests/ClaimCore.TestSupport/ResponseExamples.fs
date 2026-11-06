@@ -19,7 +19,7 @@ let defaultReply (endpoint: Endpoint<'Input, 'Output>) =
     PositiveExamples.forEndpoint "wire-response-examples.json" endpoint.Token
     |> List.map (fun value ->
         endpoint.Output.Read "$" value
-        |> Result.defaultWith (fun problem -> invalidOp (string problem)))
+        |> Result.defaultWith (fun problem -> invalidOp (endpoint.Token + ": " + string problem)))
     |> List.tryFind (fun value -> suitable (endpoint.Classify value).Kind)
     |> Option.defaultWith (fun () ->
         invalidOp ("Missing successful response example: " + endpoint.Token))

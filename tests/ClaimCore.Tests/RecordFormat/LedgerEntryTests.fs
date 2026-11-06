@@ -28,7 +28,7 @@ let private subject (vector: JsonElement) =
         RecordedTarget.Authority
             {
                 TargetActorId = CaseFixtures.actorId (Guid.Parse(text vector "subjectId"))
-                Act = AuthorityKind.Grant
+                Act = AuthorityKind.parse (text vector "act") |> Option.get
             }
     elif text vector "subject" = "WORK" then
         RecordedTarget.Work
@@ -64,8 +64,24 @@ let private subject (vector: JsonElement) =
                     DateOnly.Parse(text vector "businessDate", CultureInfo.InvariantCulture)
             }
 
-let private metadata vector : LedgerMetadata =
+let private metadata (vector: JsonElement) : LedgerMetadata =
+    let operation =
+        let value = vector.GetProperty("authorityOperation")
+
+        if value.ValueKind = JsonValueKind.Null then
+            None
+        else
+            AuthorityKind.parse (value.GetString() |> nonNull)
+
+    let effects =
+        LedgerEffects.create
+            operation
+            (vector.GetProperty("effectCount").GetInt32())
+            (vector.GetProperty("effectIndex").GetInt32())
+        |> Option.get
+
     {
+        Effects = effects
         CreationReference =
             if text vector "subject" = "CASE" && text vector "act" = "OPEN" then
                 Some(CaseFixtures.reference (text vector "creationReference"))
@@ -108,7 +124,10 @@ let private expectedPayload vector =
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal vectors.Length 10 "All independent fact, work, reminder and control vectors"
+        Expect.equal
+            vectors.Length
+            15
+            "Independent fact, work, reminder, control and grouped authority vectors"
 
         for vector in vectors do
             let payload = expectedPayload vector
@@ -190,6 +209,7 @@ let private allMetadataFields () =
                     PayloadCommitment = changedHash entry.PayloadCommitment
                 }
                 { entry with
+                    Effects = LedgerEffects.authority AuthorityKind.Grant 1 0
                     Subject =
                         RecordedTarget.Authority
                             {
@@ -256,6 +276,31 @@ let tests =
         "ledger entry format"
         [
             testCase "both independent ledger vectors reproduce every byte" vectors
+            testCase "ADMIT root kind remains distinct from its REGISTER effect" (fun () ->
+                withVectors (fun vectors ->
+                    let vector =
+                        vectors
+                        |> List.find (fun value -> text value "name" = "ADMIT identity root")
+
+                    let entry = metadata vector
+
+                    Expect.equal
+                        (LedgerEffects.authorityOperation entry.Effects)
+                        (Some AuthorityKind.Admit)
+                        "Logical ADMIT is retained in the header"
+
+                    match entry.Subject with
+                    | RecordedTarget.Authority subject ->
+                        Expect.equal
+                            subject.Act
+                            AuthorityKind.Register
+                            "Durable effect is identity-only REGISTER"
+                    | _ -> failtest "Expected authority vector"
+
+                    Expect.equal
+                        (LedgerEntry.hash entry |> Convert.ToHexStringLower)
+                        (text vector "entryHash")
+                        "Independent oracle pins logical code40 and physical code33 separately"))
             testCase "each fixed metadata field affects the hash" allMetadataFields
             testCase "act codes have an independent append-only expectation" (fun () ->
                 let acts =
@@ -290,6 +335,8 @@ let tests =
                             AuthorityKind.Revoke, 35uy
                             AuthorityKind.Enable, 36uy
                             AuthorityKind.Disable, 37uy
+                            AuthorityKind.SetProfile, 38uy
+                            AuthorityKind.EraseProfile, 39uy
                         ] do
                         let subject =
                             {
@@ -299,6 +346,17 @@ let tests =
 
                         let candidate =
                             { entry with
+                                Effects =
+                                    LedgerEffects.authority
+                                        kind
+                                        (if
+                                             kind = AuthorityKind.Register
+                                             || kind = AuthorityKind.ProvisionOwner
+                                         then
+                                             2
+                                         else
+                                             1)
+                                        0
                                 Subject = RecordedTarget.Authority subject
                             }
 
@@ -460,7 +518,7 @@ let tests =
                     let bytes = LedgerEntry.preimage beforeEpoch
 
                     Expect.equal
-                        (Convert.ToHexStringLower bytes[115..122])
+                        (Convert.ToHexStringLower bytes[124..131])
                         "ffffffffffffffff"
                         "Signed microsecond minus one"
 
@@ -504,6 +562,7 @@ let tests =
                         let authorityBytes =
                             LedgerEntry.preimage
                                 { entry with
+                                    Effects = LedgerEffects.authority AuthorityKind.Grant 1 0
                                     Subject =
                                         RecordedTarget.Authority
                                             {
@@ -514,7 +573,7 @@ let tests =
 
                         Expect.equal caseBytes[81] 1uy "Case kind"
                         Expect.equal authorityBytes[81] 2uy "Authority kind"
-                        Expect.equal caseBytes[147..150] [| 0uy; 0uy; 0uy; 0uy |] "Real day zero"))
+                        Expect.equal caseBytes[156..159] [| 0uy; 0uy; 0uy; 0uy |] "Real day zero"))
         ]
 
 [<Tests>]

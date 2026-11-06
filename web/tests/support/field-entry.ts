@@ -40,7 +40,7 @@ const fieldControl = (target: HTMLElement | string): HTMLElement => {
       ),
   );
   if (field !== undefined) {
-    const control = document.querySelector<HTMLElement>(`[data-field-name="${field.name}"]`);
+    const control = document.querySelector<HTMLElement>(`form [data-field-name="${field.name}"]`);
     if (control !== null) {
       return control;
     }

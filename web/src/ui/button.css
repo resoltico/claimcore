@@ -1,0 +1,49 @@
+.ui-button {
+  --button-bg: var(--accent-solid);
+  --button-text: var(--on-accent-solid);
+  --button-border: var(--accent-solid);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-inline-size: var(--target-primary);
+  min-block-size: var(--target-primary);
+  padding: var(--space-2) var(--space-4);
+  border: var(--border-width) solid var(--button-border);
+  border-radius: var(--radius-sm);
+  background: var(--button-bg);
+  color: var(--button-text);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.ui-button--secondary {
+  --button-bg: var(--bg-surface);
+  --button-text: var(--text-primary);
+  --button-border: var(--border-control);
+}
+.ui-button--danger {
+  --button-bg: var(--danger-bg);
+  --button-text: var(--danger-text);
+  --button-border: var(--danger-text);
+}
+.ui-button[data-disabled] {
+  --button-bg: var(--bg-surface);
+  --button-text: var(--text-disabled);
+  --button-border: var(--border-control);
+  cursor: not-allowed;
+}
+.ui-button:focus-visible {
+  outline: var(--focus-width) solid var(--focus-ring);
+  outline-offset: var(--focus-offset);
+}
+.ui-icon-button {
+  padding: var(--space-2);
+  inline-size: var(--target-primary);
+}
+@media (forced-colors: active) {
+  .ui-button {
+    --button-border: var(--border-control);
+  }
+}

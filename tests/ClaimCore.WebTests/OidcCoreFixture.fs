@@ -47,7 +47,10 @@ let createFor issuer subject =
                 (Service.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id 20) service AuthorityAct.Register
+                        authorityRequest
+                            (id 20)
+                            service
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     (CancellationToken.None))
 

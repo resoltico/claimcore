@@ -12,11 +12,11 @@ import { noHorizontalOverflow } from "./layout-support";
 import { casePath, referencePath } from "../src/routing/routes";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { isResponse } from "../src/protocol/client";
-import { pauseJsonReply } from "./localization-support";
+import { pauseJsonReply, selectMode } from "./localization-support";
 import { recoveryRecords } from "./recovery-storage";
 
 const recoverAcceptedClose = async (page: Page, operationId: string) => {
-  const accepted = page.getByRole("heading", { name: "Case detail", exact: true });
+  const accepted = page.locator("#case-detail-title");
   const check = page.getByRole("button", { name: "Check status", exact: true });
   // A canceled document navigation may also cancel Firefox's outstanding fetch.
   await accepted.or(check).waitFor({ state: "visible" });
@@ -39,7 +39,16 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();
-  await expect(page.locator(".success-toast")).toContainText("revision 2.");
+  await expect(page.locator(".success-toast")).toContainText("Case closed.");
+  const details = page.locator("[data-record-details]");
+  await details.locator(":scope > summary").click();
+  await expect(
+    details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Revision", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText("2");
+  await details.locator(":scope > summary").click();
 };
 
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
@@ -48,7 +57,7 @@ test("native beforeunload blocks document navigation only while execution is in 
   await openAuthenticated(page);
   const reference = `UNLOAD-${randomUUID()}`;
   await openCase(page, reference);
-  await startAct(page, "Close the case");
+  await startAct(page, "CLOSE", "en");
   const identity = await reviewDraft(page);
   const execution = await pauseJsonReply(page, "operation.execute");
   const dialogs: string[] = [];
@@ -59,8 +68,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     dismissed.resolve();
   });
   try {
-    await page.getByText("I confirm these changes.", { exact: true }).click();
-    await page.getByRole("button", { name: "Record changes", exact: true }).click();
+    await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     const { reply } = await execution.ready;
     expect(reply.outcome.kind).toBe("ACCEPTED");
     expect(reply.operationId).toBe(identity.operationId);
@@ -69,7 +77,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     await Promise.all([
       page.waitForEvent("dialog", { timeout: 5_000 }),
       page.evaluate(() => {
-        window.location.assign("/operations");
+        window.location.assign("/recovery");
       }),
     ]);
     await dismissed.promise;
@@ -79,7 +87,7 @@ test("native beforeunload blocks document navigation only while execution is in 
     );
     execution.release();
     await recoverAcceptedClose(page, identity.operationId);
-    await page.goto("/operations", { waitUntil: "commit" });
+    await page.goto("/recovery", { waitUntil: "commit" });
     await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {
@@ -118,15 +126,13 @@ test("an unauthenticated case deep link survives actual OIDC sign-in", async ({
           new URL(response.url()).pathname === "/signin-oidc" && response.status() === 302,
         { timeout: freshLoginWorkflowTimeout },
       ),
-      login(signedOutPage, "Case detail"),
+      login(signedOutPage, null),
     ]);
     await expect(signedOutPage).toHaveURL(destination.href);
-    await expect(
-      signedOutPage.getByRole("heading", { name: "Case detail", exact: true }),
-    ).toBeVisible();
-    await expect(
-      signedOutPage.getByRole("heading", { name: "Case detail", exact: true }),
-    ).toContainText(reference);
+    await expect(signedOutPage.locator("#case-detail-title")).toBeVisible();
+    await expect(signedOutPage.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+      reference,
+    );
   } finally {
     await anonymous.close();
   }
@@ -156,26 +162,29 @@ test("canonical case links reload and browser back and forward preserve the case
   const destination = casePath(response.payload.outcome.data.caseId);
   await expect(page).toHaveURL((url) => url.pathname === destination);
   await page.reload();
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await page.getByRole("button", { name: "Back to cases", exact: true }).click();
-  await expect(page).toHaveURL(/\/cases$/u);
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",
+  );
   await page.goBack();
   await expect(page).toHaveURL((url) => url.pathname === destination);
   await page.goForward();
+  await expect(page).toHaveURL(
+    (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",
+  );
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
 });
-for (const theme of ["LIGHT", "DARK"] as const) {
+for (const theme of ["light", "dark"] as const) {
   test(`theme ${theme} passes axe and reflows at 320px`, async ({ page }) => {
     await openAuthenticated(page);
-    await page.locator("[data-settings-button]").click();
-    await page.getByRole("combobox", { name: "Theme", exact: true }).selectOption(theme);
-    await page.keyboard.press("Escape");
-    await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+    await selectMode(page, theme);
+    await expect(page.locator("html")).toHaveAttribute("data-mode", theme.toLowerCase());
     await expectAccessible(page);
     await page.setViewportSize({ width: 320, height: 900 });
     await noHorizontalOverflow(page, "narrow");
     await expectAccessible(page);
     await page.reload();
-    await expect(page.locator("html")).toHaveAttribute("data-theme", theme.toLowerCase());
+    await expect(page.locator("html")).toHaveAttribute("data-mode", theme.toLowerCase());
   });
 }

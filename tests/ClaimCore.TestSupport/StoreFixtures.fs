@@ -61,7 +61,7 @@ type internal AuthorityInspection =
         Needed: AuthorityFact list
         OperationId: Guid
         Target: PrincipalKey
-        CaseTarget: CaseSelector option
+        CaseTargets: GrantTarget list
     }
 
 let internal inspectTarget fixture principal (query: AuthorityInspection) token =
@@ -75,7 +75,7 @@ let internal inspectTarget fixture principal (query: AuthorityInspection) token 
                         query.Needed
                         (CaseFixtures.operationId query.OperationId)
                         query.Target
-                        query.CaseTarget)
+                        query.CaseTargets)
             CancellationToken = token
         }
     )
@@ -101,9 +101,9 @@ let internal inspectOperation fixture principal operation token =
                                 Case =
                                     match current with
                                     | ReceiptCurrent.Case value
-                                    | ReceiptCurrent.Work(value, _)
+                                    | ReceiptCurrent.Work(value, _, _)
                                     | ReceiptCurrent.Reminder(value, _) -> value
-                                    | ReceiptCurrent.Authority -> None
+                                    | ReceiptCurrent.Authority _ -> None
                             }
                     })
             CancellationToken = token
@@ -160,6 +160,41 @@ let internal accepted (reply: ExecuteReply) =
         receipt
     | other -> failtestf "Expected accepted operation, received %A." other
 
+/// Acceptance metadata stays historical; the basis describes the current authorized read.
+let internal expectReceipt (actual: OperationReceipt) (expected: OperationReceipt) message =
+    Expect.equal
+        (actual.OperationId, actual.Position, actual.Subject, actual.RecordedAt, actual.RecordedBy)
+        (expected.OperationId,
+         expected.Position,
+         expected.Subject,
+         expected.RecordedAt,
+         expected.RecordedBy)
+        message
+
+    Expect.isGreaterThanOrEqual
+        actual.Basis.ObservedAt
+        expected.Basis.ObservedAt
+        "The later receipt cannot report an earlier database observation"
+
+    Expect.equal actual.Basis.TimeZoneId expected.Basis.TimeZoneId "Installation zone is retained"
+
+    let observedDate =
+        TimeZoneInfo.ConvertTime(
+            actual.Basis.ObservedAt,
+            TimeZoneInfo.FindSystemTimeZoneById expected.Basis.TimeZoneId
+        )
+        |> fun instant -> DateOnly.FromDateTime instant.DateTime
+
+    Expect.equal
+        actual.Basis.BusinessDate
+        observedDate
+        "Business date belongs to the current observation"
+
+let internal replayReceipt (reply: ExecuteReply) =
+    match reply.Outcome with
+    | ExecuteResult.AlreadyAccepted receipt -> receipt
+    | other -> failtestf "Expected already accepted operation, received %A." other
+
 let internal acceptedAuthority outcome =
     match accepted outcome with
     | { Subject = ReceiptSubject.Authority _ } -> ()
@@ -181,6 +216,7 @@ let internal bootstrap fixture =
             AuthorityExecution.provisionStore
                 (core fixture fixture.Owner)
                 (id 1)
+                Inputs.ownerProfile
                 CancellationToken.None
 
         match result with

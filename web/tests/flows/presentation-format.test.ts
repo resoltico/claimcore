@@ -71,7 +71,12 @@ it("formats only read-only scalar displays and leaves technical text and currenc
   expect(displayField("12.5000", field("claimedAmount"), "lv-LV")).toBe("12,5000");
   expect(displayField("2026-09-22", field("incidentDate"), "en-GB")).toBe("22/09/2026");
   expect(displayField("EUR", field("claimedCurrency"), "ar-EG")).toBe("EUR");
-  const p = createPresenter({ language: "ar", displayLocale: "lv-LV", theme: "SYSTEM" as const });
+  const p = createPresenter({
+    language: "ar",
+    displayLocale: "lv-LV",
+    mode: "system" as const,
+    accent: "green" as const,
+  });
   expect(p.fieldValue(null, field("claimedAmount"))).not.toBe(
     p.fieldValue("0", field("claimedAmount")),
   );
@@ -82,13 +87,13 @@ it("formats only read-only scalar displays and leaves technical text and currenc
 it("uses stable metadata identity rather than supplied English labels as catalog authority", () => {
   const p = createPresenter(defaults);
   expect(p.fieldLabel("claimantName")).toBe("Claimant name");
-  expect(p.fieldMeaning("claimantName")).not.toBe("");
+  expect(p.fieldHint("claimantName")).not.toBe("");
   expect(p.actLabel("CLOSE")).toBe("Close the case");
   expect(p.actMeaning("CLOSE")).not.toBe("");
   expect(p.groupLabel("registration")).not.toBe("");
-  expect(p.groupMeaning("registration")).not.toBe("");
+  expect(p.groupHint("registration")).not.toBe("");
   expect(p.fieldLabel("FUTURE_TECHNICAL_FIELD")).toBe("FUTURE_TECHNICAL_FIELD");
-  expect(p.fieldMeaning("FUTURE_TECHNICAL_FIELD")).toBe("");
+  expect(p.fieldHint("FUTURE_TECHNICAL_FIELD")).toBe("");
   expect(p.term("act", "CLOSE")).toBe(p.actLabel("CLOSE"));
   expect(isTerm("act", "opaque-identifier")).toBe(false);
   expect(p.integer("42")).toBe("42");

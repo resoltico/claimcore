@@ -178,7 +178,7 @@ let tests =
                                     Insurer = Some "Another insurer"
                                 })
                             (Some changed))
-                        (Error(Refusal.RevisionConflict(Revision.create 2L |> Option.get)))
+                        (Error(Refusal.revisionConflict (Revision.create 2L |> Option.get)))
                         "Stale intent refuses")
             testCase
                 "paid correction needs explicit payment intent; reaffirm keeps the actual date"
@@ -281,6 +281,7 @@ let tests =
                                     ActorId = ActorId.create (id 10) |> Option.get
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                         Installation = [ Role.CaseHandler ]
                     }

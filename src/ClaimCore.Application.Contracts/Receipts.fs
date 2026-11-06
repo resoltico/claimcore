@@ -21,15 +21,38 @@ type CaseReceipt =
         Snapshot: SnapshotDisclosure
     }
 
-type AuthorityReceipt =
+type AuthorityReceiptEffect =
     {
-        TargetActorId: ActorId
         Act: AuthorityKind
+        Position: LedgerPosition
     }
 
 [<RequireQualifiedAccess>]
+type AuthorityTargetDisclosure =
+    | Disclosed of ActorRef
+    | Withheld of ActorId
+
+module AuthorityTargetDisclosure =
+    let actorId =
+        function
+        | AuthorityTargetDisclosure.Disclosed actor -> actor.ActorId
+        | AuthorityTargetDisclosure.Withheld actor -> actor
+
+type AuthorityReceipt =
+    {
+        Effects: AuthorityReceiptEffect list
+        TargetActor: AuthorityTargetDisclosure
+        Act: AuthorityKind
+    }
+
+/// Historical receipt bounds follow the retained operation format, not current authoring admission.
+module AuthorityReceipt =
+    [<Literal>]
+    let MaximumEffects = 50
+
+[<RequireQualifiedAccess>]
 type WorkDisclosure =
-    | Disclosed of CaseWorkSnapshot
+    | Disclosed of CaseWorkReadModel
     | Withheld
     | Erased
 
@@ -81,7 +104,8 @@ type OperationReceipt =
         Position: LedgerPosition
         Subject: ReceiptSubject
         RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
+        RecordedBy: ActorRef
+        Basis: WorkDateBasis
     }
 
 type ChangeSummary =

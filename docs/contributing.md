@@ -127,8 +127,12 @@ request and response types, so dispatch can invoke the route without recovering 
 ### Read and write transactions
 
 [IReadTx](../src/ClaimCore.Application/LedgerStorePort.fs) supplies primitives over one consistent snapshot.
-`IWriteTx` adds the head, nonce, append, projection and fence primitives. The PostgreSQL adapter constructs
+`IWriteTx` adds the head, fresh payload-nonce provider, append, projection and fence primitives. The PostgreSQL adapter constructs
 it after acquiring the ledger head lock.
+Accepted authority operations may contain up to 50 contiguous effects. Each effect has an independently
+generated payload nonce; all effects and projections commit together. Operation lookup validates the
+complete group, and receipts/checkpoints use its final effect position. Payload erasure preserves
+accepted metadata but can make exact replay unavailable.
 
 ### Request gate
 
@@ -202,6 +206,9 @@ producer. Custom output directories contain only contract artifacts. Core messag
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
 Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
+Shared UI components import the styles their markup requires. Styles imported only by a lazy view are
+not available on cold entry to another view. Check shared fact rendering through direct Recovery and
+review routes as well as the case workspace; a prior visit can mask a missing stylesheet dependency.
 Published failure/recovery journeys exercise missing chunks, document replacement and offline draft
 preservation in each supported browser engine. Build or schema checks alone do not cover these paths.
 
@@ -227,6 +234,52 @@ matrices and CLI frames provide independent expectations. Hand-authored durable 
 [sources.json](../tests/fixtures/oracle/sources.json) define inputs and acceptance expectations; the
 [Python oracle](../tests/fixtures/oracle/generate_vectors.py) derives their bytes and hashes without calling
 the implementation. Keep those source cases independent of production codecs and validators.
+
+## Core presentation and copy
+
+[Descriptor](../src/ClaimCore.Protocol/Presentation/Descriptor.fs) owns typed business presentation:
+case headlines, attention, recommendations, change summaries and actor names come from the core.
+CLI and web adapt inputs and render these values; they must not rank actions or recreate business rules.
+Case and reminder view predicates, rows and counts use the same authorized read snapshot. Exercise
+both the memory contract and PostgreSQL implementation when changing a view.
+
+[TimelineOverview](../src/ClaimCore.Application/TimelineOverview.fs) selects concise recorded events and
+highlight references from validated historical effects after disclosure and conflict-range filtering.
+Full differences remain authoritative. The generated `resolveTimelineHighlights` helper only resolves
+those references; renderers must not choose other fields or reconstruct historical reminder actions.
+Keep maximal retained-value replies within the existing 4 MiB cap, including 50-entry conflict pages.
+
+Catalog field and input metadata distinguish labels, short GUI hints and precise rules. Rules retain
+wire syntax for CLI help, documentation and information tips. GUI diagnostics use the generated GUI
+message map rather than displaying CLI syntax. Consequence and completion identities are core metadata;
+renderers must not infer them from effect names.
+
+The machine-readable [glossary](../src/ClaimCore.Protocol/Messages/Localization/glossary.json) owns the
+EN/LV/AR seed terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
+registers, banned GUI tokens and glossary alignment during generation and `--check`. Add a negative
+control when changing these checks. Latvian and Arabic linguistic changes need native-speaker review;
+record outstanding review in the PR until a reviewer has supplied it.
+
+## Theme and layout
+
+[theme/tokens.json](../web/src/theme/tokens.json) owns the DTCG color tokens and OKLCH ramp configuration.
+Run `npm --prefix web run theme` to regenerate [tokens.css](../web/src/theme/tokens.css), then
+`npm --prefix web run theme -- --check` to check it. Keep color literals in the token source and its
+generated stylesheet. Components use semantic tokens, not primitive palette references. Green and blue
+each support light and dark modes, system selection, stronger contrast and forced colors.
+
+`npm --prefix web run lint` includes [design lint](../web/scripts/design-lint.mjs): no stray color
+literals, component primitive references, viewport queries outside `ui/layout.css`, or pixel font sizes.
+Use the shared `ui/` controls and layout primitives; [breakpoints](../web/src/theme/breakpoints.ts) and
+[layout.css](../web/src/ui/layout.css) own responsive boundaries. Keep CSP-compatible control behavior
+qualified in Chromium, Firefox and WebKit.
+
+The [contrast test](../web/tests/unit/theme/contrast.test.ts) checks all four accent/mode combinations
+and includes a negative control against the retired palette. Run it with
+`npm --prefix web run test:unit -- tests/unit/theme/contrast.test.ts`. Passing that test does not replace
+keyboard, axe, forced-colors or browser qualification. Preferences belong only in SettingsPanel,
+reachable through `/settings` and the sign-in footer dialog; keep bootstrap and hydrated theme choices
+consistent without relaxing the strict CSP.
 
 ## Browser boundaries and lint
 
@@ -263,22 +316,49 @@ the concrete reason described above.
 
 ## Verification
 
-Choose checks by the changed behavior and the claim being made:
+Use three phases, and select the scope before starting a command:
 
-| When | Scope |
-| --- | --- |
-| Editing | Focused tests, builds or named stages for affected behavior; use existing watch commands where helpful. |
-| Broader checkpoint | `bash eng/verify.sh --fast` runs lint, native units and the full frontend stage. |
-| Implementation PR ready for review | `bash eng/verify.sh` runs the ordinary full gate; CI qualifies the declared platform matrix. |
-| Documentation-only change | Check affected links, commands and claims; run relevant documentation checks. Product or generated-output changes need their applicable checks. |
-| Performance investigation | Select the workload and evidence needed; see [Growth](#growth). |
+1. **Edit and diagnose.** Run affected tests and the cheapest check that can reject the change. After a
+   declaration change, regenerate/check contracts and compile the actual consumers and authored fixtures
+   before starting containers. Inspect each command's exit status; a later successful command does not
+   make an earlier failed command pass.
+2. **Check a coherent checkpoint.** Use `bash eng/verify.sh --fast` when the source and consumers agree.
+   For browser work, inspect one populated small-screen case and one RTL view with the full shared axe
+   helper before expanding coverage. Batch stale selector/DTO/route/consent ports; do not discover each
+   one by replaying a complete acceptance suite's already-passing prefix.
+   After a qualification failure, stop full reruns. Diagnose the failed path, inspect related consumers
+   for the same cause, and pass the affected focused checks before resuming qualification. Repeat a
+   full run for diagnosis only when the failure requires its conditions; state that reason first.
+3. **Qualify stable source.** Run the required full stages and platform matrix after relevant changes
+   have stopped. Choose an execution owner: CI can supply the stages/platforms it actually exercises;
+   use local full verification when required or when CI cannot supply that evidence. Avoid repeating the
+   same qualification locally and in CI solely because both are available.
 
-There is no automatic full-gate requirement after each edit or commit. Explicit task
-acceptance criteria still apply. Reuse results only while their relevant source, configuration, dependencies
-and execution conditions remain applicable; rerun affected checks after later changes. Preserve failures
-and their resolution rather than treating a later pass as evidence that the earlier run never failed.
-Required clean or independent verification remains required. Local checks establish only their exercised
-scope and platform; focused runs do not qualify an unrun complete stage or CI matrix.
+| Change or question | First useful check | Expand when |
+| --- | --- | --- |
+| Native behavior | Affected native test list with current compiled inputs | Interactions or a broader checkpoint justify the full stage |
+| Wire/catalog declaration | Generator/check, compiler/type checks, authored corpus | Producers and consumers agree, before published integration |
+| Browser behavior or stale test | Affected unit file or focused published diagnostic | Relevant behavior passes on the current source |
+| Layout or copy | One representative populated frame; full axe and relevant bounds | A final visual set or another engine is needed for the claim |
+| Documentation only | Links, command/behavior claims, existing documentation checks | Product or generated inputs also changed |
+| Performance | An existing targeted workload; see [Growth](#growth) | Evidence or explicit acceptance requires the full comparison |
+
+There is no automatic full-gate requirement after each edit or commit. Reuse passing evidence while its
+relevant source, configuration, dependencies, platform and purpose still apply. After a change, rerun
+what it can invalidate, then complete the final required scope once. Keep security, CSP, admission,
+frozen-byte/ownership and hard resource limits intact. A failed check needs diagnosis; changing the
+method or scope does not turn its previous failure into a pass.
+
+Explicit task acceptance and required clean/independent checks still apply. Track additional requirements
+(such as a full growth comparison or field retest) separately from the ordinary `Gate`. Focused runs,
+smoke selections and partial matrices establish only their reported scope, never unrun qualification.
+
+CI enforces the order: published browsers wait for frontend checks, and a full comparison waits for a
+successful ordinary `Gate`. The workflow stage rejects regressions in those dependencies and partial
+browser qualification before starting tools or containers. The matrix plan also checks its required
+tuples and counts during cheap frontend tests and spec collection, before creating its dataset.
+Direct local commands do not enforce prior check completion; apply the same sequencing when invoking
+them. CI dependency checks prevent those workflow regressions, not every possible manual misuse.
 
 After [first checkout](#first-checkout), examples for focused iteration are:
 
@@ -297,9 +377,65 @@ is Debug. Build the affected application projects in Release before a direct foc
 so a missing Release input fails before that setup cost.
 Published Web tests also need current frontend assets from `npm --prefix web ci` followed by
 `npm --prefix web run build`; the acceptance stage prepares those assets.
+Reuse installed dependencies while the lockfile/toolchain inputs are unchanged. A test-selector-only
+edit needs its test checks, not another product asset build or dependency installation.
 Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
+
+Complete published-browser qualification has a 40-minute Playwright execution safety cap for the
+expanded workflow and design-matrix inventory. `BrowserTests.fs` owns scope limits (complete 40,
+diagnostic 20, smoke 2 minutes), passes them explicitly to Playwright, and gives its native process
+one further minute for reporting and cleanup. The acceptance project has a 60-minute MTP bound for one
+explicit engine, with 70 minutes including CI setup. The default local invocation sequences all three
+engines once under a 150-minute project bound. These capacity bounds do not change per-test
+limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
+is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
+Secondary-principal specs acquire real OIDC sessions in their own `beforeAll` setup under the existing
+login-admission wait. Keep those cookies within the spec that acquired them so authentication
+deadlines remain meaningful during long runs.
+
+For concrete browser failures, select existing specs and one engine. With current Release
+applications/test assembly and frontend assets already built:
+
+```sh
+CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=chromium \
+CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE=diagnostic \
+CLAIMCORE_ACCEPTANCE_BROWSER_SPEC=design-matrix.spec.ts \
+dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
+  --configuration Release --no-build --no-restore --zero-tests-policy=strict \
+  --filter 'FullyQualifiedName~published browser diagnostic' \
+  -- --settings=eng/expecto.acceptance.runsettings
+```
+
+This starts the same isolated fixture and keeps the existing hard limits, but runs only the selected
+files. `CLAIMCORE_ACCEPTANCE_BROWSER_SPEC` also accepts a comma-separated list of unique exact
+existing basenames (no spaces or paths). Diagnostics collect all selected failures with
+`--max-failures=0`, under the unchanged 20-minute, one-worker, zero-retry limits. Selection is
+validated before fixture startup; every selected test must pass without skips or retries, and reports
+explicitly state incomplete qualification. Selected specs share mutable fixture state, so later failures
+may be cascades: inspect chronology and current state before treating them as independent defects.
+To run one existing test within one spec, also set `CLAIMCORE_ACCEPTANCE_BROWSER_CASE` to its exact
+literal title (at most 256 Unicode scalars, unpadded and without controls). The runner escapes it as an
+exact suffix and validates exactly one existing file/title/engine identity with Playwright `--list`
+before fixture startup. Completion must match that identity, pass without skips or retries, and reports
+include `selectedCase` with `fullQualification=false`; it does not establish whole-file coverage.
+Existing selected-file artifact requirements remain; select the case that produces them.
+The ordinary acceptance gate refuses diagnostic selection, including case selectors. Use this path to diagnose the affected
+spec instead of restarting complete suites and replaying unrelated passing tests.
+
+For a Linux-only browser failure, dispatch the existing CI workflow with `browser_spec` set to that
+basename and optional `browser_engine=chromium|firefox|webkit` (default Chromium), for example
+`gh workflow run ci.yml --ref BRANCH -f browser_spec=presentation-foundations.spec.ts -f browser_engine=webkit`.
+This runs only the explicitly partial one-file diagnostic; qualification, growth and `Gate` jobs are
+skipped. Invalid or ambiguous spec names and unknown engines fail before setup. A nondefault engine
+without `browser_spec` fails configuration and blocks qualification jobs; ordinary dispatches keep full
+qualification. Chromium is also installed for CLI authentication bootstrap when the selected test
+engine differs. Add `-f browser_case='en 640px green light at 200% zoom'` with
+`-f browser_spec=design-matrix.spec.ts` to diagnose only that existing planned dimension. It still
+requires all 29 scene loads and 30 checks, with the expected captures, and remains partial.
+Case-only input is rejected before qualification setup. The existing diagnostic execution and outer
+time limits are unchanged.
 
 For broader verification:
 
@@ -354,6 +490,11 @@ No later passing check erases a failed run. Cleanup must preserve original failu
 
 Failed publication retains bounded stdout/stderr in the printed private fixture directory. Generated
 published binaries are removed separately; diagnostic files and other unique failure inputs remain.
+Published Web services drain logs for their fixture lifetime, retaining at most the final 8 MiB of
+stdout and 1 MiB of stderr. Their private `*.capture.json` records total and retained byte counts,
+truncation, EOF and cleanup completion; verification reports retain only this counts-and-flags metadata.
+A retained tail is not a complete log. Fixture teardown bounds
+process termination and pipe draining. Command output limits and execution deadlines remain strict.
 These directories can contain credentials and are not public report attachments. Review them privately,
 then remove only the owned fixture after its useful evidence is secured. Failure retention can grow disk
 use; it does not authorize deleting active fixtures, shared caches or unrelated containers.
@@ -386,107 +527,35 @@ CLAIMCORE_UPDATE_GOLDENS=1 bash eng/verify.sh unit
 Update mode refuses when `CI` is set, including an empty value. It writes only declared fixture
 basenames and always refuses the three permanent vector files. It supplies omitted positive fields
 from the builders and prepares CLI frames from their authored arguments; it leaves invalid examples
-unchanged. Run the ordinary gate afterwards. Updating goldens never resolves permanent-format failures.
+unchanged. Rerun the affected byte/contract tests without update mode, then complete the final required
+qualification. Updating goldens never resolves permanent-format failures.
 
 ## Growth
 
-Growth measurements are separate from the ordinary verification gate. They are optional unless required
-by task acceptance criteria or an agreed release plan; a release does not automatically require both
-growth commands. Choose the smallest existing scope that answers the concrete performance question.
-State the reference and workloads for a comparison. Preserve evidence from running work; a policy change
-does not resolve an observed regression or invalidate an agreed acceptance criterion.
+Performance measurements are optional unless a task or release plan requires them. They are separate
+from the ordinary `Gate`. State the concrete question, affected workload and reference before starting;
+use the smallest existing diagnostic that answers it. A correction to UI copy, selectors or formatting
+does not by itself call for a new growth run.
 
-| Purpose | Command | Evidence |
+| Need | Existing command | Claim |
 | --- | --- | --- |
-| Focused write observation | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | One current-source write profile and three cardinality populations; no reads or reference comparison. |
-| Focused comparison | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Three alternating pairs for that write profile and cardinality controls; diagnostic only. |
-| Full comparison | `bash eng/verify.sh growth-compare REF` | Three alternating pairs with relative budgets over shared workloads. |
-| Full observation | `bash eng/verify.sh growth` | The complete current-source workload set; no reference ratios. |
+| One write profile | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | Current-source observation, not full qualification |
+| Investigate a relative regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
+| Required full comparison | `bash eng/verify.sh growth-compare REF` | Three same-host pairs, six complete runs |
 
-Single-profile `growth` can exit zero while its report marks qualification incomplete: only the selected
-observation passed. Diagnostic `growth-compare` returns 2 when its budgets pass, as described below.
-Neither result qualifies unmeasured workloads. Choose a broader run when needed by the question or agreed
-acceptance scope; retain workload identity and all comparison checks when claiming a comparison result.
+A full comparison repeatedly seeds large populations and may take hours. Start it after relevant
+product code and workload fingerprints are stable and ordinary correctness qualification has passed
+for those inputs. CI enforces this with the ordinary `Gate` dependency; for a local comparison, first
+confirm applicable passing correctness evidence. Do not run a
+full observation and a full comparison merely for duplicate coverage. Reuse existing results only when
+their inputs, platform and question still apply; changed relevant code requires new evidence. Explicit
+acceptance criteria remain binding, and a diagnostic or incomplete run never becomes a full pass.
 
-Run `bash eng/verify.sh growth-compare REF` to compare against a commit. It captures the candidate's
-HEAD and tracked working changes, retaining the source patch and its SHA-256. It refuses any nonignored
-untracked files: stage intended new source files and move unrelated scratch files outside the checkout.
-It refuses source changes during capture. Both source-stable inputs build in disposable
-detached worktrees with locked restore. The comparison alternates
-reference → candidate three times. Write and cardinality profiles use fresh PostgreSQL containers;
-read profiles share the fresh database for their case population. The compared set
-is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality comparison, and read profiles
-at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
-authority history and actor-filtered authority history. Reminder-feature measurements comprise seven
-profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
-and global work overview. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
-exact set. Both inputs execute their selected workloads. Only shared workload keys yield ratios; unmatched profiles
-are reported as not applicable.
-
-For a targeted diagnostic or an injected-delay control, the existing `CLAIMCORE_GROWTH_PROFILE`
-selector accepts `10000:1`, `100000:1` or `100000:16`. It still runs three alternating pairs and the
-normal growth harness's three cardinality controls, without read workloads. The report states that
-qualification is incomplete: exit 1 means a budget/check failed, and exit 2 means diagnostic budgets
-passed but the required full set was not run. A diagnostic can never return qualification success.
-Reduced runs do not establish a full comparison pass.
-
-Comparison fails when a candidate median's write/read throughput is below 0.85×, or its p95, p99 or verification
-time exceeds 1.30× the reference. Reports retain all six raw runs, medians, ratios and workload
-fingerprints in JSON and Markdown under `artifacts/verification/growth-compare-*` (or beneath
-`CLAIMCORE_TEST_REPORT_DIRECTORY`). These are same-host, same-session relative measurements, not an SLA.
-Different workload fingerprints refuse comparison, naming the differing members.
-
-`comparison-progress.json` is an atomic observation of preparation and alternating child runs. It records
-source and harness identities, completed side count and the active owned checkout/report paths; it never
-reports a partial pass. `comparison.json` remains the final verdict, including cleanup failures. Current
-harnesses publish `artifacts/verification/growth/*/read-progress.json` in the checkout with seed/measurement
-phase, counts and the last completed read report. Each completed read report is published immediately;
-`run.json` bookkeeping can lag until the population fixture has been disposed. Incomplete progress is not
-qualification evidence and does not permit skipping outstanding workloads.
-
-Read reports include measured latency samples in observation order, excluding warmups, with the percentile
-index rule recorded beside them. Comparison reports add informational per-pair ratios, run spread and
-available sample evidence for latency percentiles. Missing reference samples are reported rather than
-reconstructed. These observations do not change sampling, budgets or the median comparison rule. Retain
-the source patch, harness patches, build logs and workload fingerprints together when reproducing a
-result; a source hash alone does not identify the assembly loaded by a separate diagnostic.
-
-A reference without workload fingerprints requires a recorded manual review of act cycles, populations,
-authored values and read queries. Set `CLAIMCORE_GROWTH_EQUIVALENCE_FILE` to a JSON review with exact
-`reference` and `candidate` commit IDs, `candidatePatchSha256` when working changes are present,
-a `workloads` array of reviewed keys (for example
-`write/10000/1`, `write/100000/1`, `write/100000/16`, `cardinality/1000`, `read/search/100000`,
-`read/filtered/100000`), and a `review` explaining the evidence. Missing or mismatched reviews refuse
-before building. This is explicit manual equivalence evidence, not an inferred fingerprint match.
-Single-profile diagnostics also require review of `cardinality/1` and `cardinality/100`.
-
-The comparison labels its disposable test containers and, when needed, adapts reference harness selection.
-Every adaptation is retained as a patch in the report. Product code stays at the recorded commit.
-The comparison removes its worktrees, build outputs and labelled containers on success or failure,
-while preserving reports and failure output.
-
-The full `bash eng/verify.sh growth` observation includes nine write-contention profiles,
-three cardinality comparisons and search/filtered, notification-order, summary and explicit-work
-follow-up/summary workloads at 1k, 10k and 100k cases. At the
-100k case population, global and actor-filtered authority-history reads also run after 100k additional
-grant/revoke events. Those events are seeded after the existing case-query measurements, preserving
-their workload inputs and fingerprints. The authority workloads have their own declared fingerprints.
-After those common measurements, one open case per thousand receives explicit responsibility and a past
-Pending reminder based on the database business date. Mine/Overdue/FOLLOW_UP pages and filtered summaries check
-independently named cases, account identity, dates and counts before recording their separate latency
-samples. High-fanout workloads then populate 100/1,000/10,000 Pending and completed reminders on one
-case, independently checking queue continuations, bounded current views, unique financial totals and
-global attention. The `reminder-derived-follow-up` and `reminder-derived-work-summary` profiles use the
-independent Work/Reminder seed. Only profiles with matching workload keys and fingerprints yield ratios;
-common read/write/cardinality comparisons retain their budgets.
-[GrowthQualificationTests](../tests/ClaimCore.IntegrationTests/GrowthQualificationTests.fs) owns sequencing
-and completed-report checks; its `GrowthReadWorkloads` helper owns read populations and latency reports. Selecting one `CLAIMCORE_GROWTH_PROFILE` marks qualification
-incomplete. Report actual counts, throughput, p50/p95/p99 latency and verifier memory/time. Measurements
-establish neither an SLA nor constant total-system memory.
-
-The gate bounds managed completed-report retention, not total caches, image or artifact use. Protect active
-runs, measure resource use and reclaim only owned temporary resources. Locked NuGet/npm restore and audits
-still run with caches; shared caches are not disposable task resources.
+Keep the existing throughput, latency, verification and resource limits. Inspect failures and current
+progress before repeating a run; fix a bad prerequisite or method rather than weakening a check.
+For workload definitions, source capture, reference equivalence, reports and cleanup, see
+[Performance measurements](performance.md). The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs)
+owns the exact populations and keys.
 
 ## Dependencies
 

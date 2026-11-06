@@ -46,7 +46,12 @@ let private setup (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 3) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 3)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -110,6 +115,8 @@ type internal PausedPageStore
             failtest "Page release was not signalled"
 
     interface IStore with
+        member _.Context query = inner.Context query
+
         member _.Write
             ({
                  WriteOperation.Work = work
@@ -135,6 +142,7 @@ type internal PausedPageStore
                         (fun tx ->
                             work
                                 { new IReadTx with
+                                    member _.AccessRequestPage query = tx.AccessRequestPage query
                                     member _.ObservedAt = tx.ObservedAt
                                     member _.Maintenance() = tx.Maintenance()
 
@@ -180,13 +188,25 @@ type internal PausedPageStore
                                         tx.WorkSummaries(ids, today)
 
                                     member _.AssignedAccounts pairs = tx.AssignedAccounts pairs
+
+                                    member _.ResponsibilityCounts(selection, actors) =
+                                        tx.ResponsibilityCounts(selection, actors)
+
                                     member _.ReminderPage query = tx.ReminderPage query
 
                                     member _.WorkOverview(selection, mine) =
                                         tx.WorkOverview(selection, mine)
 
+                                    member _.CaseViewCounts selection = tx.CaseViewCounts selection
+
+                                    member _.ReminderViewCounts selection =
+                                        tx.ReminderViewCounts selection
+
                                     member _.ActivityPage query = tx.ActivityPage query
-                                    member _.FindEntry id = tx.FindEntry id
+                                    member _.TimelinePage query = tx.TimelinePage query
+                                    member _.CaseStageFacts id = tx.CaseStageFacts id
+                                    member _.PreviousEntries entries = tx.PreviousEntries entries
+                                    member _.FindOperation id = tx.FindOperation id
                                     member _.NonAcceptance key = tx.NonAcceptance key
 
                                     member _.CasePage
@@ -237,12 +257,16 @@ type internal PausedPageStore
                                     member _.ActorPage
                                         ({
                                              ActorPageQuery.AfterActorId = after
+                                             Role = role
+                                             Text = text
                                              Limit = limit
                                          })
                                         =
                                         tx.ActorPage(
                                             {
                                                 ActorPageQuery.AfterActorId = after
+                                                Role = role
+                                                Text = text
                                                 Limit = limit
                                             }
                                         )
@@ -262,6 +286,8 @@ type internal PausedPageStore
                                             }
                                         )
 
+                                    member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids
+                                    member _.ActorRefs ids = tx.ActorRefs ids
                                     member _.FindActor id = tx.FindActor id
                                     member _.AssigneePage query = tx.AssigneePage query
                                     member _.EnabledHumanOwners() = tx.EnabledHumanOwners()

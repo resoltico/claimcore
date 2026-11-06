@@ -19,7 +19,7 @@ open ClaimCore.TestSupport.TestServerFixture
 
 let private authorityBody =
     Encoding.UTF8.GetBytes(
-        $"""{{"kind":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER"}}}}"""
+        $"""{{"kind":"AUTHORITY","operationId":"{operationId}","target":{{"kind":"HUMAN","issuer":"https://issuer.example.test/realm","subject":"person"}},"act":{{"kind":"REGISTER","profile":{{"displayName":"Host transport person","contact":null}}}}}}"""
     )
 
 let private body name =
@@ -53,6 +53,7 @@ let private actorTarget endpoint (response: byte array) =
             (result.RootElement
                 .GetProperty("outcome")
                 .GetProperty("data")
+                .GetProperty("actor")
                 .GetProperty("actor")
                 .GetProperty("actorId")
                 .GetString())
@@ -175,7 +176,10 @@ let private outcomes () =
                 [
                     ExecuteResult.Accepted accepted, "ACCEPTED"
                     ExecuteResult.AlreadyAccepted accepted, "ALREADY_ACCEPTED"
-                    ExecuteResult.Rejected(Refusal.Case CaseRefusal.CaseVoided), "REJECTED"
+                    ExecuteResult.Rejected(
+                        Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided)
+                    ),
+                    "REJECTED"
                     ExecuteResult.Failed CoreFault.StoreUnavailable, "FAILED"
                     ExecuteResult.OutcomeUnknown, "OUTCOME_UNKNOWN"
                 ]
@@ -331,23 +335,45 @@ let private authorityPreview () =
         match Codec.decode 100000 Api.operationPreview.Output response with
         | Ok {
                  OperationId = id
-                 Outcome = Outcome.Succeeded(Previewed.Reviewed(OperationReview.Authority review))
+                 Outcome = Outcome.Succeeded(PresentedPreviewed.Reviewed {
+                                                                             Subject = PresentedReviewSubject.Authority review
+                                                                             Presentation = presentation
+                                                                         })
              } ->
             Expect.equal id operationId "Original operation identity"
             Expect.isNone review.Target "Registration has no accepted target yet"
             Expect.isFalse review.Before.Enabled "Registration begins absent"
             Expect.isTrue review.After.Enabled "Registration proposes enabled authority"
+
+            Expect.isTrue
+                (presentation.Changes |> List.exists (fun change -> change.Key = "enabled"))
+                "The real ApiRoutes adapter supplies core presentation"
+
+            Expect.isTrue
+                (presentation.Changes |> List.exists (fun change -> change.Key = "profileName"))
+                "Registration profile is a typed review change"
         | _ -> failtest "Expected an authority review"
 
         Expect.equal fixture.EntryCount original "Preview records nothing"
         let! status, response = host.Call("operation.execute", authorityBody, token)
         Expect.equal status 200 "Execute the reviewed input unchanged"
 
-        Expect.isOk
-            (Codec.decode 100000 Api.operationExecute.Output response)
-            "Shared execution reply"
+        match Codec.decode 100000 Api.operationExecute.Output response with
+        | Ok {
+                 Outcome = ExecuteResult.Accepted {
+                                                      Subject = ReceiptSubject.Authority receipt
+                                                  }
+             } ->
+            Expect.equal
+                (receipt.Effects |> List.map _.Act)
+                [ AuthorityKind.Register; AuthorityKind.SetProfile ]
+                "REGISTER commits the identity and erasable profile atomically"
+        | _ -> failtest "Expected shared authority execution reply"
 
-        Expect.equal fixture.EntryCount (original + 1) "Execution records once"
+        Expect.equal
+            fixture.EntryCount
+            (original + 2)
+            "One registration operation has exactly two ledger effects"
     }
     |> _.GetAwaiter().GetResult()
 
@@ -425,7 +451,15 @@ let private principalAdmission () =
                             issuer = issuer
                             subject = subject
                         |}
-                    act = {| kind = "REGISTER" |}
+                    act =
+                        {|
+                            kind = "REGISTER"
+                            profile =
+                                {|
+                                    displayName = "Principal boundary person"
+                                    contact = null
+                                |}
+                        |}
                 |}
 
         let samples =

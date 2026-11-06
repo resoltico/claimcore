@@ -1,3 +1,4 @@
+import { FieldHelp } from "./FieldHelp";
 import { CatalogDate } from "./CatalogDate";
 import { CatalogCode } from "./CatalogCode";
 import { CountryHint } from "./CountryHint";
@@ -96,10 +97,12 @@ export const CatalogField = ({
       value={value}
       onChange={onChange}
     >
-      <Label>{p.fieldLabel(field.name)}</Label>
+      <div className="field-label-row">
+        <Label>{p.fieldLabel(field.name)}</Label>
+        <FieldHelp label={p.fieldLabel(field.name)} ruleId={field.ruleId} />
+      </div>
       <ScalarControl field={field} name={name} />
       <Text slot="description" className="field-description">
-        <small>{p.fieldMeaning(field.name)}</small>
         <small>{p.hint(field)}</small>
         <ScalarCounter field={field} value={value} />
         {field.name === "incidentCountry" ? <CountryHint code={value} /> : null}

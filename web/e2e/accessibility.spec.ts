@@ -2,6 +2,7 @@ import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 
+import { expectKeyboardContained } from "./localization-support";
 import { noHorizontalOverflow } from "./layout-support";
 import { reviewDraft, startOpen } from "./case-workflow";
 import { expectAccessible, login, progress } from "./session-helpers";
@@ -16,7 +17,9 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   await progress("a11y-media-ready");
   await page.goto("/", { waitUntil: "commit", timeout: 10_000 });
   await progress("a11y-document-ready");
-  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+  ).toBeVisible();
 };
 
 test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports", async ({
@@ -36,20 +39,27 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await progress("a11y-editor");
   await expectAccessible(page);
   await reviewDraft(page);
-  const review = page.getByRole("dialog", { name: "Review changes" });
+  const review = page.getByRole("dialog", { name: "Open a case", exact: true });
   await expect(review).toBeVisible();
   await progress("a11y-review");
   await expectAccessible(page);
-  await review.getByRole("checkbox").focus();
-  await page.keyboard.press("Space");
-  await review.getByRole("button", { name: "Record changes" }).focus();
+  await expect(review.getByRole("checkbox")).toHaveCount(0);
+  await expectKeyboardContained(page, review);
+  await review.getByRole("button", { name: "Open a case", exact: true }).focus();
   await page.keyboard.press("Enter");
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await progress("a11y-receipt");
   await expectAccessible(page);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
-  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
-  await page.locator(".history-list summary").first().click();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
+  const timeline = page.locator(".case-timeline-panel");
+  await expect(timeline).toHaveAttribute("aria-busy", "false");
+  const facts = timeline.getByRole("button", { name: "Facts", exact: true });
+  await facts.click();
+  await expect(facts).toHaveAttribute("aria-pressed", "true");
+  await expect(timeline).toHaveAttribute("aria-busy", "false");
+  await expect(timeline.locator(".timeline-entry")).toHaveCount(1);
+  await expect(timeline.locator(".timeline-entry")).toContainText("Synthetic claimant");
+  await timeline.locator(".timeline-entry details > summary").click();
   await progress("a11y-history");
   await expectAccessible(page);
   await page.setViewportSize({ width: 640, height: 900 });
@@ -60,9 +70,11 @@ test("keeps published login, editor, review, receipt and history accessible at n
   await noHorizontalOverflow(page, "zoom");
   await page.context().clearCookies();
   await page.reload({ waitUntil: "commit" });
-  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in", exact: true })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toHaveCount(0);
+  await expect(page.locator("#case-detail-title")).toHaveCount(0);
   await expect(page.locator("section.receipt")).toHaveCount(0);
   await progress("a11y-expired-session");
   await expectAccessible(page);

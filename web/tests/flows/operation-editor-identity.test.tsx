@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
@@ -39,6 +40,7 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
 const preparedResponse = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
         before: null,
@@ -51,7 +53,7 @@ const preparedResponse = () =>
             fields,
           },
         },
-        changes: [],
+
         context: runtime,
       },
     },
@@ -68,8 +70,9 @@ const validationRefusal: Diagnostic = {
 };
 const staleRefusal: Diagnostic = {
   code: "REVISION_CONFLICT",
-  action: "READ_CURRENT",
+  action: "REVIEW_LATEST",
   actualRevision: 2,
+  changes: { kind: "WITHHELD" },
 };
 const rejectedResponse = (rejection: Diagnostic) =>
   response("operation.preview", "REJECTED", rejection);
@@ -80,17 +83,14 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
     .mockImplementationOnce(previewForRequest(preparedResponse()))
     .mockResolvedValueOnce(refusedResponse())
     .mockResolvedValueOnce(rejectedResponse(validationRefusal));
+  vi.spyOn(crypto, "randomUUID").mockReturnValueOnce("20000000-0000-4000-8000-000000000001");
   render(editor(null, "OPEN"));
   fillRegistrationInputs({
     claimantName: "Synthetic A",
   });
   await user.click(getButton("Review changes"));
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
   selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
@@ -101,7 +101,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(getButton("Review changes"));
   expect(await screen.findByRole("alert")).toHaveTextContent("Input problems: 1.");
   expect(claimant).toHaveAccessibleDescription(
-    "Name of the person or company making the claim.Up to 200 characters. A non-blank value is required.",
+    "The person or company making the claim. A non-blank value is required.",
   );
   expect(claimant).toHaveAttribute("aria-invalid", "true");
   expect(sentDraft(0).operationId).not.toBe(sentDraft(2).operationId);
@@ -125,7 +125,8 @@ it("retries the frozen request after delivery loss despite a changed current rev
   });
   vi.mocked(globalThis.fetch)
     .mockRejectedValueOnce(new Error("Synthetic delivery loss"))
-    .mockResolvedValueOnce(rejectedResponse(staleRefusal));
+    .mockResolvedValueOnce(rejectedResponse(staleRefusal))
+    .mockResolvedValueOnce(response("case.get", "SUCCEEDED", { ...current, revision: 2 }));
   const view = render(editor(current, "CLOSE"));
   await user.click(getButton("Review changes"));
   await screen.findByText(/could not be reached/u);
@@ -140,13 +141,11 @@ it("retries the frozen request after delivery loss despite a changed current rev
   );
   await user.click(getButton("Review changes"));
   await waitFor(() => {
-    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(2);
+    expect(vi.mocked(globalThis.fetch)).toHaveBeenCalledTimes(3);
   });
   expect(sentDraft(1)).toEqual(sentDraft(0));
   expect(sentDraft(1).expectedRevision).toBe(1);
-  expect(
-    await screen.findByText("Read the current case before making a changed request."),
-  ).toBeVisible();
+  expect(await screen.findByText("This case has changed")).toBeVisible();
 });
 const paidCase: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",

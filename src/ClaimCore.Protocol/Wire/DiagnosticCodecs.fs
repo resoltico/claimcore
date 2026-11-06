@@ -49,6 +49,13 @@ module DiagnosticCodecs =
                  |> field "maximumIntegerDigits" fst (count 1L)
                  |> field "maximumFractionalDigits" snd (count 0L))
             variant
+                (codeName (nameof Violation.GrantCountRange))
+                Violation.GrantCountRange
+                (function
+                | Violation.GrantCountRange value -> Some value
+                | _ -> None)
+                (record id |> field "maximumGrants" id (count 1L))
+            variant
                 (codeName (nameof Violation.PageLimitRange))
                 Violation.PageLimitRange
                 (function
@@ -76,10 +83,7 @@ module DiagnosticCodecs =
                     ]
 
             Bindings.walk definitions selection RequestCodecs.operationInput.Schema
-            |> List.choose (function
-                | BindingNode.Input input -> Some input
-                | _ -> None)
-            |> List.length
+            |> Bindings.inputWidth
 
         let caseWidths =
             CaseActKind.all
@@ -171,9 +175,20 @@ module DiagnosticCodecs =
         )
 
     let private caseVariants =
-        familyVariants Refusal.Case (function
+        (familyVariants Refusal.Case (function
             | Refusal.Case value -> Some value
-            | _ -> None)
+            | _ -> None))
+        @ [
+            variant
+                "NOT_OFFERED"
+                (CaseRefusal.NotOffered >> Refusal.Case)
+                (function
+                | Refusal.Case(CaseRefusal.NotOffered state) -> Some state
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.ReviewLatest
+                 |> field "state" id (VocabularyCodec.create CaseHeadline.vocabulary))
+        ]
 
     let private authorityVariants =
         familyVariants Refusal.Authority (function
@@ -181,18 +196,83 @@ module DiagnosticCodecs =
             | _ -> None)
 
     let private accessVariants =
-        familyVariants Refusal.Access (function
+        (familyVariants Refusal.Access (function
             | Refusal.Access value -> Some value
-            | _ -> None)
+            | _ -> None))
+        @ [
+            variant
+                "NOT_AUTHORIZED"
+                (AccessRefusal.NotAuthorized >> Refusal.Access)
+                (function
+                | Refusal.Access(AccessRefusal.NotAuthorized required) -> Some required
+                | _ -> None)
+                (record id
+                 |> actionField RecommendedAction.AskForAccess
+                 |> field "required" id (VocabularyCodec.create Capability.vocabulary))
+        ]
 
     let private reminderVariants =
-        familyVariants Refusal.Reminder (function
+        ((familyVariants Refusal.Reminder (function
             | Refusal.Reminder value -> Some value
-            | _ -> None)
+            | _ -> None))
+         @ [
+             variant
+                 "NOT_OFFERED"
+                 (ReminderRuleRefusal.NotOffered >> Refusal.Reminder)
+                 (function
+                 | Refusal.Reminder(ReminderRuleRefusal.NotOffered state) -> Some state
+                 | _ -> None)
+                 (record id
+                  |> actionField RecommendedAction.ReviewLatest
+                  |> field "state" id (VocabularyCodec.create ReminderState.vocabulary))
+         ])
         |> List.map (fun variant ->
             { variant with
                 Tag = "REMINDER_" + variant.Tag
             })
+
+    let private conflictChanges =
+        let page =
+            (record (fun entries next ->
+                {
+                    ChangePage.Entries = entries
+                    NextCursor = next
+                })
+            : Fields<ChangePage, _>)
+            |> field
+                "entries"
+                _.Entries
+                (list RevisionConflictInfo.MaximumChanges TimelineCodecs.timelineEntry)
+            |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+            |> build
+            |> named "ConflictChangePage"
+
+        tagged
+            "ConflictChanges"
+            [
+                variant
+                    "PAGE"
+                    ConflictChanges.Page
+                    (function
+                    | ConflictChanges.Page value -> Some value
+                    | _ -> None)
+                    (record id |> field "page" id page)
+                unitVariant "WITHHELD" ConflictChanges.Withheld
+            ]
+
+    let private revisionConflict =
+        (record (fun revision changes ->
+            RevisionConflictInfo.at revision |> RevisionConflictInfo.explain changes)
+        : Fields<RevisionConflictInfo, _>)
+        |> actionField RecommendedAction.ReviewLatest
+        |> field "actualRevision" _.ActualRevision ResponseScalars.revision
+        |> field
+            "changes"
+            (fun conflict ->
+                conflict.Changes
+                |> Option.defaultWith (fun () ->
+                    invalidOp "A revision conflict requires its authorized snapshot explanation."))
+            conflictChanges
 
     let private diagnosticVariants =
         [
@@ -209,11 +289,9 @@ module DiagnosticCodecs =
                 (codeName (nameof Refusal.RevisionConflict))
                 Refusal.RevisionConflict
                 (function
-                | Refusal.RevisionConflict revision -> Some revision
+                | Refusal.RevisionConflict conflict -> Some conflict
                 | _ -> None)
-                (record id
-                 |> actionField RecommendedAction.ReadCurrent
-                 |> field "actualRevision" id ResponseScalars.revision)
+                revisionConflict
         ]
         @ caseVariants
         @ reminderVariants
@@ -225,6 +303,20 @@ module DiagnosticCodecs =
            |> List.filter (fun variant -> variant.Tag = "INVALID_CURSOR"))
 
     let diagnostic = groupedTaggedOn "code" "Diagnostic" diagnosticVariants
+
+    let caseActAvailability =
+        diagnosticVariants
+        |> List.filter (fun variant ->
+            List.contains
+                variant.Tag
+                [
+                    "CASE_ALREADY_EXISTS"
+                    "NOT_OFFERED"
+                    "RESOURCE_UNAVAILABLE"
+                    "NOT_AUTHORIZED"
+                    "REGISTER_MAINTENANCE"
+                ])
+        |> groupedTaggedOn "code" "CaseActAvailabilityReason"
 
     let private definitionsOf (variants: Variant<'T> list) : DiagnosticDefinition list =
         variants
@@ -238,16 +330,25 @@ module DiagnosticCodecs =
                             Some
                                 {
                                     Name = "issueCount"
-                                    Minimum = minimum
-                                    Maximum = maximum
+                                    Rule = DiagnosticParameterRule.IntegerRange(minimum, maximum)
                                 }
                         | name, Schema.Integer(minimum, maximum) when name <> "actualRevision" ->
                             Some
                                 {
                                     Name = name
-                                    Minimum = int minimum
-                                    Maximum = int maximum
+                                    Rule =
+                                        DiagnosticParameterRule.IntegerRange(
+                                            int minimum,
+                                            int maximum
+                                        )
                                 }
+                        | name, Schema.Vocabulary(vocabulary, Schema.OneOf(values, _)) ->
+                            Schema.tryLiteralSet values
+                            |> Option.map (fun values ->
+                                {
+                                    Name = name
+                                    Rule = DiagnosticParameterRule.Vocabulary(vocabulary, values)
+                                })
                         | _ -> None)
                 | _ -> invalidOp "Diagnostic alternatives require object fields."
 
@@ -264,14 +365,12 @@ module DiagnosticCodecs =
     let private described =
         function
         | JsonValue.Object(("code", JsonValue.String code) :: fields) ->
-            let parameters =
-                fields
-                |> List.choose (function
-                    | name, JsonValue.Integer value when name <> "actualRevision" ->
-                        Some(name, int value)
-                    | _ -> None)
+            let definition =
+                definitions @ violationDefinitions
+                |> List.find (fun definition -> definition.Id = code)
 
-            code, parameters
+            let names = definition.Parameters |> List.map _.Name |> Set.ofList
+            code, fields |> List.filter (fun (name, _) -> Set.contains name names)
         | _ -> invalidOp "A diagnostic codec must write its code and typed fields."
 
     let describeIssue issue = inputIssue.Write issue |> described
@@ -279,7 +378,10 @@ module DiagnosticCodecs =
     let describe refusal =
         match refusal with
         | Refusal.InvalidInput issues ->
-            "INVALID_INPUT", [ "issueCount", InputIssues.toList issues |> List.length ]
+            "INVALID_INPUT",
+            [
+                "issueCount", JsonValue.Integer(int64 (InputIssues.toList issues |> List.length))
+            ]
         | refusal -> diagnostic.Write refusal |> described
 
     let code refusal = describe refusal |> fst

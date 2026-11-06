@@ -8,25 +8,43 @@ type RecommendedAction =
     | ReadCurrent
     | RetrySafe
     | StopAndInvestigate
+    | ChooseAnotherReference
+    | AskForAccess
+    | ReviewLatest
     | NoneRequired
 
 module Refusals =
+    let private caseAction =
+        function
+        | CaseRefusal.CaseAlreadyExists -> RecommendedAction.ChooseAnotherReference
+        | CaseRefusal.CorrectionNoChanges
+        | CaseRefusal.WorkNoChanges -> RecommendedAction.NoneRequired
+        | CaseRefusal.CorrectionRequiresExistingValue
+        | CaseRefusal.ZeroDecisionCannotBePaid -> RecommendedAction.CorrectInput
+        | CaseRefusal.AssigneeUnavailable
+        | CaseRefusal.NotOffered _ -> RecommendedAction.ReviewLatest
+
     let action =
         function
         | Refusal.InvalidInput _ -> RecommendedAction.CorrectInput
-        | Refusal.RevisionConflict _
+        | Refusal.Access(AccessRefusal.ResourceUnavailable | AccessRefusal.NotAuthorized _) ->
+            RecommendedAction.AskForAccess
+        | Refusal.Case value -> caseAction value
         | Refusal.OperationResolved
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate
-        | Refusal.Reminder _
-        | Refusal.Case _
-        | Refusal.Authority _
-        | Refusal.Access _ -> RecommendedAction.NoneRequired
+        | Refusal.Reminder ReminderRuleRefusal.NoChanges -> RecommendedAction.NoneRequired
+        | Refusal.Authority(AuthorityRefusal.HumanPrincipalRequired | AuthorityRefusal.RoleScopeNotApplicable) ->
+            RecommendedAction.CorrectInput
+        | Refusal.RevisionConflict _
+        | Refusal.Reminder(ReminderRuleRefusal.NotOffered _)
+        | Refusal.Authority(AuthorityRefusal.LastOwner | AuthorityRefusal.ActorAlreadyRegistered | AuthorityRefusal.ActorUnknown) ->
+            RecommendedAction.ReviewLatest
 
     let actualRevision =
         function
-        | Refusal.RevisionConflict revision -> Some revision
+        | Refusal.RevisionConflict conflict -> Some conflict.ActualRevision
         | _ -> None
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]

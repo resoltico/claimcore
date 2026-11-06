@@ -2,6 +2,7 @@ import { readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import process from "node:process";
 import { chromium } from "@playwright/test";
+import { isActiveOwnerContext } from "./published-session-context.mjs";
 
 const [root, origin, owned, phase, name] = process.argv.slice(2);
 const modes = new Set(["login", "verify", "logout", "stale"]);
@@ -121,7 +122,7 @@ const protectedContext = async (context, fingerprint, csrf) => {
   const response = await contextRequest(context, fingerprint, csrf);
   const reply = await response.json();
   require(response.status() === 200 && reply.outcome.kind === "SUCCEEDED", "CONTEXT_REFUSED");
-  require(reply.outcome.data.capabilities.includes("MANAGE_AUTHORITY"), "OWNER_MISSING");
+  require(isActiveOwnerContext(reply), "OWNER_MISSING");
 };
 const login = async (context, fingerprint) => {
   activeStep = "CREDENTIALS";

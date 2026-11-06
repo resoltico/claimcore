@@ -1,35 +1,78 @@
-import type { CurrentCase, CatalogDocument } from "../../api/service";
-import { BusinessValue } from "../../components/BusinessValue";
+import type { CaseStageDisplay, CaseStageEntry } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
-const steps = ["UNDECIDED", "DECIDED", "PAID"] as const;
-export const CaseProgress = ({
+import { LifecycleStatus } from "../LifecycleStatus";
+import { Icon } from "../../ui/icons";
+import "./stage.css";
+const StageDate = ({ value }: { value: string }) => {
+  const p = usePresentation();
+  const parts = p.dateParts(value);
+  const yearIndex = parts.findIndex((part) => part.type === "year");
+  const year = parts[yearIndex];
+  if (year === undefined) {
+    return <time dateTime={value}>{parts.map((part) => part.value).join("")}</time>;
+  }
+  return (
+    <time dateTime={value}>
+      {parts
+        .slice(0, yearIndex)
+        .map((part) => part.value)
+        .join("")}
+      <wbr />
+      <span className="case-stage-year">{year.value}</span>
+      {parts
+        .slice(yearIndex + 1)
+        .map((part) => part.value)
+        .join("")}
+    </time>
+  );
+};
+const Stage = ({
+  entry,
   current,
-  definition,
 }: {
-  current: CurrentCase;
-  definition: CatalogDocument;
+  entry: CaseStageEntry;
+  current: Extract<CaseStageDisplay, { kind: "TRACKER" }>["current"];
 }) => {
   const p = usePresentation();
-  const { fields } = current.state;
-  const { progress } = fields;
-  const paidDate = definition.fields.find((field) => field.name === "paymentDate");
   return (
-    <div className="case-progress">
-      <div role="list" aria-label={p.text("input.progress.label")}>
-        {steps.map((step) => (
-          <span role="listitem" key={step} aria-current={step === progress ? "step" : undefined}>
-            {p.term("progress", step)}
-          </span>
-        ))}
-      </div>
-      {fields.payment === null || paidDate === undefined ? null : (
-        <p>
-          {p.fieldLabel("paymentDate")}:{" "}
-          <time dateTime={fields.payment.paymentDate}>
-            <BusinessValue value={fields.payment.paymentDate} field={paidDate} />
-          </time>
-        </p>
+    <li
+      className="case-stage-step"
+      aria-current={entry.stage === current ? "step" : undefined}
+      data-complete={entry.completed}
+    >
+      <span className="case-stage-marker" aria-hidden="true">
+        {entry.completed ? <Icon name="check" /> : null}
+      </span>
+      <strong>{p.term("caseStage", entry.stage)}</strong>
+      <span className="sr-only">
+        {p.text(entry.completed ? "ui.stage.recorded" : "ui.notRecorded")}
+      </span>
+      {entry.completed ? (
+        <small>
+          {entry.date === null ? p.text("ui.stage.noDate") : <StageDate value={entry.date} />}
+        </small>
+      ) : (
+        <small>{p.text("ui.notRecorded")}</small>
       )}
-    </div>
+      {entry.amount === null ? null : (
+        <bdi>{p.money(entry.amount.amount, entry.amount.currency)}</bdi>
+      )}
+    </li>
+  );
+};
+/** Stage order, completion, dates and amounts are supplied by the core. */
+export const CaseProgress = ({ value }: { value: CaseStageDisplay }) => {
+  const p = usePresentation();
+  if (value.kind !== "TRACKER") {
+    return <LifecycleStatus value={value} />;
+  }
+  return (
+    <section className="case-progress" aria-label={p.text("input.progress.label")}>
+      <ol className="case-stage-list">
+        {value.steps.map((entry) => (
+          <Stage key={entry.stage} entry={entry} current={value.current} />
+        ))}
+      </ol>
+    </section>
   );
 };

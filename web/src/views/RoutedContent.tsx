@@ -1,5 +1,6 @@
-import { useRequesterContext } from "../hooks/useRequesterContext";
-import type { CaseSelector } from "@contracts/client";
+import type { AuthorityHistory as AuthorityHistoryType } from "./authority/AuthorityHistory";
+import { SettingsPage } from "../features/settings/SettingsPage";
+import type { useCaseNavigation } from "../routing/useCaseNavigation";
 import { useEffect, useState, type ComponentProps } from "react";
 import { ViewModule } from "./ViewModule";
 import type { Notice } from "../protocol/notices";
@@ -14,12 +15,16 @@ import { actPath, casePath, referencePath, type Route } from "../routing/routes"
 import { navigate } from "../routing/navigation";
 import type { AuthorityPanel as AuthorityPanelType } from "./AuthorityPanel";
 import type { CaseDetail as CaseDetailType } from "./CaseDetail";
-import { WorkQueue } from "./work/WorkQueue";
+import { ReminderQueue } from "./work/ReminderQueue";
 import { CaseList } from "./CaseList";
 import { MissingPage } from "./MissingPage";
 import type { OperationEditor as OperationEditorType } from "./OperationEditor";
-import type { RecoveryPanel as RecoveryPanelType } from "./RecoveryPanel";
 
+const loadAuthorityHistory = () =>
+  import("./authority/AuthorityHistory").then((module) => module.AuthorityHistory);
+const AuthorityHistory = (props: ComponentProps<typeof AuthorityHistoryType>) => (
+  <ViewModule load={loadAuthorityHistory} viewProps={props} />
+);
 const loadAuthorityPanel = () => import("./AuthorityPanel").then((module) => module.AuthorityPanel);
 const AuthorityPanel = (props: ComponentProps<typeof AuthorityPanelType>) => (
   <ViewModule load={loadAuthorityPanel} viewProps={props} />
@@ -34,8 +39,11 @@ const OperationEditor = (props: ComponentProps<typeof OperationEditorType>) => (
   <ViewModule load={loadOperationEditor} viewProps={props} />
 );
 const loadRecoveryPanel = () => import("./RecoveryPanel").then((module) => module.RecoveryPanel);
-const RecoveryPanel = (props: ComponentProps<typeof RecoveryPanelType>) => (
-  <ViewModule load={loadRecoveryPanel} viewProps={props} />
+const RecoveryPanel = ({ operationId }: { operationId: string }) => (
+  <ViewModule
+    load={loadRecoveryPanel}
+    viewProps={operationId === "" ? {} : { initialOperationId: operationId }}
+  />
 );
 
 const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void }) => {
@@ -52,34 +60,6 @@ const EditorFailure = ({ message, retry }: { message: Notice; retry: () => void 
     </section>
   );
 };
-/** A return observation belongs to this mounted requester workspace, never history or a journal. */
-const useCaseNavigation = () => {
-  const verified = useRequesterContext() !== null;
-  const [returnTo, setReturnTo] = useState<{
-    url: string;
-    scrollY: number;
-    focusId: string;
-  } | null>(null);
-  const remember = (focusId: string) => {
-    setReturnTo({ url: location.pathname + location.search, scrollY: window.scrollY, focusId });
-  };
-  return {
-    selectCase: (target: CaseSelector) => {
-      remember(target.kind === "ID" ? `case-${target.caseId}` : "case-lookup");
-      navigate(
-        target.kind === "ID" ? casePath(target.caseId) : referencePath(target.caseReference),
-      );
-    },
-    openCase: () => {
-      remember("open-case");
-      navigate("/cases/new");
-    },
-    backToCases: () => {
-      const owned = verified ? returnTo : null;
-      navigate(owned?.url ?? "/cases", false, owned?.focusId, owned?.scrollY);
-    },
-  };
-};
 const selectAct = (current: CurrentCase, act: string): void => {
   navigate(actPath({ kind: "ID", caseId: current.caseId }, act));
 };
@@ -90,9 +70,11 @@ export type EditorCallbacks = {
 const EditorBootstrap = ({
   route,
   onReady,
+  onBack,
 }: EditorCallbacks & {
   route: Extract<Route, { screen: "caseAct" }>;
   onReady: (current: CurrentCase) => void;
+  onBack: () => void;
 }) => {
   const p = usePresentation();
   const current = useCaseDisclosure(route.target);
@@ -113,28 +95,17 @@ const EditorBootstrap = ({
     return <EditorFailure message={current.message} retry={current.revalidate} />;
   }
   const { value } = current;
-  if (
-    value === null ||
-    !isCurrentCase(value) ||
-    !isCaseAct(route.act) ||
-    !value.advice.acts.some((act) => act === route.act)
-  ) {
+  if (value !== null && isCaseAct(route.act) && !value.advice.acts.includes(route.act)) {
+    const unavailable = value.advice.blocked.find((item) => item.act === route.act);
     return (
-      <section>
-        <h1>{p.text("ui.caseDetail")}</h1>
-        <button
-          type="button"
-          onClick={() => {
-            navigate(
-              route.target.kind === "ID"
-                ? casePath(route.target.caseId)
-                : referencePath(route.target.caseReference),
-            );
-          }}
-        >
-          {p.text("ui.backToCase")}
-        </button>
-      </section>
+      <CaseDetail
+        target={route.target}
+        reloadSignal={0}
+        definition={productMetadata.catalog}
+        onBack={onBack}
+        onAct={selectAct}
+        {...(unavailable === undefined ? {} : { unavailableAct: unavailable })}
+      />
     );
   }
   return <p role="status">{p.text("ui.loadingCurrentCase")}</p>;
@@ -143,6 +114,7 @@ const RoutedEditor = (
   props: EditorCallbacks & {
     route: Extract<Route, { screen: "caseAct" }>;
     disclosureAvailable: boolean;
+    onBack: () => void;
   },
 ) => {
   const [opened, setOpened] = useState<CurrentCase | null>(null);
@@ -186,6 +158,30 @@ const NewCaseEditor = ({
     onMutationLockChange={setLocked}
   />
 );
+const AreaContent = ({
+  route,
+  setLocked,
+  caseAvailable,
+}: {
+  route: Route;
+  setLocked: (locked: boolean) => void;
+  caseAvailable: boolean;
+}) => {
+  switch (route.screen) {
+    case "settings":
+      return <SettingsPage />;
+    case "reminders":
+      return <ReminderQueue onLockChange={setLocked} disclosureAvailable={caseAvailable} />;
+    case "recovery":
+      return <RecoveryPanel key={route.operationId} operationId={route.operationId} />;
+    case "authorityHistory":
+      return <AuthorityHistory key={route.actorId} actorId={route.actorId} />;
+    case "missing":
+      return <MissingPage />;
+    default:
+      return null;
+  }
+};
 export const RoutedContent = ({
   route,
   setLocked,
@@ -193,18 +189,18 @@ export const RoutedContent = ({
   refresh,
   authorityAvailable = true,
   caseAvailable = true,
+  caseNavigation,
 }: EditorCallbacks & {
   route: Route;
   refresh: number;
   authorityAvailable?: boolean;
   caseAvailable?: boolean;
+  caseNavigation: ReturnType<typeof useCaseNavigation>;
 }) => {
-  const { selectCase, openCase, backToCases } = useCaseNavigation();
+  const { selectCase, backToCases } = caseNavigation;
   switch (route.screen) {
-    case "work":
-      return <WorkQueue />;
     case "cases":
-      return <CaseList onSelect={selectCase} onOpen={openCase} />;
+      return <CaseList onSelect={selectCase} />;
     case "case":
       return (
         <CaseDetail
@@ -231,20 +227,14 @@ export const RoutedContent = ({
           key={`${JSON.stringify(route.target)}:${route.act}`}
           route={route}
           disclosureAvailable={caseAvailable}
+          onBack={backToCases}
           setLocked={setLocked}
           committed={committed}
         />
       );
-    case "operations":
-      return (
-        <RecoveryPanel
-          key={route.operationId}
-          {...(route.operationId === "" ? {} : { initialOperationId: route.operationId })}
-        />
-      );
-    case "authority":
+    case "people":
       return <AuthorityPanel onLockChange={setLocked} disclosureAvailable={authorityAvailable} />;
-    case "missing":
-      return <MissingPage />;
+    default:
+      return <AreaContent route={route} setLocked={setLocked} caseAvailable={caseAvailable} />;
   }
 };

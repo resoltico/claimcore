@@ -12,7 +12,13 @@ it.each([
 ] as const)("shows a localized country name in %s without changing its code", (language, name) => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
+    JSON.stringify({
+      version: 3,
+      language,
+      displayLocale: "en-GB",
+      mode: "system" as const,
+      accent: "green" as const,
+    }),
   );
   render(<CatalogField field={country} value="LV" onChange={vi.fn()} />);
   expect(screen.getByRole("combobox")).toHaveValue("LV");

@@ -4,9 +4,9 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-/// Conversion preserves the act stage and the record format's independent ownership.
+/// Authored requests expand to separate durable effects; names never enter identity or grant payloads.
 module AuthorityRequests =
-    let canonical (request: AuthorityRequestRecord) =
+    let canonical (record: AuthorityEffectRecord) =
         let grant (value: RecordedGrant) =
             let scope =
                 match value.Scope with
@@ -16,79 +16,113 @@ module AuthorityRequests =
 
             { value with Scope = scope }
 
-        { request with
-            Act = AuthorityAct.map grant request.Act
+        { record with
+            Effect = AuthorityEffect.map grant record.Effect
         }
 
     let display (value: RecordedGrant) : ScopedGrant =
         {
             Role = value.Role
             Scope =
-                match value.Scope with
-                | RecordedGrantScope.Installation -> GrantScope.Installation
-                | RecordedGrantScope.Case(id, reference) -> GrantScope.Case(id, reference)
+                (match value.Scope with
+                 | RecordedGrantScope.Installation -> GrantScope.Installation
+                 | RecordedGrantScope.Case(id, reference) -> GrantScope.Case(id, reference))
         }
 
-    let private authored (act: ValidAuthorityAct) : AuthoredAuthorityAct =
-        AuthorityAct.map
-            (fun (grant: AuthoredGrant) ->
-                {
-                    AuthoredGrant.Role = grant.Role
-                    Scope = grant.Scope
-                })
-            act
-
-    let toRecord (snapshot: CaseSnapshot option) command =
-        let resolve =
-            function
+    let toRecords (snapshots: Map<GrantTarget, CaseSnapshot>) target (command: AuthorityCommand) =
+        let resolve target =
+            match target with
             | GrantTarget.Installation -> Ok RecordedGrantScope.Installation
-            | GrantTarget.CaseReference requested ->
-                match snapshot with
+            | _ ->
+                match Map.tryFind target snapshots with
                 | Some current when
-                    CaseReference.key requested = CaseReference.identity current.Reference
+                    (match target with
+                     | GrantTarget.CaseReference reference ->
+                         CaseReference.key reference = CaseReference.identity current.Reference
+                     | GrantTarget.CaseId id -> id = current.CaseId
+                     | GrantTarget.Installation -> false)
                     ->
                     Ok(RecordedGrantScope.Case(current.CaseId, current.Reference))
                 | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
-            | GrantTarget.CaseId requested ->
-                match snapshot with
-                | Some current when requested = current.CaseId ->
-                    Ok(RecordedGrantScope.Case(current.CaseId, current.Reference))
-                | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
-        AuthorityRecord.ofCommand resolve command
+        let grant (value: AuthoredGrant) =
+            resolve value.Scope
+            |> Result.map (fun scope ->
+                {
+                    RecordedGrant.Role = value.Role
+                    Scope = scope
+                })
 
-    /// Owner provisioning has a dedicated host boundary, never an ordinary wire request.
-    let input operationId target act : Result<AuthorityRequest, Refusal> =
+        let effects =
+            match command.Act with
+            | AuthorityAct.Admit admission ->
+                admission.Grants
+                |> List.fold
+                    (fun state value ->
+                        state
+                        |> Result.bind (fun effects ->
+                            grant value
+                            |> Result.map (fun value -> AuthorityEffect.Grant value :: effects)))
+                    (Ok [])
+                |> Result.map (fun effects ->
+                    AuthorityEffect.Register(PrincipalKey.toInput command.Target)
+                    :: AuthorityEffect.SetProfile admission.Profile
+                    :: List.rev effects)
+            | AuthorityAct.Register profile ->
+                Ok
+                    [
+                        AuthorityEffect.Register(PrincipalKey.toInput command.Target)
+                        AuthorityEffect.SetProfile profile
+                    ]
+            | AuthorityAct.ProvisionOwner profile ->
+                Ok
+                    [
+                        AuthorityEffect.ProvisionOwner(PrincipalKey.toInput command.Target)
+                        AuthorityEffect.SetProfile profile
+                    ]
+            | AuthorityAct.SetProfile profile -> Ok [ AuthorityEffect.SetProfile profile ]
+            | AuthorityAct.EraseProfile -> Ok [ AuthorityEffect.EraseProfile ]
+            | AuthorityAct.Grant value ->
+                grant value |> Result.map (AuthorityEffect.Grant >> List.singleton)
+            | AuthorityAct.Revoke value ->
+                grant value |> Result.map (AuthorityEffect.Revoke >> List.singleton)
+            | AuthorityAct.Enable -> Ok [ AuthorityEffect.Enable ]
+            | AuthorityAct.Disable -> Ok [ AuthorityEffect.Disable ]
+
+        effects
+        |> Result.map (
+            List.map (fun effect ->
+                {
+                    AuthorityEffectRecord.OperationId = OperationId.value command.OperationId
+                    TargetActorId = target
+                    Effect = effect
+                })
+        )
+
+    /// Owner provisioning has a dedicated private host boundary, never an ordinary wire request.
+    let input operationId target (act: ValidAuthorityAct) : Result<AuthorityRequest, Refusal> =
         match act with
-        | AuthorityAct.ProvisionOwner -> Error(Refusal.Access AccessRefusal.ActNotPermitted)
-        | act ->
+        | AuthorityAct.ProvisionOwner _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
+        | _ ->
             Ok
                 {
                     OperationId = operationId
                     Target = PrincipalKey.toInput target
-                    Act = authored act
+                    Act = AuthorityAct.map id ActorProfile.authored act
                 }
 
     let toInput (command: AuthorityCommand) =
         input (OperationId.value command.OperationId) command.Target command.Act
 
-    /// Permanent parsing does not reapply current capability decisions.
-    let fromRecord request = AuthorityRecord.interpret request
+    let internal targetCases (command: AuthorityCommand) =
+        let targets =
+            match command.Act with
+            | AuthorityAct.Grant value
+            | AuthorityAct.Revoke value -> [ value.Scope ]
+            | AuthorityAct.Admit value -> value.Grants |> List.map _.Scope
+            | _ -> []
 
-    let internal validRecord request =
-        fromRecord request
-        |> Result.exists (fun command ->
-            command.Act <> AuthorityAct.ProvisionOwner
-            || PrincipalKey.isHuman command.Target)
-
-    let internal targetCase (command: AuthorityCommand) =
-        match command.Act with
-        | AuthorityAct.Grant {
-                                 Scope = GrantTarget.CaseReference reference
-                             }
-        | AuthorityAct.Revoke {
-                                  Scope = GrantTarget.CaseReference reference
-                              } -> Some(CaseSelector.Reference reference)
-        | AuthorityAct.Grant { Scope = GrantTarget.CaseId id }
-        | AuthorityAct.Revoke { Scope = GrantTarget.CaseId id } -> Some(CaseSelector.Id id)
-        | _ -> None
+        targets
+        |> List.filter (function
+            | GrantTarget.Installation -> false
+            | _ -> true)

@@ -1,0 +1,15 @@
+.revision-conflict {
+  padding: var(--space-4);
+  margin-block: var(--space-4);
+  border: var(--border-width) solid var(--warning-text);
+  border-radius: var(--radius-md);
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  min-inline-size: 0;
+}
+.revision-conflict h2 {
+  margin-block-start: 0;
+}
+.revision-conflict .case-timeline {
+  color: var(--text-primary);
+}

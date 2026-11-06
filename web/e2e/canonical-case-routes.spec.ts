@@ -1,3 +1,4 @@
+import { goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import type { CaseSelector } from "@contracts/client";
@@ -33,18 +34,22 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
   await page.waitForLoadState("networkidle");
   const first = await readCase(page, { kind: "REFERENCE", caseReference: reference });
   await expect(page).toHaveURL((url) => url.pathname === `/cases/id/${first.caseId}`);
-  await page.locator('.workspace-header nav a[href="/cases"]').click();
+  await goToView(page, "cases");
   await openCase(page, first.caseId);
   await page.waitForLoadState("networkidle");
   const second = await readCase(page, { kind: "REFERENCE", caseReference: first.caseId });
   expect(second.caseId).not.toBe(first.caseId);
   expect(second.caseReference.toUpperCase()).toBe(first.caseId.toUpperCase());
   await page.goto(casePath(first.caseId), { waitUntil: "commit" });
-  await expect(page.locator("#case-detail-title")).toHaveText(first.caseReference);
+  await expect(page.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+    first.caseReference,
+  );
   await page.goto(referencePath(first.caseId), { waitUntil: "commit" });
-  await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
-  await page.locator('.workspace-header nav a[href="/cases"]').click();
-  const search = page.getByRole("searchbox");
+  await expect(page.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+    second.caseReference,
+  );
+  await goToView(page, "cases");
+  const search = page.getByRole("searchbox", { name: "Filter this view", exact: true });
   await search.fill(second.caseReference);
   await search.press("Enter");
   const link = page.getByRole("link", { name: second.caseReference, exact: true });
@@ -52,7 +57,9 @@ test("canonical CaseId links and explicit UUID-shaped reference lookup select di
   const request = page.waitForRequest((value) => new URL(value.url()).pathname === "/api/case.get");
   await link.click();
   expect((await request).postDataJSON()).toEqual({ target: { kind: "ID", caseId: second.caseId } });
-  await expect(page.locator("#case-detail-title")).toHaveText(second.caseReference);
+  await expect(page.locator(".case-heading .eyebrow .identifier-value")).toHaveText(
+    second.caseReference,
+  );
 });
 
 test("case inspection restores the live work query, selected row focus and scroll without history payloads", async ({
@@ -60,7 +67,8 @@ test("case inspection restores the live work query, selected row focus and scrol
 }) => {
   await openAuthenticated(page);
   await page.setViewportSize({ width: 390, height: 800 });
-  await page.getByRole("button", { name: "All accessible", exact: true }).click();
+  await page.getByRole("tab", { name: /^All(?:\s|$)/u }).click();
+  await expect(page).toHaveURL((url) => url.searchParams.get("view") === "ALL");
   await page.waitForLoadState("networkidle");
   const rows = page.locator(".worklist-row");
   expect(await rows.count()).toBeGreaterThan(1);

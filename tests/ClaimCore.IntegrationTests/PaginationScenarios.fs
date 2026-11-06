@@ -48,7 +48,12 @@ let internal reader fixture (admin: ServiceContext) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 20) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 20)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -109,7 +114,12 @@ let internal registerActors (actor: ServiceContext) =
             let! registered =
                 (Service.execute
                     actor
-                    (OperationInput.Authority(authorityRequest (id n) target AuthorityAct.Register))
+                    (OperationInput.Authority(
+                        authorityRequest
+                            (id n)
+                            target
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                    ))
                     (CancellationToken.None))
 
             acceptedAuthority registered

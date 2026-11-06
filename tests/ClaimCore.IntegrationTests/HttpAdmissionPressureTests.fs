@@ -61,6 +61,17 @@ type private StoreProbe(storage: IStore) =
     member _.CancelledReads = tokens |> Seq.filter _.IsCancellationRequested |> Seq.length
 
     interface IStore with
+        member _.Context query =
+            if ignoreCancellation then
+                tokens.Add query.CancellationToken
+
+                storage.Context
+                    { query with
+                        CancellationToken = CancellationToken.None
+                    }
+            else
+                storage.Context query
+
         member _.Read operation =
             if ignoreCancellation then
                 tokens.Add operation.CancellationToken
@@ -172,7 +183,12 @@ let private qualify () =
             let! registered =
                 Service.execute
                     actor
-                    (OperationInput.Authority(authorityRequest (id 10) other AuthorityAct.Register))
+                    (OperationInput.Authority(
+                        authorityRequest
+                            (id 10)
+                            other
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                    ))
                     CancellationToken.None
 
             acceptedAuthority registered

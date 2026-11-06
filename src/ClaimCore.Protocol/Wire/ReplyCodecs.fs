@@ -108,32 +108,88 @@ module ReplyCodecs =
         |> named "CapabilityAccess"
 
     let authorityState =
-        (record (fun enabled grants access ->
+        (record (fun profile enabled grants access ->
             {
+                Profile = profile
                 Enabled = enabled
                 Grants = grants
                 Access = access
             })
         : Fields<AuthorityState, _>)
+        |> field "profile" _.Profile (nullable ActorCodecs.profile)
         |> field "enabled" _.Enabled boolean
-        |> field "grants" _.Grants (list 1 ResponseCodecs.authorityGrant)
+        |> field
+            "grants"
+            _.Grants
+            (list AuthorityAdmission.MaximumGrants ResponseCodecs.authorityGrant)
         |> field "access" _.Access (list Capability.all.Length capabilityAccess)
         |> build
         |> named "AuthorityState"
 
+    let private authorityReviewEffect =
+        tagged
+            "AuthorityReviewEffect"
+            [
+                variant
+                    "REGISTER"
+                    AuthorityReviewEffect.Register
+                    (function
+                    | AuthorityReviewEffect.Register value -> Some value
+                    | _ -> None)
+                    (record id |> field "principal" id PrincipalCodecs.key)
+                variant
+                    "PROVISION_OWNER"
+                    AuthorityReviewEffect.ProvisionOwner
+                    (function
+                    | AuthorityReviewEffect.ProvisionOwner value -> Some value
+                    | _ -> None)
+                    (record id |> field "principal" id PrincipalCodecs.key)
+                variant
+                    "SET_PROFILE"
+                    AuthorityReviewEffect.SetProfile
+                    (function
+                    | AuthorityReviewEffect.SetProfile value -> Some value
+                    | _ -> None)
+                    (record id |> field "profile" id ActorCodecs.profile)
+                variant
+                    "GRANT"
+                    AuthorityReviewEffect.Grant
+                    (function
+                    | AuthorityReviewEffect.Grant value -> Some value
+                    | _ -> None)
+                    (record id |> field "grant" id ResponseCodecs.authorityGrant)
+                variant
+                    "REVOKE"
+                    AuthorityReviewEffect.Revoke
+                    (function
+                    | AuthorityReviewEffect.Revoke value -> Some value
+                    | _ -> None)
+                    (record id |> field "grant" id ResponseCodecs.authorityGrant)
+                unitVariant "ERASE_PROFILE" AuthorityReviewEffect.EraseProfile
+                unitVariant "ENABLE" AuthorityReviewEffect.Enable
+                unitVariant "DISABLE" AuthorityReviewEffect.Disable
+            ]
+
     let private authorityReviewFields =
-        (record (fun target scope before after ->
+        (record (fun basis target scope before after effects ->
             {
+                Basis = basis
+                Effects = effects
                 Target = target
                 AccessScope = scope
                 Before = before
                 After = after
             })
         : Fields<AuthorityReview, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "target" _.Target (nullable ResponseCodecs.actorSummary)
         |> field "accessScope" _.AccessScope ResponseCodecs.grantScope
         |> field "before" _.Before authorityState
         |> field "after" _.After authorityState
+        |> field
+            "effects"
+            _.Effects
+            (list (AuthorityAdmission.MaximumGrants + 2) authorityReviewEffect)
 
     let private workReviewFields =
         (record (fun parent reference before proposed context ->
@@ -147,8 +203,8 @@ module ReplyCodecs =
         : Fields<WorkReview, _>)
         |> field "parent" _.Parent ResponseCodecs.caseSnapshot
         |> field "caseReference" _.Reference ResponseScalars.caseReference
-        |> field "before" _.Before WorkCodecs.workSnapshot
-        |> field "proposed" _.Proposed WorkCodecs.workSnapshot
+        |> field "before" _.Before WorkCodecs.workReadModel
+        |> field "proposed" _.Proposed WorkCodecs.workReadModel
         |> field "context" _.Context ResponseCodecs.runtimeContext
 
     let private reminderReviewFields =
@@ -176,35 +232,44 @@ module ReplyCodecs =
                 [
                     variant
                         "WORK"
-                        OperationReview.Work
+                        PresentedReviewSubject.Work
                         (function
-                        | OperationReview.Work value -> Some value
+                        | PresentedReviewSubject.Work value -> Some value
                         | _ -> None)
                         workReviewFields
                     variant
                         "REMINDER"
-                        OperationReview.Reminder
+                        PresentedReviewSubject.Reminder
                         (function
-                        | OperationReview.Reminder value -> Some value
+                        | PresentedReviewSubject.Reminder value -> Some value
                         | _ -> None)
                         reminderReviewFields
                     variant
                         "CASE"
-                        OperationReview.Case
+                        PresentedReviewSubject.Case
                         (function
-                        | OperationReview.Case value -> Some value
+                        | PresentedReviewSubject.Case value -> Some value
                         | _ -> None)
                         ResponseCodecs.reviewFields
                     variant
                         "AUTHORITY"
-                        OperationReview.Authority
+                        PresentedReviewSubject.Authority
                         (function
-                        | OperationReview.Authority value -> Some value
+                        | PresentedReviewSubject.Authority value -> Some value
                         | _ -> None)
                         authorityReviewFields
                 ]
 
-        record id |> field "subject" id subject |> build |> named "OperationReview"
+        (record (fun subject presentation ->
+            {
+                PresentedReview.Subject = subject
+                Presentation = presentation
+            })
+        : Fields<PresentedReview, _>)
+        |> field "subject" _.Subject subject
+        |> field "presentation" _.Presentation PresentationCodecs.review
+        |> build
+        |> named "OperationReview"
 
     let private reviewed = record id |> field "review" id review |> build
 
@@ -214,16 +279,16 @@ module ReplyCodecs =
             [
                 variant
                     "REVIEWED"
-                    (Previewed.Reviewed >> Outcome.Succeeded)
+                    (PresentedPreviewed.Reviewed >> Outcome.Succeeded)
                     (function
-                    | Outcome.Succeeded(Previewed.Reviewed value) -> Some value
+                    | Outcome.Succeeded(PresentedPreviewed.Reviewed value) -> Some value
                     | _ -> None)
                     (data reviewed)
                 variant
                     "ALREADY_ACCEPTED"
-                    (Previewed.AlreadyAccepted >> Outcome.Succeeded)
+                    (PresentedPreviewed.AlreadyAccepted >> Outcome.Succeeded)
                     (function
-                    | Outcome.Succeeded(Previewed.AlreadyAccepted value) -> Some value
+                    | Outcome.Succeeded(PresentedPreviewed.AlreadyAccepted value) -> Some value
                     | _ -> None)
                     (data ReceiptCodecs.receipt)
                 variant
@@ -245,10 +310,10 @@ module ReplyCodecs =
     let preview =
         (record (fun id outcome ->
             {
-                PreviewReply.OperationId = id
+                PresentedPreviewReply.OperationId = id
                 Outcome = outcome
             })
-        : Fields<PreviewReply, _>)
+        : Fields<PresentedPreviewReply, _>)
         |> field "operationId" _.OperationId Codec.uuid
         |> field "outcome" _.Outcome previewResult
         |> build

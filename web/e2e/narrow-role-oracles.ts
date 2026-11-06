@@ -1,3 +1,4 @@
+import { showAccountActions } from "./workspace-navigation";
 import { expect, type Page } from "@playwright/test";
 import { endpoints } from "@contracts/client";
 import { browserRequest, sessionToken } from "./session-helpers";
@@ -53,12 +54,16 @@ export const opaqueCaseRefusal = async (page: Page, reference: string) => {
 };
 
 export const noCaseWorkspace = async (page: Page) => {
-  await expect(page.getByRole("button", { name: "Sign out", exact: true })).toBeVisible();
+  const signOut = page.getByRole("button", { name: "Sign out", exact: true });
+  if (!(await signOut.isVisible())) {
+    await showAccountActions(page);
+  }
+  await expect(signOut).toBeVisible();
   await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Cases", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Open by exact reference", exact: true }),
   ).toHaveCount(0);
-  await expect(page.getByRole("region", { name: "Current case", exact: true })).toHaveCount(0);
+  await expect(page.locator("section.case-detail")).toHaveCount(0);
 };

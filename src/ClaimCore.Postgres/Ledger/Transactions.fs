@@ -2,7 +2,6 @@ namespace ClaimCore.Postgres
 
 open System
 open System.IO
-open System.Security.Cryptography
 open System.Threading
 open Npgsql
 open ClaimCore.Application
@@ -63,8 +62,7 @@ module internal Transactions =
                     StoredEntries.position
                         (DatabaseSession.value 0 row)
                         (DatabaseSession.value 1 row),
-                    DatabaseSession.instant 2 row,
-                    RandomNumberGenerator.GetBytes 32
+                    DatabaseSession.instant 2 row
             | _ -> return raise (RecordCorruptException "Ledger head is absent.")
         }
 
@@ -87,7 +85,7 @@ module internal Transactions =
         | :? PostgresException as error when commitStarted && DatabaseSession.commitUncertain error ->
             StoreFailure.CommitOutcomeUnknown
         | :? PostgresException as error when
-            error.SqlState = "CC001"
+            (error.SqlState = "CC001" || error.SqlState = "CC004")
             || (error.SqlState = "23505" && error.TableName = "ledger")
             ->
             StoreFailure.Integrity

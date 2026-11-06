@@ -28,6 +28,7 @@
     <Compile Include="CliInvocationEvidence.fs" />
     <Compile Include="CliDriverCompletion.fs" />
     <Compile Include="CliCalls.fs" />
+    <Compile Include="AcceptanceReceiptObservations.fs" />
     <Compile Include="PublishedDrainTests.fs" />
     <Compile Include="CliSetupTests.fs" />
     <Compile Include="CliDriverCompletionTests.fs" />
@@ -49,6 +50,8 @@
     <Compile Include="BrowserReadback.fs" />
     <Compile Include="BrowserProgress.fs" />
     <Compile Include="BrowserCompletion.fs" />
+    <Compile Include="BrowserLayoutReports.fs" />
+    <Compile Include="BrowserLayoutReportsTests.fs" />
     <Compile Include="BrowserTests.fs" />
     <Compile Include="DeploymentConfigurationTests.fs" />
     <Compile Include="LocalConfigurationProfilesTests.fs" />

@@ -21,10 +21,15 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.ReminderGet -> Route.bind Api.reminder Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
             Route.bind Api.reminders Service.reminders
+        | ActorEndpoint.Query QueryEndpoint.CaseViews -> Route.bind Api.caseViews Service.caseViews
+        | ActorEndpoint.Query QueryEndpoint.ReminderViews ->
+            Route.bind Api.reminderViews Service.reminderViews
         | ActorEndpoint.Query QueryEndpoint.WorkOverview ->
             Route.bind Api.workOverview Service.workOverview
         | ActorEndpoint.Query QueryEndpoint.CaseActivity ->
             Route.bind Api.caseActivity Service.activity
+        | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
+            Route.bind Api.caseTimeline Service.timeline
         | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
         | ActorEndpoint.Query QueryEndpoint.CaseGet -> Route.bind Api.caseGet Service.get
         | ActorEndpoint.Query QueryEndpoint.CaseAssignees ->
@@ -42,8 +47,16 @@ module internal ApiRoutes =
             Route.bind Api.authorityGrants Service.grants
         | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
             Route.bind Api.authorityHistory Service.authorityHistory
+        | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
+            Route.bind Api.authorityRequests Service.accessRequests
+        | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
+            Route.bind Api.authorityRequestsDismiss Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
-            Route.bind Api.operationPreview Service.preview
+            Route.bind Api.operationPreview (fun services input token ->
+                task {
+                    let! reply = Service.preview services input token in
+                    return PresentedPreviewReply.ofCore reply
+                })
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.bind Api.operationExecute Service.execute
         | ActorEndpoint.Query QueryEndpoint.Status -> Route.bind Api.operationStatus Service.status
@@ -182,6 +195,11 @@ module internal ApiRoutes =
                             else
                                 let! result =
                                     withActor (AuthenticatedPrincipals.key principal) (fun core ->
+                                        let core =
+                                            Service.withClaims
+                                                (AuthenticatedPrincipals.claims principal)
+                                                core
+
                                         task {
                                             if
                                                 Api.requiresInstallation endpoint

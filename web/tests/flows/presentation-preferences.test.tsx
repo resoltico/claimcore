@@ -1,9 +1,10 @@
+import { chooseOption } from "../support/choice-entry";
 import { renderHook } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { useEffect, useRef } from "react";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { PresentationControls } from "../../src/presentation/PresentationControls";
+import { SettingsPanel } from "../../src/features/settings/SettingsPanel";
 import { usePresentation } from "../../src/presentation/context";
 import { Message } from "../../src/presentation/Message";
 import {
@@ -24,18 +25,24 @@ it("resolves explicit language and display-format preferences independently with
     expect(resolveLanguage(input)).toBe("en");
   }
   expect(
-    parsePreferences('{"version":2,"language":null,"displayLocale":"lv-LV","theme":"SYSTEM"}'),
+    parsePreferences(
+      '{"version":3,"language":null,"displayLocale":"lv-LV","mode":"system","accent":"green"}',
+    ),
   ).toEqual({
     language: "en",
     displayLocale: "lv-LV",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   });
   expect(
-    parsePreferences('{"version":2,"language":"ar","displayLocale":null,"theme":"SYSTEM"}'),
+    parsePreferences(
+      '{"version":3,"language":"ar","displayLocale":null,"mode":"system","accent":"green"}',
+    ),
   ).toEqual({
     language: "ar",
     displayLocale: "en-GB",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   });
   expect(resolveLanguage("LV-lv")).toBe("lv");
   expect(resolveLanguage("ar-EG")).toBe("ar");
@@ -43,17 +50,23 @@ it("resolves explicit language and display-format preferences independently with
   expect(resolveDisplayLocale("lv-lv")).toBe("lv-LV");
   expect(resolveDisplayLocale("ar-EG-u-ca-islamic")).toBe("en-GB");
   expect(resolveDisplayLocale("ar-EG")).toBe("ar-EG");
-  expect(resolveDisplayLocale("de-DE")).toBe("en-GB");
+  expect(resolveDisplayLocale("de-DE")).toBe("de-DE");
   expect(
     parsePreferences(
       JSON.stringify({
-        version: 2,
+        version: 3,
         language: "lv-LV",
         displayLocale: "ar-EG",
-        theme: "SYSTEM" as const,
+        mode: "system" as const,
+        accent: "green" as const,
       }),
     ),
-  ).toEqual({ language: "lv", displayLocale: "ar-EG", theme: "SYSTEM" as const });
+  ).toEqual({
+    language: "lv",
+    displayLocale: "ar-EG",
+    mode: "system" as const,
+    accent: "green" as const,
+  });
 });
 
 it("refuses corrupt, oversized and unknown preference records without retaining arbitrary data", () => {
@@ -66,14 +79,16 @@ it("refuses corrupt, oversized and unknown preference records without retaining 
     "42",
     '"secret"',
     "x".repeat(257),
-    '{"version":2,"language":"ar","displayLocale":"ar-EG"}',
+    '{"version":3,"language":"ar","displayLocale":"ar-EG"}',
     '{"version":1,"language":"ar"}',
     '{"version":1,"language":"ar","displayLocale":"ar-EG","claimant":"secret"}',
   ]) {
     expect(parsePreferences(text)).toEqual(defaults);
   }
   expect(
-    parsePreferences('{"version":2,"language":null,"displayLocale":42,"theme":"SYSTEM"}'),
+    parsePreferences(
+      '{"version":3,"language":null,"displayLocale":42,"mode":"system","accent":"green"}',
+    ),
   ).toEqual(defaults);
   localStorage.setItem(preferenceKey, "private-invalid-text");
   expect(loadPreferences()).toEqual(defaults);
@@ -83,10 +98,11 @@ it("persists only presentation preferences and remains usable when storage is de
   const next = {
     language: "lv" as const,
     displayLocale: "ar-EG" as const,
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   };
   expect(savePreferences(next)).toBe(true);
-  expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({ version: 2, ...next });
+  expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({ version: 3, ...next });
   expect(loadPreferences()).toEqual(next);
   vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
     throw new Error("denied");
@@ -99,24 +115,27 @@ it("persists only presentation preferences and remains usable when storage is de
 });
 
 it("projects owned preference fields from typed width subtypes", () => {
-  const extended: Preferences & { readonly version: 2; readonly extra: string } = {
+  const extended: Preferences & { readonly version: 3; readonly extra: string } = {
     language: "lv",
     displayLocale: "ar-EG",
-    version: 2,
+    version: 3,
     extra: "synthetic-extension",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   };
   expect(savePreferences(extended)).toBe(true);
   expect(JSON.parse(localStorage.getItem(preferenceKey)!)).toEqual({
-    version: 2,
+    version: 3,
     language: "lv",
     displayLocale: "ar-EG",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   });
   expect(loadPreferences()).toEqual({
     language: "lv",
     displayLocale: "ar-EG",
-    theme: "SYSTEM" as const,
+    mode: "system" as const,
+    accent: "green" as const,
   });
 });
 
@@ -138,23 +157,23 @@ it("switches language and display formats without remounting children or rewriti
   const user = userEvent.setup();
   render(
     <>
-      <PresentationControls />
+      <SettingsPanel />
       <Probe mount={mount} />
     </>,
   );
-  const language = screen.getByLabelText("Interface language", { selector: "select" });
-  const format = screen.getByLabelText("Date and number format", { selector: "select" });
+  const language = screen.getByRole("radio", { name: "العربية" });
+  const format = screen.getByRole("combobox", { name: "Date and number format" });
   const input = screen.getByRole("textbox", { name: "unchanged draft" });
-  await user.selectOptions(format, "lv-LV");
-  await user.selectOptions(language, "ar");
+  await chooseOption(user, format, "lv-LV");
+  await user.click(language);
   expect(document.documentElement).toHaveAttribute("lang", "ar");
   expect(document.documentElement).toHaveAttribute("dir", "rtl");
   expect(input).toBe(screen.getByRole("textbox", { name: "unchanged draft" }));
   expect(input).toHaveValue("2026-02-30 / 1.0000");
   expect(format).toHaveValue("lv-LV");
   expect(language).toHaveFocus();
-  expect(language.querySelector('option[value="en-XA"]')).toBeNull();
-  await user.selectOptions(language, "en");
+  expect(document.querySelector('input[value="en-XA"]')).toBeNull();
+  await user.click(screen.getByRole("radio", { name: "English" }));
   expect(document.documentElement).toHaveAttribute("lang", "en");
   expect(document.documentElement).toHaveAttribute("dir", "ltr");
   expect(mount).toHaveBeenCalledOnce();
@@ -165,10 +184,8 @@ it("announces unsaved preferences in the chosen language without blocking the sw
   vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
     throw new Error("denied-secret");
   });
-  render(<PresentationControls />);
-  await userEvent
-    .setup()
-    .selectOptions(screen.getByLabelText("Interface language", { selector: "select" }), "lv");
+  render(<SettingsPanel />);
+  await userEvent.setup().click(screen.getByRole("radio", { name: "Latviešu" }));
   expect(document.documentElement.lang).toBe("lv");
   expect(document.querySelector('[aria-live="polite"]')).not.toHaveTextContent("denied-secret");
   expect(document.querySelector('[aria-live="polite"]')?.textContent).not.toBe("");

@@ -178,7 +178,10 @@ const owner = async (context, origin, fingerprint, csrf) => {
   const value = await payload(await post(context, origin, "context", fingerprint, csrf));
   if (
     value.outcome.kind !== "SUCCEEDED" ||
-    !value.outcome.data.capabilities.includes("MANAGE_AUTHORITY")
+    value.outcome.data.requester.kind !== "ACTIVE" ||
+    !value.outcome.data.requester.capabilities.includes("MANAGE_AUTHORITY") ||
+    value.outcome.data.requester.self.displayName.kind !== "NAMED" ||
+    value.outcome.data.requester.self.displayName.value !== "Authored deployment owner"
   ) {
     throw new Error("Fresh owner authority was not provisioned.");
   }
@@ -191,7 +194,9 @@ const login = async (context, origin) => {
   try {
     await page.locator("#password").fill(password.toString("utf8").trim());
     await page.locator("#kc-login").click();
-    await page.waitForURL((url) => url.origin === origin && url.pathname === "/");
+    await page.waitForURL(
+      (url) => url.origin === origin && ["/", "/people"].includes(url.pathname),
+    );
   } finally {
     password.fill(0);
     await page.close();
@@ -207,6 +212,7 @@ const qualify = async (origin, ca) => {
     // Only this synthetic browser ignores fixture certificates. Readiness above verifies its explicit CA and hostname.
     const context = await browser.newContext({ ignoreHTTPSErrors: true });
     await login(context, origin);
+    progress("owner-context");
     const csrf = await session(context, origin, fingerprint);
     await owner(context, origin, fingerprint, csrf);
     progress("restart");
@@ -287,6 +293,7 @@ try {
     [
       path.join(root, "deployment/configure-local.sh"),
       configuration,
+      "Authored deployment owner",
       "Etc/UTC",
       String(webPort),
       String(identityPort),

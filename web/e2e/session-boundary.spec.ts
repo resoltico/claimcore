@@ -1,10 +1,9 @@
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { AxeBuilder } from "@axe-core/playwright";
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
 import { consumerContractIdentity } from "@contracts/client";
-import { login, logout } from "./session-helpers";
+import { expectAccessible, login, logout } from "./session-helpers";
 
 test.use({ storageState: { cookies: [], origins: [] } });
 
@@ -102,7 +101,9 @@ const expectAnonymousSession = async (page: Page) => {
 test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({ page }) => {
   test.setTimeout(freshLoginWorkflowTimeout);
   await page.goto("/", { waitUntil: "commit" });
-  await expect(page.getByRole("heading", { name: "ClaimCore", exact: true })).toBeVisible();
+  await expect(
+    page.getByRole("heading", { name: "Sign in to the case register", exact: true }),
+  ).toBeVisible();
   await expect(page.getByRole("link", { name: "Sign in" })).toBeVisible();
   const antiforgeryToken = await expectAnonymousSessionBoundary(page);
   await expectSessionRejection(page, antiforgeryToken);
@@ -113,7 +114,7 @@ test("uses OIDC sign-in and the accessible actor-bound case workspace", async ({
     status: 200,
     payload: { outcome: { kind: "SUCCEEDED", data: { authenticated: true } } },
   });
-  await expect(new AxeBuilder({ page }).analyze()).resolves.toMatchObject({ violations: [] });
+  await expectAccessible(page);
   await logout(page);
   await expectAnonymousSession(page);
 });

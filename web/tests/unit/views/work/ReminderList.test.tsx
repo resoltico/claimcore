@@ -1,3 +1,6 @@
+import { within, waitFor } from "@testing-library/react";
+import { service } from "../../../../src/api/service";
+import { actorRefInput } from "../../../support/inputs";
 import { afterEach, expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../../../support/presentation-test-support";
@@ -26,7 +29,7 @@ const row = (
   },
   caseReference: "TIMING-CASE",
   recordedAt: basis.observedAt,
-  recordedBy: "00000000-0000-4000-8000-000000000098",
+  recordedBy: actorRefInput({ actorId: "00000000-0000-4000-8000-000000000098" }),
   acts: [],
   active: true,
   timing,
@@ -53,7 +56,13 @@ for (const [language, labels, pending] of [
       vi.setSystemTime(new Date("2031-06-15T12:00:00Z"));
       localStorage.setItem(
         preferenceKey,
-        JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" }),
+        JSON.stringify({
+          version: 3,
+          language,
+          displayLocale: "en-GB",
+          mode: "system",
+          accent: "green" as const,
+        }),
       );
       vi.stubGlobal(
         "fetch",
@@ -77,6 +86,10 @@ for (const [language, labels, pending] of [
       for (const [index, item] of [...items].entries()) {
         expect(item.querySelector(".reminder-timing")).toHaveTextContent(labels[index]!);
         expect(item).toHaveTextContent(pending);
+        const details = item.querySelector(".reminder-record-details");
+        expect(details).not.toHaveAttribute("open");
+        expect(item.querySelector(":scope > .observation-basis")).toBeNull();
+        expect(details?.querySelector(".observation-basis")).not.toBeVisible();
         expect(item.querySelector(".observation-basis")).toHaveTextContent("03/11/2026");
         expect(item.querySelector(".observation-basis")).toHaveTextContent("Etc/UTC");
       }
@@ -158,4 +171,129 @@ it("retains each loaded row's server timing and date basis when a later page use
   expect(items[1]).toHaveTextContent("Overdue");
   expect(items[1]).toHaveTextContent("04/11/2026");
   expect(items[1]).toHaveTextContent("Europe/Riga");
+});
+
+const actionRow = (acts: ReminderReadModel["acts"]): ReminderReadModel => ({
+  ...row(7, "2026-11-01", "OVERDUE"),
+  acts,
+});
+const renderActions = (
+  item: ReminderReadModel,
+  onAct?: (row: ReminderReadModel, kind: string, originId?: string) => void,
+) => {
+  const fetch = vi
+    .fn()
+    .mockResolvedValue(
+      response("reminder.list", "SUCCEEDED", { basis, items: [item], nextCursor: null }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  return {
+    ...render(<ReminderList filter={{}} {...(onAct === undefined ? {} : { onAct })} />),
+    fetch,
+  };
+};
+
+it("delegates the explicit completion circle exactly once without previewing or writing in the row", async () => {
+  const item = actionRow(["COMPLETE", "UPDATE", "CANCEL", "COMPLETE_AND_PLAN_NEXT"]);
+  const onAct = vi.fn();
+  const preview = vi.spyOn(service, "preview");
+  const execute = vi.spyOn(service, "execute");
+  const { fetch } = renderActions(item, onAct);
+  const circle = await screen.findByRole("button", { name: "Complete reminder" });
+  expect(circle).toHaveAttribute("id", `reminder-${item.reminder.reminderId}-COMPLETE`);
+  expect(circle).toHaveAttribute("aria-describedby", `reminder-action-${item.reminder.reminderId}`);
+  expect(screen.queryByRole("checkbox")).toBeNull();
+  expect(screen.queryByRole("menu")).toBeNull();
+  expect(onAct).not.toHaveBeenCalled();
+  await userEvent.setup().click(circle);
+  expect(onAct).toHaveBeenCalledExactlyOnceWith(
+    item,
+    "COMPLETE",
+    `reminder-${item.reminder.reminderId}-COMPLETE`,
+  );
+  expect(preview).not.toHaveBeenCalled();
+  expect(execute).not.toHaveBeenCalled();
+  expect(fetch).toHaveBeenCalledOnce();
+});
+
+it("keeps only supplied non-completion actions in the menu and forwards the same current row", async () => {
+  const item = actionRow(["COMPLETE", "CANCEL", "UPDATE"]);
+  const onAct = vi.fn((_row: ReminderReadModel, _kind: string, originId?: string) => originId);
+  renderActions(item, onAct);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  const overflow = screen.getByRole("button", { name: "Available actions" });
+  await user.click(overflow);
+  const menu = screen.getByRole("menu", { name: "Available actions" });
+  expect(
+    within(menu)
+      .getAllByRole("menuitem")
+      .map((entry) => entry.textContent),
+  ).toEqual(["Cancel reminder", "Update reminder"]);
+  expect(within(menu).queryByRole("menuitem", { name: "Complete reminder" })).toBeNull();
+  expect(within(menu).queryByRole("menuitem", { name: "Reopen reminder" })).toBeNull();
+  await user.click(within(menu).getByRole("menuitem", { name: "Update reminder" }));
+  expect(onAct).toHaveBeenCalledTimes(2);
+  expect(onAct.mock.calls[1]![0]).toBe(onAct.mock.calls[0]![0]);
+  expect(onAct.mock.calls[1]![1]).toBe("UPDATE");
+  expect(onAct.mock.results[1]!.value).toBe(overflow.id);
+  expect(screen.queryByRole("menu")).toBeNull();
+});
+
+it("supports keyboard menu dismissal and focus restoration without selecting an action", async () => {
+  const onAct = vi.fn();
+  renderActions(actionRow(["UPDATE", "CANCEL"]), onAct);
+  const user = userEvent.setup();
+  const trigger = await screen.findByRole("button", { name: "Available actions" });
+  trigger.focus();
+  await user.keyboard("{ArrowDown}");
+  expect(await screen.findByRole("menu", { name: "Available actions" })).toBeVisible();
+  await user.keyboard("{Escape}");
+  expect(screen.queryByRole("menu")).toBeNull();
+  await waitFor(() => {
+    expect(trigger).toHaveFocus();
+  });
+  expect(onAct).not.toHaveBeenCalled();
+});
+
+it.each([
+  { active: true, state: "PENDING" as const, acts: [] },
+  { active: false, state: "PENDING" as const, acts: [] },
+  { active: true, state: "COMPLETED" as const, acts: ["REOPEN"] as const },
+  { active: true, state: "CANCELLED" as const, acts: ["REOPEN"] as const },
+])(
+  "never invents completion from state or date: $state active=$active",
+  async ({ active, state, acts }) => {
+    const onAct = vi.fn();
+    const item = {
+      ...actionRow(acts),
+      active,
+      timing: null,
+      reminder: { ...actionRow(acts).reminder, state },
+    };
+    const { container } = renderActions(item, onAct);
+    await screen.findByText("Action 7");
+    expect(screen.queryByRole("button", { name: "Complete reminder" })).toBeNull();
+    expect(container.querySelector(".reminder-timing")).toBeNull();
+    if (!active || state !== "PENDING") {
+      expect(container.querySelector(".reminder-row")).toHaveAttribute("data-muted", "true");
+    } else {
+      expect(container.querySelector(".reminder-row")).not.toHaveAttribute("data-muted");
+    }
+    if (acts.length > 0) {
+      await userEvent.setup().click(screen.getByRole("button", { name: "Available actions" }));
+      expect(screen.getAllByRole("menuitem")).toHaveLength(1);
+      expect(screen.getByRole("menuitem", { name: "Reopen reminder" })).toBeVisible();
+    } else {
+      expect(screen.queryByRole("button", { name: "Available actions" })).toBeNull();
+    }
+    expect(onAct).not.toHaveBeenCalled();
+  },
+);
+
+it("renders no action controls without the parent coordinator even when the row supplies acts", async () => {
+  renderActions(actionRow(["COMPLETE", "CANCEL"]));
+  await screen.findByText("Action 7");
+  expect(screen.queryByRole("button", { name: "Complete reminder" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Available actions" })).toBeNull();
 });

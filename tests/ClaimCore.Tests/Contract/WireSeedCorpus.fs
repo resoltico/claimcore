@@ -49,8 +49,17 @@ let internal recordContext (kind: Type) (field: Reflection.PropertyInfo) =
 let internal unionContext (kind: Type) (case: UnionCaseInfo) (field: Reflection.PropertyInfo) =
     kind.Name + "." + case.Name + "." + field.Name
 
-// Opaque groups expose their field keys through named accessors. Those keys are part of
-// admitted seed structure even before a diagnostic example mentions the field as a value.
+let private retainedValues (kind: Type) value =
+    if kind = typeof<Registration> then
+        Registration.values (unbox value)
+    elif kind = typeof<Decision> then
+        Decision.values (unbox value)
+    elif kind = typeof<Payment> then
+        Payment.values (unbox value)
+    else
+        []
+
+// Named accessors preserve the actual typed scalar alternatives hidden by opaque group representations.
 let private groupFields (kind: Type) value =
     if kind = typeof<RegistrationInput> then
         RegistrationInput.values (unbox value) |> List.map fst
@@ -58,14 +67,8 @@ let private groupFields (kind: Type) value =
         DecisionInput.values (unbox value) |> List.map fst
     elif kind = typeof<PaymentInput> then
         PaymentInput.values (unbox value) |> List.map fst
-    elif kind = typeof<Registration> then
-        Registration.values (unbox value) |> List.map fst
-    elif kind = typeof<Decision> then
-        Decision.values (unbox value) |> List.map fst
-    elif kind = typeof<Payment> then
-        Payment.values (unbox value) |> List.map fst
     else
-        []
+        retainedValues kind value |> List.map fst
 
 let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null) =
     add seeds.Values kind value
@@ -73,6 +76,13 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
 
     for field in groupFields kind value do
         collect seeds (context + ".groupField") typeof<BusinessField> (box field)
+
+    for field, scalar in retainedValues kind value do
+        collect
+            seeds
+            (context + ".groupValue." + BusinessField.key field)
+            typeof<Admitted>
+            (box scalar)
 
     if kind = typeof<string> then
         add seeds.Tokens context (unbox<string> value)
@@ -90,6 +100,31 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
     elif kind = typeof<PrincipalKey> then
         let input = PrincipalKey.toInput (unbox<PrincipalKey> value)
         collect seeds (context + ".Principal") typeof<PrincipalInput> (box input)
+    elif kind = typeof<CaseSummaryFacts> then
+        let facts = unbox<CaseSummaryFacts> value
+
+        for KeyValue(field, value) in facts.Fields do
+            collect seeds (context + ".listedField") typeof<BusinessField> (box field)
+
+            collect
+                seeds
+                (context + ".listedValue." + BusinessField.key field)
+                typeof<CaseFieldValue option>
+                (box value)
+    elif kind = typeof<RevisionConflictInfo> then
+        let conflict = unbox<RevisionConflictInfo> value
+
+        collect
+            seeds
+            (context + ".RevisionConflictInfo.ActualRevision")
+            typeof<Revision>
+            (box conflict.ActualRevision)
+
+        collect
+            seeds
+            (context + ".RevisionConflictInfo.Changes")
+            typeof<ConflictChanges option>
+            (box conflict.Changes)
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
         collect seeds (context + ".CaseAdvice.Acts") typeof<CaseActKind list> (box advice.Acts)
@@ -105,6 +140,12 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
             (context + ".CaseAdvice.History")
             typeof<HistoryDetail list>
             (box advice.History)
+
+        collect
+            seeds
+            (context + ".CaseAdvice.Blocked")
+            typeof<CaseActRefusal list>
+            (box advice.Blocked)
     elif FSharpType.IsTuple kind then
         Array.zip (FSharpType.GetTupleElements kind) (FSharpValue.GetTupleFields(nonNull value))
         |> Array.iteri (fun index (itemType, item) ->

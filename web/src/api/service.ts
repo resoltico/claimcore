@@ -1,3 +1,6 @@
+import { retryRead } from "./readRetry";
+import { captureReadRetryNotice } from "./readRetryNotice";
+import { captureBusinessDateObserver } from "./businessDateObservation";
 import { ReadAdmission } from "./readAdmission";
 import { replyCorrelates } from "../protocol/replyCorrelation";
 import type { PreparedRequest } from "../protocol/preparedRequest";
@@ -96,13 +99,28 @@ const send = <K extends EndpointId>(
   if (body !== undefined) {
     headers["Content-Type"] = "application/json";
   }
+  const observeDate = captureBusinessDateObserver(id, credential);
+  const retryNotice = captureReadRetryNotice(credential);
   const network = async (deliveredSignal: AbortSignal): Promise<ApiResult<ServiceResponse<K>>> => {
     if (deliveredSignal.aborted) {
       return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
     }
     try {
-      const response = await sendHttp(endpoint, headers, body, deliveredSignal);
-      return await result(id, response, deliveredSignal, input);
+      const attempt = async () => {
+        const response = await sendHttp(endpoint, headers, body, deliveredSignal);
+        return {
+          result: await result(id, response, deliveredSignal, input),
+          retryAfter: response.headers.get("Retry-After"),
+        };
+      };
+      const reply =
+        endpoint.effect === "READ"
+          ? await retryRead(attempt, AbortSignal.any([signal, deliveredSignal]), retryNotice)
+          : (await attempt()).result;
+      if (!signal.aborted && !deliveredSignal.aborted && reply.kind === "outcome") {
+        observeDate(reply.value);
+      }
+      return reply;
     } catch {
       return { kind: "deliveryFailure", notice: localNotice("unreachable") };
     }

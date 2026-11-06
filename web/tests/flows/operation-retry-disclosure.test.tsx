@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
@@ -48,11 +49,28 @@ const disclosedCurrent = {
 const preview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      presentation: {
+        changes: [
+          {
+            key: "claimantName",
+            labelId: "field.claimantName.label",
+            before: { kind: "PARTY", value: currentCanary },
+            after: { kind: "PARTY", value: reviewCanary },
+          },
+        ],
+        unchanged: [],
+      },
       subject: {
         kind: "CASE",
-        before: disclosedCurrent,
+        before: {
+          caseId: current.caseId,
+          caseReference: current.caseReference,
+          revision: current.revision,
+          state: disclosedCurrent.state,
+        },
         after: {
-          ...disclosedCurrent,
+          caseId: current.caseId,
+          caseReference: current.caseReference,
           revision: 2,
           state: {
             ...disclosedCurrent.state,
@@ -65,13 +83,7 @@ const preview = () =>
             },
           },
         },
-        changes: [
-          {
-            field: "claimantName",
-            before: currentCanary,
-            after: reviewCanary,
-          },
-        ],
+
         context: runtime,
       },
     },
@@ -108,22 +120,16 @@ const beginUnknown = async (onMutationLockChange: (locked: boolean) => void) => 
   await user.clear(claimant);
   await user.type(claimant, reviewCanary);
   await user.click(getButton("Review changes"));
-  await screen.findByRole("dialog", {
-    name: "Review changes",
-  });
+  await screen.findByRole("dialog");
   expect(document.body).toHaveTextContent(currentCanary);
   expect(document.body).toHaveTextContent(reviewCanary);
-  await user.click(
-    screen.getByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await findButton("Send again");
   return user;
 };
 const expectPendingOnly = (locked: (locked: boolean) => void, busy = false) => {
-  expect(screen.queryByRole("dialog")).toBeNull();
+  expect(screen.queryByRole("dialog", { name: "Discard these draft changes?" })).toBeNull();
   expect(
     screen.queryByRole("button", {
       name: "Review changes",

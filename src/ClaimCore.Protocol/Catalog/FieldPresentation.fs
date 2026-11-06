@@ -8,8 +8,11 @@ module FieldPresentation =
     let labelId field =
         Vocabulary.messageKey BusinessField.vocabulary field "label"
 
-    let meaningId field =
-        Vocabulary.messageKey BusinessField.vocabulary field "meaning"
+    let hintId field =
+        Vocabulary.messageKey BusinessField.vocabulary field "hint"
+
+    let ruleId field =
+        Vocabulary.messageKey BusinessField.vocabulary field "rule"
 
     let descriptor field =
         match (BusinessField.describe field).Kind with

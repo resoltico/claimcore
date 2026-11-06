@@ -69,6 +69,15 @@ module internal ProjectionRebuild =
                         (AuthorityProjection.SetEnabled(id, actor.Enabled))
                         token
 
+                match actor.Actor.Profile with
+                | None -> ()
+                | Some profile ->
+                    do!
+                        Persistence.authority
+                            connection
+                            (AuthorityProjection.SetProfile(id, profile))
+                            token
+
             for KeyValue((actor, operation), instant) in state.Fences do
                 let! _ =
                     DatabaseSession.execute
@@ -97,6 +106,8 @@ module internal ProjectionRebuild =
                                     Snapshot = snapshot
                                     ChangedAt = history.ChangedAt.Value
                                     RecordedBy = history.RecordedBy.Value
+                                    SummaryChangedAt = history.SummaryChangedAt
+                                    SummaryRecordedBy = history.SummaryRecordedBy
                                 })
                             token
                 | Some _ -> ()

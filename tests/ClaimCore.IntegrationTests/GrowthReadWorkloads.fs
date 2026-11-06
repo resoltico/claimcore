@@ -219,8 +219,8 @@ let private authorityProfiles progressed publish (database: PostgresFixture.Data
 
         Expect.equal
             (ClaimCore.Postgres.DatabaseSession.value<int64> 0 counts.Head)
-            (int64 (GrowthWorkloadPlan.authorityEntries + 3))
-            "History qualification contains the declared actual authority entry population"
+            (int64 (GrowthWorkloadPlan.authorityEntries + 4))
+            "History population includes the two owner effects and two setup grants"
 
         let reports = ResizeArray<_>()
 
@@ -297,11 +297,12 @@ let private workProfiles progressed publish (actor: ServiceContext) cases =
 
         let context =
             match context with
-            | Outcome.Succeeded value -> value
+            | Outcome.Succeeded {
+                                    Requester = RequesterState.Active value
+                                } -> value
             | _ -> failtest "Case-work growth requires the actual registered handler context"
 
-        let followUp =
-            CalendarDate.ofDate (context.Runtime.EffectiveBusinessDate.AddDays -1)
+        let followUp = CalendarDate.ofDate (context.Runtime.Basis.BusinessDate.AddDays -1)
 
         let references = ResizeArray<string>()
 
@@ -387,19 +388,19 @@ let private workProfiles progressed publish (actor: ServiceContext) cases =
 
                     for row in page.Items do
                         match row.State with
-                        | CaseState.Active facts ->
+                        | CaseState.Active _ ->
                             Expect.equal
-                                facts.Work.FollowUp
+                                (row.NextAction |> Option.map _.Due)
                                 (Some followUp)
                                 "The planned date survives actual PostgreSQL reads"
 
                             Expect.equal
-                                facts.Work.Due
-                                CaseDue.Overdue
+                                (row.NextAction |> Option.map _.DueState)
+                                (Some CaseDue.Overdue)
                                 "The database observation classifies actual past follow-up"
 
                             Expect.equal
-                                (facts.Work.Responsible |> Option.map _.Account.ActorId)
+                                (row.Responsible |> Option.map _.ActorId)
                                 (Some context.ActorId)
                                 "Mine is explicit responsibility, not grant-based visibility"
                         | _ -> failtest "Only seeded active work can match the work filter"
@@ -467,14 +468,16 @@ let private reminderProfiles progressed publish actor cases =
 
         let context =
             match contextResult with
-            | Outcome.Succeeded value -> value
+            | Outcome.Succeeded {
+                                    Requester = RequesterState.Active value
+                                } -> value
             | other -> failtestf "Reminder growth context unavailable: %A" other
 
         let reference = GrowthWorkloadPlan.readReference 3
         let population = cases / 10
 
         let due =
-            context.Runtime.EffectiveBusinessDate
+            context.Runtime.Basis.BusinessDate
                 .AddDays(-2)
                 .ToString("yyyy-MM-dd", Globalization.CultureInfo.InvariantCulture)
 
@@ -542,7 +545,8 @@ let private reminderProfiles progressed publish actor cases =
                 Text = Some "High fanout action"
                 AfterCursor = cursor
                 Limit = 50
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let assertPage state expected =
@@ -754,7 +758,131 @@ let private reminderProfiles progressed publish actor cases =
                 (Nullable())
                 overview
 
-        return [| pending; completed; currentReport; financialReport; overviewReport |]
+        let caseViews () =
+            task {
+                let! result = Service.caseViews actor () token
+
+                match result with
+                | Outcome.Succeeded views ->
+                    Expect.equal
+                        (views.Items |> List.find (fun item -> item.View = CaseView.All) |> _.Count)
+                        (int64 cases)
+                        "All-case count includes the seeded population"
+
+                    Expect.equal
+                        (views.Items
+                         |> List.find (fun item -> item.View = CaseView.NeedsAttention)
+                         |> _.Count)
+                        (int64 (cases / 2))
+                        "Core attention matches the independent active-open population"
+
+                    return views.Items.Length
+                | other -> return failtestf "Core case view growth query failed: %A" other
+            }
+
+        let! caseViewsReport =
+            measure
+                progressed
+                publish
+                cases
+                ("core-case-views", "ALL_VIEWS", 11, fingerprint "case-views")
+                (Nullable())
+                caseViews
+
+        let reminderViews () =
+            task {
+                let! result = Service.reminderViews actor () token
+
+                match result with
+                | Outcome.Succeeded views ->
+                    Expect.equal
+                        (views.Items
+                         |> List.find (fun item -> item.View = ReminderView.Pending)
+                         |> _.Count)
+                        (int64 (cases / 1000 + population))
+                        "Pending count includes seeded plans and the high-fanout case"
+
+                    Expect.equal
+                        (views.Items
+                         |> List.find (fun item -> item.View = ReminderView.Completed)
+                         |> _.Count)
+                        (int64 population)
+                        "Completed count includes the separate terminal population"
+
+                    return views.Items.Length
+                | other -> return failtestf "Core reminder view growth query failed: %A" other
+            }
+
+        let! reminderViewsReport =
+            measure
+                progressed
+                publish
+                cases
+                ("core-reminder-views", "ALL_VIEWS", 7, fingerprint "reminder-views")
+                (Nullable())
+                reminderViews
+
+        let timeline () =
+            task {
+                let! result =
+                    Service.timeline
+                        actor
+                        {
+                            Target = target
+                            Filter = None
+                            AfterCursor = None
+                            Limit = 50
+                        }
+                        token
+
+                match result with
+                | Outcome.Succeeded page ->
+                    Expect.equal
+                        page.Items.Length
+                        50
+                        "Shared ledger timeline is bounded despite child fanout"
+
+                    Expect.isSome page.NextCursor "A high-fanout case retains continuation"
+
+                    Expect.isTrue
+                        (page.Items
+                         |> List.pairwise
+                         |> List.forall (fun (left, right) ->
+                             left.Position.Sequence > right.Position.Sequence))
+                        "The replacement timeline has one descending ledger sequence"
+
+                    Expect.isTrue
+                        (page.Items
+                         |> List.forall (fun (entry: CaseTimelineEntry) ->
+                             match entry.Changes with
+                             | TimelineChanges.Disclosed _ -> true
+                             | _ -> false))
+                        "Full-history growth exercises typed change decoding and actor lookup"
+
+                    return page.Items.Length
+                | other -> return failtestf "Core timeline growth query failed: %A" other
+            }
+
+        let! timelineReport =
+            measure
+                progressed
+                publish
+                cases
+                ("core-case-timeline", "LEDGER_SEQUENCE", 50, fingerprint "timeline")
+                (Nullable 50)
+                timeline
+
+        return
+            [|
+                pending
+                completed
+                currentReport
+                financialReport
+                overviewReport
+                caseViewsReport
+                reminderViewsReport
+                timelineReport
+            |]
     }
 
 let profileWithProgress cases progressed completed =

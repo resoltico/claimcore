@@ -34,6 +34,9 @@ let calendar =
 
 let private decisionStore =
     { new IStore with
+        member _.Context _ =
+            failtest "Pure decisions must not load requester context"
+
         member _.Read _ =
             failtest "Pure decisions must not read storage"
 
@@ -52,10 +55,12 @@ let actor principal actorId roles cases : AuthorityView =
                     ActorId = actorId
                     Principal = principal
                     Enabled = true
+                    Profile = None
                 }
         Installation = roles
         Cases = Map.ofList cases
         HasScopedCases = not cases.IsEmpty
+        HasAssignedRoles = not roles.IsEmpty || not cases.IsEmpty
     }
 
 let worker =
@@ -95,7 +100,10 @@ let locked authority current existing : LockedFacts<CaseFacts> =
                 Maintenance = RegisterMaintenance.initial
                 ObservedAt = instant
                 Actor = authority
-                ExistingOperation = existing
+                ExistingOperation =
+                    existing
+                    |> Option.map (fun entry ->
+                        StoredOperation.create [ entry ] |> Result.defaultWith (string >> failtest))
                 Case = current
             }
     }
@@ -112,13 +120,18 @@ let decide request view =
         view.Read
 
 let executeAuthority installation principal request (view: LockedFacts<AuthorityExecutionFacts>) =
+    let mutable counter = 0uy
+
     AuthorityExecution.execute
         (services installation calendar principal)
         request
         {
             Head = view.Head
             Fenced = view.IsFenced
-            Nonce = view.PayloadNonce
+            NewPayloadNonce =
+                (fun () ->
+                    counter <- counter + 1uy
+                    Array.create 32 counter)
         }
         view.Read
 
@@ -134,13 +147,19 @@ let provisionAuthority
     principal
     (view: LockedFacts<AuthorityExecutionFacts>)
     =
+    let mutable counter = 0uy
+
     AuthorityExecution.provision
         (services installation calendar principal)
         operation
+        Inputs.ownerProfile
         {
             Head = view.Head
             Fenced = view.IsFenced
-            Nonce = view.PayloadNonce
+            NewPayloadNonce =
+                (fun () ->
+                    counter <- counter + 1uy
+                    Array.create 32 counter)
         }
         view.Read
 
@@ -168,7 +187,11 @@ let created n reference =
 
     request, LedgerEntries.stored entry, current, receipt
 
-let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> =
+let authorityView
+    (caller: AuthorityView)
+    (target: AuthorityView)
+    existing
+    : LockedFacts<AuthorityExecutionFacts> =
     {
         Head = head
         PayloadNonce = nonce
@@ -179,14 +202,44 @@ let authorityView caller target existing : LockedFacts<AuthorityExecutionFacts> 
                 ObservedAt = instant
                 Actor = caller
                 ExistingOperation = existing
+                TargetRoles =
+                    target.Actor
+                    |> Option.map (fun actor ->
+                        actor.ActorId,
+                        (Role.all
+                         |> List.choose (fun role ->
+                             let installation = List.contains role target.Installation
+
+                             let cases =
+                                 target.Cases
+                                 |> Map.values
+                                 |> Seq.filter (List.contains role)
+                                 |> Seq.length
+                                 |> int64
+
+                             if installation || cases > 0L then
+                                 Some
+                                     {
+                                         ActorRoleSummary.Role = role
+                                         Installation = installation
+                                         CaseCount = cases
+                                     }
+                             else
+                                 None)))
+                    |> Option.toList
+                    |> Map.ofList
                 Target = target
-                TargetCase = None
+                TargetCases = Map.empty
                 EnabledHumanOwners = Some 2
                 ActorCount = Some 2
             }
     }
 
 let admitted n target act : AuthorityCommand =
-    AuthorityRequests.input (id n) target act
-    |> Result.bind Authority.parse
+    Authority.parse
+        {
+            OperationId = id n
+            Target = PrincipalKey.toInput target
+            Act = act
+        }
     |> Result.defaultWith (fun refusal -> failtestf "Invalid authority test command: %A" refusal)

@@ -15,11 +15,12 @@ type internal State =
     {
         Maintenance: RegisterMaintenance
         Head: LedgerPosition
-        Entries: Map<OperationId, StoredEntry>
+        Entries: Map<OperationId * int, StoredEntry>
         Controls: Map<Sequence, RetainedControl>
         Cases: Map<CaseId, StoredCase>
         Work: Map<CaseId, StoredWork>
         Reminders: Map<ReminderId, StoredReminder>
+        Requests: Map<PrincipalKey, AccessRequest>
         Actors: Map<ActorId, Actor>
         Grants: Set<ActorId * Role * CaseId option>
         Fences: Map<ActorId * OperationId, DateTimeOffset>
@@ -50,10 +51,10 @@ let internal copyEntry (entry: StoredEntry) =
 
 exception CorruptProjection
 
-let internal readCase (entries: Map<OperationId, StoredEntry>) (record: StoredCase) =
+let internal readCase (entries: Map<OperationId * int, StoredEntry>) (record: StoredCase) =
     let identity =
         entries
-        |> Map.tryFind (OperationId.create (CaseId.value record.CaseId) |> Option.get)
+        |> Map.tryFind ((OperationId.create (CaseId.value record.CaseId) |> Option.get), 0)
         |> Option.exists (fun entry ->
             entry.CreationReference = Some record.Snapshot.Reference
             && entry.Subject
@@ -107,7 +108,7 @@ let internal reindex state (record: StoredCase) =
                 WorkSearchText =
                     work
                     |> Option.bind (fun value -> value.Work.Summary)
-                    |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+                    |> Option.map (HandlingSummary.format >> TextSearch.normalize)
             }
     }
 
@@ -141,16 +142,48 @@ let internal assignedAccount state caseId actorId =
                     }
             )
 
-        let _, _, subject = PrincipalKey.parts actor.Principal
+        let available =
+            PrincipalKey.isHuman actor.Principal
+            && Authority.can actor.Principal authority Capability.ReadCase (Scope.Case caseId)
+            && Authority.can actor.Principal authority Capability.ManageCaseWork (Scope.Case caseId)
 
-        {
-            AssignedAccount.Account = { ActorId = actorId; Subject = subject }
-            Available =
-                PrincipalKey.isHuman actor.Principal
-                && Authority.can actor.Principal authority Capability.ReadCase (Scope.Case caseId)
-                && Authority.can
-                    actor.Principal
-                    authority
-                    Capability.ManageCaseWork
-                    (Scope.Case caseId)
-        }
+        let availability =
+            if not actor.Enabled then ActorAvailability.Disabled
+            elif available then ActorAvailability.Available
+            else ActorAvailability.NotEligible
+
+        Actor.reference availability actor
+
+let internal completeOperations previousHead (state: State) =
+    let changed =
+        state.Entries
+        |> Map.values
+        |> Seq.filter (fun entry -> entry.Sequence > previousHead)
+        |> Seq.map _.OperationId
+        |> Set.ofSeq
+
+    changed
+    |> Set.forall (fun operation ->
+        let entries =
+            state.Entries
+            |> Map.values
+            |> Seq.filter (fun entry -> entry.OperationId = operation)
+            |> Seq.sortBy (fun entry -> LedgerEffects.index entry.Effects)
+            |> Seq.toList
+
+        match StoredOperation.create entries with
+        | Error _ -> false
+        | Ok operation ->
+            operation.Entries.Length = 1
+            || (operation.Entries
+                |> List.forall (fun entry ->
+                    match entry.Payload, entry.PayloadNonce, entry.Subject with
+                    | Some _, Some _, _ -> true
+                    | None, None, EntryTarget.Authority(id, AuthorityKind.SetProfile) ->
+                        state.Entries
+                        |> Map.values
+                        |> Seq.exists (fun erased ->
+                            erased.Subject =
+                                EntryTarget.Authority(id, AuthorityKind.EraseProfile)
+                            && erased.Sequence > entry.Sequence)
+                    | _ -> false)))

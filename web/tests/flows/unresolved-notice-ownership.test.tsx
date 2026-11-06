@@ -265,11 +265,15 @@ it("passive unresolved status retains identity and settlement requires a separat
   await userEvent.keyboard("{Enter}");
   expect(settle).not.toHaveBeenCalled();
   await userEvent.tab();
-  expect(screen.getByRole("button", { name: "Keep checking status" })).toHaveFocus();
+  expect(screen.getByRole("textbox", { name: "Exact operation ID" })).toHaveFocus();
   await userEvent.click(screen.getByRole("button", { name: "Keep checking status" }));
   expect(settle).not.toHaveBeenCalled();
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
   await userEvent.click(screen.getByRole("button", { name: "Settle operation permanently" }));
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Exact operation ID" }),
+    record.operationId,
+  );
   await userEvent.click(screen.getByRole("button", { name: "Confirm permanent settlement" }));
   await waitFor(() => {
     expect(settle).toHaveBeenCalledExactlyOnceWith(
@@ -302,6 +306,10 @@ it("an old actor's pending read cannot block or unlock a newer actor's confirmed
     expect(screen.getByRole("button", { name: "Settle operation permanently" })).not.toBeDisabled();
   });
   await userEvent.click(screen.getByRole("button", { name: "Settle operation permanently" }));
+  await userEvent.type(
+    screen.getByRole("textbox", { name: "Exact operation ID" }),
+    second.operationId,
+  );
   await userEvent.click(screen.getByRole("button", { name: "Confirm permanent settlement" }));
   await waitFor(() => {
     expect(settle).toHaveBeenCalledExactlyOnceWith(

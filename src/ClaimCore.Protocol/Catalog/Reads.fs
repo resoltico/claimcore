@@ -8,13 +8,17 @@ type ReadInput =
     | CaseOperand
     | OperationOperand
     | ActorOperand
+    | PrincipalOperand
     | ActorFilter
     | Page
+    | DirectorySearch
+    | ActorRole
     | Detail
     | Worklist
     | Reminders
     | Mine
     | ReminderIdentity
+    | TimelineFilter
 
 type ReadDeclaration =
     {
@@ -27,6 +31,10 @@ module ReadCatalog =
     let declarations =
         [
             {
+                Endpoint = QueryEndpoint.CaseTimeline
+                Inputs = [ ReadInput.CaseOperand; ReadInput.TimelineFilter; ReadInput.Page ]
+            }
+            {
                 Endpoint = QueryEndpoint.ReminderGet
                 Inputs = [ ReadInput.CaseOperand; ReadInput.ReminderIdentity ]
             }
@@ -37,6 +45,14 @@ module ReadCatalog =
             {
                 Endpoint = QueryEndpoint.ReminderList
                 Inputs = [ ReadInput.Reminders; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseViews
+                Inputs = []
+            }
+            {
+                Endpoint = QueryEndpoint.ReminderViews
+                Inputs = []
             }
             {
                 Endpoint = QueryEndpoint.WorkOverview
@@ -76,7 +92,7 @@ module ReadCatalog =
             }
             {
                 Endpoint = QueryEndpoint.AuthorityList
-                Inputs = [ ReadInput.Page ]
+                Inputs = [ ReadInput.DirectorySearch; ReadInput.ActorRole; ReadInput.Page ]
             }
             {
                 Endpoint = QueryEndpoint.AuthorityGrants
@@ -85,6 +101,14 @@ module ReadCatalog =
             {
                 Endpoint = QueryEndpoint.AuthorityHistory
                 Inputs = [ ReadInput.ActorFilter; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityRequests
+                Inputs = [ ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityRequestsDismiss
+                Inputs = [ ReadInput.PrincipalOperand ]
             }
             {
                 Endpoint = QueryEndpoint.Context

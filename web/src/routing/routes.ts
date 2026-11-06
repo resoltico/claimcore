@@ -2,12 +2,15 @@ import type { CaseSelector } from "@contracts/client";
 import { isRequest } from "../protocol/client";
 export type Route =
   | { screen: "cases"; query: string }
-  | { screen: "work" }
+  | { screen: "home" }
+  | { screen: "reminders"; query: string }
+  | { screen: "settings" }
   | { screen: "newCase" }
   | { screen: "case"; target: CaseSelector }
   | { screen: "caseAct"; target: CaseSelector; act: string }
-  | { screen: "operations"; operationId: string }
-  | { screen: "authority"; actorId: string; history: boolean }
+  | { screen: "recovery"; operationId: string }
+  | { screen: "people"; actorId: string }
+  | { screen: "authorityHistory"; actorId: string }
   | { screen: "missing" };
 
 const opaque = (value: string): string =>
@@ -64,15 +67,29 @@ const caseRoute = (segments: string[]): Route => {
 };
 const singleRoute = (segments: ReadonlyArray<string>, query: string): Route | null => {
   if (segments.length === 0) {
-    return { screen: "cases", query };
+    return { screen: "home" };
   }
   if (segments.length !== 1) {
     return null;
   }
+  if (segments[0] === "settings") {
+    return { screen: "settings" };
+  }
   if (segments[0] === "cases") {
     return { screen: "cases", query };
   }
-  return segments[0] === "work" ? { screen: "work" } : null;
+  if (segments[0] === "authority-history") {
+    const actors = new URLSearchParams(query).getAll("actorId");
+    const actorId = actors[0] ?? "";
+    if (
+      actors.length > 1 ||
+      (actors.length === 1 && !isRequest("authority.history", { limit: 50, actorId }))
+    ) {
+      return { screen: "missing" };
+    }
+    return { screen: "authorityHistory", actorId };
+  }
+  return segments[0] === "reminders" ? { screen: "reminders", query } : null;
 };
 export const parseRoute = (location: Pick<Location, "pathname" | "search">): Route => {
   const segments = location.pathname.split("/").filter(Boolean);
@@ -84,14 +101,13 @@ export const parseRoute = (location: Pick<Location, "pathname" | "search">): Rou
     if (segments[0] === "cases") {
       return caseRoute(segments);
     }
-    if (segments[0] === "operations" && segments.length <= 2) {
-      return { screen: "operations", operationId: decodeURIComponent(segments[1] ?? "") };
+    if (segments[0] === "recovery" && segments.length <= 2) {
+      return { screen: "recovery", operationId: decodeURIComponent(segments[1] ?? "") };
     }
-    if (segments[0] === "authority" && segments.length <= 2) {
+    if (segments[0] === "people" && segments.length <= 2) {
       return {
-        screen: "authority",
+        screen: "people",
         actorId: decodeURIComponent(segments[1] ?? ""),
-        history: new URLSearchParams(location.search).get("tab") === "history",
       };
     }
   } catch {

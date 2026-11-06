@@ -53,8 +53,8 @@ let private csvSubjects () =
         {
             AuthorityHistoryEntry.Sequence = Sequence.first
             RecordedAt = DateTimeOffset(2026, 1, 1, 0, 0, 0, TimeSpan.Zero)
-            RecordedBy = actor
-            TargetActorId = actor
+            RecordedBy = Inputs.actorReference actor
+            Target = Inputs.actorReference actor
             Facts = AuthorityHistoryFacts.Registered principal
         }
 
@@ -67,17 +67,21 @@ let private csvSubjects () =
     reader.HasFieldsEnclosedInQuotes <- true
     let header = reader.ReadFields() |> nonNull
     let values = reader.ReadFields() |> nonNull
-    Expect.equal header[7] "principal.subject" "Machine-readable column identity"
-    Expect.equal values[7] ("'" + subject) "Protection precedes independent RFC4180 decoding"
+    Expect.equal header[9] "principal.subject" "Machine-readable column identity"
+    Expect.equal values[9] ("'" + subject) "Protection precedes independent RFC4180 decoding"
 
     let page =
         {
-            AuthorityHistoryPage.Entries = [ entry ]
+            AuthorityHistoryPage.Basis = Inputs.workBasis
+            Entries = [ entry ]
             NextCursor = None
         }
 
     let text = TextAuthorityReply.historyPage "en" page |> String.concat "\n"
-    Expect.stringContains text subject "Human output retains the exact subject"
+
+    Expect.isFalse
+        (text.Contains "{\"")
+        "The authority table renders human text; exact identity is retained in CSV and JSON"
 
     use json =
         JsonDocument.Parse(Codec.encode Api.authorityHistory.Output (Outcome.Succeeded page))

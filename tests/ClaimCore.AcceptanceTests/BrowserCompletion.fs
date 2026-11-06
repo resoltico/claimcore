@@ -82,14 +82,56 @@ let inspect expectedFiles engine bytes =
     require (Double.IsFinite milliseconds && milliseconds >= 0.) "invalid duration"
     specs.Length, (milliseconds / 1000.).ToString("0.###", CultureInfo.InvariantCulture) + "s"
 
-let read expectedFiles engine path =
+/// Resolve one literal title from collection or execution using the same report structure.
+let selectedCase expectedFiles engine title bytes =
+    use document = JsonDocument.Parse(bytes: byte array)
+    let root = document.RootElement
+    require (items "errors" root |> List.isEmpty) "collection errors"
+    let directory = project engine root
+    let specs = items "suites" root |> List.collect specifications
+    require (specs.Length = 1) "literal case must select exactly one test"
+    let spec = specs.Head
+    require (text "title" spec = title) "literal case title differs"
+    let file = Path.GetFullPath(Path.Combine(directory, text "file" spec))
+    require (expectedFiles = Set.singleton file) "literal case file differs"
+    let tests = items "tests" spec
+    require (tests.Length = 1) "literal case project inventory differs"
+    require (text "projectName" tests.Head = engine) "literal case engine differs"
+
+    require
+        (text "expectedStatus" tests.Head = "passed")
+        "literal case is disabled or expects failure"
+
+    let identity = text "id" spec
+    require (not (String.IsNullOrWhiteSpace identity)) "literal case identity is missing"
+    identity
+
+let private reportBytes path =
     use stream = File.OpenRead path
     require (stream.Length > 0L && stream.Length <= 8_388_608L) "missing or oversized report"
     let bytes = Array.zeroCreate<byte>(int stream.Length)
     stream.ReadExactly bytes
+    bytes
 
+let read expectedFiles engine path =
     try
-        inspect expectedFiles engine bytes
+        inspect expectedFiles engine (reportBytes path)
+    with
+    | :? JsonException
+    | :? Collections.Generic.KeyNotFoundException ->
+        invalidOp "Browser completion report has an invalid structure."
+
+let readCase expectedFiles engine title identity path =
+    try
+        let bytes = reportBytes path
+        let result = inspect expectedFiles engine bytes
+        require (fst result = 1) "literal case execution count differs"
+
+        require
+            (selectedCase expectedFiles engine title bytes = identity)
+            "literal case identity differs"
+
+        result
     with
     | :? JsonException
     | :? Collections.Generic.KeyNotFoundException ->

@@ -3,12 +3,9 @@ import type { OperationReceipt } from "@contracts/client";
 import type { CurrentCase } from "../../protocol/types";
 import type { FormValues } from "../../protocol/forms";
 import { useCredential } from "../../session/SessionContext";
-import { usePresentation } from "../../presentation/context";
 import { useOperation } from "../../hooks/operation/useOperation";
 import { useOperationNavigation } from "../../hooks/useOperationNavigation";
 import { useEndpointCache } from "../../hooks/EndpointProvider";
-import { renderCatalogKey } from "../../presentation/messages";
-import { operationEntry } from "../../protocol/operationCatalog";
 import { OperationPanel, OperationDiscard } from "../operation/OperationPanel";
 
 type Props = {
@@ -17,6 +14,7 @@ type Props = {
   subject: "WORK" | "REMINDER";
   kind: string;
   targetIdentity?: string;
+  completionAnchor?: string;
   prefill?: FormValues;
   onClose: () => void;
   onRecorded: (receipt: OperationReceipt) => void;
@@ -30,20 +28,20 @@ export const WorkOperation = ({
   subject,
   kind,
   targetIdentity,
+  completionAnchor,
   prefill,
   onClose,
   onRecorded,
   onLockChange,
   onDisclosureRefused,
 }: Props) => {
-  const p = usePresentation();
   const credential = useCredential();
+  const anchor = useRef<HTMLElement | null>(
+    completionAnchor === undefined ? null : document.getElementById(completionAnchor),
+  );
+  const previewed = useRef(false);
   const cache = useEndpointCache();
   const recorded = useRef<string | null>(null);
-  const heading = useRef<HTMLHeadingElement>(null);
-  useLayoutEffect(() => {
-    heading.current?.focus();
-  }, []);
   const accepted = useCallback(
     (receipt: OperationReceipt) => {
       if (recorded.current !== receipt.operationId) {
@@ -64,6 +62,17 @@ export const WorkOperation = ({
     onLockChange,
     onDisclosureRefused,
   });
+  useEffect(() => {
+    if (
+      kind === "REMINDER_COMPLETE" &&
+      !previewed.current &&
+      model.ownerVerified &&
+      model.disclosureCurrent
+    ) {
+      previewed.current = true;
+      void model.preview();
+    }
+  }, [kind, model]);
   const invalidate = useEffectEvent(() => {
     model.invalidateDisclosure();
   });
@@ -79,18 +88,13 @@ export const WorkOperation = ({
       accepted(model.receipt);
     }
   }, [model.receipt, model.ownerVerified, subject, navigation, accepted]);
-  const definition = operationEntry(model.entry);
   const observed = model.currentCase;
   const workOffered =
     observed !== null && (observed.work.canUpdateSummary || observed.work.canAssign);
   // Reminder offers originate in the selected current reminder row; preview and commit recheck them.
   const offered = subject === "WORK" && !workOffered ? [] : [kind];
   return (
-    <section className="work-operation operation-editor" aria-labelledby="work-operation-title">
-      <h2 ref={heading} id="work-operation-title" tabIndex={-1}>
-        {renderCatalogKey(p, definition.labelId)}
-      </h2>
-      {definition.meaningId === null ? null : <p>{renderCatalogKey(p, definition.meaningId)}</p>}
+    <>
       <OperationDiscard model={model} onClose={navigation.close} />
       <OperationPanel
         model={model}
@@ -98,8 +102,9 @@ export const WorkOperation = ({
         offered={offered}
         onClose={navigation.close}
         fixedTarget
+        {...(completionAnchor === undefined ? {} : { completionAnchor: anchor })}
         disclosureAvailable={disclosureAvailable}
       />
-    </section>
+    </>
   );
 };

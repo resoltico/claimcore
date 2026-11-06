@@ -27,10 +27,11 @@ const initial: ApiResult<ListResponse> = {
       kind: "SUCCEEDED",
       data: {
         basis: workBasis,
+        exactReference: null,
         offers: [],
         items: [
           caseSummaryInput({
-            state: { kind: "ACTIVE", status: "OPENED" },
+            state: { kind: "ACTIVE" },
             caseId: "20000000-0000-4000-8000-000000000001",
             caseReference: "SYNTHETIC-PRIVATE",
             revision: 1,
@@ -51,7 +52,7 @@ const unavailable: ApiResult<ListResponse> = {
       kind: "REJECTED",
       data: {
         code: "RESOURCE_UNAVAILABLE",
-        action: "NONE_REQUIRED",
+        action: "ASK_FOR_ACCESS",
       },
     },
   },
@@ -123,7 +124,7 @@ it("does not interpret a local delivery notice as a definite server refusal", ()
         kind: "diagnostic",
         diagnostic: {
           code: "RESOURCE_UNAVAILABLE",
-          action: "NONE_REQUIRED",
+          action: "ASK_FOR_ACCESS",
         },
       },
     }),

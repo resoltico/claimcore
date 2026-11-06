@@ -1,3 +1,5 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
+import { timelinePage } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
@@ -41,7 +43,7 @@ const queueDefinitionAndList = () => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -54,12 +56,7 @@ const queueDefinitionAndList = () => {
 const queueDetail = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      entries: [],
-      nextCursor: null,
-    }),
-  );
+  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
 };
 const queueAcceptedOpen = (): void => {
   const fetch = vi.mocked(globalThis.fetch);
@@ -99,7 +96,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   );
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: current.state.fields.registration.claimantName,
     }),
   ).toBeVisible();
   await user.click(getButton("Back to cases"));
@@ -122,15 +119,17 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
       name: "Close the case",
     }),
   ).toBeVisible();
-  expect(screen.getByRole("link", { name: "Recovery" })).not.toHaveAttribute(
+  expect(document.querySelector('.workspace-sidebar a[href="/people"]')).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
+  await user.click(document.querySelector(".account-menu > summary")!);
   expect(getButton("Sign out")).not.toBeDisabled();
-  await user.click(getButton("Back to case"));
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: current.state.fields.registration.claimantName,
     }),
   ).toBeVisible();
 });
@@ -140,6 +139,7 @@ const queueOpenPreview = () => {
     previewForRequest(
       response("operation.preview", "REVIEWED", {
         review: {
+          presentation: { changes: [], unchanged: [] },
           subject: {
             kind: "CASE",
             before: null,
@@ -152,7 +152,7 @@ const queueOpenPreview = () => {
                 fields,
               },
             },
-            changes: [],
+
             context: runtime,
           },
         },
@@ -164,34 +164,31 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   queueDefinitionAndList();
+  vi.spyOn(crypto, "randomUUID").mockReturnValueOnce("20000000-0000-4000-8000-000000000001");
   queueOpenPreview();
   queueAcceptedOpen();
   queueDetail();
   renderDashboard();
-  await user.click(await findButton("Open a case"));
-  await screen.findByLabelText("Handler's case reference");
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
+  await screen.findByLabelText("Case reference");
   const fill = (label: string, value: string): void => {
     changeField(label, value);
   };
-  fill("Handler's case reference", "CASE-1");
+  fill("Case reference", "CASE-1");
   fill("Incident date", "2026-09-01");
-  fill("Incident notification date (FNOL)", "2026-09-02");
-  fill("Country of incident (ISO alpha-2 code)", "LV");
+  fill("Notified date", "2026-09-02");
+  fill("Country", "LV");
   fill("Claimant name", "Synthetic claimant");
   fill("Responsible insurer", "Synthetic insurer");
   fill("Amount claimed", "12.34");
   fill("Currency of claimed amount", "EUR");
   await user.click(getButton("Review changes"));
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
 
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: current.state.fields.registration.claimantName,
     }),
   ).toBeVisible();
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");

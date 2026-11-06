@@ -1,3 +1,4 @@
+import { goToView, openRecovery } from "./workspace-navigation";
 import { test, expect, type Page, type Browser } from "@playwright/test";
 import { readFile, writeFile } from "node:fs/promises";
 import { resolve } from "node:path";
@@ -49,7 +50,13 @@ const authenticated = async (browser: Browser, language: string, state: unknown)
     ({ key, language: selected }) => {
       localStorage.setItem(
         key,
-        JSON.stringify({ version: 2, language: selected, displayLocale: "en-GB", theme: "SYSTEM" }),
+        JSON.stringify({
+          version: 3,
+          language: selected,
+          displayLocale: "en-GB",
+          mode: "system",
+          accent: "green" as const,
+        }),
       );
     },
     { key: preferenceKey, language },
@@ -93,12 +100,17 @@ const measureNavigation = async (
   language: string,
   observations: Measurements,
 ) => {
-  for (const route of ["/operations", "/authority", "/cases"]) {
+  for (const route of ["/recovery", "/people", "/cases"]) {
     const before = await heading(page).textContent();
-    const count = (await resources(page)).length;
+    const count = route === "/recovery" ? 0 : (await resources(page)).length;
     const started = performance.now();
-    await page.locator(`.workspace-header nav a[href="${route}"]`).click();
-    await expect(page).toHaveURL(new URL(route, baseURL).href);
+    if (route === "/recovery") {
+      await openRecovery(page);
+    } else {
+      await goToView(page, route === "/people" ? "people" : "cases");
+    }
+    const destination = route === "/cases" ? "/cases?view=NEEDS_ATTENTION" : route;
+    await expect(page).toHaveURL(new URL(destination, baseURL).href);
     await expect.poll(() => heading(page).textContent()).not.toBe(before);
     await ready(page, route);
     const rendered = performance.now() - started;
@@ -114,7 +126,8 @@ const measureNavigation = async (
   const count = (await resources(page)).length;
   const started = performance.now();
   await page.locator(".worklist-rows").getByRole("link", { name: reference, exact: true }).click();
-  await expect(page.locator("section.case-fields")).toContainText(reference);
+  await expect(page.locator("section.case-detail .case-heading .eyebrow")).toHaveText(reference);
+  await expect(page.locator("section.case-detail .case-fields")).toBeVisible();
   const rendered = performance.now() - started;
   await page.waitForLoadState("networkidle");
   observations.push({
@@ -214,7 +227,7 @@ test("records comparable cold routes warm navigation and language activation", a
   }
   const observations: Measurements = [];
   for (const language of ["en", "lv", "ar"]) {
-    for (const route of ["/cases", "/operations", "/authority"]) {
+    for (const route of ["/cases", "/recovery", "/people"]) {
       await measureRoute(browser, baseURL, state, language, route, observations);
     }
   }

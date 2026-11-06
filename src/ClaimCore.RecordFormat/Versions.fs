@@ -13,10 +13,10 @@ module RecordVersions =
     let Snapshot = 4
 
     [<Literal>]
-    let Authority = 2
+    let Authority = 3
 
     [<Literal>]
-    let LedgerEntry = 4
+    let LedgerEntry = 5
 
     [<Literal>]
     let Work = 1

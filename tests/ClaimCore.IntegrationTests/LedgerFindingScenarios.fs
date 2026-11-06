@@ -23,10 +23,26 @@ let internal link (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256) WHERE sequence=4"
+                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256) WHERE sequence=5"
                 [||]
 
         do! finding VerificationFinding.Link database
+    }
+
+let internal operationEffectGroup (database: PostgresFixture.Database) =
+    task {
+        let! _ = populated database
+
+        do!
+            rewrite
+                database
+                (CaseFixtures.sequence 2L)
+                (authoritySubject (fun subject ->
+                    { subject with
+                        TargetActorId = CaseFixtures.actorId (id 997)
+                    }))
+
+        do! finding VerificationFinding.OperationEffectGroup database
     }
 
 let internal entryHash (database: PostgresFixture.Database) =
@@ -36,7 +52,7 @@ let internal entryHash (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET entry_hash=set_byte(entry_hash,0,(get_byte(entry_hash,0)+1)%256) WHERE sequence=4"
+                "UPDATE claimcore.ledger SET entry_hash=set_byte(entry_hash,0,(get_byte(entry_hash,0)+1)%256) WHERE sequence=5"
                 [||]
 
         do! finding VerificationFinding.EntryHash database
@@ -49,7 +65,7 @@ let internal commitment (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=set_byte(payload,octet_length(payload)-1,(get_byte(payload,octet_length(payload)-1)+1)%256) WHERE sequence=4"
+                "UPDATE claimcore.ledger SET payload=set_byte(payload,octet_length(payload)-1,(get_byte(payload,octet_length(payload)-1)+1)%256) WHERE sequence=5"
                 [||]
 
         do! finding VerificationFinding.Commitment database
@@ -58,7 +74,7 @@ let internal commitment (database: PostgresFixture.Database) =
 let internal format (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
-        do! rewrite database (CaseFixtures.sequence (4L)) (payload [| 0x7Fuy |] Array.empty)
+        do! rewrite database (CaseFixtures.sequence (5L)) (payload [| 0x7Fuy |] Array.empty)
         do! finding VerificationFinding.PayloadFormat database
     }
 
@@ -90,7 +106,7 @@ let internal revision (database: PostgresFixture.Database) =
                     Revision = CaseFixtures.revision 3L
                 }
 
-        do! rewrite database (CaseFixtures.sequence (5L)) change
+        do! rewrite database (CaseFixtures.sequence (6L)) change
         do! finding VerificationFinding.RevisionSequence database
     }
 
@@ -122,7 +138,7 @@ let internal start (database: PostgresFixture.Database) =
                 }
                 { snapshot with State = view }
 
-        do! rewrite database (CaseFixtures.sequence (4L)) change
+        do! rewrite database (CaseFixtures.sequence (5L)) change
         do! finding VerificationFinding.HistoryStart database
     }
 
@@ -161,7 +177,7 @@ let internal stateSequence (database: PostgresFixture.Database) =
 let internal erasure (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
-        let! original = row database (CaseFixtures.sequence (4L))
+        let! original = row database (CaseFixtures.sequence (5L))
 
         let! granted =
             grant
@@ -190,7 +206,7 @@ let internal erasure (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET payload=$1,payload_nonce=$2 WHERE sequence=4"
+                "UPDATE claimcore.ledger SET payload=$1,payload_nonce=$2 WHERE sequence=5"
                 [|
                     DatabaseSession.parameter original.Entry.Payload
                     DatabaseSession.parameter original.Entry.PayloadNonce
@@ -206,7 +222,7 @@ let internal missingPayload (database: PostgresFixture.Database) =
         do!
             sql
                 database
-                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE sequence=4"
+                "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE sequence=5"
                 [||]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
@@ -230,10 +246,11 @@ let internal authority (database: PostgresFixture.Database) =
         let sequence = (accepted added).Position.Sequence
 
         let altered =
-            authorityRequest (id 20) (target "absent") (AuthorityAct.Enable)
+            authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord None
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 1))
+            |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
 
@@ -243,7 +260,7 @@ let internal authority (database: PostgresFixture.Database) =
                 sequence
                 (authoritySubject (fun subject ->
                     { subject with
-                        Act = AuthorityKind.Enable
+                        Act = AuthorityKind.Disable
                     })
                  >> updateAuthority altered)
 
@@ -255,7 +272,7 @@ let internal executor (database: PostgresFixture.Database) =
         let! _ = populated database
 
         do!
-            rewrite database (CaseFixtures.sequence (4L)) (fun value ->
+            rewrite database (CaseFixtures.sequence (5L)) (fun value ->
                 { value with
                     Metadata =
                         { value.Metadata with
@@ -429,9 +446,23 @@ let private fenceProjection (database: PostgresFixture.Database) =
         do! finding VerificationFinding.FenceProjection database
     }
 
+let internal profileProjection (database: PostgresFixture.Database) =
+    task {
+        let! _ = populated database
+
+        do!
+            sql
+                database
+                "UPDATE claimcore.actors SET display_name='Wrong projection' WHERE actor_id=$1"
+                [| box (id 1) |]
+
+        do! finding VerificationFinding.AuthorityProfileProjection database
+    }
+
 let internal findingCases =
     [
         VerificationFinding.Link, link
+        VerificationFinding.OperationEffectGroup, operationEffectGroup
         VerificationFinding.EntryHash, entryHash
         VerificationFinding.Commitment, commitment
         VerificationFinding.PayloadFormat, format
@@ -440,6 +471,7 @@ let internal findingCases =
         VerificationFinding.StateSequence, stateSequence
         VerificationFinding.ErasureIncomplete, erasure
         VerificationFinding.PayloadWithoutErasure, missingPayload
+        VerificationFinding.AuthorityProfileProjection, profileProjection
         VerificationFinding.AuthorityFold, authority
         VerificationFinding.ActorNotEnabled, executor
         VerificationFinding.HumanRequired, human

@@ -28,10 +28,10 @@ let private transitions =
         (CaseState.Active()), AuthoredCaseAct.Void "Recorded in error", Ok(CaseState.Voided())
         (CaseState.Voided()),
         AuthoredCaseAct.Void "Recorded in error",
-        Error(Refusal.Case CaseRefusal.AlreadyVoided)
+        Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
         (CaseState.Active()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
-        Error(Refusal.Case CaseRefusal.NotVoided)
+        Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided))
         (CaseState.Voided()),
         AuthoredCaseAct.Reinstate "Reference confirmed",
         Ok(CaseState.Active())
@@ -47,8 +47,8 @@ let private invalidReasons =
         " leading"
         "trailing "
         "a\u0000b"
-        "a b"
-        "a b"
+        "a\u2028b"
+        "a\u2029b"
         String([| char 0xD800 |])
         String.replicate 201 "x"
     ]
@@ -132,7 +132,7 @@ let private staleRevision () =
 
     Expect.isTrue
         ((outcome |> Result.map Case.snapshot) =
-            Error(Refusal.RevisionConflict(CaseFixtures.revision 7L)))
+            Error(Refusal.revisionConflict (CaseFixtures.revision 7L)))
         "Revision check precedes admission and state"
 
 let private vocabulary () =

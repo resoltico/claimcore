@@ -61,6 +61,14 @@ type StoredCase =
         Index: CaseIndex
     }
 
+type CaseStageFacts =
+    {
+        Revision: Revision
+        OpenedOn: CalendarDate
+        ClosedOn: CalendarDate option
+        LastAct: CaseActKind
+    }
+
 [<RequireQualifiedAccess>]
 type EntryTarget =
     | NonAcceptance of targetOperationId: OperationId
@@ -71,6 +79,7 @@ type EntryTarget =
 
 type StoredEntry =
     {
+        Effects: LedgerEffects
         Sequence: Sequence
         EntryHash: byte array
         OperationId: OperationId
@@ -83,6 +92,78 @@ type StoredEntry =
         Payload: byte array option
     }
 
+/// One accepted operation, including every contiguous physical effect in sequence order.
+[<NoComparison>]
+type StoredOperation =
+    private
+    | StoredOperation of root: StoredEntry * entries: StoredEntry list
+
+    member this.Root = let (StoredOperation(root, _)) = this in root
+    member this.Entries = let (StoredOperation(_, entries)) = this in entries
+    member this.OperationId = this.Root.OperationId
+    member this.ActorId = this.Root.ActorId
+    member this.Subject = this.Root.Subject
+
+    member this.Position =
+        let last = List.last this.Entries
+        LedgerPosition.create last.Sequence (EntryHash.ofBytes last.EntryHash |> Option.get)
+
+module StoredOperation =
+    /// Metadata completeness is independent of payload availability after authorized erasure.
+    let create (entries: StoredEntry list) =
+        let failure () = Error CoreFault.StoreIntegrityError
+
+        match entries with
+        | [] -> failure ()
+        | root :: _ ->
+            let count = LedgerEffects.count root.Effects
+            let authority = LedgerEffects.authorityOperation root.Effects
+
+            let target =
+                match root.Subject with
+                | EntryTarget.Authority(id, _) -> Some id
+                | _ -> None
+
+            let coherent index (entry: StoredEntry) =
+                LedgerEffects.index entry.Effects = index
+                && LedgerEffects.count entry.Effects = count
+                && LedgerEffects.authorityOperation entry.Effects = authority
+                && entry.OperationId = root.OperationId
+                && entry.ActorId = root.ActorId
+                && entry.RecordedAt = root.RecordedAt
+                && Sequence.value entry.Sequence = Sequence.value root.Sequence + int64 index
+                && not (obj.ReferenceEquals(entry.EntryHash, null))
+                && entry.EntryHash.Length = 32
+                && (match entry.Subject with
+                    | EntryTarget.Authority(_, act) ->
+                        LedgerEffects.describesAuthority act entry.Effects
+                    | _ -> entry.Effects = LedgerEffects.single)
+                && (match target, entry.Subject with
+                    | Some expected, EntryTarget.Authority(actual, _) -> expected = actual
+                    | None, _ -> count = 1
+                    | _ -> false)
+
+            let nonces = entries |> List.choose _.PayloadNonce
+
+            let accepted =
+                match root.Subject with
+                | EntryTarget.NonAcceptance _ -> false
+                | _ -> true
+
+            if
+                accepted
+                && root.Sequence >= Sequence.first
+                && count >= 1
+                && count <= LedgerEffects.MaximumCount
+                && entries.Length = count
+                && (List.mapi coherent entries |> List.forall id)
+                && (List.distinct nonces |> List.length) = nonces.Length
+                && (count = 1 || target.IsSome)
+            then
+                Ok(StoredOperation(root, entries))
+            else
+                failure ()
+
 type StoredWork =
     {
         CaseId: CaseId
@@ -91,6 +172,8 @@ type StoredWork =
         SnapshotBytes: byte array
         ChangedAt: DateTimeOffset option
         RecordedBy: ActorId option
+        SummaryChangedAt: DateTimeOffset option
+        SummaryRecordedBy: ActorId option
     }
 
 type StoredReminder =
@@ -124,6 +207,8 @@ type WorkProjection =
         Snapshot: CaseWorkSnapshot
         ChangedAt: DateTimeOffset
         RecordedBy: ActorId
+        SummaryChangedAt: DateTimeOffset option
+        SummaryRecordedBy: ActorId option
     }
 
 type ReminderProjection =
@@ -141,9 +226,12 @@ type WorkChangeProjection =
 [<RequireQualifiedAccess>]
 type ReceiptCurrent =
     | Case of StoredCase option
-    | Work of parent: StoredCase option * current: StoredWork option
+    | Work of
+        parent: StoredCase option *
+        current: StoredWork option *
+        accounts: Map<CaseId * ActorId, ActorRef>
     | Reminder of parent: StoredCase option * current: Map<ReminderId, StoredReminder>
-    | Authority
+    | Authority of target: ActorRef option
 
 [<RequireQualifiedAccess>]
 type CaseProjection =
@@ -153,6 +241,7 @@ type CaseProjection =
 
 type EntryDraft =
     {
+        Effects: LedgerEffects
         Sequence: Sequence
         PreviousHash: byte array
         EntryHash: byte array
@@ -170,6 +259,8 @@ type EntryDraft =
 type AuthorityProjection =
     | Register of actorId: ActorId * principal: PrincipalKey
     | ProvisionOwner of actorId: ActorId * principal: PrincipalKey
+    | SetProfile of actorId: ActorId * profile: ActorProfile
+    | EraseProfile of actorId: ActorId * eraseSequence: Sequence
     | SetEnabled of actorId: ActorId * enabled: bool
     | AddGrant of actorId: ActorId * role: Role * caseId: CaseId option
     | RemoveGrant of actorId: ActorId * role: Role * caseId: CaseId option
@@ -237,6 +328,8 @@ type AuthorityHistoryPageQuery =
 
 type ActorPageQuery =
     {
+        Role: Role option
+        Text: DirectorySearchText option
         AfterActorId: ActorId option
         Limit: int
     }
@@ -292,7 +385,8 @@ type ReminderPageQuery =
     {
         Selection: CaseSelection
         TargetCaseId: CaseId option
-        State: ReminderState
+        State: ReminderState option
+        View: ReminderView option
         Due: ReminderDue option
         Text: CaseSearchText option
         IncludeInactive: bool
@@ -315,11 +409,28 @@ type ActivityPageQuery =
         Limit: int
     }
 
+type TimelinePageQuery =
+    {
+        CaseId: CaseId
+        Filter: TimelineFilter option
+        Range: ChangeRange option
+        BeforeSequence: Sequence option
+        Limit: int
+    }
+
 /// Independently owned global facts observed together by read consumers that require both.
 type GlobalReadFacts =
     {
         Authority: AuthorityView
+        AssignedRoles: ActorRoleSummary list
         Maintenance: RegisterMaintenance
+    }
+
+type AccessRequestPageQuery =
+    {
+        After: AccessRequestPosition option
+        ObservedAt: DateTimeOffset
+        Limit: int
     }
 
 type IReadTx =
@@ -330,14 +441,20 @@ type IReadTx =
     abstract AuthorityCases: PrincipalKey * CaseId list -> Task<AuthorityView>
     abstract FindCase: CaseId -> Task<StoredCase option>
     abstract FindCaseByReference: string -> Task<StoredCase option>
+    abstract CaseStageFacts: CaseId -> Task<CaseStageFacts option>
     abstract FindWork: CaseId -> Task<StoredWork option>
     abstract FindReminder: ReminderId -> Task<StoredReminder option>
     abstract WorkSummaries: CaseId list * DateOnly -> Task<Map<CaseId, CaseWorkSummary>>
-    abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId, AssignedAccount>>
+    abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId * ActorId, ActorRef>>
+    abstract ResponsibilityCounts: CaseSelection * ActorId list -> Task<Map<ActorId, int64>>
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
     abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
+    abstract CaseViewCounts: CaseSelection -> Task<CaseViewCount list>
+    abstract ReminderViewCounts: CaseSelection -> Task<ReminderViewCount list>
     abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
-    abstract FindEntry: OperationId -> Task<StoredEntry option>
+    abstract TimelinePage: TimelinePageQuery -> Task<Page<StoredEntry, Sequence>>
+    abstract PreviousEntries: StoredEntry list -> Task<Map<Sequence, StoredEntry>>
+    abstract FindOperation: OperationId -> Task<StoredOperation option>
     abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
@@ -345,21 +462,28 @@ type IReadTx =
 
     abstract HistoryPage: HistoryPageQuery -> Task<CaseHistorySlice>
     abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
+
+    abstract AccessRequestPage:
+        AccessRequestPageQuery -> Task<Page<AccessRequest, AccessRequestPosition>>
+
     abstract ActorPage: ActorPageQuery -> Task<Page<Actor, ActorId>>
 
     abstract GrantPage: GrantPageQuery -> Task<Page<ScopedGrant, GrantPosition>>
 
+    abstract ActorRoleSummaries: ActorId list -> Task<Map<ActorId, ActorRoleSummary list>>
+    abstract ActorRefs: ActorId list -> Task<Map<ActorId, ActorRef>>
     abstract FindActor: ActorId -> Task<Actor option>
-    abstract AssigneePage: AssigneePageQuery -> Task<Page<AccountSubject, ActorId>>
+    abstract AssigneePage: AssigneePageQuery -> Task<Page<ActorRef, ActorId>>
     abstract EnabledHumanOwners: unit -> Task<int>
     abstract ActorCount: unit -> Task<int>
 
 type IWriteTx =
     inherit IReadTx
     abstract Head: LedgerPosition
-    abstract Nonce: byte array
+    abstract NewPayloadNonce: unit -> byte array
     abstract Append: EntryDraft -> Task<unit>
     abstract ProjectCase: CaseProjection -> Task<unit>
+    abstract DismissAccessRequest: PrincipalKey -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
     abstract Fence: FenceKey -> Task<unit>
@@ -378,6 +502,23 @@ type WriteOperation<'result> =
         CancellationToken: CancellationToken
     }
 
+/// Context cache writes are non-ledger facts. Implementations serialize the principal before
+/// taking the authority snapshot and refresh a request only when that snapshot has no actor.
+[<NoComparison>]
+type ContextQuery =
+    {
+        Principal: PrincipalKey
+        Claims: RequesterClaims
+        CancellationToken: CancellationToken
+    }
+
+type ContextFacts =
+    {
+        Facts: GlobalReadFacts
+        ObservedAt: DateTimeOffset
+    }
+
 type IStore =
+    abstract Context: ContextQuery -> Task<Result<ContextFacts, StoreFailure>>
     abstract Read: ReadOperation<'result> -> Task<Result<'result, StoreFailure>>
     abstract Write: WriteOperation<'result> -> Task<Result<Verdict<'result>, StoreFailure>>

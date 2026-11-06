@@ -1,3 +1,4 @@
+import { productMetadata } from "../protocol/productMetadata";
 import { isAmountText, isGregorianDate } from "../protocol/scalars";
 import type { FieldCatalogEntry } from "../api/service";
 import type { DisplayLocale } from "./preferences";
@@ -12,21 +13,21 @@ export const exactInteger = (value: string, locale: DisplayLocale): string => {
   }
   return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(value));
 };
-const currencies = new Set(Intl.supportedValuesOf("currency"));
+const currencyMinorUnits = new Map(
+  productMetadata.catalog.moneyMinorUnits.map(({ currency, minorUnits }) => [currency, minorUnits]),
+);
 const canonicalTotal = /^(0|[1-9][0-9]{0,39})(\.[0-9]{1,4})?$/u;
 const fractionDigits = (currency: string | undefined, own: number): number =>
-  currency !== undefined && currencies.has(currency)
-    ? Math.max(
-        own,
-        new Intl.NumberFormat("en", { style: "currency", currency }).resolvedOptions()
-          .maximumFractionDigits ?? 0,
-      )
-    : own;
+  Math.max(own, currency === undefined ? 0 : (currencyMinorUnits.get(currency) ?? 0));
 
-/** Integer and fractional text stay exact; Intl supplies grouping, digits and currency padding only. */
-const decimalText = (value: string, locale: DisplayLocale, currency?: string): string => {
+/** Integer and fractional text stay exact; Intl supplies grouping and digits; currency padding comes from the core catalog. */
+const decimalText = (
+  value: string,
+  locale: DisplayLocale,
+  minimumFractionDigits: number,
+): string => {
   const [whole = "", own = ""] = value.split(".");
-  const fraction = own.padEnd(fractionDigits(currency, own.length), "0");
+  const fraction = own.padEnd(minimumFractionDigits, "0");
   const integer = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(whole));
   if (fraction === "") {
     return integer;
@@ -41,10 +42,20 @@ const decimalText = (value: string, locale: DisplayLocale, currency?: string): s
 };
 
 export const exactAmount = (value: string, locale: DisplayLocale, currency?: string): string =>
-  isAmountText(value) ? decimalText(value, locale, currency) : value;
+  isAmountText(value)
+    ? decimalText(value, locale, fractionDigits(currency, value.split(".")[1]?.length ?? 0))
+    : value;
 
 export const exactMoney = (value: string, currency: string, locale: DisplayLocale): string =>
-  `${canonicalTotal.test(value) ? decimalText(value, locale, currency) : value} ${currency}`;
+  `${canonicalTotal.test(value) ? decimalText(value, locale, fractionDigits(currency, value.split(".")[1]?.length ?? 0)) : value} ${currency}`;
+
+/** The review's supplied display scale controls padding; exact fractional text is never truncated. */
+export const moneyWithScale = (
+  value: string,
+  currency: string,
+  displayScale: number,
+  locale: DisplayLocale,
+): string => `${decimalText(value, locale, displayScale)} ${currency}`;
 
 export const caseAge = (
   notified: string | null,
@@ -75,10 +86,14 @@ export const recordedTime = (value: string, zone: string, locale: DisplayLocale)
 
 const calendarCarrier = (value: string): Date | null =>
   isGregorianDate(value) ? new Date(`${value}T00:00:00.000Z`) : null;
-export const calendarDate = (value: string, locale: DisplayLocale): string => {
+export const calendarDateParts = (
+  value: string,
+  locale: DisplayLocale,
+  named = false,
+): ReadonlyArray<Intl.DateTimeFormatPart> => {
   const date = calendarCarrier(value);
   if (date === null) {
-    return value;
+    return [{ type: "literal", value }];
   }
   const digits = digitsFor(locale);
   const year = Array.from(value.slice(0, 4), (d) => digits[d.charCodeAt(0) - 48]).join("");
@@ -86,13 +101,17 @@ export const calendarDate = (value: string, locale: DisplayLocale): string => {
     calendar: "gregory",
     timeZone: "UTC",
     year: "numeric",
-    month: "2-digit",
-    day: "2-digit",
+    month: named ? "short" : "2-digit",
+    day: named ? "numeric" : "2-digit",
+    ...(named ? { weekday: "short" as const } : {}),
   })
     .formatToParts(date)
-    .map((part) => (part.type === "year" ? year : part.value))
-    .join("");
+    .map((part) => ({ type: part.type, value: part.type === "year" ? year : part.value }));
 };
+export const calendarDate = (value: string, locale: DisplayLocale, named = false): string =>
+  calendarDateParts(value, locale, named)
+    .map((part) => part.value)
+    .join("");
 export const displayField = (
   value: string,
   field: FieldCatalogEntry,

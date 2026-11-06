@@ -1,3 +1,4 @@
+import { navigate } from "../../../src/routing/navigation";
 import { stubWorklistSummary } from "../../support/worklist-summary.fixtures";
 import { actorContextInput } from "../../support/inputs";
 import { mockEndpoint } from "../../support/endpoint-mocks";
@@ -42,31 +43,42 @@ it("locks navigation and logout while a reviewed mutation is dispatched", async 
     }),
   );
   render(<Dashboard />);
-  await user.click(await screen.findByRole("button", { name: "Open a case" }));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
+  await screen.findByRole("button", { name: "Review changes" });
   fillRegistrationInputs({ caseReference: "LOCK-001", incidentDate: "2026-09-09" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
-    expect(screen.getByRole("link", { name: "Recovery" })).toHaveAttribute("aria-disabled", "true");
+    expect(document.querySelector('.workspace-sidebar a[href="/cases"]')).toHaveAttribute(
+      "aria-disabled",
+      "true",
+    );
   });
-  expect(screen.getByRole("button", { name: "Sign out" })).toBeDisabled();
-  expect(screen.getByRole("button", { name: "Back to cases" })).toBeDisabled();
+  expect(screen.queryByRole("button", { name: "Sign out" })).toBeNull();
+  expect(document.querySelector(".account-menu")?.closest('[aria-hidden="true"]')).not.toBeNull();
+  for (const close of screen.getAllByRole("button", { name: "Close" })) {
+    expect(close).toBeDisabled();
+  }
 });
 
-it("replaces an unavailable initial case route with the first advertised workspace", async () => {
+it("chooses an advertised workspace only for the default entry route", async () => {
+  navigate("/", true);
   mockEndpoint("context").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
       outcome: {
         kind: "SUCCEEDED",
-        data: actorContextInput({
-          productVersion: "0.10.0",
-          businessDate: "2026-09-09",
-          timeZone: "Etc/UTC",
-          capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-          views: ["AUTHORITY", "OPERATIONS"],
-          offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
-        }),
+        data: {
+          requester: actorContextInput({
+            productVersion: "0.10.0",
+            observedAt: "2026-09-09T12:00:00.000000Z",
+            businessDate: "2026-09-09",
+            timeZone: "Etc/UTC",
+            capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+            views: ["AUTHORITY", "OPERATIONS"],
+            offers: installationOffers(["REGISTER", "GRANT", "REVOKE", "ENABLE", "DISABLE"]),
+          }),
+        },
       },
     },
   });
@@ -76,12 +88,39 @@ it("replaces an unavailable initial case route with the first advertised workspa
     value: wireReply("authority.list"),
   });
   render(<Dashboard />);
-  expect(await screen.findByRole("heading", { name: "Access", level: 1 })).toBeVisible();
-  expect(window.location.pathname).toBe("/authority");
+  expect(await screen.findByRole("heading", { name: "People & access", level: 1 })).toBeVisible();
+  expect(window.location.pathname).toBe("/people");
   expect(screen.queryByRole("heading", { name: "Cases", level: 1 })).toBeNull();
   expect(globalThis.fetch).not.toHaveBeenCalled();
 });
 
 beforeEach(() => {
   stubWorklistSummary();
+});
+
+it("preserves explicit unavailable deep links and discloses no alternative resource", async () => {
+  navigate("/cases?view=recent", true);
+  mockEndpoint("context").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: {
+      outcome: {
+        kind: "SUCCEEDED",
+        data: {
+          requester: actorContextInput({
+            ...context,
+            views: ["AUTHORITY"],
+            capabilities: ["READ_AUTHORITY"],
+            offers: [],
+          }),
+        },
+      },
+    },
+  });
+  render(<Dashboard />);
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "The requested resource is unavailable.",
+  );
+  expect(window.location.pathname + window.location.search).toBe("/cases?view=recent");
+  expect(globalThis.fetch).not.toHaveBeenCalled();
 });

@@ -10,6 +10,7 @@ export const caseFields: CaseFields = {
 };
 export const operationId = "10000000-0000-4000-8000-000000000001";
 export const review: OperationReview = {
+  presentation: { changes: [], unchanged: [] },
   subject: {
     kind: "CASE",
     before: null,
@@ -22,9 +23,9 @@ export const review: OperationReview = {
         fields: caseFields,
       },
     },
-    changes: [],
     context: {
       productVersion: "0.1.0",
+      observedAt: "2026-09-09T12:00:00.000000Z",
       businessDate: "2026-09-09",
       timeZone: "Etc/UTC",
     },

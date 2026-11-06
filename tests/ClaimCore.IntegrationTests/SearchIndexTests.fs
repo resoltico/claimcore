@@ -325,7 +325,7 @@ let private literalLifecycle (database: PostgresFixture.Database) =
 
         acceptedAuthority granted
         let! context = Service.context actor () token
-        let ownerId = (read context).ActorId
+        let ownerId = (Inputs.activeContext (read context)).ActorId
 
         let query observed =
             {

@@ -33,10 +33,10 @@ def run(cli, operation, actor, installation, answer):
         stage = "permanent-effect"
         wait(terminal, b"permanently block its operation ID")
         stage = "confirmation-question"
-        wait(terminal, b"Record these changes? [y/N] ")
+        wait(terminal, f"Type {operation} to confirm: ".encode())
         stage = "confirmation-result"
         terminal.send((answer + "\n").encode())
-        terminal.expect(f"Exit code: {2 if answer == 'yes' else 130}".encode())
+        terminal.expect(f"Exit code: {2 if answer == operation else 130}".encode())
         terminal.expect(b"claimcore> ")
         terminal.send(b"exit\n")
         terminal.finish(0)
@@ -52,7 +52,7 @@ def run(cli, operation, actor, installation, answer):
                 output.write(terminal.output)
         terminal.close()
     print(json.dumps({"authenticatedScope": True, "exactOperation": True,
-                      "explicitConsent": answer == "yes", "shellContinued": True}))
+                      "explicitConsent": answer == operation, "shellContinued": True}))
 
 
 if __name__ == "__main__":

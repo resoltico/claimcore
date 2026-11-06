@@ -9,6 +9,7 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
 open CliCalls
+open ReceiptObservations
 
 type private Submitted =
     {
@@ -153,14 +154,20 @@ let private responseLoss (fixture: PublishedFixture.Fixture) =
         let original = originalAcceptance fixture
         do! fixture.RestartWeb()
 
-        let reply =
-            verb fixture fixture.Environment [ "operation"; "settle"; submitted.OperationId ] 0
-
-        let receipt = require "ACCEPTED" reply
-
-        Expect.isTrue
-            (JsonElement.DeepEquals(receipt, original))
-            "Exact acceptance and authorized disclosure survive server and CLI replacement"
+        let receipt =
+            sameRecordedReceipt fixture "restart-settlement-receipt" original (fun () ->
+                verb
+                    fixture
+                    fixture.Environment
+                    [
+                        "operation"
+                        "settle"
+                        submitted.OperationId
+                        "--confirm"
+                        submitted.OperationId
+                    ]
+                    0
+                |> require "ACCEPTED")
 
         onlyAcceptance fixture submitted receipt
     }
@@ -171,7 +178,11 @@ let qualify fixture =
         let operationId = id ()
         let before = head fixture
 
-        verb fixture fixture.Environment [ "operation"; "settle"; operationId ] 2
+        verb
+            fixture
+            fixture.Environment
+            [ "operation"; "settle"; operationId; "--confirm"; operationId ]
+            2
         |> require "NOT_ACCEPTED"
         |> ignore
 
@@ -185,7 +196,11 @@ let qualify fixture =
              + 1L)
             "First final resolution appends one retained control"
 
-        verb fixture fixture.Environment [ "operation"; "settle"; operationId ] 2
+        verb
+            fixture
+            fixture.Environment
+            [ "operation"; "settle"; operationId; "--confirm"; operationId ]
+            2
         |> require "NOT_ACCEPTED"
         |> ignore
 

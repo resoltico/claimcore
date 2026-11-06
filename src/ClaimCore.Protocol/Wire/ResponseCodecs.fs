@@ -31,37 +31,13 @@ module ResponseCodecs =
             ]
         |> Codec.vocabulary "scope"
 
-    let private scalar kind =
-        let codec =
-            match kind with
-            | FieldValueKind.CalendarDate -> date
-            | FieldValueKind.Country -> country
-            | FieldValueKind.PartyName
-            | FieldValueKind.IncidentDescription
-            | FieldValueKind.HandlingSummary -> nonempty
-            | FieldValueKind.Amount -> amount
-            | FieldValueKind.Currency -> currency
-            | FieldValueKind.ActorId
-            | FieldValueKind.PlannedDate
-            | FieldValueKind.Reference
-            | FieldValueKind.Status -> invalidArg (nameof kind) "A group contains business values."
-
-        codec
-        |> mapResult
-            (fun path raw ->
-                FieldValue.parse kind raw
-                |> Result.mapError (fun _ ->
-                    {
-                        Path = path
-                        Reason = "value outside its wire grammar"
-                    }))
-            FieldValue.format
-
     let private group group create values =
         CaseFields.ofGroup group
         |> List.filter ((<>) BusinessField.IncidentDescription)
         |> List.map (fun field ->
-            field, BusinessField.key field, scalar (BusinessField.describe field).Kind)
+            field,
+            BusinessField.key field,
+            CaseFieldCodecs.scalar (BusinessField.describe field).Kind)
         |> Codec.fieldMap
         |> mapResult
             (fun path fields ->
@@ -89,35 +65,35 @@ module ResponseCodecs =
         |> field
             "incidentDate"
             (Registration.incidentDate >> Admitted.Date)
-            (scalar FieldValueKind.CalendarDate)
+            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
         |> field
             "incidentNotificationDate"
             (Registration.incidentNotificationDate >> Admitted.Date)
-            (scalar FieldValueKind.CalendarDate)
+            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
         |> field
             "incidentCountry"
             (Registration.country >> Admitted.Country)
-            (scalar FieldValueKind.Country)
+            (CaseFieldCodecs.scalar FieldValueKind.Country)
         |> field
             "claimantName"
             (Registration.claimant >> Admitted.Name)
-            (scalar FieldValueKind.PartyName)
+            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
         |> field
             "insurerName"
             (Registration.insurer >> Admitted.Name)
-            (scalar FieldValueKind.PartyName)
+            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
         |> field
             "claimedAmount"
             (Registration.claimed >> Money.amount >> Admitted.Amount)
-            (scalar FieldValueKind.Amount)
+            (CaseFieldCodecs.scalar FieldValueKind.Amount)
         |> field
             "claimedCurrency"
             (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
-            (scalar FieldValueKind.Currency)
+            (CaseFieldCodecs.scalar FieldValueKind.Currency)
         |> field
             "incidentDescription"
             (Registration.description >> Option.map Admitted.Description)
-            (nullable (scalar FieldValueKind.IncidentDescription))
+            (nullable (CaseFieldCodecs.scalar FieldValueKind.IncidentDescription))
         |> buildResult (fun path reason -> { Path = path; Reason = reason })
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
@@ -263,26 +239,67 @@ module ResponseCodecs =
             (fun (state: RegisterMaintenance) -> state.Active, state.Generation)
         |> named "RegisterMaintenance"
 
+    let private blockedCaseAct =
+        (record (fun act reason ->
+            {
+                CaseActRefusal.Act = act
+                Reason = reason
+            })
+        : Fields<CaseActRefusal, _>)
+        |> field "act" _.Act (VocabularyCodec.create CaseActKind.vocabulary)
+        |> field "reason" _.Reason DiagnosticCodecs.caseActAvailability
+        |> build
+        |> named "CaseActRefusal"
+
     let caseAdvice =
-        record (fun acts correction history maintenance -> acts, correction, history, maintenance)
+        record (fun acts correction history maintenance recommended blocked ->
+            acts, correction, history, maintenance, recommended, blocked)
         |> field
             "acts"
-            (fun (acts, _, _, _) -> acts)
+            (fun (acts, _, _, _, _, _) -> acts)
             (list CaseActKind.all.Length (VocabularyCodec.create CaseActKind.vocabulary))
-        |> optionalField "correction" (fun (_, correction, _, _) -> correction) correctionAdvice
-        |> field "history" (fun (_, _, history, _) -> history) (list 2 historyDetail)
-        |> field "maintenance" (fun (_, _, _, maintenance) -> maintenance) registerMaintenance
+        |> optionalField
+            "correction"
+            (fun (_, correction, _, _, _, _) -> correction)
+            correctionAdvice
+        |> field "history" (fun (_, _, history, _, _, _) -> history) (list 2 historyDetail)
+        |> field "maintenance" (fun (_, _, _, maintenance, _, _) -> maintenance) registerMaintenance
+        |> field
+            "recommended"
+            (fun (_, _, _, _, recommended, _) -> recommended)
+            (nullable (VocabularyCodec.create CaseActKind.vocabulary))
+        |> field
+            "blocked"
+            (fun (_, _, _, _, _, blocked) -> blocked)
+            (list CaseActKind.all.Length blockedCaseAct)
         |> build
         |> mapResult
-            (fun path (acts, correction, history, maintenance) ->
-                CaseAdvice.createDuringMaintenance maintenance acts correction history
+            (fun path (acts, correction, history, maintenance, recommended, blocked) ->
+                CaseAdvice.createDuringMaintenance maintenance acts correction history blocked
+                |> Result.bind (CaseAdvice.withRecommendation recommended)
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
             (fun (advice: CaseAdvice) ->
-                advice.Acts, advice.Correction, advice.History, advice.Maintenance)
+                advice.Acts,
+                advice.Correction,
+                advice.History,
+                advice.Maintenance,
+                advice.Recommended,
+                advice.Blocked)
+        |> fun codec ->
+            { codec with
+                Schema =
+                    Schema.EnumPartition(
+                        codec.Schema,
+                        CaseActKind.all |> List.map CaseActKind.token,
+                        "acts",
+                        "blocked",
+                        "act"
+                    )
+            }
         |> named "CaseAdvice"
 
     let caseView =
-        (record (fun id reference revision view advice assigned work ->
+        (record (fun id reference revision view advice assigned work headline attention stages ->
             {
                 Snapshot =
                     {
@@ -294,6 +311,9 @@ module ResponseCodecs =
                 Advice = advice
                 Mine = assigned
                 Work = work
+                Headline = headline
+                Attention = attention
+                Stages = stages
             })
         : Fields<CaseReadModel, _>)
         |> field "caseId" _.Snapshot.CaseId caseId
@@ -303,6 +323,12 @@ module ResponseCodecs =
         |> field "advice" _.Advice caseAdvice
         |> field "mine" _.Mine boolean
         |> field "work" _.Work ReadRowCodecs.workView
+        |> field "headline" _.Headline (VocabularyCodec.create CaseHeadline.vocabulary)
+        |> field
+            "attention"
+            _.Attention
+            (list CaseAttention.all.Length (VocabularyCodec.create CaseAttention.vocabulary))
+        |> field "stages" _.Stages CaseStageCodecs.display
         |> build
         |> named "CaseView"
 
@@ -321,16 +347,21 @@ module ResponseCodecs =
             ]
 
     let private runtimeFields =
-        (record (fun version date zone ->
+        (record (fun version date zone observed ->
             {
-                ProductVersion = version
-                EffectiveBusinessDate = date
-                TimeZoneId = zone
+                RuntimeContext.ProductVersion = version
+                Basis =
+                    {
+                        ObservedAt = observed
+                        BusinessDate = date
+                        TimeZoneId = zone
+                    }
             })
         : Fields<RuntimeContext, _>)
         |> field "productVersion" _.ProductVersion nonempty
-        |> field "businessDate" _.EffectiveBusinessDate dateValue
-        |> field "timeZone" _.TimeZoneId nonempty
+        |> field "businessDate" (fun value -> value.Basis.BusinessDate) dateValue
+        |> field "timeZone" (fun value -> value.Basis.TimeZoneId) nonempty
+        |> field "observedAt" (fun value -> value.Basis.ObservedAt) instant
 
     let runtimeContext = runtimeFields |> build |> named "RuntimeContext"
 
@@ -339,11 +370,38 @@ module ResponseCodecs =
         |> field "actorId" fst actorId
         |> field "hasScopedCases" snd boolean
 
-    let actorContext =
+    let private actorRoleSummary =
+        (record (fun role installation count ->
+            {
+                ActorRoleSummary.Role = role
+                Installation = installation
+                CaseCount = count
+            })
+        : Fields<ActorRoleSummary, _>)
+        |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "installation" _.Installation boolean
+        |> field "caseCount" _.CaseCount (integer 0L SafeInteger.Maximum)
+        |> build
+        |> named "ActorRoleSummary"
+
+    let private actorContextFields =
         (record
-            (fun installation runtime capabilities views offers (identity, assigned) maintenance ->
+            (fun
+                installation
+                runtime
+                capabilities
+                views
+                offers
+                (identity, assigned)
+                maintenance
+                self
+                issuer
+                roles ->
                 {
-                    ActorContext.InstallationId = installation
+                    ActorContext.Issuer = issuer
+                    Roles = roles
+                    InstallationId = installation
+                    Self = self
                     Maintenance = maintenance
                     ActorId = identity
                     Runtime = runtime
@@ -363,40 +421,187 @@ module ResponseCodecs =
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
         |> flatten (fun context -> context.ActorId, context.HasScopedCases) contextActor
         |> field "maintenance" _.Maintenance registerMaintenance
+        |> field "self" _.Self ActorCodecs.actorRef
+        |> field "issuer" _.Issuer PrincipalCodecs.issuer
+        |> field "roles" _.Roles (list Role.all.Length actorRoleSummary)
+
+    let actorContext = actorContextFields |> build |> named "ActorContext"
+
+    let requesterClaims =
+        let hint =
+            partyName
+            |> constrained
+                (Schema.String(None, None, Some 1, Some 200, None))
+                (PartyName.admit >> Result.isOk)
+
+        (record (fun name username email ->
+            RequesterClaims.admit
+                (name |> Option.map PartyName.format)
+                (username |> Option.map PartyName.format)
+                (email |> Option.map PartyName.format))
+        : Fields<RequesterClaims, _>)
+        |> optionalField "name" _.Name hint
+        |> optionalField "preferredUsername" _.PreferredUsername hint
+        |> optionalField "email" _.Email hint
         |> build
-        |> named "ActorContext"
+        |> named "RequesterClaims"
+
+    let private requesterState =
+        tagged
+            "RequesterState"
+            [
+                variant
+                    (RequesterKind.token RequesterKind.Active)
+                    RequesterState.Active
+                    (function
+                    | RequesterState.Active value -> Some value
+                    | _ -> None)
+                    actorContextFields
+                variant
+                    (RequesterKind.token RequesterKind.NoRoles)
+                    RequesterState.NoRoles
+                    (function
+                    | RequesterState.NoRoles value -> Some value
+                    | _ -> None)
+                    ((record (fun self installation date zone ->
+                        {
+                            RequesterWithoutRoles.Self = self
+                            InstallationId = installation
+                            BusinessDate = date
+                            TimeZone = zone
+                        })
+                     : Fields<RequesterWithoutRoles, _>)
+                     |> field "self" _.Self ActorCodecs.actorRef
+                     |> field "installationId" _.InstallationId uuid
+                     |> field "businessDate" _.BusinessDate dateValue
+                     |> field "timeZone" _.TimeZone text)
+                variant
+                    (RequesterKind.token RequesterKind.Disabled)
+                    RequesterState.Disabled
+                    (function
+                    | RequesterState.Disabled value -> Some value
+                    | _ -> None)
+                    (record id |> field "self" id ActorCodecs.actorRef)
+                variant
+                    (RequesterKind.token RequesterKind.NotRegistered)
+                    RequesterState.NotRegistered
+                    (function
+                    | RequesterState.NotRegistered value -> Some value
+                    | _ -> None)
+                    ((record (fun issuer subject claims ->
+                        {
+                            UnregisteredRequester.Issuer = issuer
+                            Subject = subject
+                            Claims = claims
+                        })
+                     : Fields<UnregisteredRequester, _>)
+                     |> field "issuer" _.Issuer (boundedText 1 PrincipalKey.MaximumIssuerCharacters)
+                     |> field
+                         "subject"
+                         _.Subject
+                         (boundedText 1 PrincipalKey.MaximumHumanSubjectCharacters)
+                     |> field "claims" _.Claims requesterClaims)
+            ]
+
+    let contextReply =
+        record (fun requester -> { ContextReply.Requester = requester })
+        |> field "requester" _.Requester requesterState
+        |> build
+        |> named "RequesterContext"
+
+    let private accessRequest =
+        (record (fun principal first last claims ->
+            {
+                AccessRequest.Principal = principal
+                FirstSeen = first
+                LastSeen = last
+                Claims = claims
+            })
+        : Fields<AccessRequest, _>)
+        |> field "principal" _.Principal principal
+        |> field "firstSeen" _.FirstSeen instant
+        |> field "lastSeen" _.LastSeen instant
+        |> field "claims" _.Claims requesterClaims
+        |> build
+        |> named "AccessRequest"
+
+    let accessRequestsPage =
+        (record (fun basis items cursor ->
+            {
+                Basis = basis
+                AccessRequestPage.Items = items
+                NextCursor = cursor
+            })
+        : Fields<AccessRequestPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
+        |> field "items" _.Items (list Paging.MaximumPageSize accessRequest)
+        |> field
+            "nextCursor"
+            _.NextCursor
+            (nullable (boundedText 1 Paging.MaximumAccessRequestCursorCharacters))
+        |> build
+        |> named "AccessRequestPage"
 
     let position = LedgerCodecs.position
     let changeSummary = LedgerCodecs.changeSummary
     let fieldChange = LedgerCodecs.fieldChange
 
     let reviewFields =
-        (record (fun before proposed changes context ->
+        (record (fun before proposed context ->
             {
-                Before = before
+                PresentedCaseReview.Before = before
                 Proposed = proposed
-                Changes = changes
                 Context = context
             })
-        : Fields<AdvisoryReview, _>)
+        : Fields<PresentedCaseReview, _>)
         |> field "before" _.Before (nullable caseSnapshot)
         |> field "after" _.Proposed caseSnapshot
-        |> field "changes" _.Changes (list CaseFields.declarations.Length fieldChange)
         |> field "context" _.Context runtimeContext
 
-    let actorSummary =
-        (record (fun v0 v1 v2 ->
+    let private actorResponsibleCases =
+        (record (fun count actor _view ->
             {
-                Actor.ActorId = v0
-                Principal = v1
-                Enabled = v2
+                ActorResponsibleCases.Count = count
+                ResponsibleActor = actor
             })
-        : Fields<Actor, _>)
-        |> field "actorId" _.ActorId actorId
-        |> field "principal" _.Principal (principal)
-        |> field "enabled" _.Enabled (boolean)
+        : Fields<ActorResponsibleCases, _>)
+        |> field "count" _.Count (integer 0L SafeInteger.Maximum)
+        |> field "responsibleActor" _.ResponsibleActor actorId
+        |> field "view" _.View (constant "ALL" |> map (fun () -> CaseView.All) (fun _ -> ()))
         |> build
-        |> named "ActorSummary"
+        |> named "ActorResponsibleCases"
+
+    let actorSummary =
+        let contact =
+            boundedUtf8Text 1 PartyName.MaximumBytes
+            |> mapResult
+                (fun path raw ->
+                    ContactText.parse raw
+                    |> Result.mapError (fun _ ->
+                        {
+                            Path = path
+                            Reason = "Invalid profile contact."
+                        }))
+                ContactText.format
+
+        (record (fun actor principal contact responsibleCases state roles ->
+            {
+                ActorReviewItem.State = state
+                Roles = roles
+                Actor = actor
+                Principal = principal
+                Contact = contact
+                ResponsibleCases = responsibleCases
+            })
+        : Fields<ActorReviewItem, _>)
+        |> field "actor" _.Actor ActorCodecs.actorRef
+        |> field "principal" _.Principal principal
+        |> field "contact" _.Contact (nullable contact)
+        |> optionalField "responsibleCases" _.ResponsibleCases actorResponsibleCases
+        |> field "state" _.State (VocabularyCodec.create AccountState.vocabulary)
+        |> field "roles" _.Roles (list Role.all.Length actorRoleSummary)
+        |> build
+        |> named "ActorReviewItem"
 
     let internal authorityGrantFields =
         (record (fun v0 v1 -> { ScopedGrant.Role = v0; Scope = v1 }): Fields<ScopedGrant, _>)
@@ -406,26 +611,30 @@ module ResponseCodecs =
     let authorityGrant = authorityGrantFields |> build |> named "AuthorityGrant"
 
     let grantsPage =
-        (record (fun v0 v1 v2 ->
+        (record (fun basis v0 v1 v2 ->
             {
+                Basis = basis
                 AuthorityGrantPage.Actor = v0
                 Items = v1
                 NextCursor = v2
             })
         : Fields<AuthorityGrantPage, _>)
-        |> field "actor" _.Actor (actorSummary)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
+        |> field "actor" _.Actor actorSummary
         |> field "items" _.Items (list 50 authorityGrant)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "GrantsPage"
 
     let actorsPage =
-        (record (fun v0 v1 ->
+        (record (fun basis v0 v1 ->
             {
+                Basis = basis
                 ActorReviewPage.Items = v0
                 NextCursor = v1
             })
         : Fields<ActorReviewPage, _>)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
         |> field "items" _.Items (list 50 actorSummary)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
@@ -441,25 +650,13 @@ module ResponseCodecs =
             | _ -> invalidArg "entry" "Expected summary history.")
 
     let historyDifference =
-        let lifecycle =
-            (record (fun before after ->
-                {
-                    LifecycleChange.Before = before
-                    After = after
-                })
-            : Fields<LifecycleChange, _>)
-            |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
-            |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
-            |> build
-            |> named "LifecycleChange"
-
         (record (fun lifecycle fields ->
             {
                 HistoryDifference.Lifecycle = lifecycle
                 Fields = fields
             })
         : Fields<HistoryDifference, _>)
-        |> field "lifecycle" _.Lifecycle (nullable lifecycle)
+        |> field "lifecycle" _.Lifecycle (nullable LedgerCodecs.lifecycleChange)
         |> field "fields" _.Fields (list CaseFields.declarations.Length fieldChange)
         |> build
         |> named "HistoryDifference"
@@ -554,13 +751,26 @@ module ResponseCodecs =
 
     let caseSummary = ReadRowCodecs.caseSummary
 
+    let caseRef =
+        (record (fun id reference ->
+            {
+                CaseRef.CaseId = id
+                CaseReference = reference
+            })
+        : Fields<CaseRef, _>)
+        |> field "caseId" _.CaseId caseId
+        |> field "caseReference" _.CaseReference caseReference
+        |> build
+        |> named "CaseRef"
+
     let casesPage =
-        (record (fun items next offers basis ->
+        (record (fun items next offers basis exact ->
             {
                 Basis = basis
                 Items = items
                 NextCursor = next
                 Offers = offers
+                ExactReference = exact
             })
         : Fields<CaseSummaryPage, _>)
         |> field "items" _.Items (list 50 caseSummary)
@@ -569,18 +779,21 @@ module ResponseCodecs =
             _.NextCursor
             (nullable (boundedText 1 Paging.MaximumCaseCursorCharacters))
         |> field "offers" _.Offers (list maximumInstallationOffers installationOffer)
-        |> field "basis" _.Basis ReadRowCodecs.dateBasis
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
+        |> field "exactReference" _.ExactReference (nullable caseRef)
         |> build
         |> named "CasesPage"
 
     let assigneePage =
-        (record (fun items next ->
+        (record (fun basis items next ->
             {
-                AssigneePage.Items = items
+                AssigneePage.Basis = basis
+                Items = items
                 NextCursor = next
             })
         : Fields<AssigneePage, _>)
-        |> field "items" _.Items (list Paging.MaximumPageSize ReadRowCodecs.accountSubject)
+        |> field "basis" _.Basis ResponseScalars.workDateBasis
+        |> field "items" _.Items (list Paging.MaximumPageSize ActorCodecs.actorRef)
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "AssigneePage"

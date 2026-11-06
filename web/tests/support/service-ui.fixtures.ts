@@ -5,12 +5,16 @@ export { productMetadata as definition } from "../../src/protocol/productMetadat
 export { caseFields as fields, operationId } from "./service-foundation.fixtures";
 export const runtime = {
   productVersion: "0.8.0",
+  observedAt: "2026-09-09T12:00:00.000000Z",
   businessDate: "2026-09-09",
   timeZone: "Etc/UTC",
 };
 const fixtureData = (endpoint: string, kind: string, data: unknown): unknown => {
   if (kind !== "SUCCEEDED") {
     return data;
+  }
+  if (endpoint === "context") {
+    return { requester: data };
   }
   if (endpoint === "session.logout") {
     return null;
@@ -35,5 +39,5 @@ export const context = actorContextInput({
 
 export const unavailable = {
   code: "RESOURCE_UNAVAILABLE",
-  action: "NONE_REQUIRED",
+  action: "ASK_FOR_ACCESS",
 } as const;

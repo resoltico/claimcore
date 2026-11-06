@@ -1,28 +1,42 @@
+import { workBasis } from "../../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { afterEach, expect, it, vi } from "vitest";
 import type { AuthorityHistoryEntry } from "@contracts/client";
 import { render, screen } from "../../../support/presentation-test-support";
-import { context, response } from "../../../support/service-ui.fixtures";
+import { context } from "../../../support/service-ui.fixtures";
 import { RequesterContext } from "../../../../src/hooks/useRequesterContext";
 import { AuthorityHistory } from "../../../../src/views/authority/AuthorityHistory";
 import { preferenceKey } from "../../../../src/presentation/preferences";
 const owner: AuthorityHistoryEntry = {
   sequence: 31,
   recordedAt: "2026-01-01T22:30:00.000000Z",
-  recordedBy: context.actorId,
-  targetActorId: context.actorId,
+  recordedBy: context.self,
+  target: context.self,
   act: {
     kind: "PROVISION_OWNER",
     principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-owner" },
   },
 };
+const historyResponse = (
+  entries: ReadonlyArray<AuthorityHistoryEntry>,
+  nextCursor: string | null = null,
+) =>
+  new Response(
+    JSON.stringify({
+      outcome: {
+        kind: "SUCCEEDED",
+        data: { basis: { ...workBasis, timeZone: "Europe/Riga" }, entries, nextCursor },
+      },
+    }),
+    { status: 200, headers: { "content-type": "application/json" } },
+  );
 afterEach(() => vi.unstubAllGlobals());
 it.each([
   {
     language: "en",
     displayLocale: "en-GB",
     label: "Provision owner",
-    you: "You",
+
     day: "2 Jan 2026",
     time: "00:30",
   },
@@ -30,7 +44,7 @@ it.each([
     language: "lv",
     displayLocale: "lv-LV",
     label: "Iestatīt sākotnējo īpašnieku",
-    you: "Jūs",
+
     day: "2026. gada 2. janv.",
     time: "00:30",
   },
@@ -38,22 +52,24 @@ it.each([
     language: "ar",
     displayLocale: "ar-EG",
     label: "تعيين المالك الأول",
-    you: "أنت",
+
     day: "٠٢\u200f/٠١\u200f/٢٠٢٦",
     time: "١٢:٣٠ ص",
   },
 ])(
-  "localizes bootstrap history and requester attribution in $language",
-  async ({ language, displayLocale, label, you, day, time }) => {
+  "localizes bootstrap history and renders actor names in $language",
+  async ({ language, displayLocale, label, day, time }) => {
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({ version: 2, language, displayLocale, theme: "SYSTEM" }),
+      JSON.stringify({
+        version: 3,
+        language,
+        displayLocale,
+        mode: "system",
+        accent: "green" as const,
+      }),
     );
-    const fetch = vi
-      .fn()
-      .mockResolvedValue(
-        response("authority.history", "SUCCEEDED", { entries: [owner], nextCursor: null }),
-      );
+    const fetch = vi.fn().mockResolvedValue(historyResponse([owner]));
     vi.stubGlobal("fetch", fetch);
     const view = render(
       <RequesterContext
@@ -64,7 +80,7 @@ it.each([
     );
     await screen.findByText(label, { exact: true });
     expect(screen.queryByText("PROVISION_OWNER")).toBeNull();
-    expect(screen.getAllByText(you, { exact: true })).toHaveLength(2);
+    expect(screen.getAllByText("Named account", { exact: true })).toHaveLength(2);
     const instant = view.container.querySelector("li header time");
     expect(instant).toHaveTextContent(day);
     expect(instant).toHaveTextContent(time);
@@ -77,22 +93,18 @@ it("keeps the selected actor filter when appending an older authority history pa
   const older: AuthorityHistoryEntry = { ...owner, sequence: 30, act: { kind: "DISABLE" } };
   const fetch = vi
     .fn()
-    .mockResolvedValueOnce(
-      response("authority.history", "SUCCEEDED", { entries: [owner], nextCursor: "older-page" }),
-    )
-    .mockResolvedValueOnce(
-      response("authority.history", "SUCCEEDED", { entries: [older], nextCursor: null }),
-    );
+    .mockResolvedValueOnce(historyResponse([owner], "older-page"))
+    .mockResolvedValueOnce(historyResponse([older]));
   vi.stubGlobal("fetch", fetch);
-  const view = render(<AuthorityHistory actorId={context.actorId} />);
+  const view = render(<AuthorityHistory actorId={context.self.actorId} />);
   const more = await screen.findByRole("button", { name: "Load more history" });
   await userEvent.setup().click(more);
-  await screen.findByText("Disable actor", { exact: true });
+  await screen.findByText("Disable account", { exact: true });
   expect(view.container.querySelectorAll("li")).toHaveLength(2);
   expect(fetch).toHaveBeenLastCalledWith(
     "/api/authority.history",
     expect.objectContaining({
-      body: JSON.stringify({ limit: 50, actorId: context.actorId, cursor: "older-page" }),
+      body: JSON.stringify({ limit: 50, actorId: context.self.actorId, cursor: "older-page" }),
     }),
   );
   expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();

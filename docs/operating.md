@@ -33,7 +33,9 @@ not imply a constant-cost write or a production capacity guarantee.
 ### Database administration
 
 Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Provisioning also needs
-`CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`, containing operationId, issuer and subject. Keep those inputs
+`CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE`, containing operationId, issuer, subject and a required authored profile.
+For example: `{"operationId":"…","issuer":"https://issuer.example/","subject":"…","profile":{"displayName":"Initial owner","contact":null}}`.
+The profile name is not taken from identity-provider claims. Keep those inputs
 unchanged when repeating the same provisioning operation. Remote database connections require verified TLS.
 Runtime credentials have no schema-owner authority. Offline help/version do not connect.
 
@@ -92,6 +94,8 @@ other pruning can make them differ. These are observations, not a pinned session
 
 ## Access review and sessions
 
+For day-to-day account admission, profiles and role changes, use [People and access](people-and-access.md).
+
 With installation OWNER or AUDITOR, list actors and inspect each selected actor's grant pages. Follow every
 continuation; an actor summary is not a complete grant inventory. Disabled actors remain reviewable. Each
 page checks current rights and uses a separate snapshot.
@@ -104,8 +108,8 @@ its ledger sequence, UTC recording time, executor, target and typed principal or
 revocation. History payloads are permanent authority records; erasing a case does not erase its grants
 or authority history. CSV export protects formula-leading cells; JSON preserves exact values.
 
-Selecting an actor starts its offered GRANT action when available, with the disclosed principal bound
-to that actor. Review the target, role and scope before confirming. Selecting another actor does not
+Selecting a person opens their detail page and offered actions, with the disclosed principal bound
+to that person. Review the target, role and scope before confirming. Selecting another actor does not
 rewrite an authored, prepared or unresolved request. Starting that actor's action requires the normal
 discard acknowledgement and creates a fresh request; declining keeps the original target and request.
 
@@ -242,6 +246,16 @@ address affected erasures before reopening access. Restored operational generati
 backup too: discard outstanding resume instructions and inspect the restored state while traffic and
 owner mutations remain isolated.
 
+Profile erasure removes the account’s saved display name and contact, including retained SET_PROFILE payloads and their nonces. The principal identity, enabled state, grants and work references remain; references display “Former account” and a short ID. A later SET_PROFILE records a new profile and survives an older erase frontier. Profile erasure does not remove earlier exports, private provisioning files or client retry journals. Those copies have separate operator and client custody.
+
+Authenticated callers see their own ACTIVE, NO_ROLES, DISABLED or NOT_REGISTERED state through `context`. Other endpoints retain the non-disclosing `RESOURCE_UNAVAILABLE` refusal. Optional identity-provider `name`, `preferred_username` and `email` hints are independently admitted as single-line text of at most 200 Unicode scalars; missing, ambiguous or invalid hints are omitted. They never become actor profiles automatically.
+
+The non-ledger `access_request` table temporarily records not-registered callers, keyed by issuer, principal kind and subject. A repeated visit refreshes hints and last-seen time while retaining first-seen time. Requests expire after 30 days; each requester refresh removes at most 50 expired rows, and concurrent inserts retain at most 1,000 rows by evicting the oldest. Registration and initial-owner provisioning remove the matching request in the same transaction. The cache is excluded from ledger verification and is not a source of authority or actor names. Only `MANAGE_AUTHORITY` permits `authority.requests` and `authority.requests.dismiss`; `READ_AUTHORITY` does not. Dismissal deletes one kind-aware identity without a ledger entry or access grant; a later visit may create a new request.
+
+People rows report registered account assignment state: disabled; enabled without assigned roles; or enabled with assigned roles. Their bounded role summaries show installation assignments and scoped-case counts. These facts do not assert effective access: every operation still applies principal-kind, scope and authorization checks. Recognized inadmissible assignments remain visible to authorized authority reviewers and remain removable; they never grant protected rights.
+
+
+
 The append-only guard permits parent-scoped fact/work/reminder payload clearing. A trusted schema owner can use that exception without
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
 all evidence remains outside that protection.
@@ -314,7 +328,8 @@ remain in a partition cache.
 
 The browser separately bounds reads within each document and drains dispatched obsolete responses.
 That client coordination does not combine the activity of multiple tabs, CLI processes or Web hosts.
-All clients remain subject to the server limits, including HTTP 429 admission refusals.
+All clients remain subject to the server limits, including HTTP 429 admission refusals. Rate-limited
+responses include `Retry-After: 1`; this is a retry hint, not a larger authentication or admission budget.
 
 `CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
 `CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
@@ -332,6 +347,14 @@ returns a bounded transport refusal; it does not imply a permanent operation rej
 appropriate, and use [delivery recovery](integrating.md#delivery-recovery) for an uncertain mutation.
 Context reads that establish journal ownership remain fresh; permission and action-state checks always
 execute on the server.
+
+## Browser preferences
+
+Preferences use `claimcore.presentation.v3` in browser storage; v2 values are ignored without migration.
+People choose language, regional format, green/blue accent and light/dark/system mode only in Settings,
+or the same panel from the sign-in footer. The first visit negotiates supported browser languages.
+System mode follows the device preference. OS contrast preferences and forced colors remain effective.
+These presentation choices do not change business dates, amounts, authorization or stored facts.
 
 ## Published interface assets
 

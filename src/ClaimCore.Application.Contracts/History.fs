@@ -2,12 +2,6 @@ namespace ClaimCore.Application.Contracts
 
 open ClaimCore.Domain
 
-type LifecycleChange =
-    {
-        Before: Lifecycle option
-        After: Lifecycle
-    }
-
 type HistoryDifference =
     {
         Lifecycle: LifecycleChange option

@@ -23,6 +23,11 @@ let private owner operationId subject =
             operationId = operationId
             issuer = "https://issuer.example/"
             subject = subject
+            profile =
+                {|
+                    displayName = "Administration fixture owner"
+                    contact = (None: string option)
+                |}
         |}
 
 let private discovery binary connection principal =

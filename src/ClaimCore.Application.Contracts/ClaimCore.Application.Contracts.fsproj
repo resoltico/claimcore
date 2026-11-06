@@ -7,13 +7,16 @@
     <Compile Include="Outcome.fs" />
     <Compile Include="Maintenance.fs" />
     <Compile Include="Advice.fs" />
+    <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />
     <Compile Include="History.fs" />
+    <Compile Include="Timeline.fs" />
     <Compile Include="CasePages.fs" />
     <Compile Include="CaseTotals.fs" />
     <Compile Include="AuthorityPages.fs" />
     <Compile Include="WorkReads.fs" />
+    <Compile Include="ViewCounts.fs" />
     <Compile Include="Replies.fs" />
     <Compile Include="Operations.fs" />
     <Compile Include="Resolution.fs" />

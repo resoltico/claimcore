@@ -8,9 +8,12 @@ import { clearRecoveryFixtures } from "./recovery.fixtures";
 import { navigate, setNavigationLock } from "../../src/routing/navigation";
 import * as matchers from "@testing-library/jest-dom/matchers";
 import { cleanup } from "@testing-library/react";
-import { afterEach, expect } from "vitest";
+import { beforeEach, afterEach, expect, vi } from "vitest";
 
 expect.extend(matchers);
+beforeEach(() => {
+  vi.spyOn(navigator, "languages", "get").mockReturnValue(["en-GB"]);
+});
 
 afterEach(() => {
   cleanup();

@@ -1,5 +1,5 @@
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { CaseHistory } from "../../src/views/CaseHistory";
+import { CaseTimeline } from "../../src/views/case/CaseTimeline";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { afterEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
@@ -45,7 +45,7 @@ it("localizes generated enum tokens while preserving identical authored principa
     }),
   ).toHaveLength(2);
   expect(
-    screen.getByText("Register actor", {
+    screen.getByText("Register account", {
       exact: true,
     }),
   ).toBeVisible();
@@ -91,16 +91,16 @@ it("an empty short nonterminal page never claims the end of visible scope", () =
     <PageStatus empty cursor="synthetic-continuation" emptyMessage="ui.noAccessibleCases" />,
   );
   expect(screen.getByText("No accessible cases returned.")).toBeVisible();
-  expect(screen.getByText("More results are available in this visible scope.")).toBeVisible();
-  expect(screen.queryByText("End of results in this visible scope.")).toBeNull();
+  expect(screen.getByText("More results are available.")).toBeVisible();
+  expect(screen.queryByText("All results shown.")).toBeNull();
   rerender(<PageStatus empty cursor={null} emptyMessage="ui.noAccessibleCases" />);
-  expect(screen.getByText("End of results in this visible scope.")).toBeVisible();
+  expect(screen.getByText("All results shown.")).toBeVisible();
 });
 afterEach(() => {
   vi.restoreAllMocks();
 });
 it("a failed history read stops loading without inventing a successful empty page", async () => {
-  mockEndpoint("case.history").mockResolvedValue({
+  mockEndpoint("case.timeline").mockResolvedValue({
     kind: "deliveryFailure",
     notice: {
       kind: "local",
@@ -108,14 +108,9 @@ it("a failed history read stops loading without inventing a successful empty pag
     },
     dispatched: false,
   });
-  render(
-    <CaseHistory
-      target={{ kind: "REFERENCE", caseReference: "SYNTHETIC" }}
-      fields={productMetadata.catalog.fields}
-    />,
-  );
+  render(<CaseTimeline target={{ kind: "REFERENCE", caseReference: "SYNTHETIC" }} />);
   expect(await screen.findByRole("alert")).toBeVisible();
   expect(screen.queryByRole("status")).toBeNull();
   expect(screen.queryByText("No accessible history entries returned.")).toBeNull();
-  expect(screen.queryByText("End of results in this visible scope.")).toBeNull();
+  expect(screen.queryByText("All results shown.")).toBeNull();
 });

@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
 import { caseViewInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
@@ -23,8 +24,8 @@ const current: CurrentCase = caseViewInput({
   },
 });
 const expectAuthoringDisabled = () => {
-  const controls = document.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
-    ".operation-editor form input, .operation-editor form select",
+  const controls = document.querySelectorAll<HTMLInputElement | HTMLButtonElement>(
+    ".operation-form-card input, .operation-form-card button[role=combobox]",
   );
   expect(controls.length).toBeGreaterThan(1);
   for (const control of controls) {
@@ -50,16 +51,8 @@ it("shows only an accepted receipt, focuses it and keeps Return usable", async (
       name: "Review changes",
     }),
   );
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(
-    screen.getByRole("button", {
-      name: "Record changes",
-    }),
-  );
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   const heading = await screen.findByRole("heading", {
     name: "Recorded change",
   });
@@ -109,21 +102,11 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
     );
     expectAuthoringDisabled();
     preparing.resolve(previewReply());
-    await screen.findByRole("dialog", {
-      name: "Review changes",
-    });
-    expectAuthoringDisabled();
-    await user.click(
-      screen.getByRole("checkbox", {
-        name: "I confirm these changes.",
-      }),
-    );
-    await user.click(
-      screen.getByRole("button", {
-        name: "Record changes",
-      }),
-    );
-    expectAuthoringDisabled();
+    await screen.findByRole("dialog");
+    expect(screen.queryByRole("textbox")).toBeNull();
+    await waitForReviewConfirm();
+    await user.click(reviewConfirm());
+    expect(screen.queryByRole("textbox")).toBeNull();
     expect(
       screen.getByRole("button", {
         name: "Recording…",

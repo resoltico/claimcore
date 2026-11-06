@@ -42,8 +42,11 @@ let private caseReply =
     {
         Mine = false
         Work = Inputs.workView current.State
+        Stages = Inputs.stageDisplay current.State
         Snapshot = current
-        Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
+        Headline = CaseHeadline.Undecided
+        Attention = []
+        Advice = Inputs.caseAdvice current.State
     }
 
 let private review =
@@ -61,18 +64,26 @@ let private review =
                             })
                 }
             Changes =
-                [
-                    {
-                        FieldName = BusinessField.Status
-                        Before = Some "OPENED"
-                        After = Some "CLOSED"
-                    }
-                ]
+                {
+                    Lifecycle = None
+                    Fields =
+                        [
+                            {
+                                FieldName = BusinessField.Status
+                                Before = Some(CaseFieldValue.Status CaseStatus.Opened)
+                                After = Some(CaseFieldValue.Status CaseStatus.Closed)
+                            }
+                        ]
+                }
             Context =
                 {
                     ProductVersion = "synthetic"
-                    EffectiveBusinessDate = DateOnly(2026, 9, 7)
-                    TimeZoneId = "Etc/UTC"
+                    Basis =
+                        {
+                            ObservedAt = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
+                            BusinessDate = DateOnly(2026, 9, 7)
+                            TimeZoneId = "Etc/UTC"
+                        }
                 }
         }
 
@@ -95,10 +106,28 @@ let private harness language answer scenario =
             | "context" ->
                 response frame Api.context.Output (ResponseExamples.defaultReply Api.context)
             | "case.get" ->
-                Expect.equal
-                    generated
-                    0
-                    "The automatically allocated id is not frozen before reading the case"
+                let acceptedOpen =
+                    calls
+                    |> Seq.tryPick (fun call ->
+                        Frames.value Api.operationExecute call
+                        |> Option.bind (function
+                            | OperationInput.Case request when
+                                CaseAct.kind request.Act = CaseActKind.Open
+                                ->
+                                Some request
+                            | _ -> None))
+
+                match acceptedOpen with
+                | Some _ ->
+                    Expect.equal
+                        generated
+                        1
+                        "Post-acceptance work refresh retains the frozen OPEN identity"
+                | None ->
+                    Expect.equal
+                        generated
+                        0
+                        "The automatically allocated id is not frozen before reading an existing case"
 
                 response
                     frame
@@ -106,20 +135,66 @@ let private harness language answer scenario =
                     (if scenario = Scenario.ReadRefused then
                          Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
                      else
-                         Outcome.Succeeded caseReply)
+                         Outcome.Succeeded(
+                             acceptedOpen
+                             |> Option.map (fun request ->
+                                 { caseReply with
+                                     Snapshot =
+                                         { caseReply.Snapshot with
+                                             CaseId =
+                                                 CaseId.ofOperationId (
+                                                     CaseFixtures.operationId request.OperationId
+                                                 )
+                                             Revision = Revision.first
+                                         }
+                                 })
+                             |> Option.defaultValue caseReply
+                         ))
             | "operation.preview" ->
                 response
                     frame
                     Api.operationPreview.Output
-                    {
-                        OperationId = operationId ()
-                        Outcome =
-                            if scenario = Scenario.PreviewRefused then
-                                Outcome.Rejected(Refusal.Access AccessRefusal.ActNotPermitted)
-                            else
-                                Outcome.Succeeded(Previewed.Reviewed review)
-                    }
+                    (PresentedPreviewReply.ofCore
+                        {
+                            OperationId = operationId ()
+                            Outcome =
+                                if scenario = Scenario.PreviewRefused then
+                                    Outcome.Rejected(
+                                        Refusal.Access(AccessRefusal.NotAuthorized Capability.Close)
+                                    )
+                                else
+                                    let supplied =
+                                        match Frames.value Api.operationPreview frame, review with
+                                        | Some(OperationInput.Case request),
+                                          OperationReview.Case value when
+                                            CaseAct.kind request.Act = CaseActKind.Open
+                                            ->
+                                            OperationReview.Case
+                                                { value with
+                                                    Before = None
+                                                    Proposed =
+                                                        { value.Proposed with
+                                                            CaseId =
+                                                                CaseId.ofOperationId (
+                                                                    CaseFixtures.operationId
+                                                                        request.OperationId
+                                                                )
+                                                            Reference = CaseFixtures.reference "x"
+                                                            Revision = Revision.first
+                                                        }
+                                                }
+                                        | _ -> review
+
+                                    Outcome.Succeeded(Previewed.Reviewed supplied)
+                        })
             | "operation.execute" ->
+                let act =
+                    match Frames.value Api.operationExecute frame with
+                    | Some(OperationInput.Case input) -> CaseAct.kind input.Act
+                    | _ -> failtest "Expected reviewed case operation"
+
+                let opening = act = CaseActKind.Open
+
                 let receipt =
                     { CliReplyFixtures.receipt with
                         OperationId = CaseFixtures.operationId (operationId ())
@@ -128,10 +203,20 @@ let private harness language answer scenario =
                             | ReceiptSubject.Case subject ->
                                 ReceiptSubject.Case
                                     { subject with
-                                        CaseId = current.CaseId
+                                        CaseId =
+                                            if opening then
+                                                CaseId.ofOperationId (
+                                                    CaseFixtures.operationId (operationId ())
+                                                )
+                                            else
+                                                current.CaseId
                                         Reference = current.Reference
-                                        Revision = CaseFixtures.revision 8L
-                                        Act = CaseActKind.Close
+                                        Revision =
+                                            if opening then
+                                                Revision.first
+                                            else
+                                                CaseFixtures.revision 8L
+                                        Act = act
                                     }
                             | _ -> failtest "The case receipt fixture must identify its actual case"
                     }
@@ -144,7 +229,10 @@ let private harness language answer scenario =
                         Outcome =
                             if scenario = Scenario.Stale then
                                 ExecuteResult.Rejected(
-                                    Refusal.RevisionConflict(CaseFixtures.revision 8L)
+                                    Refusal.RevisionConflict(
+                                        RevisionConflictInfo.at (CaseFixtures.revision 8L)
+                                        |> RevisionConflictInfo.explain ConflictChanges.Withheld
+                                    )
                                 )
                             else
                                 ExecuteResult.Accepted receipt
@@ -217,6 +305,50 @@ let tests =
         "interactive CLI review"
         [
             testCase
+                "OPEN previews without a lookup and confirms its exact authored input"
+                (fun () ->
+                    for answer, executed in [ Some "yes", true; Some "no", false; None, false ] do
+                        let h = harness "en" answer Scenario.Accepted
+
+                        let arguments =
+                            [ "case"; "open"; "x" ]
+                            @ CliExamples.registrationArguments Inputs.registration
+
+                        Expect.equal (run arguments h) 0 "Human completion"
+
+                        let expected =
+                            [ "context"; "operation.preview" ]
+                            @ (if executed then [ "operation.execute"; "case.get" ] else [])
+
+                        Expect.equal
+                            (endpoints h)
+                            expected
+                            "A new reference is not looked up before OPEN"
+
+                        let input = caseInput h.Calls[1]
+                        Expect.equal input.ExpectedRevision 0L "Zero is the actual OPEN contract"
+
+                        Expect.equal
+                            input.Target
+                            (CaseSelector.Reference "x")
+                            "Preview binds the authored reference"
+
+                        Expect.equal
+                            (h.Generated())
+                            1
+                            "Allocate one operation ID after valid syntax"
+
+                        if executed then
+                            Expect.equal
+                                (Frames.inputBytes h.Calls[1])
+                                (Frames.inputBytes h.Calls[2])
+                                "The exact previewed input is executed"
+                        else
+                            Expect.contains
+                                (List.ofSeq h.Prompts)
+                                "Not recorded.\n"
+                                "Explicit declined OPEN output")
+            testCase
                 "accept freezes one id and fetched revision across preview and execute"
                 (fun () ->
                     let h = harness "en" (Some "yes") Scenario.Accepted
@@ -245,6 +377,21 @@ let tests =
                         (Frames.inputBytes h.Calls[2])
                         (Frames.inputBytes h.Calls[3])
                         "Confirmation executes exactly the reviewed input")
+            testCase "erasure requires the authored reference rather than yes" (fun () ->
+                for answer, executed in
+                    [ Some "yes", false; Some "x ", false; None, false; Some "x", true ] do
+                    let h = harness "en" answer Scenario.Accepted
+                    Expect.equal (run [ "case"; "erase"; "x" ] h) 0 "Human completion"
+
+                    Expect.equal
+                        (endpoints h |> List.contains "operation.execute")
+                        executed
+                        "The irreversible write is sent only after exact target entry"
+
+                    Expect.stringContains
+                        (String.concat "" h.Prompts)
+                        "Type x to confirm: "
+                        "Typed target prompt")
             testCase "decline never dispatches execute" (fun () ->
                 let h = harness "en" (Some "n") Scenario.Accepted
 
@@ -256,7 +403,16 @@ let tests =
                 Expect.equal
                     (endpoints h)
                     [ "context"; "case.get"; "operation.preview" ]
-                    "No mutation follows decline")
+                    "No mutation follows decline"
+
+                Expect.equal
+                    (h.Prompts |> Seq.last)
+                    "Not recorded.\n"
+                    "Decline gives explicit closure"
+
+                Expect.isFalse
+                    (h.Text |> Seq.exists (fun value -> value.Contains "Active → Active"))
+                    "Unchanged lifecycle values do not obscure the actual changes")
             testCase "empty or closed confirmation input defaults to no" (fun () ->
                 for answer in [ None; Some ""; Some "unexpected" ] do
                     let h = harness "en" answer Scenario.Accepted
@@ -322,24 +478,36 @@ let tests =
                     "JSON omission remains usage-invalid"
 
                 Expect.equal h.Calls.Count 0 "No remote call was made")
-            testCase "omitted correction groups mean KEEP and every action is shown" (fun () ->
-                let h = harness "en" (Some "n") Scenario.Accepted
-                run [ "case"; "correct"; "x" ] h |> ignore
+            testCase
+                "omitted correction groups mean KEEP and one unchanged summary replaces repeated KEEP lines"
+                (fun () ->
+                    let h = harness "en" (Some "n") Scenario.Accepted
+                    run [ "case"; "correct"; "x" ] h |> ignore
 
-                match (caseInput h.Calls[2]).Act with
-                | CaseAct.Correct correction ->
-                    Expect.equal correction.Registration Amendment.Keep "Registration is retained"
-                    Expect.equal correction.Decision Change.Keep "Decision is retained"
-                    Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
-                | _ -> failtest "Expected a correction review"
+                    match (caseInput h.Calls[2]).Act with
+                    | CaseAct.Correct correction ->
+                        Expect.equal
+                            correction.Registration
+                            Amendment.Keep
+                            "Registration is retained"
 
-                let rendered = String.concat "\n" h.Text
+                        Expect.equal correction.Decision Change.Keep "Decision is retained"
+                        Expect.equal correction.Payment PaymentChange.Keep "Payment is retained"
+                    | _ -> failtest "Expected a correction review"
 
-                for group in [ "Registration"; "Payment decision"; "Payment record" ] do
-                    Expect.stringContains
-                        rendered
-                        (group + ": Keep current details")
-                        "The review makes unchanged groups explicit")
+                    let rendered = String.concat "\n" h.Text
+
+                    Expect.equal
+                        (rendered.Split('\n')
+                         |> Array.filter (fun line ->
+                             line.StartsWith("Unchanged:", StringComparison.Ordinal))
+                         |> Array.length)
+                        1
+                        "One summary covers unchanged values"
+
+                    Expect.isFalse
+                        (rendered.Contains "Keep current details")
+                        "Unchanged group actions do not obscure the supplied changes")
             testCase "localized prompts accept affirmative Latvian and Arabic replies" (fun () ->
                 for language, answer, prompt in
                     [

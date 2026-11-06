@@ -14,10 +14,11 @@ const result = (reference: string): ApiResult<ListResponse> => ({
       kind: "SUCCEEDED",
       data: {
         basis: workBasis,
+        exactReference: null,
         offers: [],
         items: [
           caseSummaryInput({
-            state: { kind: "ACTIVE", status: "OPENED" },
+            state: { kind: "ACTIVE" },
             caseId: "20000000-0000-4000-8000-000000000001",
             caseReference: reference,
             revision: 1,

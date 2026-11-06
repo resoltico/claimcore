@@ -13,6 +13,7 @@
     <Compile Include="CliCommands.fs" />
     <Compile Include="CommandGrammar.fs" />
     <Compile Include="CliProfile.fs" />
+    <Compile Include="CliLanguage.fs" />
     <Compile Include="RemoteConfiguration.fs" />
     <Compile Include="CliConfigure.fs" />
     <Compile Include="ServiceReply.fs" />
@@ -20,14 +21,15 @@
     <Compile Include="RecoveryJournal.fs" />
     <Compile Include="Schemas.fs" />
     <Compile Include="VerbOptions.fs" />
+    <Compile Include="CollectionArguments.fs" />
     <Compile Include="Grammar.fs" />
     <Compile Include="CliInvocation.fs" />
     <Compile Include="ClientFailures.fs" />
     <Compile Include="PrivateInputs.fs" />
     <Compile Include="FrameReader.fs" />
     <Compile Include="MessageCatalogs.fs" />
-    <Compile Include="CliConfirmation.fs" />
     <Compile Include="TerminalText.fs" />
+    <Compile Include="CliConfirmation.fs" />
     <Compile Include="UsageText.fs" />
     <Compile Include="ContractDiscovery.fs" />
     <Compile Include="Discovery.fs" />
@@ -50,15 +52,20 @@
     <Compile Include="StandardSinks.fs" />
     <Compile Include="RemoteFrameProcessing.fs" />
     <Compile Include="TextReplyFormat.fs" />
+    <Compile Include="TextDescriptorValue.fs" />
+    <Compile Include="TextObservation.fs" />
+    <Compile Include="TextTable.fs" />
     <Compile Include="TextDiagnosticReply.fs" />
     <Compile Include="CsvCell.fs" />
     <Compile Include="CaseListRows.fs" />
     <Compile Include="AuthorityHistoryRows.fs" />
     <Compile Include="TextWorkReply.fs" />
+    <Compile Include="TextTimelineReply.fs" />
+    <Compile Include="TimelineRows.fs" />
     <Compile Include="TextCaseReply.fs" />
     <Compile Include="TextAuthorityReply.fs" />
+    <Compile Include="TextContextReply.fs" />
     <Compile Include="TextOperationReply.fs" />
-    <Compile Include="TextGenericReply.fs" />
     <Compile Include="TextReply.fs" />
     <Compile Include="RecoveryCommand.fs" />
     <Compile Include="ReadPageIO.fs" />
@@ -77,8 +84,9 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
-    <EmbeddedResource Include="../ClaimCore.Protocol/Messages/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../ClaimCore.Protocol/Messages/Localization/*.json" Exclude="../ClaimCore.Protocol/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
+    <PackageReference Include="Wcwidth" />
     <PackageReference Include="Duende.IdentityModel" />
     <PackageReference Include="Duende.IdentityModel.OidcClient" />
   </ItemGroup>

@@ -1,3 +1,6 @@
+import { mockEndpoint } from "../support/endpoint-mocks";
+import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
+import { navigate } from "../../src/routing/navigation";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -9,7 +12,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
-import { wireResponse, historyVariants } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/contract-corpus.fixtures";
 import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
@@ -35,7 +38,7 @@ const queueListPages = () => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -49,10 +52,11 @@ const queueListPages = () => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "CLOSED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-2",
           revision: 2,
+          headline: "CLOSED",
         }),
       ],
       nextCursor: null,
@@ -66,12 +70,11 @@ const queueListPages = () => {
     }),
   );
 };
-it("lists, reloads, pages, selects and opens cases through typed list outcomes", async () => {
+it("lists, reloads, pages and selects cases through typed list outcomes", async () => {
   const user = userEvent.setup();
   queueListPages();
   const select = vi.fn();
-  const open = vi.fn();
-  render(<CaseList onSelect={select} onOpen={open} />);
+  render(<CaseList onSelect={select} />);
   await user.click(
     await screen.findByRole(
       "link",
@@ -87,14 +90,12 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
     kind: "ID",
     caseId: "20000000-0000-4000-8000-000000000001",
   });
-  await user.click(getButton("Open a case"));
-  expect(open).toHaveBeenCalledOnce();
   await user.click(getButton("Load more cases"));
   expect(await screen.findByRole("link", { name: "CASE-2" })).toBeVisible();
   await user.click(screen.getByText("Open by exact reference", { selector: "summary" }));
   await user.click(getButton("Open by exact reference"));
   expect(select).toHaveBeenCalledTimes(1);
-  await user.type(screen.getByLabelText("Handler's case reference (exact)"), "CASE-9");
+  await user.type(screen.getByLabelText("Case reference (exact)"), "CASE-9");
   await user.click(getButton("Open by exact reference"));
   expect(select).toHaveBeenCalledWith({
     kind: "ID",
@@ -102,40 +103,24 @@ it("lists, reloads, pages, selects and opens cases through typed list outcomes",
   });
   await user.click(getButton("Reload cases"));
 });
-const historyWithTwoReceipts = () => {
-  const { full } = historyVariants();
-  return {
-    nextCursor: "next",
-    entries: [
-      full,
-      {
-        kind: "FULL",
-        receipt: {
-          ...full.receipt,
-          operationId: "20000000-0000-4000-8000-000000000002",
-        },
-      },
+const historyWithTwoReceipts = () =>
+  timelinePage(
+    [
+      timelineEntry(),
+      timelineEntry({
+        position: { sequence: 2, entryHash: "b".repeat(64) },
+        operationId: "20000000-0000-4000-8000-000000000002",
+      }),
     ],
-  };
-};
+    "next",
+  );
 it("shows current fields, server act labels, full expandable history and retryable history pages", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   const extendedHistory = historyWithTwoReceipts();
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      entries: [],
-      nextCursor: null,
-    }),
-  );
-  fetch.mockResolvedValueOnce(response("case.history", "SUCCEEDED", extendedHistory));
-  fetch.mockResolvedValueOnce(
-    response("case.history", "SUCCEEDED", {
-      entries: [],
-      nextCursor: null,
-    }),
-  );
+  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", extendedHistory));
+  fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
   const [back, act] = [vi.fn(), vi.fn()];
   render(
     <CaseDetail
@@ -149,30 +134,20 @@ it("shows current fields, server act labels, full expandable history and retryab
   expect(await screen.findByText("CASE-1")).toBeVisible();
   await user.click(await findButton(/Close the case/u));
   expect(act).toHaveBeenCalledWith(current, "CLOSE");
-  await user.selectOptions(screen.getByLabelText("History detail"), "FULL");
-  const entrySummary = (await screen.findAllByText(/Open a case · revision/u))[0]!;
-  await user.click(entrySummary);
-  const entry = entrySummary.closest("details");
-  expect(entry?.querySelector(".history-attribution")).toHaveTextContent("You");
-  expect(entry?.querySelector(".history-exact")).toHaveTextContent(operationId);
+  const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("li")!;
+  await user.click(entry.querySelector("summary")!);
+  expect(entry).toHaveTextContent(operationId);
   expect(entry).toHaveTextContent("Exact UTC instant");
-  await user.click(getButton("Load more history"));
+  await user.click(getButton("Load 50 more"));
   await user.click(getButton("Back to cases"));
   expect(back).toHaveBeenCalledOnce();
 });
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("case.list", "SUCCEEDED", {
-      offers: context.offers,
-      items: [],
-      nextCursor: null,
-    }),
-  );
-  fetch.mockResolvedValueOnce(wireResponse("operation.observe"));
+  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.observe")));
+  navigate("/recovery");
   render(<Dashboard />);
-  await user.click(await screen.findByRole("link", { name: "Recovery" }));
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));
   await user.type(screen.getByLabelText("Exact operation ID"), operationId);
   await user.click(getButton("Look up recorded result"));
@@ -195,7 +170,7 @@ it("reports a failed list as a request-local error without manufacturing rows", 
       },
     ),
   );
-  render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
+  render(<CaseList onSelect={vi.fn()} />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
   expect(screen.queryByRole("listitem")).toBeNull();
 });
@@ -219,7 +194,7 @@ it("keeps public metadata and other panes available when a case read is refused"
   );
   const first = render(<Dashboard />);
   expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
-  expect(screen.getByRole("link", { name: "Recovery" })).not.toHaveAttribute(
+  expect(document.querySelector('.workspace-sidebar a[href="/people"]')).not.toHaveAttribute(
     "aria-disabled",
     "true",
   );
@@ -231,6 +206,16 @@ it("keeps public metadata and other panes available when a case read is refused"
   first.unmount();
 });
 it("routes dashboard list selections and the new-case act into the typed editor", async () => {
+  mockEndpoint("case.get").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { outcome: { kind: "SUCCEEDED", data: current } },
+  });
+  mockEndpoint("case.timeline").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: { outcome: { kind: "SUCCEEDED", data: timelinePage() } },
+  });
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(
@@ -238,7 +223,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -252,7 +237,7 @@ it("routes dashboard list selections and the new-case act into the typed editor"
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "CASE-1",
           revision: 1,
@@ -262,17 +247,17 @@ it("routes dashboard list selections and the new-case act into the typed editor"
     }),
   );
   render(<Dashboard />);
-  await user.click(await findButton("Open a case"));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
   expect(
     await screen.findByRole("heading", {
       name: "Open a case",
     }),
   ).toBeVisible();
-  await user.click(getButton("Back to cases"));
+  await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(screen.getByRole("link", { name: "CASE-1" }));
   expect(
     await screen.findByRole("heading", {
-      name: "Case detail",
+      name: fields.registration.claimantName,
     }),
   ).toBeVisible();
 });

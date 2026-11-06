@@ -34,6 +34,7 @@ let tests =
                 ActorId = CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000002")
                 Principal = adminPrincipal
                 Enabled = true
+                Profile = None
             }
 
         memory.SeedActor admin [ Role.CaseHandler, None ]
@@ -67,6 +68,7 @@ let tests =
                 ActorId = CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000010")
                 Principal = servicePrincipal
                 Enabled = true
+                Profile = None
             }
 
         let caseId = CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")
@@ -100,4 +102,133 @@ let tests =
                 (page.Items |> List.map (fun row -> CaseReference.format row.Reference))
                 [ "VISIBLE-2" ]
                 "An installation read must exclude the refused scope and retain unrelated cases"
-        | _ -> failtestf "Expected an authorized unrelated-case page, got %A" listed)
+
+            let row = List.exactlyOne page.Items
+            Expect.isNone row.NextAction "A case without reminders has no next-action identity"
+            Expect.isNone row.Responsible "An unassigned case has no responsible actor reference"
+            Expect.equal row.PendingReminders 0L "The list exposes the core pending count"
+
+            Expect.equal
+                row.Headline
+                CaseHeadline.Undecided
+                "The core headline reflects case progress"
+
+            Expect.equal
+                row.Attention
+                [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
+                "A readable open case reports independent attention reasons"
+        | _ -> failtestf "Expected an authorized unrelated-case page, got %A" listed
+
+        for query, expected in
+            [ "visible-1", None; "visible-2", Some "VISIBLE-2"; "VISIBLE", None ] do
+            let request = Inputs.caseListPage { AfterCursor = None; Limit = 1 }
+
+            let request =
+                { request with
+                    Filter =
+                        { request.Filter with
+                            Text = Some query
+                        }
+                }
+
+            match
+                Service.list service request CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+            with
+            | Outcome.Succeeded page ->
+                Expect.equal
+                    (page.ExactReference
+                     |> Option.map (fun exact -> CaseReference.format exact.CaseReference))
+                    expected
+                    "Exact matches use case-folding and the same read authorization, including corruption exclusion"
+            | result -> failtestf "Expected authorized search page, got %A" result
+
+        let target =
+            {
+                Target = CaseSelector.Reference "VISIBLE-2"
+            }
+
+        for principal, expected in
+            [ adminPrincipal, Some CaseActKind.Decide; servicePrincipal, None ] do
+            match
+                Service.get (core principal) target CancellationToken.None
+                |> fun task -> task.GetAwaiter().GetResult()
+            with
+            | Outcome.Succeeded model ->
+                Expect.equal
+                    model.Advice.Recommended
+                    expected
+                    "A recommendation requires an offered act"
+
+                Expect.equal
+                    model.Headline
+                    CaseHeadline.Undecided
+                    "Detail and listing use core headline semantics"
+
+                Expect.equal
+                    model.Attention
+                    [ CaseAttention.NoNextAction; CaseAttention.Unassigned ]
+                    "Detail and listing agree"
+            | result -> failtestf "Expected readable detail, got %A" result
+
+        let reminderId = Guid.Parse "b0000000-0000-4000-8000-000000000020"
+
+        let created =
+            Service.execute
+                (core adminPrincipal)
+                (OperationInput.Reminder
+                    {
+                        OperationId = reminderId
+                        Target = CaseSelector.Reference "VISIBLE-2"
+                        Act =
+                            AuthoredReminderAct.Create
+                                {
+                                    Action = "Review evidence"
+                                    Due = "2026-09-08"
+                                }
+                    })
+                CancellationToken.None
+            |> fun task -> task.GetAwaiter().GetResult()
+
+        match created.Outcome with
+        | ExecuteResult.Accepted _ -> ()
+        | result -> failtestf "Expected accepted reminder, got %A" result
+
+        match
+            Service.list
+                service
+                (Inputs.caseListPage { AfterCursor = None; Limit = 50 })
+                CancellationToken.None
+            |> fun task -> task.GetAwaiter().GetResult()
+        with
+        | Outcome.Succeeded page ->
+            let row = List.exactlyOne page.Items
+
+            Expect.equal
+                row.PendingReminders
+                1L
+                "The current snapshot includes the created reminder"
+
+            match row.NextAction with
+            | Some next ->
+                Expect.equal
+                    (ReminderId.value next.ReminderId)
+                    reminderId
+                    "The renderer can open the exact next reminder"
+
+                Expect.equal
+                    (ReminderAction.format next.Action)
+                    "Review evidence"
+                    "The action is core supplied"
+
+                Expect.equal
+                    (CalendarDate.format next.Due)
+                    "2026-09-08"
+                    "The due date belongs to that reminder"
+
+                Expect.equal
+                    next.DueState
+                    CaseDue.Upcoming
+                    "Due state uses the snapshot business date"
+            | None -> failtest "A pending reminder must have a next action"
+        | result -> failtestf "Expected readable scheduled case, got %A" result)

@@ -1,53 +1,20 @@
 import type { CaseListRequest } from "@contracts/client";
 import { isTerm } from "../presentation/terms";
-export const savedViews = [
-  "mine",
-  "unassigned",
-  "due-today",
-  "overdue",
-  "open-undecided",
-  "decided-unpaid",
-  "recent",
-  "closed",
-  "voided",
-  "all",
-] as const;
-export type SavedView = (typeof savedViews)[number];
-export type WorklistQuery = Omit<CaseListRequest, "cursor" | "limit"> & {
-  readonly view?: SavedView;
-};
-export const viewQuery = (view: SavedView): WorklistQuery => {
-  switch (view) {
-    case "mine":
-      return { view, assignment: "MINE" };
-    case "unassigned":
-      return { view, assignment: "UNASSIGNED" };
-    case "due-today":
-      return { view, due: "TODAY", order: "FOLLOW_UP" };
-    case "overdue":
-      return { view, due: "OVERDUE", order: "FOLLOW_UP" };
-    case "open-undecided":
-      return { view, lifecycle: ["ACTIVE"], status: ["OPENED"], progress: ["UNDECIDED"] };
-    case "decided-unpaid":
-      return { view, lifecycle: ["ACTIVE"], progress: ["DECIDED"] };
-    case "recent":
-      return { view, order: "RECENT" };
-    case "closed":
-      return { view, status: ["CLOSED"] };
-    case "voided":
-      return { view, lifecycle: ["VOIDED"] };
-    case "all":
-      return { view };
-  }
-};
+export type WorklistQuery = Omit<CaseListRequest, "cursor" | "limit">;
 const unique = <T>(values: ReadonlyArray<T>): T[] => [...new Set(values)];
-const responsibilityQuery = (assignment: string | null): Pick<WorklistQuery, "assignment"> =>
-  assignment === "MINE" || assignment === "UNASSIGNED" ? { assignment } : {};
+const responsibilityQuery = (
+  assignment: string | null,
+  actor: string | null,
+): Pick<WorklistQuery, "assignment" | "responsibleActor"> => ({
+  ...(assignment === "MINE" || assignment === "UNASSIGNED" ? { assignment } : {}),
+  ...(actor === null || actor === "" ? {} : { responsibleActor: actor }),
+});
 const dueQuery = (due: string | null): Pick<WorklistQuery, "due"> =>
   due !== null && isTerm("due", due) ? { due } : {};
 export const parseWorklistQuery = (query: string): WorklistQuery => {
   const params = new URLSearchParams(query);
-  const view = savedViews.find((value) => value === params.get("view"));
+  const rawView = params.get("view");
+  const view = rawView !== null && isTerm("caseView", rawView) ? rawView : undefined;
   const lifecycle = unique(
     params.getAll("lifecycle").filter((value) => isTerm("lifecycle", value)),
   );
@@ -60,13 +27,13 @@ export const parseWorklistQuery = (query: string): WorklistQuery => {
   const rawDue = params.get("due");
 
   return {
-    ...(view === undefined ? {} : viewQuery(view)),
+    ...(view === undefined ? {} : { view }),
     ...(lifecycle.length ? { lifecycle } : {}),
     ...(status.length ? { status } : {}),
     ...(progress.length ? { progress } : {}),
     ...(text === "" ? {} : { text }),
     ...(order === undefined ? {} : { order }),
-    ...responsibilityQuery(assignment),
+    ...responsibilityQuery(assignment, params.get("responsibleActor")),
     ...dueQuery(rawDue),
   };
 };
@@ -86,8 +53,11 @@ export const worklistPath = (query: WorklistQuery): string => {
   if (query.order !== undefined) {
     params.set("order", query.order);
   }
-  if (query.assignment !== undefined && query.view !== "mine") {
+  if (query.assignment !== undefined) {
     params.set("assignment", query.assignment);
+  }
+  if (query.responsibleActor !== undefined) {
+    params.set("responsibleActor", query.responsibleActor);
   }
   if (query.due !== undefined) {
     params.set("due", query.due);
@@ -95,7 +65,8 @@ export const worklistPath = (query: WorklistQuery): string => {
   const suffix = params.toString();
   return suffix === "" ? "/cases" : `/cases?${suffix}`;
 };
-export const listRequest = (query: WorklistQuery, cursor: string | null): CaseListRequest => {
-  const { view: _view, ...filters } = query;
-  return { ...filters, limit: 50, ...(cursor === null ? {} : { cursor }) };
-};
+export const listRequest = (query: WorklistQuery, cursor: string | null): CaseListRequest => ({
+  ...query,
+  limit: 50,
+  ...(cursor === null ? {} : { cursor }),
+});

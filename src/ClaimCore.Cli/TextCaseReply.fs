@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -36,99 +37,61 @@ module internal TextCaseReply =
                :: rows (Some group)))
 
     let assigneePage language (page: AssigneePage) =
-        (page.Items
-         |> List.map (fun account ->
-             ActorId.format account.ActorId
-             + "  "
-             + displayed language (Some account.Subject)))
-        @ nextLines language page.NextCursor
+        let header, rows =
+            TextTable.page language (TextTable.environment ()) Descriptor.assigneeColumns page.Items
 
-    let private workAccount language (work: CaseWorkView) =
-        work.Responsible
-        |> Option.map (fun assigned ->
-            line
-                language
-                (FieldPresentation.labelId BusinessField.ResponsibleActor)
-                (displayed language (Some assigned.Account.Subject)
-                 + " ["
-                 + ActorId.format assigned.Account.ActorId
-                 + "] — "
-                 + label
-                     language
-                     (if assigned.Available then
-                          "label.assigneeAvailable"
-                      else
-                          "label.assigneeUnavailable")))
-        |> Option.toList
+        (if header = "" then [] else [ header ])
+        @ rows page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis false
 
     let offerAct language act =
         term language CaseActKind.vocabulary act
 
     let caseLines language (value: CaseReadModel) =
-        [
-            line
-                language
-                (FieldPresentation.labelId BusinessField.CaseReference)
-                (TerminalText.data (CaseReference.format value.Snapshot.Reference))
-            line
-                language
-                (CliMessages.key CliMessage.RevisionLabel)
-                (Revision.format value.Snapshot.Revision)
-            line
-                language
-                (CliMessages.key CliMessage.StateLabel)
-                (term language Lifecycle.vocabulary (CaseState.lifecycle value.Snapshot.State))
-        ]
+        let sections =
+            Descriptor.caseView value
+            |> List.filter (fun section -> section.TitleId <> "label.recommendedNext")
+
+        TextDescriptorValue.sections language sections
+        @ (value.Advice.Recommended
+           |> Option.toList
+           |> List.map (fun act ->
+               let operation = CatalogOperation.Act(ActKind.Case act)
+
+               let command =
+                   CommandGrammar.commandText operation
+                   + " "
+                   + CommandGrammar.quoteArgument (CaseReference.format value.Snapshot.Reference)
+                   + " --expected-revision "
+                   + Revision.format value.Snapshot.Revision
+                   + " …"
+
+               line
+                   language
+                   "label.recommendedNext"
+                   (offerAct language act + " (" + TerminalText.data command + ")")))
         @ (if value.Advice.Maintenance.Active then
                [ label language "diagnostic.REGISTER_MAINTENANCE" ]
            else
                [])
-        @ [
-            instant value.Work.Basis.ObservedAt
-            + "  "
-            + CalendarDate.format (CalendarDate.ofDate value.Work.Basis.BusinessDate)
-            + "  "
-            + TerminalText.data value.Work.Basis.TimeZoneId
-        ]
-        @ workAccount language value.Work
-        @ [
-            line language "label.workRevision" (Revision.format value.Work.Revision)
-            line
-                language
-                "label.workChangedAt"
-                (value.Work.ChangedAt |> Option.map instant |> displayed language)
-            line
-                language
-                "label.workRecordedBy"
-                (value.Work.RecordedBy |> Option.map ActorId.format |> displayed language)
-            line
-                language
-                (FieldPresentation.labelId BusinessField.HandlingSummary)
-                (value.Work.Summary |> Option.map HandlingSummary.format |> narrative language)
-            line
-                language
-                "label.nextFollowUp"
-                (value.Work.FollowUp |> Option.map CalendarDate.format |> displayed language)
-            line
-                language
-                "field.reminderAction.label"
-                (value.Work.NextAction |> Option.map ReminderAction.format |> displayed language)
-            line language "label.pendingReminders" (number value.Work.PendingReminders)
-            line language "label.overdueReminders" (number value.Work.OverdueReminders)
-        ]
-        @ (if value.Work.NeedsNextAction then
-               [ label language "label.noNextAction" ]
-           else
-               [])
-        @ (CaseState.fields value.Snapshot.State
-           |> Option.map (fieldLines language)
-           |> Option.defaultValue [])
         @ [
             line
                 language
                 (CliMessages.key CliMessage.AvailableActsLabel)
                 (value.Advice.Acts |> List.map (offerAct language) |> String.concat ", ")
         ]
+        @ (if value.Advice.Blocked.IsEmpty then
+               []
+           else
+               label language "label.unavailableActions"
+               :: (value.Advice.Blocked
+                   |> List.collect (fun blocked ->
+                       (offerAct language blocked.Act + ":")
+                       :: TextDiagnosticReply.refusalLinesFor
+                           language
+                           (Some(CaseReference.format value.Snapshot.Reference))
+                           blocked.Reason)))
+        @ [ TextObservation.line language value.Work.Basis ]
 
     let historyLines language (page: HistoryResultPage) =
         (page.Entries
@@ -184,5 +147,8 @@ module internal TextCaseReply =
         @ nextLines language page.NextCursor
 
     let casePage language (page: CaseSummaryPage) =
-        CaseListRows.textHeader language :: CaseListRows.textRows language page.Items
-        @ nextLines language page.NextCursor
+        let header = CaseListRows.textHeader language
+
+        (if header = "" then [] else [ header ])
+        @ CaseListRows.textRows language page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis true

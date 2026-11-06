@@ -6,10 +6,9 @@ import { isCaseAct, type ActKind } from "../../operation/metadata";
 import { useCompact } from "../../hooks/useCompact";
 import { usePresentation } from "../../presentation/context";
 import { operationEntry } from "../../protocol/operationCatalog";
-import { casePrimaryAction } from "../../operation/caseActionPriority";
 const stewardship = (act: ActKind) =>
   operationEntry({ subject: "CASE", kind: act }).family === "STEWARDSHIP";
-type Action = { act: ActKind; primary: ActKind | undefined; onAct: (act: ActKind) => void };
+type Action = { act: ActKind; primary: ActKind | null; onAct: (act: ActKind) => void };
 const ActButton = ({ act, primary, onAct }: Action) => {
   const p = usePresentation();
   let className = act === primary ? "primary" : "";
@@ -33,8 +32,14 @@ const ActButton = ({ act, primary, onAct }: Action) => {
   );
 };
 type GroupProps = Omit<Action, "act"> & { acts: ReadonlyArray<ActKind> };
-const ActionGroups = ({ acts, primary, onAct }: GroupProps) => {
+const ActionGroups = ({
+  acts,
+  primary,
+  onAct,
+  headingLevel,
+}: GroupProps & { headingLevel: 2 | 3 }) => {
   const p = usePresentation();
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   const buttons = (items: ReadonlyArray<ActKind>) =>
     items.map((act) => <ActButton key={act} act={act} primary={primary} onAct={onAct} />);
   return (
@@ -42,11 +47,31 @@ const ActionGroups = ({ acts, primary, onAct }: GroupProps) => {
       <div className="actions">{buttons(acts.filter((act) => !stewardship(act)))}</div>
       {acts.some((act) => stewardship(act)) ? (
         <section className="case-stewardship">
-          <h3>{p.term("actFamily", "STEWARDSHIP")}</h3>
+          <Heading>{p.term("actFamily", "STEWARDSHIP")}</Heading>
           <div className="actions">{buttons(acts.filter((act) => stewardship(act)))}</div>
         </section>
       ) : null}
     </>
+  );
+};
+export const CaseActionAlternatives = ({
+  current,
+  onAct,
+}: {
+  current: CurrentCase;
+  onAct: Action["onAct"];
+}) => {
+  const requester = useRequesterContext();
+  if (current.advice.maintenance.active || requester?.maintenance.active === true) {
+    return null;
+  }
+  return (
+    <ActionGroups
+      acts={current.advice.acts.filter(isCaseAct)}
+      primary={null}
+      onAct={onAct}
+      headingLevel={2}
+    />
   );
 };
 const useActionBar = () => {
@@ -59,6 +84,10 @@ const useActionBar = () => {
     }
     const measure = () => {
       detail.style.setProperty("--case-action-bar-height", `${bar.offsetHeight}px`);
+      document.documentElement.style.setProperty(
+        "--case-action-bar-height",
+        `${bar.offsetHeight}px`,
+      );
     };
     measure();
     const observer = typeof ResizeObserver === "undefined" ? null : new ResizeObserver(measure);
@@ -66,6 +95,7 @@ const useActionBar = () => {
     return () => {
       observer?.disconnect();
       detail.style.removeProperty("--case-action-bar-height");
+      document.documentElement.style.removeProperty("--case-action-bar-height");
     };
   }, []);
   return ref;
@@ -79,7 +109,7 @@ const CompactActions = ({ acts, primary, onAct }: GroupProps) => {
         {p.text("label.availableActs")}
       </h2>
       <div className="case-primary-action">
-        {primary === undefined ? null : <ActButton act={primary} primary={primary} onAct={onAct} />}
+        {primary === null ? null : <ActButton act={primary} primary={primary} onAct={onAct} />}
       </div>
       {acts.filter((act) => act !== primary).length === 0 ? null : (
         <details className="case-more-actions">
@@ -91,6 +121,7 @@ const CompactActions = ({ acts, primary, onAct }: GroupProps) => {
               acts={acts.filter((act) => act !== primary)}
               primary={primary}
               onAct={onAct}
+              headingLevel={3}
             />
           </div>
         </details>
@@ -108,8 +139,8 @@ export const CasePrimaryAction = ({
   const compact = useCompact();
   const requester = useRequesterContext();
   const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
-  const primary = casePrimaryAction(current);
-  return compact || paused || primary === undefined ? null : (
+  const primary = current.advice.recommended;
+  return compact || paused || primary === null ? null : (
     <ActButton act={primary} primary={primary} onAct={onAct} />
   );
 };
@@ -125,7 +156,7 @@ export const CaseActions = ({
   const requester = useRequesterContext();
   const paused = current.advice.maintenance.active || requester?.maintenance.active === true;
   const acts = paused ? [] : current.advice.acts.filter(isCaseAct);
-  const primary = paused ? undefined : casePrimaryAction(current);
+  const primary = paused ? null : current.advice.recommended;
   if (acts.length === 0) {
     return null;
   }
@@ -136,9 +167,16 @@ export const CaseActions = ({
     return null;
   }
   return (
-    <aside className="case-actions" aria-labelledby="acts-title">
-      <h2 id="acts-title">{p.text("ui.continueCase")}</h2>
-      <ActionGroups acts={acts.filter((act) => act !== primary)} primary={primary} onAct={onAct} />
-    </aside>
+    <details className="case-actions">
+      <summary id="acts-title">{p.text("ui.moreCaseActions")}</summary>
+      <div className="case-actions-popup">
+        <ActionGroups
+          acts={acts.filter((act) => act !== primary)}
+          primary={primary}
+          onAct={onAct}
+          headingLevel={2}
+        />
+      </div>
+    </details>
   );
 };

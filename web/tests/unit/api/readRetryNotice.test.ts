@@ -1,0 +1,33 @@
+import { expect, it, vi } from "vitest";
+import { captureReadRetryNotice, subscribeReadRetries } from "../../../src/api/readRetryNotice";
+it("keeps overlapping read waits visible until both finish", () => {
+  const changed = vi.fn();
+  const close = subscribeReadRetries("current", changed);
+  const first = captureReadRetryNotice("current")();
+  const second = captureReadRetryNotice("current")();
+  first();
+  expect(changed).toHaveBeenLastCalledWith(true);
+  second();
+  expect(changed).toHaveBeenLastCalledWith(false);
+  second();
+  expect(changed).toHaveBeenCalledTimes(4);
+  close();
+});
+it("discards prior-scope feedback even when the replacement reuses the credential", () => {
+  const old = vi.fn();
+  const replacement = vi.fn();
+  const closeOld = subscribeReadRetries("same", old);
+  const late = captureReadRetryNotice("same");
+  const finish = late();
+  const closeNew = subscribeReadRetries("same", replacement);
+  closeOld();
+  finish();
+  late()();
+  captureReadRetryNotice("other")()();
+  expect(replacement).not.toHaveBeenCalled();
+  const finishNew = captureReadRetryNotice("same")();
+  expect(replacement).toHaveBeenLastCalledWith(true);
+  finishNew();
+  expect(replacement).toHaveBeenLastCalledWith(false);
+  closeNew();
+});

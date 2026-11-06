@@ -7,6 +7,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Cli
+open ClaimCore.TestSupport
 
 let private frame refusal =
     {
@@ -205,3 +206,159 @@ let accumulated =
                     lines[index]
                     (label + ": " + message)
                     "Each issue has its own localized line")
+
+
+[<Tests>]
+let nextAndConflicts =
+    testList
+        "CLI actionable refusal presentation"
+        [
+            testCase
+                "recommended command arguments round trip through the actual shell grammar"
+                (fun () ->
+                    for raw in [ "R-1"; "R'Q"; "R$Q"; "R\\Q"; "R;Q"; "a b"; "" ] do
+                        Expect.equal
+                            (ShellTokenizer.split (CommandGrammar.quoteArgument raw))
+                            (Ok [ raw ])
+                            "The suggested argument remains literal")
+            testCase
+                "no-action refusals omit action tokens and access refusals name roles"
+                (fun () ->
+                    for language in LocalizationPolicy.languages do
+                        let unchanged =
+                            TextDiagnosticReply.refusalLines
+                                language
+                                (Refusal.Case CaseRefusal.CorrectionNoChanges)
+                            |> String.concat "\n"
+
+                        Expect.isFalse
+                            (unchanged.Contains "NONE_REQUIRED" || unchanged.Contains "Action:")
+                            "Do not print internal next-action tokens"
+
+                        let access =
+                            TextDiagnosticReply.refusalLines
+                                language
+                                (Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward))
+                            |> String.concat "\n"
+
+                        Expect.stringContains
+                            access
+                            (MessageCatalogs.render language "role.DATA_STEWARD.label" Map.empty)
+                            "The exact policy-required role is named"
+
+                        Expect.isFalse
+                            (access.Contains "ASK_FOR_ACCESS" || access.Contains "cli.next.")
+                            "The next step is localized prose")
+            testCase
+                "conflict prints all fifty supplied authors differences and its bounded continuation"
+                (fun () ->
+                    let entries =
+                        [
+                            for number in 1..50 ->
+                                {
+                                    CaseTimelineEntry.OperationId =
+                                        CaseFixtures.operationId (
+                                            System.Guid.Parse(
+                                                sprintf "5b359a73-77f5-4a54-9015-%012d" number
+                                            )
+                                        )
+                                    Position =
+                                        { CliReplyFixtures.receipt.Position with
+                                            Sequence = CaseFixtures.sequence (int64 number)
+                                        }
+                                    Subject =
+                                        TimelineSubject.CaseFact(
+                                            CaseFixtures.revision (int64 number),
+                                            CaseActKind.AmendRegistration
+                                        )
+                                    RecordedAt = ClaimCore.TestSupport.Inputs.workBasis.ObservedAt
+                                    RecordedBy =
+                                        { CliReplyFixtures.receipt.RecordedBy with
+                                            DisplayName =
+                                                DisplayName.Named(
+                                                    ClaimCore.TestSupport.Inputs.name (
+                                                        sprintf "Editor %d" number
+                                                    )
+                                                )
+                                        }
+                                    Changes =
+                                        if number = 1 then
+                                            TimelineChanges.Withheld
+                                        elif number = 2 then
+                                            TimelineChanges.Erased
+                                        else
+                                            TimelineChanges.Disclosed
+                                                {
+                                                    Items =
+                                                        [
+                                                            TimelineChange.HandlingSummary
+                                                                {
+                                                                    Before = None
+                                                                    After =
+                                                                        Some(
+                                                                            HandlingSummary.parse (
+                                                                                sprintf
+                                                                                    "Change %d"
+                                                                                    number
+                                                                            )
+                                                                            |> Fixtures.accepted
+                                                                        )
+                                                                }
+                                                        ]
+                                                    Overview =
+                                                        {
+                                                            Event =
+                                                                TimelineEvent.CaseActRecorded
+                                                                    CaseActKind.AmendRegistration
+                                                            Highlights = []
+                                                        }
+                                                }
+                                }
+                        ]
+
+                    let refusal =
+                        Refusal.RevisionConflict(
+                            RevisionConflictInfo.at (CaseFixtures.revision 50L)
+                            |> RevisionConflictInfo.explain (
+                                ConflictChanges.Page
+                                    {
+                                        Entries = entries
+                                        NextCursor = Some "literal-cursor"
+                                    }
+                            )
+                        )
+
+                    for language in LocalizationPolicy.languages do
+                        let output =
+                            TextDiagnosticReply.refusalLinesFor language (Some "CASE-1") refusal
+                            |> String.concat "\n"
+
+                        Expect.stringContains output "Editor 1" "First supplied author"
+
+                        Expect.stringContains
+                            output
+                            "Editor 50"
+                            "Last supplied author is not dropped"
+
+                        Expect.stringContains output "Change 50" "Last supplied difference"
+
+                        Expect.stringContains
+                            output
+                            "claimcore case timeline CASE-1 --cursor literal-cursor"
+                            "Continuation retains the core range cursor"
+
+                        Expect.stringContains
+                            output
+                            "claimcore case get CASE-1"
+                            "The next step uses the actual target"
+
+                        for key in [ "label.changesWithheld"; "label.changesErased" ] do
+                            Expect.stringContains
+                                output
+                                (MessageCatalogs.render language key Map.empty)
+                                "Disclosure alternatives remain distinct"
+
+                        Expect.isFalse
+                            (output.Contains "REVIEW_LATEST" || output.Contains "{\"")
+                            "No business tokens or JSON leak into prose")
+        ]

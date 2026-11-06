@@ -1,10 +1,8 @@
 import type {
-  HistoryEntries,
   HostFailure,
   RequestByEndpoint,
   ResponseByEndpoint,
   CaseView,
-  OperationReview as Review,
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
@@ -15,7 +13,6 @@ export type {
   OperationReview,
   Diagnostic,
 } from "@contracts/client";
-export type HistoryEntry = HistoryEntries[number];
 export type { OperationReceipt } from "@contracts/client";
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
@@ -42,5 +39,3 @@ export type ApiResult<T> =
   | { readonly kind: "outcome"; readonly value: T; readonly status: number }
   | { readonly kind: "hostFailure"; readonly failure: HostFailure; readonly status: number }
   | { readonly kind: "deliveryFailure"; readonly notice: Notice; readonly dispatched?: boolean };
-
-export type CaseReview = Extract<Review["subject"], { kind: "CASE" }>;

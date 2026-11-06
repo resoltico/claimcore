@@ -1,0 +1,27 @@
+.access-state {
+  min-block-size: 100dvh;
+  display: grid;
+  align-content: start;
+  padding: var(--space-5);
+  gap: var(--space-7);
+  background: var(--bg-canvas);
+}
+.access-state > section {
+  inline-size: min(100%, 36rem);
+  justify-self: center;
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+}
+.access-state h1 {
+  font-size: var(--text-2xl);
+}
+.access-state dd {
+  margin: 0 0 var(--space-4);
+  overflow-wrap: anywhere;
+}
+.access-state section > button {
+  margin-block-start: var(--space-4);
+  margin-inline-end: var(--space-3);
+}

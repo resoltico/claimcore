@@ -3,6 +3,7 @@ module ClaimCore.AcceptanceTests.BrowserTests
 open System
 open System.Text
 open System.Text.Json
+open System.Text.RegularExpressions
 open System.Collections.Generic
 open System.IO
 open System.Threading.Tasks
@@ -16,83 +17,180 @@ let private selectEngines (value: string | null) =
     | "webkit" -> [ "webkit" ]
     | _ -> invalidOp "Acceptance browser engine must be chromium, firefox or webkit."
 
-let private smokeScope (value: string | null) =
+[<RequireQualifiedAccess>]
+type private BrowserScope =
+    | Complete
+    | Smoke
+    | Diagnostic of specifications: string list
+
+let private selectScope
+    (value: string | null)
+    (specification: string | null)
+    (engines: string list)
+    =
+    let oneEngine () =
+        if engines.Length <> 1 then
+            invalidOp "Partial browser scope requires one explicit acceptance browser engine."
+
+    let noSpecification () =
+        if specification <> null then
+            invalidOp "A browser specification is only valid with diagnostic scope."
+
     match value with
     | null
-    | "complete" -> false
-    | "smoke" -> true
-    | _ -> invalidOp "Acceptance browser scope must be complete or smoke."
+    | "complete" ->
+        noSpecification ()
+        BrowserScope.Complete
+    | "smoke" ->
+        noSpecification ()
+        oneEngine ()
+        BrowserScope.Smoke
+    | "diagnostic" ->
+        oneEngine ()
+
+        match specification with
+        | null -> invalidOp "Diagnostic scope requires existing *.spec.ts basenames."
+        | value ->
+            let names = value.Split ',' |> Array.toList
+
+            if
+                names
+                |> List.exists (fun name ->
+                    not (Regex.IsMatch(name, @"\A[A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts\z")))
+                || (Set.ofList names).Count <> names.Length
+            then
+                invalidOp
+                    "Diagnostic specifications must be unique comma-separated *.spec.ts basenames."
+
+            BrowserScope.Diagnostic names
+    | _ -> invalidOp "Acceptance browser scope must be complete, smoke or diagnostic."
+
+let private selectCase selected (value: string | null) =
+    match value with
+    | null -> None
+    | title ->
+        match selected with
+        | BrowserScope.Diagnostic [ _ ] -> ()
+        | _ ->
+            invalidOp
+                "A literal browser case requires diagnostic scope and exactly one specification."
+
+        let runes = title.EnumerateRunes() |> Seq.toList
+
+        if
+            runes.IsEmpty
+            || runes.Length > 256
+            || title <> title.Trim()
+            || List.exists Rune.IsControl runes
+        then
+            invalidOp "Browser case must be a nonempty, unpadded, bounded literal without controls."
+
+        Some title
 
 let private engines =
     Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE"
     |> selectEngines
 
-let private smoke =
-    let selected =
-        Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE"
-        |> smokeScope
+let private scope =
+    selectScope
+        (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE")
+        (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SPEC")
+        engines
 
-    if selected && engines.Length <> 1 then
-        invalidOp
-            "Smoke requires one explicit acceptance browser engine; it is not complete qualification."
+let private caseTitle =
+    selectCase scope (Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_CASE")
 
-    selected
+let private smokeSpecifications =
+    [
+        "authority-uncertainty.spec.ts"
+        "authority-grants.spec.ts"
+        "act-lifecycle.spec.ts"
+        "loading-boundaries.spec.ts"
+        "localization-correction.spec.ts"
+        "localization-editor.spec.ts"
+        "localization-pseudolocale.spec.ts"
+        "localization-session-history.spec.ts"
+        "narrow-role.spec.ts"
+        "recovery-journal.spec.ts"
+        "resolution.spec.ts"
+        "reply-correlation.spec.ts"
+        "work-surface-foundations.spec.ts"
+        "workspace-recovery.spec.ts"
+        "stewardship-authority.spec.ts"
+        "stewardship-localization.spec.ts"
+        "uncertain-execution.spec.ts"
+        "unicode-parity.spec.ts"
+    ]
 
-let private selectedSpecifications =
-    if smoke then
-        [
-            "authority-uncertainty.spec.ts"
-            "authority-grants.spec.ts"
-            "act-lifecycle.spec.ts"
-            "loading-boundaries.spec.ts"
-            "localization-correction.spec.ts"
-            "localization-editor.spec.ts"
-            "localization-pseudolocale.spec.ts"
-            "localization-session-history.spec.ts"
-            "narrow-role.spec.ts"
-            "recovery-journal.spec.ts"
-            "resolution.spec.ts"
-            "reply-correlation.spec.ts"
-            "work-surface-foundations.spec.ts"
-            "workspace-recovery.spec.ts"
-            "stewardship-authority.spec.ts"
-            "stewardship-localization.spec.ts"
-            "uncertain-execution.spec.ts"
-            "unicode-parity.spec.ts"
-        ]
-    else
-        []
+let private scopeName =
+    function
+    | BrowserScope.Complete -> "complete"
+    | BrowserScope.Smoke -> "smoke"
+    | BrowserScope.Diagnostic _ -> "diagnostic"
 
-let private expectedFiles root =
+let private scopeDescription =
+    function
+    | BrowserScope.Complete -> "complete engine suite"
+    | BrowserScope.Smoke -> "smoke; full browser qualification remains unrun"
+    | BrowserScope.Diagnostic names ->
+        "diagnostic "
+        + String.concat ", " names
+        + "; full browser qualification remains unrun"
+
+let private specifications =
+    function
+    | BrowserScope.Complete -> []
+    | BrowserScope.Smoke -> smokeSpecifications
+    | BrowserScope.Diagnostic names -> names
+
+let private requiresSpecification selected name =
+    selected = BrowserScope.Complete || List.contains name (specifications selected)
+
+let private expectedFiles root selected =
     let directory = Path.Combine(root, "web", "e2e")
 
-    (if smoke then
-         selectedSpecifications |> Seq.map (fun file -> Path.Combine(directory, file))
-     else
-         Directory.EnumerateFiles(directory, "*.spec.ts", SearchOption.AllDirectories))
-    |> Seq.map Path.GetFullPath
-    |> Set.ofSeq
+    let all =
+        Directory.EnumerateFiles(directory, "*.spec.ts", SearchOption.AllDirectories)
 
-let private report root output engine =
+    match selected with
+    | BrowserScope.Complete -> all |> Seq.map Path.GetFullPath |> Set.ofSeq
+    | BrowserScope.Smoke ->
+        smokeSpecifications
+        |> Seq.map (fun file -> Path.GetFullPath(Path.Combine(directory, file)))
+        |> Set.ofSeq
+    | BrowserScope.Diagnostic names ->
+        names
+        |> List.map (fun basename ->
+            match
+                all |> Seq.filter (fun file -> Path.GetFileName file = basename) |> Seq.toList
+            with
+            | [ file ] -> Path.GetFullPath file
+            | _ -> invalidOp "Each diagnostic basename must identify exactly one existing file.")
+        |> Set.ofList
+
+let private fallbackReportDirectory =
+    lazy
+        Path.Combine(
+            ClaimCore.TestSupport.RepositoryRoot.find (),
+            "artifacts",
+            "verification",
+            "native." + Guid.NewGuid().ToString("N")
+        )
+
+let private reportDirectory () =
+    match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+    | null -> fallbackReportDirectory.Value
+    | value -> value
+
+let private report selected selection files output engine =
+    let path = Path.Combine(output, "playwright.json")
+
     let count, duration =
-        BrowserCompletion.read (expectedFiles root) engine (Path.Combine(output, "playwright.json"))
+        match selection with
+        | None -> BrowserCompletion.read files engine path
+        | Some(title, identity) -> BrowserCompletion.readCase files engine title identity path
 
-    let scope =
-        if smoke then
-            "smoke; full browser qualification remains unrun"
-        else
-            "complete engine suite"
-
-    let directory =
-        match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-        | null ->
-            Path.Combine(
-                ClaimCore.TestSupport.RepositoryRoot.find (),
-                "artifacts",
-                "verification",
-                "native." + Guid.NewGuid().ToString("N")
-            )
-        | value -> value
+    let directory = reportDirectory ()
 
     Directory.CreateDirectory directory |> ignore
     let measurement = Path.Combine(output, "loading-measurements.json")
@@ -102,10 +200,10 @@ let private report root output engine =
 
     let featureMeasurement = Path.Combine(output, "loading-new-work.json")
 
-    if not smoke then
+    if requiresSpecification selected "case-work.spec.ts" then
         Expect.isTrue
             (File.Exists featureMeasurement)
-            "Complete scope retains the new work-editor measurement"
+            "Selected scope retains the required work-editor measurement"
 
     if File.Exists featureMeasurement then
         File.Copy(
@@ -118,21 +216,26 @@ let private report root output engine =
         {|
             runId = Path.GetFileName directory
             engine = engine
-            scope = if smoke then "smoke" else "complete"
+            scope = scopeName selected
+            fullQualification = selected = BrowserScope.Complete
+            specifications = specifications selected
+            selectedCase = selection |> Option.map fst |> Option.toObj
             passed = count
             duration = duration
         |}
     |> FixtureFiles.write directory ("browser-" + engine + ".json")
     |> ignore
 
-    Console.WriteLine($"Published {engine} ({scope}): {count} passed; {duration}")
+    Console.WriteLine(
+        $"Published {engine} ({scopeDescription selected}): {count} passed; {duration}"
+    )
 
 let private completionFixture nested =
     let test =
         """{"projectName":"chromium","expectedStatus":"passed","status":"expected","results":[{"status":"passed","retry":0,"errors":[]}]}"""
 
     let spec id file =
-        $"""{{"id":"{id}","file":"{file}","ok":true,"tests":[{test}]}}"""
+        $"""{{"id":"{id}","title":"{id}","file":"{file}","ok":true,"tests":[{test}]}}"""
 
     let specifications =
         [ spec "a" "synthetic-a.spec.ts"; spec "b" "synthetic-b.spec.ts" ]
@@ -229,12 +332,23 @@ let private selectionControls () =
             "Invalid scope cannot silently omit engines"
 
         Expect.throws
-            (fun () -> smokeScope value |> ignore)
+            (fun () -> selectScope value null [ "chromium" ] |> ignore)
             "Invalid campaign cannot silently shorten work"
 
-    Expect.isFalse (smokeScope null) "Default remains complete"
-    Expect.isFalse (smokeScope "complete") "Complete scope is explicit"
-    Expect.isTrue (smokeScope "smoke") "Smoke is explicitly selected"
+    Expect.equal
+        (selectScope null null (selectEngines null))
+        BrowserScope.Complete
+        "Default remains complete"
+
+    Expect.equal
+        (selectScope "complete" null [ "chromium" ])
+        BrowserScope.Complete
+        "Complete scope is explicit"
+
+    Expect.equal
+        (selectScope "smoke" null [ "chromium" ])
+        BrowserScope.Smoke
+        "Smoke is explicitly selected"
 
 let private runSelected (qualify: string -> Task<unit>) selected =
     task {
@@ -270,11 +384,556 @@ let private orchestrationControls () =
 
         Expect.equal (Seq.toList observed) expected "Failure never starts later expensive fixtures"
 
-let private browserArguments engine =
+let private timeoutMinutes =
+    function
+    | BrowserScope.Complete -> 40
+    | BrowserScope.Diagnostic _ -> 20
+    | BrowserScope.Smoke -> 2
+
+let private processTimeout selected = (timeoutMinutes selected + 1) * 60_000
+
+let private browserArguments selected engine =
+    let files =
+        match selected with
+        | BrowserScope.Diagnostic names ->
+            names |> List.map (fun name -> @"(?:^|[/\\])" + Regex.Escape name + "$")
+        | _ -> specifications selected
+
     [ "exec"; "--"; "playwright"; "test" ]
-    @ selectedSpecifications
-    @ [ "--project"; engine; "--forbid-only"; "--max-failures=1" ]
-    @ (if smoke then [ "--global-timeout=120000" ] else [])
+    @ files
+    @ [ "--project"; engine; "--forbid-only" ]
+    @ [
+        match selected with
+        | BrowserScope.Diagnostic _ -> "--max-failures=0"
+        | _ -> "--max-failures=1"
+    ]
+    @ [ $"--global-timeout={timeoutMinutes selected * 60_000}" ]
+
+let private caseArguments =
+    function
+    | None -> []
+    | Some title -> [ "--grep"; "(?:^| )" + Regex.Escape title + "$" ]
+
+let private browserStart selected arguments values =
+    let start = PublishedProcesses.start "npm" arguments values
+    start.Environment.Remove "CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE" |> ignore
+    start.Environment["CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE"] <- scopeName selected
+    start
+
+let private caseControls () =
+    let selected = BrowserScope.Diagnostic [ "synthetic-a.spec.ts" ]
+
+    Expect.equal
+        (selectCase BrowserScope.Complete null)
+        None
+        "No literal case keeps normal qualification"
+
+    for campaign in
+        [
+            BrowserScope.Complete
+            BrowserScope.Smoke
+            BrowserScope.Diagnostic [ "a.spec.ts"; "b.spec.ts" ]
+        ] do
+        Expect.throws
+            (fun () -> selectCase campaign "literal" |> ignore)
+            "Cases cannot narrow qualification or multiple files"
+
+    for title in
+        [
+            ""
+            " "
+            " padded"
+            "padded "
+            "line\nfeed"
+            "tab\tcase"
+            "nul\u0000case"
+            String('x', 257)
+        ] do
+        Expect.throws
+            (fun () -> selectCase selected title |> ignore)
+            "Malformed literal cases fail before setup"
+
+    let unicode = String.replicate 256 "🚗"
+
+    Expect.equal
+        (selectCase selected unicode)
+        (Some unicode)
+        "Length bounds Unicode scalars without normalization"
+
+    Expect.throws
+        (fun () -> selectCase selected (unicode + "🚗") |> ignore)
+        "Scalar bound is enforced"
+
+    let arguments = caseArguments (Some "case .+?")
+
+    Expect.equal
+        arguments
+        [ "--grep"; @"(?:^| )case\ \.\+\?$" ]
+        "Only an escaped literal suffix enters arguments"
+
+    Expect.isTrue (Regex.IsMatch("file case .+?", arguments[1])) "Literal title matches"
+
+    Expect.isFalse
+        (Regex.IsMatch("file case XYZ", arguments[1]))
+        "User punctuation cannot become a regular expression"
+
+    Expect.isFalse
+        (Regex.IsMatch("file othercase .+?", arguments[1]))
+        "Case suffix has a title boundary"
+
+    let previous =
+        Environment.GetEnvironmentVariable "CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE"
+
+    try
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE", "unvalidated")
+
+        for campaign in [ selected; BrowserScope.Complete; BrowserScope.Smoke ] do
+            let start = browserStart campaign [] (Dictionary<string, string>())
+
+            Expect.isFalse
+                (start.Environment.ContainsKey "CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE")
+                "Inherited case never silently narrows Node"
+    finally
+        Environment.SetEnvironmentVariable("CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE", previous)
+
+    let node = System.Text.Json.Nodes.JsonNode.Parse(completionFixture false) |> nonNull
+
+    let specs (root: System.Text.Json.Nodes.JsonNode) =
+        (((root["suites"] |> nonNull).AsArray()[0] |> nonNull)["specs"] |> nonNull).AsArray()
+
+    let spec root = (specs root)[0] |> nonNull
+
+    let testNode root =
+        ((spec root)["tests"] |> nonNull).AsArray()[0] |> nonNull
+
+    (specs node).RemoveAt 1
+    (node["stats"] |> nonNull)["expected"] <- System.Text.Json.Nodes.JsonValue.Create 1
+
+    let bytes () =
+        Encoding.UTF8.GetBytes(node.ToJsonString())
+
+    let files =
+        Set.singleton (Path.GetFullPath(Path.Combine(Path.GetTempPath(), "synthetic-a.spec.ts")))
+
+    Expect.equal
+        (BrowserCompletion.selectedCase files "chromium" "a" (bytes ()))
+        "a"
+        "One known case resolves its identity"
+
+    let collection = node.DeepClone()
+
+    let test =
+        ((((specs collection)[0] |> nonNull)["tests"] |> nonNull).AsArray()[0] |> nonNull)
+
+    test["results"] <- System.Text.Json.Nodes.JsonArray()
+
+    Expect.equal
+        (BrowserCompletion.selectedCase
+            files
+            "chromium"
+            "a"
+            (Encoding.UTF8.GetBytes(collection.ToJsonString())))
+        "a"
+        "Collection does not pretend to execute tests"
+
+    Expect.throws
+        (fun () ->
+            BrowserCompletion.inspect
+                files
+                "chromium"
+                (Encoding.UTF8.GetBytes(collection.ToJsonString()))
+            |> ignore)
+        "Collection alone never qualifies"
+
+    for change in
+        [
+            (fun copy -> (specs copy).Clear())
+            (fun copy -> (specs copy).Add((specs copy)[0] |> nonNull |> _.DeepClone()))
+            (fun copy ->
+                (spec copy)["file"] <- System.Text.Json.Nodes.JsonValue.Create "foreign.spec.ts")
+            (fun copy -> (spec copy)["title"] <- System.Text.Json.Nodes.JsonValue.Create "foreign")
+            (fun copy -> (spec copy)["id"] <- System.Text.Json.Nodes.JsonValue.Create "")
+            (fun copy ->
+                (testNode copy)["projectName"] <- System.Text.Json.Nodes.JsonValue.Create "webkit")
+            (fun copy ->
+                (testNode copy)["expectedStatus"] <-
+                    System.Text.Json.Nodes.JsonValue.Create "skipped")
+        ] do
+        let copy = node.DeepClone()
+        change copy
+
+        Expect.throws
+            (fun () ->
+                BrowserCompletion.selectedCase
+                    files
+                    "chromium"
+                    "a"
+                    (Encoding.UTF8.GetBytes(copy.ToJsonString()))
+                |> ignore)
+            "Zero, multiple, foreign or disabled cases fail before a fixture"
+
+    let directory = Directory.CreateTempSubdirectory("claimcore-case-completion-")
+
+    try
+        let path = Path.Combine(directory.FullName, "playwright.json")
+        File.WriteAllBytes(path, bytes ())
+
+        Expect.equal
+            (BrowserCompletion.readCase files "chromium" "a" "a" path)
+            (1, "1.2s")
+            "Exactly the collected case completes"
+
+        Expect.throws
+            (fun () -> BrowserCompletion.readCase files "chromium" "a" "other-id" path |> ignore)
+            "Changed execution identity cannot pass"
+    finally
+        directory.Delete true
+
+let private diagnosticControls () =
+    caseControls ()
+    let root = Directory.CreateTempSubdirectory("claimcore-browser-selection-")
+    let directory = Path.Combine(root.FullName, "web", "e2e")
+    Directory.CreateDirectory directory |> ignore
+    let first = Path.Combine(directory, "synthetic-a.spec.ts")
+    let second = Path.Combine(directory, "synthetic-b.spec.ts")
+    File.WriteAllText(first, "")
+    File.WriteAllText(second, "")
+
+    try
+        let selected = selectScope "diagnostic" "synthetic-a.spec.ts" [ "chromium" ]
+        let files = expectedFiles root.FullName selected
+
+        Expect.equal
+            files
+            (Set.singleton first)
+            "Diagnostic inventory is the one actual existing file"
+
+        Expect.equal (scopeName selected) "diagnostic" "A diagnostic is never a complete report"
+
+        Expect.stringContains
+            (scopeDescription selected)
+            "remains unrun"
+            "Partial scope is explicit"
+
+        Expect.equal
+            (expectedFiles root.FullName BrowserScope.Complete)
+            (Set.ofList [ first; second ])
+            "Default inventory keeps every specification"
+
+        Expect.equal smokeSpecifications.Length 18 "Existing smoke inventory remains unchanged"
+
+        let invalidSelections: (string * (string | null) * string list) list =
+            [
+                "diagnostic", null, [ "chromium" ]
+                "diagnostic", "", [ "chromium" ]
+                "diagnostic", "../synthetic-a.spec.ts", [ "chromium" ]
+                "diagnostic", "/synthetic-a.spec.ts", [ "chromium" ]
+                "diagnostic", @"nested\synthetic-a.spec.ts", [ "chromium" ]
+                "diagnostic", "--project=webkit", [ "chromium" ]
+                "diagnostic", "synthetic-*.spec.ts", [ "chromium" ]
+                "diagnostic", "synthetic-a.spec.ts\n", [ "chromium" ]
+                "diagnostic", "synthetic-a.spec.ts", selectEngines null
+                "complete", "synthetic-a.spec.ts", [ "chromium" ]
+                "smoke", "synthetic-a.spec.ts", [ "chromium" ]
+                "smoke", null, selectEngines null
+            ]
+
+        for campaign, specification, engines in invalidSelections do
+            Expect.throws
+                (fun () -> selectScope campaign specification engines |> ignore)
+                "Invalid selection cannot reach a fixture"
+
+        let batch =
+            selectScope "diagnostic" "synthetic-b.spec.ts,synthetic-a.spec.ts" [ "chromium" ]
+
+        let batchFiles = expectedFiles root.FullName batch
+
+        Expect.equal
+            batchFiles
+            (Set.ofList [ first; second ])
+            "Every selected basename owns its actual file"
+
+        Expect.equal
+            (specifications batch)
+            [ "synthetic-b.spec.ts"; "synthetic-a.spec.ts" ]
+            "Authored order is retained"
+
+        for invalid in
+            [
+                ",synthetic-a.spec.ts"
+                "synthetic-a.spec.ts,"
+                "synthetic-a.spec.ts,,synthetic-b.spec.ts"
+                "synthetic-a.spec.ts,synthetic-a.spec.ts"
+                "synthetic-a.spec.ts,../synthetic-b.spec.ts"
+                "synthetic-a.spec.ts,--project=webkit"
+                "synthetic-a.spec.ts,synthetic-*.spec.ts"
+                "synthetic-a.spec.ts,synthetic-b.spec.ts\n"
+                "synthetic-a.spec.ts, synthetic-b.spec.ts"
+            ] do
+            Expect.throws
+                (fun () -> selectScope "diagnostic" invalid [ "chromium" ] |> ignore)
+                "Malformed batches fail before setup"
+
+        for campaign in [ BrowserScope.Complete; BrowserScope.Smoke ] do
+            let arguments = browserArguments campaign "chromium"
+            Expect.contains arguments "--max-failures=1" "Qualification and smoke still fail fast"
+
+            Expect.isFalse
+                (List.contains "--max-failures=0" arguments)
+                "Only diagnostics collect every failure"
+
+        for campaign, minutes, argument, nativeMilliseconds in
+            [
+                BrowserScope.Complete, 40, "--global-timeout=2400000", 2_460_000
+                selected, 20, "--global-timeout=1200000", 1_260_000
+                BrowserScope.Smoke, 2, "--global-timeout=120000", 180_000
+            ] do
+            Expect.equal
+                (timeoutMinutes campaign)
+                minutes
+                "Each scope owns its explicit execution cap"
+
+            let arguments = browserArguments campaign "chromium"
+
+            Expect.equal
+                (arguments
+                 |> List.filter (fun value ->
+                     value.StartsWith("--global-timeout=", StringComparison.Ordinal)))
+                [ argument ]
+                "Exactly one scope-specific Playwright cap is passed"
+
+            Expect.equal
+                (processTimeout campaign)
+                nativeMilliseconds
+                "Native cleanup allows exactly one additional minute"
+
+        let batchArguments = browserArguments batch "chromium"
+
+        Expect.equal
+            (batchArguments |> List.skip 4 |> List.take 2)
+            [ @"(?:^|[/\\])synthetic-b\.spec\.ts$"; @"(?:^|[/\\])synthetic-a\.spec\.ts$" ]
+            "Every selected file becomes an escaped exact selector"
+
+        Expect.contains
+            batchArguments
+            "--max-failures=0"
+            "Diagnostics collect all selected failures"
+
+        for names in [ "absent.spec.ts"; "synthetic-a.spec.ts,absent.spec.ts" ] do
+            let missing = selectScope "diagnostic" names [ "chromium" ]
+
+            Expect.throws
+                (fun () -> expectedFiles root.FullName missing |> ignore)
+                "Every unknown file rejects before fixture creation"
+
+        let nested = Path.Combine(directory, "nested")
+        Directory.CreateDirectory nested |> ignore
+        File.WriteAllText(Path.Combine(nested, "synthetic-a.spec.ts"), "")
+
+        for campaign in [ selected; batch ] do
+            Expect.throws
+                (fun () -> expectedFiles root.FullName campaign |> ignore)
+                "Ambiguous basename rejects instead of selecting multiple files"
+
+        Directory.Delete(nested, true)
+
+        let arguments = browserArguments selected "chromium"
+        let literal = @"(?:^|[/\\])synthetic-a\.spec\.ts$"
+
+        Expect.equal
+            arguments
+            [
+                "exec"
+                "--"
+                "playwright"
+                "test"
+                literal
+                "--project"
+                "chromium"
+                "--forbid-only"
+                "--max-failures=0"
+                "--global-timeout=1200000"
+            ]
+            "Only the escaped known file is added; hard runner options stay locked"
+
+        Expect.isTrue
+            (Regex.IsMatch("/repo/web/e2e/synthetic-a.spec.ts", literal))
+            "Literal selector reaches its file"
+
+        Expect.isFalse
+            (Regex.IsMatch("/repo/web/e2e/synthetic-aXspecYts", literal))
+            "Dots are not arbitrary regex wildcards"
+
+        Expect.isFalse
+            (Regex.IsMatch("/repo/web/e2e/other-synthetic-a.spec.ts", literal))
+            "Suffixes cannot select another basename"
+
+        let node = System.Text.Json.Nodes.JsonNode.Parse(completionFixture false) |> nonNull
+        let config = node["config"] |> nonNull
+        config["rootDir"] <- System.Text.Json.Nodes.JsonValue.Create directory
+        let broad = node.ToJsonString() |> Encoding.UTF8.GetBytes
+
+        Expect.equal
+            (BrowserCompletion.inspect batchFiles "chromium" broad)
+            (2, "1.2s")
+            "Every selected file must finish successfully"
+
+        for before, after in
+            [
+                "synthetic-b.spec.ts", "extra.spec.ts"
+                "\"status\":\"passed\"", "\"status\":\"skipped\""
+                "\"retry\":0", "\"retry\":1"
+            ] do
+            let changed = node.ToJsonString().Replace(before, after, StringComparison.Ordinal)
+            Expect.notEqual changed (node.ToJsonString()) "Negative mutates the intended report"
+
+            Expect.throws
+                (fun () ->
+                    BrowserCompletion.inspect
+                        batchFiles
+                        "chromium"
+                        (Encoding.UTF8.GetBytes changed)
+                    |> ignore)
+                "Missing, foreign, skipped and retried selected files never pass"
+
+        Expect.throws
+            (fun () -> BrowserCompletion.inspect files "chromium" broad |> ignore)
+            "Unexpected extra executed file cannot qualify a diagnostic"
+
+        let suites = (node["suites"] |> nonNull).AsArray()
+        let specs = ((suites[0] |> nonNull)["specs"] |> nonNull).AsArray()
+        specs.RemoveAt 1
+        (node["stats"] |> nonNull)["expected"] <- System.Text.Json.Nodes.JsonValue.Create 1
+
+        Expect.throws
+            (fun () ->
+                BrowserCompletion.inspect
+                    batchFiles
+                    "chromium"
+                    (Encoding.UTF8.GetBytes(node.ToJsonString()))
+                |> ignore)
+            "A missing selected file is not a partial diagnostic success"
+
+        Expect.equal
+            (BrowserCompletion.inspect
+                files
+                "chromium"
+                (Encoding.UTF8.GetBytes(node.ToJsonString())))
+            (1, "1.2s")
+            "A diagnostic still requires complete nonempty execution of its selected file"
+
+        let output = Path.Combine(root.FullName, "output")
+        let reports = Path.Combine(root.FullName, "reports")
+        Directory.CreateDirectory output |> ignore
+        File.WriteAllText(Path.Combine(output, "playwright.json"), node.ToJsonString())
+
+        let previousReports =
+            Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY"
+
+        Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", reports)
+
+        try
+            Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", null)
+            let fallback = reportDirectory ()
+            Expect.equal (reportDirectory ()) fallback "Default evidence destination stays stable"
+            report selected None files output "chromium"
+
+            Expect.isTrue
+                (File.Exists(Path.Combine(fallback, "browser-chromium.json")))
+                "Direct diagnostics retain evidence without caller environment setup"
+
+            Directory.Delete(fallback, true)
+            Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", reports)
+            report selected None files output "chromium"
+
+            use summary =
+                JsonDocument.Parse(
+                    File.ReadAllBytes(Path.Combine(reports, "browser-chromium.json"))
+                )
+
+            Expect.equal
+                (summary.RootElement.GetProperty("scope").GetString())
+                "diagnostic"
+                "Partial execution is clearly labeled"
+
+            Expect.isFalse
+                (summary.RootElement.GetProperty("fullQualification").GetBoolean())
+                "A passing diagnostic never claims qualification"
+
+            let recorded =
+                summary.RootElement.GetProperty("specifications").EnumerateArray()
+                |> Seq.exactlyOne
+
+            Expect.equal
+                (recorded.GetString())
+                "synthetic-a.spec.ts"
+                "The selected file is retained in evidence"
+
+            report selected (Some("a", "a")) files output "chromium"
+
+            use partial =
+                JsonDocument.Parse(
+                    File.ReadAllBytes(Path.Combine(reports, "browser-chromium.json"))
+                )
+
+            Expect.equal
+                (partial.RootElement.GetProperty("selectedCase").GetString())
+                "a"
+                "The exact executed case is explicit"
+
+            Expect.equal
+                (partial.RootElement.GetProperty("passed").GetInt32())
+                1
+                "Only the selected case is reported"
+
+            Expect.isFalse
+                (partial.RootElement.GetProperty("fullQualification").GetBoolean())
+                "One case never qualifies its whole file"
+
+            let workFile = Path.Combine(directory, "case-work.spec.ts")
+            File.WriteAllText(workFile, "")
+            let workScope = selectScope "diagnostic" "case-work.spec.ts" [ "chromium" ]
+            let workNode = node.DeepClone()
+            let workSuites = (workNode["suites"] |> nonNull).AsArray()
+            let workSpecs = ((workSuites[0] |> nonNull)["specs"] |> nonNull).AsArray()
+
+            (workSpecs[0] |> nonNull)["file"] <-
+                System.Text.Json.Nodes.JsonValue.Create "case-work.spec.ts"
+
+            File.WriteAllText(Path.Combine(output, "playwright.json"), workNode.ToJsonString())
+
+            Expect.throws
+                (fun () ->
+                    report workScope None (expectedFiles root.FullName workScope) output "chromium")
+                "Selected work specification cannot pass without its required measurement artifact"
+        finally
+            Environment.SetEnvironmentVariable("CLAIMCORE_TEST_REPORT_DIRECTORY", previousReports)
+
+        for campaign in
+            [
+                BrowserScope.Complete
+                BrowserScope.Smoke
+                BrowserScope.Diagnostic [ "unicode-parity.spec.ts" ]
+            ] do
+            Expect.isTrue
+                (requiresSpecification campaign "unicode-parity.spec.ts")
+                "Selected Unicode scope keeps native readback mandatory"
+
+        Expect.isFalse
+            (requiresSpecification selected "unicode-parity.spec.ts")
+            "Unrelated file does not fabricate Unicode readback coverage"
+
+        Expect.isTrue
+            (requiresSpecification BrowserScope.Complete "case-work.spec.ts")
+            "Complete keeps required work measurement"
+
+        Expect.isTrue
+            (requiresSpecification
+                (BrowserScope.Diagnostic [ "case-work.spec.ts" ])
+                "case-work.spec.ts")
+            "Selected work specification keeps its artifact guard"
+    finally
+        root.Delete true
 
 let private printFailureSummary root engine bytes =
     let codeFiles =
@@ -294,24 +953,22 @@ let private printFailureSummary root engine bytes =
     let durations = BrowserProgress.failedDurations codeFiles bytes |> String.concat ","
     let stack = BrowserProgress.stackLocations codeFiles bytes |> String.concat ","
     let categories = BrowserProgress.failureCategories bytes |> String.concat ","
+    let facts = BrowserProgress.factReadabilityMarkers bytes |> String.concat ","
     let targets = BrowserProgress.targetGeometry bytes |> String.concat ","
 
     let summary =
-        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; targets={targets}"
+        $"Published {engine}: completed rows passed={passed}, failed={failed}; categories={categories}; locations={locations}; durations={durations}; stack={stack}; targets={targets}; facts={facts}"
 
     Console.WriteLine summary
 
-    match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-    | null -> ()
-    | directory ->
-        let output = Path.Combine(directory, "browser-failure")
-        Directory.CreateDirectory output |> ignore
-        FixtureFiles.text output (engine + ".txt") summary |> ignore
+    let output = Path.Combine(reportDirectory (), "browser-failure")
+    Directory.CreateDirectory output |> ignore
+    FixtureFiles.text output (engine + ".txt") summary |> ignore
 
-let private runBrowser root engine output start =
+let private runBrowser selected root engine output start =
     try
-        // Leave one minute to report and clean up after Playwright's 20-minute suite bound.
-        PublishedProcesses.run (21 * 60_000) start None
+        // Leave one minute to report and clean up after the scope's Playwright bound.
+        PublishedProcesses.run (processTimeout selected) start None
     with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
         FixtureFiles.write output "playwright.stdout" failure.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" failure.StandardError |> ignore
@@ -323,16 +980,82 @@ let private runBrowser root engine output start =
 
         failtest ($"Browser process failure: {failure.Kind}; bounded private evidence retained.")
 
+let private collectCase root selected files engine title =
+    match title with
+    | None -> None
+    | Some title ->
+        let directory = Directory.CreateTempSubdirectory("claimcore-browser-collection-")
+        let values = Dictionary<string, string>()
+        values["CLAIMCORE_WEB_E2E_ENGINE"] <- engine
+        values["CLAIMCORE_WEB_E2E_PRIVATE_OUTPUT_DIR"] <- directory.FullName
+
+        let arguments =
+            browserArguments selected engine
+            @ caseArguments (Some title)
+            @ [ "--list"; "--reporter=json" ]
+
+        let start = browserStart selected arguments values
+        start.WorkingDirectory <- Path.Combine(root, "web")
+
+        for name in
+            [
+                "PLAYWRIGHT_JSON_OUTPUT_FILE"
+                "PLAYWRIGHT_JSON_OUTPUT_DIR"
+                "PLAYWRIGHT_JSON_OUTPUT_NAME"
+            ] do
+            start.Environment.Remove name |> ignore
+
+        let mutable complete = false
+
+        try
+            let result =
+                try
+                    PublishedProcesses.run 30_000 start None
+                with :? ClaimCore.TestSupport.BoundedProcessFailure as failure ->
+                    FixtureFiles.write directory.FullName "collection.stdout" failure.StandardOutput
+                    |> ignore
+
+                    FixtureFiles.write directory.FullName "collection.stderr" failure.StandardError
+                    |> ignore
+
+                    failtest
+                        "Literal browser collection exceeded its bound; private evidence retained."
+
+            FixtureFiles.write directory.FullName "collection.stdout" result.StandardOutput
+            |> ignore
+
+            FixtureFiles.write directory.FullName "collection.stderr" result.StandardError
+            |> ignore
+
+            Expect.equal
+                result.ExitCode
+                0
+                "Literal case collection must succeed before fixture startup"
+
+            let identity =
+                BrowserCompletion.selectedCase files engine title result.StandardOutput
+
+            complete <- true
+            Some(title, identity)
+        finally
+            if complete then
+                directory.Delete true
+            else
+                Console.Error.WriteLine(
+                    "Browser collection evidence retained privately: " + directory.FullName
+                )
+
 let private qualifyEngine engine =
     task {
-        let scope =
-            if smoke then
-                "smoke; complete qualification is not being run"
-            else
-                "complete engine suite"
+        let root = ClaimCore.TestSupport.RepositoryRoot.find ()
+        // Resolve the exact inventory before any expensive fixture or authentication starts.
+        let files = expectedFiles root scope
+        let selection = collectCase root scope files engine caseTitle
+        // Refuse an unusable evidence destination before starting the expensive fixture.
+        Directory.CreateDirectory(reportDirectory ()) |> ignore
 
         Console.WriteLine(
-            $"Starting published {engine} {scope}; isolated fixture, one worker, zero retries."
+            $"Starting published {engine} {scopeDescription scope}; isolated fixture, one worker, zero retries."
         )
 
         use fixture = new PublishedFixture.Fixture()
@@ -354,23 +1077,33 @@ let private qualifyEngine engine =
         values["CLAIMCORE_WEB_E2E_PRINCIPALS_FILE"] <-
             Path.Combine(fixture.Directory, "principals.json")
 
-        let start = PublishedProcesses.start "npm" (browserArguments engine) values
+        let start =
+            browserStart scope (browserArguments scope engine @ caseArguments caseTitle) values
+
+        match selection with
+        | Some(title, _) -> start.Environment["CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE"] <- title
+        | None -> ()
 
         start.WorkingDirectory <- Path.Combine(fixture.Root, "web")
-        let result = runBrowser fixture.Root engine output start
+        let result = runBrowser scope fixture.Root engine output start
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
 
         if result.ExitCode <> 0 then
             printFailureSummary fixture.Root engine result.StandardOutput
 
+            BrowserLayoutReports.retain output (reportDirectory ()) engine
+
         Expect.equal
             result.ExitCode
             0
             ("Published browser scope " + engine + "; private evidence retained")
 
-        report fixture.Root output engine
-        BrowserReadback.qualify fixture output
+        report scope selection files output engine
+
+        if requiresSpecification scope "unicode-parity.spec.ts" then
+            BrowserReadback.qualify fixture output
+
         fixture.Complete()
     }
 
@@ -378,22 +1111,24 @@ let private qualifyEngine engine =
 let tests =
     testSequenced
     <| testList
-        (if smoke then
-             "published browser smoke"
-         else
-             "published browser qualification")
+        (match scope with
+         | BrowserScope.Complete -> "published browser qualification"
+         | BrowserScope.Smoke -> "published browser smoke"
+         | BrowserScope.Diagnostic _ -> "published browser diagnostic")
         [
             testCase
                 "completion evidence rejects missing files, incomplete and retried executions"
                 (fun () ->
                     completionControls ()
                     selectionControls ()
-                    orchestrationControls ())
+                    orchestrationControls ()
+                    diagnosticControls ())
             testCaseAsync
-                ((if smoke then
-                      "workflow, localization and Unicode smoke on "
-                  else
-                      "complete browser specification suites on ")
+                ((match scope with
+                  | BrowserScope.Complete -> "complete browser specification suites on "
+                  | BrowserScope.Smoke -> "workflow, localization and Unicode smoke on "
+                  | BrowserScope.Diagnostic names ->
+                      "diagnostic " + String.concat ", " names + " on ")
                  + String.concat ", " engines)
                 (async { do! runSelected qualifyEngine engines |> Async.AwaitTask })
         ]

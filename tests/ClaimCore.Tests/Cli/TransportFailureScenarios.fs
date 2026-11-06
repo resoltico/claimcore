@@ -43,23 +43,39 @@ let internal resultExits () =
                 |> Option.ofObj
                 |> Option.get
 
-            let invocation = frameForReply (Api.id endpoint) body
-            let body = correlatedBody invocation body
+            // This contract is the admitted outcome-to-exit mapping. Raw examples intentionally
+            // include structurally valid bodies without a corresponding executable request.
+            // Independent HTTP controls test request identity and correlation separately.
+            let value =
+                StrictJson.read Limits.MaximumResponseBytes body
+                |> Result.defaultWith (fun _ -> failtest "Independent response example")
 
-            use handler = new Handler(fun _ -> Task.FromResult(response 200 body))
-            let reply = send handler invocation
+            let typed =
+                ServiceReply.read endpoint value
+                |> Result.defaultWith (fun _ -> failtest "Independent response codec")
+
+            let admitted =
+                {
+                    FrameReply.Endpoint = Some endpoint.Id
+                    OperationId = None
+                    Delivery =
+                        if tag = "OUTCOME_UNKNOWN" then
+                            DeliveryState.Uncertain
+                        else
+                            DeliveryState.Delivered
+                    Result = FrameResult.Reply typed
+                }
 
             Expect.equal
-                reply.ExitCode
+                (Frames.exitCode admitted)
                 (Map.tryFind tag expected |> Option.defaultValue 0)
                 ("Outcome selects exit for "
-                 + (Api.id endpoint)
+                 + Api.id endpoint
                  + " "
                  + tag
                  + " sample "
                  + string index)
 
-            Expect.isOk (Frames.decode reply.Bytes) "Output is an admitted frame"
             seen <- Set.add tag seen
 
     for tag in Map.keys expected do

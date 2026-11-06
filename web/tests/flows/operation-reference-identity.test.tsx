@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { caseViewInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -24,9 +25,15 @@ const current: CurrentCase = caseViewInput({
 const prepared = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
-        before: current,
+        before: {
+          caseId: current.caseId,
+          caseReference: current.caseReference,
+          revision: current.revision,
+          state: current.state,
+        },
         after: {
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: fields.caseReference,
@@ -36,7 +43,7 @@ const prepared = () =>
             fields,
           },
         },
-        changes: [],
+
         context: runtime,
       },
     },
@@ -74,18 +81,14 @@ it("keeps existing references immutable and delegates a reviewed commit", async 
     />,
   );
   expect(
-    screen.queryByLabelText("Handler's case reference", {
+    screen.queryByLabelText("Case reference", {
       exact: true,
     }),
   ).toBeNull();
-  expect(screen.getByText(/Handler's case reference:/u)).toHaveTextContent(fields.caseReference);
+  expect(screen.getByText(/Case reference:/u)).toHaveTextContent(fields.caseReference);
   await user.click(getButton("Review changes"));
-  await user.click(
-    await screen.findByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await user.click(await findButton("Return to case"));
   expect(committed).toHaveBeenCalledOnce();
   const draft = sentDraft(fetch.mock.calls[0]?.[1]?.body);

@@ -10,12 +10,16 @@
     <Compile Include="InstallationCheck/InstallationCheck.fs" />
     <Compile Include="Reads/Projections.fs" />
     <Compile Include="Ledger/StoredEntries.fs" />
+    <Compile Include="AccessRequests.fs" />
     <Compile Include="Ledger/Persistence.fs" />
     <Compile Include="Ledger/Transactions.fs" />
     <Compile Include="RegisterMaintenanceStore.fs" />
     <Compile Include="Reads/CaseSelectionSql.fs" />
+    <Compile Include="Reads/ResponsibilityCountStorage.fs" />
     <Compile Include="Reads/CaseSummaryQuery.fs" />
+    <Compile Include="Reads/ViewCountStorage.fs" />
     <Compile Include="Reads/WorkStorage.fs" />
+    <Compile Include="Reads/TimelineStorage.fs" />
     <Compile Include="Ledger/TransactionPrimitives.fs" />
     <Compile Include="Verification/VerificationRows.fs" />
     <Compile Include="Verification/WorkProjectionVerification.fs" />

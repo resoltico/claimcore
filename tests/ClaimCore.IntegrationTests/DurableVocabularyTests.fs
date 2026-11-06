@@ -26,7 +26,7 @@ let private corruptRead (read: unit -> Task<unit>) =
 
 let private readEntry (tx: IReadTx) =
     task {
-        let! _ = tx.FindEntry(CaseFixtures.operationId (id 10))
+        let! _ = tx.FindOperation(CaseFixtures.operationId (id 10))
         return ()
     }
 
@@ -45,7 +45,15 @@ let private readGrants (tx: IReadTx) =
 
 let private readActors (tx: IReadTx) =
     task {
-        let! _ = tx.ActorPage { AfterActorId = None; Limit = 50 }
+        let! _ =
+            tx.ActorPage
+                {
+                    Role = None
+                    Text = None
+                    AfterActorId = None
+                    Limit = 50
+                }
+
         return ()
     }
 
@@ -69,7 +77,7 @@ let private rawGrants database =
         TransactionPages.grants connection (CaseFixtures.actorId (id 1)) None 50 token)
 
 let private rawActors database =
-    rawRead database (fun connection -> TransactionPages.actors connection None 50 token)
+    rawRead database (fun connection -> TransactionPages.actors connection None None None 50 token)
 
 let private rejectsUnknown mutate read raw =
     run (fun database ->
@@ -109,7 +117,7 @@ let tests =
                     (fun database ->
                         guardedSql
                             database
-                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN',creation_reference=NULL WHERE sequence=4"
+                            "UPDATE claimcore.ledger SET act='SYNTHETIC_UNKNOWN',creation_reference=NULL WHERE sequence=5"
                             [||])
                     readEntry
                     rawEntry)

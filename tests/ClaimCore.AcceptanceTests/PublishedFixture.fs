@@ -154,6 +154,11 @@ let private initialize
                         operationId = Guid.NewGuid().ToString("D")
                         issuer = identity.Issuer
                         subject = IdentityRealm.ownerSubject
+                        profile =
+                            {|
+                                displayName = "Published fixture owner"
+                                contact = (None: string option)
+                            |}
                     |})
 
         for arguments in [ [ "initialize"; "Etc/UTC" ]; [ "provision-owner" ] ] do

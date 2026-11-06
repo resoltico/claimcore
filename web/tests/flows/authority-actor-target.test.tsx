@@ -1,6 +1,10 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
+import { stubViewCounts } from "../support/dashboard-context.fixtures";
+import userEvent from "@testing-library/user-event";
+import { chooseOption } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
-import { expect, it, vi } from "vitest";
-import { act, fireEvent } from "@testing-library/react";
+import { beforeEach, expect, it, vi } from "vitest";
+import { act, fireEvent, within } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { Dashboard } from "../../src/views/Dashboard";
@@ -16,11 +20,19 @@ import {
   openActor,
   setupActorTargets,
 } from "../support/actor-target.fixtures";
+beforeEach(() => {
+  stubViewCounts();
+});
 const grantToSelected = async () => {
-  fireEvent.click(await screen.findByRole("button", { name: /Grant role: Grant a role/u }));
+  fireEvent.click(await screen.findByRole("button", { name: /Grant role:/u }));
   await screen.findByRole("dialog", { name: "Discard these draft changes?" });
 };
 const expectBoundActor = async (subject = firstActor.principal.subject) => {
+  if (document.querySelector('[name="target.subject"]') === null) {
+    expect(await screen.findAllByRole("dialog")).toHaveLength(1);
+    const actions = await screen.findAllByRole("button", { name: /^(?:Grant|Revoke) role:/u });
+    fireEvent.click(actions[0]!);
+  }
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).toHaveValue(subject);
   });
@@ -61,7 +73,7 @@ it("does not offer REGISTER or manufacture mutation inputs for an actor with no 
   const preview = setupActorTargets(["REGISTER"]);
   actorRoute();
   render(<Dashboard />);
-  await screen.findByText(firstActor.principal.subject);
+  await screen.findAllByText(firstActor.principal.subject);
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
   expect(screen.queryByRole("option", { name: "Register actor" })).toBeNull();
   expect(preview).not.toHaveBeenCalled();
@@ -74,7 +86,7 @@ it("declining retarget consent retains the authored principal and returns to its
   await openActor();
   await grantToSelected();
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
-  fireEvent.click(screen.getByRole("button", { name: "Continue current request" }));
+  expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
   expect(document.querySelector('[name="target.subject"]')).toHaveValue("authored-other");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
@@ -90,7 +102,7 @@ it("explicit retarget consent creates a fresh request for the disclosed actor", 
   await authorDifferentTarget();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("checkbox", { name: "I confirm this exact request." });
+  await waitForReviewConfirm();
   const [previous] = preview.mock.calls[0]!;
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
   await openActor();
@@ -117,8 +129,8 @@ it("declining an uncertain request retarget preserves the exact request and retr
   await authorDifferentTarget();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  fireEvent.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   const [original] = execute.mock.calls[0]!;
   await openActor();
@@ -141,11 +153,13 @@ it("changing acts retains the bound actor identity after discard consent", async
   await expectBoundActor();
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  await screen.findByRole("checkbox", { name: "I confirm this exact request." });
+  await waitForReviewConfirm();
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
-  fireEvent.change(screen.getByRole("combobox", { name: "Authority action" }), {
-    target: { value: "DISABLE" },
-  });
+  await chooseOption(
+    userEvent.setup(),
+    screen.getByRole("combobox", { name: "Authority action" }),
+    "DISABLE",
+  );
   fireEvent.click(await screen.findByRole("button", { name: "Discard and change action" }));
   await expectBoundActor();
   chooseRoleForReview();
@@ -171,7 +185,7 @@ it("ignores a late actor disclosure when a different actor is selected", async (
   render(<Dashboard />);
   await screen.findAllByRole("link", { name: / ·/u });
   await openActor();
-  await openActor(secondActor.actorId);
+  await openActor(secondActor.actor.actorId);
   await expectBoundActor(secondActor.principal.subject);
   await act(async () => {
     release(grantsFor());
@@ -209,7 +223,7 @@ it("waits for fresh actor disclosure after availability loss and never restores 
       value: {
         outcome: {
           kind: "REJECTED",
-          data: { code: "RESOURCE_UNAVAILABLE", action: "NONE_REQUIRED" },
+          data: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
         },
       },
     });
@@ -217,4 +231,81 @@ it("waits for fresh actor disclosure after availability loss and never restores 
   });
   expect(screen.queryByDisplayValue(firstActor.principal.subject)).toBeNull();
   expect(screen.queryByText(firstActor.principal.subject)).toBeNull();
+});
+
+it("opens one named person panel and prefills profile edits only from its current disclosed profile", async () => {
+  setupActorTargets(["SET_PROFILE"]);
+  actorRoute();
+  render(<Dashboard />);
+  const person = await screen.findByRole("dialog", { name: "server-first" });
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(person).not.toHaveTextContent("stale-list-first");
+  expect(
+    within(person.querySelector<HTMLDetailsElement>(".actor-record-details")!).getByText(
+      firstActor.principal.subject,
+      { selector: "bdi", exact: true },
+    ),
+  ).not.toBeVisible();
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: /^Update profile:/u }));
+  await waitFor(() => {
+    expect(document.querySelector('[name="act.profile.displayName"]')).toHaveValue("server-first");
+  });
+  expect(document.querySelector('[name="act.profile.contact"]')).toHaveValue("");
+  expect(document.querySelector('[name="target.subject"]')).toHaveValue(
+    firstActor.principal.subject,
+  );
+  expect(document.querySelector('[name="target.subject"]')).toBeDisabled();
+  expect(document.querySelector('[name="target.subject"]')).not.toBeVisible();
+  expect(screen.getAllByRole("dialog")).toHaveLength(1);
+  expect(getEndpointMock("authority.grants")).toHaveBeenCalledOnce();
+});
+
+it("opens a row revocation with the exact supplied principal, role and case reference without another grant read", async () => {
+  const preview = setupActorTargets(["REVOKE"]);
+  const reply = grantsFor();
+  if (reply.kind !== "outcome" || reply.value.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Grant page fixture required");
+  }
+  getEndpointMock("authority.grants").mockResolvedValue({
+    ...reply,
+    value: {
+      outcome: {
+        kind: "SUCCEEDED",
+        data: {
+          ...reply.value.outcome.data,
+          items: [
+            {
+              role: "CASE_READER",
+              scope: {
+                kind: "CASE",
+                caseId: "20000000-0000-4000-8000-000000000001",
+                caseReference: "CASE-FROM-GRANT",
+              },
+            },
+          ],
+        },
+      },
+    },
+  });
+  actorRoute();
+  render(<Dashboard />);
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("button", { name: "Revoke role" }));
+  expect(document.querySelector('[name="act.scope.target.caseReference"]')).toHaveValue(
+    "CASE-FROM-GRANT",
+  );
+  await user.click(screen.getByRole("button", { name: "Review changes" }));
+  await waitFor(() => {
+    expect(preview).toHaveBeenCalledOnce();
+  });
+  expect(preview.mock.calls[0]![0].input).toMatchObject({
+    target: firstActor.principal,
+    act: {
+      kind: "REVOKE",
+      role: "CASE_READER",
+      scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: "CASE-FROM-GRANT" } },
+    },
+  });
+  expect(getEndpointMock("authority.grants")).toHaveBeenCalledOnce();
 });

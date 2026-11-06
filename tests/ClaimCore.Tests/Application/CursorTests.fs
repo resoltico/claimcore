@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CursorTests
 
 open ClaimCore.RecordFormat
+open ClaimCore.Json
 
 open ClaimCore.Protocol
 
@@ -27,6 +28,111 @@ let private token (json: string) =
         .TrimEnd('=')
         .Replace('+', '-')
         .Replace('/', '_')
+
+let private actorNameCursorBudget () =
+    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let raw = String.replicate 200 "ﷺ"
+    let query = DirectorySearchText.parse raw |> Result.defaultWith (string >> failtest)
+
+    Expect.equal
+        (DirectorySearchText.value query).Length
+        3600
+        "Legal compatibility expansion does not enlarge the public cursor"
+
+    let actor = CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000050")
+    let cursor = Cursors.encodeActors installation (Some query) None actor
+    Expect.isLessThanOrEqual cursor.Length 512 "Existing cursor admission budget is unchanged"
+
+    let padded =
+        cursor.Replace('-', '+').Replace('_', '/')
+        + String.replicate ((4 - cursor.Length % 4) % 4) "="
+
+    use document = JsonDocument.Parse(Convert.FromBase64String padded)
+
+    Expect.equal
+        (document.RootElement.GetProperty("query").GetString())
+        "66d643546a81f50e79f93060e650f02430c27b16d51bdbb686a0b5f7178b3823"
+        "Independent query-only fingerprint pins normalized filter binding"
+
+    Expect.equal
+        (Cursors.decodeActors
+            Paging.MaximumActorCursorCharacters
+            installation
+            (Some query)
+            None
+            cursor)
+        (Ok actor)
+        "Expanded query cursor remains usable"
+
+    let different =
+        DirectorySearchText.parse "other" |> Result.defaultWith (string >> failtest)
+
+    Expect.equal
+        (Cursors.decodeActors
+            Paging.MaximumActorCursorCharacters
+            installation
+            (Some different)
+            None
+            cursor)
+        (Error Refusal.InvalidCursor)
+        "The same position cannot change its normalized filter"
+
+    let bytes =
+        Codec.encode
+            Api.authorityList.Input
+            {
+                ActorListRequest.Role = None
+                Text = Some raw
+                AfterCursor = Some cursor
+                Limit = 50
+            }
+
+    Expect.isLessThan
+        bytes.Length
+        65536
+        "Worst legal expansion query plus bounded cursor fits the unchanged64KiB request gate"
+
+[<Tests>]
+let conflictRangeCursor =
+    testCase
+        "timeline conflict continuations retain entity range and fit the fixed cursor budget"
+        (fun () ->
+            let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+            let scope = String('a', 64)
+
+            let range =
+                {
+                    Entity = ChangeEntity.Reminder(ReminderId.create actor |> Option.get)
+                    ExpectedRevision = CaseFixtures.revision Revision.Maximum
+                    ActualRevision = CaseFixtures.revision Revision.Maximum
+                }
+
+            let sequence = CaseFixtures.sequence 9007199254740991L
+            let encoded = Cursors.encodeTimeline installation scope (Some range) sequence
+
+            Expect.isLessThanOrEqual
+                encoded.Length
+                Cursors.MaximumTokenCharacters
+                "The longest entity range fits without increasing admission"
+
+            Expect.equal
+                (Cursors.decodeTimeline installation scope encoded)
+                (Ok
+                    {
+                        BeforeSequence = sequence
+                        Range = Some range
+                    })
+                "The observed upper revision is retained exactly"
+
+            Expect.equal
+                (Cursors.decodeTimeline installation (String('b', 64)) encoded)
+                (Error Refusal.InvalidCursor)
+                "The continuation conveys no actor authority"
+
+            Expect.equal
+                (Cursors.decodeTimeline (Guid.NewGuid()) scope encoded)
+                (Error Refusal.InvalidCursor)
+                "The installation binding remains strict")
 
 let private examples action =
     use fixture =
@@ -82,13 +188,18 @@ let private accepted () =
 
                     Expect.equal
                         (Cursors.decodeActors
+                            Paging.MaximumActorCursorCharacters
                             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            None
+                            None
                             encoded)
                         (Ok(CaseFixtures.actorId (expected)))
                         "Independent actor position"
 
                     Cursors.encodeActors
                         (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        None
+                        None
                         (CaseFixtures.actorId (expected))
                 | "authority.grants" ->
                     let caseId = position.GetProperty "caseId"
@@ -192,7 +303,7 @@ let private boundaries () =
 
     for json in
         [
-            baseJson.Replace("\"v\":5", "\"v\":5.0")
+            baseJson.Replace("\"v\":6", "\"v\":6.0")
             baseJson.Replace("\"kind\":\"CASES\"", "\"kind\":\"CASES\",\"kind\":\"CASES\"")
             baseJson.Replace("DEMO-0050", "\\ud800")
         ] do
@@ -309,6 +420,9 @@ let private worklistBinding () =
                 Assignment = Some CaseAssignment.Mine
             }
             { selected with
+                View = Some CaseView.All
+            }
+            { selected with
                 Order = CaseListOrder.Reference
             }
         ] do
@@ -377,11 +491,84 @@ let private recentPrecision () =
         (Error Refusal.InvalidCursor)
         "A forged canonical cursor cannot introduce sub-microsecond keyset semantics"
 
+let private accessRequestBinding () =
+    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let issuerPrefix = "https://issuer.example/"
+
+    let issuer =
+        issuerPrefix
+        + String.replicate (PrincipalKey.MaximumIssuerCharacters - issuerPrefix.Length) "x"
+
+    let principal =
+        PrincipalKey.human issuer (String.replicate PrincipalKey.MaximumHumanSubjectCharacters "\"")
+        |> Result.defaultWith (string >> failtest)
+
+    let after =
+        {
+            AccessRequestPosition.LastSeen = DateTimeOffset(2026, 11, 4, 0, 0, 0, TimeSpan.Zero)
+            Principal = principal
+        }
+
+    let cursor = Cursors.encodeAccessRequests installation after
+
+    Expect.isTrue
+        (cursor.Length > 512
+         && cursor.Length <= Paging.MaximumAccessRequestCursorCharacters)
+        "Longest authenticated principal keys fit the dedicated cursor budget"
+
+    Expect.equal
+        (Cursors.decodeAccessRequests
+            Paging.MaximumAccessRequestCursorCharacters
+            installation
+            cursor)
+        (Ok after)
+        "Exact full identity survives cursor encoding"
+
+    Expect.equal
+        (Cursors.decodeAccessRequests Paging.MaximumAccessRequestCursorCharacters Guid.Empty cursor)
+        (Error Refusal.InvalidCursor)
+        "Cursor cannot cross installations"
+
+    Expect.equal
+        (Cursors.decodeAccessRequests
+            Paging.MaximumAccessRequestCursorCharacters
+            installation
+            (String.replicate (Paging.MaximumAccessRequestCursorCharacters + 1) "A"))
+        (Error Refusal.InvalidCursor)
+        "Oversized cursor is rejected before decoding"
+
+    Expect.throwsT<ArgumentException>
+        (fun () ->
+            Cursors.encodeAccessRequests
+                installation
+                { after with
+                    LastSeen = after.LastSeen.AddTicks 1L
+                }
+            |> ignore)
+        "Encoder cannot manufacture unsupported sub-microsecond positions"
+
+    let raw =
+        """{"installationId":"90000000-0000-4000-8000-000000000001","issuer":"https://issuer.example/","kind":"ACCESS_REQUESTS","lastSeen":"2026-11-04T00:00:00.0000001+00:00","principalKind":"HUMAN","subject":"waiting","v":1}"""
+
+    Expect.equal
+        (Cursors.decodeAccessRequests
+            Paging.MaximumAccessRequestCursorCharacters
+            installation
+            (token raw))
+        (Error Refusal.InvalidCursor)
+        "Forged sub-microsecond positions are refused"
+
 [<Tests>]
 let tests =
     testList
         "plain canonical keysets"
         [
+            testCase
+                "name-search cursor fingerprints preserve existing admission budgets"
+                actorNameCursorBudget
+            testCase
+                "access-request cursors preserve full bounded identity and database precision"
+                accessRequestBinding
             testCase "worklist filters bind every cursor dimension" worklistBinding
             testCase "recent positions retain recorded-instant precision" recentPrecision
             testCase "owner accepted examples" accepted
@@ -444,7 +631,13 @@ let installationBinding =
                             Cursors.decodeHistory foreign (CaseFixtures.caseId actor) encoded
                             |> Result.map ignore
                         | "authority.list" ->
-                            Cursors.decodeActors foreign encoded |> Result.map ignore
+                            Cursors.decodeActors
+                                Paging.MaximumActorCursorCharacters
+                                foreign
+                                None
+                                None
+                                encoded
+                            |> Result.map ignore
                         | "authority.grants" ->
                             Cursors.decodeGrants foreign (CaseFixtures.actorId actor) encoded
                             |> Result.map ignore

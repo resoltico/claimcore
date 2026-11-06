@@ -36,21 +36,51 @@ let internal contextCodec () =
         Api.context.Output
         (Outcome.Succeeded
             {
-                InstallationId = System.Guid.Parse "90000000-0000-4000-8000-000000000001"
-                Runtime =
-                    {
-                        ProductVersion = "0.10.0"
-                        EffectiveBusinessDate = today
-                        TimeZoneId = "Etc/UTC"
-                    }
-                ActorId =
-                    ActorId.create (System.Guid.Parse "10000000-0000-4000-8000-000000000001")
-                    |> Option.get
-                HasScopedCases = false
-                Maintenance = RegisterMaintenance.initial
-                Capability = []
-                View = []
-                Offers = []
+                Requester =
+                    RequesterState.Active
+                        {
+                            InstallationId =
+                                System.Guid.Parse "90000000-0000-4000-8000-000000000001"
+                            Runtime =
+                                {
+                                    ProductVersion = "0.10.0"
+                                    Basis =
+                                        {
+                                            ObservedAt =
+                                                System.DateTimeOffset(
+                                                    today.ToDateTime(System.TimeOnly.MinValue),
+                                                    System.TimeSpan.Zero
+                                                )
+                                            BusinessDate = today
+                                            TimeZoneId = "Etc/UTC"
+                                        }
+                                }
+                            ActorId =
+                                ActorId.create (
+                                    System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                )
+                                |> Option.get
+                            Issuer = "https://issuer.example/"
+                            Roles =
+                                [
+                                    {
+                                        Role = Role.Owner
+                                        Installation = true
+                                        CaseCount = 0L
+                                    }
+                                ]
+                            Self =
+                                ClaimCore.TestSupport.Inputs.actorReference (
+                                    CaseFixtures.actorId (
+                                        System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                    )
+                                )
+                            HasScopedCases = false
+                            Maintenance = RegisterMaintenance.initial
+                            Capability = []
+                            View = []
+                            Offers = []
+                        }
             })
 
     |> ignore
@@ -71,8 +101,15 @@ let internal queryCodecs () =
                 {
                     Mine = false
                     Work = Inputs.workView view.State
+                    Stages = Inputs.stageDisplay view.State
                     Snapshot = view
-                    Advice = (CaseAdvice.create [] None [] |> Result.defaultWith invalidOp)
+                    Headline =
+                        if view.State = ClaimCore.Domain.CaseState.Erased then
+                            CaseHeadline.Erased
+                        else
+                            CaseHeadline.Undecided
+                    Attention = []
+                    Advice = Inputs.caseAdvice view.State
                 })
 
         |> ignore
@@ -85,6 +122,7 @@ let internal queryCodecs () =
                 Items = []
                 NextCursor = None
                 Offers = []
+                ExactReference = None
             })
 
     |> ignore
@@ -110,7 +148,14 @@ let internal queryCodecs () =
 
     |> ignore
 
-    admitted Api.authorityList.Output (Outcome.Succeeded { Items = []; NextCursor = None })
+    admitted
+        Api.authorityList.Output
+        (Outcome.Succeeded
+            {
+                Basis = Inputs.workBasis
+                Items = []
+                NextCursor = None
+            })
 
     |> ignore
 
@@ -121,7 +166,10 @@ let internal executeOutcomes () =
             [
                 ExecuteResult.Accepted receiptValue, 0
                 ExecuteResult.AlreadyAccepted receiptValue, 0
-                ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted), 2
+                ExecuteResult.Rejected(
+                    Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
+                ),
+                2
                 ExecuteResult.Failed CoreFault.StoreUnavailable, 3
                 ExecuteResult.OutcomeUnknown, 4
             ] do
@@ -204,12 +252,20 @@ let internal previewCodecs () =
         {
             Before = None
             Proposed = Case.snapshot (opened ())
-            Changes = []
+            Changes = { Lifecycle = None; Fields = [] }
             Context =
                 {
                     ProductVersion = "0.10.0"
-                    EffectiveBusinessDate = today
-                    TimeZoneId = "Etc/UTC"
+                    Basis =
+                        {
+                            ObservedAt =
+                                System.DateTimeOffset(
+                                    today.ToDateTime(System.TimeOnly.MinValue),
+                                    System.TimeSpan.Zero
+                                )
+                            BusinessDate = today
+                            TimeZoneId = "Etc/UTC"
+                        }
                 }
         }
 
@@ -217,10 +273,14 @@ let internal previewCodecs () =
         [
             (Previewed.Reviewed >> Outcome.Succeeded) (OperationReview.Case review)
             (Previewed.AlreadyAccepted >> Outcome.Succeeded) receipt
-            Outcome.Rejected(ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted)
+            Outcome.Rejected(
+                ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)
+            )
             Outcome.Failed CoreFault.StoreIntegrityError
         ] do
-        admitted Api.operationPreview.Output { OperationId = id; Outcome = value }
+        admitted
+            Api.operationPreview.Output
+            (PresentedPreviewReply.ofCore { OperationId = id; Outcome = value })
         |> ignore
 
 let internal diagnostics () =
@@ -231,7 +291,8 @@ let internal diagnostics () =
         [
             ClaimCore.Domain.Refusal.InvalidCursor, "INVALID_CURSOR"
             (ClaimCore.Domain.Refusal.Authority AuthorityRefusal.LastOwner), "LAST_OWNER"
-            (ClaimCore.Domain.Refusal.Access AccessRefusal.ActNotPermitted), "ACT_NOT_PERMITTED"
+            (ClaimCore.Domain.Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)),
+            "NOT_AUTHORIZED"
             (ClaimCore.Domain.Refusal.Access AccessRefusal.ResourceUnavailable),
             "RESOURCE_UNAVAILABLE"
         ] do
@@ -266,9 +327,13 @@ let internal actionExpectations =
             Revision = None
         }
         {
-            Refusal = (Refusal.RevisionConflict(CaseFixtures.revision 7L))
-            Action = RecommendedAction.ReadCurrent
-            Token = "READ_CURRENT"
+            Refusal =
+                Refusal.RevisionConflict(
+                    RevisionConflictInfo.at (CaseFixtures.revision 7L)
+                    |> RevisionConflictInfo.explain ConflictChanges.Withheld
+                )
+            Action = RecommendedAction.ReviewLatest
+            Token = "REVIEW_LATEST"
             Field = None
             Revision = Some 7L
         }
@@ -286,7 +351,12 @@ let internal actionEnums () =
             "Input correction and current-state recovery are distinct"
 
 let internal diagnosticRevisions () =
-    let reason = Refusal.RevisionConflict(CaseFixtures.revision 0L)
+    let reason =
+        Refusal.RevisionConflict(
+            RevisionConflictInfo.at (CaseFixtures.revision 0L)
+            |> RevisionConflictInfo.explain ConflictChanges.Withheld
+        )
+
     let codec = DiagnosticCodecs.diagnostic
 
     Expect.equal
@@ -296,7 +366,7 @@ let internal diagnosticRevisions () =
 
     Expect.throws
         (fun () ->
-            Codec.encode codec (Refusal.RevisionConflict(CaseFixtures.revision (-1L)))
+            Codec.encode codec (Refusal.revisionConflict (CaseFixtures.revision (-1L)))
             |> ignore)
         "Negative actual revisions remain invalid"
 

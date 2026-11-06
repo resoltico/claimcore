@@ -1,9 +1,10 @@
 import type { CatalogDocument } from "@contracts/client";
 import { isObject } from "./client";
-import type { FormValues } from "./forms";
+import { isFormCollection, type FormValues } from "./forms";
 
 export type CatalogEntry = CatalogDocument["entries"][number];
 export type CatalogEntryIdentity = Pick<CatalogEntry, "subject" | "kind">;
+export type CatalogCollection = CatalogEntry["collections"][number];
 export type CatalogInput = CatalogEntry["inputs"][number];
 export const bindingPath = (input: CatalogInput): string => input.path.join(".");
 export const applies = (binding: Pick<CatalogInput, "branches">, values: FormValues): boolean =>
@@ -43,7 +44,7 @@ const implicitChoice = (input: CatalogInput, value: unknown): boolean =>
   !input.wireRequired && input.kind.kind === "CHOICE" && value === input.default;
 
 // Selected partial facts keep empty authored text for core diagnostics.
-const selectedFact = (entry: CatalogEntry, input: CatalogInput, values: FormValues): boolean =>
+const selectedFact = (entry: CatalogBindings, input: CatalogInput, values: FormValues): boolean =>
   entry.subject !== "AUTHORITY" &&
   entry.endpoint === "operation.execute" &&
   input.source === "AUTHORED" &&
@@ -51,7 +52,7 @@ const selectedFact = (entry: CatalogEntry, input: CatalogInput, values: FormValu
   input.field !== null &&
   Object.hasOwn(values, bindingPath(input));
 const omittedInput = (
-  entry: CatalogEntry,
+  entry: CatalogBindings,
   input: CatalogInput,
   values: FormValues,
   value: unknown,
@@ -62,10 +63,8 @@ const omittedInput = (
     !(input.allowsNull && value === null && Object.hasOwn(values, bindingPath(input)))) ||
     implicitChoice(input, value));
 
-export const assembleCatalogInput = (
-  entry: CatalogEntry,
-  values: FormValues,
-): Record<string, unknown> => {
+type CatalogBindings = Pick<CatalogEntry, "inputs" | "constants" | "subject" | "endpoint">;
+const assembleBindings = (entry: CatalogBindings, values: FormValues): Record<string, unknown> => {
   const root: Record<string, unknown> = {};
   for (const constant of entry.constants.filter(
     (item) => !item.requiresParent && applies(item, values),
@@ -90,6 +89,29 @@ export const assembleCatalogInput = (
   )) {
     if (isObject(atPath(root, constant.path.slice(0, -1)))) {
       assign(root, constant.path, constant.value);
+    }
+  }
+  return root;
+};
+
+export const assembleCatalogInput = (
+  entry: CatalogEntry,
+  values: FormValues,
+): Record<string, unknown> => {
+  const root = assembleBindings(entry, values);
+  for (const collection of entry.collections.filter((item) => applies(item, values))) {
+    const value = values[collection.path.join(".")];
+    if (isFormCollection(value)) {
+      assign(
+        root,
+        collection.path,
+        value.rows.map((row) =>
+          assembleBindings(
+            { ...entry, inputs: collection.rowInputs, constants: collection.rowConstants },
+            row.values,
+          ),
+        ),
+      );
     }
   }
   return root;

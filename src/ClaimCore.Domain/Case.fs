@@ -84,6 +84,58 @@ module Case =
                 ParsedAct = act
             })
 
+    /// Current admission accumulates independently of complete group construction.
+    let admit today (current: CaseSnapshot option) request =
+        let before =
+            current
+            |> Option.bind (fun snapshot -> CaseState.fields snapshot.State)
+            |> Option.map (fun fields ->
+                {
+                    Facts = fields.Registration
+                    Progress = fields.Progress
+                    Status = fields.Status
+                })
+
+        let parse =
+            RequestValidation.parseWith
+                (StateValidation.fieldAdmission today before)
+                (Reason.admit
+                 >> Result.mapError (fun violation ->
+                     Refusal.invalidInput (InputTarget.Reason, violation)))
+                request
+
+        let contextRules =
+            Admission.collect
+                [
+                    StateValidation.authoredChronology before request.Act
+                    match before, request.Act with
+                    | Some claim, CaseAct.Correct correction ->
+                        CaseCorrections.paidAcknowledgement claim.Progress correction
+                    | _ -> Ok()
+                ]
+        // Retain the existing priority of revision conflicts over current admission.
+        let revision =
+            match current, RequestValidation.parse request with
+            | Some current, Ok _ when
+                CaseAct.kind request.Act <> CaseActKind.Open
+                && current.Revision <> (Revision.create request.ExpectedRevision |> Option.get)
+                && CaseState.lifecycle current.State <> Lifecycle.Erased
+                ->
+                Error(Refusal.revisionConflict current.Revision)
+            | _ -> Ok()
+
+        revision
+        |> Result.bind (fun () -> Admission.map2 (fun parsed () -> parsed) parse contextRules)
+        |> InputValidation.ordered
+        |> Result.map (fun (reference, identity, revision, act) ->
+            {
+                Source = request
+                ParsedOperationId = identity
+                ParsedExpectedRevision = revision
+                ParsedReference = reference
+                ParsedAct = act
+            })
+
     let canonical (command: CaseCommand) =
         { command with
             Source =
@@ -136,7 +188,7 @@ module Case =
     let private create today (command: CaseCommand) =
         match command.Act with
         | CaseAct.Open _ when command.ExpectedRevision <> Revision.zero ->
-            Error(Refusal.RevisionConflict Revision.zero)
+            Error(Refusal.revisionConflict Revision.zero)
         | CaseAct.Open facts ->
             BusinessState.openCase today facts
             |> Result.map (fun claim ->
@@ -156,10 +208,10 @@ module Case =
             invalidArg "record" "The authoritative case does not match the request target."
         else
             match record.State, request.Act with
-            | CaseState.Erased, _ -> Error(Refusal.Case CaseRefusal.CaseErased)
+            | CaseState.Erased, _ -> Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
             | _, CaseAct.Open _ -> Error(Refusal.Case CaseRefusal.CaseAlreadyExists)
             | _ when record.Revision <> request.ExpectedRevision ->
-                Error(Refusal.RevisionConflict record.Revision)
+                Error(Refusal.revisionConflict record.Revision)
             | (CaseState.Active _ | CaseState.Voided _) as state, act ->
                 transition today act state
                 |> Result.map (fun state ->
@@ -173,9 +225,14 @@ module Case =
         | None -> create today command
         | Some record -> existing today command record
 
+    let actRefusal kind (record: CaseRecord) =
+        match Transitions.applicable record.State (CaseAct.probe kind) with
+        | Ok _ -> None
+        | Error refusal -> Some refusal
+
     let eligibleActs (record: CaseRecord) =
         CaseActKind.all
-        |> List.filter (CaseAct.probe >> Transitions.applicable record.State >> Result.isOk)
+        |> List.filter (fun kind -> actRefusal kind record |> Option.isNone)
 
     let correctionActions (record: CaseRecord) group =
         match record.State with

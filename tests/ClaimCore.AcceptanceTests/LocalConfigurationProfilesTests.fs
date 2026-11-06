@@ -65,6 +65,7 @@ let private configure root path environment =
         [
             Path.Combine(root, "deployment/configure-local.sh")
             path
+            "Authored setup owner"
             "Etc/UTC"
             "7181"
             "7182"

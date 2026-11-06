@@ -4,7 +4,12 @@ import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../support/presentation-test-support";
-import { editor, draftAt, current } from "../support/presentation-state.fixtures";
+import {
+  editor,
+  draftAt,
+  current,
+  setEditorLanguage,
+} from "../support/presentation-state.fixtures";
 import type { CurrentCase } from "../../src/api/service";
 import { response } from "../support/service-ui.fixtures";
 import { preferenceKey } from "../../src/presentation/preferences";
@@ -28,7 +33,13 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   const user = userEvent.setup();
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language, displayLocale: "en-GB", theme: "SYSTEM" as const }),
+    JSON.stringify({
+      version: 3,
+      language,
+      displayLocale: "en-GB",
+      mode: "system" as const,
+      accent: "green" as const,
+    }),
   );
   vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("Synthetic lost response")));
   render(
@@ -49,11 +60,8 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   )!;
   await user.clear(amount);
   await user.type(amount, "1.0000");
-  const languageSelector = document.querySelector<HTMLSelectElement>(
-    '.presentation-controls select[id$="-language"]',
-  )!;
   for (const next of ["ar", "lv", "en"]) {
-    await chooseOption(user, languageSelector, next);
+    await setEditorLanguage(user, next);
     expect(selectedOption(registration)).toBe("UPDATE");
     expect(selectedOption(decision)).toBe("CLEAR");
     expect(selectedOption(payment)).toBe("CLEAR");
@@ -89,7 +97,7 @@ it("associates payment acknowledgement with the generated mode control", async (
     ),
   );
   render(editor({ initialAct: "CORRECT", current: paidCase }));
-  const payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
+  let payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await chooseOption(
     user,
     document.querySelector<HTMLSelectElement>("#correction-decision-mode")!,
@@ -103,14 +111,17 @@ it("associates payment acknowledgement with the generated mode control", async (
   expect(payment).toHaveAttribute("aria-invalid", "true");
   const description = document.getElementById("act.groups.payment.kind-error");
   expect(payment.getAttribute("aria-describedby")?.split(" ")).toEqual([
-    "act.groups.payment.kind-meaning",
+    "act.groups.payment.kind-hint",
     "act.groups.payment.kind-error",
   ]);
   expect(description).toHaveTextContent("explicit payment reaffirmation");
-  await chooseOption(user, screen.getByRole("combobox", { name: "Interface language" }), "lv");
-  expect(description).toHaveTextContent("skaidri jāapstiprina");
+  await setEditorLanguage(user, "lv");
+  expect(document.getElementById("act.groups.payment.kind-error")).toHaveTextContent(
+    "skaidri jāapstiprina",
+  );
+  payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await chooseOption(user, payment, "CLEAR");
   expect(payment).not.toHaveAttribute("aria-invalid");
-  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-meaning");
+  expect(payment).toHaveAttribute("aria-describedby", "act.groups.payment.kind-hint");
   expect(globalThis.fetch).toHaveBeenCalledOnce();
 });

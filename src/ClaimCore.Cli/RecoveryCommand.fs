@@ -60,10 +60,19 @@ module internal RecoveryCommand =
             MayChange = false
         }
 
-    let private consent (console: InteractiveConsole) language mode action context operation =
+    let private consent
+        (console: InteractiveConsole)
+        language
+        confirmation
+        mode
+        action
+        context
+        (operation: Guid)
+        =
         match action, mode with
-        | RecoveryAttemptAction.Check, _
-        | RecoveryAttemptAction.Settle, RemoteClientMode.Automation -> true
+        | RecoveryAttemptAction.Check, _ -> true
+        | RecoveryAttemptAction.Settle, _ when confirmation = Some(operation.ToString("D")) -> true
+        | RecoveryAttemptAction.Settle, RemoteClientMode.Automation -> false
         | RecoveryAttemptAction.Settle, RemoteClientMode.Interactive ->
             CliConfirmation.settlement console language context operation
 
@@ -88,6 +97,26 @@ module internal RecoveryCommand =
                    } -> RecoveryJournal.matchesReceipt record receipt
             | _ -> true
         | _ -> true
+
+    let private confirmationIssue (console: InteractiveConsole) options action operation =
+        if action <> RecoveryAttemptAction.Settle then
+            None
+        else
+            match options.Confirmation with
+            | Some value when value <> operation ->
+                Some(UsageError.InvalidChoice("--confirm", value, [ operation ]))
+            | None when not console.IsInteractive -> Some(UsageError.MissingOption "--confirm")
+            | _ -> None
+
+    let private usage options issue =
+        {
+            Bytes =
+                Encoding.UTF8.GetBytes(
+                    UsageText.render options.Language [ "recovery"; "settle" ] [ issue ]
+                )
+            ExitCode = ExitCode.value ExitCode.Usage
+            MayChange = false
+        }
 
     let private perform
         (access: RemoteAccessSession)
@@ -131,10 +160,28 @@ module internal RecoveryCommand =
                             with
                             | None -> return failure options ClientFailure.InvalidFrame
                             | Some record when
+                                confirmationIssue
+                                    console
+                                    options
+                                    action
+                                    (record.OperationId.ToString("D"))
+                                |> Option.isSome
+                                ->
+                                return
+                                    usage
+                                        options
+                                        (confirmationIssue
+                                            console
+                                            options
+                                            action
+                                            (record.OperationId.ToString("D"))
+                                         |> Option.get)
+                            | Some record when
                                 not (
                                     consent
                                         console
                                         options.Language
+                                        options.Confirmation
                                         access.Configuration.Mode
                                         action
                                         context

@@ -133,7 +133,21 @@ type Actor =
         ActorId: ActorId
         Principal: PrincipalKey
         Enabled: bool
+        Profile: ActorProfile option
     }
+
+module Actor =
+    let reference availability (actor: Actor) =
+        let kind, _, _ = PrincipalKey.parts actor.Principal
+        ActorRef.create actor.ActorId kind availability actor.Profile
+
+    let currentReference (actor: Actor) =
+        reference
+            (if actor.Enabled then
+                 ActorAvailability.Available
+             else
+                 ActorAvailability.Disabled)
+            actor
 
 type ActorAuthority =
     {
@@ -152,6 +166,7 @@ type AuthorityView =
         Installation: Role list
         Cases: Map<CaseId, Role list>
         HasScopedCases: bool
+        HasAssignedRoles: bool
     }
 
 module AuthorityView =
@@ -161,6 +176,7 @@ module AuthorityView =
             Installation = []
             Cases = Map.empty
             HasScopedCases = false
+            HasAssignedRoles = false
         }
 
     let ofActor (actor: ActorAuthority option) =
@@ -190,9 +206,47 @@ module AuthorityView =
                 Installation = installation
                 Cases = cases
                 HasScopedCases = false
+                HasAssignedRoles = not actor.Grants.IsEmpty
             }
 
 [<RequireQualifiedAccess>]
 type CaseVisibility =
     | Every
     | Scoped
+
+/// Assignment state describes registration/enabling and assigned roles, never effective authorization.
+[<RequireQualifiedAccess>]
+type AccountState =
+    | Active
+    | NoRoles
+    | Disabled
+
+module AccountState =
+    let vocabulary =
+        Vocabulary.ofUnion<AccountState> "accountState" TokenCasing.ScreamingSnake None
+
+    let classify enabled hasAssignedRoles =
+        if not enabled then AccountState.Disabled
+        elif hasAssignedRoles then AccountState.Active
+        else AccountState.NoRoles
+
+/// Bounded directory facts retain recognized assignments, including those currently ineligible.
+type ActorRoleSummary =
+    {
+        Role: Role
+        Installation: bool
+        CaseCount: int64
+    }
+
+module ActorRoleSummary =
+    let ordered values =
+        values |> List.sortBy (fun value -> Role.all |> List.findIndex ((=) value.Role))
+
+    let valid (values: ActorRoleSummary list) =
+        values.Length <= Role.all.Length
+        && (values |> List.map _.Role |> List.distinct |> List.length) = values.Length
+        && (values
+            |> List.forall (fun value ->
+                value.CaseCount >= 0L
+                && value.CaseCount <= SafeInteger.Maximum
+                && (value.Installation || value.CaseCount > 0L)))

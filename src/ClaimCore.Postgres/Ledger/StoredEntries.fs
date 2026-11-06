@@ -26,7 +26,7 @@ module internal StoredEntries =
         + DatabaseSession.instantExpression "recorded_at"
         + ",subject_id,case_revision,"
         + DatabaseSession.dateExpression "business_date"
-        + ",payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id"
+        + ",payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation"
 
     let private subjects row =
         let target = DatabaseSession.value<Guid> 9 row
@@ -126,8 +126,24 @@ module internal StoredEntries =
 
         let subject, metadataSubject = subjects row
 
+        let effects =
+            let operation =
+                DatabaseSession.optional<string> 20 row
+                |> Option.map (fun value ->
+                    DurableNames.tryAuthorityAct value
+                    |> Option.defaultWith (fun () ->
+                        raise (RecordCorruptException "Invalid authority operation.")))
+
+            LedgerEffects.create
+                operation
+                (DatabaseSession.value<int> 19 row)
+                (DatabaseSession.value<int> 18 row)
+            |> Option.defaultWith (fun () ->
+                raise (RecordCorruptException "Invalid operation effect group."))
+
         let entry: StoredEntry =
             {
+                Effects = effects
                 Sequence = DatabaseSession.value 0 row |> DatabaseSession.admitted Sequence.create
                 EntryHash = DatabaseSession.value 2 row
                 OperationId =
@@ -151,6 +167,7 @@ module internal StoredEntries =
             Entry = entry
             Metadata =
                 {
+                    Effects = entry.Effects
                     InstallationId = installationId
                     Sequence = entry.Sequence
                     PreviousHash = DatabaseSession.value 1 row
@@ -168,14 +185,23 @@ module internal StoredEntries =
             let! rows =
                 DatabaseSession.rows
                     connection
-                    ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1 AND subject_kind<>'CONTROL'")
+                    ($"SELECT {columns} FROM claimcore.ledger WHERE operation_id=$1 AND subject_kind<>'CONTROL' ORDER BY effect_index LIMIT {LedgerEffects.MaximumCount + 1}")
                     [| box (OperationId.value id) |]
                     token
 
             match rows with
             | [] -> return None
-            | [ row ] -> return Some((decode installationId row).Entry)
-            | _ -> return raise (RecordCorruptException "Duplicate operation identity.")
+            | rows ->
+                let entries = rows |> List.map (decode installationId >> _.Entry)
+
+                return
+                    StoredOperation.create entries
+                    |> Result.map Some
+                    |> Result.defaultWith (fun _ ->
+                        raise (
+                            RecordCorruptException
+                                "Operation effect group is incomplete or inconsistent."
+                        ))
         }
 
     let nonAcceptance connection installationId (key: FenceKey) token =

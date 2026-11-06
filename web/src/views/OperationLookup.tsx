@@ -1,3 +1,5 @@
+import { IdentifierValue } from "../components/IdentifierValue";
+import { actorName } from "../presentation/actorName";
 import { renderCatalogKey } from "../presentation/messages";
 import { operationEntryForInput } from "../protocol/operationCatalog";
 import { WorkReceiptView } from "./work/WorkReceiptView";
@@ -38,13 +40,25 @@ const ReceiptBody = ({
         )
       : p.term("act", receipt.subject.act);
   if (receipt.subject.kind === "AUTHORITY") {
+    const target = receipt.subject.targetActor;
+    const id = target.kind === "DISCLOSED" ? target.actor.actorId : target.actorId;
     return (
-      <p>
-        {p.text("ui.authorityReceipt", {
-          act: actLabel,
-          actor: receipt.subject.targetActorId,
-        })}
-      </p>
+      <section className="authority-receipt">
+        {target.kind === "DISCLOSED" ? (
+          <p>
+            {p.text("ui.authorityReceipt", { act: actLabel, actor: actorName(p, target.actor) })}
+          </p>
+        ) : (
+          <>
+            <p>{actLabel}</p>
+            <p>{p.text("ui.snapshotWithheld")}</p>
+          </>
+        )}
+        <details>
+          <summary>{p.text("label.recordDetails")}</summary>
+          <IdentifierValue value={id} />
+        </details>
+      </section>
     );
   }
   if (receipt.subject.kind === "WORK" || receipt.subject.kind === "REMINDER") {
@@ -89,7 +103,7 @@ const ReceiptView = ({
                     }).labelId,
                   )
                 : p.term("act", receipt.subject.act),
-            actor: receipt.recordedBy,
+            actor: actorName(p, receipt.recordedBy),
           }}
           argument="operationId"
         />
@@ -125,7 +139,7 @@ export const OperationLookup = ({ definition, initialOperationId }: OperationLoo
           if (initialOperationId === undefined) {
             void observe();
           } else {
-            navigate(`/operations/${encodeURIComponent(operationId)}`);
+            navigate(`/recovery/${encodeURIComponent(operationId)}`);
           }
         }}
       >

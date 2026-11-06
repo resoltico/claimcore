@@ -81,10 +81,20 @@ let private actorIdentity () =
         let endpoint = Api.operationExecute
         let input = Array.copy commandInput
 
+        let authorId = System.Guid.Parse "20000000-0000-4000-8000-000000000999"
+
+        let accepted =
+            { receipt operationId "WEB-001" with
+                RecordedBy =
+                    ClaimCore.TestSupport.Inputs.actorReference (
+                        ActorId.create authorId |> Option.get
+                    )
+            }
+
         for outcome, known in
             [
-                ExecuteResult.Accepted(receipt operationId "WEB-001"), true
-                ExecuteResult.AlreadyAccepted(receipt operationId "WEB-001"), false
+                ExecuteResult.Accepted accepted, true
+                ExecuteResult.AlreadyAccepted accepted, false
             ] do
             host.ClearLog()
             host.HandlerStub.Execute <- (fun _ -> Task.FromResult outcome)
@@ -96,6 +106,12 @@ let private actorIdentity () =
                 (entry.RootElement.GetProperty("actorId").ValueKind = JsonValueKind.String)
                 known
                 "Only a fresh acceptance proves the current actor ID"
+
+            if known then
+                Expect.equal
+                    (entry.RootElement.GetProperty("actorId").GetGuid())
+                    authorId
+                    "The current actor is the accepted author, independently of the operation ID"
 
             Expect.equal
                 (entry.RootElement.GetProperty("operationId").ValueKind)

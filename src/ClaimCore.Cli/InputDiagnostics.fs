@@ -23,6 +23,7 @@ type CliSetting =
     | SecretFile
     | OidcTrustRoot
     | ServiceTrustRoot
+    | Language
 
 [<RequireQualifiedAccess>]
 type ConfigurationIssue =
@@ -57,6 +58,7 @@ module InputDiagnostics =
         | CliSetting.SecretFile -> "CLAIMCORE_OIDC_CLIENT_SECRET_FILE"
         | CliSetting.OidcTrustRoot -> "CLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE"
         | CliSetting.ServiceTrustRoot -> "CLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE"
+        | CliSetting.Language -> "CLAIMCORE_LANGUAGE"
 
     let settings =
         Vocabulary.all CliSetting.vocabulary

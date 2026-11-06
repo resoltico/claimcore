@@ -30,10 +30,15 @@ let internal genesis fixture =
                                     ExecutionFacts.target
                                         (core fixture fixture.Owner)
                                         tx
-                                        (Authority.factsNeeded AuthorityAct.ProvisionOwner)
+                                        (Authority.factsNeeded (
+                                            AuthorityAct.ProvisionOwner(
+                                                ActorProfile.parse Inputs.ownerProfile
+                                                |> Result.defaultWith (string >> failtest)
+                                            )
+                                        ))
                                         ((CaseFixtures.operationId (id 1)))
                                         fixture.Owner
-                                        None
+                                        []
 
                                 Expect.equal
                                     tx.Head.Sequence
@@ -50,13 +55,14 @@ let internal genesis fixture =
                                     AuthorityExecution.provision
                                         (core fixture fixture.Owner)
                                         ((CaseFixtures.operationId (id 1)))
+                                        Inputs.ownerProfile
                                         {
                                             Head = tx.Head
                                             Fenced = false
-                                            Nonce = tx.Nonce
+                                            NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
-                                    |> ExecutionFacts.persist tx tx.ProjectAuthority
+                                    |> ExecutionFacts.persistOperation tx tx.ProjectAuthority
                             })
                     CancellationToken = CancellationToken.None
                 }
@@ -64,7 +70,7 @@ let internal genesis fixture =
 
         match result with
         | Ok(Verdict.Proceed receipt) ->
-            Expect.equal receipt.Position.Sequence (CaseFixtures.sequence 1L) "First sequence"
+            Expect.equal receipt.Position.Sequence (CaseFixtures.sequence 2L) "First sequence"
         | _ -> failtest "Expected append"
 
         Expect.equal calls 1 "One decision"
@@ -84,7 +90,7 @@ let internal genesis fixture =
 
         match entry with
         | Ok { ExistingOperation = Some entry } ->
-            Expect.equal entry.Sequence (CaseFixtures.sequence 1L) "Readable acceptance"
+            Expect.equal entry.Position.Sequence (CaseFixtures.sequence 2L) "Readable acceptance"
         | _ -> failtest "Missing accepted entry"
     }
 
@@ -103,8 +109,8 @@ let internal replayAndRefusal fixture =
 
         Expect.equal
             receipt.Position.Sequence
-            (CaseFixtures.sequence 4L)
-            "One entry per authority operation and case operation"
+            (CaseFixtures.sequence 5L)
+            "Owner profile effect and ordinary operations share the physical chain"
 
         let! replay =
             (Service.execute
@@ -112,7 +118,7 @@ let internal replayAndRefusal fixture =
                 (ClaimCore.TestSupport.Inputs.caseOperation original)
                 (CancellationToken.None))
 
-        Expect.equal replay.Outcome (ExecuteResult.AlreadyAccepted receipt) "Original receipt"
+        expectReceipt (replayReceipt replay) receipt "Original acceptance with current observation"
 
         let! stale =
             (Service.execute
@@ -122,10 +128,11 @@ let internal replayAndRefusal fixture =
                 ))
                 (CancellationToken.None))
 
-        Expect.equal
-            stale.Outcome
-            (ExecuteResult.Rejected((Refusal.RevisionConflict(CaseFixtures.revision 1L))))
-            "No stale acceptance"
+        match stale.Outcome with
+        | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
+            Expect.equal (Revision.value conflict.ActualRevision) 1L "No stale acceptance"
+            Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
+        | other -> failtestf "Expected revision conflict, got %A" other
 
         let! view =
             inspectCase fixture (fixture.Owner) (None) ("CONTRACT-001") (CancellationToken.None)
@@ -212,7 +219,7 @@ let internal lockedView fixture =
                                                     failtestf
                                                         "Unexpected fence integrity failure: %A"
                                                         fault)
-                                            Nonce = tx.Nonce
+                                            Nonce = tx.NewPayloadNonce()
                                         }
                                         view
                                     |> ExecutionFacts.persist tx tx.ProjectCase
@@ -223,7 +230,7 @@ let internal lockedView fixture =
             )
 
         match result with
-        | Ok(Verdict.Replay receipt) -> Expect.equal receipt first "Locked replay"
+        | Ok(Verdict.Replay receipt) -> expectReceipt receipt first "Locked replay"
         | _ -> failtest "Expected replay"
 
         Expect.equal calls 1 "Callback called once"
@@ -295,7 +302,7 @@ let internal caseUpdate fixture =
                  ExistingOperation = Some entry
                  Case = Some record
              } ->
-            Expect.equal entry.Sequence receipt.Position.Sequence "Operation position"
+            Expect.equal entry.Position.Sequence receipt.Position.Sequence "Operation position"
             Expect.equal record.Snapshot.Revision (CaseFixtures.revision (2L)) "Current projection"
         | _ -> failtest "Missing accepted update"
     }

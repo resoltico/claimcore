@@ -1,4 +1,11 @@
-import { chooseRoleForReview } from "../support/authority-input.fixtures";
+import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
+import { workBasis } from "../support/inputs";
+import {
+  reviewConfirm,
+  queryReviewConfirm,
+  waitForReviewConfirm,
+} from "../support/review-controls";
+import userEvent from "@testing-library/user-event";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
 import { installationOffers } from "../support/installation-advice.fixtures";
@@ -22,7 +29,7 @@ const pending = <T,>() => {
 };
 const context = (): ApiResult<ServiceResponse<"context">> => {
   const value = wireReply("context");
-  if (value.outcome.kind !== "SUCCEEDED") {
+  if (value.outcome.kind !== "SUCCEEDED" || value.outcome.data.requester.kind !== "ACTIVE") {
     throw new Error("Missing context fixture");
   }
   return {
@@ -33,34 +40,51 @@ const context = (): ApiResult<ServiceResponse<"context">> => {
       outcome: {
         ...value.outcome,
         data: {
-          ...value.outcome.data,
-          offers: installationOffers(["REGISTER", "GRANT", "DISABLE"]),
+          requester: {
+            ...value.outcome.data.requester,
+            offers: installationOffers(["ADMIT", "GRANT", "DISABLE"]),
+            views: ["AUTHORITY", "OPERATIONS"],
+          },
         },
       },
     },
   };
 };
+const existing = {
+  actor: {
+    actorId: "10000000-0000-4000-8000-000000000001",
+    displayName: { kind: "NAMED", value: "Synthetic existing person" },
+    principalKind: "HUMAN",
+    availability: "AVAILABLE",
+  },
+  principal: { kind: "HUMAN", issuer: "https://issuer.example/", subject: "synthetic-first" },
+  contact: null,
+  state: "ACTIVE",
+  roles: [{ role: "CASE_READER", installation: true, caseCount: 0 }],
+} as const;
 const listing = (): ApiResult<ServiceResponse<"authority.list">> => ({
   kind: "outcome",
   status: 200,
-  value: wireReply("authority.list"),
+  value: {
+    outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [existing], nextCursor: null } },
+  },
 });
 const acceptance = (
   prepared: Parameters<typeof service.execute>[0],
 ): ApiResult<ServiceResponse<"operation.execute">> => authorityAcceptance(prepared);
 const author = async (subject: string) => {
+  await openPersonEditor();
   await waitFor(() => {
     expect(document.querySelector('[name="target.subject"]')).not.toBeNull();
   });
-  fireEvent.change(document.querySelector('[name="target.kind"]')!, {
-    target: { value: "SERVICE" },
-  });
-  for (const [name, value] of [
-    ["target.issuer", "https://issuer.example/"],
-    ["target.subject", subject],
-  ]) {
+  for (const [name, value] of [["target.subject", subject]]) {
     fireEvent.change(document.querySelector(`[name="${name}"]`)!, { target: { value } });
   }
+  const profile = document.querySelector('[name="act.profile.displayName"]');
+  if (profile !== null) {
+    fireEvent.change(profile, { target: { value: "Synthetic registered person" } });
+  }
+  await chooseAdmissionRole();
 };
 const finish = async <T,>(read: ReturnType<typeof pending<T>>, value: T) => {
   await act(async () => {
@@ -69,15 +93,21 @@ const finish = async <T,>(read: ReturnType<typeof pending<T>>, value: T) => {
   });
 };
 const selectEnabled = async () => {
-  await waitFor(() => {
-    expect(
-      screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-    ).toHaveLength(3);
+  mockEndpoint("authority.grants").mockResolvedValue({
+    kind: "outcome",
+    status: 200,
+    value: {
+      outcome: {
+        kind: "SUCCEEDED",
+        data: { basis: workBasis, actor: existing, items: [], nextCursor: null },
+      },
+    },
   });
-  fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-    target: { value: "DISABLE" },
-  });
+  const user = userEvent.setup();
+  await user.click(await screen.findByRole("link", { name: /Synthetic existing person/u }));
+  await user.click(await screen.findByRole("button", { name: /^Disable account/u }));
 };
+
 it.each(["context", "listing"] as const)(
   "accepted enablement preserves the next authored request across %s-first disclosure refresh",
   async (first) => {
@@ -91,37 +121,39 @@ it.each(["context", "listing"] as const)(
     const execute = vi.spyOn(service, "execute").mockReturnValue(execution.promise);
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await selectEnabled();
-    await author("synthetic-first");
-    chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-    fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    await waitForReviewConfirm();
+    fireEvent.click(reviewConfirm());
     await waitFor(() => {
       expect(execute).toHaveBeenCalledOnce();
     });
     const [prepared] = execute.mock.calls[0]!;
     expect(prepared.input.act).toEqual({ kind: "DISABLE" });
     await finish(execution, acceptance(prepared));
-    expect(screen.queryByRole("button", { name: "Record changes" })).toBeNull();
+    expect(queryReviewConfirm()).toBeNull();
     if (first === "listing") {
       await finish(listingRead, listing());
-      expect(screen.queryByLabelText("Authority action", { exact: true })).toBeNull();
+      expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     }
     await finish(contextRead, context());
-    fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
-    fireEvent.change(screen.getByLabelText("Authority action", { exact: true }), {
-      target: { value: "GRANT" },
-    });
     await author("synthetic-next");
     if (first === "context") {
       await finish(listingRead, listing());
     }
-    expect(screen.queryByRole("dialog")).toBeNull();
-    expect(screen.getByLabelText("Authority action", { exact: true })).toHaveValue("GRANT");
+    expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
+    expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     expect(document.querySelector('[name="target.subject"]')).toHaveValue("synthetic-next");
-    chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-    expect(await screen.findByRole("heading", { name: "Review changes" })).toBeVisible();
+    await waitForReviewConfirm();
+    expect(reviewConfirm()).toBeVisible();
+    const [next] = vi.mocked(service.preview).mock.calls.at(-1)!;
+    expect(next.input).toMatchObject({
+      kind: "AUTHORITY",
+      target: { subject: "synthetic-next" },
+      act: { kind: "ADMIT" },
+    });
+    expect(next.input.operationId).not.toBe(prepared.input.operationId);
+    expect(next.bytes).not.toBe(prepared.bytes);
     expect(execute).toHaveBeenCalledOnce();
   },
 );
@@ -163,20 +195,16 @@ it.each(["transport", "host", "core"] as const)(
     );
     render(<AuthorityPanel onLockChange={vi.fn()} />);
     await author("synthetic-first");
-    chooseRoleForReview();
     fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-    fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-    fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+    await waitForReviewConfirm();
+    fireEvent.click(reviewConfirm());
     expect(await screen.findByRole("alert")).toBeVisible();
-    expect(screen.queryByLabelText("Authority action", { exact: true })).toBeNull();
+    expect(screen.queryByRole("combobox", { name: "Authority action" })).toBeNull();
     expect(reads).toHaveBeenCalledTimes(2);
     fireEvent.click(screen.getByRole("button", { name: /^Try again$/u }));
-    fireEvent.click(screen.getByRole("button", { name: "Start another operation" }));
-    await waitFor(() => {
-      expect(
-        screen.getByLabelText("Authority action", { exact: true }).querySelectorAll("option"),
-      ).toHaveLength(3);
-    });
+    await openPersonEditor();
+    expect(screen.getByRole("dialog", { name: "Add person" })).toBeVisible();
+    expect(document.querySelector('[name="target.subject"]')).toHaveValue("");
     expect(screen.queryByRole("alert")).toBeNull();
     expect(reads).toHaveBeenCalledTimes(3);
   },
@@ -199,10 +227,9 @@ it("context reload preserves an uncertain prepared authority request and exact r
     .mockImplementation((prepared) => Promise.resolve(acceptance(prepared)));
   render(<AuthorityPanel onLockChange={vi.fn()} />);
   await author("synthetic-pending");
-  chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
-  fireEvent.click(await screen.findByRole("checkbox", { name: "I confirm this exact request." }));
-  fireEvent.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  fireEvent.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   const [prepared] = execute.mock.calls[0]!;
   await finish(oldListing, {
@@ -217,7 +244,8 @@ it("context reload preserves an uncertain prepared authority request and exact r
   expect(execute.mock.calls[0]![0]).toBe(prepared);
   expect(screen.queryByText("synthetic-pending")).toBeNull();
   expect(screen.queryByRole("button", { name: "Review changes" })).toBeNull();
-  fireEvent.click(screen.getByRole("button", { name: "Send again" }));
+  fireEvent.click(screen.getByRole("button", { name: "Continue current request" }));
+  fireEvent.click(await screen.findByRole("button", { name: "Send again" }));
   await waitFor(() => {
     expect(screen.queryByRole("button", { name: "Send again" })).toBeNull();
   });

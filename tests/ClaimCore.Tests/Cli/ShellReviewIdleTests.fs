@@ -25,22 +25,27 @@ let private reviewed frame =
             {
                 Before = Some current
                 Proposed = current
-                Changes = []
+                Changes = { Lifecycle = None; Fields = [] }
                 Context =
                     {
                         ProductVersion = "synthetic"
-                        EffectiveBusinessDate = DateOnly(2026, 10, 1)
-                        TimeZoneId = "Etc/UTC"
+                        Basis =
+                            {
+                                ObservedAt = DateTimeOffset(2026, 10, 1, 0, 0, 0, TimeSpan.Zero)
+                                BusinessDate = DateOnly(2026, 10, 1)
+                                TimeZoneId = "Etc/UTC"
+                            }
                     }
             }
 
     response
         frame
         Api.operationPreview
-        {
-            OperationId = Frames.operationId frame |> Option.get
-            Outcome = Outcome.Succeeded(Previewed.Reviewed review)
-        }
+        (PresentedPreviewReply.ofCore
+            {
+                OperationId = Frames.operationId frame |> Option.get
+                Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+            })
 
 let private idleConfirmation () =
     task {
@@ -64,8 +69,11 @@ let private idleConfirmation () =
                                 {
                                     Mine = false
                                     Work = Inputs.workView CliReplyFixtures.snapshot.State
+                                    Stages = Inputs.stageDisplay CliReplyFixtures.snapshot.State
                                     Snapshot = CliReplyFixtures.snapshot
-                                    Advice = CaseAdvice.create [] None [] |> Fixtures.accepted
+                                    Headline = CaseHeadline.Undecided
+                                    Attention = []
+                                    Advice = Inputs.caseAdvice CliReplyFixtures.snapshot.State
                                 })
                 else
                     return reviewed frame

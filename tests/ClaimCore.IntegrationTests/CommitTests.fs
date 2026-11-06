@@ -44,8 +44,8 @@ let private replay (database: PostgresFixture.Database) (actor: ServiceContext) 
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence (4L))
-            "One accepted case operation after replay"
+            (CaseFixtures.sequence 5L)
+            "Owner provisioning has two effects; one case operation is accepted after replay"
     }
 
 let private proxyCore (database: PostgresFixture.Database) source =
@@ -138,8 +138,8 @@ let private lostResolution drop (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence (4L))
-            "Resolution appends one retained control; repeating it appends nothing"
+            (CaseFixtures.sequence 5L)
+            "Two owner effects and two grants precede one retained control; repeat adds nothing"
     }
 
 let private lostAuthority drop landed (database: PostgresFixture.Database) =
@@ -168,7 +168,11 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
             PrincipalKey.human "https://issuer.example/" "authority-commit"
             |> Result.defaultWith (string >> failtest)
 
-        let request = authorityRequest (id 145) target AuthorityAct.Register
+        let request =
+            authorityRequest
+                (id 145)
+                target
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
         let! unknown =
             (Service.execute (proxyCore database source) (OperationInput.Authority request) (token))
@@ -188,8 +192,8 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence (4L))
-            "One authority acceptance"
+            (CaseFixtures.sequence 6L)
+            "One registration accepts its identity and profile effects exactly once"
     }
 
 let private repeatedInitialization (database: PostgresFixture.Database) =

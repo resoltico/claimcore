@@ -29,6 +29,9 @@ module DurableNames =
         | AuthorityKind.Revoke -> "REVOKE"
         | AuthorityKind.Enable -> "ENABLE"
         | AuthorityKind.Disable -> "DISABLE"
+        | AuthorityKind.SetProfile -> "SET_PROFILE"
+        | AuthorityKind.EraseProfile -> "ERASE_PROFILE"
+        | AuthorityKind.Admit -> "ADMIT"
 
     let progress =
         function
@@ -55,6 +58,38 @@ module DurableNames =
         function
         | CaseAssignment.Mine -> "MINE"
         | CaseAssignment.Unassigned -> "UNASSIGNED"
+
+    // The permanent view-name table is exhaustive and contains no nested decisions.
+    // fsharplint:disable-next-line CyclomaticComplexity
+    let caseView =
+        function
+        | CaseView.NeedsAttention -> "NEEDS_ATTENTION"
+        | CaseView.Mine -> "MINE"
+        | CaseView.Overdue -> "OVERDUE"
+        | CaseView.DueToday -> "DUE_TODAY"
+        | CaseView.NoNextAction -> "NO_NEXT_ACTION"
+        | CaseView.Unassigned -> "UNASSIGNED"
+        | CaseView.Undecided -> "UNDECIDED"
+        | CaseView.DecidedUnpaid -> "DECIDED_UNPAID"
+        | CaseView.Closed -> "CLOSED"
+        | CaseView.Voided -> "VOIDED"
+        | CaseView.All -> "ALL"
+
+    let reminderState =
+        function
+        | ReminderState.Pending -> "PENDING"
+        | ReminderState.Completed -> "COMPLETED"
+        | ReminderState.Cancelled -> "CANCELLED"
+
+    let reminderView =
+        function
+        | ReminderView.Pending -> "PENDING"
+        | ReminderView.Mine -> "MINE"
+        | ReminderView.Overdue -> "OVERDUE"
+        | ReminderView.Today -> "TODAY"
+        | ReminderView.Upcoming -> "UPCOMING"
+        | ReminderView.Completed -> "COMPLETED"
+        | ReminderView.Cancelled -> "CANCELLED"
 
     let status =
         function
@@ -129,6 +164,10 @@ module DurableNames =
         | InputTarget.PrincipalKind -> "principal.kind"
         | InputTarget.PrincipalIssuer -> "principal.issuer"
         | InputTarget.PrincipalSubject -> "principal.subject"
+        | InputTarget.ProfileDisplayName -> "profile.displayName"
+        | InputTarget.ProfileContact -> "profile.contact"
+        | InputTarget.DirectorySearch -> "directorySearch"
+        | InputTarget.Grants -> "grants"
         | InputTarget.Role -> "role"
         | InputTarget.Limit -> "limit"
         | InputTarget.Cursor -> "cursor"
@@ -163,6 +202,9 @@ module DurableNames =
             AuthorityKind.Revoke
             AuthorityKind.Enable
             AuthorityKind.Disable
+            AuthorityKind.SetProfile
+            AuthorityKind.EraseProfile
+            AuthorityKind.Admit
         ]
 
     let tryCaseAct token =

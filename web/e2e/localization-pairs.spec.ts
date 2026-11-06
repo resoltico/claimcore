@@ -1,3 +1,5 @@
+import { pseudolocalizeLiteral } from "../src/presentation/templates";
+import { showAccountActions } from "./workspace-navigation";
 import { expect, test, type Page } from "@playwright/test";
 import { openApplication, openAuthenticated } from "./session-helpers";
 import {
@@ -16,7 +18,12 @@ import type { Language } from "../src/presentation/preferences";
 
 const openPairPage = async (page: Page, source: Language, authenticated: boolean) => {
   if (!authenticated) {
-    await openApplication(page, "ClaimCore");
+    await openApplication(
+      page,
+      source === "en-XA"
+        ? `⟦${pseudolocalizeLiteral(ui("en", "ui.signInTitle"))}⟧`
+        : ui(source, "ui.signInTitle"),
+    );
     return;
   }
   const endpoint = endpoints.find((entry) => entry.id === "case.list");
@@ -54,15 +61,14 @@ const visibleLanguage = async (
     await expect(
       page.getByRole("heading", { name: ui(language, "ui.cases"), exact: true }),
     ).toBeVisible();
-    await expect(
-      page.getByRole("button", {
-        name: openLabel(language),
-        exact: true,
-      }),
-    ).toBeVisible();
+    const open = page.getByRole("link", { name: openLabel(language), exact: true });
+    await expect(open).toBeVisible();
+    await expect(open).toHaveAttribute("href", "/cases/new");
+    await showAccountActions(page);
     await expect(
       page.getByRole("button", { name: ui(language, "ui.signOut"), exact: true }),
     ).toBeVisible();
+    await page.locator(".account-menu > summary").click();
   } else {
     await expect(
       page.getByRole("link", { name: ui(language, "ui.signIn"), exact: true }),
@@ -91,7 +97,13 @@ for (const authenticated of [false, true]) {
               (key): unknown => JSON.parse(localStorage.getItem(key) ?? "null"),
               preferenceKey,
             ),
-          ).toEqual({ version: 2, language: target, displayLocale, theme: "SYSTEM" });
+          ).toEqual({
+            version: 3,
+            language: target,
+            displayLocale,
+            mode: "system",
+            accent: "green" as const,
+          });
           expect(requests).toHaveLength(0);
         });
       }

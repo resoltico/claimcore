@@ -22,11 +22,11 @@ let private steward action : UnvalidatedCaseRequest =
         Act = action
     }
 
-let private authority action : AuthorityRequestRecord =
+let private authority action : AuthorityEffectRecord =
     {
         OperationId = operationId
-        Target = Inputs.principal
-        Act = action
+        TargetActorId = CaseFixtures.actorId operationId
+        Effect = action
     }
 
 let private stewardshipProperty =
@@ -77,16 +77,16 @@ let private authorityProperty =
         let! action =
             Gen.item
                 [
-                    (ClaimCore.Domain.AuthorityAct.Register)
+                    (AuthorityEffect.Register Inputs.principal)
                     ((if active then
-                          ClaimCore.Domain.AuthorityAct.Grant
+                          AuthorityEffect.Grant
                       else
-                          ClaimCore.Domain.AuthorityAct.Revoke)
+                          AuthorityEffect.Revoke)
                         { Role = role; Scope = scope })
                     ((if active then
-                          ClaimCore.Domain.AuthorityAct.Enable
+                          AuthorityEffect.Enable
                       else
-                          ClaimCore.Domain.AuthorityAct.Disable))
+                          AuthorityEffect.Disable))
                 ]
 
         let request = authority action
@@ -108,7 +108,7 @@ let private decoderProperty =
             Fixtures.opened () |> Case.snapshot |> CaseRecord.encodeSnapshot
             steward (AuthoredCaseAct.Void "Reason") |> CaseFixtures.encode
             authority (
-                (ClaimCore.Domain.AuthorityAct.Grant
+                (AuthorityEffect.Grant
                     {
                         Role = Role.CaseHandler
                         Scope = RecordedGrantScope.Installation
@@ -165,7 +165,7 @@ let private strictRecords () =
 
     let grant =
         authority (
-            (ClaimCore.Domain.AuthorityAct.Grant
+            (AuthorityEffect.Grant
                 {
                     Role = Role.CaseHandler
                     Scope = RecordedGrantScope.Installation
@@ -180,7 +180,7 @@ let private strictRecords () =
             encoded.Replace("\"kind\":\"INSTALLATION\"", "\"kind\":\"UNKNOWN\"")
             encoded.Replace("\"kind\":\"GRANT\"", "\"kind\":\"UNKNOWN\"")
             encoded.Replace("\"role\":\"CASE_HANDLER\",", "")
-            encoded.Replace("\"kind\":\"HUMAN\"", "\"kind\":\"HUMAN\",\"extra\":true")
+            encoded.Replace("\"targetActorId\":", "\"extra\":true,\"targetActorId\":")
         ] do
         Expect.notEqual candidate encoded "Negative control changes the authority record"
 
@@ -205,10 +205,10 @@ let tests =
                     "Canonical field order")
             testCase "authority encoding has fixed independent bytes" (fun () ->
                 let expected =
-                    "{\"act\":{\"kind\":\"REGISTER\"},\"format\":2,\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"target\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}}"
+                    "{\"act\":{\"kind\":\"REGISTER\",\"principal\":{\"issuer\":\"https://issuer.example/\",\"kind\":\"HUMAN\",\"subject\":\"synthetic-owner\"}},\"format\":3,\"kind\":\"AUTHORITY\",\"operationId\":\"20000000-0000-4000-8000-000000000001\",\"targetActorId\":\"20000000-0000-4000-8000-000000000001\"}"
 
                 Expect.equal
-                    (authority ((ClaimCore.Domain.AuthorityAct.Register))
+                    (authority ((AuthorityEffect.Register Inputs.principal))
                      |> AuthorityRecord.encode
                      |> Encoding.UTF8.GetString)
                     expected

@@ -8,41 +8,40 @@ open ClaimCore.RecordFormat
 /// Loads and persists authority work; Domain owns parsing, policy and state decisions.
 module internal AuthorityExecution =
     let private targets installationId (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        let rolesValid =
+            let ids = view.Target.Actor |> Option.map _.ActorId |> Option.toList |> Set.ofList
+
+            (view.TargetRoles |> Map.keys |> Set.ofSeq) = ids
+            && (view.TargetRoles |> Map.forall (fun _ roles -> ActorRoleSummary.valid roles))
+
         if
-            view.Target.Actor
-            |> Option.exists (fun actor -> actor.Principal <> command.Target)
+            not rolesValid
+            || (view.Target.Actor
+                |> Option.exists (fun actor -> actor.Principal <> command.Target))
         then
             Error CoreFault.StoreIntegrityError
         else
-            match command.Act, view.TargetCase with
-            | AuthorityAct.Grant {
-                                     Role = _
-                                     Scope = GrantTarget.CaseReference reference
-                                 },
-              Some record
-            | AuthorityAct.Revoke {
-                                      Role = _
-                                      Scope = GrantTarget.CaseReference reference
-                                  },
-              Some record ->
-                CaseExecution.current installationId record
-                |> Result.bind (fun _ ->
-                    if
-                        CaseReference.identity record.Snapshot.Reference =
-                            CaseReference.key reference
-                    then
-                        Ok()
-                    else
-                        Error CoreFault.StoreIntegrityError)
-            | AuthorityAct.Grant { Scope = GrantTarget.CaseId id }, Some record
-            | AuthorityAct.Revoke { Scope = GrantTarget.CaseId id }, Some record ->
-                CaseExecution.current installationId record
-                |> Result.bind (fun _ ->
-                    if record.CaseId = id then
-                        Ok()
-                    else
-                        Error CoreFault.StoreIntegrityError)
-            | _ -> Ok()
+            view.TargetCases
+            |> Map.toList
+            |> List.fold
+                (fun result (target, record) ->
+                    result
+                    |> Result.bind (fun () ->
+                        CaseExecution.current installationId record
+                        |> Result.bind (fun _ ->
+                            let matches =
+                                match target with
+                                | GrantTarget.CaseReference reference ->
+                                    CaseReference.identity record.Snapshot.Reference =
+                                        CaseReference.key reference
+                                | GrantTarget.CaseId id -> record.CaseId = id
+                                | GrantTarget.Installation -> false
+
+                            if matches then
+                                Ok()
+                            else
+                                Error CoreFault.StoreIntegrityError)))
+                (Ok())
 
     let private domainFacts (view: AuthorityExecutionFacts) : AuthorityFacts =
         let target =
@@ -54,6 +53,7 @@ module internal AuthorityExecution =
                             ActorId = actor.ActorId
                             Principal = actor.Principal
                             Enabled = actor.Enabled
+                            Profile = actor.Profile
                         }
                     Grants =
                         (view.Target.Installation
@@ -71,34 +71,26 @@ module internal AuthorityExecution =
 
         {
             TargetActor = target
-            TargetCaseId = view.TargetCase |> Option.map _.CaseId
+            TargetCases = view.TargetCases |> Map.map (fun _ record -> record.CaseId)
             EnabledHumanOwners = view.EnabledHumanOwners
             ActorCount = view.ActorCount
             Requester = view.Actor
         }
 
-    let private projection (command: AuthorityCommand) (view: AuthorityExecutionFacts) change =
-        let scope =
-            function
-            | Scope.Installation -> None
-            | Scope.Case id -> Some id
+    let private isProvision (command: AuthorityCommand) =
+        match command.Act with
+        | AuthorityAct.ProvisionOwner _ -> true
+        | _ -> false
 
-        let registeredId = ActorId.ofOperationId command.OperationId
-
-        match change, view.Target.Actor with
-        | AuthorityChange.Registered, _ ->
-            Ok(registeredId, AuthorityProjection.Register(registeredId, command.Target))
-        | AuthorityChange.OwnerProvisioned, _ ->
-            Ok(registeredId, AuthorityProjection.ProvisionOwner(registeredId, command.Target))
-        | AuthorityChange.Granted(role, target), Some actor ->
-            Ok(actor.ActorId, AuthorityProjection.AddGrant(actor.ActorId, role, scope target))
-        | AuthorityChange.Revoked(role, target), Some actor ->
-            Ok(actor.ActorId, AuthorityProjection.RemoveGrant(actor.ActorId, role, scope target))
-        | AuthorityChange.Enabled, Some actor ->
-            Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, true))
-        | AuthorityChange.Disabled, Some actor ->
-            Ok(actor.ActorId, AuthorityProjection.SetEnabled(actor.ActorId, false))
-        | _, None -> Error CoreFault.StoreIntegrityError
+    let private targetId (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        match command.Act with
+        | AuthorityAct.Register _
+        | AuthorityAct.Admit _
+        | AuthorityAct.ProvisionOwner _ -> Ok(ActorId.ofOperationId command.OperationId)
+        | _ ->
+            view.Target.Actor
+            |> Option.map (fun actor -> Ok actor.ActorId)
+            |> Option.defaultValue (Error(Refusal.Authority AuthorityRefusal.ActorUnknown))
 
     let private recorded
         (services: ServiceContext)
@@ -106,7 +98,7 @@ module internal AuthorityExecution =
         (view: AuthorityExecutionFacts)
         =
         if
-            command.Act <> AuthorityAct.ProvisionOwner
+            not (isProvision command)
             && not (
                 Authority.can
                     services.Principal
@@ -120,17 +112,26 @@ module internal AuthorityExecution =
             match targets services.InstallationId command view with
             | Error fault -> Verdict.Fail fault
             | Ok() ->
-                AuthorityRequests.toRecord (view.TargetCase |> Option.map _.Snapshot) command
+                targetId command view
+                |> Result.bind (fun id ->
+                    AuthorityRequests.toRecords
+                        (view.TargetCases |> Map.map (fun _ record -> record.Snapshot))
+                        id
+                        command)
                 |> Result.map Verdict.Proceed
                 |> Result.defaultWith (fun refusal ->
-                    // An unavailable scope cannot supply record identity; Domain still orders independent target refusals.
                     match Authority.decide (domainFacts view) command with
                     | Error priority -> Verdict.Refuse priority
                     | Ok _ -> Verdict.Refuse refusal)
 
+    let private identity (command: AuthorityCommand) (records: AuthorityEffectRecord list) =
+        records
+        |> List.map (AuthorityRequests.canonical >> AuthorityRecord.encode)
+        |> LedgerEntries.authorityIdentityBytes (AuthorityAct.kind command.Act)
+
     let private authorizeIdentity
         (services: ServiceContext)
-        operationId
+        operation
         bytes
         (view: AuthorityExecutionFacts)
         =
@@ -138,30 +139,36 @@ module internal AuthorityExecution =
             services
             view.Actor
             {
-                OperationId = operationId
+                OperationId = operation
                 Bytes = bytes
                 Existing = view.ExistingOperation
             }
-            (LedgerEntries.receipt services.Principal view.Actor ReceiptCurrent.Authority)
+            (LedgerEntries.receiptOperation
+                (ServiceContext.basis services view.ObservedAt)
+                services.Principal
+                view.Actor
+                (view.Actor.Actor |> Option.map Actor.currentReference)
+                (ReceiptCurrent.Authority(view.Target.Actor |> Option.map Actor.currentReference)))
 
-    let private propose _installationId command view =
-        match Authority.decide (domainFacts view) command with
-        | Error refusal -> Verdict.Refuse refusal
-        | Ok change ->
-            projection command view change
-            |> Result.map Verdict.Proceed
-            |> Result.defaultWith Verdict.Fail
+    let private propose (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        match Authority.decide (domainFacts view) command, targetId command view with
+        | Error refusal, _
+        | _, Error refusal -> Verdict.Refuse refusal
+        | Ok change, Ok target ->
+            Verdict.Proceed
+                {
+                    AuthorityProposal.TargetActorId = target
+                    Principal = command.Target
+                    Change = change
+                }
 
     let private provisionIdentity
         (services: ServiceContext)
-        operationId
+        operation
         bytes
         (head: LedgerPosition)
         (view: AuthorityExecutionFacts)
         =
-        let installationId = services.InstallationId
-        let principal = services.Principal
-
         if view.ActorCount = Some 0 then
             if head.Sequence = Sequence.zero && view.ExistingOperation.IsNone then
                 Verdict.Proceed()
@@ -170,41 +177,52 @@ module internal AuthorityExecution =
         else
             match view.ExistingOperation with
             | None -> Verdict.Refuse(Refusal.Authority AuthorityRefusal.ActorAlreadyRegistered)
-            | Some entry when entry.OperationId <> operationId ->
+            | Some existing when existing.OperationId <> operation ->
                 Verdict.Fail CoreFault.StoreIntegrityError
-            | Some entry ->
-                match LedgerEntries.validate installationId entry with
+            | Some existing ->
+                match LedgerEntries.validateOperation services.InstallationId existing with
                 | Error fault -> Verdict.Fail fault
                 | Ok validated ->
-                    match LedgerEntries.identityBytes validated with
-                    | Some accepted when accepted = bytes ->
-                        LedgerEntries.receipt
-                            principal
+                    match LedgerEntries.identityBytesOperation validated with
+                    | None -> Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
+                    | Some _ when not (PrincipalKey.isHuman services.Principal) ->
+                        Verdict.Refuse Refusal.IdempotencyConflict
+                    | Some accepted when accepted = bytes () ->
+                        LedgerEntries.receiptOperation
+                            (ServiceContext.basis services view.ObservedAt)
+                            services.Principal
                             view.Actor
-                            ReceiptCurrent.Authority
+                            (view.Actor.Actor |> Option.map Actor.currentReference)
+                            (ReceiptCurrent.Authority(
+                                view.Target.Actor |> Option.map Actor.currentReference
+                            ))
                             validated
                         |> Result.map Verdict.Replay
                         |> Result.defaultWith Verdict.Fail
                     | _ -> Verdict.Refuse Refusal.IdempotencyConflict
 
-    let private project
+    let private projection
         (command: AuthorityCommand)
-        (record: AuthorityRequestRecord)
-        (view: AuthorityExecutionFacts)
-        (targetId, projection)
+        (entry: EntryDraft)
+        (record: AuthorityEffectRecord)
         =
-        {
-            OperationId = command.OperationId
-            ObservedAt = view.ObservedAt
-            ActorId =
-                match command.Act with
-                | AuthorityAct.ProvisionOwner -> targetId
-                | _ -> LedgerEnvelope.actorId view.Actor
-            Subject = EntryTarget.Authority(targetId, AuthorityAct.kind record.Act)
-            Snapshot = Array.empty
-            Current = ReceiptCurrent.Authority
-            Projection = projection
-        }
+        let id = record.TargetActorId
+
+        let scope (grant: RecordedGrant) =
+            match grant.Scope with
+            | RecordedGrantScope.Installation -> None
+            | RecordedGrantScope.Case(id, _) -> Some id
+
+        match record.Effect with
+        | AuthorityEffect.Register _ -> AuthorityProjection.Register(id, command.Target)
+        | AuthorityEffect.ProvisionOwner _ -> AuthorityProjection.ProvisionOwner(id, command.Target)
+        | AuthorityEffect.SetProfile profile -> AuthorityProjection.SetProfile(id, profile)
+        | AuthorityEffect.EraseProfile -> AuthorityProjection.EraseProfile(id, entry.Sequence)
+        | AuthorityEffect.Enable -> AuthorityProjection.SetEnabled(id, true)
+        | AuthorityEffect.Disable -> AuthorityProjection.SetEnabled(id, false)
+        | AuthorityEffect.Grant grant -> AuthorityProjection.AddGrant(id, grant.Role, scope grant)
+        | AuthorityEffect.Revoke grant ->
+            AuthorityProjection.RemoveGrant(id, grant.Role, scope grant)
 
     let review
         (services: ServiceContext)
@@ -212,77 +230,147 @@ module internal AuthorityExecution =
         (view: AuthorityExecutionFacts)
         =
         recorded services command view
-        |> Verdict.bind (fun record ->
-            let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
-
-            authorizeIdentity services command.OperationId bytes view
+        |> Verdict.bind (fun records ->
+            authorizeIdentity services command.OperationId (identity command records) view
             |> Verdict.bind (fun () ->
                 if view.Maintenance.Active then
                     Verdict.Refuse Refusal.RegisterMaintenance
                 else
-                    propose services.InstallationId command view))
+                    propose command view))
+
+    let private afterActor act (actor: Actor) =
+        match act with
+        | AuthorityAct.SetProfile profile -> { actor with Profile = Some profile }
+        | AuthorityAct.EraseProfile -> { actor with Profile = None }
+        | AuthorityAct.Disable -> { actor with Enabled = false }
+        | AuthorityAct.Enable -> { actor with Enabled = true }
+        | _ -> actor
+
+    let private targetActor (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        let created profile =
+            let kind, _, _ = PrincipalKey.parts command.Target
+
+            Some(
+                ActorRef.create
+                    (ActorId.ofOperationId command.OperationId)
+                    kind
+                    ActorAvailability.Available
+                    (Some profile)
+            )
+
+        match command.Act with
+        | AuthorityAct.Register profile
+        | AuthorityAct.ProvisionOwner profile -> created profile
+        | AuthorityAct.Admit admission -> created admission.Profile
+        | _ ->
+            view.Target.Actor
+            |> Option.map (afterActor command.Act >> Actor.currentReference)
+
+    let private receiptActor (command: AuthorityCommand) (view: AuthorityExecutionFacts) =
+        match command.Act with
+        | AuthorityAct.ProvisionOwner _ -> targetActor command view
+        | _ ->
+            view.Actor.Actor
+            |> Option.map (fun actor ->
+                (if actor.Principal = command.Target then
+                     afterActor command.Act actor
+                 else
+                     actor)
+                |> Actor.currentReference)
 
     let private executeRecord
         (services: ServiceContext)
         (command: AuthorityCommand)
         admit
-        (write: LedgerWriteContext)
+        (write: AuthorityWriteContext)
         (view: AuthorityExecutionFacts)
         =
         recorded services command view
-        |> Verdict.bind (fun record ->
-            let bytes = AuthorityRequests.canonical record |> AuthorityRecord.encode
-
-            admit bytes
+        |> Verdict.bind (fun records ->
+            admit (fun () -> identity command records)
             |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
-            |> Verdict.bind (fun () -> propose services.InstallationId command view)
-            |> Verdict.bind (fun proposed ->
-                let plan = project command record view proposed
+            |> Verdict.bind (fun () -> propose command view)
+            |> Verdict.bind (fun _ ->
+                let actorId =
+                    if isProvision command then
+                        ActorId.ofOperationId command.OperationId
+                    else
+                        LedgerEnvelope.actorId view.Actor
 
-                LedgerEnvelope.accept
-                    services
-                    view.Actor
-                    write
-                    plan
-                    (AuthorityRecord.encode record)))
+                LedgerEntries.createAuthorityOperation
+                    (AuthorityAct.kind command.Act)
+                    write.NewPayloadNonce
+                    {
+                        InstallationId = services.InstallationId
+                        Head = write.Head
+                        Instant = view.ObservedAt
+                        ActorId = actorId
+                        OperationId = command.OperationId
+                        Effects =
+                            records
+                            |> List.map (fun record ->
+                                {
+                                    Subject =
+                                        EntryTarget.Authority(
+                                            record.TargetActorId,
+                                            AuthorityEffect.kind record.Effect
+                                        )
+                                    Request = AuthorityRecord.encode record
+                                    Snapshot = Array.empty
+                                })
+                    }
+                |> Result.bind (fun entries ->
+                    entries
+                    |> List.map LedgerEntries.stored
+                    |> StoredOperation.create
+                    |> Result.bind (LedgerEntries.validateOperation services.InstallationId)
+                    |> Result.bind (
+                        LedgerEntries.receiptOperation
+                            (ServiceContext.basis services view.ObservedAt)
+                            services.Principal
+                            view.Actor
+                            (receiptActor command view)
+                            (ReceiptCurrent.Authority(targetActor command view))
+                    )
+                    |> Result.map (fun receipt ->
+                        entries, List.map2 (projection command) entries records, receipt))
+                |> Result.map Verdict.Proceed
+                |> Result.defaultWith Verdict.Fail))
 
     let execute
         (services: ServiceContext)
         (command: AuthorityCommand)
-        (write: LedgerWriteContext)
+        (write: AuthorityWriteContext)
         (view: AuthorityExecutionFacts)
         =
         executeRecord
             services
             command
-            (fun bytes -> authorizeIdentity services command.OperationId bytes view)
+            (fun bytes -> authorizeIdentity services command.OperationId (bytes ()) view)
             write
             view
 
     let provision
         (services: ServiceContext)
-        operationId
-        (write: LedgerWriteContext)
+        operation
+        profile
+        (write: AuthorityWriteContext)
         (view: AuthorityExecutionFacts)
         =
-        let target = services.Principal
-
-        match Authority.provision (OperationId.value operationId) target with
+        match Authority.provision (OperationId.value operation) services.Principal profile with
         | Error refusal -> Verdict.Refuse refusal
         | Ok command ->
             executeRecord
                 services
                 command
-                (fun bytes -> provisionIdentity services operationId bytes write.Head view)
+                (fun bytes -> provisionIdentity services operation bytes write.Head view)
                 write
                 view
 
     let run (services: ServiceContext) (command: AuthorityCommand) token =
-        let store = services.Store
-
-        store.Write(
+        services.Store.Write
             {
-                WriteOperation.Work =
+                Work =
                     (fun tx ->
                         task {
                             let! view =
@@ -292,7 +380,7 @@ module internal AuthorityExecution =
                                     (Authority.factsNeeded command.Act)
                                     command.OperationId
                                     command.Target
-                                    (AuthorityRequests.targetCase command)
+                                    (AuthorityRequests.targetCases command)
 
                             let! fenced =
                                 ExecutionFacts.fenced
@@ -312,63 +400,67 @@ module internal AuthorityExecution =
                                         {
                                             Head = tx.Head
                                             Fenced = fenced
-                                            Nonce = tx.Nonce
+                                            NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
 
-                            return! ExecutionFacts.persist tx tx.ProjectAuthority verdict
+                            return! ExecutionFacts.persistOperation tx tx.ProjectAuthority verdict
                         })
                 CancellationToken = token
             }
-        )
 
-    let provisionStore (services: ServiceContext) operationId token =
-        let store = services.Store
-        let target = services.Principal
-
-        let operationId =
-            OperationId.create operationId
-            |> Option.defaultWith (fun () ->
-                invalidArg (nameof operationId) "Use a nonempty provisioning operation.")
-
-        store.Write(
-            {
-                WriteOperation.Work =
-                    (fun tx ->
-                        task {
-                            let! view =
-                                ExecutionFacts.target
-                                    services
-                                    tx
-                                    (Authority.factsNeeded AuthorityAct.ProvisionOwner)
-                                    operationId
-                                    target
-                                    None
-
-                            let! fenced =
-                                ExecutionFacts.fenced
-                                    services
-                                    tx
-                                    view.Actor
-                                    operationId
-                                    view.ExistingOperation
-
-                            let verdict =
-                                match fenced with
-                                | Error fault -> Verdict.Fail fault
-                                | Ok fenced ->
-                                    provision
+    let provisionStore (services: ServiceContext) operation profile token =
+        match Authority.provision operation services.Principal profile with
+        | Error refusal -> System.Threading.Tasks.Task.FromResult(Ok(Verdict.Refuse refusal))
+        | Ok command ->
+            services.Store.Write
+                {
+                    Work =
+                        (fun tx ->
+                            task {
+                                let! view =
+                                    ExecutionFacts.target
                                         services
-                                        operationId
-                                        {
-                                            Head = tx.Head
-                                            Fenced = fenced
-                                            Nonce = tx.Nonce
-                                        }
-                                        view
+                                        tx
+                                        (Authority.factsNeeded command.Act)
+                                        command.OperationId
+                                        command.Target
+                                        []
 
-                            return! ExecutionFacts.persist tx tx.ProjectAuthority verdict
-                        })
-                CancellationToken = token
-            }
-        )
+                                let! fenced =
+                                    ExecutionFacts.fenced
+                                        services
+                                        tx
+                                        view.Actor
+                                        command.OperationId
+                                        view.ExistingOperation
+
+                                let verdict =
+                                    match fenced with
+                                    | Error fault -> Verdict.Fail fault
+                                    | Ok fenced ->
+                                        let write =
+                                            {
+                                                AuthorityWriteContext.Head = tx.Head
+                                                Fenced = fenced
+                                                NewPayloadNonce = tx.NewPayloadNonce
+                                            }
+
+                                        executeRecord
+                                            services
+                                            command
+                                            (fun bytes ->
+                                                provisionIdentity
+                                                    services
+                                                    command.OperationId
+                                                    bytes
+                                                    tx.Head
+                                                    view)
+                                            write
+                                            view
+
+                                return!
+                                    ExecutionFacts.persistOperation tx tx.ProjectAuthority verdict
+                            })
+                    CancellationToken = token
+                }

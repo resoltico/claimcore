@@ -14,7 +14,7 @@ let private codec = Api.caseHistory.Output
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private receipt =
-    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001","subject":{"kind":"CASE","caseId":"10000000-0000-4000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}}}"""
+    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":{"actorId":"10000000-0000-4000-8000-000000000001","displayName":{"kind":"ERASED"},"principalKind":"HUMAN","availability":"AVAILABLE"},"subject":{"kind":"CASE","caseId":"10000000-0000-4000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}},"basis":{"observedAt":"2026-11-04T12:00:00.000000Z","businessDate":"2026-11-04","timeZone":"Etc/UTC"}}"""
 
 let private summary =
     """{"kind":"SUMMARY","change":{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001"}}"""
@@ -38,7 +38,7 @@ let private validator () =
     let root = JsonObject()
     root["components"] <- (document["components"] |> nonNull).DeepClone()
     root["$ref"] <- System.Text.Json.Nodes.JsonValue.Create "#/components/schemas/HistoryReply"
-    JsonSchema.FromText(root.ToJsonString(), BuildOptions(Dialect = Dialect.Draft202012))
+    Utf8SchemaValidation.build (root.ToJsonString())
 
 let private agrees schema expected text =
     use document = JsonDocument.Parse(text: string)

@@ -37,8 +37,9 @@ module internal WorkExecution =
             Error(Refusal.invalidInput (InputTarget.OperationId, Violation.OperationIdRequired))
         )
 
-    let private revision target raw =
+    let private revision target minimum raw =
         Revision.create raw
+        |> Option.filter (fun value -> value >= minimum)
         |> Option.map Ok
         |> Option.defaultValue (
             Error(Refusal.invalidInput (target, Violation.ExpectedRevisionRange))
@@ -58,7 +59,10 @@ module internal WorkExecution =
                     ReminderPlan.Action = action
                     Due = due
                 })
-            (input InputTarget.ReminderAction ReminderAction.parse raw.Action)
+            (input
+                InputTarget.ReminderAction
+                (ReminderAction.parse >> Result.bind ReminderAction.admit)
+                raw.Action)
             (input InputTarget.ReminderDueDate CalendarDate.parse raw.Due)
 
     let private reminderAct =
@@ -86,14 +90,14 @@ module internal WorkExecution =
                 (Admission.map2
                     (fun id expected -> id, expected)
                     (reminderId id)
-                    (revision InputTarget.ExpectedReminderRevision expected))
+                    (revision InputTarget.ExpectedReminderRevision Revision.first expected))
                 change
 
     let prepareWork (request: WorkOperationRequest) =
         let (WorkAct.UpdateWork raw) = request.Act
 
         let update =
-            CaseWorkInput.parse raw
+            CaseWorkInput.admit raw
             |> Result.mapError (fun issues ->
                 issues
                 |> List.map (fun (field, violation) ->
@@ -111,18 +115,40 @@ module internal WorkExecution =
             (Admission.map2
                 (fun operation expected -> operation, expected)
                 (operation request.OperationId)
-                (revision InputTarget.ExpectedWorkRevision request.ExpectedRevision))
+                (revision InputTarget.ExpectedWorkRevision Revision.zero request.ExpectedRevision))
             update
-        |> Result.bind (fun result ->
-            CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
+        |> fun prepared ->
+            Admission.map2
+                (fun result () -> result)
+                prepared
+                (CaseExecution.validateSelector request.Target)
+        |> Result.mapError (function
+            | Refusal.InvalidInput issues ->
+                InputIssues.toList issues
+                |> List.sortBy (fun issue -> InputTarget.order issue.Target)
+                |> InputIssues.ofList
+                |> Option.get
+                |> Refusal.InvalidInput
+            | refusal -> refusal)
 
     let prepareReminder (request: ReminderOperationRequest) =
         Admission.map2
             (fun operation act -> Reminder(operation, request.Target, act))
             (operation request.OperationId)
             (reminderAct request.Act)
-        |> Result.bind (fun result ->
-            CaseExecution.validateSelector request.Target |> Result.map (fun () -> result))
+        |> fun prepared ->
+            Admission.map2
+                (fun result () -> result)
+                prepared
+                (CaseExecution.validateSelector request.Target)
+        |> Result.mapError (function
+            | Refusal.InvalidInput issues ->
+                InputIssues.toList issues
+                |> List.sortBy (fun issue -> InputTarget.order issue.Target)
+                |> InputIssues.ofList
+                |> Option.get
+                |> Refusal.InvalidInput
+            | refusal -> refusal)
 
     let private target =
         function
@@ -133,13 +159,6 @@ module internal WorkExecution =
         function
         | Work(operation, _, _, _)
         | Reminder(operation, _, _) -> operation
-
-    let private runtime (services: ServiceContext) instant =
-        {
-            ProductVersion = services.ProductVersion
-            EffectiveBusinessDate = services.Calendar.DateAt instant
-            TimeZoneId = services.Calendar.TimeZoneId
-        }
 
     let private authorized (services: ServiceContext) (view: CaseFacts) =
         match view.Case with
@@ -159,7 +178,7 @@ module internal WorkExecution =
             then
                 Ok parent
             else
-                Error(Refusal.Access AccessRefusal.ActNotPermitted)
+                Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork))
         | _ -> Error(Refusal.Access AccessRefusal.ResourceUnavailable)
 
     let private eligibleAssignee (tx: IReadTx) caseId =
@@ -213,32 +232,44 @@ module internal WorkExecution =
                 }
 
             let bytes = WorkRecord.encodeRequest request
-            let state = ReceiptCurrent.Work(Some parent, current)
+            let state = ReceiptCurrent.Work(Some parent, current, Map.empty)
+
+            let! named =
+                ReceiptReads.existing services tx view.Actor state view.ExistingOperation
 
             let replay =
-                OperationIdentity.decide
-                    services
-                    view.Actor
-                    {
-                        OperationId = operation
-                        Bytes = bytes
-                        Existing = view.ExistingOperation
-                    }
-                    (LedgerEntries.receipt services.Principal view.Actor state)
+                match named with
+                | Error fault -> Verdict.Fail fault
+                | Ok state ->
+                    OperationIdentity.decide
+                        services
+                        view.Actor
+                        {
+                            OperationId = operation
+                            Bytes = bytes
+                            Existing = view.ExistingOperation
+                        }
+                        (LedgerEntries.receiptOperation
+                            (ServiceContext.basis services view.ObservedAt)
+                            services.Principal
+                            view.Actor
+                            (view.Actor.Actor |> Option.map Actor.currentReference)
+                            state)
 
             match replay with
             | Verdict.Proceed() ->
                 match current, parent.Snapshot.State with
-                | _, CaseState.Erased -> return Verdict.Refuse(Refusal.Case CaseRefusal.CaseErased)
+                | _, CaseState.Erased ->
+                    return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased))
                 | _, CaseState.Voided _ ->
-                    return Verdict.Refuse(Refusal.Case CaseRefusal.CaseVoided)
+                    return Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Voided))
                 | Some current, CaseState.Active fields when current.Snapshot.IsSome ->
                     let before = current.Snapshot.Value
 
                     if view.Maintenance.Active then
                         return Verdict.Refuse Refusal.RegisterMaintenance
                     elif before.Revision <> expected then
-                        return Verdict.Refuse(Refusal.RevisionConflict before.Revision)
+                        return Verdict.Refuse(Refusal.revisionConflict before.Revision)
                     else
                         let next = CaseWork.apply update before.Work
                         let responsibilityChanged = next.Responsible <> before.Work.Responsible
@@ -264,7 +295,10 @@ module internal WorkExecution =
                             | _ -> Ok()
 
                         if responsibilityChanged && fields.Status <> CaseStatus.Opened then
-                            return Verdict.Refuse(Refusal.Case CaseRefusal.CaseClosed)
+                            return
+                                Verdict.Refuse(
+                                    Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)
+                                )
                         elif not eligible then
                             return Verdict.Refuse(Refusal.Case CaseRefusal.AssigneeUnavailable)
                         elif next = before.Work then
@@ -281,6 +315,14 @@ module internal WorkExecution =
 
                                 let recordedBy = LedgerEnvelope.actorId view.Actor
 
+                                let summaryChangedAt, summaryRecordedBy =
+                                    if after.Work.Summary.IsNone then
+                                        None, None
+                                    elif before.Work.Summary = after.Work.Summary then
+                                        current.SummaryChangedAt, current.SummaryRecordedBy
+                                    else
+                                        Some view.ObservedAt, Some recordedBy
+
                                 let stored =
                                     { current with
                                         Revision = after.Revision
@@ -288,40 +330,69 @@ module internal WorkExecution =
                                         SnapshotBytes = WorkRecord.encodeSnapshot after
                                         ChangedAt = Some view.ObservedAt
                                         RecordedBy = Some recordedBy
+                                        SummaryChangedAt = summaryChangedAt
+                                        SummaryRecordedBy = summaryRecordedBy
                                     }
 
-                                return
-                                    Verdict.Proceed
-                                        {
-                                            Subject =
-                                                EntryTarget.Work
-                                                    {
-                                                        CaseId = parent.CaseId
-                                                        Revision = after.Revision
-                                                        Act = WorkActKind.UpdateWork
-                                                        BusinessDate =
-                                                            services.Calendar.DateAt view.ObservedAt
-                                                    }
-                                            RequestBytes = bytes
-                                            SnapshotBytes = stored.SnapshotBytes
-                                            Current = ReceiptCurrent.Work(Some parent, Some stored)
-                                            Projection =
-                                                WorkChangeProjection.Work
-                                                    {
-                                                        Snapshot = after
-                                                        ChangedAt = view.ObservedAt
-                                                        RecordedBy = recordedBy
-                                                    }
-                                            Review =
-                                                OperationReview.Work
-                                                    {
-                                                        Reference = parent.Snapshot.Reference
-                                                        Parent = parent.Snapshot
-                                                        Before = before
-                                                        Proposed = after
-                                                        Context = runtime services view.ObservedAt
-                                                    }
-                                        }
+                                let relations =
+                                    [ before; after ]
+                                    |> List.choose (fun snapshot ->
+                                        snapshot.Work.Responsible
+                                        |> Option.map (fun actor -> parent.CaseId, actor))
+                                    |> List.distinct
+
+                                let! accounts = tx.AssignedAccounts relations
+
+                                match
+                                    CaseWorkReadModels.snapshot accounts before,
+                                    CaseWorkReadModels.snapshot accounts after
+                                with
+                                | Error fault, _
+                                | _, Error fault -> return Verdict.Fail fault
+                                | Ok beforeRead, Ok afterRead ->
+                                    return
+                                        Verdict.Proceed
+                                            {
+                                                Subject =
+                                                    EntryTarget.Work
+                                                        {
+                                                            CaseId = parent.CaseId
+                                                            Revision = after.Revision
+                                                            Act = WorkActKind.UpdateWork
+                                                            BusinessDate =
+                                                                services.Calendar.DateAt
+                                                                    view.ObservedAt
+                                                        }
+                                                RequestBytes = bytes
+                                                SnapshotBytes = stored.SnapshotBytes
+                                                Current =
+                                                    ReceiptCurrent.Work(
+                                                        Some parent,
+                                                        Some stored,
+                                                        accounts
+                                                    )
+                                                Projection =
+                                                    WorkChangeProjection.Work
+                                                        {
+                                                            Snapshot = after
+                                                            ChangedAt = view.ObservedAt
+                                                            RecordedBy = recordedBy
+                                                            SummaryChangedAt = summaryChangedAt
+                                                            SummaryRecordedBy = summaryRecordedBy
+                                                        }
+                                                Review =
+                                                    OperationReview.Work
+                                                        {
+                                                            Reference = parent.Snapshot.Reference
+                                                            Parent = parent.Snapshot
+                                                            Before = beforeRead
+                                                            Proposed = afterRead
+                                                            Context =
+                                                                ServiceContext.runtime
+                                                                    services
+                                                                    view.ObservedAt
+                                                        }
+                                            }
                 | _ -> return Verdict.Fail CoreFault.StoreIntegrityError
             | other ->
                 return
@@ -330,23 +401,31 @@ module internal WorkExecution =
                         other
         }
 
-    let private reminderRefusal =
+    let private reminderRefusal (parent: StoredCase) current =
         function
         | ReminderRefusal.IdentityReserved -> Verdict.Fail CoreFault.StoreIntegrityError
-        | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.RevisionConflict actual)
+        | ReminderRefusal.RevisionConflict actual -> Verdict.Refuse(Refusal.revisionConflict actual)
         | ReminderRefusal.InvalidAction violation ->
             Verdict.Refuse(Refusal.invalidInput (InputTarget.ReminderAction, violation))
         | ReminderRefusal.NotFound
         | ReminderRefusal.ParentMismatch ->
             Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)
-        | ReminderRefusal.ParentNotActive ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.ParentNotActive)
+        | ReminderRefusal.ParentNotActive
         | ReminderRefusal.ParentNotOpen ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.ParentNotOpen)
-        | ReminderRefusal.PendingRequired ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.PendingRequired)
+            let state =
+                parent.Snapshot.State
+                |> CaseState.map (fun fields ->
+                    fields.Status, CaseProgress.ofPayment fields.Progress)
+
+            Verdict.Refuse(Refusal.Case(CaseRefusal.NotOffered(CaseHeadline.ofState state)))
+        | ReminderRefusal.PendingRequired
         | ReminderRefusal.TerminalRequired ->
-            Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.TerminalRequired)
+            match current with
+            | Some reminder ->
+                Verdict.Refuse(
+                    Refusal.Reminder(ReminderRuleRefusal.NotOffered(Reminder.state reminder))
+                )
+            | None -> Verdict.Fail CoreFault.StoreIntegrityError
         | ReminderRefusal.NoChanges ->
             Verdict.Refuse(Refusal.Reminder ReminderRuleRefusal.NoChanges)
 
@@ -403,7 +482,12 @@ module internal WorkExecution =
                         Bytes = bytes
                         Existing = view.ExistingOperation
                     }
-                    (LedgerEntries.receipt services.Principal view.Actor state)
+                    (LedgerEntries.receiptOperation
+                        (ServiceContext.basis services view.ObservedAt)
+                        services.Principal
+                        view.Actor
+                        (view.Actor.Actor |> Option.map Actor.currentReference)
+                        state)
 
             match replay with
             | Verdict.Proceed() when view.Maintenance.Active ->
@@ -418,7 +502,7 @@ module internal WorkExecution =
                         next.IsSome
 
                 match Reminder.decide operation parent.Snapshot before reserved command with
-                | Error refusal -> return reminderRefusal refusal
+                | Error refusal -> return reminderRefusal parent before refusal
                 | Ok effects ->
                     let recordedBy = LedgerEnvelope.actorId view.Actor
 
@@ -476,7 +560,8 @@ module internal WorkExecution =
                                             CaseId = parent.CaseId
                                             Before = before
                                             Effects = effects
-                                            Context = runtime services view.ObservedAt
+                                            Context =
+                                                ServiceContext.runtime services view.ObservedAt
                                         }
                             }
             | other ->
@@ -501,6 +586,24 @@ module internal WorkExecution =
                             workProposal services tx view parent operation expected update
                         | Reminder(operation, _, act) ->
                             reminderProposal services tx view parent operation act
+
+                    let entity, expected =
+                        match prepared with
+                        | Work(_, _, expected, _) -> ChangeEntity.Work, Revision.value expected
+                        | Reminder(_, _, ReminderInput.Change(id, expected, _)) ->
+                            ChangeEntity.Reminder id, Revision.value expected
+                        | Reminder(operation, _, ReminderInput.Create _) ->
+                            ChangeEntity.Reminder(ReminderId.ofOperationId operation), 0L
+
+                    let! proposal =
+                        ConflictReads.verdict
+                            services
+                            tx
+                            view.Actor
+                            (Some parent)
+                            entity
+                            expected
+                            proposal
 
                     return view, proposal
             with :? OverflowException ->
@@ -559,7 +662,7 @@ module internal WorkExecution =
                                                 view.Actor
                                                 {
                                                     Head = tx.Head
-                                                    Nonce = tx.Nonce
+                                                    Nonce = tx.NewPayloadNonce()
                                                     Fenced = fenced
                                                 }
                                                 {

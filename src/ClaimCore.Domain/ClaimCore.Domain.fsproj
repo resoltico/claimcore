@@ -7,10 +7,13 @@
     <Compile Include="Refusals/Violations.fs" />
     <Compile Include="Values.fs" />
     <Compile Include="NarrativeValues.fs" />
+    <Compile Include="CurrencyMinorUnits.fs" />
     <Compile Include="MoneyValues.fs" />
     <Compile Include="DecimalTotal.fs" />
     <Compile Include="FieldValues.fs" />
     <Compile Include="Identifiers.fs" />
+    <Compile Include="LedgerPosition.fs" />
+    <Compile Include="ActorProfiles.fs" />
     <Compile Include="CaseFields.fs" />
     <Compile Include="CaseWork.fs" />
     <Compile Include="CaseUpdates.fs" />
@@ -19,14 +22,16 @@
     <Compile Include="Vocabulary/Capability.fs" />
     <Compile Include="CaseActs.fs" />
     <Compile Include="AuthorityActs.fs" />
+    <Compile Include="WorklistSemantics.fs" />
+    <Compile Include="CaseStages.fs" />
     <Compile Include="Reads.fs" />
+    <Compile Include="Changes.fs" />
     <Compile Include="Refusals/RefusalModel.fs" />
     <Compile Include="Admission.fs" />
     <Compile Include="Vocabulary/InputTarget.fs" />
     <Compile Include="AuthorityModel.fs" />
     <Compile Include="CaseModel.fs" />
-    <Compile Include="LedgerPosition.fs" />
-    <Compile Include="Validation.fs" />
+    <Compile Include="InputValidation.fs" />
     <Compile Include="CaseState.fs" />
     <Compile Include="StateValidation.fs" />
     <Compile Include="CaseCorrection.fs" />
@@ -35,5 +40,6 @@
     <Compile Include="Case.fsi" />
     <Compile Include="Case.fs" />
     <Compile Include="Authority.fs" />
+    <Compile Include="Validation.fs" />
   </ItemGroup>
 </Project>

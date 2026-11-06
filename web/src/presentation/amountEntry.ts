@@ -10,9 +10,6 @@ import type { CatalogEntry } from "../protocol/catalogAssembly";
 
 /** Ambiguous or malformed entry remains authored text for server admission. */
 export const normalizeAmountEntry = (raw: string, locale: string): string => {
-  if (isAmountText(raw)) {
-    return raw;
-  }
   const format = new Intl.NumberFormat(locale, { useGrouping: true });
   const parts = format.formatToParts(1234567.5);
   const decimal = parts.find((part) => part.type === "decimal")?.value ?? ".";

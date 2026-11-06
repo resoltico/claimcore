@@ -18,6 +18,19 @@ module internal Projections =
         | Ok value -> value
         | Error _ -> raise (RecordCorruptException "Invalid stored projection.")
 
+    let profile (name: string option) (contact: string option) =
+        match name, contact with
+        | None, None -> None
+        | Some name, contact ->
+            ActorProfile.restore
+                {
+                    DisplayName = name
+                    Contact = contact
+                }
+            |> parsed
+            |> Some
+        | None, Some _ -> raise (RecordCorruptException "Contact without an actor display name.")
+
     let caseColumns =
         "case_id,case_reference,revision,state,snapshot,status,progress,search_text,work_search_text,"
         + DatabaseSession.instantExpression "changed_at"
@@ -211,6 +224,7 @@ module internal Projections =
                             ActorId = required 0 first |> DatabaseSession.admitted ActorId.create
                             Principal = principal
                             Enabled = required 1 first
+                            Profile = profile (optional<string> 4 first) (optional<string> 5 first)
                         }
                     Grants = grants
                 }
@@ -230,7 +244,8 @@ module internal Projections =
             box (caseIds |> List.distinct |> List.map CaseId.value |> List.toArray)
         |]
 
-    let private actorColumns = "a.actor_id,a.enabled,g.role,g.case_id"
+    let private actorColumns =
+        "a.actor_id,a.enabled,g.role,g.case_id,a.display_name,a.contact"
 
     let actor connection principal (caseIds: CaseId list) token =
         task {
@@ -251,7 +266,7 @@ module internal Projections =
             "EXISTS(SELECT 1 FROM claimcore.grants scoped WHERE scoped.actor_id=a.actor_id AND scoped.case_id IS NOT NULL AND scoped.role=ANY($4::text[]) AND NOT EXISTS(SELECT 1 FROM claimcore.grants bad WHERE bad.actor_id=scoped.actor_id AND bad.case_id=scoped.case_id AND bad.role=ANY($5::text[])))"
 
         let sql =
-            $"SELECT {actorColumns},{scoped} FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
+            $"SELECT {actorColumns},{scoped},EXISTS(SELECT 1 FROM claimcore.grants assigned WHERE assigned.actor_id=a.actor_id) FROM claimcore.actors a LEFT JOIN claimcore.grants g ON g.actor_id=a.actor_id AND g.case_id IS NULL WHERE a.principal_kind=$1 AND a.issuer=$2 AND a.subject=$3"
 
         let parameters =
             [|
@@ -275,7 +290,8 @@ module internal Projections =
         | [] -> view
         | first :: _ ->
             { view with
-                HasScopedCases = DatabaseSession.value<bool> 4 first
+                HasScopedCases = DatabaseSession.value<bool> 6 first
+                HasAssignedRoles = DatabaseSession.value<bool> 7 first
             }
 
     /// Global visibility and actor/grant facts belong to the same read snapshot, without a second round trip.
@@ -286,21 +302,52 @@ module internal Projections =
             return globalAuthority principal rows
         }
 
+    // Both directory pages and own context summarize raw assignments, independently of eligibility.
+    let private roleSummaryQuery predicate =
+        $"SELECT g.role,bool_or(g.case_id IS NULL) AS installation,count(g.case_id) AS case_count FROM claimcore.grants g WHERE {predicate} GROUP BY g.role"
+
+    let private roleSummary role installation count =
+        {
+            ActorRoleSummary.Role =
+                DurableNames.tryRole role
+                |> Option.defaultWith (fun () ->
+                    raise (RecordCorruptException "Unknown assigned role."))
+            Installation = installation
+            CaseCount = count
+        }
+
+    let private roleSummaryJson (raw: string) =
+        use document = System.Text.Json.JsonDocument.Parse raw
+
+        document.RootElement.EnumerateArray()
+        |> Seq.map (fun value ->
+            roleSummary
+                (value.GetProperty("role").GetString()
+                 |> Option.ofObj
+                 |> Option.defaultWith (fun () ->
+                     raise (RecordCorruptException "Missing assigned role.")))
+                (value.GetProperty("installation").GetBoolean())
+                (value.GetProperty("case_count").GetInt64()))
+        |> Seq.toList
+        |> ActorRoleSummary.ordered
+
     let globalReadFacts connection principal token =
         task {
             let actor, parameters = globalActorQuery principal
 
+            let roles = roleSummaryQuery "g.actor_id=actor.actor_id"
+
             let sql =
-                $"WITH current_mode AS MATERIALIZED(SELECT active,generation,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.generation,m.mode_count FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
+                $"WITH current_mode AS MATERIALIZED(SELECT active,generation,count(*) OVER() AS mode_count FROM claimcore.register_maintenance) SELECT actor.*,m.active,m.generation,m.mode_count,(SELECT COALESCE(jsonb_agg(to_jsonb(r)),'[]'::jsonb)::text FROM ({roles}) r) FROM current_mode m LEFT JOIN LATERAL({actor}) actor ON true"
 
             let! rows = DatabaseSession.preparedRows connection sql parameters token
 
             let mode =
                 match rows with
-                | first :: _ when DatabaseSession.value<int64> 7 first = 1L ->
+                | first :: _ when DatabaseSession.value<int64> 10 first = 1L ->
                     RegisterMaintenance.create
-                        (DatabaseSession.value<bool> 5 first)
-                        (DatabaseSession.value<int64> 6 first)
+                        (DatabaseSession.value<bool> 8 first)
+                        (DatabaseSession.value<int64> 9 first)
                     |> Result.defaultWith (fun _ ->
                         raise (RecordCorruptException "Invalid register maintenance state."))
                 | _ ->
@@ -311,6 +358,7 @@ module internal Projections =
             return
                 {
                     GlobalReadFacts.Authority = globalAuthority principal rows
+                    AssignedRoles = roleSummaryJson (DatabaseSession.value<string> 11 rows.Head)
                     Maintenance = mode
                 }
         }
@@ -330,6 +378,7 @@ module internal Projections =
                 |> fun kind -> PrincipalKey.ofKind kind (required 2 row) (required 3 row)
                 |> parsed
             Enabled = required 4 row
+            Profile = profile (optional<string> 5 row) (optional<string> 6 row)
         }
 
     let grantRow row : ScopedGrant * GrantPosition =
@@ -352,3 +401,35 @@ module internal Projections =
                 )
 
         { Role = role; Scope = scope }, { Role = role; CaseId = caseId }
+
+    let actorRoleSummaries connection ids token =
+        task {
+            if List.isEmpty ids then
+                return Map.empty
+            else
+                let roles = roleSummaryQuery "g.actor_id=a.actor_id"
+
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        ($"SELECT a.actor_id,r.* FROM claimcore.actors a LEFT JOIN LATERAL({roles}) r ON true WHERE a.actor_id=ANY($1::uuid[]) ORDER BY a.actor_id,r.role")
+                        [| box (ids |> List.map ActorId.value |> List.distinct |> List.toArray) |]
+                        token
+
+                return
+                    rows
+                    |> List.groupBy (fun row ->
+                        DatabaseSession.value<Guid> 0 row
+                        |> DatabaseSession.admitted ActorId.create)
+                    |> List.map (fun (id, rows) ->
+                        id,
+                        rows
+                        |> List.choose (fun row ->
+                            DatabaseSession.optional<string> 1 row
+                            |> Option.map (fun role ->
+                                roleSummary
+                                    role
+                                    (DatabaseSession.value<bool> 2 row)
+                                    (DatabaseSession.value<int64> 3 row))))
+                    |> Map.ofList
+        }

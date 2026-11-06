@@ -21,13 +21,19 @@ let private owner issuer subject =
             operationId = operation
             issuer = issuer
             subject = subject
+            profile =
+                {|
+                    displayName = "Authored owner"
+                    contact = (None: string option)
+                |}
         |}
 
 let private accepted () =
     let bytes = owner "https://issuer.example/" "human-owner"
     let original = Array.copy bytes
-    let id, principal = Inputs.decodeOwner bytes
+    let id, principal, profile = Inputs.decodeOwner bytes
     Expect.equal id operation "Operation identity retained"
+    Expect.equal profile.DisplayName "Authored owner" "An authored profile is required"
     Expect.isTrue (PrincipalKey.isHuman principal) "The format denotes a human owner"
 
     Expect.equal
@@ -161,3 +167,19 @@ let tests =
             testCase "exact owner format retains identity and caller buffer ownership" accepted
             testCase "format and principal failures retain the refusal boundary" refused
         ]
+
+[<Tests>]
+let usageToken =
+    testCase "database structured usage retains even escaped unknown command tokens" (fun () ->
+        for token in [ "frobnicate"; "line\nbreak"; "escape\u001b" ] do
+            match Inputs.command [ token ] with
+            | Ok _ -> failtest "An unknown database command cannot execute"
+            | Error usage ->
+                let bytes, code = Replies.usage usage
+                use document = JsonDocument.Parse(bytes: byte array)
+                Expect.equal code 2 "The existing administrative refusal exit stays unchanged"
+
+                Expect.equal
+                    (document.RootElement.GetProperty("issue").GetProperty("command").GetString())
+                    token
+                    "The structured contract preserves the authored token")

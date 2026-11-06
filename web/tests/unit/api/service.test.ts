@@ -1,3 +1,6 @@
+import { timelinePage, timelineEntry } from "../../support/timeline.fixtures";
+import { wireReply } from "../../support/contract-corpus.fixtures";
+import { actorRefInput } from "../../support/inputs";
 import {
   ReadableStream as NodeReadableStream,
   type ReadableStreamDefaultController as NodeController,
@@ -33,15 +36,20 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
   ).toBe(true);
 });
 
-import { service } from "../../../src/api/service";
+import { service, requestEndpoint } from "../../../src/api/service";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 const operation = "10000000-0000-4000-8000-000000000001";
 const installation = "90000000-0000-4000-8000-000000000001";
 const receipt = {
+  basis: {
+    observedAt: "2026-11-04T12:00:00.000000Z",
+    businessDate: "2026-11-04",
+    timeZone: "Etc/UTC",
+  },
   operationId: operation,
   position: { sequence: 1, entryHash: "a".repeat(64) },
   recordedAt: "2026-01-01T00:00:00.000000Z",
-  recordedBy: operation,
+  recordedBy: actorRefInput({ actorId: operation }),
   subject: {
     kind: "CASE",
     caseId: operation,
@@ -147,8 +155,6 @@ it.each([
 });
 
 it("coordinates list summary and overview through complete response admission, not just headers", async () => {
-  const { requestEndpoint } = await import("../../../src/api/service");
-  const { wireReply } = await import("../../support/contract-corpus.fixtures");
   const streams: NodeController<Uint8Array>[] = [];
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((path) => {
     if (typeof path !== "string") {
@@ -187,8 +193,6 @@ it("coordinates list summary and overview through complete response admission, n
 });
 
 it("drains dispatched obsolete reads before admitting replacements and never dispatches queued cancellations", async () => {
-  const { requestEndpoint } = await import("../../../src/api/service");
-  const { wireReply } = await import("../../support/contract-corpus.fixtures");
   const streams: NodeController<Uint8Array>[] = [];
   const deliveredSignals: AbortSignal[] = [];
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
@@ -251,7 +255,6 @@ it("drains dispatched obsolete reads before admitting replacements and never dis
 });
 
 it("bounds dispatched read draining by the independent transport deadline even when source cancellation stalls", async () => {
-  const { requestEndpoint } = await import("../../../src/api/service");
   vi.useFakeTimers();
   const cancel = vi.fn(
     () =>
@@ -286,4 +289,74 @@ it("bounds dispatched read draining by the independent transport deadline even w
   });
   expect(deliveredSignal!.aborted).toBe(true);
   expect(cancel).toHaveBeenCalledTimes(1);
+});
+
+it("admits the actual nested grant target and refuses a different actor before rendering", async () => {
+  const sample = wireReply("authority.grants");
+  if (sample.outcome.kind !== "SUCCEEDED") {
+    throw new Error("Expected the core grant-page fixture.");
+  }
+  const { data } = sample.outcome;
+  const { actorId } = data.actor.actor;
+  const different = {
+    outcome: {
+      kind: "SUCCEEDED",
+      data: {
+        ...data,
+        actor: {
+          ...data.actor,
+          actor: { ...data.actor.actor, actorId: "90000000-0000-4000-8000-000000000099" },
+        },
+      },
+    },
+  };
+  vi.stubGlobal(
+    "fetch",
+    vi.fn().mockResolvedValueOnce(reply(sample)).mockResolvedValueOnce(reply(different)),
+  );
+  expect((await service.authorityGrants(actorId, null, "csrf")).kind).toBe("outcome");
+  const rejected = await service.authorityGrants(actorId, null, "csrf");
+  expect(rejected.kind).toBe("deliveryFailure");
+});
+it("admits a timeline target and refuses mismatched case IDs and references", async () => {
+  const data = timelinePage([timelineEntry()]);
+  const fetch = vi
+    .fn()
+    .mockResolvedValueOnce(reply({ outcome: { kind: "SUCCEEDED", data } }))
+    .mockResolvedValueOnce(
+      reply({
+        outcome: {
+          kind: "SUCCEEDED",
+          data: { ...data, caseId: "90000000-0000-4000-8000-000000000099" },
+        },
+      }),
+    )
+    .mockResolvedValueOnce(
+      reply({ outcome: { kind: "SUCCEEDED", data: { ...data, caseReference: "OTHER-CASE" } } }),
+    );
+  vi.stubGlobal("fetch", fetch);
+  expect(
+    (
+      await requestEndpoint("case.timeline", "csrf", {
+        target: { kind: "ID", caseId: data.caseId },
+        limit: 50,
+      })
+    ).kind,
+  ).toBe("outcome");
+  expect(
+    (
+      await requestEndpoint("case.timeline", "csrf", {
+        target: { kind: "ID", caseId: data.caseId },
+        limit: 50,
+      })
+    ).kind,
+  ).toBe("deliveryFailure");
+  expect(
+    (
+      await requestEndpoint("case.timeline", "csrf", {
+        target: { kind: "REFERENCE", caseReference: data.caseReference },
+        limit: 50,
+      })
+    ).kind,
+  ).toBe("deliveryFailure");
 });

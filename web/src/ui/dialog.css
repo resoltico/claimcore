@@ -1,0 +1,186 @@
+.ui-dialog-overlay {
+  position: fixed;
+  z-index: var(--layer-dialog);
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: var(--space-4);
+  overflow: auto;
+  background: var(--scrim);
+}
+.ui-dialog {
+  inline-size: min(100%, 42rem);
+  max-block-size: calc(100dvh - var(--space-6));
+  overflow: auto;
+  overflow-wrap: anywhere;
+  padding: var(--space-5);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-md);
+  background: var(--bg-surface);
+  color: var(--text-primary);
+  box-shadow: var(--shadow-2);
+}
+.ui-dialog-title {
+  margin-block-start: 0;
+  font-size: var(--text-xl);
+}
+.ui-dialog-actions {
+  display: flex;
+  justify-content: end;
+  gap: var(--space-3);
+  margin-block-start: var(--space-5);
+}
+.ui-dialog-overlay--bottom {
+  place-items: end center;
+  padding: 0;
+}
+.ui-dialog-overlay--bottom .ui-dialog {
+  inline-size: min(100%, var(--sheet-max-inline-size));
+  border-end-start-radius: 0;
+  border-end-end-radius: 0;
+}
+
+.ui-dialog [role="dialog"][tabindex="-1"]:focus {
+  outline: none;
+}
+
+.ui-dialog-overlay {
+  padding-inline: min(var(--space-4), 2vw);
+}
+.ui-dialog {
+  padding-inline: min(var(--space-5), 4vw);
+}
+.ui-dialog-overlay--end {
+  place-items: stretch end;
+  padding: 0;
+  overflow: hidden;
+}
+.ui-dialog-overlay--end .ui-dialog {
+  inline-size: min(100%, 35rem);
+  block-size: 100dvh;
+  max-block-size: 100dvh;
+  border-radius: 0;
+}
+.review-consequence-stewardship {
+  background: var(--warning-bg);
+  color: var(--warning-text);
+  border-inline-start: var(--border-width) solid var(--warning-text);
+  padding: var(--space-3);
+}
+.review-consequence-irreversible {
+  background: var(--danger-bg);
+  color: var(--danger-text);
+  border-inline-start: var(--border-width) solid var(--danger-text);
+  padding: var(--space-3);
+}
+.ui-dialog-overlay--end .ui-dialog {
+  overflow: hidden;
+}
+.ui-dialog-overlay--end [role="dialog"] {
+  display: flex;
+  flex-direction: column;
+  block-size: 100%;
+  min-block-size: 0;
+}
+.ui-dialog-overlay--end .ui-dialog-header,
+.ui-dialog-overlay--end .ui-dialog-actions {
+  flex-shrink: 0;
+}
+.ui-dialog-overlay--end .ui-dialog-body {
+  flex: 1;
+  min-block-size: 0;
+  overflow: auto;
+  padding-block: var(--space-3);
+  scroll-padding-block: var(--space-3);
+}
+.ui-dialog-overlay--end .ui-dialog-actions {
+  margin-block-start: var(--space-3);
+  flex-wrap: wrap;
+  padding-block-start: var(--space-3);
+  border-block-start: var(--border-width) solid var(--border-control);
+}
+
+.ui-dialog-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: var(--space-3);
+}
+.ui-dialog-heading .ui-dialog-title {
+  margin-block-end: var(--space-2);
+}
+
+.operation-steps {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  list-style: none;
+  padding: 0;
+  margin-block: var(--space-3);
+  color: var(--text-secondary);
+  font-size: var(--text-sm);
+}
+.operation-steps li {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+.operation-steps li > span {
+  display: inline-grid;
+  place-items: center;
+  inline-size: var(--target-minimum);
+  block-size: var(--target-minimum);
+  border: var(--border-width) solid var(--border-control);
+  border-radius: var(--radius-sm);
+}
+.operation-steps [aria-current="step"] {
+  color: var(--accent-text);
+  font-weight: 650;
+}
+.operation-steps [aria-current="step"] > span {
+  background: var(--accent-soft-bg);
+  border-color: var(--accent-soft-border);
+}
+.review-before > small,
+.review-after > small {
+  display: block;
+  color: var(--text-secondary);
+  margin-block-end: var(--space-1);
+}
+.review-unchanged {
+  color: var(--text-secondary);
+}
+.authority-review-effects {
+  margin-block: var(--space-3);
+}
+
+.ui-completion-popover {
+  z-index: var(--layer-dialog);
+  display: flex;
+  flex-direction: column;
+  inline-size: min(26rem, calc(100vw - var(--space-4)));
+  max-block-size: calc(100dvh - var(--space-4));
+  overflow: hidden;
+}
+.ui-completion-popover [role="dialog"] {
+  display: flex;
+  flex-direction: column;
+  min-block-size: 0;
+  flex: 1;
+  overflow: hidden;
+}
+.ui-completion-popover .ui-dialog-body {
+  min-block-size: 0;
+  flex: 1;
+  overflow: auto;
+}
+.ui-completion-popover .ui-dialog-header,
+.ui-completion-popover .ui-dialog-actions {
+  flex-shrink: 0;
+}
+.ui-completion-popover .ui-dialog-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-2);
+  margin-block-start: var(--space-3);
+}

@@ -177,7 +177,7 @@ let private taggedCollisions () =
         "A payload cannot redeclare its discriminator"
 
 let private definitions () =
-    let text = Schema.String(None, None, None, None)
+    let text = Schema.String(None, None, None, None, None)
     let original = Map.ofList [ "Shared", text ]
     Expect.equal (SchemaDefinitions.merge original original) original "Identical meaning is shared"
 

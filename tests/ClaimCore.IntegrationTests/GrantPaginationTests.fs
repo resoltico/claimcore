@@ -92,7 +92,12 @@ let private prepare (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 200) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 200)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -114,10 +119,21 @@ let private prepare (database: PostgresFixture.Database) =
             acceptedAuthority added
 
 
-        let! actors = (Service.actors admin ({ AfterCursor = None; Limit = 50 }) (token))
+        let! actors =
+            (Service.actors
+                admin
+                ({
+                    Role = None
+                    Text = None
+                    AfterCursor = None
+                    Limit = 50
+                })
+                (token))
 
         let actorId =
-            (page actors).Items |> List.find (fun a -> a.Principal = target) |> _.ActorId
+            (page actors).Items
+            |> List.find (fun a -> a.Principal = target)
+            |> _.Actor.ActorId
 
         let! disabled =
             (Service.execute
@@ -202,7 +218,12 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 620) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 620)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -266,7 +287,15 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
         Expect.equal crossTarget (Outcome.Rejected Refusal.InvalidCursor) "Target is bound"
 
         let! crossEndpoint =
-            (Service.actors admin ({ AfterCursor = cursor; Limit = 50 }) (token))
+            (Service.actors
+                admin
+                ({
+                    Role = None
+                    Text = None
+                    AfterCursor = cursor
+                    Limit = 50
+                })
+                (token))
 
         Expect.equal crossEndpoint (Outcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
@@ -294,7 +323,24 @@ let private traversal (database: PostgresFixture.Database) =
         let! first = (Service.grants admin (query) (token))
         let first = page first
         Expect.equal first.Items.Length 50 "Target grants do not expand actor rows"
-        Expect.isFalse first.Actor.Enabled "Disabled target header is reviewable"
+
+        Expect.equal
+            first.Actor.Actor.ActorId
+            targetId
+            "The related header retains the resolved actor identity"
+
+        Expect.equal
+            first.Actor.Principal
+            (PrincipalKey.service "https://issuer.example/" "grant-target"
+             |> Result.defaultWith (string >> failtest))
+            "The same snapshot supplies the stored principal for profile edits"
+
+        Expect.isNone first.Actor.Contact "A target without an authored contact reports absence"
+
+
+        Expect.isFalse
+            (first.Actor.Actor.Availability = ActorAvailability.Available)
+            "Disabled target header is reviewable"
 
         let! last =
             (Service.grants
@@ -431,7 +477,10 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
 
         let! prior = reading
         let prior = page prior
-        Expect.isFalse prior.Actor.Enabled "Target header comes from pre-change snapshot"
+
+        Expect.isFalse
+            (prior.Actor.Actor.Availability = ActorAvailability.Available)
+            "Target header comes from pre-change snapshot"
 
         Expect.contains
             prior.Items
@@ -443,7 +492,10 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
 
         let! fresh = (Service.grants admin (query) (token))
         let fresh = page fresh
-        Expect.isTrue fresh.Actor.Enabled "Fresh page observes enabled target"
+
+        Expect.isTrue
+            (fresh.Actor.Actor.Availability = ActorAvailability.Available)
+            "Fresh page observes enabled target"
 
         Expect.isFalse
             (fresh.Items |> List.exists (fun g -> g.Role = Role.CaseHandler))

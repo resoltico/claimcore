@@ -14,7 +14,10 @@ export default function publicAssets() {
       if (directory === undefined) {
         throw new Error("Public assets require a build directory.");
       }
-      const entries = Object.values(bundle).filter((entry) => entry.fileName.startsWith("assets/"));
+      const entries = [
+        ...Object.values(bundle).filter((entry) => entry.fileName.startsWith("assets/")),
+        { fileName: "react-aria-pressable.css" },
+      ];
       const assets = await Promise.all(
         entries.map(async (entry) => {
           const bytes = await readFile(resolve(directory, entry.fileName));

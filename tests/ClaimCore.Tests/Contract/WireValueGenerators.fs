@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireValueGenerators
 
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -41,7 +42,12 @@ let internal listBounds (path: string) =
                 "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
                 "CaseWorklistCounts.Assignment", 2
                 "CaseWorklistCounts.Due", 5
-                "AuthorityState.Grants", 1
+                "ActorReviewItem.Roles", 7
+                "ActorContext.Roles", 7
+                "AuthorityState.Grants", 48
+                "AuthorityAdmission`2.Grants", 48
+                "AuthorityReview.Effects", 50
+                "AuthorityReceipt.Effects", 50
                 "AuthorityState.Access", 11
                 "CapabilityAccess.DirectRoles", 7
                 "CapabilityAccess.InstallationRoles", 7
@@ -55,14 +61,30 @@ let internal listBounds (path: string) =
                 "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
-                "AdvisoryReview.Changes", Inventory.fieldCount
+                "CaseViews.Items", 11
+                "ReminderViews.Items", 7
+                "CaseStageOutline.Completed", 4
+                "Tracker.steps", 4
+                "CaseReadModel.Attention", 6
+                "CaseSummary.Attention", 6
+                "CaseReviewChanges.Fields", Inventory.fieldCount
+                "ReviewPresentation.Changes", 324
+                "ReviewPresentation.Unchanged", 324
                 "HistoryDifference.Fields", Inventory.fieldCount
+                "Disclosed.Item", Inventory.fieldCount + 1
+                "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50
 
     let minimum =
-        if path.Contains("HistoryEntries.", StringComparison.Ordinal) then
+        if context = "AuthorityAdmission`2.Grants" then
+            1
+        elif context = "CaseStageOutline.Completed" then
+            1
+        elif context = "Tracker.steps" then
+            4
+        elif path.Contains("HistoryEntries.", StringComparison.Ordinal) then
             1
         else
             0
@@ -144,6 +166,11 @@ let private scalarDomainValue (kind: Type) =
         Some(uppercase 2 |> Gen.map (CaseFixtures.country >> box))
     elif kind = typeof<PartyName> then
         Some(scalarText |> Gen.map (CaseFixtures.name >> box))
+    elif kind = typeof<ContactText> then
+        Some(
+            scalarText
+            |> Gen.map (ContactText.parse >> Result.defaultWith (string >> invalidOp) >> box)
+        )
     elif kind = typeof<EntryHash> then
         Some(
             gen {
@@ -176,13 +203,40 @@ let private scalarDomainValue (kind: Type) =
     else
         financialValue kind
 
+let private claimsValue =
+    gen {
+        let! name = Gen.option scalarText
+        let! username = Gen.option scalarText
+        let! email = Gen.option scalarText
+        return RequesterClaims.admit name username email
+    }
+
 let internal domainValue kind =
-    match groupValue kind with
-    | Some value -> Some value
-    | None ->
-        match WireWorkGenerators.domainValue kind with
+    if kind = typeof<RequesterClaims> then
+        Some(claimsValue |> Gen.map box)
+    elif kind = typeof<UnregisteredRequester> then
+        Some(
+            gen {
+                let! id = guid
+                let! claims = claimsValue
+
+                return
+                    box
+                        {
+                            UnregisteredRequester.Issuer =
+                                "https://issuer-" + id.ToString("N") + ".example/"
+                            Subject = id.ToString("N")
+                            Claims = claims
+                        }
+            }
+        )
+    else
+        match groupValue kind with
         | Some value -> Some value
-        | None -> scalarDomainValue kind
+        | None ->
+            match WireWorkGenerators.domainValue kind with
+            | Some value -> Some value
+            | None -> scalarDomainValue kind
 
 let private positionValue response context kind =
     if kind = typeof<Revision> then
@@ -201,6 +255,40 @@ let private maintenanceValue =
 
         return RegisterMaintenance.create active generation |> Result.defaultWith invalidOp
     }
+
+let private listedScalar value =
+    let represented parse project generator =
+        generator
+        |> Gen.map (parse >> Result.defaultWith (string >> invalidOp) >> project)
+
+    match value with
+    | CaseFieldValue.Reference _ ->
+        represented CaseReference.parse CaseFieldValue.Reference reference
+    | CaseFieldValue.Status _ ->
+        Gen.item [ CaseStatus.Opened; CaseStatus.Closed ]
+        |> Gen.map CaseFieldValue.Status
+    | CaseFieldValue.Business scalar ->
+        let value =
+            match scalar with
+            | Admitted.Date _ -> represented CalendarDate.parse Admitted.Date date
+            | Admitted.Country _ -> represented CountryCode.parse Admitted.Country (uppercase 2)
+            | Admitted.Name _ -> represented PartyName.parse Admitted.Name scalarText
+            | Admitted.Description _ ->
+                represented IncidentDescription.parse Admitted.Description scalarText
+            | Admitted.Amount _ -> represented Amount.parse Admitted.Amount amount
+            | Admitted.Currency _ -> represented Currency.parse Admitted.Currency (uppercase 3)
+
+        value |> Gen.map CaseFieldValue.Business
+
+let private listedFacts (facts: CaseSummaryFacts) =
+    facts.Fields
+    |> Map.toList
+    |> List.map (fun (field, value) ->
+        match value with
+        | None -> Gen.constant (field, None)
+        | Some value -> listedScalar value |> Gen.map (fun value -> field, Some value))
+    |> sequence
+    |> Gen.map (Map.ofList >> fun fields -> { CaseSummaryFacts.Fields = fields })
 
 let rec internal fresh response source context (kind: Type) (value: obj | null) =
     match positionValue response context kind with
@@ -232,6 +320,27 @@ and private freshRepresentation response source context (kind: Type) (value: obj
         freshList response source context kind
     elif kind = typeof<RegisterMaintenance> then
         maintenanceValue |> Gen.map box
+    elif kind = typeof<CaseSummaryFacts> then
+        listedFacts (unbox value) |> Gen.map box
+    elif kind = typeof<RevisionConflictInfo> then
+        let conflict = unbox<RevisionConflictInfo> value
+
+        gen {
+            let! revision =
+                integer response (context + ".RevisionConflictInfo.ActualRevision")
+                |> Gen.map CaseFixtures.revision
+
+            let! changes =
+                fresh
+                    response
+                    source
+                    (context + ".RevisionConflictInfo.Changes")
+                    typeof<ConflictChanges>
+                    (box (conflict.Changes |> Option.get))
+                |> Gen.map unbox<ConflictChanges>
+
+            return RevisionConflictInfo.at revision |> RevisionConflictInfo.explain changes |> box
+        }
     elif kind = typeof<CaseAdvice> then
         let advice = unbox<CaseAdvice> value
 
@@ -270,10 +379,27 @@ and private freshRepresentation response source context (kind: Type) (value: obj
 
             let! maintenance = maintenanceValue
 
+            let! recommended =
+                if maintenance.Active || List.isEmpty acts then
+                    Gen.constant None
+                else
+                    Gen.choice [ Gen.constant None; Gen.item acts |> Gen.map Some ]
+
+            let blocked =
+                CaseActKind.all
+                |> List.filter (fun act -> not (List.contains act acts))
+                |> List.map (fun act ->
+                    {
+                        CaseActRefusal.Act = act
+                        Reason = Refusal.Access AccessRefusal.ResourceUnavailable
+                    })
+
             return
-                CaseAdvice.create acts correction history
+                CaseAdvice.create acts correction history blocked
                 |> Result.defaultWith invalidOp
                 |> CaseAdvice.duringMaintenance maintenance
+                |> CaseAdvice.withRecommendation recommended
+                |> Result.defaultWith invalidOp
                 |> box
         }
     elif kind = typeof<InputIssues> then
@@ -284,9 +410,9 @@ and private freshRepresentation response source context (kind: Type) (value: obj
             let! items = Gen.list (Range.singleton size) item
             return items |> List.map unbox<InputIssue> |> InputIssues.ofList |> Option.get |> box
         }
-    elif kind = typeof<PreviewReply> then
+    elif kind = typeof<PresentedPreviewReply> then
         freshRecord response source context kind value
-        |> Gen.map (unbox<PreviewReply> >> WireWorkGenerators.coherentPreview >> box)
+        |> Gen.map (unbox<PresentedPreviewReply> >> WireWorkGenerators.coherentPreview >> box)
     elif kind = typeof<OperationReceipt> then
         freshRecord response source context kind value
         |> Gen.map (unbox<OperationReceipt> >> WireWorkGenerators.coherentReceipt >> box)
@@ -323,14 +449,87 @@ and private freshList response source context kind =
     }
 
 and private freshRecord response source context kind value =
-    Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
-    |> Array.map (fun (field, item) ->
-        fresh response source (context + "." + recordContext kind field) field.PropertyType item)
-    |> Array.toList
-    |> sequence
-    |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
+    if kind = typeof<TimelineDisclosure> then
+        let seed = unbox<TimelineDisclosure> value
+
+        gen {
+            let! items =
+                freshList
+                    response
+                    source
+                    (context + ".TimelineDisclosure.Items")
+                    typeof<TimelineChange list>
+                |> Gen.map unbox<TimelineChange list>
+
+            let! event =
+                fresh
+                    response
+                    source
+                    (context + ".TimelineDisclosure.Overview.TimelineOverview.Event")
+                    typeof<TimelineEvent>
+                    (box seed.Overview.Event)
+                |> Gen.map unbox<TimelineEvent>
+
+            let! highlights = WireWorkGenerators.timelineHighlights items
+
+            return
+                box
+                    {
+                        TimelineDisclosure.Items = items
+                        Overview =
+                            {
+                                Event = event
+                                Highlights = highlights
+                            }
+                    }
+        }
+    else
+        Array.zip (FSharpType.GetRecordFields kind) (FSharpValue.GetRecordFields(nonNull value))
+        |> Array.map (fun (field, item) ->
+            fresh
+                response
+                source
+                (context + "." + recordContext kind field)
+                field.PropertyType
+                item)
+        |> Array.toList
+        |> sequence
+        |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
 
 and private freshUnion response source context kind value =
+    if kind = typeof<PresentedValue> then
+        match unbox<PresentedValue> value with
+        | PresentedValue.Code(vocabulary, _) ->
+            presentationToken vocabulary
+            |> Gen.map (fun token -> box (PresentedValue.Code(vocabulary, token)))
+        | PresentedValue.Codes(vocabulary, _) ->
+            Gen.list (Range.constant 0 11) (presentationToken vocabulary)
+            |> Gen.map (fun tokens -> box (PresentedValue.Codes(vocabulary, tokens)))
+        | _ -> freshUnionFields response source context kind value
+    else
+        freshUnionFields response source context kind value
+
+and private presentationToken vocabulary =
+    if vocabulary = "country" then
+        uppercase 2
+    elif vocabulary = "currency" then
+        uppercase 3
+    else
+        [
+            Vocabulary.name Lifecycle.vocabulary, Vocabulary.tokens Lifecycle.vocabulary
+            Vocabulary.name CaseStatus.vocabulary, Vocabulary.tokens CaseStatus.vocabulary
+            Vocabulary.name Role.vocabulary, Vocabulary.tokens Role.vocabulary
+            Vocabulary.name ScopeKind.vocabulary, Vocabulary.tokens ScopeKind.vocabulary
+            Vocabulary.name Capability.vocabulary, Vocabulary.tokens Capability.vocabulary
+            Vocabulary.name ReminderState.vocabulary, Vocabulary.tokens ReminderState.vocabulary
+            Vocabulary.name PresentedBoolean.vocabulary,
+            Vocabulary.tokens PresentedBoolean.vocabulary
+        ]
+        |> Map.ofList
+        |> Map.find vocabulary
+        |> Gen.item
+
+and private freshUnionFields response source context kind value =
     let case, fields = FSharpValue.GetUnionFields(value, kind)
 
     Array.zip (case.GetFields()) fields

@@ -42,9 +42,9 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
             {
                 CaseRequest = 4
                 Snapshot = 4
-                Authority = 2
+                Authority = 3
                 Control = 2
-                LedgerEntry = 4
+                LedgerEntry = 5
                 Work = 1
                 Reminder = 1
             }
@@ -73,7 +73,11 @@ let private statusAndGenerations (database: PostgresFixture.Database) =
         Expect.equal repeated.State entered.State "Repeated entry does not advance generation"
 
         let! provisioned =
-            Service.provisionOwner (core database.Fixture database.Fixture.Owner) (id 1) token
+            Service.provisionOwner
+                (core database.Fixture database.Fixture.Owner)
+                (id 1)
+                ClaimCore.TestSupport.Inputs.ownerProfile
+                token
 
         match provisioned with
         | Ok(Verdict.Refuse Refusal.RegisterMaintenance) -> ()
@@ -142,7 +146,12 @@ let private actionState (database: PostgresFixture.Database) =
         let! authority =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 12) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 12)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         Expect.equal
@@ -176,15 +185,40 @@ let private actionState (database: PostgresFixture.Database) =
         Expect.isTrue read.Advice.Maintenance.Active "Case advice reports its observed mode"
         Expect.isEmpty read.Advice.Acts "Current advice offers no register writes"
         let! context = Service.context actor () token
-        let context = success context
+        let context = Inputs.activeContext (success context)
         Expect.isTrue context.Maintenance.Active "Context exposes register maintenance"
         Expect.isEmpty context.Offers "Context offers are read-only during maintenance"
         let! replay = Service.execute actor pending token
 
+        let replayed =
+            match replay.Outcome with
+            | ExecuteResult.AlreadyAccepted receipt -> receipt
+            | other -> failtestf "Expected retained acceptance during maintenance: %A" other
+
+        let original = accepted opening
+
         Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted(accepted opening))
-            "Retained acceptance remains readable without another append"
+            (replayed.OperationId,
+             replayed.Position,
+             replayed.Subject,
+             replayed.RecordedAt,
+             replayed.RecordedBy.ActorId)
+            (original.OperationId,
+             original.Position,
+             original.Subject,
+             original.RecordedAt,
+             original.RecordedBy.ActorId)
+            "Retained acceptance preserves its identity, facts and original recording metadata"
+
+        Expect.isGreaterThanOrEqual
+            replayed.Basis.ObservedAt
+            context.Runtime.Basis.ObservedAt
+            "Replay reports its current authorized observation, after the preceding context read"
+
+        Expect.equal
+            (replayed.Basis.BusinessDate, replayed.Basis.TimeZoneId)
+            (context.Runtime.Basis.BusinessDate, "Etc/UTC")
+            "Replay observation uses the installation business calendar"
 
         let sessions = SessionStore(database.RuntimeSource) :> ISessionStore
 
@@ -295,6 +329,7 @@ let private entryWaitsForAcceptance (database: PostgresFixture.Database) =
 
         let store =
             { new IStore with
+                member _.Context query = database.Fixture.Store.Context query
                 member _.Read operation = database.Fixture.Store.Read operation
 
                 member _.Write operation =

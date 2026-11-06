@@ -187,7 +187,7 @@ let private identityAndVersionTests =
 
                 Expect.isTrue
                     ((result |> Result.map Case.snapshot) =
-                        Error(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
+                        Error(Refusal.revisionConflict (CaseFixtures.revision 1L)))
                     "No lost update")
             testCase "missing case rejected" (fun () ->
                 let result =
@@ -218,7 +218,7 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case CaseRefusal.DecisionRequired))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Undecided)))
                     "Decision required")
             testCase "second full payment rejected" (fun () ->
                 let result =
@@ -232,7 +232,7 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case CaseRefusal.PaymentAlreadyRecorded))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
                     "No instalment model")
             testCase "zero decision allowed but no fictitious zero transfer" (fun () ->
                 let claim =
@@ -256,7 +256,7 @@ let private paymentGuardTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case CaseRefusal.ZeroDecisionCannotBePaid))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
                     "No transfer"
 
                 Expect.isFalse
@@ -302,7 +302,7 @@ let private decisionEditingTests =
                     paid () |> apply (AuthoredCaseAct.Decide decision) |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case CaseRefusal.DecisionAlreadyPaid))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Paid)))
                     "Explicit correction first")
             testCase "unpaid decision can be replaced" (fun () ->
                 let fields =
@@ -333,7 +333,7 @@ let private decisionEditingTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (amendment = Error(Refusal.Case CaseRefusal.AmendmentRequiresUndecided))
+                    (amendment = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
                     "No stale decision"
 
                 let fields =
@@ -387,7 +387,7 @@ let private correctionTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case CaseRefusal.PaymentNotRecorded))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Decided)))
                     "No payment")
             testCase "closed cases must reopen before edits" (fun () ->
                 let claim = decided () |> apply (AuthoredCaseAct.Bare BareAct.Close) |> accepted
@@ -402,7 +402,7 @@ let private correctionTests =
                     |> Result.map Case.snapshot
 
                 Expect.isTrue
-                    (result = Error(Refusal.Case CaseRefusal.CaseClosed))
+                    (result = Error(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)))
                     "Explicit reopen")
         ]
 

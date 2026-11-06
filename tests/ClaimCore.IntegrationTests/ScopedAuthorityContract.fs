@@ -70,7 +70,12 @@ let internal scopedHandler fixture (admin: ServiceContext) reference =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 30) target AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 30)
+                        target
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -169,7 +174,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
 
         Expect.equal
             refused.Outcome
-            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
+            (ExecuteResult.Rejected(Refusal.Access(AccessRefusal.NotAuthorized Capability.Register)))
             "Revocation is decided again under lock"
 
         let! current =
@@ -277,7 +282,12 @@ let internal scopedWorker fixture =
         let! registered =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 20) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 20)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (CancellationToken.None))
 
         acceptedAuthority registered
@@ -395,7 +405,12 @@ let internal scopedAuthority fixture =
         let! registered =
             Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 430) roleless AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 430)
+                        roleless
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 CancellationToken.None
 
         acceptedAuthority registered
@@ -438,7 +453,12 @@ let internal scopedAuthority fixture =
         let! registeredService =
             Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 440) service AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 440)
+                        service
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 CancellationToken.None
 
         acceptedAuthority registeredService

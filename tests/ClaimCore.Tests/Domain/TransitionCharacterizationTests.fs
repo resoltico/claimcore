@@ -119,7 +119,8 @@ let classes =
 let outcome =
     function
     | Ok(_: CaseRecord) -> "ACCEPTED"
-    | Error(Refusal.RevisionConflict revision) ->
+    | Error(Refusal.RevisionConflict conflict) ->
+        let revision = conflict.ActualRevision
         sprintf "RevisionConflict %A" (Revision.value revision)
     | Error(Refusal.Case refusal) -> sprintf "%A" refusal
     | Error(Refusal.Authority refusal) -> sprintf "%A" refusal

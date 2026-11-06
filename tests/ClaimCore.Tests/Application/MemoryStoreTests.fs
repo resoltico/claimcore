@@ -87,12 +87,112 @@ let private rollback () =
             Expect.equal count (Ok 0) "Rejected staged projection is discarded"
     }
 
+let private requestExpiry () =
+    async {
+        let! fixture = fixture () |> Async.AwaitTask
+
+        try
+            let memory = fixture.Store :?> MemoryStore.Store
+            let actor = core fixture fixture.Owner
+            let before = memory.ObservedAt
+
+            let! _ =
+                Service.context
+                    (Service.withClaims (RequesterClaims.admit (Some "Hint") None None) actor)
+                    ()
+                    CancellationToken.None
+                |> Async.AwaitTask
+
+            memory.ObservedAt <- before.AddDays 31.
+            let! _ = Service.context actor () CancellationToken.None |> Async.AwaitTask
+            let request = List.exactlyOne memory.AccessRequests
+
+            Expect.equal
+                request.FirstSeen
+                memory.ObservedAt
+                "An expired request starts a fresh first-seen lifetime"
+
+            Expect.isNone request.Claims.Name "A refreshed absence does not retain an old hint"
+            let! _ = bootstrap fixture |> Async.AwaitTask
+
+            Expect.isEmpty
+                memory.AccessRequests
+                "Owner provisioning removes its matching request atomically"
+        finally
+            fixture.Dispose()
+    }
+
+let private directoryBatch () =
+    async {
+        let! fixture = fixture () |> Async.AwaitTask
+
+        try
+            let memory = fixture.Store :?> MemoryStore.Store
+            let! owner = bootstrap fixture |> Async.AwaitTask
+
+            for number in [ 2000..2049 ] do
+                let principal =
+                    PrincipalKey.human "https://issuer.example/" ($"batch-{number}")
+                    |> Result.defaultWith (string >> failtest)
+
+                memory.SeedActor
+                    {
+                        ActorId = CaseFixtures.actorId (id number)
+                        Principal = principal
+                        Enabled = true
+                        Profile = None
+                    }
+                    []
+
+            let page limit =
+                async {
+                    let before = memory.Events |> List.filter ((=) "read") |> List.length
+
+                    let! result =
+                        Service.actors
+                            owner
+                            {
+                                Role = None
+                                Text = None
+                                AfterCursor = None
+                                Limit = limit
+                            }
+                            CancellationToken.None
+                        |> Async.AwaitTask
+
+                    let after = memory.Events |> List.filter ((=) "read") |> List.length
+
+                    match result with
+                    | Outcome.Succeeded page ->
+                        Expect.equal page.Items.Length limit "Requested page is materialized"
+                    | other -> failtestf "Directory batch: %A" other
+
+                    return after - before
+                }
+
+            let! one = page 1
+            let! many = page 50
+
+            Expect.equal
+                many
+                one
+                "A50-person page uses the same number of snapshot primitives as a one-person page"
+        finally
+            fixture.Dispose()
+    }
+
 [<Tests>]
 let tests =
     testList
         "memory transaction store"
         [
             StoreContractTests.tests fixture
+            testCaseAsync
+                "directory role facts are one batch rather than per-person reads"
+                (directoryBatch ())
+            testCaseAsync
+                "expired requester hints reset and provisioning deletes the request"
+                (requestExpiry ())
             testCaseAsync
                 "rejection discards pending writes and locking precedes reads"
                 (rollback ())
@@ -150,7 +250,7 @@ let authorityFactReads =
                             "Only required head-locked protection facts are queried"
                     }
 
-                do! check 600 AuthorityAct.Register []
+                do! check 600 (AuthorityAct.Register Inputs.actorProfile) []
 
                 do!
                     check

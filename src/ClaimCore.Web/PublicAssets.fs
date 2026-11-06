@@ -41,7 +41,10 @@ module internal PublicAssets =
             let file = Path.GetFullPath(Path.Combine(directory, path.TrimStart('/')))
 
             if
-                not (path.StartsWith("/assets/", StringComparison.Ordinal))
+                not (
+                    path.StartsWith("/assets/", StringComparison.Ordinal)
+                    || path = "/react-aria-pressable.css"
+                )
                 || not (file.StartsWith(root, StringComparison.Ordinal))
             then
                 invalidOp "Invalid public build path."
@@ -84,7 +87,9 @@ module internal PublicAssets =
                     ->
                     context.Response.ContentType <- asset.ContentType
                     context.Response.Headers.ETag <- asset.ETag
-                    HttpHeaders.publicAsset context
+                    // Fixed-name styles must not inherit immutable caching across builds.
+                    if context.Request.Path.StartsWithSegments(PathString "/assets") then
+                        HttpHeaders.publicAsset context
 
                     let matched =
                         context.Request.Headers.IfNoneMatch

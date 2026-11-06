@@ -210,12 +210,15 @@ let grant fixture target role = setGrant fixture target role true
 let private setupFrames fixture =
     let registrations =
         [
-            "SERVICE", "service", [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
-            "HUMAN", IdentityRealm.stewardSubject, [ "DATA_STEWARD" ]
-            "HUMAN", IdentityRealm.readerSubject, [ "CASE_READER" ]
-            "HUMAN", IdentityRealm.editorSubject, [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
+            "SERVICE", "service", "Published service", [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
+            "HUMAN", IdentityRealm.stewardSubject, "Published steward", [ "DATA_STEWARD" ]
+            "HUMAN", IdentityRealm.readerSubject, "Published reader", [ "CASE_READER" ]
+            "HUMAN",
+            IdentityRealm.editorSubject,
+            "Published editor",
+            [ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
         ]
-        |> List.collect (fun (kind, subject, roles) ->
+        |> List.collect (fun (kind, subject, displayName, roles) ->
             let target = principal fixture kind subject
 
             frame
@@ -224,7 +227,15 @@ let private setupFrames fixture =
                     kind = "AUTHORITY"
                     operationId = id ()
                     target = target
-                    act = {| kind = "REGISTER" |}
+                    act =
+                        {|
+                            kind = "REGISTER"
+                            profile =
+                                {|
+                                    displayName = displayName
+                                    contact = null
+                                |}
+                        |}
                 |}
             :: (roles |> List.map (grantFrame target)))
 

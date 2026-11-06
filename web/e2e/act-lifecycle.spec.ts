@@ -1,16 +1,27 @@
-import { goToView, showOperationLookup } from "./workspace-navigation";
+import { openRecovery, goToView, showOperationLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
 import { expect, test } from "@playwright/test";
 import type { Page } from "@playwright/test";
 
-import { completeAct, openCase, lookupCase } from "./case-workflow";
+import { completeAct, openCase, lookupCase, caseActionButton } from "./case-workflow";
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
+const expectRevision = async (page: Page, revision: string) => {
+  const details = page.locator("[data-record-details]");
+  await details.locator(":scope > summary").click();
+  await expect(
+    details
+      .locator("dl > div")
+      .filter({ has: page.getByText("Revision", { exact: true }) })
+      .locator("dd"),
+  ).toHaveText(revision);
+  await details.locator(":scope > summary").click();
+};
 const reference = (): string => `BROWSER-${randomUUID()}`;
 
 const decide = async (page: Page): Promise<void> => {
-  await completeAct(page, "Record payment decision", {
+  await completeAct(page, "DECIDE", {
     "Payment decision date": "2026-09-03",
     "Amount to be paid": "300.25",
     "Currency of amount to be paid": "EUR",
@@ -23,24 +34,26 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   const caseReference = reference();
   await openAuthenticated(page);
   const opened = await openCase(page, caseReference);
-  await completeAct(page, "Amend registration", {
+  await completeAct(page, "AMEND_REGISTRATION", {
     "Claimant name": "Synthetic amended claimant",
   });
   await decide(page);
-  await completeAct(page, "Withdraw payment decision");
-  await expect(page.locator(".case-header-state").getByText("Revision 4")).toBeVisible();
-  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
-  await expect(page.locator(".history-list > li > details")).toHaveCount(4);
+  await completeAct(page, "WITHDRAW_DECISION");
+  await expectRevision(page, "4");
+  await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(4);
   const opening = page
-    .locator(".history-list > li > details")
+    .locator(".case-timeline > .timeline-entry")
     .filter({ hasText: opened.operationId });
   await expect(opening).toHaveCount(1);
-  await opening.locator(":scope > summary").click();
+  await opening.locator(":scope > details > summary").click();
+  await expect(opening.locator(".timeline-change").first()).toBeVisible();
+  await expect(opening).toContainText("Synthetic claimant");
+  await expect(opening).toContainText("1,200.50");
   await expect(opening).toContainText(opened.operationId);
-  await expect(page.getByRole("button", { name: /^Close the case:/u })).toBeVisible();
+  await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
   await expectAccessible(page);
 
-  await goToView(page, "operations");
+  await openRecovery(page);
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
@@ -50,7 +63,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
 
   await goToView(page, "cases");
   await lookupCase(page, caseReference);
-  await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+  await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.getByText("Synthetic amended claimant").first()).toBeVisible();
 });
 
@@ -61,13 +74,12 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await openAuthenticated(page);
   await openCase(page, caseReference);
   await decide(page);
-  await completeAct(page, "Record actual payment", { "Payment date": "2026-09-05" });
-  await completeAct(page, "Correct an erroneous payment record");
-  await completeAct(page, "Close the case");
+  await completeAct(page, "RECORD_PAYMENT", { "Payment date": "2026-09-05" });
+  await completeAct(page, "CLEAR_PAYMENT");
+  await completeAct(page, "CLOSE");
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
-  await completeAct(page, "Reopen the case");
-  await expect(page.locator(".case-header-state").getByText("Revision 6")).toBeVisible();
-  await page.getByRole("combobox", { name: "History detail", exact: true }).selectOption("FULL");
-  await expect(page.locator(".history-list > li > details")).toHaveCount(6);
+  await completeAct(page, "REOPEN");
+  await expectRevision(page, "6");
+  await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(6);
   await expectAccessible(page);
 });

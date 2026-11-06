@@ -48,6 +48,7 @@ module ProjectionVerification =
                             ActorId = id
                             Principal = principal
                             Enabled = row.Enabled
+                            Profile = row.Profile
                         }
                     Grants = []
                 }
@@ -87,7 +88,15 @@ module ProjectionVerification =
                 match Map.tryFind id actual with
                 | None -> false
                 | Some current ->
-                    { actor with Grants = [] } = { current with Grants = [] }
+                    { actor with
+                        Actor = { actor.Actor with Profile = None }
+                        Grants = []
+                    }
+                        =
+                        { current with
+                            Actor = { current.Actor with Profile = None }
+                            Grants = []
+                        }
                     && Set.ofList actor.Grants = Set.ofList current.Grants))
 
     let caseProjection installationId histories seen (record: StoredCase) =
@@ -181,8 +190,36 @@ module ProjectionVerification =
                 (Ok Set.empty))
         |> Result.bind (finishCases histories)
 
+    let actorProfileSearch (expected: Map<ActorId, ActorAuthority>) (id, search, contactSearch) =
+        match Map.tryFind id expected with
+        | None -> Error(divergence None VerificationFinding.AuthorityProfileProjection)
+        | Some actor ->
+            let wanted =
+                actor.Actor.Profile
+                |> Option.map (fun profile ->
+                    TextSearch.normalize (PartyName.format profile.DisplayName))
+
+            let wantedContact =
+                actor.Actor.Profile
+                |> Option.bind _.Contact
+                |> Option.map (ContactText.format >> TextSearch.normalize)
+
+            require
+                None
+                VerificationFinding.AuthorityProfileProjection
+                (search = wanted && contactSearch = wantedContact)
+
     let finishAuthority expected actual =
-        require None VerificationFinding.AuthorityProjection (matching expected actual)
+        result {
+            do! require None VerificationFinding.AuthorityProjection (matching expected actual)
+
+            do!
+                require
+                    None
+                    VerificationFinding.AuthorityProfileProjection
+                    (Map.map (fun _ (actor: ActorAuthority) -> actor.Actor.Profile) expected =
+                        Map.map (fun _ (actor: ActorAuthority) -> actor.Actor.Profile) actual)
+        }
 
     let authority expected actorRows grantRows =
         actorRows
@@ -238,7 +275,7 @@ module ProjectionVerification =
                     let search =
                         current
                         |> Option.bind _.Summary
-                        |> Option.map (HandlingSummary.format >> CaseSearch.normalize)
+                        |> Option.map (HandlingSummary.format >> TextSearch.normalize)
 
                     require
                         None
@@ -264,6 +301,8 @@ module ProjectionVerification =
                      |> Option.defaultValue Array.empty)
                 && row.ChangedAt = history.ChangedAt
                 && row.RecordedBy = history.RecordedBy
+                && row.SummaryChangedAt = history.SummaryChangedAt
+                && row.SummaryRecordedBy = history.SummaryRecordedBy
 
         require
             None

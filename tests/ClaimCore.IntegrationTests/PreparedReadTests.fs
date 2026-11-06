@@ -74,7 +74,10 @@ let private freshness (database: PostgresFixture.Database) =
                 Service.execute
                     admin
                     (OperationInput.Authority(
-                        authorityRequest (id operation) who AuthorityAct.Register
+                        authorityRequest
+                            (id operation)
+                            who
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
 
@@ -382,7 +385,7 @@ let private cancellation (database: PostgresFixture.Database) =
         let! recovered = (Service.context core () token).WaitAsync(TimeSpan.FromSeconds 3.)
 
         Expect.equal
-            (succeeded recovered).ActorId
+            (Inputs.activeContext (succeeded recovered)).ActorId
             (CaseFixtures.actorId (id 1))
             "A fresh request succeeds after cancellation cleanup"
     }

@@ -31,7 +31,7 @@ module internal RequestValidation =
         | PaymentChange.Reaffirm -> Ok PaymentChange.Reaffirm
         | PaymentChange.Replace value -> parse value |> Result.map PaymentChange.Replace
 
-    let private act (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
+    let private act admit admitReason (input: AuthoredCaseAct) : Result<ValidCaseAct, Refusal> =
         match input with
         | CaseAct.Correct value ->
             Admission.map2
@@ -44,36 +44,84 @@ module internal RequestValidation =
                         })
                 (Admission.map2
                     (fun registration decision -> registration, decision)
-                    (amend Validation.registrationUpdate value.Registration)
-                    (change Validation.decisionUpdate value.Decision))
-                (payment Validation.payment value.Payment)
+                    (amend
+                        (RegistrationUpdateInput.parseWith admit >> InputValidation.group)
+                        value.Registration)
+                    (change
+                        (DecisionUpdateInput.parseWith admit >> InputValidation.group)
+                        value.Decision))
+                (payment (Payment.parseWith admit >> InputValidation.group) value.Payment)
         | input ->
             CaseAct.traverse
-                Validation.registration
-                Validation.registrationUpdate
-                Validation.decision
-                Validation.decisionUpdate
-                Validation.payment
-                reason
+                (Registration.parseWith admit >> InputValidation.group)
+                (RegistrationUpdateInput.parseWith admit >> InputValidation.group)
+                (Decision.parseWith admit >> InputValidation.group)
+                (DecisionUpdateInput.parseWith admit >> InputValidation.group)
+                (Payment.parseWith admit >> InputValidation.group)
+                (fun raw -> reason raw |> Result.bind admitReason)
                 input
 
-    let parse (request: UnvalidatedCaseRequest) =
-        let identity =
-            OperationId.create request.OperationId
-            |> Option.map Ok
-            |> Option.defaultWith (fun () ->
-                Validation.invalid InputTarget.OperationId Violation.OperationIdRequired)
+    let private identity operationId =
+        OperationId.create operationId
+        |> Option.map Ok
+        |> Option.defaultWith (fun () ->
+            InputValidation.invalid InputTarget.OperationId Violation.OperationIdRequired)
 
-        let revision =
-            Revision.create request.ExpectedRevision
-            |> Option.map Ok
-            |> Option.defaultWith (fun () ->
-                Validation.invalid InputTarget.ExpectedRevision Violation.ExpectedRevisionRange)
+    let private expected expectedRevision =
+        Revision.create expectedRevision
+        |> Option.map Ok
+        |> Option.defaultWith (fun () ->
+            InputValidation.invalid InputTarget.ExpectedRevision Violation.ExpectedRevisionRange)
+
+    let private parts admit admitReason operationId referenceResult expectedRevision input =
+        let identity = identity operationId
+        let revision = expected expectedRevision
 
         Admission.map2
             (fun (identity, reference) (revision, act) -> reference, identity, revision, act)
+            (Admission.map2 (fun identity reference -> identity, reference) identity referenceResult)
             (Admission.map2
-                (fun identity reference -> identity, reference)
-                identity
-                (reference request.CaseReference))
-            (Admission.map2 (fun revision act -> revision, act) revision (act request.Act))
+                (fun revision act -> revision, act)
+                revision
+                (act admit admitReason input))
+
+    let parseWith admit admitReason (request: UnvalidatedCaseRequest) =
+        parts
+            admit
+            admitReason
+            request.OperationId
+            (reference request.CaseReference)
+            request.ExpectedRevision
+            request.Act
+
+    let private syntaxAdmission _field =
+        FieldValue.admit System.DateOnly.MaxValue
+
+    let private syntaxReason =
+        Reason.admit
+        >> Result.mapError (fun violation -> Refusal.invalidInput (InputTarget.Reason, violation))
+
+    let syntax operationId authoredReference expectedRevision input =
+        let reference =
+            match authoredReference with
+            | Some raw -> reference raw |> Result.map Some
+            | None -> Ok None
+
+        parts syntaxAdmission syntaxReason operationId reference expectedRevision input
+        |> Result.map ignore
+
+    let parse request = parseWith (fun _ -> Ok) Ok request
+
+
+    /// Only supplied request metadata participates; field and chronology rules remain shared.
+    let syntaxIntent operationId authoredReference expectedRevision input =
+        let supplied check =
+            Option.map (check >> Result.map ignore) >> Option.defaultValue (Ok())
+
+        Admission.collect
+            [
+                supplied identity operationId
+                supplied reference authoredReference
+                supplied expected expectedRevision
+                act syntaxAdmission syntaxReason input |> Result.map ignore
+            ]

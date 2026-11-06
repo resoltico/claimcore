@@ -1,5 +1,5 @@
 import { caseFieldValue } from "../protocol/caseFields";
-import { useId, useState, type ReactNode } from "react";
+import { useId, type ReactNode } from "react";
 import type { CaseFields, CatalogDocument } from "../api/service";
 import { CaseFactRows, CaseFactGroup } from "./CaseFactGroup";
 import { usePresentation } from "../presentation/context";
@@ -31,21 +31,10 @@ export const CaseFieldsView = ({ values, revision, fields, context }: CaseFields
   const p = usePresentation();
   const headingId = useId();
   const snapshotFields = fields.filter((field) => field.section !== "work");
-  const [explain, setExplain] = useState(false);
   return (
-    <section aria-labelledby={headingId} className="case-fields">
+    <section aria-labelledby={headingId} className="case-fields case-fields-view">
       <div className="section-heading">
         <h2 id={headingId}>{context}</h2>
-        <button
-          type="button"
-          className="explain-fields"
-          aria-pressed={explain}
-          onClick={() => {
-            setExplain(!explain);
-          }}
-        >
-          {p.text("ui.explainFields")}
-        </button>
         <span>{p.text("ui.revision", { revision: p.integer(revision) })}</span>
         <CopyValue
           label={p.text("ui.acceptedSummary")}
@@ -55,7 +44,6 @@ export const CaseFieldsView = ({ values, revision, fields, context }: CaseFields
       <CaseFactRows
         values={values}
         fields={snapshotFields.filter((field) => field.group === null)}
-        explain={explain}
       />
       {groups.map((group) => (
         <CaseFactGroup key={group} group={group} values={values} fields={snapshotFields} />

@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { expect, it, vi, beforeEach } from "vitest";
 
 vi.mock("../../e2e/session-helpers", () => ({ openAuthenticated: vi.fn() }));

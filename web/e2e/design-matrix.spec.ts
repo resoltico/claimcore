@@ -1,3 +1,14 @@
+import {
+  dimensions,
+  dimensionCaseTitle,
+  selectDiagnosticDimension,
+  expectedDimensionCounts,
+  expectedCaptures,
+  expectedRoutes,
+  expectedEngineCounts,
+  assertMatrixPlan,
+  type Dimension,
+} from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { expect, test, type Page, type TestInfo, type Request } from "@playwright/test";
@@ -11,11 +22,8 @@ import {
   checkFrame,
   configureDimension,
   displayLocaleFor,
-  dimensions,
   visitRoute,
   writeMatrixReport,
-  expectedCaptures,
-  type Dimension,
   matrixEvidenceDirectory,
 } from "./design-matrix-checks";
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
@@ -24,41 +32,24 @@ if (!["chromium", "firefox", "webkit"].includes(engine)) {
     "Design matrix requires CLAIMCORE_WEB_E2E_ENGINE=chromium|firefox|webkit and matching --project.",
   );
 }
+const plannedDimensions = dimensions(engine);
+const selectedDimension = selectDiagnosticDimension(
+  plannedDimensions,
+  process.env["CLAIMCORE_WEB_E2E_DIAGNOSTIC_CASE"],
+  process.env["CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE"],
+);
+const caseScope =
+  selectedDimension === undefined
+    ? {}
+    : {
+        scope: "diagnostic-case",
+        fullQualification: false,
+        case: dimensionCaseTitle(selectedDimension),
+      };
 let dataset: DesignDataset;
 type FrameCounts = { pageLoads: number; axeAndReflowChecks: number; screenshots: number };
 type EngineCounts = FrameCounts & { dimensions: number };
 const completed: FrameCounts[] = [];
-const expectedRoutes = [
-  "cases-mine",
-  "cases-notified",
-  "cases-summary",
-  "cases-open-undecided",
-  "cases-decided-unpaid",
-  "cases-recent",
-  "cases-closed",
-  "cases-voided",
-  "cases-all",
-  "cases-filtered",
-  "case-undecided",
-  "case-decided",
-  "case-paid",
-  "case-closed",
-  "case-voided",
-  "case-erased",
-  "editor-open",
-  "editor-decide",
-  "editor-correct",
-  "editor-void",
-  "editor-work",
-  "recovery",
-  "paid-correction-review",
-  "history-comparison",
-  "operation-result",
-  "authority-history",
-  "not-found",
-  "authority-list",
-  "authority-detail",
-] as const;
 type Run = {
   page: Page;
   info: TestInfo;
@@ -69,7 +60,7 @@ type Run = {
 };
 const recordFrame = async (run: Run, frame: string) => {
   try {
-    await checkFrame(run.page, run.dimension, frame);
+    await checkFrame(run.page, run.dimension, frame, run.info);
   } catch (error) {
     await run.page.screenshot({ path: run.info.outputPath(`failed-${frame}.png`), fullPage: true });
     throw error;
@@ -101,11 +92,9 @@ const expandedFilters = async (run: Run) => {
     await summary.click();
   }
   await expect(run.page.locator(".worklist-filters input:checked")).toHaveCount(3);
-  await expect(
-    run.page
-      .locator(".worklist-filters select")
-      .filter({ has: run.page.locator('option[value="RECENT"]') }),
-  ).toHaveValue("RECENT");
+  await expect(run.page.locator('.worklist-filters [role="combobox"][value="RECENT"]')).toHaveCount(
+    1,
+  );
   await recordFrame(run, "cases-filter-panel");
   if (compact) {
     await run.page.keyboard.press("Escape");
@@ -128,21 +117,22 @@ const paidCorrectionReview = async (run: Run) => {
   };
   run.page.on("request", observe);
   try {
-    await run.page.locator('.operation-editor form button[type="submit"]').click();
-    await expect(run.page.locator(".review-modal")).toBeVisible();
-    await expect(run.page.locator(".review-modal button.primary")).toBeDisabled();
-    await expect(run.page.locator(".review-modal").getByRole("checkbox")).not.toBeChecked();
+    await run.page.getByRole("dialog").locator('button[type="submit"]').click();
+    await expect(run.page.locator(".ui-dialog")).toBeVisible();
+    await expect(
+      run.page.getByRole("dialog").locator("button[data-confirm-operation]"),
+    ).toBeEnabled();
+    await expect(run.page.getByRole("dialog").getByRole("checkbox")).toHaveCount(0);
     expect(executions).toBe(0);
   } finally {
     run.page.off("request", observe);
   }
 };
 const historyComparison = async (page: Page) => {
-  await page.locator(".case-history select").selectOption("FULL");
-  const first = page.locator(".history-list > li > details").first();
+  const first = page.locator(".case-timeline > .timeline-entry").first();
   await expect(first).toBeVisible();
-  await first.locator(":scope > summary").click();
-  await expect(first.locator(".history-changes")).toBeVisible();
+  await first.locator(":scope > details > summary").click();
+  await expect(first.locator("details .timeline-changes")).toBeVisible();
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {
@@ -161,9 +151,7 @@ const performRoute = async (route: MatrixRoute, run: Run) => {
   });
 };
 const registerDimension = (dimension: Dimension) => {
-  test(`${dimension.language} ${dimension.width}px ${dimension.theme}${dimension.zoom === undefined ? "" : " at 200% zoom"}`, async ({
-    page,
-  }, info) => {
+  test(dimensionCaseTitle(dimension), async ({ page }, info) => {
     test.setTimeout(240_000);
     expect(info.project.name).toBe(engine);
     page.setDefaultTimeout(15_000);
@@ -185,6 +173,7 @@ const registerDimension = (dimension: Dimension) => {
       });
       await writeMatrixReport(info, {
         engine,
+        ...caseScope,
         dimension,
         expected: {
           pageLoads: expectedRoutes.length,
@@ -205,9 +194,9 @@ const registerDimension = (dimension: Dimension) => {
 };
 const reportEngine = async (info: TestInfo) => {
   const expected =
-    engine === "chromium"
-      ? { dimensions: 26, pageLoads: 754, axeAndReflowChecks: 780, screenshots: 91 }
-      : { dimensions: 4, pageLoads: 116, axeAndReflowChecks: 120, screenshots: 0 };
+    selectedDimension === undefined
+      ? expectedEngineCounts(engine)
+      : expectedDimensionCounts(engine, selectedDimension);
   const actual = completed.reduce<EngineCounts>(
     (total, value) => ({
       dimensions: total.dimensions + 1,
@@ -217,9 +206,14 @@ const reportEngine = async (info: TestInfo) => {
     }),
     { dimensions: 0, pageLoads: 0, axeAndReflowChecks: 0, screenshots: 0 },
   );
-  await writeMatrixReport(info, { engine, expected, actual }, "design-matrix-engine-counts");
+  await writeMatrixReport(
+    info,
+    { engine, ...caseScope, expected, actual },
+    "design-matrix-engine-counts",
+  );
   expect(actual).toEqual(expected);
 };
+assertMatrixPlan(engine);
 test.describe("adopted work surface design matrix", () => {
   test.beforeAll(async ({ browser, baseURL }, info) => {
     test.setTimeout(120_000);
@@ -239,5 +233,7 @@ test.describe("adopted work surface design matrix", () => {
       await dataset?.close();
     }
   });
-  dimensions(engine).forEach(registerDimension);
+  (selectedDimension === undefined ? plannedDimensions : [selectedDimension]).forEach(
+    registerDimension,
+  );
 });

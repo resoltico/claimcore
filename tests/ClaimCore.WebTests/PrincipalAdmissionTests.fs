@@ -159,11 +159,71 @@ let private rootIssuerDiscovery () =
             (validate (metadata.Replace(source, source.TrimEnd('/'))))
             "Issuer slash substitution is refused"
 
+let private boundedHints () =
+    let admit extra =
+        bearer ([ Claim("azp", "cli"); Claim("sub", "human") ] @ extra)
+        |> Result.defaultWith (fun error ->
+            failtestf "Identity remains valid independently of optional hints: %A" error)
+
+    let text = String.replicate 200 "😀"
+
+    let accepted =
+        admit
+            [
+                Claim("name", text)
+                Claim("preferred_username", "user")
+                Claim("email", "hint@example.invalid")
+            ]
+
+    let hints = AuthenticatedPrincipals.claims accepted
+
+    Expect.equal
+        (hints.Name |> Option.map PartyName.format)
+        (Some text)
+        "Hint cap counts Unicode scalars"
+
+    Expect.equal
+        (hints.PreferredUsername |> Option.map PartyName.format)
+        (Some "user")
+        "Exact authenticated hint keys are retained"
+
+    for bad in [ text + "😀"; "first\nsecond"; "" ] do
+        let value = admit [ Claim("name", bad) ]
+
+        Expect.isNone
+            (AuthenticatedPrincipals.claims value).Name
+            "Invalid optional hints cannot enter context or cache"
+
+        Expect.equal
+            (AuthenticatedPrincipals.key value)
+            (AuthenticatedPrincipals.key accepted)
+            "Hint admission does not alter authenticated identity"
+
+    let duplicates = admit [ Claim("name", "first"); Claim("name", "second") ]
+
+    Expect.isNone
+        (AuthenticatedPrincipals.claims duplicates).Name
+        "Ambiguous optional hints are omitted, never first-wins"
+
+    let browser =
+        PrincipalIdentity.fromBrowserSession
+            issuer
+            (principal [ Claim("sub", "human"); Claim("name", "Browser hint") ])
+        |> Result.defaultWith (string >> failtest)
+
+    Expect.equal
+        ((AuthenticatedPrincipals.claims browser).Name |> Option.map PartyName.format)
+        (Some "Browser hint")
+        "Verified browser-session hints follow the same admission"
+
 [<Tests>]
 let tests =
     testList
         "exact principal admission"
         [
+            testCase
+                "authenticated optional hints have scalar caps and never change identity"
+                boundedHints
             testCase
                 "verified client claims agree exactly and distinct services keep distinct identities"
                 clientClaims

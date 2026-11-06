@@ -72,27 +72,40 @@ module internal MessageCatalogs =
         + " OPERATION_ID"
 
     let private overview language =
+        let meaning =
+            function
+            | "case" -> CliMessage.CaseFamily
+            | "work" -> CliMessage.WorkCommands
+            | "reminder" -> CliMessage.ReminderCommands
+            | "authority" -> CliMessage.AuthorityFamily
+            | "operation" -> CliMessage.OperationFamily
+            | "context" -> CliMessage.ContextFamily
+            | name -> invalidOp ("Missing command-family meaning: " + name)
+
+        let hostMeaning =
+            function
+            | CliCommand.Help -> CliMessage.HelpFamily
+            | CliCommand.Version -> CliMessage.VersionFamily
+            | CliCommand.Describe -> CliMessage.DescribeFamily
+            | CliCommand.Schema -> CliMessage.SchemaFamily
+            | CliCommand.Call -> CliMessage.CallFamily
+            | CliCommand.Session -> CliMessage.SessionFamily
+            | CliCommand.Shell -> CliMessage.ShellFamily
+            | CliCommand.Recovery -> CliMessage.RecoveryFamily
+            | CliCommand.Configure -> CliMessage.ConfigureFamily
+
         let families =
-            [
-                "case", CliMessage.CaseFamily
-                "authority", CliMessage.AuthorityFamily
-                "operation", CliMessage.OperationFamily
-                "context", CliMessage.ContextFamily
-                "call", CliMessage.CallFamily
-                "session", CliMessage.SessionFamily
-                "shell", CliMessage.ShellFamily
-                "recovery", CliMessage.RecoveryFamily
-                "configure", CliMessage.ConfigureFamily
-                "describe", CliMessage.DescribeFamily
-                "schema", CliMessage.SchemaFamily
-                "help", CliMessage.HelpFamily
-            ]
+            (CommandGrammar.families |> List.map (fun name -> name, meaning name))
+            @ (CliCommand.all
+               |> List.map (fun command -> CliCommand.token command, hostMeaning command))
 
         CliIdentity.programName
         + "\n"
         + (families
            |> List.map (fun (family, key) -> family + " — " + renderCli language key)
            |> String.concat "\n")
+        + "\n"
+        + renderCli language (CliMessage.HelpCommands(CliIdentity.programName + " help <family>"))
         + "\n"
 
     // This total HelpTopic-to-text table has no nested decisions; keep every topic compiler-checked.
@@ -119,9 +132,9 @@ module internal MessageCatalogs =
         | HelpTopic.Configure -> renderCli language CliMessage.HelpConfigure
         | HelpTopic.Overview -> overview language
         | HelpTopic.Verbs ->
-            Catalog.document.Entries
-            |> List.map (fun entry ->
-                CliIdentity.programName + " " + CommandGrammar.synopsis entry.Kind)
+            CommandGrammar.operations
+            |> List.map (fun operation ->
+                CliIdentity.programName + " " + CommandGrammar.synopsis operation)
             |> String.concat "\n"
             |> fun value -> value + "\n\n" + renderCli language CliMessage.LiveTraversalHelp + "\n"
 
@@ -129,8 +142,7 @@ module internal MessageCatalogs =
         function
         | CliGuidance.ProtocolGuidance ->
             renderCli language (CliMessage.HelpProtocol(invocation, request, response))
-        | CliGuidance.ConfigurationIssue ->
-            renderCli language (CliMessage.HelpConfigurationIssue(secret, trust))
+        | CliGuidance.ConfigurationIssue -> helpBody language HelpTopic.Configuration
 
     let help language topic =
         let body =

@@ -1,3 +1,4 @@
+import { timelinePage } from "../support/timeline.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -30,7 +31,7 @@ it.each([
     const value = caseSummaryInput({
       caseId: current.caseId,
       caseReference: current.caseReference,
-      state: { kind: "ACTIVE", status: "OPENED" },
+      state: { kind: "ACTIVE" },
     });
     const page = (items: (typeof value)[]) =>
       ({
@@ -39,7 +40,7 @@ it.each([
         value: {
           outcome: {
             kind: "SUCCEEDED",
-            data: { basis: workBasis, offers: [], items, nextCursor: null },
+            data: { basis: workBasis, exactReference: null, offers: [], items, nextCursor: null },
           },
         },
       }) as const;
@@ -70,32 +71,27 @@ it.each([
       status: 200,
       value: { outcome: { kind: "SUCCEEDED", data: current } },
     });
-    mockEndpoint("case.history").mockResolvedValue({
+    mockEndpoint("case.timeline").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: {
         outcome: {
           kind: "SUCCEEDED",
-          data: {
-            caseId: current.caseId,
-            caseReference: current.caseReference,
-            entries: [],
-            nextCursor: null,
-          },
+          data: timelinePage(),
         },
       },
     });
     const scroll = vi.fn();
     Object.defineProperty(window, "scrollY", { configurable: true, value: 340 });
     Object.defineProperty(window, "scrollTo", { configurable: true, value: scroll });
-    navigate("/cases?q=CASE&order=RECENT", true);
+    navigate("/cases?view=ALL&q=CASE&order=RECENT", true);
     const user = userEvent.setup();
     render(<Dashboard />);
     await user.click(await screen.findByRole("link", { name: current.caseReference }));
-    await screen.findByRole("heading", { name: "Case detail" });
+    await screen.findByRole("heading", { name: current.state.fields.registration.claimantName });
     await user.click(screen.getByRole("button", { name: "Back to cases" }));
     await waitFor(() => {
-      expect(location.pathname + location.search).toBe("/cases?q=CASE&order=RECENT");
+      expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");
     });
     if (interrupt) {
       const summary = document.querySelector<HTMLElement>(".exact-lookup > summary")!;

@@ -1,10 +1,17 @@
+import { FieldHelp } from "./FieldHelp";
 import { AssigneeInput } from "./AssigneeInput";
 import { roleAdmitted } from "../operation/roleAvailability";
 import { CorrectionInputs } from "./CorrectionInputs";
 import { isTerm, isVocabulary } from "../presentation/terms";
-import type { CatalogEntry } from "../protocol/catalogAssembly";
+import type { CatalogCollection, CatalogEntry } from "../protocol/catalogAssembly";
 import type { CurrentCase, FieldCatalogEntry } from "../protocol/types";
-import { formValueText, isChoiceValues, type FormValues, type FormValue } from "../protocol/forms";
+import {
+  formValueText,
+  isChoiceValues,
+  isFormCollection,
+  type FormValues,
+  type FormValue,
+} from "../protocol/forms";
 import type { Notice } from "../protocol/notices";
 import { NoticeView } from "../presentation/Message";
 import { renderCatalogKey } from "../presentation/messages";
@@ -16,6 +23,7 @@ import {
   visibleOperationInputs,
   selectableFact,
   prefilledValue,
+  initialCollectionRow,
   type CatalogInput,
 } from "../operation/operationForm";
 
@@ -25,6 +33,9 @@ type Props = {
   current: CurrentCase | null;
   disabled: boolean;
   fixedTarget?: boolean;
+  fixedPaths?: ReadonlyArray<string>;
+  namePrefix?: string;
+  roleContext?: { principalKind: string; scope: string };
   fieldErrors: Readonly<Record<string, Notice>>;
   onChange: (path: string, value: FormValue) => void;
   onFieldsChange: (values: FormValues, omitted?: ReadonlyArray<string>) => void;
@@ -37,13 +48,16 @@ const permittedOptions = (input: CatalogInput, props: Props): ReadonlyArray<stri
     input.adviceGroup === null ? undefined : props.current?.advice.correction?.[input.adviceGroup];
   return group === undefined
     ? input.kind.options
-    : input.kind.options.filter((mode) => group.some((value) => value === mode));
+    : input.kind.options.filter(
+        (mode) =>
+          group.some((value) => value === mode) || props.values[bindingPath(input)] === mode,
+      );
 };
 const inputError = (input: CatalogInput, props: Props) =>
   props.fieldErrors[bindingPath(input)] ?? null;
 const descriptionIds = (input: CatalogInput, error: Notice | null) =>
   [
-    input.meaningId === null ? null : `${input.identity}-meaning`,
+    input.hintId === null ? null : `${input.identity}-hint`,
     error === null ? null : `${input.identity}-error`,
   ]
     .filter((id) => id !== null)
@@ -52,8 +66,8 @@ const InputDescription = ({ input, error }: { input: CatalogInput; error: Notice
   const p = usePresentation();
   return (
     <>
-      {input.meaningId === null ? null : (
-        <small id={`${input.identity}-meaning`}>{renderCatalogKey(p, input.meaningId)}</small>
+      {input.hintId === null ? null : (
+        <small id={`${input.identity}-hint`}>{renderCatalogKey(p, input.hintId)}</small>
       )}
       {error === null ? null : (
         <small id={`${input.identity}-error`}>
@@ -77,17 +91,30 @@ const choiceLabel = (
     ? p.term(vocabulary, value)
     : value;
 };
+const roleContext = (props: Props) =>
+  props.roleContext ?? {
+    principalKind: formValueText(props.values["target.kind"]),
+    scope: formValueText(props.values["act.scope.kind"]),
+  };
 const roleOptionUnavailable = (input: CatalogInput, props: Props, value: string) =>
   props.entry.subject === "AUTHORITY" &&
-  props.entry.kind === "GRANT" &&
+  (props.entry.kind === "GRANT" || props.entry.kind === "ADMIT") &&
   input.kind.kind === "CHOICE" &&
   input.kind.vocabulary === "role" &&
-  typeof props.values["target.kind"] === "string" &&
-  !roleAdmitted(
-    value,
-    props.values["target.kind"],
-    typeof props.values["act.scope.kind"] === "string" ? props.values["act.scope.kind"] : undefined,
-  );
+  !roleAdmitted(value, roleContext(props).principalKind, roleContext(props).scope || undefined);
+const groupOptionUnavailable = (input: CatalogInput, props: Props, value: string): boolean => {
+  const modes =
+    input.adviceGroup === null ? undefined : props.current?.advice.correction?.[input.adviceGroup];
+  return value !== "" && modes !== undefined && !modes.some((mode) => mode === value);
+};
+const choiceUnavailableReason = (input: CatalogInput, props: Props, value: string) => {
+  if (groupOptionUnavailable(input, props, value)) {
+    return "ui.choiceNotAvailable";
+  }
+  return roleAdmitted(value, roleContext(props).principalKind)
+    ? "ui.roleNotAvailableAtScope"
+    : "ui.roleNotAvailableForService";
+};
 const ChoiceOption = ({
   input,
   value,
@@ -96,13 +123,14 @@ const ChoiceOption = ({
   const p = usePresentation();
   const path = bindingPath(input);
   const error = inputError(input, props);
-  const blocked = roleOptionUnavailable(input, props, value);
+  const blocked =
+    roleOptionUnavailable(input, props, value) || groupOptionUnavailable(input, props, value);
   const reason = `${input.identity}-${value}-unavailable`;
   return (
     <label className={props.values[path] === value ? "selected" : ""}>
       <input
         type="radio"
-        name={path}
+        name={`${props.namePrefix ?? ""}${path}`}
         value={value}
         checked={props.values[path] === value}
         disabled={props.disabled || blocked}
@@ -117,12 +145,7 @@ const ChoiceOption = ({
       {choiceLabel(p, input, value)}
       {blocked ? (
         <small id={reason} aria-hidden="true">
-          {p.text(
-            typeof props.values["target.kind"] === "string" &&
-              !roleAdmitted(value, props.values["target.kind"])
-              ? "ui.roleNotAvailableForService"
-              : "ui.roleNotAvailableAtScope",
-          )}
+          {p.text(choiceUnavailableReason(input, props, value))}
         </small>
       ) : null}
     </label>
@@ -138,12 +161,13 @@ const ChoiceInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   const group = input.kind.kind === "GROUP";
   const error = inputError(input, props);
   const admitted = permittedOptions(input, props);
-  const options = group && !input.required ? ["", ...admitted] : admitted;
+  const options = group && !input.required && input.default === null ? ["", ...admitted] : admitted;
   const label = renderCatalogKey(p, input.labelId);
   const roleChoice = input.kind.kind === "CHOICE" && input.kind.vocabulary === "role";
   return (
     <fieldset className={group ? "correction-card" : "choice-card"}>
       <legend>{label}</legend>
+      <FieldHelp label={label} ruleId={input.ruleId} />
       <div
         role="radiogroup"
         className={options.length <= 4 ? "segmented-choice" : "radio-choice"}
@@ -179,7 +203,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
       <AssigneeInput
         field={field}
         current={props.current}
-        inputName={path}
+        inputName={`${props.namePrefix ?? ""}${path}`}
         value={formValueText(props.values[path])}
         disabled={props.disabled}
         error={error ?? undefined}
@@ -193,7 +217,7 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
     return (
       <CatalogField
         field={field}
-        inputName={path}
+        inputName={`${props.namePrefix ?? ""}${path}`}
         value={formValueText(props.values[path])}
         disabled={props.disabled}
         error={error ?? undefined}
@@ -205,10 +229,13 @@ const ScalarInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
   }
   return (
     <div className="text-field">
-      <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
+      <div className="field-label-row">
+        <label htmlFor={input.identity}>{renderCatalogKey(p, input.labelId)}</label>
+        <FieldHelp label={renderCatalogKey(p, input.labelId)} ruleId={input.ruleId} />
+      </div>
       <input
         id={input.identity}
-        name={path}
+        name={`${props.namePrefix ?? ""}${path}`}
         type="text"
         autoComplete="off"
         {...scalarInputAppearance(input)}
@@ -241,7 +268,7 @@ const ChoiceSetInput = ({ input, ...props }: Props & { input: CatalogInput }) =>
         <label key={option}>
           <input
             type="checkbox"
-            name={path}
+            name={`${props.namePrefix ?? ""}${path}`}
             value={option}
             disabled={props.disabled}
             checked={selected.includes(option)}
@@ -277,7 +304,7 @@ const BindingInput = ({ input, ...props }: Props & { input: CatalogInput }) => {
           <input
             id={input.identity}
             type="checkbox"
-            name={path}
+            name={`${props.namePrefix ?? ""}${path}`}
             disabled={props.disabled}
             checked={props.values[path] === true}
             aria-invalid={props.fieldErrors[path] !== undefined || undefined}
@@ -409,8 +436,95 @@ const CorrectionGroup = ({
     )}
   </section>
 );
+const CollectionInput = ({ collection, ...props }: Props & { collection: CatalogCollection }) => {
+  const p = usePresentation();
+  const path = collection.path.join(".");
+  const value = props.values[path];
+  const rows = isFormCollection(value) ? value.rows : [];
+  const error = props.fieldErrors[path];
+  const update = (next: typeof rows) => {
+    props.onChange(path, { kind: "COLLECTION", rows: next });
+  };
+  return (
+    <fieldset
+      id={`field-${path}`}
+      tabIndex={-1}
+      aria-invalid={error !== undefined || undefined}
+      aria-describedby={error === undefined ? undefined : `${collection.identity}-error`}
+    >
+      <legend>{renderCatalogKey(p, collection.labelId)}</legend>
+      <FieldHelp label={renderCatalogKey(p, collection.labelId)} ruleId={collection.ruleId} />
+      {collection.hintId === null ? null : <p>{renderCatalogKey(p, collection.hintId)}</p>}
+      {rows.map(({ key, values: row }, index) => (
+        <fieldset key={key}>
+          <legend>{p.text("ui.grantNumber", { number: p.integer(String(index + 1)) })}</legend>
+          {collection.rowInputs
+            .filter((input) =>
+              input.branches.every((branch) => row[branch.path.join(".")] === branch.value),
+            )
+            .map((input) => (
+              <BindingInput
+                key={input.identity}
+                input={{ ...input, identity: `${collection.identity}-${key}-${input.identity}` }}
+                {...props}
+                namePrefix={`${path}.${key}.`}
+                values={row}
+                current={null}
+                roleContext={{
+                  principalKind: formValueText(props.values["target.kind"]),
+                  scope: formValueText(row["scope.kind"]),
+                }}
+                fieldErrors={{}}
+                onChange={(fieldPath, next) => {
+                  update(
+                    rows.map((item) =>
+                      item.key === key
+                        ? { ...item, values: { ...item.values, [fieldPath]: next } }
+                        : item,
+                    ),
+                  );
+                }}
+                onFieldsChange={() => undefined}
+              />
+            ))}
+          <button
+            type="button"
+            disabled={props.disabled || rows.length <= collection.minimumItems}
+            onClick={() => {
+              update(rows.filter((item) => item.key !== key));
+            }}
+          >
+            {p.text("ui.removeGrant")}
+          </button>
+        </fieldset>
+      ))}
+      {error === undefined ? null : (
+        <p id={`${collection.identity}-error`}>
+          <NoticeView value={error} />
+        </p>
+      )}
+      <button
+        type="button"
+        disabled={props.disabled || rows.length >= collection.maximumItems}
+        onClick={() => {
+          update([...rows, { key: crypto.randomUUID(), values: initialCollectionRow(collection) }]);
+        }}
+      >
+        {p.text("ui.addGrant")}
+      </button>
+    </fieldset>
+  );
+};
 export const CatalogInputs = (props: Props) => {
-  const visible = visibleOperationInputs(props.entry, props.values, props.current);
+  const p = usePresentation();
+  const visible = visibleOperationInputs(props.entry, props.values, props.current).filter(
+    (input) =>
+      !(
+        props.fixedTarget === true &&
+        props.entry.subject === "REMINDER" &&
+        input.field === "reminderId"
+      ),
+  );
   const groups = visible.filter((input) => input.kind.kind === "GROUP");
   const prefix = (input: CatalogInput) => `${input.path.slice(0, -1).join(".")}.`;
   const children = (group: CatalogInput) =>
@@ -419,23 +533,43 @@ export const CatalogInputs = (props: Props) => {
     (input) =>
       !groups.some((group) => group !== input && bindingPath(input).startsWith(prefix(group))),
   );
+  const technical = parents.filter(
+    (input) => props.fixedTarget === true && input.path[0] === "target",
+  );
+  const renderInput = (input: CatalogInput) =>
+    input.kind.kind === "GROUP" ? (
+      <CorrectionGroup key={input.identity} input={input} {...props}>
+        {children(input)}
+      </CorrectionGroup>
+    ) : (
+      factNode(input, parents, {
+        ...props,
+        disabled:
+          props.disabled ||
+          props.fixedPaths?.includes(bindingPath(input)) === true ||
+          (props.fixedTarget === true && input.path[0] === "target"),
+      })
+    );
   return (
     <>
       {parents
-        .filter((input) => !pairedChild(input, parents, props))
-        .map((input) =>
-          input.kind.kind === "GROUP" ? (
-            <CorrectionGroup key={input.identity} input={input} {...props}>
-              {children(input)}
-            </CorrectionGroup>
-          ) : (
-            factNode(input, parents, {
-              ...props,
-              disabled:
-                props.disabled || (props.fixedTarget === true && input.path[0] === "target"),
-            })
+        .filter((input) => !technical.includes(input) && !pairedChild(input, parents, props))
+        .map(renderInput)}
+      {technical.length === 0 ? null : (
+        <details>
+          <summary>{p.text("label.recordDetails")}</summary>
+          {technical.map(renderInput)}
+        </details>
+      )}
+      {props.entry.collections
+        .filter((collection) =>
+          collection.branches.every(
+            (branch) => props.values[branch.path.join(".")] === branch.value,
           ),
-        )}
+        )
+        .map((collection) => (
+          <CollectionInput key={collection.identity} collection={collection} {...props} />
+        ))}
     </>
   );
 };

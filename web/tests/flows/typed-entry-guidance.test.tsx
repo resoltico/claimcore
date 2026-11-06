@@ -1,24 +1,27 @@
 import { expect, it, vi } from "vitest";
 import { within } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { CatalogField } from "../../src/components/CatalogField";
 import { productMetadata } from "../../src/protocol/productMetadata";
 import { preferenceKey } from "../../src/presentation/preferences";
-it("describes locale entry and derives the amount limit from the machine descriptor", () => {
+it("uses core widget hints and keeps precise formatting rules behind explicit help", async () => {
   localStorage.setItem(
     preferenceKey,
-    JSON.stringify({ version: 2, language: "en", displayLocale: "lv-LV", theme: "LIGHT" }),
+    JSON.stringify({
+      version: 3,
+      language: "en",
+      displayLocale: "lv-LV",
+      mode: "light",
+      accent: "green",
+    }),
   );
   const amount = productMetadata.catalog.fields.find((field) => field.name === "claimedAmount")!;
   const date = productMetadata.catalog.fields.find((field) => field.name === "incidentDate")!;
-  if (amount.scalar.kind !== "AMOUNT") {
-    throw new Error("Amount descriptor missing.");
-  }
-  const descriptor = { ...amount, scalar: { ...amount.scalar, maximumFractionalDigits: 2 } };
   render(
     <>
       <CatalogField
-        field={descriptor}
+        field={amount}
         inputName="amount"
         value="1,25"
         disabled={false}
@@ -35,13 +38,17 @@ it("describes locale entry and derives the amount limit from the machine descrip
   );
   const input = screen.getByRole("textbox", { name: "Amount claimed" });
   expect(input).toHaveValue("1,25");
-  expect(input).toHaveAccessibleDescription(/selected number format.*up to 2 decimal places/u);
-  expect(input).not.toHaveAccessibleDescription(/No.*commas/u);
+  expect(input).toHaveAccessibleDescription("How much the claimant is asking for.");
+  expect(input).not.toHaveAccessibleDescription(/ASCII|YYYY|redundant|decimal point/u);
   const segment = within(screen.getByRole("group", { name: "Incident date" })).getAllByRole(
     "spinbutton",
   )[0]!;
-  expect(segment).toHaveAccessibleDescription(
-    /Enter the date in these sections or choose it from the calendar/u,
+  expect(segment).toHaveAccessibleDescription(/When the incident happened/u);
+  expect(segment).not.toHaveAccessibleDescription(/ASCII|YYYY/u);
+  const help = screen.getByLabelText("Explain fields: Amount claimed", { exact: true });
+  await userEvent.click(help);
+  expect(help.closest("details")).toHaveAttribute("open");
+  expect(help.closest("details")).toHaveTextContent(
+    "up to 18 digits before the decimal point and up to 4 after it",
   );
-  expect(segment).not.toHaveAccessibleDescription(/Use ASCII digits in YYYY-MM-DD/u);
 });

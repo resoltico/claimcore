@@ -2,11 +2,12 @@
 # Fresh local evaluation inputs. Refuse existing paths; never reset a directory or database.
 set -euo pipefail
 umask 077
-configuration="${1:?Usage: configure-local.sh NEW_ABSOLUTE_DIRECTORY [IANA_ZONE [WEB_PORT IDENTITY_PORT]]}"
-zone="${2:-Etc/UTC}"
-web_port="${3:-5443}"
-identity_port="${4:-5444}"
-[[ $# -le 4 && "${configuration}" == /* && ! -e "${configuration}" && ! -L "${configuration}" ]] || {
+configuration="${1:?Usage: configure-local.sh NEW_ABSOLUTE_DIRECTORY OWNER_DISPLAY_NAME [IANA_ZONE [WEB_PORT IDENTITY_PORT]]}"
+owner_display_name="${2:?Enter an authored owner display name.}"
+zone="${3:-Etc/UTC}"
+web_port="${4:-5443}"
+identity_port="${5:-5444}"
+[[ $# -le 5 && "${configuration}" == /* && ! -e "${configuration}" && ! -L "${configuration}" ]] || {
   printf 'Use a new absolute configuration directory.\n' >&2; exit 2;
 }
 [[ "${configuration}" != *$'\n'* && "${configuration}" != *$'\r'* && "${zone}" =~ ^[A-Za-z0-9_+/-]+$ ]] || exit 2
@@ -57,7 +58,8 @@ printf '%s' "${web_secret}" >"${configuration}/web/client.secret"
 printf '%s\n' "${owner_login}" >"${configuration}/owner-login.password"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_owner;Password=${owner_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/ca.pem" >"${configuration}/administration/owner.connection"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_runtime;Password=${runtime_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/runtime/ca.pem" >"${configuration}/web/runtime.connection"
-printf '{"operationId":"%s","issuer":"https://identity.localhost:%s/realms/claimcore","subject":"%s"}\n' "${owner_operation_id}" "${identity_port}" "${owner_subject}" >"${configuration}/administration/owner.principal"
+node -e 'const fs=require("node:fs"); const [file,operationId,issuer,subject,displayName]=process.argv.slice(1); fs.writeFileSync(file,JSON.stringify({operationId,issuer,subject,profile:{displayName,contact:null}})+"\n",{mode:0o600});' \
+  "${configuration}/administration/owner.principal" "${owner_operation_id}" "https://identity.localhost:${identity_port}/realms/claimcore" "${owner_subject}" "${owner_display_name}"
 cp "${configuration}/ca.pem" "${configuration}/web/ca.pem"
 cp "${configuration}/ca.pem" "${configuration}/administration/ca.pem"
 cat >"${configuration}/identity/realm/claimcore.json" <<JSON

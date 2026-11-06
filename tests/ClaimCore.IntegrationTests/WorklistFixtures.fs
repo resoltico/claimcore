@@ -164,7 +164,7 @@ let private recordedAt (database: PostgresFixture.Database) operation =
         let! rows =
             DatabaseSession.rows
                 connection
-                "SELECT recorded_at FROM claimcore.ledger WHERE operation_id=$1"
+                "SELECT recorded_at FROM claimcore.ledger WHERE operation_id=$1 AND effect_index=0"
                 [| box operation |]
                 token
 

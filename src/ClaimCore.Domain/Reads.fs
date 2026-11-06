@@ -52,12 +52,6 @@ module CaseDue =
             | Some date when CalendarDate.value date = today -> CaseDue.Today
             | Some _ -> CaseDue.Upcoming
 
-[<RequireQualifiedAccess>]
-type CaseProgress =
-    | Undecided
-    | Decided
-    | Paid
-
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module CaseListOrder =
     let vocabulary =
@@ -65,29 +59,17 @@ module CaseListOrder =
 
     let token = Vocabulary.token vocabulary
 
-[<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module CaseProgress =
-    let vocabulary =
-        Vocabulary.ofUnion<CaseProgress> "progress" TokenCasing.ScreamingSnake None
-
-    let token = Vocabulary.token vocabulary
-
-    let ofPayment =
-        function
-        | PaymentProgress.Undecided -> CaseProgress.Undecided
-        | PaymentProgress.Decided _ -> CaseProgress.Decided
-        | PaymentProgress.Paid _ -> CaseProgress.Paid
-
-module CaseSearch =
+module TextSearch =
     let normalize (value: string) =
         value.Normalize(System.Text.NormalizationForm.FormKC).ToLowerInvariant()
 
+module CaseSearch =
     let private searchableFields = CaseFields.declarations |> List.filter _.Searchable
 
     let text fields =
         searchableFields
         |> List.choose (fun row -> CaseFields.value row.Field fields)
-        |> List.map normalize
+        |> List.map TextSearch.normalize
         |> String.concat "\u001f"
 
 [<Struct>]
@@ -102,7 +84,24 @@ module CaseSearchText =
     let parse raw =
         ScalarText.parse (Some PartyName.MaximumBytes) MaximumCharacters raw
         |> Result.bind (ScalarText.admit MaximumCharacters)
-        |> Result.map (CaseSearch.normalize >> CaseSearchText)
+        |> Result.map (TextSearch.normalize >> CaseSearchText)
+
+/// Literal current-name lookup shares the established NFKC/invariant-lower search meaning.
+[<Struct>]
+type DirectorySearchText = private DirectorySearchText of string
+
+module DirectorySearchText =
+    let MaximumCharacters = PartyName.MaximumCharacters
+    let value (DirectorySearchText value) = value
+
+    let parse raw =
+        PartyName.parse raw
+        |> Result.bind PartyName.admit
+        |> Result.map (PartyName.format >> TextSearch.normalize >> DirectorySearchText)
+
+    let matches query name =
+        TextSearch.normalize name
+        |> fun name -> name.Contains(value query, System.StringComparison.Ordinal)
 
 type CaseListFilter<'text> =
     {
@@ -111,6 +110,8 @@ type CaseListFilter<'text> =
         Progress: CaseProgress list
         Text: 'text option
         Order: CaseListOrder
+        View: CaseView option
+        ResponsibleActor: ActorId option
         Assignment: CaseAssignment option
         Due: CaseDue option
     }
@@ -123,6 +124,8 @@ module CaseListFilter =
             Progress = progress
             Text = text
             Order = order
+            View = None
+            ResponsibleActor = None
             Assignment = None
             Due = None
         }
@@ -146,6 +149,8 @@ module CaseListFilter =
                 input.Order
             |> fun filter ->
                 { filter with
+                    View = input.View
+                    ResponsibleActor = input.ResponsibleActor
                     Assignment = input.Assignment
                     Due = input.Due
                 })

@@ -38,7 +38,12 @@ let private caller (database: PostgresFixture.Database) =
         let! registered =
             (Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 20) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 20)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority registered
@@ -201,8 +206,8 @@ let private zeroRevisionReply endpoint status response =
 
     Expect.equal
         (diagnostic.GetProperty("action").GetString())
-        "READ_CURRENT"
-        "Original corrective action"
+        "REVIEW_LATEST"
+        "Conflict asks for review against the latest authorized case"
 
     Expect.equal
         (diagnostic.GetProperty("actualRevision").GetInt64())

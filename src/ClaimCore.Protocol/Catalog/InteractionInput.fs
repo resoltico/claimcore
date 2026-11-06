@@ -14,6 +14,11 @@ type InteractionInput =
     | Lifecycle
     | Status
     | Progress
+    | CaseView
+    | ResponsibleActorFilter
+    | RoleFilter
+    | ReminderView
+    | TimelineFilter
     | Order
     | Assignment
     | Due
@@ -43,6 +48,11 @@ module InteractionInput =
         | InteractionInput.Lifecycle -> "lifecycle"
         | InteractionInput.Status -> "status"
         | InteractionInput.Progress -> "progress"
+        | InteractionInput.CaseView -> "caseView"
+        | InteractionInput.ResponsibleActorFilter -> "responsibleActorFilter"
+        | InteractionInput.RoleFilter -> "roleFilter"
+        | InteractionInput.ReminderView -> "reminderView"
+        | InteractionInput.TimelineFilter -> "timelineFilter"
         | InteractionInput.Order -> "order"
         | InteractionInput.Due -> "due"
         | InteractionInput.WorkChoice field -> BusinessField.key field + "Action"
@@ -69,6 +79,11 @@ module InteractionInput =
         | InteractionInput.Lifecycle
         | InteractionInput.Status
         | InteractionInput.Progress
+        | InteractionInput.CaseView
+        | InteractionInput.ResponsibleActorFilter
+        | InteractionInput.RoleFilter
+        | InteractionInput.ReminderView
+        | InteractionInput.TimelineFilter
         | InteractionInput.Order
         | InteractionInput.Due
         | InteractionInput.Assignment -> vocabularyName + "." + key input + "." + part

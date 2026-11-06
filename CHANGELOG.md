@@ -2,6 +2,56 @@
 
 ## [Unreleased]
 
+- Recreate databases for authority format 3 and ledger entry format 5; old installations are rejected without migration.
+- Supply an authored owner display name during provisioning and a profile when registering people; identity-provider claims do not supply profile names.
+- Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
+- Regenerate clients for named ActorRefs in work and assignee reads; reusable refs omit contacts and reflect current profile erasure.
+- Assignee pages require snapshot basis alongside named candidates and cursors; update strict readers.
+- Update work review/receipt readers for responsible ActorRefs; authority receipt targets now use Disclosed/Withheld projection under current authority-read rights.
+- Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
+- Case and reminder state refusals use NOT_OFFERED and REMINDER_NOT_OFFERED; DECISION_REQUIRED is retired. Invalid corrections keep targeted input diagnostics.
+- Regenerate consumers for NOT_AUTHORIZED.required and ASK_FOR_ACCESS, CHOOSE_ANOTHER_REFERENCE and REVIEW_LATEST guidance; unreadable targets remain RESOURCE_UNAVAILABLE.
+- Regenerate case-list and CSV consumers: state.fields now comes from listed declarations; core work state replaces duplicate nested work and progress columns.
+- Regenerate revision-conflict consumers for typed change pages of up to 50 entries; continue via case.timeline under current history permissions.
+- Regenerate timeline and conflict readers for disclosure-scoped event overviews and bounded highlight references; full differences remain available without duplicating large payloads.
+- Schema validators must enforce x-claimcore-maxUtf8Bytes as part of the wire profile; standard maxLength alone does not preserve permanent UTF-8 limits.
+- Regenerate preview consumers for required review.presentation and retained money displayScale; CASE subjects replace raw string changes with typed core presentation.
+- Regenerate catalogs for hintId/ruleId, GUI diagnostics, consequenceId/doneId and role meaningId; field meaning and checkbox confirmation identities are removed.
+- Receipt basis and runtime observedAt describe the current server snapshot; recordedAt remains the accepted event time, including on replay and later checks.
+- Replace CLI case history and case activity with case timeline; typed changes, actor names and canonical CSV support bounded or complete live traversal.
+- Actor-directory search matches current names or contacts plus typed role filters; discard old actor cursors. Profile erasure clears both private search indexes.
+- Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
+- Protected Application calls check requester availability before input refusals; malformed calls can need storage. Offline CLI syntax checks remain local.
+- Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
+- Reminder changes require positive expected revisions; zero returns input diagnostics instead of an encoding error. Initial work updates and case opening still accept zero.
+- Irreversible human CLI commands require an exact typed target or matching --confirm; dry-run and structured protocol calls retain their wire contracts.
+- Regenerate work readers and custom stores for summaryChangedAt/summaryRecordedBy; responsibility-only edits preserve the summary's actual author and time.
+- Browser settings use claimcore.presentation.v3 and ignore v2; choose preferences again in Settings or the sign-in footer dialog.
+- Incomplete dates survive Settings and language changes as private draft segments; canonical dates and prepared request bytes stay separate.
+- Set or erase actor profiles separately from identity and grants; historical names use current profiles, while erasure preserves acceptance but can prevent exact replay.
+- Case and reminder view counts share a snapshot; case timelines combine fact, work and reminder changes under current history permissions.
+- ADMIT records an authored profile and up to 48 role assignments atomically; access requests distinguish human and service identities and clear on admission.
+- Sign-in distinguishes unregistered, roleless and disabled accounts; owners can review unverified request hints and bind admission to the exact account.
+- People show bounded role summaries and explicit assignment state; optional responsibility counts and links use the viewer's case-read access and preserve known zero.
+- Unavailable case actions carry current core reasons; case trackers use recorded dates and keep absent financial stages unrecorded after closure.
+- Web task drawers use one routine confirmation button; reminder completion stays beside its row, and erasure still requires the exact reference.
+- Activity details stay expanded across Settings visits; case action groups follow the page heading outline.
+- Use Manual filters in Reminders to include inactive work; standard views keep their own selection rules.
+- Case, work, reminder and timeline text use typed core descriptors; case tables adapt to width without truncating money, and retained actor names are safely escaped.
+- Work overview attention includes due-today and ready-to-close cases, matching core case views.
+- Case lists identify exact visible reference matches using installation case-folding and expose the next reminder identity; unavailable cases remain undisclosed.
+- CLI adds family/verb help and --version, rejects irrelevant clear flags, names escaped usage tokens and reports declined reviews.
+- CLI language follows explicit flag, environment, profile and POSIX locale precedence; configure --show reports the effective choice and source.
+- CLI --dry-run rejects malformed writes locally with exit 2 and ordered input issues; structured refusals retain the existing frame shape with NOT_SENT delivery.
+- CLI money keeps meaningful precision and adds ISO minor units for known currencies; canonical JSON and CSV amounts stay unchanged.
+- CLI human values use explicit en-GB, lv-LV and Latin-digit ar-AE cultures so money, dates and observation footers agree across supported platforms.
+- Green and blue accents support light, dark and device modes, stronger control boundaries, OS contrast preferences and forced colours.
+- First visits negotiate supported browser languages and regional formats; add en-US, ar-AE, de-DE and fr-FR display locales.
+- Contributors can diagnose selected browser specs without replaying full suites; diagnostic batches collect failures but never qualify acceptance. Reuse applicable CI evidence.
+- Published-client fixtures drain Web logs for their full lifetime and retain bounded tails; capture metadata identifies truncation and incomplete cleanup.
+- Secondary-principal browser specs obtain real OIDC sessions at file setup, preserving authentication expiry and login admission during long suites.
+- Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
+
 ## [0.15.0] - 2026-11-03
 
 - Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.

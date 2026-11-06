@@ -181,41 +181,49 @@ module CatalogCodecs =
         tagged "Presentation.ScalarRule" (textRules @ dateRules @ moneyRules @ statusRules)
 
     let private businessField =
-        (record (fun v0 v1 v2 v3 v4 v5 section pairs ->
+        (record (fun v0 v1 v2 rule v3 v4 v5 section pairs prominence listed ->
             {
                 FieldPresentationDefinition.Name = v0
                 LabelId = v1
-                MeaningId = v2
+                HintId = v2
+                RuleId = rule
                 Scalar = v3
                 AllowsAbsence = v4
                 Group = v5
                 Section = section
                 Pairs = pairs
+                Prominence = prominence
+                Listed = listed
             })
         : Fields<FieldPresentationDefinition, _>)
         |> field "name" _.Name (fieldName)
         |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (text)
+        |> field "hintId" _.HintId text
+        |> field "ruleId" _.RuleId text
         |> field "scalar" _.Scalar (scalar)
         |> field "allowsAbsence" _.AllowsAbsence (boolean)
         |> field "group" _.Group (nullable (VocabularyCodec.create RecordGroup.vocabulary))
         |> field "section" _.Section (nullable (VocabularyCodec.create CaseSection.vocabulary))
         |> field "pairs" _.Pairs (nullable fieldName)
+        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
+        |> field "listed" _.Listed boolean
         |> build
         |> named "Presentation.FieldPresentationDefinition"
 
     let private inputField =
-        (record (fun v0 v1 v2 v3 ->
+        (record (fun v0 v1 v2 rule v3 ->
             {
                 InputPresentationDefinition.Name = v0
                 LabelId = v1
-                MeaningId = v2
+                HintId = v2
+                RuleId = rule
                 Scalar = v3
             })
         : Fields<InputPresentationDefinition, _>)
         |> field "name" _.Name text
         |> field "labelId" _.LabelId (text)
-        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "hintId" _.HintId (nullable text)
+        |> field "ruleId" _.RuleId (nullable text)
         |> field "scalar" _.Scalar (nullable scalar)
         |> build
         |> named "Presentation.InputPresentationDefinition"
@@ -336,7 +344,7 @@ module CatalogCodecs =
     let private inputSource = InputSource.vocabulary |> VocabularyCodec.create
 
     let private binding =
-        record
+        (record
             (fun
                 identity
                 field
@@ -345,7 +353,8 @@ module CatalogCodecs =
                 adviceGroup
                 branches
                 label
-                meaning
+                hint
+                rule
                 order
                 prefill
                 required
@@ -362,7 +371,8 @@ module CatalogCodecs =
                     AdviceGroup = adviceGroup
                     Branches = branches
                     LabelId = label
-                    MeaningId = meaning
+                    HintId = hint
+                    RuleId = rule
                     Order = order
                     Prefill = prefill
                     Required = required
@@ -372,6 +382,7 @@ module CatalogCodecs =
                     DiagnosticTargets = targets
                     Source = source
                 })
+        : Fields<CatalogInput, _>)
         |> field "identity" _.Identity text
         |> field "field" _.Field (nullable inputTarget)
         |> field "path" _.Path (many text)
@@ -382,7 +393,8 @@ module CatalogCodecs =
             (nullable (VocabularyCodec.create RecordGroup.vocabulary))
         |> field "branches" _.Branches (many condition)
         |> field "labelId" _.LabelId text
-        |> field "meaningId" _.MeaningId (nullable text)
+        |> field "hintId" _.HintId (nullable text)
+        |> field "ruleId" _.RuleId (nullable text)
         |> field "order" _.Order count
         |> field "prefill" _.Prefill (nullable (many text))
         |> field "required" _.Required boolean
@@ -393,6 +405,54 @@ module CatalogCodecs =
         |> field "source" _.Source inputSource
         |> build
         |> named "Presentation.CatalogInput"
+
+    let private collection =
+        (record
+            (fun
+                identity
+                field
+                path
+                branches
+                label
+                hint
+                rule
+                order
+                required
+                minimum
+                maximum
+                inputs
+                constants ->
+                {
+                    CatalogCollection.Identity = identity
+                    Field = field
+                    Path = path
+                    Branches = branches
+                    LabelId = label
+                    HintId = hint
+                    RuleId = rule
+                    Order = order
+                    Required = required
+                    MinimumItems = minimum
+                    MaximumItems = maximum
+                    RowInputs = inputs
+                    RowConstants = constants
+                })
+        : Fields<CatalogCollection, _>)
+        |> field "identity" _.Identity text
+        |> field "field" _.Field inputTarget
+        |> field "path" _.Path (many text)
+        |> field "branches" _.Branches (many condition)
+        |> field "labelId" _.LabelId text
+        |> field "hintId" _.HintId (nullable text)
+        |> field "ruleId" _.RuleId (nullable text)
+        |> field "order" _.Order count
+        |> field "required" _.Required boolean
+        |> field "minimumItems" _.MinimumItems count
+        |> field "maximumItems" _.MaximumItems count
+        |> field "rowInputs" _.RowInputs (many binding)
+        |> field "rowConstants" _.RowConstants (many assignment)
+        |> build
+        |> named "Presentation.CatalogCollection"
 
     let private identityName =
         function
@@ -406,11 +466,14 @@ module CatalogCodecs =
             Kind: string
             LabelId: string
             MeaningId: string
-            ConfirmationId: string option
+            ConsequenceId: string option
+            DoneId: string option
             Family: ActFamily option
             AffectedSections: CaseSection list
             Effect: InteractionEffect
+            Consequence: Consequence
             Inputs: CatalogInput list
+            Collections: CatalogCollection list
             Constants: BindingAssignment list
         }
 
@@ -422,11 +485,14 @@ module CatalogCodecs =
                 kind
                 label
                 meaning
-                confirmation
+                consequenceCopy
+                doneCopy
                 family
                 sections
                 effect
+                consequence
                 inputs
+                collections
                 constants ->
                 {
                     EntryWire.Endpoint = endpoint
@@ -434,11 +500,14 @@ module CatalogCodecs =
                     Kind = kind
                     LabelId = label
                     MeaningId = meaning
-                    ConfirmationId = confirmation
+                    ConsequenceId = consequenceCopy
+                    DoneId = doneCopy
                     Family = family
                     AffectedSections = sections
                     Effect = effect
+                    Consequence = consequence
                     Inputs = inputs
+                    Collections = collections
                     Constants = constants
                 })
         |> field "endpoint" _.Endpoint text
@@ -446,14 +515,17 @@ module CatalogCodecs =
         |> field "kind" _.Kind text
         |> field "labelId" _.LabelId text
         |> field "meaningId" _.MeaningId text
-        |> field "confirmationId" _.ConfirmationId (nullable text)
+        |> field "consequenceId" _.ConsequenceId (nullable text)
+        |> field "doneId" _.DoneId (nullable text)
         |> field "family" _.Family (nullable (VocabularyCodec.create ActFamily.vocabulary))
         |> field
             "affectedSections"
             _.AffectedSections
             (many (VocabularyCodec.create CaseSection.vocabulary))
         |> field "effect" _.Effect (VocabularyCodec.create InteractionEffect.vocabulary)
+        |> field "consequence" _.Consequence (VocabularyCodec.create Consequence.vocabulary)
         |> field "inputs" _.Inputs (many binding)
+        |> field "collections" _.Collections (many collection)
         |> field "constants" _.Constants (many assignment)
         |> build
         |> mapResult
@@ -474,6 +546,7 @@ module CatalogCodecs =
                 | Some operation when
                     ActorEndpoint.token operation.Endpoint = wire.Endpoint
                     && operation.Subject = wire.Subject
+                    && wire.Consequence = CatalogOperation.consequence operation
                     && (wire.Family, wire.AffectedSections, wire.Effect) =
                         CatalogOperation.interaction operation
                     ->
@@ -482,11 +555,14 @@ module CatalogCodecs =
                             CatalogEntry.Kind = operation
                             LabelId = wire.LabelId
                             MeaningId = wire.MeaningId
-                            ConfirmationId = wire.ConfirmationId
+                            ConsequenceId = wire.ConsequenceId
+                            DoneId = wire.DoneId
                             Family = wire.Family
                             AffectedSections = wire.AffectedSections
                             Effect = wire.Effect
+                            Consequence = wire.Consequence
                             Inputs = wire.Inputs
+                            Collections = wire.Collections
                             Constants = wire.Constants
                         }
                 | _ ->
@@ -502,24 +578,29 @@ module CatalogCodecs =
                     Kind = identityName value.Kind
                     LabelId = value.LabelId
                     MeaningId = value.MeaningId
-                    ConfirmationId = value.ConfirmationId
+                    ConsequenceId = value.ConsequenceId
+                    DoneId = value.DoneId
                     Family = value.Family
                     AffectedSections = value.AffectedSections
                     Effect = value.Effect
+                    Consequence = value.Consequence
                     Inputs = value.Inputs
+                    Collections = value.Collections
                     Constants = value.Constants
                 })
         |> named "Presentation.CatalogEntry"
 
     let private role =
-        (record (fun role kinds scopes ->
+        (record (fun role meaning kinds scopes ->
             {
                 RolePresentationDefinition.Role = role
+                MeaningId = meaning
                 AdmittedPrincipalKinds = kinds
                 AdmittedScopes = scopes
             })
         : Fields<RolePresentationDefinition, _>)
         |> field "role" _.Role (VocabularyCodec.create Role.vocabulary)
+        |> field "meaningId" _.MeaningId text
         |> field
             "admittedPrincipalKinds"
             _.AdmittedPrincipalKinds
@@ -563,6 +644,18 @@ module CatalogCodecs =
         |> field "characterWarnings" fst warnings
         |> field "limits" snd limits
 
+    let private currencyMinorUnit =
+        (record (fun currency scale ->
+            {
+                CurrencyMinorUnitDefinition.Currency = currency
+                MinorUnits = scale
+            })
+        : Fields<CurrencyMinorUnitDefinition, _>)
+        |> field "currency" _.Currency ResponseScalars.currency
+        |> field "minorUnits" _.MinorUnits (integer 0L 4L |> map int int64)
+        |> build
+        |> named "Presentation.CurrencyMinorUnit"
+
     let codec =
         (record
             (fun
@@ -571,6 +664,7 @@ module CatalogCodecs =
                 entries
                 roles
                 capabilities
+                moneyMinorUnits
                 version ->
                 {
                     CatalogDocument.Fields = fields
@@ -580,6 +674,7 @@ module CatalogCodecs =
                     Entries = entries
                     Roles = roles
                     Capabilities = capabilities
+                    MoneyMinorUnits = moneyMinorUnits
                     ProductVersion = version
                 })
         : Fields<CatalogDocument, _>)
@@ -588,6 +683,7 @@ module CatalogCodecs =
         |> field "entries" _.Entries (many entry)
         |> field "roles" _.Roles (many role)
         |> field "capabilities" _.Capabilities (many capability)
+        |> field "moneyMinorUnits" _.MoneyMinorUnits (many currencyMinorUnit)
         |> field "productVersion" _.ProductVersion text
         |> build
         |> named "Presentation.CatalogDocument"

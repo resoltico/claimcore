@@ -1,5 +1,5 @@
 import { fillBusinessField } from "./typed-entry";
-import { expectInputRefusal, issueMeanings } from "./input-refusal-expectations";
+import { expectInputRefusal, issueMeanings, guiFormatIssues } from "./input-refusal-expectations";
 import { isResponse } from "../src/protocol/client";
 import type { Page } from "@playwright/test";
 import { randomUUID } from "node:crypto";
@@ -97,7 +97,10 @@ for (const language of ["en", "lv", "ar"] as const) {
       );
       await expectInputRefusal(page, control, language, {
         meaning: issueMeanings[language][name],
-        issue: businessFormatRefusalText[diagnostic][language],
+        issue:
+          diagnostic === "DECIMAL_FORMAT"
+            ? businessFormatRefusalText[diagnostic][language]
+            : guiFormatIssues[diagnostic][language],
       });
       await expect(page.locator("[data-error-summary]")).toBeFocused();
       await page.locator("[data-error-summary]").getByRole("link").click();
@@ -120,19 +123,18 @@ for (const language of ["en", "lv", "ar"] as const) {
     await openAuthenticated(page);
     const reference = `MISSING-${randomUUID()}`;
     await openCase(page, reference);
-    await startAct(page, "Close the case");
+    await startAct(page, "CLOSE", "en");
     // Close through the existing native workflow, then try to correct an absent decision.
     const first = await pauseJsonReply(page, "operation.preview");
     await page.getByRole("button", { name: "Review changes" }).click();
     await first.ready;
     first.release();
     await confirmReview(page);
-    await page.getByRole("button", { name: "Record changes" }).click();
-    await expect(page.getByRole("heading", { name: "Case detail", exact: true })).toBeVisible();
-    await expect(page.locator(".success-toast")).toContainText(
-      "Close the case recorded at revision 2.",
-    );
-    await startAct(page, "Correct case facts");
+    await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
+    await expect(page.locator("#case-detail-title")).toBeVisible();
+    await expect(page.locator(".success-toast")).toContainText("Case closed.");
+    await startAct(page, "CORRECT", "en");
+    await expect(page.getByRole("dialog").locator("[data-open-settings]")).toBeVisible();
     await selectLanguage(page, language);
     const mode = page.locator('input[type="radio"][name="act.groups.decision.kind"]');
     await expect(mode).toHaveCount(1);

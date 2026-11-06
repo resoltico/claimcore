@@ -86,7 +86,7 @@ it("renders absent and suspicious accepted values without changing the recorded 
   expect(screen.getAllByText("Not recorded")).toHaveLength(3);
   expect(screen.getByText("Contains U+202E")).toBeVisible();
   expect(screen.queryByText("Handling summary")).toBeNull();
-  expect(screen.queryByText("Responsible account")).toBeNull();
+  expect(screen.queryByText("Responsible")).toBeNull();
 });
 
 it("gives simultaneous current and historical case fields distinct heading IDs", () => {

@@ -1,3 +1,6 @@
+import type { DateEntryPart } from "../../operation/dateEntryDraft";
+import { readConflict } from "./readConflict";
+import { latestOperationValues } from "../../operation/operationConflict";
 import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
@@ -30,6 +33,7 @@ import { operationEntry } from "../../protocol/operationCatalog";
 import {
   operationReducer,
   operationView,
+  canRestoreCreationDraft,
   type OperationState,
   type OperationEffect,
   type OperationAction,
@@ -77,8 +81,11 @@ const fresh = (options: Options, kind = options.kind, prefill: FormValues = {}):
     disclosureContext: context,
     caseObservation: options.current,
     disclosureRead: null,
+    conflict: null,
     disclosureRefused: false,
+    disclosureRevision: 0,
     values,
+    dateEntries: {},
     baseline: values,
     generation: 0,
     operation: {
@@ -287,6 +294,11 @@ const readCaseDisclosure = async (
     reads.delete(effect.identity.id);
   }
 };
+type DisclosureEffect = Extract<OperationEffect, { kind: "READ_CURRENT" | "READ_CONFLICT" }>;
+const isDisclosureEffect = (effect: OperationEffect): effect is DisclosureEffect =>
+  effect.kind === "READ_CURRENT" || effect.kind === "READ_CONFLICT";
+const readDisclosure = (effect: DisclosureEffect, reads: Map<string, AbortController>) =>
+  effect.kind === "READ_CONFLICT" ? readConflict(effect, reads) : readCaseDisclosure(effect, reads);
 const useEffects = (
   state: OperationState,
   dispatch: React.Dispatch<OperationAction>,
@@ -350,8 +362,8 @@ const useEffects = (
           effect.identity.credential === latest.current.options.credential &&
           effect.identity.target === targetKey(latest.current.options);
         const run = async (): Promise<OperationAction> => {
-          if (effect.kind === "READ_CURRENT") {
-            return readCaseDisclosure(effect, reads.current);
+          if (isDisclosureEffect(effect)) {
+            return readDisclosure(effect, reads.current);
           }
           const journal = options.journal!;
           const scope = options.recoveryScope;
@@ -435,6 +447,59 @@ const useLock = (state: OperationState, onLockChange: Options["onLockChange"]) =
   }, [locked, onLockChange]);
 };
 type Dispatch = React.Dispatch<OperationAction>;
+const prepareValues = (state: OperationState, options: Options, values: FormValues) =>
+  prepareRequest(
+    "operation.execute",
+    buildRequest(
+      "operation.execute",
+      assembleOperation(
+        operationEntry(state.entry),
+        options.normalizeValues?.(values, operationEntry(state.entry)) ?? values,
+      ),
+    ),
+  );
+const reviewLatestDraft = (
+  state: OperationState,
+  dispatch: Dispatch,
+  options: Options,
+): Promise<void> => {
+  const { conflict } = state;
+  if (
+    conflict === null ||
+    conflict.latest === null ||
+    conflict.latest.revision === null ||
+    state.disclosureRead !== null ||
+    state.disclosureRefused
+  ) {
+    return Promise.resolve();
+  }
+  try {
+    const values = latestOperationValues(
+      operationEntry(state.entry),
+      state.values,
+      conflict.latest.revision,
+      crypto.randomUUID(),
+    );
+    const prepared = prepareValues(state, options, values);
+    dispatch({
+      type: "REVIEW_LATEST",
+      conflictId: conflict.identity.id,
+      generation: state.generation,
+      identity: identity(options, state.context.generation),
+      values,
+      prepared,
+    });
+  } catch (error) {
+    dispatch({
+      type: "REFUSE",
+      notice: { kind: "local", reason: "invalidInput" },
+      target: error instanceof ProtocolInputError ? error.path.join(".") : null,
+      uncertain: false,
+      disclosure: false,
+    });
+  }
+  return Promise.resolve();
+};
 const previewDraft = (
   state: OperationState,
   dispatch: Dispatch,
@@ -442,18 +507,7 @@ const previewDraft = (
 ): Promise<void> => {
   try {
     const view = operationView(state);
-    const prepared =
-      view.prepared ??
-      prepareRequest(
-        "operation.execute",
-        buildRequest(
-          "operation.execute",
-          assembleOperation(
-            operationEntry(state.entry),
-            options.normalizeValues?.(state.values, operationEntry(state.entry)) ?? state.values,
-          ),
-        ),
-      );
+    const prepared = view.prepared ?? prepareValues(state, options, state.values);
     dispatch({
       type: "PREVIEW",
       prepared,
@@ -512,7 +566,16 @@ const editing = (state: OperationState, dispatch: Dispatch, options: Options) =>
         });
       }
     },
+    reviewLatest: () => (blocked ? Promise.resolve() : reviewLatestDraft(state, dispatch, options)),
     revalidateDisclosure: () => {
+      if (!blocked && state.conflict !== null && state.disclosureRead === null) {
+        dispatch({
+          type: "READ_CONFLICT",
+          identity: identity(options, state.context.generation),
+          conflictId: state.conflict.identity.id,
+        });
+        return;
+      }
       if (
         !blocked &&
         state.disclosureRead === null &&
@@ -587,35 +650,88 @@ const hasCurrentDisclosure = (state: OperationState, options: Options, epoch: nu
   state.target === targetKey(options) &&
   !state.disclosureRefused;
 /** The first verified requester owns this coordinator; refresh never adopts a different owner. */
-const useVerifiedOperationOwner = (scope: RecoveryScope | undefined): boolean => {
+const useVerifiedOperationOwner = (scope: RecoveryScope | undefined) => {
   const [owner, setOwner] = useState<RecoveryScope | null>(null);
   if (owner === null && scope !== undefined) {
     setOwner(scope);
   }
-  return owner !== null && scope !== undefined && sameRecoveryScope(owner, scope);
+  return {
+    verified: owner !== null && scope !== undefined && sameRecoveryScope(owner, scope),
+    changed: owner !== null && scope !== undefined && !sameRecoveryScope(owner, scope),
+  };
 };
+const requesterOffersCreation = (requester: ReturnType<typeof useRequesterContext>) =>
+  requester?.offers.some((offer) => offer.kind === "OPEN") === true;
+const useCreationDraftRestore = (
+  state: OperationState,
+  dispatch: Dispatch,
+  options: Options,
+  ownerVerified: boolean,
+  requester: ReturnType<typeof useRequesterContext>,
+) => {
+  // Only a new successful context observation supplies proof; stale offers never renew it.
+  const observed = useRef({ requester, revision: state.disclosureRevision, pending: false });
+  useLayoutEffect(() => {
+    if (observed.current.requester !== requester) {
+      observed.current = {
+        requester,
+        revision: state.disclosureRevision,
+        pending: ownerVerified && requesterOffersCreation(requester),
+      };
+    }
+    const proof = observed.current;
+    if (!proof.pending) {
+      return;
+    }
+    if (proof.revision !== state.disclosureRevision || !ownerVerified) {
+      proof.pending = false;
+      return;
+    }
+    if (
+      state.context.target !== targetKey(options) ||
+      state.context.epoch !== options.contextEpoch ||
+      state.context.credential !== options.credential
+    ) {
+      return;
+    }
+    // Context alignment may take another render, but refusal/reset ordering cannot be bypassed.
+    proof.pending = false;
+    if (canRestoreCreationDraft(state)) {
+      dispatch({
+        type: "RESTORE_CREATION_DRAFT",
+        identity: identity(options, state.context.generation),
+        editing: state.operation,
+        disclosureRevision: proof.revision,
+      });
+    }
+  }, [dispatch, options, ownerVerified, requester, state]);
+};
+const requesterRecoveryScope = (
+  requester: ReturnType<typeof useRequesterContext>,
+): RecoveryScope | undefined =>
+  requester === null
+    ? undefined
+    : {
+        serviceOrigin: location.origin,
+        installationId: requester.installationId,
+        actorId: requester.actorId,
+      };
 /** One pure state owner; refs contain only effect scheduling and mounted-lifetime controls. */
 export const useOperation = (supplied: Options) => {
   const requester = useRequesterContext();
   const journal = useRecoveryJournal();
   const session = useContext(SessionContext);
   const contextEpoch = supplied.contextEpoch ?? session?.state.epoch ?? 0;
-  const recoveryScope =
-    supplied.recoveryScope ??
-    (requester === null
-      ? undefined
-      : {
-          serviceOrigin: location.origin,
-          installationId: requester.installationId,
-          actorId: requester.actorId,
-        });
+  const recoveryScope = supplied.recoveryScope ?? requesterRecoveryScope(requester);
   const options: Options = {
     ...supplied,
     contextEpoch,
     journal: supplied.journal ?? journal,
     ...(recoveryScope === undefined ? {} : { recoveryScope }),
   };
-  const ownerVerified = useVerifiedOperationOwner(options.recoveryScope);
+  const { verified: ownerVerified, changed: ownerChanged } = useVerifiedOperationOwner(
+    options.recoveryScope,
+  );
   const [state, dispatch] = useReducer(operationReducer, options, fresh);
   const target = targetKey(options);
   useLayoutEffect(() => {
@@ -626,6 +742,12 @@ export const useOperation = (supplied: Options) => {
       target,
     });
   }, [options.credential, target, contextEpoch]);
+  useLayoutEffect(() => {
+    if (ownerChanged) {
+      dispatch({ type: "CLEAR_DATE_ENTRIES" });
+    }
+  }, [ownerChanged]);
+  useCreationDraftRestore(state, dispatch, options, ownerVerified, requester);
   useEffects(state, dispatch, options);
   useLock(state, options.onLockChange);
   const view = operationView(state);
@@ -634,7 +756,16 @@ export const useOperation = (supplied: Options) => {
     ...view,
     ownerVerified,
     ...actions(state, dispatch, options),
-    dirty: dirtyValues(state.values, state.baseline),
+    captureDateEntry: (
+      path: string,
+      canonical: string,
+      parts: ReadonlyArray<DateEntryPart> | null,
+    ) => {
+      if (ownerVerified && disclosureCurrent) {
+        dispatch({ type: "DATE_ENTRY", path, canonical, parts, id: crypto.randomUUID() });
+      }
+    },
+    dirty: dirtyValues(state.values, state.baseline) || Object.keys(state.dateEntries).length > 0,
     disclosureCurrent,
     currentCase: disclosureCurrent ? state.caseObservation : null,
     revalidating: state.disclosureRead !== null,

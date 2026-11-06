@@ -74,7 +74,7 @@ module internal Persistence =
 
         DatabaseSession.execute
             connection
-            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)"
+            "INSERT INTO claimcore.ledger(sequence,previous_hash,entry_hash,entry_format,subject_kind,act,operation_id,actor_id,recorded_at,subject_id,case_revision,business_date,payload_commitment,payload,payload_nonce,creation_reference,parent_case_id,next_reminder_id,effect_index,effect_count,authority_operation) VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20,$21)"
             [|
                 box (Sequence.value entry.Sequence)
                 box entry.PreviousHash
@@ -96,6 +96,12 @@ module internal Persistence =
                 )
                 DatabaseSession.parameter (subject.Parent |> Option.map CaseId.value)
                 DatabaseSession.parameter (subject.Next |> Option.map ReminderId.value)
+                box (LedgerEffects.index entry.Effects)
+                box (LedgerEffects.count entry.Effects)
+                DatabaseSession.parameter (
+                    LedgerEffects.authorityOperation entry.Effects
+                    |> Option.map DurableNames.authorityAct
+                )
             |]
             token
 
@@ -175,18 +181,19 @@ module internal Persistence =
         }
 
     let private register connection id principal token =
-        let kind, issuer, subject = PrincipalKey.parts principal
+        task {
+            let! _ = AccessRequests.lockPrincipal connection principal token
 
-        DatabaseSession.execute
-            connection
-            "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
-            [|
-                box (ActorId.value id)
-                box (DurableNames.principalKind kind)
-                box issuer
-                box subject
-            |]
-            token
+            let! changed =
+                DatabaseSession.execute
+                    connection
+                    "INSERT INTO claimcore.actors VALUES ($1,$2,$3,$4,true)"
+                    (Array.append [| box (ActorId.value id) |] (AccessRequests.parameters principal))
+                    token
+
+            let! _ = AccessRequests.delete connection principal token
+            return changed
+        }
 
     let authority connection projection token =
         task {
@@ -205,6 +212,37 @@ module internal Persistence =
                         token
 
                 return ()
+            | AuthorityProjection.SetProfile(id, profile) ->
+                let! changed =
+                    DatabaseSession.execute
+                        connection
+                        "UPDATE claimcore.actors SET display_name=$2,contact=$3,display_name_search=$4,contact_search=$5 WHERE actor_id=$1"
+                        [|
+                            box (ActorId.value id)
+                            box (PartyName.format profile.DisplayName)
+                            DatabaseSession.parameter (
+                                profile.Contact |> Option.map ContactText.format
+                            )
+                            box (TextSearch.normalize (PartyName.format profile.DisplayName))
+                            DatabaseSession.parameter (
+                                profile.Contact
+                                |> Option.map (ContactText.format >> TextSearch.normalize)
+                            )
+                        |]
+                        token
+
+                if changed <> 1 then
+                    raise (RecordCorruptException "Profile target is absent.")
+            | AuthorityProjection.EraseProfile(id, sequence) ->
+                let! rows =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT claimcore.erase_profile_payload($1) WHERE EXISTS(SELECT 1 FROM claimcore.ledger WHERE sequence=$2 AND subject_kind='AUTHORITY' AND subject_id=$1 AND act='ERASE_PROFILE')"
+                        [| box (ActorId.value id); box (Sequence.value sequence) |]
+                        token
+
+                if rows.Length <> 1 then
+                    raise (RecordCorruptException "Profile erase has no matching accepted effect.")
             | AuthorityProjection.SetEnabled(id, enabled) ->
                 let! changed =
                     DatabaseSession.execute
@@ -256,7 +294,7 @@ module internal Persistence =
                         box (ReminderState.token (Reminder.state value))
                         box (ReminderAction.format (Reminder.action value))
                         box (CalendarDate.format (Reminder.due value))
-                        box (CaseSearch.normalize (ReminderAction.format (Reminder.action value)))
+                        box (TextSearch.normalize (ReminderAction.format (Reminder.action value)))
                         box changedAt
                         box (ActorId.value recordedBy)
                     |]
@@ -285,7 +323,7 @@ module internal Persistence =
                 let! changed =
                     DatabaseSession.execute
                         connection
-                        "UPDATE claimcore.case_work SET revision=$2,snapshot=$3,responsible_actor=$4,handling_summary=$5,search_text=$6,changed_at=$7,recorded_by=$8 WHERE case_id=$1"
+                        "UPDATE claimcore.case_work SET revision=$2,snapshot=$3,responsible_actor=$4,handling_summary=$5,search_text=$6,changed_at=$7,recorded_by=$8,summary_changed_at=$9,summary_recorded_by=$10 WHERE case_id=$1"
                         [|
                             box (CaseId.value value.CaseId)
                             box (Revision.value value.Revision)
@@ -294,9 +332,13 @@ module internal Persistence =
                                 value.Work.Responsible |> Option.map ActorId.value
                             )
                             DatabaseSession.parameter summary
-                            DatabaseSession.parameter (summary |> Option.map CaseSearch.normalize)
+                            DatabaseSession.parameter (summary |> Option.map TextSearch.normalize)
                             box projection.ChangedAt
                             box (ActorId.value projection.RecordedBy)
+                            DatabaseSession.parameter projection.SummaryChangedAt
+                            DatabaseSession.parameter (
+                                projection.SummaryRecordedBy |> Option.map ActorId.value
+                            )
                         |]
                         token
 
@@ -312,7 +354,7 @@ module internal Persistence =
                             DatabaseSession.parameter (
                                 value.Work.Responsible |> Option.map ActorId.value
                             )
-                            DatabaseSession.parameter (summary |> Option.map CaseSearch.normalize)
+                            DatabaseSession.parameter (summary |> Option.map TextSearch.normalize)
                         |]
                         token
 

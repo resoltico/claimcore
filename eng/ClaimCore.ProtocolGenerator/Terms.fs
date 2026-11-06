@@ -1,8 +1,10 @@
 namespace ClaimCore.ProtocolGeneration
 
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 
 open ClaimCore.Domain
+open ClaimCore.Application.Contracts
 
 type TermVocabulary =
     {
@@ -76,13 +78,26 @@ module Terms =
                 ]
         }
 
+    let private views vocabulary =
+        {
+            Name = Vocabulary.name vocabulary
+            Labels =
+                Vocabulary.tokens vocabulary
+                |> List.map (fun token -> token, "view." + token + ".label")
+        }
+
     let all =
         [
+            rendered PresentedBoolean.vocabulary
+            rendered View.vocabulary
             rendered CaseStatus.vocabulary
             rendered Lifecycle.vocabulary
             rendered Capability.vocabulary
             rendered Role.vocabulary
             rendered PrincipalKind.vocabulary
+            rendered ActorAvailability.vocabulary
+            rendered AccountState.vocabulary
+            rendered RequesterKind.vocabulary
             rendered CorrectionGroupAction.vocabulary
             rendered ScopeKind.vocabulary
             rendered ActKind.vocabulary
@@ -90,6 +105,8 @@ module Terms =
             rendered InteractionEffect.vocabulary
             rendered HistoryDetail.vocabulary
             sectionTerms
+            views CaseView.vocabulary
+            views ReminderView.vocabulary
             rendered CaseDue.vocabulary
             rendered WorkChoice.vocabulary
             rendered WorkActKind.vocabulary
@@ -99,6 +116,19 @@ module Terms =
             rendered CaseListOrder.vocabulary
             rendered CaseAssignment.vocabulary
             rendered CaseProgress.vocabulary
+            rendered CaseStageKind.vocabulary
+            rendered CaseHeadline.vocabulary
+            rendered CaseAttention.vocabulary
+            rendered TimelineFilter.vocabulary
+            {
+                Name = "timelineKind"
+                Labels =
+                    [
+                        "CASE_FACT", "timelineKind.CASE_FACT.label"
+                        "WORK", "timelineKind.WORK.label"
+                        "REMINDER", "timelineKind.REMINDER.label"
+                    ]
+            }
             rendered ActSubject.vocabulary
             fieldTerms
             rendered RecordGroup.vocabulary

@@ -1,0 +1,13 @@
+{
+  "case": {"en":"case","lv":"lieta","ar":"ملف","forbidden":{"ar":["قضية","قضايا","قضيت"]}},
+  "claim": {"en":"claim","lv":"prasījums","ar":"مطالبة","forbidden":{}},
+  "claimant": {"en":"claimant","lv":"prasītājs","ar":"المطالب","forbidden":{}},
+  "insurer": {"en":"insurer","lv":"apdrošinātājs","ar":"شركة التأمين","forbidden":{}},
+  "payment decision": {"en":"payment decision","lv":"izmaksas lēmums","ar":"قرار الدفع","forbidden":{}},
+  "reminder": {"en":"reminder","lv":"atgādinājums","ar":"تذكير","forbidden":{}},
+  "next action": {"en":"next action","lv":"nākamā darbība","ar":"الإجراء التالي","forbidden":{}},
+  "responsible person": {"en":"responsible","lv":"atbildīgais","ar":"المسؤول","forbidden":{}},
+  "owner": {"en":"owner","lv":"īpašnieks","ar":"المالك","forbidden":{}},
+  "void": {"en":"void","lv":"anulēt","ar":"إبطال","forbidden":{}},
+  "erase": {"en":"erase","lv":"dzēst","ar":"محو","forbidden":{}}
+}

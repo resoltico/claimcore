@@ -74,9 +74,9 @@ let tests =
                         "Settlement has its own irreversible meaning"
 
                     Expect.equal
-                        settlement.ConfirmationId
-                        (Some "endpoint.operation.resolve.confirmation")
-                        "Both clients receive the same confirmation identity"
+                        settlement.ConsequenceId
+                        (Some "endpoint.operation.resolve.consequence")
+                        "Both clients receive the same consequence identity"
 
                     let erase =
                         OperationCatalog.entries
@@ -184,7 +184,7 @@ let tests =
                 Expect.equal (fields "void") [] "A reason act cannot borrow registration values")
             testCase "declared prefill has a wrong-value negative control" (fun () ->
                 let operation = find [ "case"; "decide" ]
-                let inputs, _ = OperationCatalog.derive operation
+                let inputs = (OperationCatalog.derive operation).Inputs
 
                 let check (inputs: OperationInputDefinition list) =
                     let date =
@@ -214,7 +214,8 @@ let tests =
                 "new-case revision is a constant with an existing-case negative control"
                 (fun () ->
                     let operation = find [ "case"; "open" ]
-                    let inputs, constants = OperationCatalog.derive operation
+                    let bindings = OperationCatalog.derive operation
+                    let inputs, constants = bindings.Inputs, bindings.Constants
 
                     let check
                         (inputs: OperationInputDefinition list)
@@ -265,10 +266,12 @@ let tests =
                                 [
                                     yield entry.LabelId
                                     yield entry.MeaningId
-                                    yield! Option.toList entry.ConfirmationId
+                                    yield! Option.toList entry.ConsequenceId
+                                    yield! Option.toList entry.DoneId
                                     for input in entry.Inputs do
                                         yield input.LabelId
-                                        yield! Option.toList input.MeaningId
+                                        yield! Option.toList input.HintId
+                                        yield! Option.toList input.RuleId
                                 ] do
                                 Expect.isTrue (Set.contains key known) (language + ": " + key))
             testCase "synopses derive choices and flag names without exceptions" (fun () ->

@@ -1,3 +1,4 @@
+import { ActorIdentity } from "../../components/ActorIdentity";
 import type { OperationReceipt, ReminderVersion } from "@contracts/client";
 import { usePresentation } from "../../presentation/context";
 import { IdentifierValue } from "../../components/IdentifierValue";
@@ -51,21 +52,18 @@ export const WorkReceiptView = ({ receipt }: { receipt: OperationReceipt }) => {
               <dt>{p.fieldLabel("handlingSummary")}</dt>
               <dd>
                 <bdi dir="auto" className="plain-text-value">
-                  {subject.snapshot.view.work.handlingSummary ?? p.text("ui.notRecorded")}
+                  {subject.snapshot.view.handlingSummary ?? p.text("ui.notRecorded")}
                 </bdi>
-                <CharacterWarning
-                  value={subject.snapshot.view.work.handlingSummary}
-                  allowLineFeed
-                />
+                <CharacterWarning value={subject.snapshot.view.handlingSummary} allowLineFeed />
               </dd>
             </div>
             <div>
               <dt>{p.fieldLabel("responsibleActor")}</dt>
               <dd>
-                {subject.snapshot.view.work.responsibleActor === null ? (
+                {subject.snapshot.view.responsible === null ? (
                   p.text("ui.notRecorded")
                 ) : (
-                  <IdentifierValue value={subject.snapshot.view.work.responsibleActor} />
+                  <ActorIdentity actor={subject.snapshot.view.responsible} />
                 )}
               </dd>
             </div>

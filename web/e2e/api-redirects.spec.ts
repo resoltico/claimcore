@@ -13,11 +13,10 @@ for (const status of [301, 302, 303, 307, 308]) {
   }) => {
     await openAuthenticated(page);
     await openCase(page, `REDIRECT-${randomUUID()}`);
-    await startAct(page, "Close the case");
+    await startAct(page, "CLOSE", "en");
     await reviewDraft(page);
     await redirectResponse.arm("/api/operation.execute", status);
-    await page.getByText("I confirm these changes.", { exact: true }).click();
-    await page.getByRole("button", { name: "Record changes" }).click();
+    await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
     await expect(page.getByRole("alert")).toContainText("unknown");
     const evidence = await redirectResponse.evidence();
     expect(evidence.originals).toBe(1);
@@ -28,7 +27,7 @@ for (const status of [301, 302, 303, 307, 308]) {
     expect(outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED").toBe(true);
     await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
     await page.getByRole("button", { name: "Send again", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Case detail" })).toBeVisible();
+    await expect(page.locator("#case-detail-title")).toBeVisible();
     expect((await redirectResponse.evidence()).originals).toBe(1);
     expect((await redirectResponse.evidence()).destinations).toBe(0);
   });

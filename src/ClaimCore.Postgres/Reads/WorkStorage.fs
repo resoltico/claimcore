@@ -32,7 +32,9 @@ module internal WorkStorage =
     let workColumns =
         "case_id,revision,snapshot,responsible_actor,handling_summary,search_text,"
         + DatabaseSession.instantExpression "changed_at"
-        + " AS changed_at,recorded_by"
+        + " AS changed_at,recorded_by,"
+        + DatabaseSession.instantExpression "summary_changed_at"
+        + " AS summary_changed_at,summary_recorded_by"
 
     let reminderColumns =
         "r.reminder_id,r.case_id,r.revision,r.snapshot,r.state,r.action,"
@@ -61,9 +63,17 @@ module internal WorkStorage =
             responsible <> (expected |> Option.bind _.Responsible)
             || summary
                <> (expected |> Option.bind _.Summary |> Option.map HandlingSummary.format)
-            || search <> (summary |> Option.map CaseSearch.normalize)
+            || search <> (summary |> Option.map TextSearch.normalize)
         then
             raise (RecordCorruptException "Work columns disagree with snapshot.")
+
+        let summaryAt =
+            DatabaseSession.namedOptional<string> (name "summary_changed_at") row
+
+        let summaryBy = actorOption (name "summary_recorded_by") row
+
+        if summary.IsSome <> summaryAt.IsSome || summaryAt.IsSome <> summaryBy.IsSome then
+            raise (RecordCorruptException "Summary attribution disagrees with its current content.")
 
         {
             CaseId = id
@@ -75,6 +85,11 @@ module internal WorkStorage =
                 |> Option.map (fun _ ->
                     DatabaseSession.namedRecordedInstant (name "changed_at") row)
             RecordedBy = actorOption (name "recorded_by") row
+            SummaryChangedAt =
+                DatabaseSession.namedOptional<string> (name "summary_changed_at") row
+                |> Option.map (fun _ ->
+                    DatabaseSession.namedRecordedInstant (name "summary_changed_at") row)
+            SummaryRecordedBy = actorOption (name "summary_recorded_by") row
         }
 
     let private readReminder name row : StoredReminder =
@@ -108,7 +123,7 @@ module internal WorkStorage =
             state <> (value |> Option.map (Reminder.state >> ReminderState.token))
             || action <> (value |> Option.map (Reminder.action >> ReminderAction.format))
             || due <> (value |> Option.map Reminder.due)
-            || search <> (action |> Option.map CaseSearch.normalize)
+            || search <> (action |> Option.map TextSearch.normalize)
         then
             raise (RecordCorruptException "Reminder columns disagree with snapshot.")
 
@@ -162,7 +177,9 @@ module internal WorkStorage =
     let summaryColumns =
         "w.case_id AS work_record_case_id,w.revision AS work_record_revision,w.snapshot AS work_record_snapshot,w.responsible_actor AS work_record_responsible_actor,w.handling_summary AS work_record_handling_summary,w.search_text AS work_record_search_text,"
         + DatabaseSession.instantExpression "w.changed_at"
-        + " AS work_record_changed_at,w.recorded_by AS work_record_recorded_by,n.pending AS work_record_pending,n.overdue AS work_record_overdue,"
+        + " AS work_record_changed_at,w.recorded_by AS work_record_recorded_by,"
+        + DatabaseSession.instantExpression "w.summary_changed_at"
+        + " AS work_record_summary_changed_at,w.summary_recorded_by AS work_record_summary_recorded_by,n.pending AS work_record_pending,n.overdue AS work_record_overdue,"
         + "r.reminder_id AS next_reminder_id,r.case_id AS next_case_id,r.revision AS next_revision,r.snapshot AS next_snapshot,r.state AS next_state,r.action AS next_action,"
         + DatabaseSession.dateExpression "r.due"
         + " AS next_due,r.search_text AS next_search_text,"
@@ -232,7 +249,7 @@ module internal WorkStorage =
                 let! rows =
                     DatabaseSession.namedRows
                         connection
-                        "SELECT p.case_id,a.actor_id,a.subject,(a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($3::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($4::text[]))) AS available FROM unnest($1::uuid[],$2::uuid[]) AS p(case_id,actor_id) JOIN claimcore.actors a USING(actor_id)"
+                        "SELECT p.case_id,a.actor_id,a.principal_kind,a.enabled,a.display_name,a.contact,(a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($3::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=p.case_id) AND g.role=ANY($4::text[]))) AS available FROM unnest($1::uuid[],$2::uuid[]) AS p(case_id,actor_id) JOIN claimcore.actors a USING(actor_id)"
                         [|
                             box (pairs |> List.map (fst >> CaseId.value) |> List.toArray)
                             box (pairs |> List.map (snd >> ActorId.value) |> List.toArray)
@@ -252,15 +269,25 @@ module internal WorkStorage =
                 return
                     rows
                     |> List.map (fun row ->
-                        caseId "case_id" row,
-                        {
-                            AssignedAccount.Account =
-                                {
-                                    ActorId = actor "actor_id" row
-                                    Subject = DatabaseSession.namedValue<string> "subject" row
-                                }
-                            Available = DatabaseSession.namedValue<bool> "available" row
-                        })
+                        let identity = actor "actor_id" row
+
+                        (caseId "case_id" row, identity),
+                        ActorRef.create
+                            identity
+                            (DurableNames.tryPrincipalKind (
+                                DatabaseSession.namedValue<string> "principal_kind" row
+                             )
+                             |> Option.defaultWith (fun () ->
+                                 raise (RecordCorruptException "Invalid assigned principal kind.")))
+                            (if not (DatabaseSession.namedValue<bool> "enabled" row) then
+                                 ActorAvailability.Disabled
+                             elif DatabaseSession.namedValue<bool> "available" row then
+                                 ActorAvailability.Available
+                             else
+                                 ActorAvailability.NotEligible)
+                            (Projections.profile
+                                (DatabaseSession.namedOptional<string> "display_name" row)
+                                (DatabaseSession.namedOptional<string> "contact" row)))
                     |> Map.ofList
         }
 
@@ -282,15 +309,22 @@ module internal WorkStorage =
         task {
             let due = query.Due |> Option.map duePredicate |> Option.defaultValue "TRUE"
 
+            let view =
+                query.View
+                |> Option.map ViewCountStorage.reminderPredicate
+                |> Option.defaultValue "TRUE"
+
             let sql =
-                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate} AND r.snapshot IS NOT NULL AND ($12::uuid IS NULL OR r.case_id=$12) AND r.state=$13 AND ($14 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($15::text IS NULL OR r.search_text LIKE '%%'||$15||'%%' ESCAPE chr(92)) AND ($16::date IS NULL OR (r.due,r.reminder_id)>($16::date,$17::uuid)) ORDER BY r.due,r.reminder_id LIMIT $18"
+                $"SELECT {reminderColumns},c.case_reference,c.state AS parent_lifecycle,c.status AS parent_status FROM claimcore.reminders r JOIN claimcore.cases c ON c.case_id=r.case_id WHERE {CaseSelectionSql.predicate query.Selection} AND r.snapshot IS NOT NULL AND ($13::uuid IS NULL OR r.case_id=$13) AND ($14::text IS NULL OR r.state=$14) AND ({view}) AND ($15 OR (c.state='ACTIVE' AND c.status='OPENED')) AND ({due}) AND ($16::text IS NULL OR r.search_text LIKE '%%'||$16||'%%' ESCAPE chr(92)) AND ($17::date IS NULL OR (r.due,r.reminder_id)>($17::date,$18::uuid)) ORDER BY r.due,r.reminder_id LIMIT $19"
 
             let parameters =
                 Array.append
                     (CaseSelectionSql.parameters query.Selection)
                     [|
                         DatabaseSession.parameter (query.TargetCaseId |> Option.map CaseId.value)
-                        box (ReminderState.token query.State)
+                        DatabaseSession.parameter (
+                            query.State |> Option.map DurableNames.reminderState
+                        )
                         box query.IncludeInactive
                         DatabaseSession.parameter (literalSearch query.Text)
                         DatabaseSession.parameter (
@@ -349,7 +383,7 @@ module internal WorkStorage =
     let overview connection (selection: CaseSelection) mine token =
         task {
             let sql =
-                $"WITH selected AS (SELECT c.case_id,c.responsible_actor FROM claimcore.cases c WHERE {CaseSelectionSql.predicate} AND c.state='ACTIVE' AND c.status='OPENED'), counts AS (SELECT r.case_id,count(*) AS pending,count(*) FILTER(WHERE r.due<$11::date) AS overdue FROM claimcore.reminders r JOIN selected s USING(case_id) WHERE r.state='PENDING' GROUP BY r.case_id), items AS (SELECT s.*,coalesce(n.pending,0) AS pending,coalesce(n.overdue,0) AS overdue,(s.responsible_actor IS NOT NULL AND EXISTS(SELECT 1 FROM claimcore.actors a WHERE a.actor_id=s.responsible_actor AND a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=s.case_id) AND g.role=ANY($12::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=s.case_id) AND g.role=ANY($13::text[])))) AS available FROM selected s LEFT JOIN counts n USING(case_id)) SELECT count(*) AS actionable,count(*) FILTER(WHERE pending=0) AS missing,count(*) FILTER(WHERE overdue>0) AS overdue_cases,coalesce(sum(overdue),0)::bigint AS overdue_reminders,count(*) FILTER(WHERE responsible_actor IS NULL) AS unassigned,count(*) FILTER(WHERE responsible_actor IS NOT NULL AND NOT available) AS unavailable,count(*) FILTER(WHERE pending=0 OR overdue>0 OR responsible_actor IS NULL OR NOT available) AS attention FROM items"
+                $"WITH selected AS (SELECT c.case_id,c.responsible_actor,({CaseSelectionSql.viewPredicate CaseView.NeedsAttention}) AS attention FROM claimcore.cases c WHERE {CaseSelectionSql.predicate selection} AND c.state='ACTIVE' AND c.status='OPENED'), counts AS (SELECT r.case_id,count(*) AS pending,count(*) FILTER(WHERE r.due<$11::date) AS overdue FROM claimcore.reminders r JOIN selected s USING(case_id) WHERE r.state='PENDING' GROUP BY r.case_id), items AS (SELECT s.*,coalesce(n.pending,0) AS pending,coalesce(n.overdue,0) AS overdue,(s.responsible_actor IS NOT NULL AND EXISTS(SELECT 1 FROM claimcore.actors a WHERE a.actor_id=s.responsible_actor AND a.enabled AND a.principal_kind='HUMAN' AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=s.case_id) AND g.role=ANY($13::text[])) AND EXISTS(SELECT 1 FROM claimcore.grants g WHERE g.actor_id=a.actor_id AND (g.case_id IS NULL OR g.case_id=s.case_id) AND g.role=ANY($14::text[])))) AS available FROM selected s LEFT JOIN counts n USING(case_id)) SELECT count(*) AS actionable,count(*) FILTER(WHERE pending=0) AS missing,count(*) FILTER(WHERE overdue>0) AS overdue_cases,coalesce(sum(overdue),0)::bigint AS overdue_reminders,count(*) FILTER(WHERE responsible_actor IS NULL) AS unassigned,count(*) FILTER(WHERE responsible_actor IS NOT NULL AND NOT available) AS unavailable,count(*) FILTER(WHERE attention) AS attention FROM items"
 
             let! rows =
                 DatabaseSession.namedRows

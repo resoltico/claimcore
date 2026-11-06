@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { preview as preparedPreview } from "../support/operation-hook.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -32,6 +33,7 @@ it("the persistent App masks an unverified session refresh and preserves the sam
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,
+          exactReference: null,
           offers: installationOffers(["OPEN"]),
           items: [],
           nextCursor: null,
@@ -44,7 +46,7 @@ it("the persistent App masks an unverified session refresh and preserves the sam
     .mockReturnValue(Promise.withResolvers<never>().promise);
   const user = userEvent.setup();
   const view = render(<App />);
-  await user.click(await screen.findByRole("button", { name: "Open a case" }));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByRole("textbox", { name: "Claimant name" });
   fillRegistrationInputs({
     caseReference: "REFRESH-DRAFT",
@@ -90,6 +92,7 @@ it("masks frozen uncertain metadata until the original owner is verified and the
         kind: "SUCCEEDED",
         data: {
           basis: workBasis,
+          exactReference: null,
           offers: installationOffers(["OPEN"]),
           items: [],
           nextCursor: null,
@@ -107,12 +110,12 @@ it("masks frozen uncertain metadata until the original owner is verified and the
   });
   const user = userEvent.setup();
   const view = render(<App />);
-  await user.click(await screen.findByRole("button", { name: "Open a case" }));
+  await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByRole("textbox", { name: "Claimant name" });
   fillRegistrationInputs({ caseReference: "UNCERTAIN_OWNER_CANARY" });
   await user.click(screen.getByRole("button", { name: "Review changes" }));
-  await user.click(await screen.findByRole("checkbox", { name: "I confirm these changes." }));
-  await user.click(screen.getByRole("button", { name: "Record changes" }));
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   await screen.findByRole("button", { name: "Send again" });
   expect(document.body).toHaveTextContent("UNCERTAIN_OWNER_CANARY");
   const [firstExecution] = execute.mock.calls;

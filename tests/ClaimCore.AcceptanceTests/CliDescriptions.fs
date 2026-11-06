@@ -21,7 +21,7 @@ let private description cli language arguments =
 
 let private selectedInputs cli =
     for language in LocalizationPolicy.languages do
-        for operation in OperationCatalog.all do
+        for operation in CommandGrammar.operations do
             let output = description cli language (CommandGrammar.words operation)
 
             Expect.stringContains
@@ -37,6 +37,49 @@ let private selectedInputs cli =
                         output
                         (ClaimCore.Cli.ContractDiscovery.localized language input.Binding.LabelId)
                         "Published input labels survive"
+
+// These historical grammar captures intentionally retain a noncanonical bare-host issuer.
+// L6 now refuses their business syntax locally; they remain valid structural frame oracles.
+let private noncanonicalAuthorityExample arguments =
+    match arguments with
+    | "authority" :: act :: _ ->
+        List.contains
+            act
+            [
+                "register"
+                "grant"
+                "revoke"
+                "enable"
+                "disable"
+                "set-profile"
+                "erase-profile"
+            ]
+        && (arguments
+            |> List.windowed 2
+            |> List.contains [ "--issuer"; "https://id.example" ])
+    | _ -> false
+
+let private principalRefusal cli arguments =
+    let result = invoke cli (arguments @ [ "--dry-run"; "--format"; "json" ]) None
+    Expect.equal result.ExitCode 2 "Noncanonical issuer is refused before dispatch"
+    Expect.equal result.StandardError.Length 0 "The refusal is one machine frame"
+    use document = JsonDocument.Parse result.StandardOutput
+    let frame = document.RootElement
+    Expect.equal (frame.GetProperty("endpoint").GetString()) "operation.execute" "Authored endpoint"
+    Expect.equal (frame.GetProperty("delivery").GetString()) "NOT_SENT" "Offline refusal"
+    let outcome = frame.GetProperty("result").GetProperty("outcome")
+    Expect.equal (outcome.GetProperty("kind").GetString()) "REJECTED" "Business syntax refusal"
+    let diagnostic = outcome.GetProperty "data"
+    Expect.equal (diagnostic.GetProperty("code").GetString()) "INVALID_INPUT" "Input diagnostic"
+    Expect.equal (diagnostic.GetProperty("action").GetString()) "CORRECT_INPUT" "Repair action"
+    let issues = diagnostic.GetProperty "issues"
+    Expect.equal (issues.GetArrayLength()) 1 "Exactly the authored principal issue"
+    Expect.equal (issues[0].GetProperty("field").GetString()) "principal.issuer" "Issuer target"
+
+    Expect.equal
+        (issues[0].GetProperty("code").GetString())
+        "PRINCIPAL_FORMAT"
+        "Canonical issuer rule"
 
 let private frameOracle cli =
     let rows =
@@ -56,13 +99,14 @@ let private frameOracle cli =
                 cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
                 |> List.ofArray
 
-            OperationCatalog.all
+            CommandGrammar.operations
+            |> List.sortByDescending (CommandGrammar.words >> List.length)
             |> List.find (fun operation ->
                 let words = CommandGrammar.words operation
                 List.truncate words.Length arguments = words))
         |> Set.ofArray
 
-    let expected = OperationCatalog.all |> Set.ofList
+    let expected = CommandGrammar.operations |> Set.ofList
     Expect.equal captured expected "Every catalog operation has an independent captured frame"
     let arguments = rows |> Array.map (fun row -> row.Split('\t', 2)[0])
 
@@ -71,6 +115,8 @@ let private frameOracle cli =
         rows.Length
         "Captured invocation arguments are distinct"
 
+    let mutable localRefusals = 0
+
     for row in rows do
         let cells = row.Split('\t', 2)
 
@@ -78,14 +124,20 @@ let private frameOracle cli =
             cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
             |> List.ofArray
 
-        let result = invoke cli (arguments @ [ "--dry-run" ]) None
-        Expect.equal result.ExitCode 0 cells[0]
-        Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
+        if noncanonicalAuthorityExample arguments then
+            localRefusals <- localRefusals + 1
+            principalRefusal cli arguments
+        else
+            let result = invoke cli (arguments @ [ "--dry-run" ]) None
+            Expect.equal result.ExitCode 0 cells[0]
+            Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
 
-        Expect.equal
-            ((Encoding.UTF8.GetString result.StandardOutput).TrimEnd('\r', '\n'))
-            cells[1]
-            "Published frame bytes match the authored vector"
+            Expect.equal
+                ((Encoding.UTF8.GetString result.StandardOutput).TrimEnd('\r', '\n'))
+                cells[1]
+                "Published frame bytes match the authored vector"
+
+    Expect.equal localRefusals 8 "All eight original noncanonical issuer examples remain exercised"
 
 let private diagnosticRoute cli =
     let result = invoke cli [ "call" ] (Some(Encoding.UTF8.GetBytes "{invalid-frame"))

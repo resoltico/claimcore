@@ -165,6 +165,9 @@ module internal DatabaseSession =
     let calendarDate index row =
         parsedCalendarDate (value<string> index row)
 
+    let optionalCalendarDate index row =
+        optional<string> index row |> Option.map parsedCalendarDate
+
     let namedOptionalCalendarDate name row =
         namedOptional<string> name row |> Option.map parsedCalendarDate
 

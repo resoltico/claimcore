@@ -223,7 +223,21 @@ module Api =
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context))
             HttpMethod.Post
             RequestCodecs.empty
-            (ReplyCodecs.readReply "ContextReply" ResponseCodecs.actorContext)
+            (ReplyCodecs.readReply "ContextReply" ResponseCodecs.contextReply)
+
+    let caseViews =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseViews))
+            HttpMethod.Post
+            RequestCodecs.empty
+            (ReplyCodecs.readReply "CaseViewsReply" ViewCountCodecs.cases)
+
+    let reminderViews =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderViews))
+            HttpMethod.Post
+            RequestCodecs.empty
+            (ReplyCodecs.readReply "ReminderViewsReply" ViewCountCodecs.reminders)
 
     let caseGet =
         read
@@ -261,6 +275,13 @@ module Api =
             (ReplyCodecs.readReply
                 "HistoryReply"
                 (ResponseCodecs.historyPageFor ReceiptCodecs.caseReceipt))
+
+    let caseTimeline =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline))
+            HttpMethod.Post
+            RequestCodecs.timelineRequest
+            (ReplyCodecs.readReply "CaseTimelineReply" TimelineCodecs.page)
 
     let reminders =
         read
@@ -302,7 +323,7 @@ module Api =
             Unavailable =
                 fun input ->
                     {
-                        PreviewReply.OperationId = OperationInput.operationId input
+                        PresentedPreviewReply.OperationId = OperationInput.operationId input
                         Outcome = Outcome.Failed CoreFault.StoreUnavailable
                     }
         }
@@ -375,7 +396,7 @@ module Api =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList))
             HttpMethod.Post
-            RequestCodecs.pageRequest
+            RequestCodecs.actorListRequest
             (ReplyCodecs.readReply "ActorsReply" ResponseCodecs.actorsPage)
 
     let authorityGrants =
@@ -392,6 +413,22 @@ module Api =
             RequestCodecs.authorityHistoryRequest
             (ReplyCodecs.readReply "AuthorityHistoryReply" AuthorityHistoryCodecs.page)
 
+    let authorityRequests =
+        read
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests))
+            HttpMethod.Post
+            RequestCodecs.accessRequestsRequest
+            (ReplyCodecs.readReply "AccessRequestsReply" ResponseCodecs.accessRequestsPage)
+
+    let authorityRequestsDismiss =
+        { read
+              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss))
+              HttpMethod.Post
+              RequestCodecs.accessRequestDismissRequest
+              (ReplyCodecs.readReply "AccessRequestDismissReply" Codec.nullValue) with
+            Effect = EndpointEffect.OperationalWrite
+        }
+
     let private defineHost =
         function
         | HostEndpoint.Session -> EndpointDefinition.create session
@@ -405,11 +442,15 @@ module Api =
         | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> EndpointDefinition.create reminder
         | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> EndpointDefinition.create workOverview
         | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> EndpointDefinition.create caseActivity
+        | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> EndpointDefinition.create caseTimeline
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
         | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
             EndpointDefinition.create caseAssignees
         | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
+        | (ActorEndpoint.Query QueryEndpoint.CaseViews) -> EndpointDefinition.create caseViews
+        | (ActorEndpoint.Query QueryEndpoint.ReminderViews) ->
+            EndpointDefinition.create reminderViews
         | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
         | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> EndpointDefinition.create caseHistory
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
@@ -425,6 +466,10 @@ module Api =
             EndpointDefinition.create authorityGrants
         | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
             EndpointDefinition.create authorityHistory
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
+            EndpointDefinition.create authorityRequests
+        | (ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
+            EndpointDefinition.create authorityRequestsDismiss
 
     let definitions =
         (HostEndpoint.all |> List.map defineHost)
@@ -574,6 +619,96 @@ module ReplyCorrelation =
                 | Some "REMINDER" -> guid "caseId" subject = guid "caseId" parent
                 | _ -> false))
 
+    let private createdReceiptIdentity receipt =
+        let operation = guid "operationId" receipt
+
+        memberValue "subject" receipt
+        |> Option.exists (fun subject ->
+            match stringMember "kind" subject, stringMember "act" subject with
+            | Some "CASE", Some "OPEN" -> guid "caseId" subject = operation
+            | Some "AUTHORITY", Some("REGISTER" | "ADMIT" | "PROVISION_OWNER") ->
+                memberValue "targetActor" subject
+                |> Option.exists (fun target ->
+                    let actor =
+                        match stringMember "kind" target with
+                        | Some "DISCLOSED" ->
+                            memberValue "actor" target |> Option.bind (guid "actorId")
+                        | Some "WITHHELD" -> guid "actorId" target
+                        | _ -> None
+
+                    actor.IsSome && actor = operation)
+            | _ -> true)
+
+    let private caseReview input subject =
+        let expected = integerMember "expectedRevision" input
+        let after = memberValue "after" subject
+        let before = memberValue "before" subject
+
+        let opening =
+            memberValue "act" input |> Option.bind (stringMember "kind") = Some "OPEN"
+
+        stringMember "kind" subject = Some "CASE"
+        && expected.IsSome
+        && (after
+            |> Option.exists (fun after ->
+                caseTarget input after
+                && integerMember "revision" after = (expected |> Option.map ((+) 1L))
+                && (if opening then
+                        expected = Some 0L
+                        && before = Some JsonValue.Null
+                        && guid "caseId" after = guid "operationId" input
+                    else
+                        before
+                        |> Option.exists (fun before ->
+                            caseTarget input before
+                            && integerMember "revision" before = expected
+                            && guid "caseId" before = guid "caseId" after
+                            && sameReference
+                                (stringMember "caseReference" before)
+                                (stringMember "caseReference" after)))))
+
+    let private principalMatches expected actual =
+        [ "kind"; "issuer"; "subject" ]
+        |> List.forall (fun field ->
+            let value = stringMember field expected
+            value.IsSome && stringMember field actual = value)
+
+    let private authorityReview input subject =
+        match
+            memberValue "target" input, memberValue "act" input, memberValue "effects" subject
+        with
+        | Some principal, Some act, Some(JsonValue.Array effects) ->
+            let tag = stringMember "kind" act
+            let creating = tag = Some "REGISTER" || tag = Some "ADMIT"
+
+            let identity =
+                if creating then
+                    memberValue "target" subject = Some JsonValue.Null
+                else
+                    memberValue "target" subject
+                    |> Option.bind (memberValue "principal")
+                    |> Option.exists (principalMatches principal)
+
+            let expectedKinds =
+                match tag, memberValue "grants" act with
+                | Some "ADMIT", Some(JsonValue.Array grants) ->
+                    "REGISTER" :: "SET_PROFILE" :: List.replicate grants.Length "GRANT"
+                | Some "REGISTER", _ -> [ "REGISTER"; "SET_PROFILE" ]
+                | Some tag, _ -> [ tag ]
+                | _ -> []
+
+            stringMember "kind" subject = Some "AUTHORITY"
+            && identity
+            && List.map (stringMember "kind") effects = List.map Some expectedKinds
+            && (effects
+                |> List.forall (fun effect ->
+                    match stringMember "kind" effect with
+                    | Some("REGISTER" | "PROVISION_OWNER") ->
+                        memberValue "principal" effect
+                        |> Option.exists (principalMatches principal)
+                    | _ -> true))
+        | _ -> false
+
     let matches token input reply =
         let outcome = memberValue "outcome" reply
         let kind = outcome |> Option.bind (stringMember "kind")
@@ -602,7 +737,9 @@ module ReplyCorrelation =
             | _ -> None
 
         let receiptIdentity =
-            receipt |> Option.forall (fun value -> guid "operationId" value = operation)
+            receipt
+            |> Option.forall (fun value ->
+                guid "operationId" value = operation && createdReceiptIdentity value)
 
         let receiptTarget =
             receipt
@@ -613,8 +750,12 @@ module ReplyCorrelation =
                     && caseTarget input subject
                     && stringMember "act" subject =
                         (memberValue "act" input |> Option.bind (stringMember "kind"))
+                | Some "AUTHORITY", Some subject ->
+                    stringMember "kind" subject = Some "AUTHORITY"
+                    && stringMember "act" subject =
+                        (memberValue "act" input |> Option.bind (stringMember "kind"))
                 | Some("WORK" | "REMINDER"), Some subject -> newFamilyReceipt input subject
-                | Some("CASE" | "WORK" | "REMINDER"), None -> false
+                | Some("CASE" | "WORK" | "REMINDER" | "AUTHORITY"), None -> false
                 | _ -> true)
 
         let readTarget =
@@ -649,6 +790,7 @@ module ReplyCorrelation =
                              | _ -> true))))
             | "authority.grants", Some "SUCCEEDED", Some value ->
                 memberValue "actor" value
+                |> Option.bind (memberValue "actor")
                 |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)
             | _ -> true
 
@@ -657,8 +799,11 @@ module ReplyCorrelation =
             | "operation.preview", Some "REVIEWED", Some "CASE", Some data ->
                 memberValue "review" data
                 |> Option.bind (memberValue "subject")
-                |> Option.bind (memberValue "after")
-                |> Option.exists (caseTarget input)
+                |> Option.exists (caseReview input)
+            | "operation.preview", Some "REVIEWED", Some "AUTHORITY", Some data ->
+                memberValue "review" data
+                |> Option.bind (memberValue "subject")
+                |> Option.exists (authorityReview input)
             | "operation.preview", Some "REVIEWED", Some "WORK", Some data ->
                 memberValue "review" data
                 |> Option.bind (memberValue "subject")

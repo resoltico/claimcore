@@ -107,7 +107,7 @@ let private configure output updates =
 
 let private dispatch output errors argv =
     try
-        match CliInvocations.admit (Array.toList argv) with
+        match CliInvocations.admitConfigured (Array.toList argv) with
         | Ok CliInvocation.Call ->
             use input = Console.OpenStandardInput()
 

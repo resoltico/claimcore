@@ -4,30 +4,33 @@ open System
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
+[<NoComparison>]
 type internal CaseFacts =
     {
         ObservedAt: DateTimeOffset
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
         Assignee: AuthorityView option
-        ExistingOperation: StoredEntry option
+        ExistingOperation: StoredOperation option
         Case: StoredCase option
     }
 
+[<NoComparison>]
 type internal AuthorityExecutionFacts =
     {
         ObservedAt: DateTimeOffset
         Maintenance: RegisterMaintenance
         Actor: AuthorityView
-        ExistingOperation: StoredEntry option
+        ExistingOperation: StoredOperation option
         Target: AuthorityView
-        TargetCase: StoredCase option
+        TargetRoles: Map<ActorId, ActorRoleSummary list>
+        TargetCases: Map<GrantTarget, StoredCase>
         EnabledHumanOwners: int option
         ActorCount: int option
     }
 
 module internal ExecutionFacts =
-    let private operationCase (entry: StoredEntry option) =
+    let private operationCase (entry: StoredOperation option) =
         match entry |> Option.map _.Subject with
         | Some(EntryTarget.Case(id, _, _, _)) -> Some id
         | Some(EntryTarget.Work subject) -> Some subject.CaseId
@@ -59,7 +62,7 @@ module internal ExecutionFacts =
         task {
             let! existing =
                 match operationId with
-                | Some id -> tx.FindEntry id
+                | Some id -> tx.FindOperation id
                 | None -> System.Threading.Tasks.Task.FromResult None
 
             let! record = findCase tx selector
@@ -83,21 +86,37 @@ module internal ExecutionFacts =
                 }
         }
 
-    let target (services: ServiceContext) (tx: IReadTx) needed operationId target reference =
+    let target (services: ServiceContext) (tx: IReadTx) needed operationId target references =
         let principal = services.Principal
 
         task {
-            let! existing = tx.FindEntry operationId
+            let! existing = tx.FindOperation operationId
 
-            let! record =
-                match reference with
-                | Some selector -> findCase tx selector
-                | None -> System.Threading.Tasks.Task.FromResult None
+            let mutable records = Map.empty
+
+            for reference in List.distinct references do
+                let selector =
+                    match reference with
+                    | GrantTarget.CaseReference value -> Some(CaseSelector.Reference value)
+                    | GrantTarget.CaseId value -> Some(CaseSelector.Id value)
+                    | GrantTarget.Installation -> None
+
+                match selector with
+                | Some selector ->
+                    let! record = findCase tx selector
+
+                    match record with
+                    | Some record -> records <- Map.add reference record records
+                    | None -> ()
+                | None -> ()
 
             let! maintenance = tx.Maintenance()
-            let ids = record |> Option.map _.CaseId |> Option.toList
+            let ids = records |> Map.values |> Seq.map _.CaseId |> Seq.distinct |> Seq.toList
             let! actor = authority tx principal (ids @ (operationCase existing |> Option.toList))
             let! target = authority tx target ids
+
+            let! targetRoles =
+                tx.ActorRoleSummaries(target.Actor |> Option.map _.ActorId |> Option.toList)
 
             let! owners =
                 if List.contains AuthorityFact.EnabledHumanOwners needed then
@@ -118,7 +137,8 @@ module internal ExecutionFacts =
                     Actor = actor
                     ExistingOperation = existing
                     Target = target
-                    TargetCase = record
+                    TargetRoles = targetRoles
+                    TargetCases = records
                     EnabledHumanOwners = owners
                     ActorCount = actors
                 }
@@ -126,7 +146,7 @@ module internal ExecutionFacts =
 
     let operation (tx: IReadTx) principal id =
         task {
-            let! entry = tx.FindEntry id
+            let! entry = tx.FindOperation id
             let! actor = authority tx principal (operationCase entry |> Option.toList)
 
             let! record =
@@ -139,7 +159,7 @@ module internal ExecutionFacts =
                     match entry |> Option.map _.Subject with
                     | Some(EntryTarget.Work subject) ->
                         let! work = tx.FindWork subject.CaseId
-                        return ReceiptCurrent.Work(record, work)
+                        return ReceiptCurrent.Work(record, work, Map.empty)
                     | Some(EntryTarget.Reminder subject) ->
                         let ids = subject.ReminderId :: (subject.NextReminderId |> Option.toList)
                         let mutable values = Map.empty
@@ -153,7 +173,7 @@ module internal ExecutionFacts =
 
                         return ReceiptCurrent.Reminder(record, values)
                     | Some(EntryTarget.Case _) -> return ReceiptCurrent.Case record
-                    | _ -> return ReceiptCurrent.Authority
+                    | _ -> return ReceiptCurrent.Authority None
                 }
 
             return actor, entry, current
@@ -193,5 +213,33 @@ module internal ExecutionFacts =
                             do! project projection
                             return Verdict.Proceed receipt
                         })
+            | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
+        }
+
+    /// One verdict commits every effect and projection together, or the store rolls all of them back.
+    let persistOperation
+        (tx: IWriteTx)
+        (project: 'projection -> System.Threading.Tasks.Task<unit>)
+        (verdict: Verdict<EntryDraft list * 'projection list * OperationReceipt>)
+        =
+        task {
+            match verdict with
+            | Verdict.Proceed(entries, projections, receipt) ->
+                let group = StoredOperation.create (entries |> List.map LedgerEntries.stored)
+
+                match group with
+                | Error fault -> return Verdict.Fail fault
+                | Ok _ when entries.Length <> projections.Length ->
+                    return Verdict.Fail CoreFault.InternalError
+                | Ok _ ->
+                    return!
+                        whenWritable tx (fun () ->
+                            task {
+                                for entry, projection in List.zip entries projections do
+                                    do! tx.Append entry
+                                    do! project projection
+
+                                return Verdict.Proceed receipt
+                            })
             | other -> return Verdict.map (fun (_, _, receipt) -> receipt) other
         }

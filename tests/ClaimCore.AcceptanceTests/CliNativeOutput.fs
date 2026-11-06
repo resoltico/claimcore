@@ -291,31 +291,85 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
                 fixture.Issuer
                 "--subject"
                 subject
+                "--name"
+                "Safety"
             ]
             0
         |> require "ACCEPTED"
 
-    let actorId =
-        registered.GetProperty("subject").GetProperty("targetActorId").GetString()
-        |> nonNull
+    let target = registered.GetProperty("subject").GetProperty "targetActor"
+
+    Expect.equal
+        (target.GetProperty("kind").GetString())
+        "DISCLOSED"
+        "Current owner receives the authorized target reference"
+
+    let targetActor = target.GetProperty "actor"
+    let actorId = targetActor.GetProperty("actorId").GetString() |> nonNull
+
+    Expect.equal
+        actorId
+        operation
+        "Registration keeps its deterministic operation-derived account identity"
+
+    Expect.equal
+        (targetActor.GetProperty("displayName").GetProperty("value").GetString())
+        "Safety"
+        "Authored profile owns the readable account name"
 
     let machine =
-        CliCalls.verb fixture owner [ "authority"; "list"; "--limit"; "50" ] 0
+        CliCalls.verb fixture owner [ "authority"; "grants"; actorId; "--limit"; "50" ] 0
         |> require "SUCCEEDED"
 
-    let found =
-        machine.GetProperty("items").EnumerateArray()
-        |> Seq.find (fun value -> value.GetProperty("actorId").GetString() = actorId)
+    let found = machine.GetProperty "actor"
+
+    Expect.equal
+        (found.GetProperty("actor").GetProperty("actorId").GetString())
+        actorId
+        "Technical disclosure is for the already-known registered identity"
 
     Expect.isTrue
         (found.GetProperty("principal").GetProperty("subject").GetString() = subject)
         "The real service and JSON CLI preserve the exact principal identity"
 
+    let listEnvironment = Dictionary<string, string>(owner)
+    listEnvironment["COLUMNS"] <- "100"
+
+    let primary =
+        CliCalls.invoke
+            fixture
+            listEnvironment
+            [ "authority"; "list"; "--limit"; "50"; "--format"; "text" ]
+            Array.empty
+            0
+
+    let primaryText = Encoding.UTF8.GetString primary.StandardOutput
+
+    let primaryRows = primaryText.Split('\n')
+
+    let nameFirst =
+        primaryRows
+        |> Array.exists (fun line -> line.StartsWith("Safety  ", StringComparison.Ordinal))
+
+    let identityFirst =
+        primaryRows
+        |> Array.exists (fun line ->
+            line.StartsWith("synthetic-", StringComparison.Ordinal)
+            || line.StartsWith(actorId, StringComparison.Ordinal))
+
+    if not nameFirst || identityFirst then
+        FixtureFiles.write fixture.Directory "account-primary-name.stdout" primary.StandardOutput
+        |> ignore
+
+    Expect.isTrue nameFirst "Primary rows identify the account by its exact authored name"
+
+    Expect.isFalse identityFirst "Neither the unsafe principal nor ID is the leading name"
+
     let rendered =
         CliCalls.invoke
             fixture
             owner
-            [ "authority"; "list"; "--limit"; "50"; "--format"; "text" ]
+            [ "authority"; "grants"; actorId; "--limit"; "50"; "--format"; "text" ]
             Array.empty
             0
 
@@ -323,12 +377,12 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     let row =
         text.Split('\n')
-        |> Array.find (fun line -> line.StartsWith(actorId, StringComparison.Ordinal))
+        |> Array.find (fun line -> line.Contains("synthetic-", StringComparison.Ordinal))
 
     for control in [ '\u001B'; '\r'; '\t'; '\b'; '\u0085'; '\u202E' ] do
         Expect.isFalse
-            (row.Contains control)
-            "Captured real human output emits no untrusted terminal instructions"
+            (primaryText.Contains control || text.Contains control)
+            "Neither human table nor technical card emits untrusted terminal instructions"
 
     Expect.isTrue
         (row.Contains(
@@ -349,11 +403,20 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
     let operation = Guid.NewGuid().ToString("D")
     let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
     let context = CliCalls.verb fixture owner [ "context" ] 0 |> require "SUCCEEDED"
-    let actor = context.GetProperty("actorId").GetString() |> nonNull
-    let installation = context.GetProperty("installationId").GetString() |> nonNull
+    let requester = context.GetProperty "requester"
+
+    Expect.equal
+        (requester.GetProperty("kind").GetString())
+        "ACTIVE"
+        "Settlement is prepared for the active authenticated owner"
+
+    let actor =
+        requester.GetProperty("self").GetProperty("actorId").GetString() |> nonNull
+
+    let installation = requester.GetProperty("installationId").GetString() |> nonNull
     let original = head fixture
 
-    for answer, expectedHead in [ "", original; "yes", original + 1L ] do
+    for answer, expectedHead in [ "", original; "yes", original; operation, original + 1L ] do
         let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
 
         let start =
@@ -393,7 +456,9 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
             Path.Combine(
                 fixture.Directory,
                 "settlement-"
-                + (if answer = "" then "cancel" else "confirm")
+                + (if answer = operation then "confirm"
+                   elif answer = "" then "cancel"
+                   else "wrong-target")
                 + ".private-output"
             )
 
@@ -409,7 +474,11 @@ let private settlementConsent (fixture: PublishedFixture.Fixture) =
                     StandardError = result.StandardError
                 })
 
-        let name = "settlement-" + (if answer = "" then "cancel" else "confirm")
+        let name =
+            "settlement-"
+            + (if answer = operation then "confirm"
+               elif answer = "" then "cancel"
+               else "wrong-target")
 
         FixtureFiles.write fixture.Directory (name + ".stdout") result.StandardOutput
         |> ignore

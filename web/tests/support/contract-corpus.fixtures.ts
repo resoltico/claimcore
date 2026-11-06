@@ -1,4 +1,3 @@
-import { positiveValue } from "./inputs";
 import { transportResponse } from "./transport-response.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
@@ -14,8 +13,19 @@ export type CorpusCase = {
   valid: boolean;
   value: unknown;
 };
-export const corpusCases = (): CorpusCase[] =>
-  (["request", "response"] as const).flatMap((direction) => {
+/** A fixture identity must select exactly one authored value within its wire direction. */
+export const assertUniqueCorpusIdentities = (cases: ReadonlyArray<CorpusCase>): void => {
+  const identities = new Set<string>();
+  for (const sample of cases) {
+    const identity = `${sample.direction}:${sample.id}`;
+    if (identities.has(identity)) {
+      throw new Error(`Duplicate authored corpus identity: ${identity}`);
+    }
+    identities.add(identity);
+  }
+};
+export const corpusCases = (): CorpusCase[] => {
+  const cases = (["request", "response"] as const).flatMap((direction) => {
     const raw: unknown = JSON.parse(
       readFileSync(
         resolve(import.meta.dirname, `../../../tests/fixtures/wire-${direction}-examples.json`),
@@ -30,9 +40,13 @@ export const corpusCases = (): CorpusCase[] =>
       endpoint: String(row["endpoint"]) as EndpointId,
       direction,
       valid: row["valid"] === true,
-      value: row["valid"] === true ? positiveValue(row["value"]) : row["value"],
+      value: row["value"],
     }));
   });
+  assertUniqueCorpusIdentities(cases);
+  return cases;
+};
+
 const hasScope = (value: unknown, endpoint: EndpointId, subject: string): boolean => {
   if (!isObject(value) || !isObject(value["outcome"]) || !isObject(value["outcome"]["data"])) {
     return false;
@@ -86,19 +100,3 @@ export const hostCases = () => [
     value: { hostFailure: { code: "INPUT_INVALID", phase: "NOT_STARTED" } },
   },
 ];
-export const historyVariants = () => {
-  const { outcome } = wireReply("operation.execute");
-  if (outcome.kind !== "ACCEPTED" || outcome.data.subject.kind !== "CASE") {
-    throw new Error("Case receipt example absent.");
-  }
-  const receipt = { ...outcome.data, subject: outcome.data.subject };
-  const { operationId, position, recordedAt, recordedBy } = receipt;
-  const { revision, act } = receipt.subject;
-  return {
-    full: { kind: "FULL" as const, receipt },
-    summary: {
-      kind: "SUMMARY" as const,
-      change: { operationId, position, revision, act, recordedAt, recordedBy },
-    },
-  };
-};

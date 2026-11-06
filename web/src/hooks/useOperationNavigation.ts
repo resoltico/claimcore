@@ -1,3 +1,4 @@
+import { useSettingsDetour } from "./SettingsDetourContext";
 import { useCallback, useEffect, useRef } from "react";
 import type { OperationModel } from "./operation/useOperation";
 import { setNavigationBlocker } from "../routing/navigation";
@@ -7,6 +8,7 @@ export const useOperationNavigation = (
   onClose?: () => void,
   scope?: string,
 ) => {
+  const settings = useSettingsDetour();
   const { dirty, priorUncertain, requestDiscard, phase, prepared } = model;
   const pending = useRef<(() => void) | null>(null);
   const release = useRef<(() => void) | null>(null);
@@ -15,6 +17,9 @@ export const useOperationNavigation = (
       return;
     }
     const dispose = setNavigationBlocker((proceed, destination) => {
+      if (settings?.permits(destination) === true) {
+        return true;
+      }
       if (
         scope !== undefined &&
         destination !== undefined &&
@@ -28,7 +33,7 @@ export const useOperationNavigation = (
     });
     release.current = dispose;
     return dispose;
-  }, [dirty, priorUncertain, requestDiscard, phase, scope, prepared]);
+  }, [dirty, priorUncertain, requestDiscard, phase, scope, prepared, settings]);
   useEffect(() => {
     if (model.pendingDiscard === null) {
       pending.current = null;

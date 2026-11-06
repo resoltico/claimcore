@@ -10,14 +10,16 @@ import {
 } from "./localization-support";
 
 const expectAuthorityControlsContained = async (page: Page) => {
-  const panel = page.locator(".authority-panel");
+  const panel = page.getByRole("dialog");
   await expect(panel).toHaveCount(1);
   const geometry = await panel.evaluate((element) => {
     const panelBounds = element.getBoundingClientRect();
     let count = 0;
     let left = panelBounds.right;
     let right = panelBounds.left;
-    for (const control of element.querySelectorAll('input:not([type="checkbox"]), select')) {
+    for (const control of element.querySelectorAll(
+      'input:not([type="checkbox"]), button, a[href], summary',
+    )) {
       const bounds = control.getBoundingClientRect();
       if (
         control.getClientRects().length === 0 ||
@@ -38,35 +40,29 @@ const expectAuthorityControlsContained = async (page: Page) => {
   expect(geometry.right).toBeLessThanOrEqual(geometry.panelRight + 1);
 };
 
-const checkPresentation = async (page: Page, complete: boolean, count: number) => {
-  const view = page.locator('section[aria-labelledby="actor-grants-title"]');
+const checkPresentation = async (page: Page, complete: boolean, count: number, name: string) => {
+  const view = page.getByRole("dialog");
   await page.setViewportSize({ width: 320, height: 800 });
-  await expect(view.getByRole("heading")).toBeVisible();
+  await expect(view.getByRole("heading", { name, exact: true })).toBeVisible();
   await noHorizontalOverflow(page, "narrow");
   await expectAuthorityControlsContained(page);
   for (const language of ["lv", "ar", "en"] as const) {
     await selectLanguage(page, language);
     await selectFormat(page, "lv-LV");
-    await expect(
-      view.getByRole("heading", { name: ui(language, "ui.actorGrants"), exact: true }),
-    ).toBeVisible();
+    await expect(view.getByRole("heading", { name, exact: true })).toBeVisible();
     await expect(
       view.getByRole("button", { name: ui(language, "ui.reloadGrants"), exact: true }),
     ).toBeEnabled();
     await expect(view.getByRole("status")).toHaveText(
       ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
     );
-    const counts = page.locator(".authority-grant-count").filter({ hasText: /\S/u });
-    await expect(counts).toHaveCount(complete ? 1 : 0);
-    if (complete) {
-      await expect(counts).toContainText(new Intl.NumberFormat("lv-LV").format(count));
-    }
+    await expect(view.locator(".actor-grant-items > li")).toHaveCount(count);
     await noHorizontalOverflow(page, "narrow");
     await expectAuthorityControlsContained(page);
   }
 };
 
-const clickActorKind = async (page: Page) => {
+const clickPersonCell = async (page: Page) => {
   const cell = page.locator(".authority-rows > tr > td").first();
   await cell.scrollIntoViewIfNeeded();
   const point = await cell.evaluate((element) => {
@@ -87,7 +83,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   });
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
-  await page.getByRole("link").and(page.locator('nav a[href="/authority"]')).click();
+  await page.getByRole("link").and(page.locator('nav a[href="/people"]')).click();
   const table = page.getByRole("table").and(page.locator(".authority-table"));
   await expect(table.getByRole("columnheader")).toHaveCount(4);
   await expect(table.locator("thead")).toBeVisible();
@@ -105,23 +101,33 @@ test("selected authority grants use bounded core pages and survive presentation 
     throw new Error("Expected a bounded actor grant page.");
   }
   const { data } = value.outcome;
-  const view = page.locator('section[aria-labelledby="actor-grants-title"]');
-  await expect(view.getByRole("heading")).toBeFocused();
-  await expect(view.getByText(data.actor.actorId, { exact: true })).toBeVisible();
-  await expect(view.locator("li")).toHaveCount(data.items.length);
-  await checkPresentation(page, data.nextCursor === null, data.items.length);
+  const name = data.actor.actor.displayName;
+  if (name.kind !== "NAMED") {
+    throw new Error("Expected the admitted grant target to have its authored name.");
+  }
+  const view = page.getByRole("dialog");
+  expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+  await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
+  await expect(view.locator(".actor-grant-items > li")).toHaveCount(data.items.length);
+  await checkPresentation(page, data.nextCursor === null, data.items.length, name.value);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);
   await selectLanguage(page, "en");
-  await view.getByRole("button", { name: "Back to actors", exact: true }).click();
+  await view
+    .locator(".ui-dialog-actions")
+    .getByRole("button", { name: "Close", exact: true })
+    .click();
   await expect(view).toHaveCount(0);
   await expect(selected).toBeFocused();
   for (const width of [1280, 320]) {
     await page.setViewportSize({ width, height: 900 });
-    await clickActorKind(page);
-    await expect(view.getByRole("heading")).toBeFocused();
-    await expect(view.getByText(data.actor.actorId, { exact: true })).toBeVisible();
-    await view.getByRole("button", { name: "Back to actors", exact: true }).click();
+    await clickPersonCell(page);
+    expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
+    await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
+    await view
+      .locator(".ui-dialog-actions")
+      .getByRole("button", { name: "Close", exact: true })
+      .click();
     await expect(selected).toBeFocused();
   }
 });

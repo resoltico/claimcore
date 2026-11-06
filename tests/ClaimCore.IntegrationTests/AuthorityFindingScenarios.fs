@@ -83,7 +83,8 @@ let internal serviceGrantTarget (database: PostgresFixture.Database) =
                     })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord None
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 3))
+            |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
 
@@ -107,7 +108,8 @@ let internal lastOwner (database: PostgresFixture.Database) =
             authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord None
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 1))
+            |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
 
@@ -158,7 +160,7 @@ let internal precedence (database: PostgresFixture.Database) =
         do!
             guardedSql
                 database
-                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256),payload=set_byte(payload,20,42) WHERE sequence=4"
+                "UPDATE claimcore.ledger SET previous_hash=set_byte(previous_hash,0,(get_byte(previous_hash,0)+1)%256),payload=set_byte(payload,20,42) WHERE sequence=5"
                 [||]
 
         do! finding VerificationFinding.Link database
@@ -197,11 +199,14 @@ let internal priorCaseRequired (database: PostgresFixture.Database) =
                     })
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecord (Some snapshot)
+            |> AuthorityRequests.toRecords
+                (Map.ofList [ GrantTarget.CaseReference "synthetic-a", snapshot ])
+                (CaseFixtures.actorId (id 1))
+            |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
 
-        do! rewrite database (CaseFixtures.sequence (3L)) (updateAuthority altered)
+        do! rewrite database (CaseFixtures.sequence (4L)) (updateAuthority altered)
         let caseId = CaseFixtures.caseId (id 10)
 
         do!

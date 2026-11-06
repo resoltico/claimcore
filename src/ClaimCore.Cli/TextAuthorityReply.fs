@@ -4,6 +4,7 @@ open System
 open System.Globalization
 open System.Text
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -23,69 +24,45 @@ module internal TextAuthorityReply =
             "  "
             [ term language Role.vocabulary grant.Role; scope; TerminalText.data reference ]
 
-    let actorRow language (actor: Actor) =
+    let actorRow language (actor: ActorReviewItem) =
         let kind, issuer, subject = PrincipalKey.parts actor.Principal
 
         String.concat
             "  "
             [
-                ActorId.format actor.ActorId
+                ActorId.format actor.Actor.ActorId
                 principalKind language kind
                 TerminalText.data issuer
                 displayed language (Some subject)
-                boolean actor.Enabled
+                displayed language (Some(actorName language actor.Actor))
+                term language ActorAvailability.vocabulary actor.Actor.Availability
+                actor.Contact |> Option.map ContactText.format |> displayed language
             ]
 
+    let private table language definitions items =
+        let options = TextTable.environment ()
+        let header = TextTable.header language options definitions
+
+        (if header = "" then [] else [ header ])
+        @ TextTable.rows language options definitions items
+
     let actorPage language (page: ActorReviewPage) =
-        (page.Items |> List.map (actorRow language))
-        @ nextLines language page.NextCursor
+        table language Descriptor.actorColumns page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis false
 
     let grantPage language (page: AuthorityGrantPage) =
-        (page.Items |> List.map (grantRow language))
-        @ nextLines language page.NextCursor
+        TextDescriptorValue.sections language (Descriptor.actor page.Actor)
+        @ table language Descriptor.grantColumns page.Items
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis false
 
     let historyPage language (page: AuthorityHistoryPage) =
-        let empty =
-            if page.Entries.IsEmpty then
-                [ label language (CliMessages.key CliMessage.AuthorityHistoryEmpty) ]
-            else
-                []
+        table language Descriptor.authorityHistoryColumns page.Entries
+        @ TextObservation.footer language page.Entries.Length page.NextCursor page.Basis false
 
-        empty
-        @ (page.Entries
-           |> List.map (fun entry ->
-               let facts =
-                   match entry.Facts with
-                   | AuthorityHistoryFacts.OwnerProvisioned principal
-                   | AuthorityHistoryFacts.Registered principal ->
-                       let kind, issuer, subject = PrincipalKey.parts principal
-
-                       String.concat
-                           "  "
-                           [
-                               principalKind language kind
-                               TerminalText.data issuer
-                               displayed language (Some subject)
-                           ]
-                   | AuthorityHistoryFacts.Granted grant
-                   | AuthorityHistoryFacts.Revoked grant -> grantRow language grant
-                   | AuthorityHistoryFacts.Enabled
-                   | AuthorityHistoryFacts.Disabled -> ""
-
-               String.concat
-                   "  "
-                   [
-                       Sequence.format entry.Sequence
-                       instant entry.RecordedAt
-                       term
-                           language
-                           AuthorityKind.vocabulary
-                           (AuthorityHistoryFacts.kind entry.Facts)
-                       ActorId.format entry.RecordedBy
-                       ActorId.format entry.TargetActorId
-                       facts
-                   ]))
-        @ nextLines language page.NextCursor
+    let requests language (page: AccessRequestPage) =
+        (page.Items
+         |> List.collect (Descriptor.accessRequest >> TextDescriptorValue.sections language))
+        @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis false
 
     let private accessText language (access: CapabilityAccess) =
         let roles values =

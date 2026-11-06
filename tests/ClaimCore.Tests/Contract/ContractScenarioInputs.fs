@@ -50,16 +50,39 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                         )
                 }
         RecordedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
-        RecordedBy = (CaseFixtures.actorId (id))
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 10, 13)
+                TimeZoneId = "Etc/UTC"
+            }
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
     }
 
 let internal authority =
+    let effects =
+        [
+            {
+                AuthorityReceiptEffect.Act = AuthorityKind.Register
+                Position = receipt.Position
+            }
+            {
+                AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                Position =
+                    LedgerPosition.create
+                        (Sequence.create 2L |> Option.get)
+                        receipt.Position.EntryHash
+            }
+        ]
+
     { receipt with
+        Position = (List.last effects).Position
         Subject =
-            ClaimCore.Application.Contracts.ReceiptSubject.Authority
+            ReceiptSubject.Authority
                 {
-                    TargetActorId = (CaseFixtures.actorId (id))
+                    TargetActor = AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId id)
                     Act = AuthorityKind.Register
+                    Effects = effects
                 }
     }
 

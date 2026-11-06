@@ -62,7 +62,10 @@ let internal assignmentAndDisclosure fixture =
                 Service.execute
                     owner
                     (OperationInput.Authority(
-                        authorityRequest (id operation) principal AuthorityAct.Register
+                        authorityRequest
+                            (id operation)
+                            principal
+                            (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
                     token
 
@@ -84,8 +87,44 @@ let internal assignmentAndDisclosure fixture =
 
             acceptedAuthority changed
 
-        let! first = candidates owner caseId None 1
+        let observations = ResizeArray<DateTimeOffset>()
+
+        let observedStore =
+            { new IStore with
+                member _.Context query = fixture.Store.Context query
+                member _.Write operation = fixture.Store.Write operation
+
+                member _.Read operation =
+                    fixture.Store.Read
+                        { operation with
+                            Work =
+                                fun tx ->
+                                    task {
+                                        observations.Add tx.ObservedAt
+                                        return! operation.Work tx
+                                    }
+                        }
+            }
+
+        let observedOwner = { owner with Store = observedStore }
+        let! first = candidates observedOwner caseId None 1
         let first = read first
+        Expect.equal observations.Count 1 "Candidate paging uses one authorized snapshot"
+
+        Expect.equal
+            first.Basis.ObservedAt
+            observations[0]
+            "Observation is the exact picker transaction instant"
+
+        Expect.equal
+            first.Basis.BusinessDate
+            (fixture.Calendar.DateAt observations[0])
+            "Business date comes from the installation calendar"
+
+        Expect.equal
+            first.Basis.TimeZoneId
+            fixture.Calendar.TimeZoneId
+            "Installation zone is retained"
 
         Expect.equal
             (first.Items |> List.map _.ActorId)
@@ -101,7 +140,13 @@ let internal assignmentAndDisclosure fixture =
             [
                 {
                     ActorId = CaseFixtures.actorId (id 10)
-                    Subject = "case-work-assignee"
+                    DisplayName =
+                        DisplayName.Named(
+                            PartyName.parse Inputs.actorProfile.DisplayName
+                            |> Result.defaultWith (string >> failtest)
+                        )
+                    PrincipalKind = PrincipalKind.Human
+                    Availability = ActorAvailability.Available
                 }
             ]
             "Only purpose-limited account identity is disclosed"
@@ -125,7 +170,7 @@ let internal assignmentAndDisclosure fixture =
         let! readerCase = get (core fixture reader) caseId
         Expect.isFalse (read readerCase).Mine "A scoped read grant is not responsibility"
         let! context = Service.context owner () token
-        let today = (read context).Runtime.EffectiveBusinessDate
+        let today = (Inputs.activeContext (read context)).Runtime.Basis.BusinessDate
         let tomorrow = CalendarDate.ofDate (today.AddDays 1) |> CalendarDate.format
 
         let update: WorkOperationRequest =
@@ -185,7 +230,8 @@ let internal assignmentAndDisclosure fixture =
 
         Expect.equal
             (current.Work.Responsible
-             |> Option.map (fun value -> value.Account.ActorId, value.Available))
+             |> Option.map (fun value ->
+                 value.ActorId, (value.Availability = ActorAvailability.Available)))
             (Some(CaseFixtures.actorId (id 10), true))
             "Relation-scoped identity and eligibility"
 
@@ -219,7 +265,8 @@ let internal assignmentAndDisclosure fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 50
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         for target in [ Some(CaseSelector.Id caseId); None ] do
@@ -266,7 +313,10 @@ let internal assignmentAndDisclosure fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    authorityRequest (id 13) authorityOnly AuthorityAct.Register
+                    authorityRequest
+                        (id 13)
+                        authorityOnly
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
@@ -343,7 +393,8 @@ let internal assignmentAndDisclosure fixture =
         Expect.equal (Revision.value retained.Work.Revision) 1L "No work revision from refusal"
 
         Expect.equal
-            (retained.Work.Responsible |> Option.map _.Available)
+            (retained.Work.Responsible
+             |> Option.map (fun value -> value.Availability = ActorAvailability.Available))
             (Some false)
             "Unavailable relation remains factual"
 
@@ -357,10 +408,15 @@ let internal assignmentAndDisclosure fixture =
         let! stale =
             Service.execute owner (OperationInput.Work { update with OperationId = id 33 }) token
 
-        Expect.equal
-            stale.Outcome
-            (ExecuteResult.Rejected(Refusal.RevisionConflict(CaseFixtures.revision 1L)))
-            "Independent work revision conflict"
+        match stale.Outcome with
+        | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
+            Expect.equal
+                (Revision.value conflict.ActualRevision)
+                1L
+                "Independent work revision conflict"
+
+            Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
+        | other -> failtestf "Expected revision conflict, got %A" other
 
         for principal in [ reader; automation ] do
             let! denied =
@@ -434,8 +490,8 @@ let internal dueFiltersAndOrder fixture =
     task {
         let! owner = caseWorker fixture
         let! context = Service.context owner () token
-        let context = read context
-        let today = context.Runtime.EffectiveBusinessDate
+        let context = Inputs.activeContext (read context)
+        let today = context.Runtime.Basis.BusinessDate
 
         let date offset =
             today.AddDays offset |> CalendarDate.ofDate |> CalendarDate.format
@@ -524,7 +580,8 @@ let internal dueFiltersAndOrder fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 1
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let! first = Service.reminders owner request token
@@ -573,7 +630,11 @@ let internal dueFiltersAndOrder fixture =
         Expect.equal overview.OverdueCases 1L "Case units"
         Expect.equal overview.OverdueReminders 1L "Reminder units"
         Expect.equal overview.UnassignedCases 3L "Explicit responsibility"
-        Expect.equal overview.AttentionCases 3L "Overlapping attention uses distinct union"
+
+        Expect.equal
+            overview.AttentionCases
+            4L
+            "The distinct union includes the available assignee’s due-today case"
 
         let! completed =
             Service.execute
@@ -649,7 +710,9 @@ let internal reminderTiming fixture =
 
         acceptedAuthority stewardship
         let! context = Service.context initialOwner () token
-        let initialDate = (read context).Runtime.EffectiveBusinessDate
+
+        let initialDate = (Inputs.activeContext (read context)).Runtime.Basis.BusinessDate
+
         let mutable businessDate = initialDate
 
         let calendar =
@@ -713,7 +776,8 @@ let internal reminderTiming fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 50
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let single operation =
@@ -862,20 +926,26 @@ let internal reminderTiming fixture =
         let inactive = pendingExpected |> List.map (fun (operation, _) -> operation, None)
         let! hidden = checkPage request []
         Expect.isNone hidden.NextCursor "Inactive work does not leak through pagination"
-        let! _ = checkPage { request with IncludeInactive = true } inactive
 
         let! _ =
             checkPage
                 { request with
-                    Target = None
-                    IncludeInactive = true
+                    IncludeInactive = Some true
                 }
                 inactive
 
         let! _ =
             checkPage
                 { request with
-                    IncludeInactive = true
+                    Target = None
+                    IncludeInactive = Some true
+                }
+                inactive
+
+        let! _ =
+            checkPage
+                { request with
+                    IncludeInactive = Some true
                     State = Some ReminderState.Completed
                     Due = Some ReminderDue.Overdue
                 }
@@ -902,7 +972,14 @@ let internal reminderTiming fixture =
 
         let! voided = execute owner 710 reference 3L (CaseAct.Void "Timing lifecycle check")
         accepted voided |> ignore
-        let! _ = checkPage { request with IncludeInactive = true } inactive
+
+        let! _ =
+            checkPage
+                { request with
+                    IncludeInactive = Some true
+                }
+                inactive
+
         let! voidedItem = single 702
         Expect.isFalse voidedItem.Active "Voided single read marks retained work inactive"
         Expect.isNone voidedItem.Timing "Voided pending work has no actionable timing"
@@ -1090,9 +1167,9 @@ let internal lifecycleAndErasure fixture =
                     })
                 token
 
-        Expect.equal
-            replayed.Outcome
-            (ExecuteResult.AlreadyAccepted compoundReceipt)
+        expectReceipt
+            (replayReceipt replayed)
+            compoundReceipt
             "Compound replay preserves both effects and identity"
 
         let! voided =
@@ -1145,11 +1222,11 @@ let internal lifecycleAndErasure fixture =
                                 for operation in
                                     [ 20; 21; 22; 23; 24; 25; 26; 27; 28; 30; 31; 32; 34; 35 ] do
                                     let! entry =
-                                        tx.FindEntry(
+                                        tx.FindOperation(
                                             OperationId.create (id operation) |> Option.get
                                         )
 
-                                    entries.Add(Option.get entry)
+                                    entries.AddRange((Option.get entry).Entries)
 
                                 return work, [ a; b; c; d ], List.ofSeq entries
                             }
@@ -1219,10 +1296,11 @@ let internal partialUpdatesAndReaffirmation fixture =
                         Claimant = Some "Stale edit"
                     })
 
-        Expect.equal
-            stale.Outcome
-            (ExecuteResult.Rejected(Refusal.RevisionConflict(CaseFixtures.revision 2L)))
-            "No automatic partial rebase"
+        match stale.Outcome with
+        | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->
+            Expect.equal (Revision.value conflict.ActualRevision) 2L "No automatic partial rebase"
+            Expect.isSome conflict.Changes "The authorized snapshot supplies conflict history"
+        | other -> failtestf "Expected revision conflict, got %A" other
 
         let! decided = execute owner 43 "PARTIAL-FACTS" 2L (CaseAct.Decide Inputs.decision)
         accepted decided |> ignore
@@ -1278,7 +1356,9 @@ let internal partialUpdatesAndReaffirmation fixture =
 
         Expect.equal
             denied.Outcome
-            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
+            (ExecuteResult.Rejected(
+                Refusal.Access(AccessRefusal.NotAuthorized Capability.RecordPayment)
+            ))
             "Reaffirmation requires the payment capability"
 
         let! granted =
@@ -1396,7 +1476,8 @@ let internal finiteDateRange fixture =
                 Text = None
                 AfterCursor = None
                 Limit = 1
-                IncludeInactive = false
+                View = None
+                IncludeInactive = None
             }
 
         let mutable cursor = None
@@ -1516,7 +1597,17 @@ let internal pairedPage fixture =
 
             Expect.isSome page.NextCursor "The third parent supplies a continuation"
             let first = page.Items.Head
-            let fields = CaseState.fields first.State |> Option.get
+
+            let! detail =
+                Service.get
+                    owner
+                    {
+                        Target = CaseSelector.Id first.CaseId
+                    }
+                    token
+
+            let detail = read detail
+            let work = detail.Work
 
             Expect.equal
                 first.Revision
@@ -1524,42 +1615,43 @@ let internal pairedPage fixture =
                 "A work page retains the independent fact revision"
 
             Expect.equal
-                fields.Work.Revision
+                work.Revision
                 Revision.first
-                "The same row carries its independent work revision"
+                "The detail retains its independent work revision"
 
             Expect.equal
-                (fields.Work.Summary |> Option.map HandlingSummary.format)
+                (work.Summary |> Option.map HandlingSummary.format)
                 (Some "Page-owned summary\nالعربية")
                 "The selected work owner supplies exact text"
 
             Expect.equal
-                (fields.Work.PendingReminders, fields.Work.OverdueReminders)
+                (first.PendingReminders, work.OverdueReminders)
                 (10L, 1L)
                 "Reminder counts have reminder units"
 
             Expect.equal
-                (fields.Work.NextAction |> Option.map ReminderAction.format)
+                (first.NextAction |> Option.map (fun next -> ReminderAction.format next.Action))
                 (Some "First pending action")
                 "The minimum pending date supplies the next action"
 
             Expect.equal
-                (fields.Work.FollowUp |> Option.map CalendarDate.format)
+                (first.NextAction |> Option.map (fun next -> CalendarDate.format next.Due))
                 (Some "0001-01-01")
                 "The derived date is preserved at the Gregorian boundary"
 
             Expect.equal
-                (fields.Work.Responsible
-                 |> Option.map (fun account -> account.Account.ActorId, account.Available))
+                (first.Responsible
+                 |> Option.map (fun account ->
+                     account.ActorId, (account.Availability = ActorAvailability.Available)))
                 (Some(CaseFixtures.actorId (id 1), true))
                 "Assignment labels retain the case-scoped availability check"
 
-            let empty = page.Items[1] |> _.State |> CaseState.fields |> Option.get |> _.Work
+            let empty = page.Items[1]
 
             Expect.equal
-                (empty.Revision, empty.Summary, empty.PendingReminders)
-                (Revision.zero, None, 0L)
-                "The next parent keeps its genuine empty work root"
+                (empty.NextAction, empty.Responsible, empty.PendingReminders)
+                (None, None, 0L)
+                "The next parent has no invented work values"
 
             let! continued =
                 Service.list

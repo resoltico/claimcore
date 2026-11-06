@@ -20,9 +20,9 @@ type internal WriteInputs =
         InstallationId: Guid
         Observed: DateTimeOffset
         Head: LedgerPosition
-        Nonce: byte array
         Read: unit -> unit
         FactRead: AuthorityFact -> unit
+        Trace: string -> unit
     }
 
 type internal Writer(inputs: WriteInputs) =
@@ -38,13 +38,16 @@ type internal Writer(inputs: WriteInputs) =
     let get = inputs.Get
     let set = inputs.Set
     let head = inputs.Head
-    let nonce = inputs.Nonce
 
     interface IWriteTx with
         member _.Head = head
-        member _.Nonce = nonce
+
+        member _.NewPayloadNonce() =
+            inputs.Trace "nonce"
+            RandomNumberGenerator.GetBytes 32
 
         member _.Append draft =
+            inputs.Trace "append"
             let state = get ()
 
             let control =
@@ -55,7 +58,10 @@ type internal Writer(inputs: WriteInputs) =
             if
                 draft.Sequence <> Sequence.successor state.Head.Sequence
                 || draft.PreviousHash <> EntryHash.toBytes state.Head.EntryHash
-                || (not control && Map.containsKey draft.OperationId state.Entries)
+                || (not control
+                    && Map.containsKey
+                        (draft.OperationId, LedgerEffects.index draft.Effects)
+                        state.Entries)
             then
                 invalidOp "An append must extend the owned head with a fresh operation."
 
@@ -83,7 +89,7 @@ type internal Writer(inputs: WriteInputs) =
                             state.Entries
                         else
                             Map.add
-                                draft.OperationId
+                                (draft.OperationId, LedgerEffects.index draft.Effects)
                                 (LedgerEntries.stored draft |> copyEntry)
                                 state.Entries
                 }
@@ -166,6 +172,8 @@ type internal Writer(inputs: WriteInputs) =
                             SnapshotBytes = WorkRecord.encodeSnapshot root
                             ChangedAt = None
                             RecordedBy = None
+                            SummaryChangedAt = None
+                            SummaryRecordedBy = None
                         }
                         state.Work
                 | CaseProjection.Erase(id, _, _) ->
@@ -176,6 +184,8 @@ type internal Writer(inputs: WriteInputs) =
                             { row with
                                 Snapshot = None
                                 SnapshotBytes = Array.empty
+                                SummaryChangedAt = None
+                                SummaryRecordedBy = None
                             }))
                 | _ -> state.Work
 
@@ -253,6 +263,8 @@ type internal Writer(inputs: WriteInputs) =
                             SnapshotBytes = WorkRecord.encodeSnapshot snapshot
                             ChangedAt = Some update.ChangedAt
                             RecordedBy = Some update.RecordedBy
+                            SummaryChangedAt = update.SummaryChangedAt
+                            SummaryRecordedBy = update.SummaryRecordedBy
                         }
 
                     { state with
@@ -318,6 +330,16 @@ type internal Writer(inputs: WriteInputs) =
             set updated
             Task.FromResult(())
 
+        member _.DismissAccessRequest principal =
+            let state = get ()
+
+            set
+                { state with
+                    Requests = Map.remove principal state.Requests
+                }
+
+            Task.FromResult()
+
         member _.ProjectAuthority projection =
             let state = get ()
 
@@ -325,6 +347,7 @@ type internal Writer(inputs: WriteInputs) =
                 match projection with
                 | AuthorityProjection.Register(id, principal) ->
                     { state with
+                        Requests = Map.remove principal state.Requests
                         Actors =
                             Map.add
                                 id
@@ -332,11 +355,13 @@ type internal Writer(inputs: WriteInputs) =
                                     ActorId = id
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                                 state.Actors
                     }
                 | AuthorityProjection.ProvisionOwner(id, principal) ->
                     { state with
+                        Requests = Map.remove principal state.Requests
                         Actors =
                             Map.add
                                 id
@@ -344,9 +369,62 @@ type internal Writer(inputs: WriteInputs) =
                                     ActorId = id
                                     Principal = principal
                                     Enabled = true
+                                    Profile = None
                                 }
                                 state.Actors
                         Grants = Set.add (id, Role.Owner, None) state.Grants
+                    }
+                | AuthorityProjection.SetProfile(id, profile) ->
+                    { state with
+                        Actors =
+                            Map.add
+                                id
+                                { state.Actors[id] with
+                                    Profile = Some profile
+                                }
+                                state.Actors
+                    }
+                | AuthorityProjection.EraseProfile(id, sequence) ->
+                    let erasures =
+                        state.Entries
+                        |> Map.values
+                        |> Seq.filter (fun entry ->
+                            entry.Subject = EntryTarget.Authority(id, AuthorityKind.EraseProfile))
+                        |> Seq.map _.Sequence
+                        |> Seq.toList
+
+                    if not (List.contains sequence erasures) then
+                        raise CorruptProjection
+
+                    let frontier = List.max erasures
+
+                    let later =
+                        state.Entries
+                        |> Map.values
+                        |> Seq.exists (fun entry ->
+                            entry.Subject = EntryTarget.Authority(id, AuthorityKind.SetProfile)
+                            && entry.Sequence > frontier)
+
+                    { state with
+                        Entries =
+                            state.Entries
+                            |> Map.map (fun _ entry ->
+                                if
+                                    entry.Subject =
+                                        EntryTarget.Authority(id, AuthorityKind.SetProfile)
+                                    && entry.Sequence < frontier
+                                then
+                                    { entry with
+                                        Payload = None
+                                        PayloadNonce = None
+                                    }
+                                else
+                                    entry)
+                        Actors =
+                            if later then
+                                state.Actors
+                            else
+                                Map.add id { state.Actors[id] with Profile = None } state.Actors
                     }
                 | AuthorityProjection.SetEnabled(id, enabled) ->
                     { state with

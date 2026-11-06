@@ -41,7 +41,7 @@ module internal VerbOptions =
         else
             None
 
-    let tokenize known switches repeated arguments (problems: ResizeArray<UsageError>) =
+    let tokenize known available switches repeated arguments (problems: ResizeArray<UsageError>) =
         let options = Dictionary<string, string option list>()
         let operands = ResizeArray<string>()
 
@@ -65,7 +65,7 @@ module internal VerbOptions =
 
                 if not (List.contains name known) then
                     problems.Add(
-                        UsageError.UnknownOption(name, suggestions name known |> List.tryHead)
+                        UsageError.UnknownOption(name, suggestions name available |> List.tryHead)
                     )
 
                 match explicit with
@@ -131,3 +131,53 @@ module internal VerbOptions =
         | CatalogAtom.Choice choices -> choice name choices value problems
         | CatalogAtom.Choices choices -> JsonValue.Array [ choice name choices value problems ]
         | CatalogAtom.Switch(off, on) -> JsonValue.String(if value = "true" then on else off)
+
+    let bindingValue =
+        function
+        | BindingValue.Text value -> JsonValue.String value
+        | BindingValue.Integer value -> JsonValue.Integer value
+        | BindingValue.Boolean value -> JsonValue.Boolean value
+
+    let rec at path value =
+        match path with
+        | [] -> Some value
+        | key :: rest -> JsonValue.tryMember key value |> Option.bind (at rest)
+
+    let rec insert path value current =
+        match path, current with
+        | [], _ -> value
+        | key :: rest, JsonValue.Object fields ->
+            let previous =
+                fields
+                |> List.tryFind (fst >> (=) key)
+                |> Option.map snd
+                |> Option.defaultValue (JsonValue.Object [])
+
+            let next = insert rest value previous
+
+            JsonValue.Object(
+                if fields |> List.exists (fst >> (=) key) then
+                    fields |> List.map (fun (name, old) -> name, if name = key then next else old)
+                else
+                    fields @ [ key, next ]
+            )
+        | _ -> invalidOp "A catalog path must traverse objects."
+
+    let applies branches body =
+        branches
+        |> List.forall (fun (branch: BindingCondition) ->
+            at branch.Path body = Some(JsonValue.String branch.Value))
+
+    let assignConstants constants body =
+        constants
+        |> List.fold
+            (fun body (item: BindingAssignment) ->
+                if
+                    applies item.Branches body
+                    && (not item.RequiresParent
+                        || (at (item.Path |> List.take (item.Path.Length - 1)) body).IsSome)
+                then
+                    insert item.Path (bindingValue item.Value) body
+                else
+                    body)
+            body

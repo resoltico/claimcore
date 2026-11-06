@@ -6,14 +6,15 @@ open System
 
 type CaseSummaryFacts =
     {
-        Work: CaseWorkView
-        Status: CaseStatus
-        ClaimantName: PartyName
-        InsurerName: PartyName
-        Claimed: Money
-        Payable: Money option
-        Progress: CaseProgress
-        IncidentNotificationDate: CalendarDate
+        Fields: Map<BusinessField, CaseFieldValue option>
+    }
+
+type CaseNextAction =
+    {
+        ReminderId: ReminderId
+        Action: ReminderAction
+        Due: CalendarDate
+        DueState: CaseDue
     }
 
 type CaseSummary =
@@ -23,6 +24,18 @@ type CaseSummary =
         Revision: Revision
         ChangedAt: DateTimeOffset
         State: CaseState<CaseSummaryFacts>
+        Headline: CaseHeadline
+        Attention: CaseAttention list
+        Stages: CaseStageOutline option
+        NextAction: CaseNextAction option
+        Responsible: ActorRef option
+        PendingReminders: int64
+    }
+
+type CaseRef =
+    {
+        CaseId: CaseId
+        CaseReference: CaseReference
     }
 
 type CaseSummaryPage =
@@ -31,10 +44,12 @@ type CaseSummaryPage =
         Items: CaseSummary list
         Offers: InstallationOffer list
         NextCursor: string option
+        ExactReference: CaseRef option
     }
 
 type AssigneePage =
     {
-        Items: AccountSubject list
+        Basis: WorkDateBasis
+        Items: ActorRef list
         NextCursor: string option
     }

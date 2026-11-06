@@ -53,7 +53,12 @@ let internal register (actor: ServiceContext) n principal =
         let! outcome =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id n) principal AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id n)
+                        principal
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 (token))
 
         acceptedAuthority outcome

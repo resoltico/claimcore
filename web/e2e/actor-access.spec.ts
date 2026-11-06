@@ -39,8 +39,8 @@ test("owner-only workspace renders without inventing case authority", async ({ p
   const fixture = await prepareRoleFixture(page);
   await ownerGrants(page, false);
   try {
-    await page.reload();
-    await expect(page.getByRole("heading", { name: "Access", exact: true })).toBeVisible();
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: "People & access", exact: true })).toBeVisible();
     await noCaseWorkspace(page);
     await opaqueCaseRefusal(page, fixture.reference);
   } finally {
@@ -75,7 +75,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases"
     disabledConfirmed = true;
     const disabled = await context.newPage();
     await disabled.goto("/");
-    await login(disabled, null, "Sign in", "synthetic-steward");
+    await login(disabled, "This account is disabled", "Sign in", "synthetic-steward");
     expect((await sessionToken(disabled)).length).toBeGreaterThan(0);
     await noCaseWorkspace(disabled);
     await opaqueCaseRefusal(disabled, fixture.reference);
@@ -107,7 +107,7 @@ test("unregistered human authenticates without gaining a wider grant", async ({
   try {
     const unknown = await context.newPage();
     await unknown.goto("/");
-    await login(unknown, null, "Sign in", "synthetic-outsider");
+    await login(unknown, "You don’t have access yet", "Sign in", "synthetic-outsider");
     expect((await sessionToken(unknown)).length).toBeGreaterThan(0);
     await noCaseWorkspace(unknown);
     await opaqueCaseRefusal(unknown, fixture.reference);

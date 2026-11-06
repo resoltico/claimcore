@@ -4,10 +4,25 @@ import { existsSync, readdirSync } from "node:fs";
 import { resolve } from "node:path";
 import { spawnSync } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { designFindings } from "./design-lint.mjs";
 import { lintProjects } from "./lint-projects.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
 const oxlint = fileURLToPath(new URL("../node_modules/oxlint/bin/oxlint", import.meta.url));
+
+const theme = spawnSync(
+  process.execPath,
+  [resolve(root, "scripts/generate-theme.mjs"), "--check"],
+  { stdio: "inherit" },
+);
+if (theme.status !== 0) {
+  process.exit(1);
+}
+const findings = designFindings(root);
+if (findings.length > 0) {
+  process.stderr.write(`${findings.join("\n")}\n`);
+  process.exit(1);
+}
 
 const unitRoot = resolve(root, "tests/unit");
 const orphaned = readdirSync(unitRoot, { recursive: true, encoding: "utf8" })

@@ -190,10 +190,20 @@ let internal independentRevisions fixture =
                 | ExecuteResult.Rejected refusal -> Some refusal
                 | _ -> None)
 
-        Expect.equal
-            (Array.toList refusals)
-            [ Refusal.RevisionConflict(CaseFixtures.revision 3L) ]
-            "Loser conflicts without rebase or transport ambiguity"
+        Expect.equal refusals.Length 1 "Exactly one conflict remains"
+
+        match refusals[0] with
+        | Refusal.RevisionConflict conflict ->
+            Expect.equal
+                (Revision.value conflict.ActualRevision)
+                3L
+                "Loser observes the winning revision"
+
+            match conflict.Changes with
+            | Some(ConflictChanges.Page page) ->
+                Expect.equal page.Entries.Length 1 "The winner is explained without a rebase"
+            | other -> failtestf "Missing authorized conflict explanation: %A" other
+        | other -> failtestf "Unexpected losing outcome: %A" other
 
         let! a = find fixture 101
         let! b = find fixture 102
@@ -302,7 +312,7 @@ let internal closeAndCompound fixture =
                 (Reminder.state (snapshot next))
                 ReminderState.Pending
                 "Both effects retained inactive"
-        | ExecuteResult.Rejected(Refusal.Reminder ReminderRuleRefusal.ParentNotOpen) ->
+        | ExecuteResult.Rejected(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)) ->
             Expect.equal
                 (Reminder.state (snapshot old))
                 ReminderState.Pending
@@ -382,11 +392,11 @@ let internal erasureRaces fixture =
 
                 let! entry =
                     storeRead fixture (fun tx ->
-                        tx.FindEntry(OperationId.create (id (number + 2)) |> Option.get))
+                        tx.FindOperation(OperationId.create (id (number + 2)) |> Option.get))
 
-                Expect.isNone (Option.get entry).Payload "Related ledger payload cleared"
-                Expect.isNone (Option.get entry).PayloadNonce "Related nonce cleared"
-            | ExecuteResult.Rejected(Refusal.Reminder ReminderRuleRefusal.ParentNotActive) ->
+                Expect.isNone (Option.get entry).Root.Payload "Related ledger payload cleared"
+                Expect.isNone (Option.get entry).Root.PayloadNonce "Related nonce cleared"
+            | ExecuteResult.Rejected(Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Erased)) ->
                 Expect.isNone child "Erase-before-action creates no child"
             | other -> failtestf "Invalid erase/reminder outcome: %A" other
 
@@ -414,7 +424,12 @@ let internal revocationAndCompound fixture =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 10) person AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 10)
+                        person
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         acceptedAuthority registered
@@ -490,7 +505,7 @@ let internal revocationAndCompound fixture =
                 (Reminder.state (snapshot next))
                 ReminderState.Pending
                 "Both effects accepted"
-        | ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted) ->
+        | ExecuteResult.Rejected(Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)) ->
             Expect.equal
                 (Reminder.state (snapshot old))
                 ReminderState.Pending
@@ -507,6 +522,78 @@ let internal revocationAndCompound fixture =
 
         Expect.equal
             after.Outcome
-            (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ActNotPermitted))
+            (ExecuteResult.Rejected(
+                Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)
+            ))
             "Late preview cannot restore capability"
+    }
+
+let internal notOffered fixture =
+    task {
+        let! actor = caseWorker fixture
+        let! parent = opened actor 100 "REMINDER-STATE"
+        let target = CaseSelector.Id parent
+        do! seed actor 101 target "Inspect current state"
+
+        let change number act = reminder actor number target act
+
+        let expect refusal (reply: ExecuteReply) =
+            Expect.equal
+                reply.Outcome
+                (ExecuteResult.Rejected refusal)
+                "Current business state is reported only after authorization"
+
+        let! pending = change 102 (AuthoredReminderAct.Reopen(id 101, 1L, "2026-11-11"))
+        expect (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Pending)) pending
+        let! completed = change 103 (AuthoredReminderAct.Complete(id 101, 1L))
+        accepted completed |> ignore
+        let! repeated = change 104 (AuthoredReminderAct.Complete(id 101, 2L))
+        expect (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Completed)) repeated
+        let! reopened = change 105 (AuthoredReminderAct.Reopen(id 101, 2L, "2026-11-11"))
+        accepted reopened |> ignore
+        let! cancelled = change 106 (AuthoredReminderAct.Cancel(id 101, 3L))
+        accepted cancelled |> ignore
+
+        let update =
+            AuthoredReminderAct.Update(
+                id 101,
+                4L,
+                {
+                    Action = "Updated action"
+                    Due = "2026-11-12"
+                }
+            )
+
+        let! unavailable = change 107 update
+
+        expect
+            (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Cancelled))
+            unavailable
+
+        let! closed =
+            caseAct actor 108 "REMINDER-STATE" 1L (AuthoredCaseAct.Bare BareAct.Close)
+
+        accepted closed |> ignore
+        let! parentClosed = change 109 (AuthoredReminderAct.Reopen(id 101, 4L, "2026-11-11"))
+        expect (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)) parentClosed
+
+        let revoke number role =
+            grant
+                actor
+                (id number)
+                fixture.Owner
+                {
+                    Role = role
+                    Scope = GrantTarget.Installation
+                }
+                false
+
+        let! revoked = revoke 110 Role.CaseHandler
+        acceptedAuthority revoked
+        let! noCapability = change 111 update
+        expect (Refusal.Access(AccessRefusal.NotAuthorized Capability.ManageCaseWork)) noCapability
+        let! revoked = revoke 112 Role.PaymentRecorder
+        acceptedAuthority revoked
+        let! unreadable = change 113 update
+        expect (Refusal.Access AccessRefusal.ResourceUnavailable) unreadable
     }

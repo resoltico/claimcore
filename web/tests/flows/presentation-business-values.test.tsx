@@ -9,10 +9,11 @@ it("formats review values by catalog definition with independent date and amount
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
-      version: 2,
+      version: 3,
       language: "en",
       displayLocale: "lv-LV",
-      theme: "SYSTEM" as const,
+      mode: "system" as const,
+      accent: "green" as const,
     }),
   );
   const field = (name: string) => definition.catalog.fields.find((item) => item.name === name)!;
@@ -49,14 +50,24 @@ it("isolates and warns about permitted business Unicode without normalizing or e
 });
 
 it("presents closed correction targets through groups while preserving exact action tokens", () => {
-  const en = createPresenter({ language: "en", displayLocale: "en-GB", theme: "SYSTEM" as const });
-  expect(en.authoredTargetLabel("registration.action")).toBe("Registration · Action");
+  const en = createPresenter({
+    language: "en",
+    displayLocale: "en-GB",
+    mode: "system" as const,
+    accent: "green" as const,
+  });
+  expect(en.authoredTargetLabel("registration.action")).toBe("Claim · Action");
   expect(en.authoredTargetLabel("decision.action")).toBe("Payment decision · Action");
-  expect(en.authoredTargetLabel("payment.action")).toBe("Payment record · Action");
+  expect(en.authoredTargetLabel("payment.action")).toBe("Payment · Action");
   expect(en.authoredTargetLabel("claimedAmount")).toBe("Amount claimed");
   expect(en.term("correction", "REPLACE")).toBe("Replace details");
   for (const language of ["lv", "ar"] as const) {
-    const p = createPresenter({ language, displayLocale: "en-GB", theme: "SYSTEM" as const });
+    const p = createPresenter({
+      language,
+      displayLocale: "en-GB",
+      mode: "system" as const,
+      accent: "green" as const,
+    });
     for (const group of ["registration", "decision", "payment"]) {
       expect(p.authoredTargetLabel(`${group}.action`)).toContain(p.groupLabel(group));
       expect(p.authoredTargetLabel(`${group}.action`)).not.toContain(".action");

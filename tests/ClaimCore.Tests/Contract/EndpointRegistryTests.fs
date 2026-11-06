@@ -84,12 +84,12 @@ let private readReplies () =
             (Codec.decode 10000 codec (bytes input))
             "Unadvertised outcomes and prose cannot enter an envelope."
 
-let private receipt =
+let private receipt: OperationReceipt =
     {
         OperationId = (CaseFixtures.operationId (id))
         Position =
             {
-                Sequence = CaseFixtures.sequence 1L
+                Sequence = CaseFixtures.sequence 2L
                 EntryHash =
                     (String.replicate 64 "a"
                      |> System.Convert.FromHexString
@@ -97,29 +97,62 @@ let private receipt =
                      |> Option.get)
             }
         RecordedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
-        RecordedBy = (CaseFixtures.actorId (id))
+        Basis =
+            {
+                ObservedAt = DateTimeOffset(2026, 10, 22, 12, 0, 0, TimeSpan.Zero)
+                BusinessDate = DateOnly(2026, 10, 22)
+                TimeZoneId = "Etc/UTC"
+            }
+        RecordedBy = ClaimCore.TestSupport.Inputs.actorReference ((CaseFixtures.actorId (id)))
         Subject =
             ReceiptSubject.Authority
                 {
-                    TargetActorId = (CaseFixtures.actorId (id))
+                    TargetActor = AuthorityTargetDisclosure.Withheld(CaseFixtures.actorId id)
                     Act = AuthorityKind.Register
+                    Effects =
+                        [
+                            {
+                                AuthorityReceiptEffect.Act = AuthorityKind.Register
+                                Position =
+                                    LedgerPosition.create
+                                        (CaseFixtures.sequence 1L)
+                                        (String.replicate 64 "a"
+                                         |> Convert.FromHexString
+                                         |> EntryHash.ofBytes
+                                         |> Option.get)
+                            }
+                            {
+                                AuthorityReceiptEffect.Act = AuthorityKind.SetProfile
+                                Position =
+                                    LedgerPosition.create
+                                        (CaseFixtures.sequence 2L)
+                                        (String.replicate 64 "a"
+                                         |> Convert.FromHexString
+                                         |> EntryHash.ofBytes
+                                         |> Option.get)
+                            }
+                        ]
                 }
     }
 
 let private authorityReview =
     OperationReview.Authority
         {
+            Basis = ClaimCore.TestSupport.Inputs.workBasis
+            Effects = [ AuthorityReviewEffect.Enable ]
             Target = None
             AccessScope = GrantScope.Installation
             Before =
                 {
                     Enabled = false
+                    Profile = None
                     Grants = []
                     Access = []
                 }
             After =
                 {
                     Enabled = true
+                    Profile = None
                     Grants = []
                     Access = []
                 }
@@ -135,10 +168,11 @@ let private mutationReplies () =
         ] do
         roundTrip
             ReplyCodecs.preview
-            {
-                PreviewReply.OperationId = id
-                Outcome = outcome
-            }
+            (PresentedPreviewReply.ofCore
+                {
+                    PreviewReply.OperationId = id
+                    Outcome = outcome
+                })
 
     for outcome in
         [

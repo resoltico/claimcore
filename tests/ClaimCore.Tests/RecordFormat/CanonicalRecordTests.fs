@@ -141,11 +141,14 @@ let private authority () =
             (Guid.Parse "20000000-0000-4000-8000-000000000002")
             "Independent operation"
 
-        Expect.equal request.Target.Subject "handler-1" "Independent target principal"
+        Expect.equal
+            request.TargetActorId
+            (CaseFixtures.actorId (Guid.Parse "30000000-0000-4000-8000-000000000003"))
+            "Independent target actor"
 
         Expect.equal
-            request.Act
-            (ClaimCore.Domain.AuthorityAct.Grant
+            request.Effect
+            (AuthorityEffect.Grant
                 {
                     Role = Role.CaseHandler
                     Scope =
@@ -179,7 +182,7 @@ let private formats () =
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
             ]
-            [ 4; 2; 4; 4 ]
+            [ 4; 3; 4; 5 ]
             "Each retained grammar has its adopted format number"
 
         for format in [ "3"; "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do
@@ -198,7 +201,7 @@ let private formats () =
         Expect.isError
             (AuthorityRecord.decode
                 65536
-                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":2", "\"format\":4"))))
+                (Encoding.UTF8.GetBytes(authority.Replace("\"format\":3", "\"format\":2"))))
             "No old authority reinterpretation")
 
 let private operationIdentity () =

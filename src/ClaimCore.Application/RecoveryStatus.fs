@@ -5,8 +5,8 @@ open ClaimCore.Application.Contracts
 
 /// Actor-scoped recovery reads retained evidence in a read-only snapshot without taking the head lock.
 module internal RecoveryStatus =
-    let private outcome services operation actor entry current fenced =
-        match Resolution.resolve services operation actor entry current with
+    let private outcome services observedAt operation actor entry current fenced =
+        match Resolution.resolve services observedAt operation actor entry current with
         | Verdict.Replay receipt -> Outcome.Succeeded(OperationStatus.Accepted receipt)
         | Verdict.Proceed _ ->
             Outcome.Succeeded(
@@ -22,13 +22,14 @@ module internal RecoveryStatus =
         task {
             match OperationId.create request.OperationId with
             | None ->
-                return
-                    Outcome.Rejected(
-                        Refusal.invalidInput (
+                return!
+                    RequestRefusals.read
+                        services
+                        token
+                        (Refusal.invalidInput (
                             InputTarget.OperationId,
                             Violation.OperationIdRequired
-                        )
-                    )
+                        ))
             | Some operation ->
                 let! result =
                     services.Store.Read
@@ -42,12 +43,17 @@ module internal RecoveryStatus =
                                         let! fenced =
                                             ExecutionFacts.fenced services tx actor operation entry
 
+                                        let! named =
+                                            ReceiptReads.existing services tx actor current entry
+
                                         return
-                                            match fenced with
-                                            | Error fault -> Outcome.Failed fault
-                                            | Ok fenced ->
+                                            match fenced, named with
+                                            | Error fault, _
+                                            | _, Error fault -> Outcome.Failed fault
+                                            | Ok fenced, Ok current ->
                                                 outcome
                                                     services
+                                                    tx.ObservedAt
                                                     operation
                                                     actor
                                                     entry

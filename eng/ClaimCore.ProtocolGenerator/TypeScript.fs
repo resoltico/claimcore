@@ -40,6 +40,7 @@ module TypeScript =
         | Schema.OneOf(variants, _) -> variants |> List.map value |> String.concat " | "
         | Schema.Ref name -> identifier name
         | Schema.Vocabulary(_, schema) -> value schema
+        | Schema.EnumPartition(schema, _, _, _, _) -> value schema
 
     let private endpointMap name response =
         Api.all
@@ -93,6 +94,11 @@ module TypeScript =
 
     let private presentationConstants () =
         [
+            "export const listedCaseFieldNames = "
+            + JsonSerializer.Serialize(
+                CaseFields.declarations |> List.filter _.Listed |> List.map _.Key
+            )
+            + " as const;"
             "export const presentationLanguageOptions = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.languageOptions)
             + " as const;"
@@ -110,6 +116,26 @@ module TypeScript =
             + " as const;"
             "export const presentationDisplayLocales = "
             + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.displayLocales)
+            + " as const;"
+            "export const resourceUnavailableDiagnostic = "
+            + (DiagnosticCodecs.diagnostic.Write(Refusal.Access AccessRefusal.ResourceUnavailable)
+               |> ClaimCore.Json.WireWriter.bytes
+               |> System.Text.Encoding.UTF8.GetString)
+            + " as const;"
+            "export const capabilityRoleRequirements = "
+            + JsonSerializer.Serialize(
+                Capability.all
+                |> List.map (fun capability ->
+                    Capability.token capability,
+                    Authority.rolesFor capability |> List.map Role.token)
+                |> dict
+            )
+            + " as const;"
+            "export const presentationAccents = "
+            + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.accents)
+            + " as const;"
+            "export const presentationModes = "
+            + JsonSerializer.Serialize(ClaimCore.Protocol.LocalizationPolicy.modes)
             + " as const;"
             "export const presentationDefaults = { language: "
             + quote ClaimCore.Protocol.LocalizationPolicy.defaultLanguage

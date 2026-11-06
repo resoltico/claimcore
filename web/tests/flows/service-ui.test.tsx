@@ -1,3 +1,4 @@
+import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
@@ -51,11 +52,9 @@ describe("catalog rendering", () => {
     const descriptionId = input.getAttribute("aria-describedby");
     expect(descriptionId).not.toBeNull();
     expect(document.getElementById(descriptionId?.split(" ").at(-1) ?? "")).toHaveTextContent(
-      createPresenter(defaults).fieldMeaning(incident.name),
+      createPresenter(defaults).fieldHint(incident.name),
     );
-    expect(screen.getAllByText(createPresenter(defaults).fieldMeaning(incident.name))).toHaveLength(
-      1,
-    );
+    expect(screen.getAllByText(createPresenter(defaults).fieldHint(incident.name))).toHaveLength(1);
     expect(screen.getByText("CASE-1")).toBeVisible();
   });
 });
@@ -65,6 +64,7 @@ const queueClosePreview = () => {
     previewForRequest(
       response("operation.preview", "REVIEWED", {
         review: {
+          presentation: { changes: [], unchanged: [] },
           subject: {
             kind: "CASE",
             before: {
@@ -85,7 +85,7 @@ const queueClosePreview = () => {
                 fields,
               },
             },
-            changes: [],
+
             context: runtime,
           },
         },
@@ -110,17 +110,9 @@ const acceptsOperation = async (): Promise<void> => {
     />,
   );
   await user.click(getButton("Review changes"));
-  expect(
-    await screen.findByRole("dialog", {
-      name: "Review changes",
-    }),
-  ).toBeVisible();
-  await user.click(
-    screen.getByRole("checkbox", {
-      name: "I confirm these changes.",
-    }),
-  );
-  await user.click(getButton("Record changes"));
+  expect(await screen.findByRole("dialog", { name: "Close the case" })).toBeVisible();
+  await waitForReviewConfirm();
+  await user.click(reviewConfirm());
   expect(
     await screen.findByRole("heading", {
       name: "Recorded change",
@@ -183,10 +175,11 @@ const sessionLifecycle = async () => {
       name: "Cases",
     }),
   ).toBeVisible();
+  await user.click(document.querySelector(".account-menu > summary")!);
   await user.click(getButton("Sign out"));
   expect(
     await screen.findByRole("heading", {
-      name: "ClaimCore",
+      name: "Sign in to the case register",
     }),
   ).toBeVisible();
 };

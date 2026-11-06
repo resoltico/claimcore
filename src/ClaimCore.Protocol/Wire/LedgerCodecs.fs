@@ -50,7 +50,7 @@ module internal LedgerCodecs =
     let fieldChange =
         (record (fun field before after ->
             {
-                FieldName = field
+                FieldDiff.FieldName = field
                 Before = before
                 After = after
             })
@@ -60,3 +60,15 @@ module internal LedgerCodecs =
         |> field "after" _.After (nullable nonempty)
         |> build
         |> named "FieldChange"
+
+    let lifecycleChange =
+        (record (fun before after ->
+            {
+                LifecycleChange.Before = before
+                After = after
+            })
+        : Fields<LifecycleChange, _>)
+        |> field "before" _.Before (nullable (VocabularyCodec.create Lifecycle.vocabulary))
+        |> field "after" _.After (VocabularyCodec.create Lifecycle.vocabulary)
+        |> build
+        |> named "LifecycleChange"

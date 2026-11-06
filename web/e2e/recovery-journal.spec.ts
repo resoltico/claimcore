@@ -1,4 +1,4 @@
-import { goToView } from "./workspace-navigation";
+import { openRecovery, goToView } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { stripTypeScriptTypes } from "node:module";
@@ -38,13 +38,17 @@ const scopeFor = async (page: Page): Promise<RecoveryScope> => {
     headers: { "Content-Type": "application/json", "X-ClaimCore-Antiforgery": csrf },
     body: "{}",
   });
-  if (!isResponse("context", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+  if (
+    !isResponse("context", reply.payload) ||
+    reply.payload.outcome.kind !== "SUCCEEDED" ||
+    reply.payload.outcome.data.requester.kind !== "ACTIVE"
+  ) {
     throw new Error("Recovery scope positive control");
   }
   return {
     serviceOrigin: new URL(page.url()).origin,
-    actorId: reply.payload.outcome.data.actorId,
-    installationId: reply.payload.outcome.data.installationId,
+    actorId: reply.payload.outcome.data.requester.actorId,
+    installationId: reply.payload.outcome.data.requester.installationId,
   };
 };
 const records = (page: Page, scope: RecoveryScope) =>
@@ -103,7 +107,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   expect(await records(second, { ...scope, actorId: randomUUID() })).toEqual([]);
   expect(await records(second, { ...scope, installationId: randomUUID() })).toEqual([]);
   await second.reload();
-  await goToView(second, "operations");
+  await openRecovery(second);
   const checked = second.waitForResponse((response) =>
     response.url().endsWith("/api/operation.status"),
   );
@@ -111,18 +115,41 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const status: unknown = await (await checked).json();
   expect(isResponse("operation.status", status) && status.outcome.kind === "UNRESOLVED").toBe(true);
   expect(await records(page, scope)).toEqual([secondRecord]);
+  let settlements = 0;
+  second.on("request", (request) => {
+    if (request.url().endsWith("/api/operation.resolve")) {
+      settlements += 1;
+    }
+  });
   await second.getByRole("button", { name: "Settle operation permanently", exact: true }).click();
   await expect(second.getByRole("dialog", { name: "Settle operation permanently" })).toContainText(
     operationId,
   );
+  const settlement = second.getByRole("dialog", {
+    name: "Settle operation permanently",
+    exact: true,
+  });
+  const confirmation = settlement.getByRole("button", {
+    name: "Confirm permanent settlement",
+    exact: true,
+  });
+  const exact = settlement.getByRole("textbox", { name: "Exact operation ID", exact: true });
+  await expect(confirmation).toBeDisabled();
+  await exact.fill(`${operationId}-wrong`);
+  await expect(confirmation).toBeDisabled();
+  expect(settlements).toBe(0);
+  await exact.fill(operationId);
+  await expect(confirmation).toBeEnabled();
+  expect(settlements).toBe(0);
   const settled = second.waitForResponse((response) =>
     response.url().endsWith("/api/operation.resolve"),
   );
-  await second.getByRole("button", { name: "Confirm permanent settlement", exact: true }).click();
+  await confirmation.click();
   const final: unknown = await (await settled).json();
   expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
     true,
   );
+  expect(settlements).toBe(1);
   await expect.poll(() => records(page, scope)).toEqual([]);
   await second.close();
 });
@@ -168,8 +195,7 @@ test("tab loss after transaction commit and before notification leaves identity 
       executions += 1;
     }
   });
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect
     .poll(() =>
       page.evaluate(
@@ -182,7 +208,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   await page.close();
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await goToView(replacement, "operations");
+  await openRecovery(replacement);
   const scope = await scopeFor(replacement);
   const saved = await records(replacement, scope);
   expect(saved).toHaveLength(1);
@@ -208,12 +234,26 @@ test("tab loss after transaction commit and before notification leaves identity 
     replacement.getByRole("dialog", { name: "Settle operation permanently" }),
   ).toContainText(identity.operationId);
   expect(settlements).toBe(0);
+  const settlement = replacement.getByRole("dialog", {
+    name: "Settle operation permanently",
+    exact: true,
+  });
+  const confirmation = settlement.getByRole("button", {
+    name: "Confirm permanent settlement",
+    exact: true,
+  });
+  const exact = settlement.getByRole("textbox", { name: "Exact operation ID", exact: true });
+  await expect(confirmation).toBeDisabled();
+  await exact.fill(`${identity.operationId}-wrong`);
+  await expect(confirmation).toBeDisabled();
+  expect(settlements).toBe(0);
+  await exact.fill(identity.operationId);
+  await expect(confirmation).toBeEnabled();
+  expect(settlements).toBe(0);
   const settled = replacement.waitForResponse((response) =>
     response.url().endsWith("/api/operation.resolve"),
   );
-  await replacement
-    .getByRole("button", { name: "Confirm permanent settlement", exact: true })
-    .click();
+  await confirmation.click();
   const final: unknown = await (await settled).json();
   expect(isResponse("operation.resolve", final) && final.outcome.kind === "NOT_ACCEPTED").toBe(
     true,
@@ -232,7 +272,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await openCase(page, `JOURNAL-ACCEPTED-${randomUUID()}`);
   await adapter(page);
   const scope = await scopeFor(page);
-  await startAct(page, "Close the case");
+  await startAct(page, "CLOSE", "en");
   const identity = await reviewDraft(page);
   let executions = 0;
   await page.route("**/api/operation.execute", async (route) => {
@@ -246,14 +286,13 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
     expect(isResponse("operation.execute", value) && value.outcome.kind === "ACCEPTED").toBe(true);
     await route.abort("connectionfailed");
   });
-  await page.getByText("I confirm these changes.", { exact: true }).click();
-  await page.getByRole("button", { name: "Record changes", exact: true }).click();
+  await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeVisible();
   const replacement = await context.newPage();
   await page.close();
   await openAuthenticated(replacement);
   await adapter(replacement);
-  await goToView(replacement, "operations");
+  await openRecovery(replacement);
   const resolved = replacement.waitForResponse((response) =>
     response.url().endsWith("/api/operation.status"),
   );
@@ -516,7 +555,7 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
       promised.payload.outcome.kind === "NOT_ACCEPTED",
   ).toBe(true);
   await page.reload();
-  await goToView(page, "operations");
+  await openRecovery(page);
   const ready = Promise.withResolvers<void>();
   const release = Promise.withResolvers<void>();
   let resolutions = 0;
@@ -541,11 +580,15 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);
     const value: unknown = await (await refreshed).json();
-    if (!isResponse("context", value) || value.outcome.kind !== "SUCCEEDED") {
+    if (
+      !isResponse("context", value) ||
+      value.outcome.kind !== "SUCCEEDED" ||
+      value.outcome.data.requester.kind !== "ACTIVE"
+    ) {
       throw new Error("Workspace context refresh positive control");
     }
-    expect(value.outcome.data.actorId).toBe(scope.actorId);
-    expect(value.outcome.data.installationId).toBe(scope.installationId);
+    expect(value.outcome.data.requester.actorId).toBe(scope.actorId);
+    expect(value.outcome.data.requester.installationId).toBe(scope.installationId);
     release.resolve();
     await expect.poll(() => records(page, scope)).toEqual([]);
     await expect(

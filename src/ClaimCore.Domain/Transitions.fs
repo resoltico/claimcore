@@ -19,60 +19,66 @@ type internal Applicable<'r, 'd, 'du, 'p, 's> =
     | Erasing
 
 module internal Transitions =
+    let private notOffered (claim: Claim) =
+        CaseRefusal.NotOffered(
+            CaseHeadline.ofState (
+                CaseState.Active(claim.Status, CaseProgress.ofPayment claim.Progress)
+            )
+        )
+
     let private amend facts claim =
         match claim.Progress with
         | PaymentProgress.Undecided -> Ok(Applicable.Amending(claim, facts))
         | PaymentProgress.Decided _
-        | PaymentProgress.Paid _ -> Error CaseRefusal.AmendmentRequiresUndecided
+        | PaymentProgress.Paid _ -> Error(notOffered claim)
 
     let private correct correction claim =
         match claim.Status, claim.Progress with
         | CaseStatus.Closed, _ -> Ok(Applicable.Correcting(claim, correction))
-        | CaseStatus.Opened, PaymentProgress.Undecided ->
-            Error CaseRefusal.CorrectionRequiresExistingValue
+        | CaseStatus.Opened, PaymentProgress.Undecided -> Error(notOffered claim)
         | CaseStatus.Opened, (PaymentProgress.Decided _ | PaymentProgress.Paid _) ->
             Ok(Applicable.Correcting(claim, correction))
 
     let private decide decision claim =
         match claim.Progress with
-        | PaymentProgress.Paid _ -> Error CaseRefusal.DecisionAlreadyPaid
+        | PaymentProgress.Paid _ -> Error(notOffered claim)
         | PaymentProgress.Undecided
         | PaymentProgress.Decided _ -> Ok(Applicable.Deciding(claim, decision))
 
     let private withdraw claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
-        | PaymentProgress.Paid _ -> Error CaseRefusal.DecisionAlreadyPaid
+        | PaymentProgress.Undecided -> Error(notOffered claim)
+        | PaymentProgress.Paid _ -> Error(notOffered claim)
         | PaymentProgress.Decided _ -> Ok(Applicable.Withdrawing claim)
 
     let private pay payment claim =
         match claim.Progress with
-        | PaymentProgress.Undecided -> Error CaseRefusal.DecisionRequired
-        | PaymentProgress.Paid _ -> Error CaseRefusal.PaymentAlreadyRecorded
+        | PaymentProgress.Undecided -> Error(notOffered claim)
+        | PaymentProgress.Paid _ -> Error(notOffered claim)
         | PaymentProgress.Decided decision when Money.value (Decision.payable (decision)) = 0M ->
-            Error CaseRefusal.ZeroDecisionCannotBePaid
+            Error(notOffered claim)
         | PaymentProgress.Decided decision -> Ok(Applicable.Paying(claim, decision, payment))
 
     let private unpay claim =
         match claim.Progress with
         | PaymentProgress.Paid(decision, _) -> Ok(Applicable.Unpaying(claim, decision))
         | PaymentProgress.Undecided
-        | PaymentProgress.Decided _ -> Error CaseRefusal.PaymentNotRecorded
+        | PaymentProgress.Decided _ -> Error(notOffered claim)
 
     let private whenOpened decide claim =
         match claim.Status with
-        | CaseStatus.Closed -> Error CaseRefusal.CaseClosed
+        | CaseStatus.Closed -> Error(notOffered claim)
         | CaseStatus.Opened -> decide claim
 
     let private close claim =
         match claim.Status with
-        | CaseStatus.Closed -> Error CaseRefusal.AlreadyClosed
+        | CaseStatus.Closed -> Error(notOffered claim)
         | CaseStatus.Opened -> Ok(Applicable.Closing claim)
 
     let private reopen claim =
         match claim.Status with
         | CaseStatus.Closed -> Ok(Applicable.Reopening claim)
-        | CaseStatus.Opened -> Error CaseRefusal.AlreadyOpened
+        | CaseStatus.Opened -> Error(notOffered claim)
 
     let private activeBusiness claim =
         function
@@ -90,7 +96,7 @@ module internal Transitions =
     let private activeStewardship claim =
         function
         | CaseAct.Void reason -> Ok(Applicable.Voiding(claim, reason))
-        | CaseAct.Reinstate _ -> Error CaseRefusal.NotVoided
+        | CaseAct.Reinstate _ -> Error(notOffered claim)
         | CaseAct.Bare BareAct.Erase -> Ok Applicable.Erasing
         | _ -> invalidOp "A business act cannot enter stewardship rules."
 
@@ -102,11 +108,11 @@ module internal Transitions =
     let private voidedBusiness =
         function
         | CaseAct.Open _ -> Error CaseRefusal.CaseAlreadyExists
-        | _ -> Error CaseRefusal.CaseVoided
+        | _ -> Error(CaseRefusal.NotOffered CaseHeadline.Voided)
 
     let private voidedStewardship claim =
         function
-        | CaseAct.Void _ -> Error CaseRefusal.AlreadyVoided
+        | CaseAct.Void _ -> Error(CaseRefusal.NotOffered CaseHeadline.Voided)
         | CaseAct.Reinstate reason -> Ok(Applicable.Reinstating(claim, reason))
         | CaseAct.Bare BareAct.Erase -> Ok Applicable.Erasing
         | _ -> invalidOp "A business act cannot enter stewardship rules."
@@ -118,7 +124,7 @@ module internal Transitions =
 
     let applicable state act =
         match state with
-        | CaseState.Erased -> Error CaseRefusal.CaseErased
+        | CaseState.Erased -> Error(CaseRefusal.NotOffered CaseHeadline.Erased)
         | CaseState.Voided claim -> voided claim act
         | CaseState.Active claim -> active claim act
 
@@ -130,7 +136,7 @@ module internal Transitions =
         match evidence with
         | Applicable.Amending(claim, update) ->
             RegistrationUpdate.apply update claim.Facts
-            |> Validation.registrationMerge
+            |> InputValidation.registrationMerge
             |> Result.map (fun facts -> { claim with Facts = facts })
             |> businessChange claim
         | Applicable.Correcting(claim, correction) ->

@@ -29,19 +29,42 @@ type CatalogDerivedInput =
     }
 
 module CommandGrammar =
+    /// The human command surface is narrower than the explicit protocol call surface.
+    let operations =
+        OperationCatalog.all
+        |> List.filter (fun operation ->
+            not (
+                List.contains
+                    operation.Endpoint
+                    [
+                        ActorEndpoint.Query QueryEndpoint.CaseHistory
+                        ActorEndpoint.Query QueryEndpoint.CaseActivity
+                    ]
+            ))
+
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
 
+    // This flat input-name table has no nested decisions; canonical flag names have one owner.
+    // fsharplint:disable-next-line CyclomaticComplexity
     let inputName =
         function
+        | InteractionInput.Target InputTarget.DirectorySearch -> "text"
         | InteractionInput.Target InputTarget.PrincipalKind -> "principalKind"
         | InteractionInput.Target InputTarget.PrincipalIssuer -> "issuer"
         | InteractionInput.Target InputTarget.PrincipalSubject -> "subject"
+        | InteractionInput.Target InputTarget.ProfileDisplayName -> "name"
+        | InteractionInput.Target InputTarget.ProfileContact -> "contact"
+        | InteractionInput.CaseView
+        | InteractionInput.ReminderView -> "view"
+        | InteractionInput.ResponsibleActorFilter -> "responsibleActor"
+        | InteractionInput.RoleFilter -> "role"
         | InteractionInput.ReminderDue -> "due"
         | InteractionInput.ReminderState -> "state"
         | InteractionInput.Target InputTarget.ReminderAction -> "action"
         | InteractionInput.Target InputTarget.ReminderDueDate -> "due"
         | InteractionInput.Detail -> "full"
+        | InteractionInput.TimelineFilter -> "filter"
         | input -> InteractionInput.key input
 
     let words (entry: CatalogOperation) =
@@ -54,11 +77,27 @@ module CommandGrammar =
             [ "operation"; "settle" ]
         | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
 
+    /// Prefer the complete command when one command is also a prefix of another.
+    let tryOperation arguments =
+        operations
+        |> List.sortByDescending (words >> List.length)
+        |> List.tryFind (fun operation ->
+            let path = words operation
+            List.truncate path.Length arguments = path)
+
+    /// One argument spelling works in the interactive shell and the documented POSIX examples.
+    let quoteArgument (value: string) =
+        if Regex.IsMatch(value, "^[A-Za-z0-9._-]+$") then
+            value
+        else
+            "'" + value.Replace("'", "'\\''") + "'"
+
     let commandText operation =
         CliIdentity.programName + " " + String.concat " " (words operation)
 
     let derive (operation: CatalogOperation) =
-        let inputs, constants = OperationCatalog.derive operation
+        let bindings = OperationCatalog.derive operation
+        let inputs, constants = bindings.Inputs, bindings.Constants
 
         let grammar (input: OperationInputDefinition) =
             let argument =
@@ -98,6 +137,70 @@ module CommandGrammar =
 
         inputs |> List.map grammar, constants
 
+    let collections operation =
+        (OperationCatalog.derive operation).Collections
+
+    let collectionFlag (definition: OperationCollectionDefinition) =
+        match definition.Name with
+        | InteractionInput.Target InputTarget.Grants ->
+            "--" + kebab (inputName (InteractionInput.Target InputTarget.Role))
+        | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
+
+    let collectionPlaceholder (definition: OperationCollectionDefinition) =
+        match definition.Name with
+        | InteractionInput.Target InputTarget.Grants -> "ROLE[@CASE-REF]"
+        | _ -> invalidOp "A declared collection requires an explicit CLI argument syntax."
+
+    let families = operations |> List.map (words >> List.head) |> List.distinct
+
+    let supportsAll (operation: CatalogOperation) =
+        List.contains
+            operation.Endpoint
+            [
+                ActorEndpoint.Query QueryEndpoint.CaseList
+                ActorEndpoint.Query QueryEndpoint.ReminderList
+                ActorEndpoint.Query QueryEndpoint.CaseTimeline
+            ]
+
+    let formats (operation: CatalogOperation) =
+        if
+            List.contains
+                operation.Endpoint
+                [
+                    ActorEndpoint.Query QueryEndpoint.CaseList
+                    ActorEndpoint.Query QueryEndpoint.ReminderList
+                    ActorEndpoint.Query QueryEndpoint.AuthorityHistory
+                    ActorEndpoint.Query QueryEndpoint.CaseTimeline
+                ]
+        then
+            [ "text"; "json"; "csv" ]
+        else
+            [ "text"; "json" ]
+
+    let globalOptions operation =
+        [
+            "--format", String.concat "|" (formats operation)
+            "--language", String.concat "|" LocalizationPolicy.languages
+            "--dry-run", ""
+            if CatalogOperation.consequence operation = Consequence.Irreversible then
+                "--confirm", "TARGET"
+            if operation.SelectedAct.IsSome then
+                "--preview", ""
+            if supportsAll operation then
+                "--all", ""
+        ]
+
+    let globalFlags =
+        operations |> List.collect (globalOptions >> List.map fst) |> List.distinct
+
+    let globalSwitches =
+        operations
+        |> List.collect (
+            globalOptions
+            >> List.choose (fun (flag, value) -> if value = "" then Some flag else None)
+        )
+        |> List.distinct
+
     let plainTextInputs operation =
         let scalar name =
             match name with
@@ -114,6 +217,17 @@ module CommandGrammar =
             match scalar input.Name with
             | Some(ScalarRule.PlainText constraints) -> Some(input, constraints)
             | _ -> None)
+
+    /// Clears describe replacement intent, never optional values on a creation.
+    let canClear (operation: CatalogOperation) (input: CatalogDerivedInput) =
+        input.Binding.AllowsNull
+        && match operation.SelectedAct with
+           | Some(ActKind.Case kind) when (CaseActKind.describe kind).Revision = RevisionInput.New ->
+               false
+           | Some(ActKind.Authority AuthorityKind.Register)
+           | Some(ActKind.Authority AuthorityKind.Admit)
+           | Some(ActKind.Reminder ReminderActKind.Create) -> false
+           | _ -> true
 
     let synopsis (operation: CatalogOperation) =
         let placeholder =
@@ -164,9 +278,25 @@ module CommandGrammar =
         let clears =
             inputs
             |> List.choose (fun input ->
-                if input.Binding.AllowsNull then
+                if canClear operation input then
                     Some("[--clear-" + kebab (inputName input.Name) + "]")
                 else
                     None)
 
-        String.concat " " (words operation @ arguments @ textSources @ clears)
+        let globals =
+            globalOptions operation
+            |> List.map (fun (flag, value) ->
+                "[" + flag + (if value = "" then "" else " " + value) + "]")
+
+        let repeated =
+            collections operation
+            |> List.map (fun definition ->
+                let syntax = collectionFlag definition + " " + collectionPlaceholder definition
+
+                (if definition.Binding.Required then
+                     syntax
+                 else
+                     "[" + syntax + "]")
+                + "...")
+
+        String.concat " " (words operation @ arguments @ repeated @ textSources @ clears @ globals)

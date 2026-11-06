@@ -15,9 +15,12 @@ module Catalog =
                         Section = row.Section
                         Pairs = row.Pairs
                         LabelId = FieldPresentation.labelId row.Field
-                        MeaningId = FieldPresentation.meaningId row.Field
+                        HintId = FieldPresentation.hintId row.Field
+                        RuleId = FieldPresentation.ruleId row.Field
                         Scalar = FieldPresentation.descriptor row.Field
                         AllowsAbsence = row.AllowsAbsence
+                        Prominence = row.Prominence
+                        Listed = row.Listed
                     })
             InputFields =
                 InteractionInput.technical
@@ -25,14 +28,27 @@ module Catalog =
                     {
                         Name = InteractionInput.key input
                         LabelId = InteractionInput.messageKey input "label"
-                        MeaningId = Some(InteractionInput.messageKey input "meaning")
+                        HintId = Some(InteractionInput.messageKey input "hint")
+                        RuleId = Some(InteractionInput.messageKey input "rule")
                         Scalar =
-                            if input = InteractionInput.Target InputTarget.Reason then
+                            if input = InteractionInput.Target InputTarget.ProfileDisplayName then
+                                Some(ScalarRule.Text PartyName.descriptor)
+                            elif input = InteractionInput.Target InputTarget.ProfileContact then
+                                Some(ScalarRule.Text ContactText.descriptor)
+                            elif input = InteractionInput.Target InputTarget.Reason then
                                 Some(ScalarRule.Text PartyName.descriptor)
                             elif input = InteractionInput.Target InputTarget.ReminderAction then
                                 Some(ScalarRule.PlainText ReminderAction.constraints)
                             elif input = InteractionInput.Target InputTarget.ReminderDueDate then
                                 Some(ScalarRule.PlannedDate CalendarDate.descriptor)
+                            elif input = InteractionInput.Target InputTarget.DirectorySearch then
+                                Some(
+                                    ScalarRule.Text
+                                        { PartyName.descriptor with
+                                            MaximumCharacters =
+                                                Some DirectorySearchText.MaximumCharacters
+                                        }
+                                )
                             elif input = InteractionInput.Target InputTarget.Text then
                                 Some(
                                     ScalarRule.Text
@@ -60,6 +76,7 @@ module Catalog =
                 |> List.map (fun role ->
                     {
                         Role = role
+                        MeaningId = Vocabulary.messageKey Role.vocabulary role "meaning"
                         AdmittedScopes = Authority.roleScopes role
                         AdmittedPrincipalKinds =
                             Vocabulary.all PrincipalKind.vocabulary
@@ -80,5 +97,9 @@ module Catalog =
                                 || not (Authority.humanOnlyCapability capability))
                     })
             Entries = OperationCatalog.entries
+            MoneyMinorUnits =
+                CurrencyMinorUnits.all
+                |> Map.toList
+                |> List.map (fun (code, scale) -> { Currency = code; MinorUnits = scale })
             ProductVersion = BuildIdentity.current.Version
         }

@@ -132,11 +132,11 @@
   "authorityActs": [
     {
       "token": "PROVISION_OWNER",
-      "payload": "BARE"
+      "payload": "PROFILE"
     },
     {
       "token": "REGISTER",
-      "payload": "BARE"
+      "payload": "PROFILE"
     },
     {
       "token": "GRANT",
@@ -153,6 +153,18 @@
     {
       "token": "DISABLE",
       "payload": "BARE"
+    },
+    {
+      "token": "SET_PROFILE",
+      "payload": "PROFILE"
+    },
+    {
+      "token": "ERASE_PROFILE",
+      "payload": "BARE"
+    },
+    {
+      "token": "ADMIT",
+      "payload": "ADMISSION"
     }
   ],
   "roles": [
@@ -327,45 +339,56 @@
       "token": "reminder.get",
       "method": "POST",
       "effect": "Read"
+    },
+    {
+      "token": "case.views",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "reminder.views",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "case.timeline",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "authority.requests",
+      "method": "POST",
+      "effect": "Read"
+    },
+    {
+      "token": "authority.requests.dismiss",
+      "method": "POST",
+      "effect": "OperationalWrite"
     }
   ],
   "refusalCodes": [
     "RESOURCE_UNAVAILABLE",
     "ACTOR_ALREADY_REGISTERED",
     "ACTOR_UNKNOWN",
-    "ACT_NOT_PERMITTED",
-    "ALREADY_VOIDED",
-    "ALREADY_CLOSED",
+    "NOT_AUTHORIZED",
     "CASE_ALREADY_EXISTS",
-    "ALREADY_OPENED",
-    "AMENDMENT_REQUIRES_UNDECIDED",
-    "CASE_CLOSED",
-    "CASE_ERASED",
-    "CASE_VOIDED",
     "CORRECTION_NO_CHANGES",
     "CORRECTION_REQUIRES_EXISTING_VALUE",
-    "DECISION_ALREADY_PAID",
-    "DECISION_REQUIRED",
     "HUMAN_PRINCIPAL_REQUIRED",
     "ROLE_SCOPE_NOT_APPLICABLE",
     "IDEMPOTENCY_CONFLICT",
     "INVALID_CURSOR",
     "INVALID_INPUT",
     "LAST_OWNER",
-    "NOT_VOIDED",
     "OPERATION_RESOLVED",
-    "PAYMENT_ALREADY_RECORDED",
-    "PAYMENT_NOT_RECORDED",
     "REVISION_CONFLICT",
     "ZERO_DECISION_CANNOT_BE_PAID",
     "WORK_NO_CHANGES",
     "ASSIGNEE_UNAVAILABLE",
     "REGISTER_MAINTENANCE",
-    "REMINDER_PARENT_NOT_ACTIVE",
-    "REMINDER_PARENT_NOT_OPEN",
-    "REMINDER_PENDING_REQUIRED",
-    "REMINDER_TERMINAL_REQUIRED",
-    "REMINDER_NO_CHANGES"
+    "REMINDER_NO_CHANGES",
+    "NOT_OFFERED",
+    "REMINDER_NOT_OFFERED"
   ],
   "technicalInputs": [
     "operationId",
@@ -397,9 +420,18 @@
     "reminderState",
     "reminderDue",
     "includeInactive",
-    "mine"
+    "mine",
+    "caseView",
+    "reminderView",
+    "timelineFilter",
+    "profile.displayName",
+    "profile.contact",
+    "responsibleActorFilter",
+    "grants",
+    "directorySearch",
+    "roleFilter"
   ],
-  "cliFrameCount": 49,
+  "cliFrameCount": 63,
   "readInputs": {
     "case.get": [
       "target"
@@ -413,7 +445,9 @@
       "text",
       "order",
       "assignment",
-      "due"
+      "due",
+      "view",
+      "responsibleActor"
     ],
     "case.history": [
       "target",
@@ -429,7 +463,9 @@
     ],
     "authority.list": [
       "limit",
-      "cursor"
+      "cursor",
+      "text",
+      "role"
     ],
     "authority.grants": [
       "actorId",
@@ -449,7 +485,9 @@
       "text",
       "order",
       "assignment",
-      "due"
+      "due",
+      "view",
+      "responsibleActor"
     ],
     "operation.status": [
       "operationId"
@@ -462,6 +500,7 @@
     "reminder.list": [
       "target",
       "state",
+      "view",
       "due",
       "assignment",
       "text",
@@ -481,6 +520,23 @@
     "reminder.get": [
       "target",
       "reminderId"
+    ],
+    "case.views": [],
+    "reminder.views": [],
+    "case.timeline": [
+      "target",
+      "filter",
+      "cursor",
+      "limit"
+    ],
+    "authority.requests": [
+      "limit",
+      "cursor"
+    ],
+    "authority.requests.dismiss": [
+      "kind",
+      "issuer",
+      "subject"
     ]
   },
   "caseLifecycles": [
@@ -504,6 +560,7 @@
   ],
   "verificationFindings": [
     "LINK",
+    "OPERATION_EFFECT_GROUP",
     "ENTRY_HASH",
     "COMMITMENT",
     "PAYLOAD_FORMAT",
@@ -530,7 +587,8 @@
     "CASE_CLAIMED_CURRENCY_PROJECTION",
     "CASE_PAYABLE_AMOUNT_PROJECTION",
     "CASE_PAYABLE_CURRENCY_PROJECTION",
-    "CASE_WORK_PROJECTION"
+    "CASE_WORK_PROJECTION",
+    "AUTHORITY_PROFILE_PROJECTION"
   ],
   "renderedVocabularies": [
     "status",
@@ -557,7 +615,19 @@
     "workAct",
     "reminderAct",
     "reminderState",
-    "reminderDue"
+    "reminderDue",
+    "headline",
+    "attention",
+    "caseView",
+    "reminderView",
+    "timelineFilter",
+    "timelineKind",
+    "actorAvailability",
+    "caseStage",
+    "requesterState",
+    "accountState",
+    "boolean",
+    "view"
   ],
   "goldens": [
     "wire-request-examples.json",
@@ -583,7 +653,12 @@
     "reminderDueDate": "2026-11-10",
     "reminderId": "10000000-0000-4000-8000-000000000007",
     "expectedWorkRevision": "0",
-    "expectedReminderRevision": "1"
+    "expectedReminderRevision": "1",
+    "profile.displayName": "Authored",
+    "profile.contact": "Contact",
+    "principal.kind": "HUMAN",
+    "principal.issuer": "https://issuer.example/",
+    "principal.subject": "waiting"
   },
   "caseAssignments": [
     "MINE",

@@ -1,8 +1,10 @@
 import { showExactLookup } from "./workspace-navigation";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import { isResponse } from "../src/protocol/client";
 import { openCase } from "./case-workflow";
-import { openAuthenticated, expectAccessible } from "./session-helpers";
+import { openAuthenticated, authenticateSteward, expectAccessible } from "./session-helpers";
 import {
   seedPresentation,
   selectLanguage,
@@ -10,6 +12,12 @@ import {
   expectKeyboardContained,
   ui,
 } from "./localization-support";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>>;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
 
 test("stewardship review preserves exact reason through pseudolocale, Arabic RTL and narrow keyboard interaction", async ({
   page,
@@ -25,37 +33,77 @@ test("stewardship review preserves exact reason through pseudolocale, Arabic RTL
   try {
     const steward = await context.newPage();
     await seedPresentation(steward, "en-XA", "ar-EG");
-    await openAuthenticated(steward, "⟦Cààsëës⟧", "narrow-authenticated-state.json");
+    await openAuthenticated(steward, "⟦Cààsëës⟧", stewardCookies);
     const lookup = await showExactLookup(steward);
     await lookup.fill(reference);
     await lookup.press("Enter");
+    await steward.locator("details.case-actions > summary").click();
     await steward.getByRole("button", { name: /Vööïïd/u }).click();
     const reason = "Exact 1.0000 العربية";
-    await steward.locator('input[name="act.reason"]').fill(reason);
-    const preview = steward.locator(".operation-editor button[type=submit]");
+    await steward.locator('[name="act.reason"]').fill(reason);
+    const preview = steward.getByRole("dialog").locator("button[type=submit]");
+    const previewed = steward.waitForResponse(
+      (response) => new URL(response.url()).pathname === "/api/operation.preview",
+    );
     await preview.click();
+    const response = await previewed;
+    const reviewed: unknown = await response.json();
+    if (!isResponse("operation.preview", reviewed) || reviewed.outcome.kind !== "REVIEWED") {
+      throw new Error("Expected the real reviewed stewardship draft.");
+    }
+    const authored: unknown = JSON.parse(response.request().postData() ?? "null");
+    expect(authored).toMatchObject({ act: { kind: "VOID", reason } });
+    if (
+      typeof authored !== "object" ||
+      authored === null ||
+      !("operationId" in authored) ||
+      typeof authored.operationId !== "string"
+    ) {
+      throw new Error("Missing frozen stewardship identity.");
+    }
+    const { operationId } = authored;
     const dialog = steward.getByRole("dialog");
     await expect(dialog).toContainText(reason);
     await expect(dialog.getByRole("heading", { name: /Vööïïd/u })).toBeVisible();
     await steward.setViewportSize({ width: 320, height: 720 });
     await noHorizontalOverflow(steward, "narrow");
     await expectKeyboardContained(steward, dialog);
-    const original = await dialog.elementHandle();
+    const requests: string[] = [];
+    steward.on("request", (request) => {
+      if (new URL(request.url()).pathname === "/api/operation.execute") {
+        requests.push(request.postData() ?? "");
+      }
+    });
     for (const language of ["ar", "lv", "en"] as const) {
       await selectLanguage(steward, language);
-      expect(await dialog.evaluate((element, previous) => element === previous, original)).toBe(
-        true,
-      );
-      await expect(dialog).toHaveAccessibleName(ui(language, "label.reviewTitle"));
+      await expect(dialog).toBeVisible();
+      await expect(dialog).toHaveAccessibleName(ui(language, "act.VOID.label"));
+      await expect(dialog.locator("button[data-confirm-operation]")).toBeEnabled();
+      await expect(dialog.locator(".review-request")).toContainText(operationId);
       await expect(dialog).toContainText(reason);
       await noHorizontalOverflow(steward, "narrow");
     }
-    await expect(dialog).toContainText("Before: Active");
-    await expect(dialog).toContainText("After: Voided as a data-entry error");
+    const lifecycle = dialog
+      .locator(".review-values > div")
+      .filter({ has: steward.getByText("Lifecycle", { exact: true }) });
+    await expect(
+      lifecycle.locator(".review-before").getByText("Active", { exact: true }),
+    ).toBeVisible();
+    await expect(
+      lifecycle.locator(".review-after").getByText("Voided", { exact: true }),
+    ).toBeVisible();
+    expect(requests).toEqual([]);
     await expectAccessible(steward);
     await steward.keyboard.press("Escape");
-    await expect(dialog).toHaveCount(0);
+    const guard = steward.getByRole("dialog");
+    await expect(guard).toContainText("Discard this draft and leave the editor?");
+    await guard.getByRole("button", { name: "Keep editing", exact: true }).click();
+    await expect(dialog).toContainText(reason);
+    await expect(dialog.locator(".review-request")).toContainText(operationId);
+    await dialog.getByRole("button", { name: "Return to editing", exact: true }).click();
     await expect(preview).toBeFocused();
+    await expect(steward.locator('[name="act.reason"]')).toHaveValue(reason);
+    expect(requests).toEqual([]);
   } finally {
     await context.close();
   }

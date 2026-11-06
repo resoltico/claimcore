@@ -227,7 +227,9 @@ let internal exactTotals fixture =
         let! context = Service.context owner () token
 
         match context with
-        | Outcome.Succeeded value ->
+        | Outcome.Succeeded {
+                                Requester = RequesterState.Active value
+                            } ->
             Expect.isTrue value.HasScopedCases "Scoped read visibility remains independent"
         | _ -> failtest "Expected context"
 
@@ -313,12 +315,17 @@ let internal assignmentExcludesForbiddenRoles fixture =
         let! registered =
             Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 100) service AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 100)
+                        service
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         let actorId =
             match (accepted registered).Subject with
-            | ReceiptSubject.Authority value -> value.TargetActorId
+            | ReceiptSubject.Authority value -> AuthorityTargetDisclosure.actorId value.TargetActor
             | _ -> failtest "Expected authority receipt"
 
         for number, scope in

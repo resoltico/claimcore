@@ -11,10 +11,11 @@ open ClaimCore.Application.VerificationChecks
 type internal VerifiedPayload =
     | NonAcceptance of OperationId
     | Case of CaseCommand * CaseSnapshot option
-    | Authority of AuthorityRequestRecord
+    | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
     | Reminder of ReminderRequestRecord * ReminderEffects
     | Erased
+    | ErasedProfile
 
 /// Record-format interpretation deliberately excludes current admission and capability policy.
 module internal VerificationPayload =
@@ -84,7 +85,10 @@ module internal VerificationPayload =
                     (Some entry.Sequence)
                     VerificationFinding.PayloadFormat
                     (request.OperationId = OperationId.value entry.OperationId
-                     && AuthorityAct.kind request.Act = kind
+                     && AuthorityEffect.kind request.Effect = kind
+                     && (match entry.Subject with
+                         | EntryTarget.Authority(target, _) -> request.TargetActorId = target
+                         | _ -> false)
                      && Array.isEmpty payload.Snapshot)
 
             return VerifiedPayload.Authority request
@@ -128,6 +132,8 @@ module internal VerificationPayload =
         match entry.Payload, entry.PayloadNonce, entry.Subject with
         | None, None, (EntryTarget.Case _ | EntryTarget.Work _ | EntryTarget.Reminder _) ->
             Ok VerifiedPayload.Erased
+        | None, None, EntryTarget.Authority(_, AuthorityKind.SetProfile) ->
+            Ok VerifiedPayload.ErasedProfile
         | Some bytes, Some nonce, _ ->
             result {
                 let! commitment =

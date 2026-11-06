@@ -301,6 +301,7 @@ let private scopedAdvice () =
                 (DecisionFixtures.services installation DecisionFixtures.calendar human)
                 (AuthorityView.ofActor (Some authority))
                 (Inputs.workView record.Snapshot.State)
+                (Inputs.stageDisplay record.Snapshot.State)
                 record
             |> accepted
 
@@ -386,6 +387,7 @@ let private noUsableCorrectionOffer () =
             (DecisionFixtures.services installation DecisionFixtures.calendar human)
             (AuthorityView.ofActor (Some authority))
             (Inputs.workView record.Snapshot.State)
+            (Inputs.stageDisplay record.Snapshot.State)
             record
         |> accepted
 
@@ -469,3 +471,56 @@ let tests =
                 "advice omits an unusable correction whose every choice is KEEP"
                 noUsableCorrectionOffer
         ]
+
+[<Tests>]
+let denialDisclosure =
+    testCase
+        "readable denied acts name the capability while other targets remain unavailable"
+        (fun () ->
+            let _, _, stored, _ =
+                ClaimCore.Tests.DecisionFixtures.created 892 "DENIAL-DISCLOSURE"
+
+            let input: UnvalidatedCaseRequest =
+                {
+                    OperationId = Guid.Parse "70000000-0000-4000-8000-000000000893"
+                    CaseReference = "DENIAL-DISCLOSURE"
+                    ExpectedRevision = 1L
+                    Act = CaseAct.Void "Recorded in error"
+                }
+
+            let command = CaseFixtures.command input
+
+            let readable =
+                ClaimCore.Tests.DecisionFixtures.actor
+                    ClaimCore.Tests.DecisionFixtures.owner
+                    (CaseFixtures.actorId (Guid.Parse "70000000-0000-4000-8000-000000000894"))
+                    [ Role.CaseReader ]
+                    []
+
+            let permission view target =
+                CaseExecution.permission ClaimCore.Tests.DecisionFixtures.owner view command target
+
+            Expect.equal
+                (permission readable (Some stored))
+                (Error(Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward)))
+                "A caller who can read the case gets its missing act capability"
+
+            let unreadable = { readable with Installation = [] }
+
+            let disabled =
+                { readable with
+                    Actor =
+                        readable.Actor |> Option.map (fun actor -> { actor with Enabled = false })
+                }
+
+            for actual in
+                [
+                    permission unreadable (Some stored)
+                    permission disabled (Some stored)
+                    permission AuthorityView.empty (Some stored)
+                    permission readable None
+                ] do
+                Expect.equal
+                    actual
+                    (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
+                    "No existence, account status or required capability is disclosed")

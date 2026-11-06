@@ -21,11 +21,16 @@ module Discovery =
             }
 
 
+    let private entries =
+        Catalog.document.Entries
+        |> List.filter (fun entry ->
+            List.contains (OperationCatalog.operation entry) CommandGrammar.operations)
+
     let private selected =
         function
-        | CliDescription.Summary -> Some Catalog.document.Entries
+        | CliDescription.Summary -> Some entries
         | CliDescription.Operation words ->
-            Catalog.document.Entries
+            entries
             |> List.tryFind (fun entry ->
                 CommandGrammar.words (OperationCatalog.operation entry) = words)
             |> Option.map List.singleton
@@ -69,41 +74,90 @@ module Discovery =
                                + "]"
                            | _ -> ""
 
-                       let guidance =
-                           match input.Name with
-                           | InteractionInput.Target(InputTarget.Field field) ->
-                               ScalarGuidance.forField field
-                           | (InteractionInput.Target InputTarget.Reason) ->
-                               Some ScalarGuidance.forReason
-                           | (InteractionInput.Target InputTarget.Text) ->
-                               Some ScalarGuidance.forSearchText
-                           | _ -> None
+                       let guidance = ScalarGuidance.forInput input.Name
 
-                       let hint =
-                           guidance
-                           |> Option.map (fun guidance ->
-                               let args =
-                                   guidance.Arguments
-                                   |> Map.map (fun _ value ->
-                                       match value with
-                                       | GuidanceArgument.Count count ->
-                                           count.ToString(
-                                               System.Globalization.CultureInfo
-                                                   .InvariantCulture
-                                           )
-                                       | GuidanceArgument.Code code -> code)
-
-                               " " + MessageCatalogs.render language guidance.Key args)
-                           |> Option.defaultValue ""
+                       let arguments =
+                           guidance.Arguments
+                           |> Map.map (fun _ value ->
+                               match value with
+                               | GuidanceArgument.Count count ->
+                                   count.ToString(
+                                       System.Globalization.CultureInfo.InvariantCulture
+                                   )
+                               | GuidanceArgument.Code code -> code)
 
                        message input.Binding.LabelId
                        + ": "
-                       + (input.Binding.MeaningId |> Option.map message |> Option.defaultValue "")
-                       + allowed
-                       + hint))
+                       + MessageCatalogs.render language guidance.Key arguments
+                       + allowed))
+                @ (CommandGrammar.collections operation
+                   |> List.map (fun definition ->
+                       let binding = definition.Binding
+
+                       message binding.LabelId
+                       + ": "
+                       + (let guidance = ScalarGuidance.forInput definition.Name
+
+                          let arguments =
+                              guidance.Arguments
+                              |> Map.map (fun _ value ->
+                                  match value with
+                                  | GuidanceArgument.Count count -> string count
+                                  | GuidanceArgument.Code code -> code)
+
+                          MessageCatalogs.render language guidance.Key arguments)
+                       + " ["
+                       + CommandGrammar.collectionFlag definition
+                       + " "
+                       + CommandGrammar.collectionPlaceholder definition
+                       + "; "
+                       + string binding.MinimumItems
+                       + "–"
+                       + string binding.MaximumItems
+                       + "]"))
                 |> String.concat "\n")
             |> String.concat "\n\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n"))
+
+    let commandHelp language (words: string list) =
+        let matches =
+            CommandGrammar.operations
+            |> List.filter (fun operation ->
+                List.truncate words.Length (CommandGrammar.words operation) = words)
+
+        match
+            matches
+            |> List.tryFind (fun operation -> CommandGrammar.words operation = words)
+        with
+        | Some operation ->
+            describeText language (CliDescription.Operation words)
+            |> Option.map (fun bytes ->
+                let globals =
+                    CommandGrammar.globalOptions operation
+                    |> List.map (fun (flag, value) ->
+                        flag + (if value = "" then "" else " " + value))
+                    |> fun options ->
+                        options
+                        @ (if operation.SelectedAct.IsSome then
+                               [ "--operation-id UUID" ]
+                           else
+                               [])
+
+                Encoding.UTF8.GetString bytes
+                + "\n"
+                + MessageCatalogs.renderCli language CliMessage.GlobalOptions
+                + "\n  "
+                + String.concat "\n  " globals
+                + "\n")
+        | None when matches.IsEmpty -> None
+        | None ->
+            matches
+            |> List.map (fun operation ->
+                String.concat " " (CommandGrammar.words operation)
+                + " — "
+                + MessageCatalogs.render language (OperationCatalog.labelId operation) Map.empty)
+            |> String.concat "\n"
+            |> fun text -> Some(text + "\n")
 
     let schema =
         function

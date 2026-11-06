@@ -20,7 +20,12 @@ let private unavailable () =
 let private inputs () =
     [
         ClaimCore.TestSupport.Inputs.caseOperation (opening 470 "BOUNDARY")
-        OperationInput.Authority(authorityRequest (id 471) other AuthorityAct.Register)
+        OperationInput.Authority(
+            authorityRequest
+                (id 471)
+                other
+                (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+        )
     ]
 
 let private malformed () =
@@ -44,7 +49,12 @@ let private malformed () =
                 ClaimCore.TestSupport.Inputs.caseOperation (
                     actRequest 471 "BOUNDARY" 1L (AuthoredCaseAct.Void Unchecked.defaultof<string>)
                 )
-                OperationInput.Authority(authorityRequest Guid.Empty other AuthorityAct.Register)
+                OperationInput.Authority(
+                    authorityRequest
+                        Guid.Empty
+                        other
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                )
             ]
 
         for input in invalid do
@@ -54,19 +64,21 @@ let private malformed () =
             let! preview =
                 (Service.preview core (input) (CancellationToken.None)) |> Async.AwaitTask
 
-            Expect.isTrue
-                (match execute.Outcome with
-                 | ExecuteResult.Rejected _ -> true
-                 | _ -> false)
-                "Invalid execution refused"
+            Expect.equal
+                execute.Outcome
+                (ExecuteResult.Failed CoreFault.StoreUnavailable)
+                "D2 requires current caller state before any Application business refusal"
 
-            Expect.isTrue
-                (match preview.Outcome with
-                 | Outcome.Rejected _ -> true
-                 | _ -> false)
-                "Invalid preview refused"
+            Expect.equal
+                preview.Outcome
+                (Outcome.Failed CoreFault.StoreUnavailable)
+                "Preview cannot reveal business validation without its requester snapshot"
 
-        Expect.equal probe.Calls 0 "Admission performs no port work"
+        Expect.equal
+            probe.Calls
+            6
+            "Every malformed execute and preview consults exactly one snapshot"
+
     }
 
 let private failures () =
@@ -176,6 +188,8 @@ let private committed () =
 
             let probe =
                 { new IStore with
+                    member _.Context query = inner.Context query
+
                     member _.Read
                         ({
                              ReadOperation.Work = work
@@ -239,7 +253,7 @@ let tests =
         "Core port boundaries"
         [
             testCaseAsync
-                "malformed business stewardship and authority input perform no port work"
+                "business input refusals require current requester snapshots"
                 (malformed ())
             testCaseAsync "write failures preserve identity and dispatch uncertainty" (failures ())
             testCaseAsync
@@ -249,3 +263,47 @@ let tests =
                 "completed acceptance survives cancellation before delivery"
                 (committed ())
         ]
+
+[<Tests>]
+let oneRound =
+    testCase "case snapshot admission enriches syntax failures in the application path" (fun () ->
+        let request: CaseOperationRequest =
+            {
+                OperationId = id 479
+                Target = CaseSelector.Reference "BAD REF"
+                ExpectedRevision = 0L
+                Act =
+                    CaseAct.Open(
+                        ClaimCore.TestSupport.Inputs.registrationFrom
+                            [
+                                BusinessField.IncidentDate, "2026-09-08"
+                                BusinessField.IncidentNotificationDate, "2026-09-06"
+                                BusinessField.IncidentCountry, "latvia"
+                                BusinessField.ClaimantName, " Padded "
+                                BusinessField.ClaimedCurrency, "eur"
+                            ]
+                    )
+            }
+
+        let prepared =
+            CaseExecution.prepare request |> Result.defaultWith (string >> failtest)
+
+        let snapshot = (locked worker None None).Read
+
+        let actual =
+            CaseExecution.complete (services installation calendar owner) prepared snapshot
+
+        match actual with
+        | Error(Refusal.InvalidInput issues) ->
+            Expect.equal
+                (InputIssues.toList issues |> List.map _.Violation)
+                [
+                    Violation.ReferenceFormat
+                    Violation.FutureDate
+                    Violation.ChronologicalOrder
+                    Violation.CountryFormat
+                    Violation.SurroundingWhitespace
+                    Violation.CurrencyFormat
+                ]
+                "The service clock and partially parsed values participate in the first refusal"
+        | result -> failtestf "Expected one refusal with every issue, got %A" result)

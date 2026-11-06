@@ -89,6 +89,7 @@ type ReminderOperationRequest =
 
 type ReminderListRequest =
     {
+        View: ReminderView option
         Target: CaseSelector option
         State: ReminderState option
         Due: ReminderDue option
@@ -96,7 +97,7 @@ type ReminderListRequest =
         Text: string option
         AfterCursor: string option
         Limit: int
-        IncludeInactive: bool
+        IncludeInactive: bool option
     }
 
 type WorkOverviewRequest = { Mine: bool }
@@ -113,4 +114,13 @@ type ReminderGetRequest =
     {
         Target: CaseSelector
         ReminderId: Guid
+    }
+
+/// Current profile names only; cursor and predicate bind the same admitted filter.
+type ActorListRequest =
+    {
+        Role: Role option
+        AfterCursor: string option
+        Limit: int
+        Text: string option
     }

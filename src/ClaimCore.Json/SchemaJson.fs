@@ -5,6 +5,7 @@ module SchemaJson =
         function
         | Schema.Ref name -> [ name ]
         | Schema.Vocabulary(_, schema) -> references schema
+        | Schema.EnumPartition(schema, _, _, _, _) -> references schema
         | Schema.Object(properties, _) -> properties |> List.collect (snd >> references)
         | Schema.Array(items, _, _) -> references items
         | Schema.OneOf(variants, discriminator) ->
@@ -32,12 +33,13 @@ module SchemaJson =
     let private optional key encode =
         Option.map (fun value -> key, encode value) >> Option.toList
 
-    let private stringFields pattern format minimum maximum =
+    let private stringFields pattern format minimum maximum maximumUtf8Bytes =
         [ "type", text "string" ]
         @ optional "pattern" text pattern
         @ optional "format" text format
         @ optional "minLength" number minimum
         @ optional "maxLength" number maximum
+        @ optional Schema.MaximumUtf8BytesKeyword number maximumUtf8Bytes
 
     let private discriminator prefix (property, mapping) =
         JsonValue.Object
@@ -66,6 +68,49 @@ module SchemaJson =
 
     let rec value prefix =
         function
+        | Schema.EnumPartition(shape, values, selected, rejected, key) ->
+            let contains item minimum maximum =
+                JsonValue.Object(
+                    [ "contains", item; "minContains", number minimum ]
+                    @ (maximum
+                       |> Option.map (fun maximum -> "maxContains", number maximum)
+                       |> Option.toList)
+                )
+
+            let properties fields =
+                JsonValue.Object [ "properties", JsonValue.Object fields ]
+
+            let rules =
+                values
+                |> List.map (fun token ->
+                    let selectedValue = JsonValue.Object [ "const", text token ]
+
+                    let rejectedValue =
+                        JsonValue.Object
+                            [
+                                "required", JsonValue.Array [ text key ]
+                                "properties", JsonValue.Object [ key, selectedValue ]
+                            ]
+
+                    JsonValue.Object
+                        [
+                            "oneOf",
+                            JsonValue.Array
+                                [
+                                    properties
+                                        [
+                                            selected, contains selectedValue 1 None
+                                            rejected, contains rejectedValue 0 (Some 0)
+                                        ]
+                                    properties
+                                        [
+                                            selected, contains selectedValue 0 (Some 0)
+                                            rejected, contains rejectedValue 1 (Some 1)
+                                        ]
+                                ]
+                        ])
+
+            JsonValue.Object [ "allOf", JsonValue.Array(value prefix shape :: rules) ]
         | Schema.Object(properties, optional) ->
             JsonValue.Object
                 [
@@ -90,8 +135,8 @@ module SchemaJson =
                     "minItems", number minimum
                     "maxItems", number maximum
                 ]
-        | Schema.String(pattern, format, minimum, maximum) ->
-            JsonValue.Object(stringFields pattern format minimum maximum)
+        | Schema.String(pattern, format, minimum, maximum, maximumUtf8Bytes) ->
+            JsonValue.Object(stringFields pattern format minimum maximum maximumUtf8Bytes)
         | Schema.Integer(minimum, maximum) ->
             JsonValue.Object
                 [

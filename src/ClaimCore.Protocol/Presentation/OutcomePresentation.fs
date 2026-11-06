@@ -43,11 +43,11 @@ module OutcomePresentation =
             FaultAdvice.action
             outcome
 
-    let classifyPreview (reply: PreviewReply) =
+    let classifyPreview (reply: PresentedPreviewReply) =
         match reply.Outcome with
-        | Outcome.Succeeded(Previewed.Reviewed _) ->
+        | Outcome.Succeeded(PresentedPreviewed.Reviewed _) ->
             classification ReplyKind.Reviewed ExitCode.Success
-        | Outcome.Succeeded(Previewed.AlreadyAccepted _) ->
+        | Outcome.Succeeded(PresentedPreviewed.AlreadyAccepted _) ->
             classification ReplyKind.AlreadyAccepted ExitCode.Success
         | outcome -> classify outcome
 

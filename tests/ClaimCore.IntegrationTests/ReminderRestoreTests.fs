@@ -146,7 +146,7 @@ let private assertOther database expected =
 
             Expect.equal
                 (view.Work.Summary |> Option.map HandlingSummary.format,
-                 view.Work.Responsible |> Option.map _.Account.ActorId)
+                 view.Work.Responsible |> Option.map _.ActorId)
                 (Some "Restorable handling summary", Some(CaseFixtures.actorId (id 1)))
                 "Identical current context and inherited responsibility remain"
         | other -> failtestf "The unrelated readable case was affected: %A" other
@@ -305,7 +305,7 @@ let private assertErased (database: PostgresFixture.Database) =
         let! counts =
             DatabaseSession.rows
                 connection
-                "SELECT count(*) FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1) AND (payload IS NOT NULL OR payload_nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
+                "SELECT count(*) FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1) AND (payload IS NOT NULL OR payload_nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
                 [| box (CaseId.value parent) |]
                 token
 
@@ -470,7 +470,7 @@ let private mixedPayload database =
             [
                 restorePayload
                 "UPDATE claimcore.cases c SET (case_reference,revision,state,snapshot,status,progress,changed_at,search_text,work_search_text,notified_on,responsible_actor,follow_up,claimed_amount,claimed_currency,payable_amount,payable_currency)=(b.case_reference,b.revision,b.state,b.snapshot,b.status,b.progress,b.changed_at,b.search_text,b.work_search_text,b.notified_on,b.responsible_actor,b.follow_up,b.claimed_amount,b.claimed_currency,b.payable_amount,b.payable_currency) FROM restore_cases b WHERE c.case_id=b.case_id"
-                "UPDATE claimcore.case_work w SET (revision,snapshot,responsible_actor,handling_summary,search_text,changed_at,recorded_by)=(b.revision,b.snapshot,b.responsible_actor,b.handling_summary,b.search_text,b.changed_at,b.recorded_by) FROM restore_work b WHERE w.case_id=b.case_id"
+                "UPDATE claimcore.case_work w SET (revision,snapshot,responsible_actor,handling_summary,search_text,changed_at,recorded_by,summary_changed_at,summary_recorded_by)=(b.revision,b.snapshot,b.responsible_actor,b.handling_summary,b.search_text,b.changed_at,b.recorded_by,b.summary_changed_at,b.summary_recorded_by) FROM restore_work b WHERE w.case_id=b.case_id"
                 "UPDATE claimcore.reminders r SET (revision,snapshot,state,action,due,search_text,changed_at,recorded_by)=(b.revision,b.snapshot,b.state,b.action,b.due,b.search_text,b.changed_at,b.recorded_by) FROM restore_reminders b WHERE r.reminder_id=b.reminder_id"
             ] do
             let! _ = DatabaseSession.execute connection statement [||] token

@@ -1,15 +1,15 @@
+import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
-import { fireEvent, render, screen, waitFor } from "../support/presentation-test-support";
+import { render, screen, waitFor } from "../support/presentation-test-support";
 import { preferenceKey } from "../../src/presentation/preferences";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { BusinessValue } from "../../src/components/BusinessValue";
 import { CopyValue } from "../../src/components/CopyValue";
 import { definition, fields, response, context, unavailable } from "../support/service-ui.fixtures";
-import { historyVariants } from "../support/contract-corpus.fixtures";
 const languages = ["en", "lv", "ar", "en-XA"] as const;
 const values = [
   {
@@ -42,41 +42,37 @@ const preferences = (language: (typeof languages)[number]) => {
   localStorage.setItem(
     preferenceKey,
     JSON.stringify({
-      version: 2,
+      version: 3,
       language,
       displayLocale: "lv-LV",
-      theme: "SYSTEM" as const,
+      mode: "system" as const,
+      accent: "green" as const,
     }),
   );
 };
-const historyReply = (value: string) => {
-  const { full } = historyVariants();
-  const entries = [
-    {
-      kind: "FULL" as const,
-      receipt: {
-        ...full.receipt,
-        subject: {
-          ...full.receipt.subject,
-          snapshot: {
-            kind: "DISCLOSED",
-            view: {
-              kind: "ACTIVE",
-              fields: {
-                ...fields,
-                caseReference: value,
-              },
-            },
+const historyReply = (value: string) => ({
+  ...timelinePage(
+    [
+      timelineEntry({
+        changes: {
+          kind: "DISCLOSED",
+          overview: {
+            event: { kind: "CASE_OPENED", messageId: "timeline.event.caseOpened" },
+            highlights: [],
           },
+          items: [
+            {
+              kind: "CASE_FIELD",
+              change: { field: "caseReference", before: null, after: { kind: "REFERENCE", value } },
+            },
+          ],
         },
-      },
-    },
-  ];
-  return {
-    nextCursor: "next",
-    entries,
-  };
-};
+      }),
+    ],
+    "next",
+  ),
+  caseReference: value,
+});
 const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/context")) {
     return response("context", "SUCCEEDED", context);
@@ -86,7 +82,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
       offers: context.offers,
       items: [
         caseSummaryInput({
-          state: { kind: "ACTIVE", status: "OPENED" },
+          state: { kind: "ACTIVE" },
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: value,
           revision: 1,
@@ -95,9 +91,9 @@ const readReply = (url: string, value: string, missing: boolean) => {
       nextCursor: null,
     });
   }
-  if (url.endsWith("/case.history")) {
+  if (url.endsWith("/case.timeline")) {
     return response(
-      "case.history",
+      "case.timeline",
       missing ? "REJECTED" : "SUCCEEDED",
       missing ? unavailable : historyReply(value),
     );
@@ -140,33 +136,24 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     />,
   );
   assertSafe(view.container.querySelector(".section-heading")!, value, points);
-  if (!missing) {
-    await waitFor(() => {
-      expect(view.container.querySelector("select")).not.toBeNull();
-    });
-    fireEvent.change(view.container.querySelector("select")!, {
-      target: {
-        value: "FULL",
-      },
-    });
-  }
+
   await waitFor(() => {
-    expect(view.container.querySelectorAll('.history-list > p[role="status"]')).toHaveLength(0);
+    expect(view.container.querySelectorAll('.case-timeline > p[role="status"]')).toHaveLength(0);
     const directStatus = view.container.querySelectorAll(".case-header-state .badge");
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
       expect(view.container.querySelector(".case-fields")).toBeNull();
     } else {
-      expect(view.container.querySelector(".history-list li")).not.toBeNull();
+      expect(view.container.querySelector(".case-timeline li")).not.toBeNull();
     }
   });
   if (missing) {
-    expect(view.container.querySelector(".case-fields, .history-list li")).toBeNull();
+    expect(view.container.querySelector(".case-fields, .case-timeline li")).toBeNull();
     expect(view.container).not.toHaveTextContent(fields.registration.claimantName);
     expect(view.container.querySelector("#acts-title")).toBeNull();
   } else {
-    assertSafe(view.container.querySelector(".case-fields")!, value, points);
-    assertSafe(view.container.querySelector(".history-list li")!, value, points);
+    assertSafe(view.container.querySelector("[data-record-details]")!, value, points);
+    assertSafe(view.container.querySelector(".case-timeline li")!, value, points);
   }
   view.unmount();
 };
@@ -184,7 +171,7 @@ it.each(languages)(
         "fetch",
         vi.fn((url: string) => Promise.resolve(readReply(url, value, false))),
       );
-      const list = render(<CaseList onSelect={vi.fn()} onOpen={vi.fn()} />);
+      const list = render(<CaseList onSelect={vi.fn()} />);
       await waitFor(() => {
         expect(list.container.querySelector(".worklist-row")).not.toBeNull();
       });

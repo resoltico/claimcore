@@ -1,124 +1,78 @@
 namespace ClaimCore.Cli
 
+open System.Globalization
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
+open ClaimCore.Protocol.Presentation
 
 module internal CaseListRows =
     [<NoEquality; NoComparison>]
-    type private Column =
+    type private CsvColumn =
         {
             Key: string
-            Label: string
-            Value: CaseSummary -> string option
+            Value: WorkDateBasis -> CaseSummary -> string option
         }
 
-    let private live (get: CaseSummaryFacts -> string) (row: CaseSummary) =
-        CaseState.fields row.State |> Option.map get
+    let private column key read =
+        {
+            Key = key
+            Value = fun _ row -> read row
+        }
 
-    let private optional (get: CaseSummaryFacts -> string option) (row: CaseSummary) =
-        CaseState.fields row.State |> Option.bind get
-
-    let private field name = FieldPresentation.labelId name
+    let private listedValue field (row: CaseSummary) =
+        CaseState.fields row.State
+        |> Option.bind (fun facts -> Map.tryFind field facts.Fields |> Option.flatten)
+        |> Option.map CaseFieldValue.format
 
     let private columns =
         [
+            column "caseReference" (fun row -> Some(CaseReference.format row.Reference))
+            column "revision" (fun row -> Some(Revision.format row.Revision))
+            column "state.kind" (fun row -> Some(CaseState.token row.State))
+            column "headline" (fun row -> Some(CaseHeadline.token row.Headline))
+            column "attention" (fun row ->
+                Some(row.Attention |> List.map CaseAttention.token |> String.concat ";"))
+            for field in CaseFields.declarations |> List.filter _.Listed do
+                column ("state.fields." + field.Key) (listedValue field.Field)
+            column "responsible.actorId" (fun row ->
+                row.Responsible |> Option.map (fun actor -> ActorId.format actor.ActorId))
+            column "responsible.displayName.value" (fun row ->
+                row.Responsible
+                |> Option.bind (fun actor ->
+                    match actor.DisplayName with
+                    | DisplayName.Named value -> Some(PartyName.format value)
+                    | DisplayName.Erased -> None))
+            column "responsible.displayName.kind" (fun row ->
+                row.Responsible
+                |> Option.map (fun actor ->
+                    match actor.DisplayName with
+                    | DisplayName.Named _ -> "NAMED"
+                    | DisplayName.Erased -> "ERASED"))
+            column "responsible.availability" (fun row ->
+                row.Responsible
+                |> Option.map (fun actor -> ActorAvailability.token actor.Availability))
+            column "nextAction.reminderId" (fun row ->
+                row.NextAction |> Option.map (fun next -> ReminderId.format next.ReminderId))
+            column "nextAction.action" (fun row ->
+                row.NextAction |> Option.map (fun next -> ReminderAction.format next.Action))
+            column "nextAction.due" (fun row ->
+                row.NextAction |> Option.map (fun next -> CalendarDate.format next.Due))
+            column "nextAction.dueState" (fun row ->
+                row.NextAction |> Option.map (fun next -> CaseDue.token next.DueState))
+            column "pendingReminders" (fun row ->
+                Some(row.PendingReminders.ToString(CultureInfo.InvariantCulture)))
+            column "changedAt" (fun row -> Some(TextReplyFormat.instant row.ChangedAt))
             {
-                Key = "caseReference"
-                Label = field BusinessField.CaseReference
-                Value = fun row -> Some(CaseReference.format row.Reference)
-            }
-            {
-                Key = "revision"
-                Label = CliMessages.key CliMessage.RevisionLabel
-                Value = fun row -> Some(Revision.format row.Revision)
-            }
-            {
-                Key = "state.kind"
-                Label = CliMessages.key CliMessage.StateLabel
-                Value = fun row -> Some(CaseState.token row.State)
-            }
-            {
-                Key = "state.status"
-                Label = field BusinessField.Status
-                Value = live (fun facts -> CaseStatus.token facts.Status)
-            }
-            {
-                Key = "state.claimantName"
-                Label = field BusinessField.ClaimantName
-                Value = live (fun facts -> PartyName.format facts.ClaimantName)
-            }
-            {
-                Key = "state.insurerName"
-                Label = field BusinessField.InsurerName
-                Value = live (fun facts -> PartyName.format facts.InsurerName)
-            }
-            {
-                Key = "state.claimed.amount"
-                Label = field BusinessField.ClaimedAmount
-                Value = live (fun facts -> Money.format facts.Claimed)
-            }
-            {
-                Key = "state.claimed.currency"
-                Label = field BusinessField.ClaimedCurrency
-                Value = live (fun facts -> Money.currency facts.Claimed)
-            }
-            {
-                Key = "state.payable.amount"
-                Label = field BusinessField.PayableAmount
-                Value = optional (fun facts -> facts.Payable |> Option.map Money.format)
-            }
-            {
-                Key = "state.payable.currency"
-                Label = field BusinessField.PayableCurrency
-                Value = optional (fun facts -> facts.Payable |> Option.map Money.currency)
-            }
-            {
-                Key = "state.progress"
-                Label = "input.progress.label"
-                Value = live (fun facts -> CaseProgress.token facts.Progress)
-            }
-            {
-                Key = "state.incidentNotificationDate"
-                Label = field BusinessField.IncidentNotificationDate
-                Value = live (fun facts -> CalendarDate.format facts.IncidentNotificationDate)
-            }
-            {
-                Key = "state.work.responsible.account.actorId"
-                Label = field BusinessField.ResponsibleActor
+                Key = "basis.businessDate"
                 Value =
-                    optional (fun facts ->
-                        facts.Work.Responsible
-                        |> Option.map (fun account -> ActorId.format account.Account.ActorId))
+                    fun basis _ ->
+                        Some(CalendarDate.ofDate basis.BusinessDate |> CalendarDate.format)
             }
             {
-                Key = "state.work.followUpDate"
-                Label = "label.nextFollowUp"
-                Value =
-                    optional (fun facts -> facts.Work.FollowUp |> Option.map CalendarDate.format)
-            }
-            {
-                Key = "state.work.due"
-                Label = "input.due.label"
-                Value = live (fun facts -> CaseDue.token facts.Work.Due)
-            }
-            {
-                Key = "state.work.basis.businessDate"
-                Label = CliMessages.key CliMessage.WorkBusinessDateLabel
-                Value =
-                    live (fun facts ->
-                        CalendarDate.format (CalendarDate.ofDate facts.Work.Basis.BusinessDate))
-            }
-            {
-                Key = "state.work.basis.timeZone"
-                Label = CliMessages.key CliMessage.WorkTimeZoneLabel
-                Value = live (fun facts -> facts.Work.Basis.TimeZoneId)
-            }
-            {
-                Key = "changedAt"
-                Label = "label.changedAt"
-                Value = fun row -> Some(TextReplyFormat.instant row.ChangedAt)
+                Key = "basis.timeZone"
+                Value = fun basis _ -> Some basis.TimeZoneId
             }
         ]
 
@@ -128,35 +82,22 @@ module internal CaseListRows =
 
     let csvHeader = columns |> List.map _.Key |> csv
 
-    let csvRows rows =
+    let csvRows basis rows =
         rows
         |> List.map (fun row ->
             columns
-            |> List.map (fun column -> column.Value row |> Option.defaultValue "")
+            |> List.map (fun column -> column.Value basis row |> Option.defaultValue "")
             |> csv)
         |> Array.concat
 
-    let textHeader language =
-        columns
-        |> List.map (fun column -> TextReplyFormat.label language column.Label)
-        |> String.concat "  "
+    let textHeaderWith options language =
+        TextTable.header language options Descriptor.caseSummaryColumns
 
-    let textRows language (rows: CaseSummary list) =
-        rows
-        |> List.map (fun row ->
-            columns
-            |> List.map (fun column ->
-                match column.Key, row.State with
-                | "state.kind", _ ->
-                    TextReplyFormat.term
-                        language
-                        Lifecycle.vocabulary
-                        (CaseState.lifecycle row.State)
-                | "state.status", (CaseState.Active facts | CaseState.Voided facts) ->
-                    TextReplyFormat.term language CaseStatus.vocabulary facts.Status
-                | "state.work.due", (CaseState.Active facts | CaseState.Voided facts) ->
-                    TextReplyFormat.term language CaseDue.vocabulary facts.Work.Due
-                | "state.progress", (CaseState.Active facts | CaseState.Voided facts) ->
-                    TextReplyFormat.term language CaseProgress.vocabulary facts.Progress
-                | _ -> TextReplyFormat.displayed language (column.Value row))
-            |> String.concat "  ")
+    let textRowsWith options language rows =
+        TextTable.rows language options Descriptor.caseSummaryColumns rows
+
+    let textHeader language =
+        textHeaderWith (TextTable.environment ()) language
+
+    let textRows language rows =
+        textRowsWith (TextTable.environment ()) language rows

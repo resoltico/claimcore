@@ -1,8 +1,12 @@
+import { showCaseActionMenu, caseActionButton } from "./case-workflow";
+import { freshLoginWorkflowTimeout } from "./admission-window";
 import { showExactLookup } from "./workspace-navigation";
 import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
   openAuthenticated,
+  authenticateSteward,
+  logout,
   browserRequest,
   sessionToken,
   expectAccessible,
@@ -13,6 +17,20 @@ import {
   type NarrowRole,
   type RoleFixture,
 } from "./narrow-role-fixture";
+import { isResponse } from "../src/protocol/client";
+
+let stewardCookies: Awaited<ReturnType<typeof authenticateSteward>> | undefined;
+test.beforeAll(async ({ browser, baseURL }) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  stewardCookies = await authenticateSteward(browser, baseURL);
+});
+
+const openNarrowSession = (page: Page, heading: string): Promise<void> => {
+  if (stewardCookies === undefined) {
+    throw new Error("E2E_NARROW_SPEC_SESSION_NOT_INITIALIZED");
+  }
+  return openAuthenticated(page, heading, stewardCookies);
+};
 
 const findCase = async (page: Page, reference: string) => {
   await (await showExactLookup(page)).fill(reference);
@@ -34,21 +52,35 @@ const expectContextAccess = async (page: Page) => {
 };
 
 const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scoped: boolean) => {
-  await expect(page.getByRole("button", { name: "Open a case", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await findCase(page, fixture.reference);
-  await expect(page.getByRole("region", { name: "Current case", exact: true })).toBeVisible();
-  await expect(page.locator(".history-list li")).toHaveCount(1);
-  const history = page.locator(".history-list");
+  await expect(page.locator(".case-header-state")).toBeVisible();
+  await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(1);
+  const history = page.locator(".case-timeline");
   await expect(history.locator("details")).toHaveCount(1);
   await history.locator("details > summary").click();
-  await expect(history.locator(".case-fields, .field-row")).toHaveCount(0);
-  await expect(history).not.toContainText("Synthetic claimant");
-  await expect(history).not.toContainText("Synthetic insurer");
-  await expect(page.getByRole("button", { name: /^Close the case:/u })).toHaveCount(
-    role === "CASE_HANDLER" ? 1 : 0,
-  );
+  if (role === "CASE_HANDLER") {
+    await expect(history.locator(".timeline-change").first()).toBeVisible();
+    await expect(history).toContainText("Synthetic claimant");
+    await expect(history).toContainText("Synthetic insurer");
+  } else {
+    await expect(history.locator(".timeline-change")).toHaveCount(0);
+    await expect(history).not.toContainText("Synthetic claimant");
+    await expect(history).not.toContainText("Synthetic insurer");
+  }
+  await showCaseActionMenu(page);
+  if (role === "CASE_HANDLER") {
+    await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
+  } else {
+    await expect(
+      page
+        .getByRole("button")
+        .and(page.locator('button[data-act="CLOSE"]'))
+        .filter({ visible: true }),
+    ).toHaveCount(0);
+  }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
-    await expect(page.locator('select option[value="FULL"]')).toHaveCount(0);
+    await expect(history.locator(".timeline-change")).toHaveCount(0);
     await refusedRead(page, "case.history", async () => {
       await browserRequest(page, "/api/case.history", {
         method: "POST",
@@ -63,12 +95,14 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
         }),
       });
     });
-    await expect(page.locator(".history-list li")).toHaveCount(1);
+    await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(1);
   }
   if (scoped) {
     await page.getByRole("button", { name: "Back to cases", exact: true }).click();
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
-    await expect(page.getByRole("region", { name: "Current case", exact: true })).toHaveCount(0);
+    await expect(
+      page.locator(".case-header-state, .case-fields, .case-work, .case-timeline-panel"),
+    ).toHaveCount(0);
   }
 };
 
@@ -117,19 +151,49 @@ for (const [name, role, scoped] of cases) {
     await test.step("Apply scoped role", () => setup ?? Promise.resolve());
     const narrow = await context.newPage();
     await test.step("Open narrow actor session", () =>
-      openAuthenticated(
-        narrow,
-        role === null ? "Recovery" : "Cases",
-        "narrow-authenticated-state.json",
-      ));
+      openNarrowSession(narrow, role === null ? "You don’t have access yet" : "Cases"));
     await test.step("Check enabled actor context", () => expectContextAccess(narrow));
     if (role === "CASE_READER" || role === "CASE_HANDLER" || role === "DATA_STEWARD") {
       await test.step("Read current case and enforce history scope", () =>
         readCase(narrow, fixture, role, scoped));
     } else {
       await noCaseWorkspace(narrow);
+      await expect(narrow.locator(".case-fields, .case-work, .case-timeline-panel")).toHaveCount(0);
       await opaqueCaseRefusal(narrow, fixture.reference);
     }
     await test.step("Check narrow view accessibility", () => expectAccessible(narrow));
   });
 }
+
+test("a fresh steward session does not restore a revoked ticket", async ({
+  page,
+  browser,
+  baseURL,
+}) => {
+  test.setTimeout(freshLoginWorkflowTimeout);
+  const revoked = await authenticateSteward(browser, baseURL);
+  const context = page.context();
+  await openAuthenticated(page, "Cases", revoked);
+  await logout(page);
+  const expectAuthenticated = async (expected: boolean) => {
+    const reply = await browserRequest(page, "/api/session");
+    expect(reply.status).toBe(200);
+    if (!isResponse("session", reply.payload) || reply.payload.outcome.kind !== "SUCCEEDED") {
+      throw new Error("E2E_STEWARD_SESSION_RESPONSE_INVALID");
+    }
+    expect(reply.payload.outcome.data.authenticated).toBe(expected);
+  };
+  await context.addCookies(revoked);
+  await page.goto("/", { waitUntil: "commit" });
+  await expect(page.locator(".login-card h1")).toBeVisible();
+  await expectAuthenticated(false);
+
+  const fresh = await authenticateSteward(browser, baseURL);
+  await openAuthenticated(page, "Cases", fresh);
+  await expectAuthenticated(true);
+
+  await context.addCookies(revoked);
+  await page.goto("/", { waitUntil: "commit" });
+  await expect(page.locator(".login-card h1")).toBeVisible();
+  await expectAuthenticated(false);
+});

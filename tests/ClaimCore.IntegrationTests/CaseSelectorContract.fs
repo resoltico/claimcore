@@ -108,9 +108,9 @@ let identities (fixture: Fixture) =
                     })
                 token
 
-        Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted receipt)
+        expectReceipt
+            (replayReceipt replay)
+            receipt
             "Resolved identity makes reference and ID retries equivalent"
 
         let query: HistoryRequest =
@@ -334,7 +334,12 @@ let grantScopes (fixture: Fixture) =
         let! registered =
             Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 631) reader AuthorityAct.Register))
+                (OperationInput.Authority(
+                    authorityRequest
+                        (id 631)
+                        reader
+                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                ))
                 token
 
         acceptedAuthority registered
@@ -378,15 +383,15 @@ let grantScopes (fixture: Fixture) =
                     })
                 token
 
-        Expect.equal
-            replay.Outcome
-            (ExecuteResult.AlreadyAccepted acceptedGrant)
+        expectReceipt
+            (replayReceipt replay)
+            acceptedGrant
             "Reference and ID grants share canonical accepted identity"
 
         let! stored =
             fixture.Store.Read
                 {
-                    Work = (fun tx -> tx.FindEntry(CaseFixtures.operationId (id 632)))
+                    Work = (fun tx -> tx.FindOperation(CaseFixtures.operationId (id 632)))
                     CancellationToken = token
                 }
 
@@ -396,7 +401,7 @@ let grantScopes (fixture: Fixture) =
             | _ -> failtest "The real accepted authority record must exist"
 
         let payload =
-            LedgerEntries.payload entry
+            LedgerEntries.payload entry.Root
             |> Result.defaultWith (fun _ -> failtest "Salted payload positive control")
 
         let permanent =
@@ -404,8 +409,8 @@ let grantScopes (fixture: Fixture) =
             |> Result.defaultWith (fun _ -> failtest "Permanent scope positive control")
 
         Expect.equal
-            permanent.Act
-            (AuthorityAct.Grant
+            permanent.Effect
+            (ClaimCore.RecordFormat.AuthorityEffect.Grant
                 {
                     Role = Role.CaseReader
                     Scope = ClaimCore.RecordFormat.RecordedGrantScope.Case(expectedId, reference)

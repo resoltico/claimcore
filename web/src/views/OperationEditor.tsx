@@ -1,8 +1,10 @@
-import { useCompact } from "../hooks/useCompact";
-import { CaseFieldsView } from "../components/CaseFieldsView";
+import { CaseFacts } from "./case/CaseFacts";
+import { CaseHeadline } from "../components/CaseHeadline";
+import { CaseProgress } from "./case/CaseProgress";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
 import { useCallback, useEffect, useEffectEvent, useLayoutEffect, useRef } from "react";
 import { useOperationNavigation } from "../hooks/useOperationNavigation";
+import { useRequesterContext } from "../hooks/useRequesterContext";
 import { useCredential } from "../session/SessionContext";
 import { usePresentation } from "../presentation/context";
 import { useOperation } from "../hooks/operation/useOperation";
@@ -48,41 +50,9 @@ const useCaseOperation = (props: OperationEditorProps) => {
   }, [model.receipt, commit]);
   return { model, navigation, commit };
 };
-const CurrentFacts = ({
-  model,
-  current,
-  definition,
-  disclosureAvailable = true,
-}: OperationEditorProps & { model: ReturnType<typeof useOperation> }) => {
-  const p = usePresentation();
-  const compact = useCompact();
-  if (
-    !disclosureAvailable ||
-    current === null ||
-    !model.disclosureCurrent ||
-    model.disclosureRefused ||
-    model.contextChanged ||
-    model.priorUncertain
-  ) {
-    return null;
-  }
-  return (
-    <aside className="editor-current">
-      <details open={!compact}>
-        <summary>{p.text("ui.currentCase")}</summary>
-        <CaseFieldsView
-          values={current.state.fields}
-          revision={current.revision}
-          fields={definition.catalog.fields}
-          context={p.text("ui.currentCase")}
-        />
-      </details>
-    </aside>
-  );
-};
 export const OperationEditor = (props: OperationEditorProps) => {
-  const p = usePresentation();
   const { model, navigation, commit } = useCaseOperation(props);
+  const requester = useRequesterContext();
   if (props.disclosureAvailable !== false && model.receipt?.subject.kind === "CASE") {
     return (
       <AcceptedOperation
@@ -94,24 +64,33 @@ export const OperationEditor = (props: OperationEditorProps) => {
     );
   }
   const current = model.currentCase;
-  const offered = current?.advice.acts ?? (props.current === null ? [props.initialAct] : []);
+  const offered =
+    current?.advice.acts ??
+    (props.current === null &&
+    props.initialAct === "OPEN" &&
+    requester?.offers.some((offer) => offer.kind === "OPEN") === true
+      ? ["OPEN"]
+      : []);
   return (
-    <section aria-labelledby="operation-title" className="operation-editor">
-      <h1 id="operation-title">{p.actLabel(model.entry.kind)}</h1>
-      <p>{p.actMeaning(model.entry.kind)}</p>
-      <div className="editor-layout">
-        <div>
-          <OperationDiscard model={model} onClose={navigation.close} />
-          <OperationPanel
-            model={model}
-            current={current}
-            offered={offered}
-            disclosureAvailable={props.disclosureAvailable !== false}
-            onClose={navigation.close}
-          />
-        </div>
-        <CurrentFacts {...props} current={current} model={model} />
-      </div>
-    </section>
+    <>
+      {current === null || props.disclosureAvailable === false ? null : (
+        <section className="case-detail">
+          <h1>
+            <bdi>{current.caseReference}</bdi>
+          </h1>
+          <CaseHeadline value={current.headline} />
+          <CaseProgress value={current.stages} />
+          <CaseFacts values={current.state.fields} fields={props.definition.catalog.fields} />
+        </section>
+      )}
+      <OperationDiscard model={model} onClose={navigation.close} />
+      <OperationPanel
+        model={model}
+        current={current}
+        offered={offered}
+        disclosureAvailable={props.disclosureAvailable !== false}
+        onClose={navigation.close}
+      />
+    </>
   );
 };

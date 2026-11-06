@@ -21,7 +21,8 @@ module internal NonAcceptance =
             |> Result.bind (fun _ ->
                 let metadata =
                     {
-                        LedgerMetadata.InstallationId = installation
+                        LedgerMetadata.Effects = entry.Effects
+                        InstallationId = installation
                         Sequence = entry.Sequence
                         PreviousHash = EntryHash.toBytes control.PreviousHash
                         OperationId = entry.OperationId
@@ -43,7 +44,7 @@ module internal NonAcceptance =
         | Some control, Some projectedAt -> validateNode installation key control projectedAt
         | _ -> Error CoreFault.StoreIntegrityError
 
-    let read installation (tx: IReadTx) key (accepted: StoredEntry option) =
+    let read installation (tx: IReadTx) key (accepted: StoredOperation option) =
         task {
             let! evidence = tx.NonAcceptance key
 

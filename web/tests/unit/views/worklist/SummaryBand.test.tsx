@@ -72,3 +72,14 @@ it("keeps its own loading state until its request completes", async () => {
     expect(screen.queryByRole("status")).toBeNull();
   });
 });
+
+it("forwards the core responsibility descriptor filter unchanged to the actual summary request", async () => {
+  const responsibleActor = "10000000-0000-4000-8000-000000000001";
+  vi.stubGlobal("fetch", vi.fn().mockResolvedValue(response("case.summary", "SUCCEEDED", summary)));
+  render(<SummaryBand filter={{ view: "ALL", responsibleActor }} />);
+  await screen.findByText("Matching cases: 2");
+  expect(fetch).toHaveBeenCalledWith(
+    "/api/case.summary",
+    expect.objectContaining({ body: JSON.stringify({ view: "ALL", responsibleActor }) }),
+  );
+});

@@ -94,6 +94,9 @@ test("rejects absent routes and malformed published Web service admission before
     "SESSION_REJECTED",
   );
   await login(page);
+  // The raw fixture probe must not compete with the app's bounded bootstrap reads.
+  await expect(page.locator('.worklist[aria-busy="false"]')).toBeVisible();
+  await expect(page.locator('.summary-band[aria-busy="true"]')).toHaveCount(0);
   const token = await sessionToken(page);
   expectHostFailure(
     await browserRequest(page, "/api/case.list", {

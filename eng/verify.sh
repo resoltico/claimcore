@@ -56,6 +56,13 @@ for stage in "${stages[@]}"; do
   esac
 done
 
+refuse_diagnostic_acceptance() {
+  if [[ "${CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE-}" == diagnostic || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_SPEC+x}" || -n "${CLAIMCORE_ACCEPTANCE_BROWSER_CASE+x}" ]]; then
+    echo "Diagnostic browser selection is not an acceptance gate. Use the focused native filter 'FullyQualifiedName~published browser diagnostic' with current built inputs and eng/expecto.acceptance.runsettings." >&2
+    return 64
+  fi
+}
+
 validate_browser_selection() {
   if [[ -n "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
     case "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE}" in
@@ -92,8 +99,9 @@ validate_postgres_selection() {
 # Refuse invalid expensive-stage inputs before restoring, installing browsers or building.
 for stage in "${stages[@]}"; do
   case "${stage}" in
+    workflows) python3 eng/check-verification-sequencing.py ;;
     browsers) validate_browser_selection ;;
-    acceptance) validate_browser_selection; validate_postgres_selection ;;
+    acceptance) refuse_diagnostic_acceptance; validate_browser_selection; validate_postgres_selection ;;
     integration | postgres | growth) validate_postgres_selection ;;
     *) : ;;
   esac
@@ -267,9 +275,13 @@ acceptance() {
   build_native
   build_frontend
   # One native case sequences every selected engine and stops before starting a later engine after a failure.
-  local project
+  local project acceptance_timeout=60m
+  if [[ -z "${CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE+x}" ]]; then
+    # The default local invocation includes all three bounded engine runs and native cases.
+    acceptance_timeout=150m
+  fi
   for project in "${acceptance_projects[@]}"; do
-    tests "${project}" Release 40m eng/expecto.acceptance.runsettings
+    tests "${project}" Release "${acceptance_timeout}" eng/expecto.acceptance.runsettings
   done
 }
 

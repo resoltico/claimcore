@@ -29,7 +29,7 @@ existing database, configuration directory or volume.
 
 ```sh
 claimcore_config="$HOME/claimcore-first-run-config"
-bash deployment/configure-local.sh "$claimcore_config" Etc/UTC 7443 7444
+bash deployment/configure-local.sh "$claimcore_config" "Evaluation owner" Etc/UTC 7443 7444
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml up --build -d
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
@@ -44,6 +44,8 @@ Initialization refuses unsupported schemas unchanged. Keep the database and key 
 [session policy](operating.md#access-review-and-sessions).
 
 ## Trust the evaluation certificate
+
+### Firefox
 
 Configuration creates `$claimcore_config/browser-profile` and imports only this installation's public
 CA when `certutil` is available. Check its isolated SSL trust:
@@ -83,10 +85,30 @@ claimcore_firefox="$(cd web && node --input-type=module -e 'import { firefox } f
 "$claimcore_firefox" --no-remote --profile "$claimcore_config/browser-profile" https://localhost:7443/
 ```
 
+### Chrome or Chromium
+
+In a browser with the modern [Chrome Certificate Manager](https://github.com/chromium/chromium/blob/main/net/data/ssl/chrome_root_store/faq.md#whats-the-chrome-certificate-manager),
+open `chrome://certificate-manager`, select **Local certificates**, then **Installed by you**.
+Under **Trusted Certificates**, choose **Import** and select this installation's
+`$claimcore_config/ca.pem`. Import the public CA certificate, not `ca.key` or `server.pfx`.
+
+Open both `https://localhost:7443/` and `https://identity.localhost:7444/realms/claimcore`
+using the ports chosen above. Both must load without a certificate warning. Keep certificate and hostname
+checks enabled; do not use certificate-error bypass flags. If browser policy prevents importing the CA,
+use the isolated Firefox profile above or obtain administrator-managed trust.
+
+This manual path changes browser trust, unlike the isolated Firefox profile created by setup.
+When it is no longer needed, remove only this installation's CA from the same **Trusted Certificates**
+list. Use its SHA-256 fingerprint to distinguish roots with the same name:
+
+```sh
+openssl x509 -in "$claimcore_config/ca.pem" -noout -fingerprint -sha256
+```
+
 ## Sign in and grant case rights
 
-Open Access at `https://localhost:7443/authority` in that Firefox profile and sign in as `owner`. Read its generated
-password locally from `owner-login.password` in the configuration directory. Keep credentials out of
+Open People & access at `https://localhost:7443/people` in the trusted browser chosen above and sign in as
+`owner`. Read its generated password locally from `owner-login.password` in the configuration directory. Keep credentials out of
 commands, logs and public reports. The identity provider is
 `https://identity.localhost:7444/realms/claimcore` for these example ports.
 
@@ -113,11 +135,11 @@ Choose **Open a case** and enter synthetic values. Use dates no later than the c
 | Claimed amount | 100.00 |
 | Currency | EUR |
 
-Incident description is optional; use it for a short account of what happened. Review the canonical
-proposal and confirm. Expect a success notice naming revision 1 and a case page showing the registration
-facts. Return to Cases and search for `START-0001`; its row shows the claimant, claimed amount,
-Undecided progress, Unassigned work and last-change time. The Open and undecided view
-includes it. My cases includes it only after responsibility is explicitly assigned to your account.
+Incident description is optional; use it for a short account of what happened. Review the proposed
+facts and choose **Open case**. Expect **Case opened** and the case workspace. Return to Cases and
+search for `START-0001`; its row shows the claimant, claimed amount, headline and work attention.
+**Needs attention** includes the new case. **Mine** includes it only after responsibility is explicitly
+assigned to your account.
 
 ## Plan the next action
 
@@ -137,6 +159,24 @@ interrupted submission.
 
 ## Optional CLI setup
 
+The published `claimcore` executable is a framework-dependent .NET apphost. If your SDK/runtime is
+installed under `~/.dotnet`, expose that installation before publishing and running the CLI:
+
+```sh
+export DOTNET_ROOT="$HOME/.dotnet"
+export PATH="$DOTNET_ROOT:$PATH"
+"$DOTNET_ROOT/dotnet" --list-runtimes
+```
+
+Use your actual installation root if it differs; it contains `dotnet`, `host/fxr` and `shared`.
+`DOTNET_ROOT` controls the published apphost's runtime lookup, not SDK selection; keep using the SDK
+pin in [`global.json`](../global.json). Architecture-specific settings such as `DOTNET_ROOT_ARM64` or
+`DOTNET_ROOT_X64` take precedence, so they must identify the matching runtime installation if set.
+See [Microsoft's .NET environment-variable reference](https://learn.microsoft.com/en-us/dotnet/core/tools/dotnet-environment-variables#dotnet_root-dotnet_rootx86-dotnet_root_x86-dotnet_root_x64).
+
+If the published executable says “You must install .NET” while `dotnet` works, check these roots and
+compare the available runtimes with `claimcore.runtimeconfig.json` in the publish directory.
+
 Keep the complete publish directory together. In a terminal using the same checkout and configuration
 paths, publish the CLI with the pinned SDK and select the ready public profile generated by setup:
 
@@ -152,8 +192,9 @@ claimcore case list --text START-0001
 ```
 
 Use the generated public CA, not its private key or a client secret. CLI PKCE opens the system browser;
-if it opens outside the trusted profile, copy the complete authorization URL into trusted Firefox and
-finish login there. The one-use 127.0.0.1 callback uses HTTP; service and issuer traffic stays HTTPS.
+if that browser does not trust the evaluation CA, copy the complete authorization URL into the trusted
+browser chosen above and finish login there. The one-use 127.0.0.1 callback uses HTTP; service and issuer
+traffic stays HTTPS.
 Tokens remain process-local. Mutation recovery identities stay in the isolated state directory selected
 above. Keep authorization URLs out of logs. Use `claimcore shell` for multiple
 commands with one sign-in; type `case list --text START-0001`, then `exit`. The shell keeps history and

@@ -46,7 +46,7 @@ module internal RegisterMaintenanceStore =
             (fun connection transaction ->
                 task {
                     let! _ = Transactions.configure connection Transactions.timeouts token
-                    let! position, observed, _ = Transactions.head connection token
+                    let! position, observed = Transactions.head connection token
                     let! _ = Baseline.require connection token
                     let! current = read connection token
 

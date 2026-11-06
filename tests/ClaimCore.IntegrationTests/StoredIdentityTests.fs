@@ -15,7 +15,7 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private corrupt (path: string * string) (value: LedgerRow) =
+let private corrupt (path: string list) (value: LedgerRow) =
     let bytes =
         value.Entry.Payload
         |> Option.defaultWith (fun () -> failtest "An authority payload is retained")
@@ -25,8 +25,11 @@ let private corrupt (path: string * string) (value: LedgerRow) =
         |> Result.defaultWith (fun _ -> failtest "The initial frame is valid")
 
     let root = JsonNode.Parse(frame.Request) |> nonNull
-    let owner, memberName = path
-    let target = root[owner] |> nonNull
+    let owners, memberName = path |> List.take (path.Length - 1), List.last path
+
+    let target =
+        owners |> List.fold (fun (node: JsonNode) name -> node[name] |> nonNull) root
+
     target[memberName] <- JsonValue.Create "UNDECLARED"
 
     let request =
@@ -40,7 +43,7 @@ let private corrupt (path: string * string) (value: LedgerRow) =
     | Error problem ->
         Expect.equal
             problem.Field
-            ("$." + owner + "." + memberName)
+            ("$." + String.concat "." path)
             "The storage decoder owns the enum failure"
     | Ok _ -> failtest "An undeclared stored enum must not escape record decoding"
 
@@ -64,17 +67,36 @@ let private qualify path (database: PostgresFixture.Database) =
 
         let receipt = accepted executed
 
+        let observedOperation =
+            if path = [ "act"; "principal"; "kind" ] then
+                id 1
+            else
+                operationId
+
         let! before =
-            ClaimCore.TestSupport.StoreFixtures.observe actor { OperationId = operationId } token
+            ClaimCore.TestSupport.StoreFixtures.observe
+                actor
+                { OperationId = observedOperation }
+                token
 
         match before with
         | Outcome.Succeeded _ -> ()
         | _ -> failtest "The exact receipt is readable before its stored enum is damaged"
 
-        do! rewrite database receipt.Position.Sequence (corrupt path)
+        let sequence =
+            if path = [ "act"; "principal"; "kind" ] then
+                // The first provisioning effect owns identity; the following profile effect does not.
+                CaseFixtures.sequence 1L
+            else
+                receipt.Position.Sequence
+
+        do! rewrite database sequence (corrupt path)
 
         let! after =
-            ClaimCore.TestSupport.StoreFixtures.observe actor { OperationId = operationId } token
+            ClaimCore.TestSupport.StoreFixtures.observe
+                actor
+                { OperationId = observedOperation }
+                token
 
         Expect.equal
             after
@@ -89,8 +111,8 @@ let tests =
         [
             testCaseAsync
                 "a damaged stored principal kind is an integrity fault"
-                (run (qualify ("target", "kind")))
+                (run (qualify [ "act"; "principal"; "kind" ]))
             testCaseAsync
                 "a damaged stored role is an integrity fault"
-                (run (qualify ("act", "role")))
+                (run (qualify [ "act"; "role" ]))
         ]

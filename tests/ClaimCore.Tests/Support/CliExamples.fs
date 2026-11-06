@@ -20,6 +20,9 @@ let private fieldSamples =
         // single-word default; arguments explicitly authored by a test remain untouched.
         let sample = if value.Contains(' ') then "Synthetic" else value
         "--" + CommandGrammar.kebab (BusinessField.key field), sample)
+    |> fun fields ->
+        fields
+        @ [ "--name", "Authored"; "--contact", "Contact"; "--role", "CASE_READER" ]
     |> Map.ofList
 
 /// Fill only omitted business inputs. Grammar still owns branch selection and required syntax.

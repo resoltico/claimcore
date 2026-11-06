@@ -36,7 +36,51 @@ module internal Advice =
             else
                 None)
 
-    let caseRecord (services: ServiceContext) actor (work: CaseWorkView) (record: StoredCase) =
+    let private blockedActs principal actor (record: StoredCase) accepted acts =
+        let resource = Scope.Case record.CaseId
+
+        CaseActKind.all
+        |> List.filter (fun kind -> not (List.contains kind acts))
+        |> List.map (fun kind ->
+            let reason =
+                match
+                    CaseExecution.permissionFor principal actor (CaseAct.probe kind) (Some record)
+                with
+                | Error refusal -> refusal
+                | Ok() ->
+                    match Case.actRefusal kind accepted with
+                    | Some refusal -> Refusal.Case refusal
+                    | None when kind = CaseActKind.Correct ->
+                        let required =
+                            Authority.correctionGroups
+                            |> List.tryPick (fun (group, capability) ->
+                                if
+                                    Case.correctionActions accepted group
+                                    <> [ CorrectionGroupAction.Keep ]
+                                    && not (can principal actor capability resource)
+                                then
+                                    Some capability
+                                else
+                                    None)
+                            |> Option.defaultWith (fun () ->
+                                invalidOp
+                                    "An unavailable correction requires a missing editable-group capability.")
+
+                        Refusal.Access(AccessRefusal.NotAuthorized required)
+                    | None -> invalidOp "An unavailable act requires a core reason."
+
+            {
+                CaseActRefusal.Act = kind
+                Reason = reason
+            })
+
+    let caseRecord
+        (services: ServiceContext)
+        actor
+        (work: CaseWorkView)
+        stages
+        (record: StoredCase)
+        =
         let installationId = services.InstallationId
         let principal = services.Principal
 
@@ -60,7 +104,18 @@ module internal Advice =
                 |> List.filter (fun kind -> kind <> CaseActKind.Correct || correction.IsSome)
 
             let advice =
-                CaseAdvice.create acts correction (history principal actor resource)
+                CaseAdvice.create
+                    acts
+                    correction
+                    (history principal actor resource)
+                    (blockedActs principal actor record accepted acts)
+                |> Result.bind (
+                    CaseAdvice.withRecommendation (
+                        ClaimCore.Domain.CaseAdvice.recommended
+                            (CaseWorkReads.facts record work).State
+                            acts
+                    )
+                )
                 |> Result.defaultWith invalidOp
 
             {
@@ -81,10 +136,14 @@ module internal Advice =
                         CanCreateReminder = active && opened && permitted
                     }
                 Snapshot = record.Snapshot
+                Stages = stages
+                Headline = CaseHeadline.ofState (CaseWorkReads.facts record work).State
+                Attention =
+                    CaseAttention.at work.Basis.BusinessDate (CaseWorkReads.facts record work)
                 Advice = advice
                 Mine =
                     match actor.Actor, work.Responsible with
-                    | Some requester, Some assigned -> assigned.Account.ActorId = requester.ActorId
+                    | Some requester, Some assigned -> assigned.ActorId = requester.ActorId
                     | _ -> false
             })
 

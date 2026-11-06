@@ -2,6 +2,7 @@ namespace ClaimCore.Cli
 
 open System
 open System.Globalization
+open System.Numerics
 open System.Text
 open ClaimCore.Protocol
 open ClaimCore.Domain
@@ -9,8 +10,23 @@ open ClaimCore.Json
 
 module internal TextReplyFormat =
 
+    // The CLI has language selection, not a separate display-locale preference.
+    // Explicit regional cultures keep numeric conventions independent of neutral-culture OS defaults.
+    let displayCulture language =
+        let locale =
+            match language with
+            | "en" -> "en-GB"
+            | "lv" -> "lv-LV"
+            | "ar" -> "ar-AE"
+            | _ -> invalidArg (nameof language) "A supported CLI language is required."
+
+        CultureInfo.GetCultureInfo locale
+
     let label language key =
         MessageCatalogs.render language key Map.empty
+
+    let actorName language actor =
+        ActorPresentation.displayName (MessageCatalogs.render language) actor
 
     let term language vocabulary value =
         label language (Vocabulary.messageKey vocabulary value "label")
@@ -22,6 +38,46 @@ module internal TextReplyFormat =
 
     let number (value: int64) =
         value.ToString(CultureInfo.InvariantCulture)
+
+    let private exactMoney (language: string) canonical code scale =
+        let parts = (canonical: string).Split '.'
+        let culture = displayCulture language
+
+        let whole =
+            BigInteger.Parse(parts[0], CultureInfo.InvariantCulture).ToString("N0", culture)
+
+        let fraction = if parts.Length = 1 then "" else parts[1]
+        let padded = fraction.PadRight(scale, '0')
+
+        whole
+        + (if padded = "" then
+               ""
+           else
+               culture.NumberFormat.NumberDecimalSeparator + padded)
+        + " "
+        + code
+
+    let moneyWithScale language value scale =
+        exactMoney language (Money.format value) (Money.currency value) scale
+
+    let money language value =
+        moneyWithScale language value (Money.displayScale value)
+
+    let moneyTotalWithScale language currency total scale =
+        exactMoney language (DecimalTotal.format total) (Currency.format currency) scale
+
+    let moneyTotal language currency total =
+        moneyTotalWithScale language currency total (DecimalTotal.displayScale currency total)
+
+    let date (language: string) value =
+        (CalendarDate.value value).ToString("d MMM yyyy", displayCulture language)
+
+    let country (language: string) code =
+        try
+            let name = RegionInfo(language + "-" + code).NativeName
+            if name = code then code else name + " (" + code + ")"
+        with :? ArgumentException ->
+            code
 
     let boolean value = if value then "true" else "false"
 

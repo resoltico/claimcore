@@ -12,6 +12,7 @@
     <Compile Include="ClientValidation.fs" />
     <Compile Include="TypeScript.fs" />
     <Compile Include="Terms.fs" />
+    <Compile Include="MessageRegisters.fs" />
     <Compile Include="CatalogValidation.fs" />
     <Compile Include="MessageGeneration.fs" />
     <Compile Include="CliDocumentation.fs" />
@@ -21,6 +22,7 @@
     <Compile Include="Program.fs" />
     <EmbeddedResource Include="../../web/locales/*.json" LogicalName="ClaimCore.Localization.%(Filename).browser%(Extension)" />
     <EmbeddedResource Include="../../src/ClaimCore.Cli/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
-    <EmbeddedResource Include="../../src/ClaimCore.Protocol/Messages/Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../src/ClaimCore.Protocol/Messages/Localization/*.json" Exclude="../../src/ClaimCore.Protocol/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../../src/ClaimCore.Protocol/Messages/Localization/glossary.json" LogicalName="ClaimCore.Glossary.json" />
   </ItemGroup>
 </Project>

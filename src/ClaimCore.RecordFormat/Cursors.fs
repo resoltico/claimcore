@@ -31,7 +31,19 @@ module CaseListPosition =
 
 type GrantPosition = { Role: Role; CaseId: CaseId option }
 
+type TimelinePosition =
+    {
+        BeforeSequence: Sequence
+        Range: ChangeRange option
+    }
+
 /// Plain positions convey no authority. Every selection authorizes before decoding.
+type AccessRequestPosition =
+    {
+        LastSeen: DateTimeOffset
+        Principal: PrincipalKey
+    }
+
 module Cursors =
     [<Literal>]
     let MaximumTokenCharacters = 512
@@ -138,6 +150,14 @@ module Cursors =
                 filter.Assignment
                 |> Option.map (DurableNames.caseAssignment >> JsonValue.String)
                 |> Option.defaultValue JsonValue.Null
+                "responsibleActor",
+                filter.ResponsibleActor
+                |> Option.map (ActorId.format >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
+                "view",
+                filter.View
+                |> Option.map (DurableNames.caseView >> JsonValue.String)
+                |> Option.defaultValue JsonValue.Null
             ]
 
     let private instant (value: string) =
@@ -199,7 +219,7 @@ module Cursors =
                 DurableNames.After, after
                 "filters", caseFilters filter
                 DurableNames.Kind, JsonValue.String "CASES"
-                DurableNames.V, JsonValue.Integer 5L
+                DurableNames.V, JsonValue.Integer 6L
             ]
 
     let private casePosition order =
@@ -244,7 +264,7 @@ module Cursors =
             | JsonValue.Object [ DurableNames.After, after
                                  "filters", filters
                                  DurableNames.Kind, JsonValue.String "CASES"
-                                 DurableNames.V, JsonValue.Integer 5L ] when
+                                 DurableNames.V, JsonValue.Integer 6L ] when
                 CanonicalWriter.bytes filters = CanonicalWriter.bytes (caseFilters filter)
                 ->
                 casePosition filter.Order after
@@ -303,23 +323,103 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeActors installation (after: ActorId) =
+    let encodeAccessRequests installation (after: AccessRequestPosition) =
+        if after.LastSeen.Ticks % 10L <> 0L then
+            invalidArg (nameof after) "Access-request positions require database instant precision."
+
+        let kind, issuer, subject = PrincipalKey.parts after.Principal
+
         encode
             installation
             [
-                DurableNames.After, JsonValue.String(ActorId.format after)
-                DurableNames.Kind, JsonValue.String "ACTORS"
-                DurableNames.V, JsonValue.Integer 2L
+                "kind", JsonValue.String "ACCESS_REQUESTS"
+                "v", JsonValue.Integer 1L
+                "lastSeen",
+                JsonValue.String(
+                    after.LastSeen.ToUniversalTime().ToString("O", CultureInfo.InvariantCulture)
+                )
+                "principalKind", JsonValue.String(DurableNames.principalKind kind)
+                "issuer", JsonValue.String issuer
+                "subject", JsonValue.String subject
             ]
 
-    let decodeActors installation token =
+    let decodeAccessRequests maximum installation token =
         decode
             installation
-            MaximumTokenCharacters
+            maximum
             (function
-            | JsonValue.Object [ DurableNames.After, JsonValue.String after
-                                 DurableNames.Kind, JsonValue.String "ACTORS"
-                                 DurableNames.V, JsonValue.Integer 2L ] -> uuid ActorId.create after
+            | JsonValue.Object [ "issuer", JsonValue.String issuer
+                                 "kind", JsonValue.String "ACCESS_REQUESTS"
+                                 "lastSeen", JsonValue.String seen
+                                 "principalKind", JsonValue.String kind
+                                 "subject", JsonValue.String subject
+                                 "v", JsonValue.Integer 1L ] ->
+                match
+                    DateTimeOffset.TryParseExact(
+                        seen,
+                        "O",
+                        CultureInfo.InvariantCulture,
+                        DateTimeStyles.None
+                    ),
+                    DurableNames.tryPrincipalKind kind
+                with
+                | (true, date), Some kind when date.Offset = TimeSpan.Zero && date.Ticks % 10L = 0L ->
+                    PrincipalKey.ofKind kind issuer subject
+                    |> Result.toOption
+                    |> Option.map (fun principal ->
+                        {
+                            AccessRequestPosition.LastSeen = date
+                            Principal = principal
+                        })
+                | _ -> None
+            | _ -> None)
+            token
+
+    let private actorQueryFingerprint text =
+        text
+        |> Option.map (fun value ->
+            System.Text.Encoding.UTF8.GetBytes(
+                "claimcore/directory-text-query/1\n" + DirectorySearchText.value value
+            )
+            |> System.Security.Cryptography.SHA256.HashData
+            |> Convert.ToHexStringLower
+            |> JsonValue.String)
+        |> Option.defaultValue JsonValue.Null
+
+    let encodeActors installation text role (after: ActorId) =
+        encode
+            installation
+            [
+                "after", JsonValue.String(ActorId.format after)
+                "kind", JsonValue.String "ACTORS"
+                "query", actorQueryFingerprint text
+                "role",
+                (role
+                 |> Option.map (DurableNames.role >> JsonValue.String)
+                 |> Option.defaultValue JsonValue.Null)
+                "v", JsonValue.Integer 4L
+            ]
+
+    let decodeActors maximum installation text role token =
+        let expected = actorQueryFingerprint text
+
+        let expectedRole =
+            role
+            |> Option.map (DurableNames.role >> JsonValue.String)
+            |> Option.defaultValue JsonValue.Null
+
+        decode
+            installation
+            maximum
+            (function
+            | JsonValue.Object [ "after", JsonValue.String after
+                                 "kind", JsonValue.String "ACTORS"
+                                 "query", actual
+                                 "role", actualRole
+                                 "v", JsonValue.Integer 4L ] when
+                actual = expected && actualRole = expectedRole
+                ->
+                uuid ActorId.create after
             | _ -> None)
             token
 
@@ -451,5 +551,86 @@ module Cursors =
                                  "scope", JsonValue.String expected
                                  "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
                 Sequence.create before
+            | _ -> None)
+            token
+
+    let private changeRange =
+        function
+        | None -> JsonValue.Null
+        | Some range ->
+            let entity, reminder =
+                match range.Entity with
+                | ChangeEntity.Case -> "CASE", None
+                | ChangeEntity.Work -> "WORK", None
+                | ChangeEntity.Reminder id -> "REMINDER", Some id
+
+            JsonValue.Object
+                [
+                    "actualRevision", JsonValue.Integer(Revision.value range.ActualRevision)
+                    "entity", JsonValue.String entity
+                    "expectedRevision", JsonValue.Integer(Revision.value range.ExpectedRevision)
+                    "reminderId",
+                    reminder
+                    |> Option.map (ReminderId.format >> JsonValue.String)
+                    |> Option.defaultValue JsonValue.Null
+                ]
+
+    let private readChangeRange =
+        function
+        | JsonValue.Null -> Some None
+        | JsonValue.Object [ "actualRevision", JsonValue.Integer actual
+                             "entity", JsonValue.String entity
+                             "expectedRevision", JsonValue.Integer expected
+                             "reminderId", reminder ] ->
+            let target =
+                match entity, reminder with
+                | "CASE", JsonValue.Null -> Some ChangeEntity.Case
+                | "WORK", JsonValue.Null -> Some ChangeEntity.Work
+                | "REMINDER", JsonValue.String raw ->
+                    uuid ReminderId.create raw |> Option.map ChangeEntity.Reminder
+                | _ -> None
+
+            match target, Revision.create expected, Revision.create actual with
+            | Some entity, Some expected, Some actual ->
+                Some(
+                    Some
+                        {
+                            Entity = entity
+                            ExpectedRevision = expected
+                            ActualRevision = actual
+                        }
+                )
+            | _ -> None
+        | _ -> None
+
+    let encodeTimeline installation scope range sequence =
+        encode
+            installation
+            [
+                "kind", JsonValue.String "CASE_TIMELINE"
+                "v", JsonValue.Integer 1L
+                "scope", JsonValue.String scope
+                "range", changeRange range
+                "before", JsonValue.Integer(Sequence.value sequence)
+            ]
+
+    let decodeTimeline installation scope token =
+        decode
+            installation
+            MaximumTokenCharacters
+            (function
+            | JsonValue.Object [ "before", JsonValue.Integer before
+                                 "kind", JsonValue.String "CASE_TIMELINE"
+                                 "range", range
+                                 "scope", JsonValue.String expected
+                                 "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
+                match Sequence.create before, readChangeRange range with
+                | Some before, Some range ->
+                    Some
+                        {
+                            BeforeSequence = before
+                            Range = range
+                        }
+                | _ -> None
             | _ -> None)
             token

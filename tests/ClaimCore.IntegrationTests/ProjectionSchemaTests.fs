@@ -46,6 +46,8 @@ let private inventories =
                 "search_text"
                 "changed_at"
                 "recorded_by"
+                "summary_changed_at"
+                "summary_recorded_by"
             ]
         "reminders",
         set

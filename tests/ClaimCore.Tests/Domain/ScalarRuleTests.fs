@@ -23,6 +23,53 @@ type private GrammarScenario =
 
 let private scalar name = FieldPresentation.descriptor name
 
+[<Tests>]
+let listPresentation =
+    testCase "core declarations own the listed facts and monetary prominence" (fun () ->
+        Expect.equal
+            (BusinessField.declarations
+             |> List.filter _.Listed
+             |> List.map _.Field
+             |> Set.ofList)
+            (Set.ofList
+                [
+                    BusinessField.ClaimantName
+                    BusinessField.InsurerName
+                    BusinessField.ClaimedAmount
+                    BusinessField.ClaimedCurrency
+                    BusinessField.PayableAmount
+                    BusinessField.PayableCurrency
+                ])
+            "The adopted list contains parties and both complete money pairs"
+
+        for amount, currency in
+            [
+                BusinessField.ClaimedAmount, BusinessField.ClaimedCurrency
+                BusinessField.PayableAmount, BusinessField.PayableCurrency
+            ] do
+            let amount = BusinessField.describe amount
+            let currency = BusinessField.describe currency
+
+            Expect.equal
+                amount.Prominence
+                Prominence.Primary
+                "Money remains visible before optional context"
+
+            Expect.equal
+                currency.Prominence
+                amount.Prominence
+                "Width reduction cannot orphan the currency"
+
+        Expect.equal
+            (BusinessField.describe BusinessField.InsurerName).Prominence
+            Prominence.Secondary
+            "Insurer is supplementary list context"
+
+        Expect.equal
+            (BusinessField.describe BusinessField.IncidentDescription).Prominence
+            Prominence.Detail
+            "Narrative remains available in details")
+
 let private expectText name maximum =
     match scalar name with
     | ScalarRule.Text constraints ->
@@ -150,12 +197,13 @@ let permanentBoundaries =
                         AuthorityRequest.OperationId =
                             Guid.Parse "90000000-0000-4000-8000-000000000001"
                         Target = Inputs.principal
-                        Act = AuthorityAct.ProvisionOwner
+                        Act =
+                            (AuthorityAct.ProvisionOwner ClaimCore.TestSupport.Inputs.ownerProfile)
                     }
 
                 Expect.equal
                     (Authority.parse request)
-                    (Error(Refusal.Access AccessRefusal.ActNotPermitted))
+                    (Error(Refusal.Access(AccessRefusal.ResourceUnavailable)))
                     "Provisioning is admitted exclusively through its dedicated boundary")
 
         ]

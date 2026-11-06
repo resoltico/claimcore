@@ -17,9 +17,32 @@ type ProducedMessage =
 
 [<RequireQualifiedAccess>]
 type CliMessage =
+    | [<MessageKey("cli.help.globalOptions")>] GlobalOptions
+    | [<MessageKey("cli.help.commands")>] HelpCommands of command: string
+    | [<MessageKey("cli.family.work")>] WorkCommands
+    | [<MessageKey("cli.family.reminder")>] ReminderCommands
+    | [<MessageKey("cli.text.notRecorded")>] NotRecorded
+    | [<MessageKey("cli.next.correctInput")>] NextCorrectInput
+    | [<MessageKey("cli.next.readCurrent")>] NextReadCurrent
+    | [<MessageKey("cli.next.retrySafe")>] NextRetrySafe
+    | [<MessageKey("cli.next.investigate")>] NextInvestigate
+    | [<MessageKey("cli.next.chooseReference")>] NextChooseReference
+    | [<MessageKey("cli.next.askAccess")>] NextAskAccess
+    | [<MessageKey("cli.next.askRoles")>] NextAskRoles of roles: string
+    | [<MessageKey("cli.next.reviewLatest")>] NextReviewLatest
+    | [<MessageKey("cli.next.reviewCommand")>] NextReviewCommand of command: string
+    | [<MessageKey("cli.next.conflictMore")>] ConflictMore of command: string
+    | [<MessageKey("cli.text.observed")>] Observed of
+        observed: string *
+        businessDate: string *
+        timeZone: string
+
     | [<MessageKey("cli.help.liveTraversal")>] LiveTraversalHelp
     | [<MessageKey("cli.usage.unknownCommand")>] UnknownCommand of command: string
     | [<MessageKey("cli.usage.unknownOption")>] UnknownOption of flag: string
+    | [<MessageKey("cli.usage.unknownOptionFor")>] UnknownOptionFor of
+        flag: string *
+        command: string
     | [<MessageKey("cli.usage.suggestion")>] Suggestion of suggestion: string
     | [<MessageKey("cli.usage.missingOption")>] MissingOption of flag: string
     | [<MessageKey("cli.usage.missingOperand")>] MissingOperand of operand: string
@@ -67,9 +90,6 @@ type CliMessage =
     | [<MessageKey("cli.help.configuration")>] HelpConfiguration of
         maximumSecretBytes: string *
         maximumTrustRootBytes: string
-    | [<MessageKey("cli.help.CLI_CONFIGURATION_ISSUE")>] HelpConfigurationIssue of
-        maximumSecretBytes: string *
-        maximumTrustRootBytes: string
     | [<MessageKey("cli.help.delivery")>] HelpDelivery of
         retryCommand: string *
         statusCommand: string *
@@ -96,6 +116,9 @@ type CliMessage =
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
     | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel
     | [<MessageKey("cli.text.next")>] NextLabel
+    | [<MessageKey("cli.text.pageCount")>] PageCount of count: string
+    | [<MessageKey("cli.text.pageMore")>] PageMore of cursor: string
+    | [<MessageKey("cli.text.pageMoreAll")>] PageMoreAll of cursor: string
     | [<MessageKey("cli.text.authorityHistoryEmpty")>] AuthorityHistoryEmpty
     | [<MessageKey("cli.text.accessSources")>] AccessSources of
         direct: string *
@@ -104,6 +127,7 @@ type CliMessage =
     | [<MessageKey("cli.text.grants")>] GrantsLabel
     | [<MessageKey("cli.text.code")>] CodeLabel
     | [<MessageKey("cli.text.uncertain")>] UncertainDelivery
+    | [<MessageKey("cli.family.version")>] VersionFamily
     | [<MessageKey("cli.family.case")>] CaseFamily
     | [<MessageKey("cli.family.authority")>] AuthorityFamily
     | [<MessageKey("cli.family.operation")>] OperationFamily
@@ -123,6 +147,7 @@ type CliMessage =
     | [<MessageKey("cli.beforeDispatchFailure")>] BeforeDispatchFailure
     | [<MessageKey("cli.text.cursorReached")>] CursorReached of cursor: string
     | [<MessageKey("cli.review.confirm")>] ReviewConfirmation
+    | [<MessageKey("cli.review.typeTarget")>] TypeConfirmationTarget of target: string
     | [<MessageKey("cli.family.recovery")>] RecoveryFamily
     | [<MessageKey("cli.family.shell")>] ShellFamily
     | [<MessageKey("cli.family.configure")>] ConfigureFamily

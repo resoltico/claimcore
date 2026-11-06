@@ -96,7 +96,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
                     InstallationId = fixture.InstallationId
                     Head = tx.Head
                     Instant = view.ObservedAt
-                    Nonce = tx.Nonce
+                    Nonce = tx.NewPayloadNonce()
                     ActorId = actor.ActorId
                     OperationId = (CaseFixtures.operationId (request.OperationId))
                     Subject = scope
@@ -115,7 +115,12 @@ let internal seed (database: PostgresFixture.Database) claimant =
         let receipt =
             LedgerEntries.validate fixture.InstallationId (LedgerEntries.stored entry)
             |> Result.bind (
-                LedgerEntries.receipt fixture.Owner view.Actor (ReceiptCurrent.Case(Some current))
+                LedgerEntries.receipt
+                    (Inputs.workBasis)
+                    fixture.Owner
+                    view.Actor
+                    (view.Actor.Actor |> Option.map Actor.currentReference)
+                    (ReceiptCurrent.Case(Some current))
             )
             |> Result.defaultWith (fun _ ->
                 failtest "Historical fixture receipt is structurally valid")
@@ -331,10 +336,13 @@ let private assertRemainingHistoryAccess
                 })
                 (token))
 
-        Expect.equal
-            observed
-            (Outcome.Succeeded(withheldReceipt original))
-            "Superseded OPEN keeps every acceptance metadata field and withholds its snapshot"
+        match observed with
+        | Outcome.Succeeded actual ->
+            expectReceipt
+                actual
+                (withheldReceipt original)
+                "Superseded OPEN preserves acceptance and withholds its snapshot"
+        | other -> failtestf "Expected own superseded acceptance: %A" other
     }
 
 let private revokedFullHistory

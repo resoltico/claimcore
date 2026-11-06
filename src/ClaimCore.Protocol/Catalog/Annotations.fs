@@ -175,15 +175,11 @@ module CatalogAnnotations =
                 then
                     yield (owner, "dueDate"), constant (target InputTarget.ReminderDueDate)
 
-            yield
-                (RequestSchemas.PrincipalInput, WireMembers.Kind),
-                constant (target InputTarget.PrincipalKind)
-            yield
-                (RequestSchemas.PrincipalInput, WireMembers.Issuer),
-                constant (target InputTarget.PrincipalIssuer)
-            yield
-                (RequestSchemas.PrincipalInput, WireMembers.Subject),
-                constant (target InputTarget.PrincipalSubject)
+            for owner in
+                [ RequestSchemas.PrincipalInput; RequestSchemas.AccessRequestDismissRequest ] do
+                yield (owner, WireMembers.Kind), constant (target InputTarget.PrincipalKind)
+                yield (owner, WireMembers.Issuer), constant (target InputTarget.PrincipalIssuer)
+                yield (owner, WireMembers.Subject), constant (target InputTarget.PrincipalSubject)
             for owner, group in
                 [
                     RequestSchemas.Registration, RecordGroup.Registration
@@ -241,8 +237,16 @@ module CatalogAnnotations =
                     constant (annotation (InteractionInput.Target(InputTarget.Group group)))
             for kind in [ CaseActKind.Void; CaseActKind.Reinstate ] do
                 yield (actBranch kind, WireMembers.Reason), constant (target InputTarget.Reason)
+            yield
+                (authorityBranch AuthorityKind.Admit, "grants"),
+                constant (target InputTarget.Grants)
+            yield ("AuthorityGrantInput", WireMembers.Role), constant (target InputTarget.Role)
             for kind in [ AuthorityKind.Grant; AuthorityKind.Revoke ] do
                 yield (authorityBranch kind, WireMembers.Role), constant (target InputTarget.Role)
+            yield
+                ("ActorProfileInput", "displayName"),
+                constant (target InputTarget.ProfileDisplayName)
+            yield ("ActorProfileInput", "contact"), constant (target InputTarget.ProfileContact)
             yield (RequestSchemas.Scope, WireMembers.Kind), scope
             for owner in
                 [
@@ -262,31 +266,46 @@ module CatalogAnnotations =
             yield
                 ("ReminderListRequest", "assignment"),
                 constant (annotation InteractionInput.Assignment)
+            yield
+                ("ReminderListRequest", "view"), constant (annotation InteractionInput.ReminderView)
             yield ("ReminderListRequest", "text"), constant (target InputTarget.Text)
             yield
                 ("ReminderListRequest", "includeInactive"),
                 constant (annotation InteractionInput.IncludeInactive)
+            yield
+                (RequestSchemas.ActorListRequest, "text"),
+                constant (target InputTarget.DirectorySearch)
+            yield
+                (RequestSchemas.ActorListRequest, "role"),
+                constant (annotation InteractionInput.RoleFilter)
             yield ("WorkOverviewRequest", "mine"), constant (annotation InteractionInput.Mine)
             yield ("ReminderGetRequest", "reminderId"), constant (target InputTarget.ReminderId)
             for owner in
                 [
-                    RequestSchemas.PageRequest
+                    RequestSchemas.ActorListRequest
+                    RequestSchemas.AccessRequestsRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
                     RequestSchemas.HistoryRequest
                     "CaseActivityRequest"
+                    "CaseTimelineRequest"
                     "ReminderListRequest"
                     RequestSchemas.GrantsRequest
                     RequestSchemas.AuthorityHistoryRequest
                 ] do
                 yield (owner, WireMembers.Cursor), constant (target InputTarget.Cursor)
                 yield (owner, WireMembers.Limit), limit
+            yield
+                ("CaseTimelineRequest", "filter"),
+                constant (annotation InteractionInput.TimelineFilter)
             for owner in [ RequestSchemas.CaseListRequest; RequestSchemas.CaseSummaryRequest ] do
                 for name, input in
                     [
                         "lifecycle", InteractionInput.Lifecycle
                         "status", InteractionInput.Status
                         "progress", InteractionInput.Progress
+                        "view", InteractionInput.CaseView
+                        "responsibleActor", InteractionInput.ResponsibleActorFilter
                         "text", InteractionInput.Target InputTarget.Text
                     ] do
                     yield (owner, name), constant (annotation input)
