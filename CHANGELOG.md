@@ -2,11 +2,13 @@
 
 ## [Unreleased]
 
+## [0.16.0] - 2026-11-06
+
 - Recreate databases for authority format 3 and ledger entry format 5; old installations are rejected without migration.
 - Supply an authored owner display name during provisioning and a profile when registering people; identity-provider claims do not supply profile names.
 - Custom stores must load complete operations and generate fresh payload salts per effect; receipt and checkpoint proofs use the final effect.
-- Regenerate clients for named ActorRefs in work and assignee reads; reusable refs omit contacts and reflect current profile erasure.
-- Assignee pages require snapshot basis alongside named candidates and cursors; update strict readers.
+- Regenerate work/reminder, assignee, receipt, activity, full case-history and authority-history readers for named ActorRefs; refs omit contacts and reflect current profile erasure.
+- Authority list, grant/history and assignee pages require snapshot basis alongside items and cursors; regenerate strict readers.
 - Update work review/receipt readers for responsible ActorRefs; authority receipt targets now use Disclosed/Withheld projection under current authority-read rights.
 - Regenerate clients for core case headlines, attention and recommended acts; clients must use the offered recommendation instead of ranking tasks.
 - Case and reminder state refusals use NOT_OFFERED and REMINDER_NOT_OFFERED; DECISION_REQUIRED is retired. Invalid corrections keep targeted input diagnostics.
@@ -22,7 +24,7 @@
 - Actor-directory search matches current names or contacts plus typed role filters; discard old actor cursors. Profile erasure clears both private search indexes.
 - Discard case-list cursors: format 6 binds the selected core view. Standard views intersect with explicit filters and preserve read permissions.
 - Protected Application calls check requester availability before input refusals; malformed calls can need storage. Offline CLI syntax checks remain local.
-- Case validation now needs a service snapshot to report syntax and business-date issues together; unavailable storage can fail malformed case writes before diagnostics.
+- Application case validation combines syntax and business-date issues against an authoritative service snapshot; Domain parsing stays storage-free.
 - Reminder changes require positive expected revisions; zero returns input diagnostics instead of an encoding error. Initial work updates and case opening still accept zero.
 - Irreversible human CLI commands require an exact typed target or matching --confirm; dry-run and structured protocol calls retain their wire contracts.
 - Regenerate work readers and custom stores for summaryChangedAt/summaryRecordedBy; responsibility-only edits preserve the summary's actual author and time.
@@ -55,14 +57,14 @@
 - Choose regional date/number formats independently in the web; CLI dates use Gregorian conventions for the selected language and retain exact money values.
 - Long pickers keep focused options in view instead of scrolling the page and closing before a choice can be made.
 - Contributor browser and published CLI checks cover each language and interface risk without multiplying independent language, command, theme and viewport choices.
-
 - Native units build their Debug closure; CI runs complete non-browser published acceptance once and qualifies each browser engine separately.
-
 - Recovery guidance distinguishes unresolved status, exact in-memory retry and account-scoped permanent settlement; an existing acceptance returns its receipt.
 - Correct payment acknowledgement choices, ordering directions, active/open counts and localized operator faults, milestone labels and name interpolation across catalogs.
 - Case lists retain summary integrity failures and reuse validated visible exact matches; outside-page lookup and disclosure checks remain.
 - Reuse immutable CLI cultures and bounded browser locale resources while preserving Gregorian dates, exact amounts and captured input formats.
 - Pointer presses begun on disabled buttons, including those disabled by a fieldset, cannot trigger a delayed submission after reenabling.
+- Source tooling uses npm 12.2.2, jsdom 31 and updated lint/build packages; restore locked dependencies and install the pinned Playwright browsers.
+- Evaluation deployments use Keycloak 26.8.2 security fixes and refreshed pinned base images; pull/rebuild the declared Compose inputs.
 
 ## [0.15.0] - 2026-11-03
 

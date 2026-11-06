@@ -259,9 +259,10 @@ renderers must not infer them from effect names.
 The machine-readable [glossary](../src/ClaimCore.Protocol/Messages/Localization/glossary.json) owns the
 supported-language terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
 registers, banned GUI tokens and glossary alignment during generation and `--check`. Add a negative
-control when changing these checks. New and changed translations need native-speaker review;
-record outstanding review in the PR until a reviewer has supplied it. Catalog parity checks establish
-complete keys and safe arguments, not linguistic approval.
+control when changing these checks. Review changed translations against owning English and actual
+consumer behavior. Record reviewer identity, language, source and context scope, distinguishing
+AI-assisted review from human linguistic approval. Catalog parity checks establish complete keys
+and safe arguments, not linguistic approval.
 
 [LocalizationPolicy](../src/ClaimCore.Protocol/Messages/Localization/LocalizationPolicy.fs) owns supported
 language tags, Chinese script/region aliases, direction and default CLI display conventions. Korean uses
@@ -286,7 +287,7 @@ Use the shared `ui/` controls and layout primitives; [breakpoints](../web/src/th
 qualified in Chromium, Firefox and WebKit.
 
 The [contrast test](../web/tests/unit/theme/contrast.test.ts) checks all four accent/mode combinations
-and includes a negative control against the retired palette. Run it with
+and includes a known low-contrast negative control. Run it with
 `npm --prefix web run test:unit -- tests/unit/theme/contrast.test.ts`. Passing that test does not replace
 keyboard, axe, forced-colors or browser qualification. Preferences belong only in SettingsPanel,
 reachable through `/settings` and the sign-in footer dialog; keep bootstrap and hydrated theme choices
@@ -378,8 +379,7 @@ visit all scenes in desktop LTR and narrow RTL contexts. The separate theme/cont
 input, security and workflow tests still apply. Language-switch coverage exercises every language and
 display format without multiplying their independent choices. Review additional combinations when a
 specific defect or deliberate UI qualification requires them; expanding the language registry must not
-silently multiply the whole workflow suite. This replaces the original overhaul's exhaustive layout
-matrix for ordinary development; its historical results remain evidence for the source they tested.
+silently multiply the whole workflow suite.
 
 After [first checkout](#first-checkout), examples for focused iteration are:
 
@@ -402,6 +402,14 @@ Published-process tests also require current Release application outputs, even w
 is Debug. Build the affected application projects in Release before a direct focused invocation;
 `eng/verify.sh` prepares these inputs for its stages. Publication runs before owned database startup,
 so a missing Release input fails before that setup cost.
+For a reused checkout after version, dependency or toolchain changes, refresh the complete Release
+closure before a direct `--no-build` published diagnostic:
+
+```sh
+dotnet build ClaimCore.slnx --configuration Release --no-restore \
+  --no-incremental --disable-build-servers
+```
+
 Published Web tests also need current frontend assets from `npm --prefix web ci` followed by
 `npm --prefix web run build`; the acceptance stage prepares those assets.
 Reuse installed dependencies while the lockfile/toolchain inputs are unchanged. A test-selector-only
@@ -423,7 +431,9 @@ Secondary-principal specs acquire real OIDC sessions in their own `beforeAll` se
 login-admission wait. Keep those cookies within the spec that acquired them so authentication
 deadlines remain meaningful during long runs.
 
-For concrete browser failures, select existing specs and one engine. With current Release
+For concrete browser failures, select existing specs and one engine. Chromium's headless shell is
+also required for CLI PKCE bootstrap when the selected engine is Firefox or WebKit; the `browsers`
+stage installs that dependency alongside the selected engine. With current Release
 applications/test assembly and frontend assets already built:
 
 ```sh
@@ -602,17 +612,23 @@ owns the exact populations and keys.
 
 [Directory.Packages.props](../Directory.Packages.props) pins direct .NET packages and selected production
 transitives that track the runtime security train; reviewed lockfiles record the complete resolution. Node/npm and [package-lock.json](../web/package-lock.json) own the frontend graph.
+The Playwright core override derives its version from `@playwright/test`, keeping the runner and
+Axe's peer API types aligned.
 Audit all dependencies, retain image digests and use locked restore/npm ci. Dependency changes must update
 consumers, lockfiles, licensing evidence and qualification together.
 
 Private-file qualification uses real objects on the declared native CI platforms, including Linux musl.
-Native-language and assistive-technology review remain human work.
+Automated checks do not establish human linguistic or assistive-technology approval; identify the
+reviewer and tested scope when recording such approval.
 
 ## Source releases
 
 [Releases](https://github.com/resoltico/claimcore/releases) distribute source archives. Version, date,
 tag assignment and publication require owner authorization. Prepare the final version, dated changelog
-section, dependencies and documentation before publishing that source commit.
+section, dependencies and documentation before publishing that source commit. Complete focused QA
+before opening the final release PR; combine these inputs so a version-only follow-up does not
+force another qualification cycle. Let the automatic PR and main-push runs provide their required
+evidence rather than duplicating them with local or manually dispatched full gates.
 
 1. Open a pull request with the finalized release changes. After its required `Gate` passes, use the
    authorized PR merge path to update protected `main`. Wait for the resulting main commit's complete
@@ -620,7 +636,8 @@ section, dependencies and documentation before publishing that source commit.
 2. Create an annotated `vVERSION` tag for that exact commit and push the tag. A tag push does not start
    another CI run.
 3. Dispatch [Publish source release](../.github/workflows/release.yml) from `main`, supplying the tag and
-   its full commit SHA.
+   its full commit SHA. Approve the pending `release` environment deployment through the authorized
+   owner account. The environment review and CI result are separate requirements.
 
 The workflow verifies the annotated tag, expected SHA, membership in `main`, matching version and a
 successful main-branch push CI run for that exact SHA. It publishes the tagged commit's dated

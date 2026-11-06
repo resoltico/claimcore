@@ -34,7 +34,7 @@ is writes `10000:1`, `100000:1`, `100000:16`, the 1,000-case cardinality compari
 at 100k cases. Six common reads cover search, filtered cases, notification order, summary, global
 authority history and actor-filtered authority history. Reminder-feature measurements comprise seven
 profiles: derived follow-up/summary, pending/completed queues, bounded current case, financial isolation
-and global work overview. Plain-sight read profiles also measure `case.views`, `reminder.views` and the
+and global work overview. Case-work read profiles also measure `case.views`, `reminder.views` and the
 bounded typed `case.timeline`, including high-child-fanout change decoding and actor enrichment. New
 keys without a reference equivalent remain not applicable for relative ratios; their actual candidate
 measurements are still retained. The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs) owns the
@@ -107,34 +107,22 @@ runs, measure resource use and reclaim only owned temporary resources. Locked Nu
 still run with caches; shared caches are not disposable task resources.
 
 
-## Open plain-sight search comparison
+## Current performance scope
 
-The [completed same-host comparison](https://github.com/resoltico/claimcore/actions/runs/41993384662)
-compared `60b3c8ca` with `30de1b32` and passed 50 of 52 relative checks. At 100,000 cases, search p95
-rose from 2.598 ms to 3.700 ms (1.424×; maximum 1.30×), and throughput fell from 464.177 to 335.288
-requests/second (0.722×; minimum 0.85×). These two failures remain open. The passing ordinary CI for
-[PR #144](https://github.com/resoltico/claimcore/pull/144) does not supersede them.
+Ordinary CI establishes its correctness and hard-resource checks; it does not qualify relative search
+latency or throughput. There is no successful current-source same-host search comparison under the
+published relative budgets. Establish deployment requirements and use the declared comparison workloads
+before claiming comparative performance or capacity. A passing diagnostic or ordinary Gate cannot
+supply that evidence.
 
-The original bounded source/SQL investigation confirmed an additional `FindCaseByReference` read for
-syntactically valid search text, including the absent `needle` query, followed by per-target authority
-when a match existed. Current list reads first return any summary integrity failure, preserving it from
-unrelated later read failures. A validated, disclosed exact match already on the current page supplies
-its ID and authored reference directly. Otherwise the separate lookup and target authorization remain,
-including outside-filter/page and empty-page matches. These are port-call/sequence improvements;
-an interface call with empty input does not necessarily issue SQL.
+[Case-list queries](../src/ClaimCore.Application/Queries.fs) validate summaries before exact-reference
+fallback work. Integrity failures return without unrelated lookup reads. A validated, disclosed exact
+match already on the current page supplies its identity and authored reference directly. Outside-page,
+filtered-out and empty-page cases still require exact lookup and target authorization. An absent search
+reference still incurs that lookup. Port-call counts alone do not establish SQL or end-to-end costs.
 
-A disposable PostgreSQL 18.6 probe used the current baseline's exact cases table and unique reference
-index with 100,000 synthetic erased rows. Two `EXPLAIN (ANALYZE, BUFFERS)` absent-reference selects
-used `cases_reference_key`, returned zero rows and reported 0.017/0.024 ms execution time. This checks
-the missing-index/scan hypothesis only: it uses a reduced projection, not the growth dataset, and omits
-network/driver, authorization and decoding costs. It cannot attribute the historical 1.102 ms p95
-increase or establish a new latency/throughput pass. That probe made no product or threshold change.
-The later visible-page reuse does not remove the absent-needle lookup or demonstrate repair of the
-historical failed ratios. A future acceptance decision needs deployment requirements; any claimed
-relative repair still needs a stable same-host comparison against the recorded workload and budgets.
-
-Formatting retains only finite supported-locale resources: read-only CLI cultures, browser numeric
-symbols/formatters and the fixed Gregorian/UTC named and numeric calendar formats. Arbitrary helper
-locale inputs retain their existing Intl behavior without entering a retained cache. Variable-zone
-formatters are not retained in an unbounded locale/time-zone map. Constructor/allocation observations
-are narrow resource checks, not end-to-end latency or throughput qualification.
+Formatting retains finite supported-locale resources: read-only CLI cultures, browser numeric
+symbols/formatters and fixed Gregorian/UTC named and numeric calendar formats. Arbitrary helper
+locale inputs retain Intl behavior without entering a retained cache. Variable-zone formatters are
+not retained in an unbounded locale/time-zone map. Constructor and allocation checks do not qualify
+end-to-end latency or throughput.
