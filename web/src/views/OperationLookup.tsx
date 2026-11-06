@@ -10,7 +10,7 @@ import { FieldError } from "react-aria-components/FieldError";
 import { useEffect, useRef } from "react";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
-import { Button } from "react-aria-components/Button";
+import { ButtonControl as Button } from "../ui/ButtonControl";
 import { Form } from "react-aria-components/Form";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
