@@ -8,7 +8,7 @@ export const ButtonControl = ({ onPointerDownCapture, ...props }: ButtonControlP
   <AriaButton
     {...props}
     onPointerDownCapture={(event) => {
-      if (event.currentTarget.disabled) {
+      if (event.currentTarget.matches(":disabled")) {
         event.preventDefault();
         event.stopPropagation();
       }
