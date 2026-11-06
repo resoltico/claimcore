@@ -8,8 +8,9 @@ defines terms.
 Case snapshots, receipts and list rows expose a stable `caseId`: the UUID of the accepted OPEN operation.
 References remain immutable and ASCII-case-insensitively unique, including after erasure. The original
 reference is retained in the OPEN ledger metadata independently of erasable request and snapshot bytes.
-Case request, snapshot and ledger entry records use format 4. Work/reminder records use format 1;
-authority and control records use format 2. Installation initialization requires the declared SQL baseline;
+Case request and snapshot records use format 4; ledger entries use 5, authority uses 3, control uses 2,
+and work/reminder records use 1. [RecordVersions](../src/ClaimCore.RecordFormat/Versions.fs) owns these
+grammars. Installation initialization requires the declared SQL baseline and a fresh database;
 schema conversion and compatibility readers are not supported.
 
 Case reads/history and case operations use a tagged `target`: either
@@ -347,9 +348,11 @@ changes stored content. On OPEN omitted/null description is absent; partial omis
 explicit null clears. Required registration null and half-money assertions remain invalid. File/editor
 CRLF conversion happens before review/freezing, never after prepared request confirmation.
 
-Typed case activity orders fact/work/reminder events by ledger sequence. Dedicated fact history
-compares consecutive case revisions; current terminal reminder access is distinct from prior-version
-ReadHistoryFull disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
+`case.timeline` merges typed fact, work and reminder events by ledger sequence, with core-computed
+changes and current actor references. The browser and `claimcore case timeline` use this unified read.
+The explicit wire reads `case.history` (consecutive fact revisions) and `case.activity` (fact/work/reminder
+activity) remain available through HTTP or `call`; their old dedicated human CLI verbs are removed.
+Current terminal reminder access is distinct from prior-version ReadHistoryFull disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
 effects. Creation receipts also bind the new CaseId, ReminderId or ActorId to the operation UUID.
 An authority receipt for an existing principal carries its ActorId, which does not establish a match to
 an authored issuer/subject. Clients correlate its operation UUID, family and act; they do not scan the
@@ -366,9 +369,12 @@ use current admission. Empty partial updates, null required facts, half money an
 refuse. A correction cannot add missing groups or create a no-op revision. Revision conflicts require
 fresh intent. Chronology diagnostics identify the asserted field and carry typed counterpart context.
 
-Case-list continuations use format 6; actor-directory continuations use format 4; assignee, reminder
-and activity continuations use format 1; other continuations use format 2. All bind InstallationId. History and assignee continuations bind the retained CaseId. Case-list
-positions bind admitted filters and ordering. Unsupported formats are refused.
+[Cursors](../src/ClaimCore.RecordFormat/Cursors.fs) owns continuation grammars: case lists use format 6;
+actor directories use 4; assignee, reminder, access-request, activity and timeline reads use 1;
+other continuations use 2. All bind InstallationId. Fact-history and assignee continuations bind the
+retained CaseId. Case-list positions bind admitted filters and ordering. Timeline cursors bind the
+selected case/requester/filter scope, sequence position and optional conflict-change range. Unsupported formats
+are refused.
 
 ```sh
 claimcore case list --lifecycle active --status opened --progress undecided --order recent

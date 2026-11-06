@@ -55,6 +55,8 @@
 - Choose regional date/number formats independently in the web; CLI dates use Gregorian conventions for the selected language and retain exact money values.
 - Contributor browser and published CLI checks cover each language and interface risk without multiplying independent language, command, theme and viewport choices.
 
+- Native units build their Debug closure; CI runs complete non-browser published acceptance once and qualifies each browser engine separately.
+
 ## [0.15.0] - 2026-11-03
 
 - Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.

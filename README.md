@@ -32,7 +32,9 @@ Its [project boundaries](docs/contributing.md#project-boundaries) and
 | Build or change the source | [Contributing](docs/contributing.md) |
 | Understand project terms | [Glossary](docs/glossary.md) |
 
-The browser offers English, Latvian and Arabic, with right-to-left layout and separate display preferences.
+The CLI and browser offer English, Latvian and Arabic plus draft Korean, Japanese, Spanish, German,
+Simplified Chinese and Traditional Chinese. Regional formats are independent; Arabic supports right-to-left
+layout. See the [glossary](docs/glossary.md) for language-review status.
 The [synthetic examples](examples/README.md) demonstrate equivalent human commands and JSON calls.
 Operators manage identity, access and data custody; start with the operating guide before using real data.
 

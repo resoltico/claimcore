@@ -291,17 +291,52 @@ jobs:
               bash eng/verify.sh frontend
             '
 
+  acceptance_native:
+    if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
+    name: Published clients (native, complete)
+    needs: [frontend]
+    runs-on: ubuntu-24.04
+    # One complete native published scope, with setup/reporting outside its 40-minute MTP bound.
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
+      - name: Install isolated NSS profile test utility
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends libnss3-tools
+      - name: Published service and clients
+        env:
+          NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
+          CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: chromium
+          CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: complete
+        run: bash eng/verify.sh browsers acceptance-native
+      - name: Retain native published evidence
+        if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: acceptance-verification-native
+          retention-days: 14
+          if-no-files-found: warn
+          path: |
+            artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/scope.json
+            artifacts/verification/native.*/service-captures/*.json
+            artifacts/verification/native.*/cli-failure/**
+
   acceptance:
     if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
-    name: Published clients (${{ matrix.engine }}, complete)
+    name: Published browsers (${{ matrix.engine }}, complete)
     needs: [frontend]
     strategy:
       fail-fast: true
       matrix:
         engine: [chromium, firefox, webkit]
     runs-on: ubuntu-24.04
-    # Allow 10 minutes for setup/reporting around the complete acceptance project's 60-minute MTP bound.
-    timeout-minutes: 70
+    # Each engine owns its fixture/bootstrap/readback under the 45-minute browser MTP bound.
+    timeout-minutes: 55
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
@@ -316,7 +351,7 @@ jobs:
           NPM_CONFIG_CACHE: ${{ runner.temp }}/claimcore-npm-cache
           CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE: ${{ matrix.engine }}
           CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE: complete
-        run: bash eng/verify.sh browsers acceptance
+        run: bash eng/verify.sh browsers acceptance-browser
       - name: Report browser execution
         env:
           BROWSER_ENGINE: ${{ matrix.engine }}
@@ -350,6 +385,7 @@ jobs:
           path: |
             artifacts/verification/frontend/completion.json
             artifacts/verification/native.*/results.trx
+            artifacts/verification/native.*/scope.json
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
             artifacts/verification/native.*/service-captures/*.json
@@ -479,7 +515,7 @@ jobs:
   gate:
     name: Gate
     if: always() && inputs.browser_spec == ''
-    needs: [configuration, lint, unit, integration, web, frontend, acceptance]
+    needs: [configuration, lint, unit, integration, web, frontend, acceptance_native, acceptance]
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:

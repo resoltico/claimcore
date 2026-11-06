@@ -413,9 +413,10 @@ neither behavior nor integration. Use named stages when the whole affected suite
 Complete published-browser qualification has a 40-minute Playwright execution safety cap for the
 expanded workflow and design-matrix inventory. `BrowserTests.fs` owns scope limits (complete 40,
 diagnostic 20, smoke 2 minutes), passes them explicitly to Playwright, and gives its native process
-one further minute for reporting and cleanup. The acceptance project has a 60-minute MTP bound for one
-explicit engine, with 70 minutes including CI setup. The default local invocation sequences all three
-engines once under a 150-minute project bound. These capacity bounds do not change per-test
+one further minute for reporting and cleanup. Complete non-browser acceptance has a 40-minute MTP
+bound; each complete browser scope has 45 minutes (50/55 minutes respectively including CI setup).
+The default local command runs native acceptance once, then sequences all three engines under a separate
+130-minute browser-project bound. These capacity bounds do not change per-test
 limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
 is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
 Secondary-principal specs acquire real OIDC sessions in their own `beforeAll` setup under the existing
@@ -492,24 +493,37 @@ execute in order and stop at failure:
 | integration | PostgreSQL then Web suites |
 | postgres / web | The corresponding isolated suite |
 | browsers | Install the locked Playwright engines and required system dependencies |
-| acceptance | Published service/CLI, deployment configuration and real browsers |
+| acceptance-native | Complete published service/CLI and deployment cases, once |
+| acceptance-browser | Complete browser scope for selected engines, with isolated fixture/bootstrap/readback |
+| acceptance | Native scope once, followed by complete browser scope |
 | growth | Separate synthetic contention and verifier qualification |
 | growth-compare REF | Three alternating same-host pairs against a committed reference, with relative budgets |
 
-Pure tests run in Debug without optimization for visible compiled negative controls; production is built
-in Release. Shared store-contract scenarios run against both the memory double and PostgreSQL. Native
+Pure tests restore and build their actual Debug dependency closure without optimization for visible
+compiled negative controls. They do not require a solution-wide Release build; each Release consumer
+builds its own current prerequisites. Shared store-contract scenarios run against both the memory
+double and PostgreSQL. Native
 projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
 skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
-PostgreSQL/growth split; CI assigns complete browser engines to separate jobs.
+PostgreSQL/growth split. CI runs complete non-browser published acceptance once and assigns each
+complete browser engine to a separate job. Both owners are required by Gate. Before fixtures,
+`eng/acceptance-scope.py` collects the full native test inventory and partitions it into disjoint native
+and browser subsets; afterward it checks the executed TRX names/outcomes against that scope, including
+missing, repeated and skipped cases. A complete subset does not claim the other subset ran.
+
+```sh
+bash eng/verify.sh acceptance-native
+CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=firefox bash eng/verify.sh browsers acceptance-browser
+```
 
 Acceptance uses [its own run settings](../eng/expecto.acceptance.runsettings) with one worker so
 container startup and teardown cannot overlap browser authentication in another fixture. These
 fixtures share host networking. Keep these settings when running focused acceptance cases; unit and
 store tests retain their separate concurrency settings.
 
-Default acceptance runs complete Chromium, Firefox and WebKit suites with zero retries. All three complete
-engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Smoke
-mode explicitly reports incomplete qualification. Native report directories under
+Default acceptance runs native cases once, then complete Chromium, Firefox and WebKit suites with zero
+retries. Ordinary acceptance stages refuse partial diagnostic/smoke scope. Direct smoke invocations
+remain explicitly incomplete. All three complete engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Native report directories under
 `artifacts/verification/` retain TRX and browser summaries. Automatic pruning retains the ten newest
 explicitly successful completed native runs; failed, active and historical runs without a known outcome
 are preserved. Review retained failures before manually removing their exact owned directories.
@@ -567,7 +581,7 @@ does not by itself call for a new growth run.
 | Need | Existing command | Claim |
 | --- | --- | --- |
 | One write profile | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | Current-source observation, not full qualification |
-| Investigate a relative regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
+| Investigate a write regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
 | Required full comparison | `bash eng/verify.sh growth-compare REF` | Three same-host pairs, six complete runs |
 
 A full comparison repeatedly seeds large populations and may take hours. Start it after relevant
