@@ -15,6 +15,14 @@ export const Button = ({
 }: ButtonProps) => (
   <AriaButton
     {...props}
+    onPointerDownCapture={(event) => {
+      // A disabled native control must not arm the press responder's deferred click.
+      if (event.currentTarget.disabled) {
+        event.preventDefault();
+        event.stopPropagation();
+      }
+      props.onPointerDownCapture?.(event);
+    }}
     type={type}
     className={["ui-button", `ui-button--${variant}`, className].filter(Boolean).join(" ")}
   />

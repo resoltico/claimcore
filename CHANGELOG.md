@@ -62,6 +62,7 @@
 - Correct payment acknowledgement choices, ordering directions, active/open counts and localized operator faults, milestone labels and name interpolation across catalogs.
 - Case lists retain summary integrity failures and reuse validated visible exact matches; outside-page lookup and disclosure checks remain.
 - Reuse immutable CLI cultures and bounded browser locale resources while preserving Gregorian dates, exact amounts and captured input formats.
+- Pointer presses begun on disabled buttons cannot trigger a delayed submission after those buttons become enabled.
 
 ## [0.15.0] - 2026-11-03
 
