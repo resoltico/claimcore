@@ -121,17 +121,12 @@ const expectPaymentGuidance = async (page: Page, refusal: string) => {
     "act.groups.payment.kind-hint act.groups.payment.kind-error",
   );
   const description = page.locator('[id="act.groups.payment.kind-error"]');
-  for (const [language, text] of [
-    ["en", "explicit payment reaffirmation"],
-    ["lv", "skaidri jāapstiprina"],
-    ["ar", "إعادة تأكيد الدفع"],
-  ] as const) {
+  for (const language of ["en", "lv", "ar"] as const) {
     await selectLanguage(page, language);
-    await expect(description).toContainText(text);
+    const text = inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED");
+    await expect(description).toHaveText(text);
     await expect(payment).toHaveAccessibleName(ui(language, "label.action"));
-    await expect(payment).toHaveAccessibleDescription(
-      `${correctionHint[language]} ${inputMessage(language, "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED")}`,
-    );
+    await expect(payment).toHaveAccessibleDescription(`${correctionHint[language]} ${text}`);
     await expect(payment).toHaveAttribute("aria-invalid", "true");
   }
   await chooseChoice(page, "act.groups.payment.kind", "CLEAR");
