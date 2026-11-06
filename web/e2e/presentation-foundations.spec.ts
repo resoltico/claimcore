@@ -8,7 +8,7 @@ import {
   caseFields,
   operationId as entryOperationId,
 } from "../tests/support/service-foundation.fixtures";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Page, type Locator } from "@playwright/test";
 import {
   presentationLanguageOptions,
   type RequestByEndpoint,
@@ -30,6 +30,27 @@ const presentationBasis = {
   timeZone: "Etc/UTC",
 };
 
+const expectChoiceInView = async (option: Locator) => {
+  // Match the layout suite's one CSS pixel allowance for fractional scroll offsets.
+  await expect
+    .poll(() =>
+      option.evaluate((element) => {
+        const item = element.getBoundingClientRect();
+        const clips = [
+          element.closest('[role="listbox"]'),
+          element.closest(".ui-select-popover"),
+        ].map((parent) => parent!.getBoundingClientRect());
+        return Math.max(
+          0,
+          Math.max(0, ...clips.map((rect) => rect.top)) - item.top,
+          Math.max(0, ...clips.map((rect) => rect.left)) - item.left,
+          item.bottom - Math.min(innerHeight, ...clips.map((rect) => rect.bottom)),
+          item.right - Math.min(innerWidth, ...clips.map((rect) => rect.right)),
+        );
+      }),
+    )
+    .toBeLessThanOrEqual(1);
+};
 const signInSettings = async (page: Page) => {
   await page.goto("/", { waitUntil: "commit" });
   await page.locator(".login-footer button").click();
@@ -122,6 +143,7 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await page.keyboard.press("End");
   await expect(page.getByRole("listbox")).toBeVisible();
   await expect(page.getByRole("option").last()).toBeFocused();
+  await expectChoiceInView(page.getByRole("option").last());
   await page.keyboard.press("Escape");
   await expect(page.getByRole("listbox")).toHaveCount(0);
   await expect(picker).toBeFocused();
@@ -134,6 +156,7 @@ test("select-only listbox supports keyboard search, commit, Escape and focus ret
   await page.keyboard.press("Home");
   await expect(page.getByRole("listbox")).toBeVisible();
   await expect(page.getByRole("option").first()).toBeFocused();
+  await expectChoiceInView(page.getByRole("option").first());
   await page.keyboard.type("Deutsch");
   await expect(page.getByRole("option", { name: "Deutsch — Deutschland" })).toBeFocused();
   await page.keyboard.press("Enter");

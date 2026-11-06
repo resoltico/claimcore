@@ -19,14 +19,17 @@
   inline-size: var(--trigger-width, auto);
   max-inline-size: calc(100vw - var(--space-4));
   max-block-size: min(24rem, var(--available-height, 24rem));
-  overflow: auto;
+  overflow: hidden;
   border: var(--border-width) solid var(--border-control);
   border-radius: var(--radius-sm);
   background: var(--bg-raised);
   color: var(--text-primary);
   box-shadow: var(--shadow-2);
 }
+/* The collection owns scrolling so react-aria keeps focused choices inside its viewport. */
 .ui-select-options {
+  max-block-size: min(24rem, var(--available-height, 24rem));
+  overflow: auto;
   min-inline-size: 0;
   max-inline-size: 100%;
   padding: var(--space-1);

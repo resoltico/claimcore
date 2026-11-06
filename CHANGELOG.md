@@ -53,6 +53,7 @@
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
 - CLI and web add draft Korean, Japanese, Spanish, German and Simplified/Traditional Chinese translations; Chinese selection preserves script and regional defaults.
 - Choose regional date/number formats independently in the web; CLI dates use Gregorian conventions for the selected language and retain exact money values.
+- Long pickers keep focused options in view instead of scrolling the page and closing before a choice can be made.
 - Contributor browser and published CLI checks cover each language and interface risk without multiplying independent language, command, theme and viewport choices.
 
 - Native units build their Debug closure; CI runs complete non-browser published acceptance once and qualifies each browser engine separately.
