@@ -387,38 +387,59 @@ module internal Queries =
                     |> Result.map List.rev)
         }
 
-    let private exactReference (services: ServiceContext) (tx: IReadTx) text =
+    let private exactReference
+        (services: ServiceContext)
+        (tx: IReadTx)
+        (items: CaseSummary list)
+        text
+        =
         task {
             match text |> Option.bind (CaseReference.parse >> Result.toOption) with
             | None -> return None
             | Some reference ->
-                let! record = tx.FindCaseByReference(CaseReference.format reference)
+                let key = CaseReference.format reference |> CaseReference.key
 
-                match record with
-                | None -> return None
-                | Some record ->
-                    let! actor =
-                        tx.Authority
-                            {
-                                Principal = services.Principal
-                                CaseId = Some record.CaseId
-                            }
-
+                match
+                    items
+                    |> List.tryFind (fun item ->
+                        CaseReference.key (CaseReference.format item.Reference) = key)
+                with
+                | Some item ->
+                    // This page item has already passed validation and snapshot disclosure.
                     return
-                        if
-                            CaseExecution.authorize
-                                services.Principal
-                                actor
-                                Capability.ReadCase
-                                (Some record)
-                        then
-                            Some
+                        Some
+                            {
+                                CaseRef.CaseId = item.CaseId
+                                CaseReference = item.Reference
+                            }
+                | None ->
+                    let! record = tx.FindCaseByReference(CaseReference.format reference)
+
+                    match record with
+                    | None -> return None
+                    | Some record ->
+                        let! actor =
+                            tx.Authority
                                 {
-                                    CaseRef.CaseId = record.CaseId
-                                    CaseReference = record.Snapshot.Reference
+                                    Principal = services.Principal
+                                    CaseId = Some record.CaseId
                                 }
-                        else
-                            None
+
+                        return
+                            if
+                                CaseExecution.authorize
+                                    services.Principal
+                                    actor
+                                    Capability.ReadCase
+                                    (Some record)
+                            then
+                                Some
+                                    {
+                                        CaseRef.CaseId = record.CaseId
+                                        CaseReference = record.Snapshot.Reference
+                                    }
+                            else
+                                None
         }
 
     let list (services: ServiceContext) (request: CaseListRequest) token =
@@ -461,33 +482,39 @@ module internal Queries =
                                                         selection.DateBasis
                                                         page.Items
 
-                                                let! exact =
-                                                    exactReference services tx request.Filter.Text
+                                                match items with
+                                                | Error fault -> return Outcome.Failed fault
+                                                | Ok items ->
+                                                    let! exact =
+                                                        exactReference
+                                                            services
+                                                            tx
+                                                            items
+                                                            request.Filter.Text
 
-                                                return
-                                                    items
-                                                    |> Result.map (fun items ->
-                                                        {
-                                                            CaseSummaryPage.Basis =
-                                                                selection.DateBasis
-                                                            Items = items
-                                                            ExactReference = exact
-                                                            Offers =
-                                                                if maintenance.Active then
-                                                                    []
-                                                                else
-                                                                    Advice.installationOffers
-                                                                        principal
-                                                                        actor
-                                                            NextCursor =
-                                                                page.Next
-                                                                |> Option.map (
-                                                                    Cursors.encodeCases
-                                                                        services.InstallationId
-                                                                        selection.Filter
-                                                                )
-                                                        })
-                                                    |> succeeded
+                                                    return
+                                                        Outcome.Succeeded
+                                                            {
+                                                                CaseSummaryPage.Basis =
+                                                                    selection.DateBasis
+                                                                Items = items
+                                                                ExactReference = exact
+                                                                Offers =
+                                                                    if maintenance.Active then
+                                                                        []
+                                                                    else
+                                                                        Advice.installationOffers
+                                                                            principal
+                                                                            actor
+                                                                NextCursor =
+                                                                    page.Next
+                                                                    |> Option.map (
+                                                                        Cursors.encodeCases
+                                                                            services.InstallationId
+                                                                            selection.Filter
+                                                                    )
+                                                            }
+
                                     })
                             CancellationToken = token
                         }

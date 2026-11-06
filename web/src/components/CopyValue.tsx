@@ -1,6 +1,6 @@
 import { CharacterWarning } from "./BusinessValue";
 import { useLayoutEffect, useRef, useState } from "react";
-import { Button } from "react-aria-components/Button";
+import { ButtonControl as Button } from "../ui/ButtonControl";
 import { usePresentation } from "../presentation/context";
 
 type CopyValueProps = { label: string; value: string; icon?: boolean };

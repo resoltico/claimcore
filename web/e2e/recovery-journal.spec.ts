@@ -129,6 +129,11 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
     name: "Settle operation permanently",
     exact: true,
   });
+  await expect(settlement).toContainText("If this operation was already accepted for your account");
+  await expect(settlement).toContainText(
+    "Otherwise it is permanently marked as not accepted for your account",
+  );
+  await expect(settlement).toContainText("This does not undo a recorded change");
   const confirmation = settlement.getByRole("button", {
     name: "Confirm permanent settlement",
     exact: true,

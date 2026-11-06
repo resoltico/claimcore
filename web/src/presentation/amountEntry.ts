@@ -1,3 +1,4 @@
+import { localeNumbers } from "./localeNumbers";
 import { isAmountText } from "../protocol/scalars";
 import { productMetadata } from "../protocol/productMetadata";
 import {
@@ -10,16 +11,7 @@ import type { CatalogEntry } from "../protocol/catalogAssembly";
 
 /** Ambiguous or malformed entry remains authored text for server admission. */
 export const normalizeAmountEntry = (raw: string, locale: string): string => {
-  const format = new Intl.NumberFormat(locale, { useGrouping: true });
-  const parts = format.formatToParts(1234567.5);
-  const decimal = parts.find((part) => part.type === "decimal")?.value ?? ".";
-  const group = parts.find((part) => part.type === "group")?.value;
-  const digits = new Map(
-    Array.from({ length: 10 }, (_, digit) => [
-      new Intl.NumberFormat(locale, { useGrouping: false }).format(digit),
-      String(digit),
-    ]),
-  );
+  const { decimal, group, digitValues: digits } = localeNumbers(locale);
   const translated = Array.from(raw, (value) => digits.get(value) ?? value).join("");
   const pieces = translated.split(decimal);
   if (pieces.length > 2) {

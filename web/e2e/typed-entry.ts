@@ -3,8 +3,10 @@ import type { Locator, Page } from "@playwright/test";
 /** Drive the same segmented calendar control as a person, without editing hidden wire inputs. */
 export const fillControl = async (control: Locator, value: string): Promise<void> => {
   await control.waitFor({ state: "visible" });
-  const segments = control.getByRole("spinbutton", { includeHidden: true });
-  if ((await segments.count()) === 0) {
+  // Date segments can expose textbox roles on iOS. Their wrapper is never a plain input,
+  // including while its segments are mounting; let each segment's locator wait for readiness.
+  const tag = await control.evaluate((element) => element.tagName);
+  if (tag === "INPUT" || tag === "TEXTAREA") {
     await control.fill(value);
     if ((await control.getAttribute("role")) === "combobox") {
       await control.press("Tab");

@@ -173,7 +173,7 @@
   "ui.reminders": "Erinnerungen",
   "ui.removeGrant": "Rolle entfernen",
   "ui.retryExact": "Erneut senden",
-  "ui.retryExactDescription": "Erneut senden verwendet genau die von dieser Seite aufbewahrten Anfragebytes. Die Ergebnisprüfung liefert eine endgültige Antwort. Nach dem Neuladen ist nur die Ergebnisprüfung verfügbar, da kein Anfrageinhalt gespeichert wird.",
+  "ui.retryExactDescription": "Erneut senden verwendet genau die Anfragebytes, die diese Seite noch im Speicher hält. Die Statusprüfung liest das aktuelle Ergebnis, ohne den Vorgang zu sperren; es kann ungeklärt bleiben. Nach dem Neuladen sind nur Wiederherstellungskennungen gespeichert, sodass diese Seite die Anfrage nicht erneut senden kann. Unter Wiederherstellung können Sie den Status prüfen oder, sofern verfügbar, bewusst eine dauerhafte Klärung anfordern.",
   "ui.retryLanguage": "Sprache erneut laden",
   "ui.retryView": "Laden wiederholen",
   "ui.returnToCase": "Zurück zum Fall",

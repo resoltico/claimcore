@@ -5,7 +5,7 @@ import { useState, type ReactNode } from "react";
 import { NoticeView } from "../presentation/Message";
 import { usePresentation } from "../presentation/context";
 import type { Notice } from "../protocol/notices";
-import { Button } from "react-aria-components/Button";
+import { ButtonControl as Button } from "../ui/ButtonControl";
 import type { CurrentCase, CatalogDocument } from "../api/service";
 import { isCurrentCase } from "../api/service";
 

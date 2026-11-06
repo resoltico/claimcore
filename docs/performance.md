@@ -115,16 +115,26 @@ rose from 2.598 ms to 3.700 ms (1.424×; maximum 1.30×), and throughput fell fr
 requests/second (0.722×; minimum 0.85×). These two failures remain open. The passing ordinary CI for
 [PR #144](https://github.com/resoltico/claimcore/pull/144) does not supersede them.
 
-A bounded source/SQL investigation on 2026-11-06 confirmed that `Queries.exactReference` adds one
-`FindCaseByReference` statement for a syntactically valid search, including the absent `needle` query.
-An absent match returns before the additional per-target authority read. A found match still needs that
-read, independently of the current page/filter; removing it would change visibility or disclosure.
+The original bounded source/SQL investigation confirmed an additional `FindCaseByReference` read for
+syntactically valid search text, including the absent `needle` query, followed by per-target authority
+when a match existed. Current list reads first return any summary integrity failure, preserving it from
+unrelated later read failures. A validated, disclosed exact match already on the current page supplies
+its ID and authored reference directly. Otherwise the separate lookup and target authorization remain,
+including outside-filter/page and empty-page matches. These are port-call/sequence improvements;
+an interface call with empty input does not necessarily issue SQL.
 
 A disposable PostgreSQL 18.6 probe used the current baseline's exact cases table and unique reference
 index with 100,000 synthetic erased rows. Two `EXPLAIN (ANALYZE, BUFFERS)` absent-reference selects
 used `cases_reference_key`, returned zero rows and reported 0.017/0.024 ms execution time. This checks
 the missing-index/scan hypothesis only: it uses a reduced projection, not the growth dataset, and omits
 network/driver, authorization and decoding costs. It cannot attribute the historical 1.102 ms p95
-increase or establish a new latency/throughput pass. No product search change or threshold change was
-made. A future acceptance decision needs deployment requirements; any claimed relative repair still
-needs a stable same-host comparison against the recorded workload and budgets.
+increase or establish a new latency/throughput pass. That probe made no product or threshold change.
+The later visible-page reuse does not remove the absent-needle lookup or demonstrate repair of the
+historical failed ratios. A future acceptance decision needs deployment requirements; any claimed
+relative repair still needs a stable same-host comparison against the recorded workload and budgets.
+
+Formatting retains only finite supported-locale resources: read-only CLI cultures, browser numeric
+symbols/formatters and the fixed Gregorian/UTC named and numeric calendar formats. Arbitrary helper
+locale inputs retain their existing Intl behavior without entering a retained cache. Variable-zone
+formatters are not retained in an unbounded locale/time-zone map. Constructor/allocation observations
+are narrow resource checks, not end-to-end latency or throughput qualification.

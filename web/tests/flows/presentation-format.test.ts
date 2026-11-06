@@ -5,6 +5,7 @@ import {
   displayField,
   exactAmount,
   exactInteger,
+  exactMoney,
 } from "../../src/presentation/format";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults, displayLocales } from "../../src/presentation/preferences";
@@ -104,13 +105,40 @@ it("uses stable metadata identity rather than supplied English labels as catalog
   }
 });
 
-it("pads known currency digits without removing authored precision and preserves unknown currencies", async () => {
-  const { exactMoney } = await import("../../src/presentation/format");
+it("pads known currency digits without removing authored precision and preserves unknown currencies", () => {
   expect(exactMoney("1200.5", "EUR", "en-GB")).toBe("1,200.50 EUR");
   expect(exactMoney("1.2345", "JPY", "en-GB")).toBe("1.2345 JPY");
   expect(exactMoney("1.2", "KWD", "en-GB")).toBe("1.200 KWD");
   expect(exactMoney("1.20", "ZZZ", "en-GB")).toBe("1.20 ZZZ");
   expect(exactMoney("9999999999999999999999999999999999999999.9999", "EUR", "en-GB")).toBe(
     "9,999,999,999,999,999,999,999,999,999,999,999,999,999.9999 EUR",
+  );
+});
+
+it.each([
+  ["en-GB", "12,345.6700 EUR"],
+  ["en-US", "12,345.6700 EUR"],
+  ["lv-LV", "12\u00a0345,6700 EUR"],
+  ["ar-EG", "١٢٬٣٤٥٫٦٧٠٠ EUR"],
+  ["ar-AE", "12,345.6700 EUR"],
+  ["de-DE", "12.345,6700 EUR"],
+  ["fr-FR", "12\u202f345,6700 EUR"],
+  ["ko-KR", "12,345.6700 EUR"],
+  ["zh-CN", "12,345.6700 EUR"],
+  ["zh-TW", "12,345.6700 EUR"],
+  ["zh-HK", "12,345.6700 EUR"],
+  ["ja-JP", "12,345.6700 EUR"],
+  ["es-ES", "12.345,6700 EUR"],
+  ["es-MX", "12,345.6700 EUR"],
+  ["es-AR", "12.345,6700 EUR"],
+  ["de-AT", "12\u00a0345,6700 EUR"],
+  ["de-CH", "12'345.6700 EUR"],
+] as const)("preserves independently authored four-decimal output in %s", (locale, expected) => {
+  expect(exactMoney("12345.6700", "EUR", locale)).toBe(expected);
+});
+
+it("preserves a forty-digit aggregate through reused numeric resources", () => {
+  expect(exactMoney("1234567890123456789012345678901234567890.1234", "EUR", "en-GB")).toBe(
+    "1,234,567,890,123,456,789,012,345,678,901,234,567,890.1234 EUR",
   );
 });

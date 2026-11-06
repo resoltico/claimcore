@@ -12,6 +12,26 @@ let tests =
     testList
         "CLI regional display cultures"
         [
+            testCase "prepared display cultures are shared and immutable" (fun () ->
+                for language in ClaimCore.Protocol.LocalizationPolicy.languages do
+                    let culture = TextReplyFormat.displayCulture language
+                    Expect.isTrue culture.IsReadOnly "Culture is not mutable shared state"
+
+                    Expect.isTrue
+                        culture.DateTimeFormat.IsReadOnly
+                        "Date conventions cannot change between calls"
+
+                    Expect.isTrue
+                        culture.NumberFormat.IsReadOnly
+                        "Money conventions cannot change between calls"
+
+                    Expect.isTrue
+                        (obj.ReferenceEquals(culture, TextReplyFormat.displayCulture language))
+                        "Same finite language resource is reused"
+
+                    Expect.throws
+                        (fun () -> culture.NumberFormat.NumberDecimalSeparator <- "!")
+                        "Callers cannot mutate exact money conventions")
             testCase
                 "supported languages select explicit independent regional identities"
                 (fun () ->

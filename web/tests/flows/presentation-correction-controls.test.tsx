@@ -114,10 +114,10 @@ it("associates payment acknowledgement with the generated mode control", async (
     "act.groups.payment.kind-hint",
     "act.groups.payment.kind-error",
   ]);
-  expect(description).toHaveTextContent("explicit payment reaffirmation");
+  expect(description).toHaveTextContent("explicitly reaffirm, replace or clear the payment record");
   await setEditorLanguage(user, "lv");
   expect(document.getElementById("act.groups.payment.kind-error")).toHaveTextContent(
-    "skaidri jāapstiprina",
+    "skaidri atkārtoti apstipriniet, aizstājiet vai noņemiet",
   );
   payment = document.querySelector<HTMLSelectElement>("#correction-payment-mode")!;
   await chooseOption(user, payment, "CLEAR");

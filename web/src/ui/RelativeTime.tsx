@@ -1,3 +1,4 @@
+import { localeNumbers } from "../presentation/localeNumbers";
 import { usePresentation } from "../presentation/context";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 /** Both instants come from the read model, so a local clock error cannot change the displayed age. */
@@ -19,7 +20,7 @@ export const RelativeTime = ({ value, observedAt }: { value: string; observedAt:
     divisor = 60;
   }
   const locale = new Intl.Locale(p.language === "en-XA" ? "en" : p.language, {
-    numberingSystem: new Intl.NumberFormat(p.displayLocale).resolvedOptions().numberingSystem,
+    numberingSystem: localeNumbers(p.displayLocale).numberingSystem,
   });
   const text = new Intl.RelativeTimeFormat(locale, { numeric: "auto" }).format(
     Math.round(seconds / divisor),

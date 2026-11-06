@@ -1,17 +1,14 @@
 import { productMetadata } from "../protocol/productMetadata";
 import { isAmountText, isGregorianDate } from "../protocol/scalars";
 import type { FieldCatalogEntry } from "../api/service";
-import type { DisplayLocale } from "./preferences";
+import { displayLocales, type DisplayLocale } from "./preferences";
+import { localeNumbers } from "./localeNumbers";
 
-const digitsFor = (locale: DisplayLocale) => {
-  const formatter = new Intl.NumberFormat(locale, { useGrouping: false });
-  return Array.from({ length: 10 }, (_, n) => formatter.format(n));
-};
 export const exactInteger = (value: string, locale: DisplayLocale): string => {
   if (!/^(0|[1-9][0-9]{0,18})$/u.test(value)) {
     return value;
   }
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(value));
+  return localeNumbers(locale).integer.format(BigInt(value));
 };
 const currencyMinorUnits = new Map(
   productMetadata.catalog.moneyMinorUnits.map(({ currency, minorUnits }) => [currency, minorUnits]),
@@ -28,14 +25,12 @@ const decimalText = (
 ): string => {
   const [whole = "", own = ""] = value.split(".");
   const fraction = own.padEnd(minimumFractionDigits, "0");
-  const integer = new Intl.NumberFormat(locale, { maximumFractionDigits: 0 }).format(BigInt(whole));
+  const numbers = localeNumbers(locale);
+  const integer = numbers.integer.format(BigInt(whole));
   if (fraction === "") {
     return integer;
   }
-  const separator = new Intl.NumberFormat(locale)
-    .formatToParts(1.1)
-    .find((part) => part.type === "decimal")!.value;
-  const digits = digitsFor(locale);
+  const { decimal: separator, digits } = numbers;
   return (
     integer + separator + Array.from(fraction, (digit) => digits[digit.charCodeAt(0) - 48]).join("")
   );
@@ -84,6 +79,28 @@ export const recordedTime = (value: string, zone: string, locale: DisplayLocale)
     timeZone: zone,
   }).format(new Date(value));
 
+const numericDates = new Map<DisplayLocale, Intl.DateTimeFormat>();
+const namedDates = new Map<DisplayLocale, Intl.DateTimeFormat>();
+const calendarFormatter = (locale: DisplayLocale, named: boolean): Intl.DateTimeFormat => {
+  const cache = named ? namedDates : numericDates;
+  const existing = cache.get(locale);
+  if (existing !== undefined) {
+    return existing;
+  }
+  const formatter = new Intl.DateTimeFormat(locale, {
+    calendar: "gregory",
+    timeZone: "UTC",
+    year: "numeric",
+    month: named ? "short" : "2-digit",
+    day: named ? "numeric" : "2-digit",
+    ...(named ? { weekday: "short" as const } : {}),
+  });
+  if (displayLocales.includes(locale)) {
+    cache.set(locale, formatter);
+  }
+  return formatter;
+};
+
 const calendarCarrier = (value: string): Date | null =>
   isGregorianDate(value) ? new Date(`${value}T00:00:00.000Z`) : null;
 export const calendarDateParts = (
@@ -95,16 +112,9 @@ export const calendarDateParts = (
   if (date === null) {
     return [{ type: "literal", value }];
   }
-  const digits = digitsFor(locale);
+  const { digits } = localeNumbers(locale);
   const year = Array.from(value.slice(0, 4), (d) => digits[d.charCodeAt(0) - 48]).join("");
-  return new Intl.DateTimeFormat(locale, {
-    calendar: "gregory",
-    timeZone: "UTC",
-    year: "numeric",
-    month: named ? "short" : "2-digit",
-    day: named ? "numeric" : "2-digit",
-    ...(named ? { weekday: "short" as const } : {}),
-  })
+  return calendarFormatter(locale, named)
     .formatToParts(date)
     .map((part) => ({ type: part.type, value: part.type === "year" ? year : part.value }));
 };

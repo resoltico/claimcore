@@ -1,8 +1,7 @@
 import "./button.css";
-import type { ComponentProps } from "react";
-import { Button as AriaButton } from "react-aria-components/Button";
+import { ButtonControl, type ButtonControlProps } from "./ButtonControl";
 
-export type ButtonProps = Omit<ComponentProps<typeof AriaButton>, "className"> & {
+export type ButtonProps = Omit<ButtonControlProps, "className"> & {
   className?: string;
   variant?: "primary" | "secondary" | "danger";
 };
@@ -13,7 +12,7 @@ export const Button = ({
   type = "button",
   ...props
 }: ButtonProps) => (
-  <AriaButton
+  <ButtonControl
     {...props}
     type={type}
     className={["ui-button", `ui-button--${variant}`, className].filter(Boolean).join(" ")}

@@ -284,7 +284,9 @@ it("names an Arabic responsibility disclosure from its complete visible event an
     const summary = view.container.querySelector("summary")!;
     expect(summary).not.toHaveAttribute("aria-labelledby");
     expect(summary).not.toHaveAttribute("aria-label");
-    expect(summary).toHaveAccessibleName(/عُيّن Alex Handler مسؤولًا Plain Sight Field Owner/u);
+    expect(summary).toHaveAccessibleName(
+      /أُسندت المسؤولية إلى Alex Handler Plain Sight Field Owner/u,
+    );
     expect(summary).toHaveAccessibleName(/عرض التفاصيل/u);
     expect(summary.querySelectorAll("bdi")).toHaveLength(2);
   } finally {

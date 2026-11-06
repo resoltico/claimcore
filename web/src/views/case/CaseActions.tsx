@@ -1,6 +1,6 @@
 import { useRequesterContext } from "../../hooks/useRequesterContext";
 import { useLayoutEffect, useRef } from "react";
-import { Button } from "react-aria-components/Button";
+import { ButtonControl as Button } from "../../ui/ButtonControl";
 import type { CurrentCase } from "../../api/service";
 import { isCaseAct, type ActKind } from "../../operation/metadata";
 import { useCompact } from "../../hooks/useCompact";

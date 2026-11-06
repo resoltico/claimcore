@@ -173,7 +173,7 @@
   "ui.reminders": "Atgādinājumi",
   "ui.removeGrant": "Noņemt lomu",
   "ui.retryExact": "Sūtīt vēlreiz",
-  "ui.retryExactDescription": "Sūtīšana vēlreiz izmanto precīzos pieprasījuma baitus šīs lapas atmiņā. Iznākuma pārbaude sniedz galīgu atbildi. Pēc pārlādes ir pieejama tikai iznākuma pārbaude, jo pieprasījuma saturs netiek saglabāts.",
+  "ui.retryExactDescription": "Atkārtotā nosūtīšana izmanto precīzos pieprasījuma baitus šīs lapas atmiņā. Statusa pārbaude nolasa pašreizējo iznākumu, nebloķējot darbību; iznākums var palikt nenoskaidrots. Pēc pārlādes saglabājas tikai atkopšanas identifikatori, tāpēc no šīs lapas pieprasījumu atkārtoti nosūtīt nevar. Sadaļā Atkopšana var pārbaudīt statusu vai, ja tas ir pieejams, apzināti pieprasīt neatgriezenisku atrisināšanu.",
   "ui.retryLanguage": "Mēģināt valodu vēlreiz",
   "ui.retryView": "Mēģināt ielādēt vēlreiz",
   "ui.returnToCase": "Atgriezties lietā",

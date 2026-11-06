@@ -3,7 +3,7 @@ import { useMemo } from "react";
 import { ComboBox, Popover } from "react-aria-components/ComboBox";
 import { Input } from "react-aria-components/Input";
 import { Label } from "react-aria-components/Label";
-import { Button } from "react-aria-components/Button";
+import { ButtonControl as Button } from "../ui/ButtonControl";
 import { ListBox, ListBoxItem } from "react-aria-components/ListBox";
 import { Text } from "react-aria-components/Text";
 import { FieldError } from "react-aria-components/FieldError";

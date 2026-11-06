@@ -30,11 +30,17 @@ const loseAcceptedClose = async (page: Page) => {
   }
 };
 for (const reload of [false, true]) {
-  test(`uncertain submit has definitive resolution${reload ? " after reload" : " in page"}`, async ({
+  test(`uncertain accepted submit recovers its receipt${reload ? " after reload" : " in page"}`, async ({
     page,
   }) => {
     await openAuthenticated(page);
     const operationId = await loseAcceptedClose(page);
+    const guidance = page.getByText(
+      /^Send again uses the exact request bytes still held by this page\./u,
+    );
+    await expect(guidance).toContainText("the outcome may remain unresolved");
+    await expect(guidance).toContainText("only recovery identifiers are stored");
+    await expect(guidance).toContainText("permanent settlement when available");
     await expect(
       page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }),
     ).toBeVisible();
