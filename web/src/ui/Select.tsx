@@ -35,6 +35,8 @@ export const Select = ({
   const listId = `${controlId}-options`;
   const valueId = `${controlId}-value`;
   const trigger = useRef<HTMLButtonElement>(null);
+  // Positioning preserves the focused option when the available scroll height changes.
+  const optionsRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState(false);
   const [draft, setDraft] = useState(value);
   const [focus, setFocus] = useState<true | "first" | "last">(true);
@@ -136,6 +138,7 @@ export const Select = ({
       <Popover
         className="ui-select-popover"
         triggerRef={trigger}
+        scrollRef={optionsRef}
         isOpen={open}
         isNonModal
         placement="bottom start"
@@ -144,8 +147,9 @@ export const Select = ({
           setOpen(next);
         }}
       >
-        <div onKeyDownCapture={cancelOnEscape}>
+        <div className="ui-select-collection" onKeyDownCapture={cancelOnEscape}>
           <ListBox
+            ref={optionsRef}
             id={listId}
             className="ui-select-options"
             aria-labelledby={labelId}

@@ -21,7 +21,7 @@ import {
   caseViewInput,
 } from "../tests/support/inputs";
 import { contrastRatio } from "../src/theme/contrast";
-import { chooseOption } from "./workspace-navigation";
+import { chooseOption, settlePopupTriggerScroll } from "./workspace-navigation";
 import { expectAccessible } from "./session-helpers";
 
 const presentationBasis = {
@@ -224,7 +224,7 @@ test("Settings reflows at 320px and 200% text without overflowing accent cards",
 });
 
 for (const language of ["en", "lv", "ar"] as const) {
-  test(`sign-in Settings dialog contains accent contents at 320px and 200% text in ${language}`, async ({
+  test(`sign-in Settings dialog keeps choices and accents visible at 320px and 200% text in ${language}`, async ({
     page,
   }) => {
     const clean = await observe(page);
@@ -234,6 +234,16 @@ for (const language of ["en", "lv", "ar"] as const) {
     await page.evaluate(() => {
       document.documentElement.style.fontSize = "200%";
     });
+    const picker = page.locator('.settings-panel [role="combobox"][id$="-format"]');
+    await settlePopupTriggerScroll(picker);
+    await picker.focus();
+    await page.keyboard.press("End");
+    await expect(page.getByRole("option").last()).toBeFocused();
+    await expectChoiceInView(page.getByRole("option").last());
+    await page.keyboard.press("Home");
+    await expect(page.getByRole("option").first()).toBeFocused();
+    await expectChoiceInView(page.getByRole("option").first());
+    await page.keyboard.press("Escape");
     await page.locator(".settings-accents").scrollIntoViewIfNeeded();
     const bounds = await page.locator(".accent-card").evaluateAll((cards) =>
       cards.map((card) => {
