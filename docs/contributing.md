@@ -205,6 +205,8 @@ Check mode refuses missing, stale or extra outputs and does not repair them. Rev
 producer. Custom output directories contain only contract artifacts. Core message metadata is locale-neutral;
 production presentation loads and admits one complete core/chrome language pair before activation.
 The generated eager catalog loaders are for tests and do not belong in the production import graph.
+The shared language policy owns interface tags, aliases, direction and regional defaults. CLI-specific
+.NET date patterns belong to `TextReplyFormat`; browser formatting uses `Intl`.
 Dynamic JavaScript uses native imports; Vite retains initial HTML preloads and async CSS dependencies.
 Shared UI components import the styles their markup requires. Styles imported only by a lazy view are
 not available on cold entry to another view. Check shared fact rendering through direct Recovery and
@@ -390,6 +392,12 @@ npm --prefix web run test:unit:watch -- tests/unit/protocol/preparedRequest.test
 ```
 
 Build current native inputs before using `--no-build`; choose the affected test suite or frontend file.
+CLI description and topic unit tests cover the complete language/operation and language/topic products.
+Publication checks every operation/input and help topic once in English; the independent literal
+samples in `CliUsageTests.localizedDiscovery` check packaged core/CLI wording for every real language.
+All-language summaries, repair guidance and consent/usage tests retain their separate protections.
+This avoids starting a process for every independent language/command combination.
+
 Published-process tests also require current Release application outputs, even when their test assembly
 is Debug. Build the affected application projects in Release before a direct focused invocation;
 `eng/verify.sh` prepares these inputs for its stages. Publication runs before owned database startup,

@@ -20,23 +20,24 @@ let private description cli language arguments =
     Encoding.UTF8.GetString result.StandardOutput
 
 let private selectedInputs cli =
-    for language in LocalizationPolicy.languages do
-        for operation in CommandGrammar.operations do
-            let output = description cli language (CommandGrammar.words operation)
+    // CliDescriptionTests covers the complete operation/input/language product in process.
+    // CliUsageTests.localizedDiscovery checks every published language with independent literals.
+    for operation in CommandGrammar.operations do
+        let output = description cli "en" (CommandGrammar.words operation)
 
-            Expect.stringContains
-                output
-                (CommandGrammar.synopsis operation)
-                "Published grammar matches the catalog"
+        Expect.stringContains
+            output
+            (CommandGrammar.synopsis operation)
+            "Published grammar matches the catalog"
 
-            let inputs, _ = CommandGrammar.derive operation
+        let inputs, _ = CommandGrammar.derive operation
 
-            for input in inputs do
-                if input.Argument <> CatalogArgument.Implicit then
-                    Expect.stringContains
-                        output
-                        (ClaimCore.Cli.ContractDiscovery.localized language input.Binding.LabelId)
-                        "Published input labels survive"
+        for input in inputs do
+            if input.Argument <> CatalogArgument.Implicit then
+                Expect.stringContains
+                    output
+                    (ClaimCore.Cli.ContractDiscovery.localized "en" input.Binding.LabelId)
+                    "Published input labels survive"
 
 // These historical grammar captures intentionally retain a noncanonical bare-host issuer.
 // L6 now refuses their business syntax locally; they remain valid structural frame oracles.

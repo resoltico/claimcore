@@ -69,11 +69,19 @@ module internal TextReplyFormat =
     let moneyTotal language currency total =
         moneyTotalWithScale language currency total (DecimalTotal.displayScale currency total)
 
+    // These are .NET format strings, owned by the terminal renderer rather than the browser policy.
     let calendarDate language (value: DateOnly) =
-        value.ToString(
-            (LocalizationPolicy.languageOption language).datePattern,
-            displayCulture language
-        )
+        let pattern =
+            match language with
+            | "ko" -> "yyyy년 M월 d일"
+            | "zh-Hans"
+            | "zh-Hant"
+            | "ja" -> "yyyy年M月d日"
+            | "es" -> "d 'de' MMM 'de' yyyy"
+            | "de" -> "d. MMM yyyy"
+            | _ -> "d MMM yyyy"
+
+        value.ToString(pattern, displayCulture language)
 
     let date language value =
         CalendarDate.value value |> calendarDate language

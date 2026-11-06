@@ -11,63 +11,54 @@ module LocalizationPolicy =
                 label = "English"
                 direction = "ltr"
                 displayLocale = "en-GB"
-                datePattern = "d MMM yyyy"
             |}
             {|
                 value = "lv"
                 label = "Latviešu"
                 direction = "ltr"
                 displayLocale = "lv-LV"
-                datePattern = "d MMM yyyy"
             |}
             {|
                 value = "ar"
                 label = "العربية"
                 direction = "rtl"
                 displayLocale = "ar-AE"
-                datePattern = "d MMM yyyy"
             |}
             {|
                 value = "ko"
                 label = "한국어"
                 direction = "ltr"
                 displayLocale = "ko-KR"
-                datePattern = "yyyy년 M월 d일"
             |}
             {|
                 value = "zh-Hans"
                 label = "简体中文"
                 direction = "ltr"
                 displayLocale = "zh-CN"
-                datePattern = "yyyy年M月d日"
             |}
             {|
                 value = "zh-Hant"
                 label = "繁體中文"
                 direction = "ltr"
                 displayLocale = "zh-TW"
-                datePattern = "yyyy年M月d日"
             |}
             {|
                 value = "ja"
                 label = "日本語"
                 direction = "ltr"
                 displayLocale = "ja-JP"
-                datePattern = "yyyy年M月d日"
             |}
             {|
                 value = "es"
                 label = "Español"
                 direction = "ltr"
                 displayLocale = "es-ES"
-                datePattern = "d 'de' MMM 'de' yyyy"
             |}
             {|
                 value = "de"
                 label = "Deutsch"
                 direction = "ltr"
                 displayLocale = "de-DE"
-                datePattern = "d. MMM yyyy"
             |}
         ]
 
