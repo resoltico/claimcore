@@ -9,7 +9,11 @@ import {
   operationId as entryOperationId,
 } from "../tests/support/service-foundation.fixtures";
 import { expect, test, type Page } from "@playwright/test";
-import { type RequestByEndpoint, type RequesterState } from "@contracts/client";
+import {
+  presentationLanguageOptions,
+  type RequestByEndpoint,
+  type RequesterState,
+} from "@contracts/client";
 import {
   actorContextInput,
   caseSummaryInput,
@@ -75,7 +79,16 @@ test("keeps presentation controls in Settings and applies persisted choices with
   });
   await trigger.click();
   const panel = page.locator(".settings-panel");
-  await expect(panel.locator('input[type="radio"]')).toHaveCount(8);
+  await expect(panel.locator('input[name$="-language"]')).toHaveCount(
+    presentationLanguageOptions.length,
+  );
+  expect(
+    await panel
+      .locator('input[name$="-language"]')
+      .evaluateAll((radios) => radios.map((radio) => radio.getAttribute("value"))),
+  ).toEqual(presentationLanguageOptions.map((option) => option.value));
+  await expect(panel.locator('input[name$="-mode"]')).toHaveCount(3);
+  await expect(panel.locator('input[name$="-accent"]')).toHaveCount(2);
   await expect(panel.locator('[aria-live="polite"]')).toBeEmpty();
   await chooseOption(
     page,

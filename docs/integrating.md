@@ -581,7 +581,8 @@ The native client publishes private per-attempt files under `$XDG_STATE_HOME/cla
 `~/.local/state/claimcore`, with 0700 directories and 0600 files. `claimcore recovery list` lists only the
 current authenticated service/installation/actor scope. `claimcore recovery check ATTEMPT_ID` reads status;
 `claimcore recovery settle ATTEMPT_ID` explicitly requests permanent settlement. Text is the default;
-`--format json` preserves machine output, and `--language en|lv|ar` selects text. Interactive mode requires
+`--format json` preserves machine output, and `--language LANGUAGE` selects text; see the
+[supported choices](cli.md#discovery-configuration-and-frame-commands). Interactive mode requires
 terminal confirmation for settlement; automation must explicitly choose `settle`. Only complete
 correlated accepted/final results can clear the selected owned record. Unresolved/error/stale replies and storage failures retain identity; a cleanup failure does not
 hide the known server result. `claimcore schema recovery` describes the identity-only listing. Prepared
