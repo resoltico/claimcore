@@ -42,5 +42,5 @@ See [Support](SUPPORT.md), [Security](SECURITY.md) and [Contributing](CONTRIBUTI
 The owner reviews and merges work. Releases distribute source through
 [GitHub Releases](https://github.com/resoltico/claimcore/releases).
 
-Original code and documentation use the [Mozilla Public License 2.0](LICENSE). Third-party components retain
+ClaimCore code and documentation use the [Mozilla Public License 2.0](LICENSE). Third-party components retain
 their licenses and notices. [CHANGELOG.md](CHANGELOG.md) records release changes.

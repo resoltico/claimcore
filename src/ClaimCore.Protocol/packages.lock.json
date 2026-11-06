@@ -11,7 +11,7 @@
       "claimcore.application.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.15.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },

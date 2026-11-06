@@ -136,7 +136,7 @@ principal outputs. Stored identity-token decoding belongs to storage adapters; c
 fault, never a request-correction refusal.
 
 HTTP replies carry `outcome`; preview, execution, observe, status and resolve echo `operationId`. Receipts contain shared
-acceptance metadata and a tagged case or authority `subject`. HTTP does not use the CLI frame wrapper.
+acceptance metadata and a typed `subject` for their operation family. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
 [host failure policy](../src/ClaimCore.Protocol/Wire/HostFailures.fs).
 
@@ -215,9 +215,10 @@ system roots while retaining hostname and validity checks. The
 
 `authority.history` accepts `limit` (1–50), optional `cursor` and optional `actorId` selecting the
 target actor. It requires installation `ReadAuthority` within the same snapshot used for the page.
-Entries are newest first by ledger sequence, with `sequence`, `recordedAt`, `recordedBy`,
-`targetActorId` and a tagged `act`. REGISTER and PROVISION_OWNER carry `principal`; GRANT and REVOKE
-carry `role` and `scope`; ENABLE and DISABLE carry no additional facts. These are decoded from the
+Entries are newest first by ledger sequence, with `sequence`, `recordedAt`, current `recordedBy` and
+`target` ActorRefs, and a tagged `act`. REGISTER and PROVISION_OWNER carry `principal`; GRANT and REVOKE
+carry `role` and `scope`; SET_PROFILE carries a nullable `profile`, which is null after its payload is
+erased. ENABLE, DISABLE and ERASE_PROFILE carry no additional facts. Entries are decoded from the
 permanent authority payload and checked against its commitment and metadata.
 
 The response has `entries` and nullable `nextCursor`. A cursor binds the target filter; restarting
@@ -247,7 +248,7 @@ order is `REFERENCE`. For example:
 | `lifecycle` | Set of ACTIVE, VOIDED and ERASED. |
 | `status` | Set of OPENED and CLOSED; erased cases have no status. |
 | `progress` | Set of UNDECIDED, DECIDED and PAID; erased cases have no progress. |
-| `text` | A 1–100-Unicode-scalar substring of reference, claimant or insurer. |
+| `text` | A 1–100-Unicode-scalar literal substring of reference, claimant, insurer, Incident description or Handling summary. |
 | `order` | REFERENCE, RECENT for last business-fact change first, NOTIFIED for oldest notification, or FOLLOW_UP for dated work first. |
 | `view` | A closed core case view, intersected with all other filters. |
 | `responsibleActor` | Exact responsible ActorId selection within the viewer's current case visibility. |
@@ -287,9 +288,9 @@ currency/amount totals. `DecimalTotal` is an unsigned canonical decimal string w
 and four fractional digits; sums never round. There is no currency conversion or self-excluding facet
 count. Visibility, assignment and forbidden-role safeguards match `case.list`, within the summary's
 own read snapshot. Separate list and summary requests can observe different accepted writes.
-`case.get` reports `mine` from the responsible ActorId. `context.hasScopedCases` reports grant-based
+`case.get` reports `mine` from the responsible ActorId. The ACTIVE `requester` in a `context` response supplies `hasScopedCases` for grant-based
 visibility, independently of responsibility. A case-scoped read grant does not make a case Mine;
-assignment does not grant access. `context.actorId` identifies the current requester.
+assignment does not grant access. `actorId` on that ACTIVE requester identifies the current account.
 
 Case work has an independent revision and optional `responsibleActor` and `handlingSummary` values.
 The `WORK` operation family carries `UPDATE_WORK` and its expected work revision; OPEN establishes an
@@ -334,8 +335,8 @@ terminal or inactive work. Such a record can match an OVERDUE date filter while 
 Generate strict consumers from the matching schema; `timing` is required even when null. Historical
 receipts have no current timing classification.
 
-The work overview ignores case page/search filters and reports accessible or Mine actionable
-cases with observation/date/zone. Missing-plan, overdue, unassigned and unavailable dimensions overlap;
+The work overview ignores case page/search filters. Its `actionableCases` counts accessible active open
+cases, or the Mine subset, with observation/date/zone. Missing-plan, overdue, unassigned and unavailable dimensions overlap;
 attentionCases counts their distinct union, including due-today and ready-to-close cases. Counts distinguish cases from reminders. Zero Pending on an
 active open case is monitored attention, not a hard validity refusal. Date passage writes no ledger event.
 Case financial aggregates count each selected case exactly once, regardless of reminder cardinality.
@@ -351,8 +352,8 @@ CRLF conversion happens before review/freezing, never after prepared request con
 `case.timeline` merges typed fact, work and reminder events by ledger sequence, with core-computed
 changes and current actor references. The browser and `claimcore case timeline` use this unified read.
 The explicit wire reads `case.history` (consecutive fact revisions) and `case.activity` (fact/work/reminder
-activity) remain available through HTTP or `call`; their old dedicated human CLI verbs are removed.
-Current terminal reminder access is distinct from prior-version ReadHistoryFull disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
+activity) are available through HTTP or `call`. Current reminder reads use current case-read rights;
+retained history requires its declared history disclosure. Recovery correlates family, parent, entity IDs/revisions and both compound
 effects. Creation receipts also bind the new CaseId, ReminderId or ActorId to the operation UUID.
 An authority receipt for an existing principal carries its ActorId, which does not establish a match to
 an authored issuer/subject. Clients correlate its operation UUID, family and act; they do not scan the
@@ -384,24 +385,25 @@ claimcore case list --format csv --all
 
 Facet flags are repeatable and derive their choices from the catalog. CSV is UTF-8 without a BOM, uses
 CRLF line endings and RFC 4180 quoting, and writes one header row of actual qualified wire field paths
-(such as `state.claimed.amount` and `state.progress`). Null/unrecorded/erased values use empty cells.
+(such as `state.fields.claimedAmount` and `responsible.actorId`). Null/unrecorded/erased values use empty cells.
 CSV is a spreadsheet-safe export: a cell beginning with `=`, `+`, `-`, `@`, TAB or CR, or with one of
 those triggers after leading spaces/TABs, receives an apostrophe before RFC 4180 quoting. This rule
 applies to every column and alters affected cells. Use `--format json` when exact values are required;
 JSON preserves exact authored values. Human text visibly escapes terminal controls, line separators,
 directional formatting and literal backslashes; see [CLI text output](cli.md).
-The header order is:
+The [CSV column definition](../src/ClaimCore.Cli/CaseListRows.fs) owns the ordered header.
+It contains reference/revision/lifecycle, core headline and attention, the Domain-declared listed
+`state.fields.*` values, current responsible-actor identity/name/availability, next-reminder identity,
+action/date/due state, Pending count, fact-change time and the page's business-date/zone basis.
+Erased fields and absent work values use empty cells. A named actor and an erased actor remain distinct
+through `responsible.displayName.kind`; erased display-name values are empty.
 
-```text
-caseReference,revision,state.kind,state.status,state.claimantName,state.insurerName,state.claimed.amount,state.claimed.currency,state.payable.amount,state.payable.currency,state.progress,state.incidentNotificationDate,state.work.responsible.actorId,state.work.responsible.displayName,state.work.followUpDate,state.work.due,state.work.basis.businessDate,state.work.basis.timeZone,changedAt
-```
-
-Work columns export the responsible ActorId, planned date, due token and that row's business-date/zone basis.
-They remain empty for erased rows; current account subjects are available through authorized JSON/detail reads.
-Amounts and timestamps use their canonical wire values; tokens and references are not localized. `--all` follows continuations to the end, emits the header once and stops on refusal, reporting the cursor
+Amounts and timestamps use canonical wire values; tokens and references are not localized. `--all`
+follows continuations to the end, emits the header once and stops on refusal, reporting the cursor
 reached. Each page is its own snapshot; the complete export is not an installation-wide snapshot.
 
-`context.maintenance` and case `advice.maintenance` contain the observed `active` flag and monotonic
+`maintenance` on the ACTIVE requester in a `context` response, and case `advice.maintenance`,
+contain the observed `active` flag and monotonic
 interval `generation`. Active maintenance removes register-write offers while retaining authorized reads.
 The server returns `REGISTER_MAINTENANCE` when an otherwise admissible new register/control write reaches
 the actual paused action state. Retained accepted operations and committed nonacceptance observations do
@@ -434,10 +436,10 @@ case-work eligibility. Optional `responsibleCases` carries a count plus an execu
 selection; its absence is not zero. Related authority details may include principal/contact information
 under their existing authority-read policy; a reusable ActorRef does not.
 
-`operation.preview` now carries required `review.presentation` beside its typed `subject`. Its
+`operation.preview` carries required `review.presentation` beside its typed `subject`. Its
 `changes` entries supply key, label identity and typed before/after values; `unchanged` supplies the
-remaining field identities for one summary. CASE subjects retain before/after/context and remove the
-old raw-string `changes` member. Work, reminder and authority subjects retain their typed effects.
+remaining field identities for one summary. CASE subjects contain before/after/context.
+Work, reminder and authority subjects carry their typed effects.
 The server builds presentation once from core meaning; clients render the supplied values rather than
 compare snapshots, infer unchanged groups or reconstruct profile names.
 
@@ -457,15 +459,14 @@ ledger verification and projection rebuild derive summary attribution from the o
 Core presentation fields and inputs publish `labelId`, `hintId` and `ruleId`. `ruleArguments` supplies
 Domain-owned bounds for precise rules. GUI diagnostics use `diagnosticGuiMessageKeys`, with the same
 validated arguments as canonical diagnostics. Catalog entries retain their act/query `meaningId`,
-provide `consequence` and `consequenceId`, and use `doneId` for past-tense outcomes. No old meaning or
-checkbox-confirmation aliases are published for fields/inputs.
+provide `consequence` and `consequenceId`, and use `doneId` for past-tense outcomes.
 
-ACTIVE context adds bounded own `roles` from the same raw-assignment summary owner as People;
+The ACTIVE requester in a `context` response supplies bounded own `roles` from the same raw-assignment summary owner as People;
 capability labels must not be inverted to invent role assignments. Limited requester states remain limited.
 `AuthorityReview.basis` and authority-list/grant/history/access-request page bases come from their own
 authorized transaction, including when no rows are returned.
 
-`RuntimeContext` retains flat business date/zone fields and adds the authoritative `observedAt`.
+`RuntimeContext` supplies `productVersion`, `businessDate`, `timeZone` and authoritative `observedAt`.
 Receipt `basis` describes the current authorized observation; its `recordedAt` remains the historical
 accepted-event timestamp, including on replay and later observation. Never substitute a client clock.
 
@@ -481,8 +482,7 @@ history (`/authority-history`), Recovery (`/recovery`) and Settings (`/settings`
 core context. Canonical case and exact-reference links remain `/cases/id/CASE-ID` and
 `/cases/reference/REFERENCE`; editors append `/acts/ACT`. `/cases/new` opens the case drawer within the
 worklist. `/people/ACTOR-ID` opens the person panel. `/recovery/OPERATION-ID` opens recovery for one change.
-Old `/work`, `/authority` and `/operations` routes return the localized missing page. Settings is the sole preference
-editor, also available as a dialog in the sign-in footer.
+Settings is the sole preference editor, also available as a dialog in the sign-in footer.
 
 Worklist query parameters carry selected view, filters, search and order; page cursors are not stored in
 the URL. Back/forward, reload and sign-in return preserve the same-origin path. Returning from case
@@ -510,17 +510,18 @@ Use the client's link builder for exact references. Ordinary reference segments 
 This avoids dot-segment normalization and prefix collisions. A UUID-shaped reference stays a reference;
 only the explicit `/cases/id/` route selects by CaseId.
 
-The actor directory uses a labelled table on desktop and compact cards on mobile, with kind, subject,
-enabled state and a count from the selected actor's fully loaded grant pages. Partial pages, reloads
-and refused disclosures withhold the count; closing the detail discards it. Each offered row link
-opens the actor detail; listing does not fetch individual grant pages.
+The actor directory uses a labelled table on desktop and compact cards on mobile, with current name,
+optional contact, principal kind, role/scope summaries and account-assignment state. Each offered row
+link opens actor detail; listing does not fetch individual grant pages. Detail loads the selected
+actor's paged grants and marks the list complete only when no continuation remains. Follow Load more
+for the remaining assignments; a row summary is not a complete grant inventory.
 
 Authority actor links bind offered actions to the disclosed actor. A retained request keeps its original
 principal and operation identity until the user explicitly discards it to begin the selected actor's
 action. Preview and exact-request confirmation still precede execution.
 
 Language, display locale and SYSTEM/LIGHT/DARK theme are independent preferences. Preferences use stored
-format version 2. Unsupported versions or invalid record shapes use defaults; unsupported preference values
+format version 3 under `claimcore.presentation.v3`. Unsupported versions or invalid record shapes use defaults; unsupported preference values
 fall back individually. Locale date/amount controls prepare canonical wire values for preview;
 the server remains responsible for admission. Unambiguous locale amounts normalize before preview;
 ambiguous text reaches server admission as authored. Country/currency suggestions allow free entry under
@@ -562,7 +563,8 @@ uncertainty. A complete OS write and flush do not prove downstream persistence.
 
 The generated [exit-code reference](cli.md#exit-codes) covers both executables, including usage and cancellation.
 
-Authenticated context includes `installationId`. Execute, passive status and final resolve requests carry its canonical UUID in
+ACTIVE and NO_ROLES requesters in an authenticated `context` response include `installationId`.
+Execute, passive status and final resolve requests carry its canonical UUID in
 the required `ClaimCore-Installation` header; a mismatch returns `INSTALLATION_MISMATCH / NOT_STARTED`
 before an acceptance or fence. All operation replies echo their operation ID; clients also check receipt
 and target identities after decoding. A schema-valid mismatched reply remains uncertain.

@@ -248,7 +248,9 @@ owner mutations remain isolated.
 
 Profile erasure removes the account’s saved display name and contact, including retained SET_PROFILE payloads and their nonces. The principal identity, enabled state, grants and work references remain; references display “Former account” and a short ID. A later SET_PROFILE records a new profile and survives an older erase frontier. Profile erasure does not remove earlier exports, private provisioning files or client retry journals. Those copies have separate operator and client custody.
 
-Authenticated callers see their own ACTIVE, NO_ROLES, DISABLED or NOT_REGISTERED state through `context`. Other endpoints retain the non-disclosing `RESOURCE_UNAVAILABLE` refusal. Optional identity-provider `name`, `preferred_username` and `email` hints are independently admitted as single-line text of at most 200 Unicode scalars; missing, ambiguous or invalid hints are omitted. They never become actor profiles automatically.
+Authenticated callers see their own ACTIVE, NO_ROLES, DISABLED or NOT_REGISTERED state through `context`. Protected business endpoints retain the non-disclosing `RESOURCE_UNAVAILABLE` refusal.
+Enabled registered actors retain their own actor-scoped delivery recovery even without business or
+authority roles; case-content disclosure still requires its current rights. Optional identity-provider `name`, `preferred_username` and `email` hints are independently admitted as single-line text of at most 200 Unicode scalars; missing, ambiguous or invalid hints are omitted. They never become actor profiles automatically.
 
 The non-ledger `access_request` table temporarily records not-registered callers, keyed by issuer, principal kind and subject. A repeated visit refreshes hints and last-seen time while retaining first-seen time. Requests expire after 30 days; each requester refresh removes at most 50 expired rows, and concurrent inserts retain at most 1,000 rows by evicting the oldest. Registration and initial-owner provisioning remove the matching request in the same transaction. The cache is excluded from ledger verification and is not a source of authority or actor names. Only `MANAGE_AUTHORITY` permits `authority.requests` and `authority.requests.dismiss`; `READ_AUTHORITY` does not. Dismissal deletes one kind-aware identity without a ledger entry or access grant; a later visit may create a new request.
 
@@ -350,7 +352,8 @@ execute on the server.
 
 ## Browser preferences
 
-Preferences use `claimcore.presentation.v3` in browser storage; v2 values are ignored without migration.
+Preferences use format 3 under `claimcore.presentation.v3` in browser storage. Unsupported versions
+or malformed records use defaults.
 People choose language, regional format, green/blue accent and light/dark/system mode only in Settings,
 or the same panel from the sign-in footer. The first visit negotiates supported browser languages.
 System mode follows the device preference. OS contrast preferences and forced colors remain effective.

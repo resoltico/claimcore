@@ -8,13 +8,12 @@ Spanish and German, and separate Simplified (`zh-Hans`) and Traditional (`zh-Han
 Regional date and number formats are independent of interface text; Chinese script selection takes
 precedence over regional defaults.
 
-The six added language catalogs are translation drafts. Native-speaker review is outstanding for Korean,
-Japanese, Spanish, German, both Chinese scripts, and the earlier Latvian/Arabic wording changes.
-Assisted semantic review of all nine catalog sets checks wording against owning English and actual
-consumer behavior, including recovery, settlement, payment choices, ordering, counts and operator faults.
-These reviews and automated completeness checks do not constitute native linguistic approval.
-No human reviewer or native approval is recorded. Before release, record each reviewer's language,
-reviewed commit, catalog/context scope and resolved corrections in the PR.
+Korean, Japanese, Spanish, German and both Chinese catalogs have draft translation status.
+All nine catalog sets have AI-assisted semantic review against owning English and consumer behavior,
+including recovery, settlement, payment choices, ordering, counts and operator faults. No human
+native-speaker sign-off is recorded for Latvian, Arabic or the draft translations. Automated completeness
+and placeholder checks establish structural consistency, not linguistic approval. Record a reviewer's
+language, reviewed source and catalog/context scope when reporting linguistic approval.
 
 | Concept | English | Latvian | Arabic |
 | --- | --- | --- | --- |

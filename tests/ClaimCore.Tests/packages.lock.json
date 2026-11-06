@@ -39,9 +39,9 @@
       },
       "Markdig": {
         "type": "Direct",
-        "requested": "[1.5.1, )",
-        "resolved": "1.5.1",
-        "contentHash": "NtHwU5t5yKr6Gnylhs8/hlR0mOAftTFQURDz2ID8bkunxps1neOzKw0dYKKlwNuwiYIGLHjJTXK91f809Ko1ww=="
+        "requested": "[1.6.0, )",
+        "resolved": "1.6.0",
+        "contentHash": "rJEpDfPM8wrfXUgkNejjg2bJN9bciy44uVyRwKUI+92CnSmbaLeJTLPYcCdvgM4RFsKrhs8d2H2hO78yZpMl3g=="
       },
       "Microsoft.OpenApi": {
         "type": "Direct",
@@ -270,11 +270,11 @@
       "claimcore": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.HostSecurity": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
-          "ClaimCore.Protocol": "[0.15.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.HostSecurity": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.Protocol": "[0.16.0, )",
           "Duende.IdentityModel": "[8.1.0, )",
           "Duende.IdentityModel.OidcClient": "[7.1.1, )",
           "FSharp.Core": "[10.1.403, )",
@@ -284,26 +284,26 @@
       "claimcore-database": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.15.0, )",
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.HostSecurity": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
-          "ClaimCore.Postgres": "[0.15.0, )",
-          "ClaimCore.Protocol": "[0.15.0, )",
+          "ClaimCore.Application": "[0.16.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.HostSecurity": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.Postgres": "[0.16.0, )",
+          "ClaimCore.Protocol": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },
       "claimcore-server": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.15.0, )",
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.HostSecurity": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
-          "ClaimCore.Postgres": "[0.15.0, )",
-          "ClaimCore.Protocol": "[0.15.0, )",
+          "ClaimCore.Application": "[0.16.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.HostSecurity": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.Postgres": "[0.16.0, )",
+          "ClaimCore.Protocol": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )",
           "Microsoft.AspNetCore.Authentication.JwtBearer": "[10.0.14, )",
           "Microsoft.AspNetCore.Authentication.OpenIdConnect": "[10.0.14, )"
@@ -312,16 +312,16 @@
       "claimcore.application": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.RecordFormat": "[0.15.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.RecordFormat": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },
       "claimcore.application.contracts": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.15.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },
@@ -346,11 +346,11 @@
       "claimcore.postgres": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.15.0, )",
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
-          "ClaimCore.RecordFormat": "[0.15.0, )",
+          "ClaimCore.Application": "[0.16.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.RecordFormat": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )",
           "Npgsql": "[10.0.3, )"
         }
@@ -358,50 +358,50 @@
       "claimcore.protocol": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },
       "claimcore.protocolgenerator": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
-          "ClaimCore.Protocol": "[0.15.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.Protocol": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )",
-          "claimcore": "[0.15.0, )",
-          "claimcore-database": "[0.15.0, )"
+          "claimcore": "[0.16.0, )",
+          "claimcore-database": "[0.16.0, )"
         }
       },
       "claimcore.recordformat": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
           "FSharp.Core": "[10.1.403, )"
         }
       },
       "claimcore.testsupport": {
         "type": "Project",
         "dependencies": {
-          "ClaimCore.Application": "[0.15.0, )",
-          "ClaimCore.Application.Contracts": "[0.15.0, )",
-          "ClaimCore.Domain": "[0.15.0, )",
-          "ClaimCore.HostSecurity": "[0.15.0, )",
-          "ClaimCore.Json": "[0.15.0, )",
-          "ClaimCore.Postgres": "[0.15.0, )",
-          "ClaimCore.Protocol": "[0.15.0, )",
-          "ClaimCore.RecordFormat": "[0.15.0, )",
+          "ClaimCore.Application": "[0.16.0, )",
+          "ClaimCore.Application.Contracts": "[0.16.0, )",
+          "ClaimCore.Domain": "[0.16.0, )",
+          "ClaimCore.HostSecurity": "[0.16.0, )",
+          "ClaimCore.Json": "[0.16.0, )",
+          "ClaimCore.Postgres": "[0.16.0, )",
+          "ClaimCore.Protocol": "[0.16.0, )",
+          "ClaimCore.RecordFormat": "[0.16.0, )",
           "Expecto": "[11.1.1, )",
           "FSharp.Core": "[10.1.403, )",
           "Microsoft.AspNetCore.TestHost": "[10.0.14, )",
           "Npgsql": "[10.0.3, )",
           "Testcontainers": "[4.16.0, )",
           "Testcontainers.PostgreSql": "[4.16.0, )",
-          "claimcore-server": "[0.15.0, )"
+          "claimcore-server": "[0.16.0, )"
         }
       },
       "Duende.IdentityModel": {

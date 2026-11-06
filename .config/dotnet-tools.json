@@ -3,14 +3,14 @@
   "isRoot": true,
   "tools": {
     "fantomas": {
-      "version": "8.1.0",
+      "version": "8.1.1",
       "commands": [
         "fantomas"
       ],
       "rollForward": false
     },
     "dotnet-fsharplint": {
-      "version": "0.27.0",
+      "version": "0.27.2",
       "commands": [
         "dotnet-fsharplint"
       ],

@@ -92,7 +92,7 @@ clears its saved work and action text, including earlier versions.
 ## Work attention and queues
 
 Navigation counts the work you can read. A case can need attention because it lacks a next action,
-has overdue work, lacks a responsible person, has an unavailable responsible person, or is paid and ready
+has overdue or due-today work, lacks a responsible person, has an unavailable responsible person, or is paid and ready
 to close. A case with several reasons still counts once in Needs attention.
 
 Open **Reminders** to see actions across cases. Use its standard views and filters to find Pending,
@@ -178,7 +178,7 @@ Checking never records or blocks a change. An unresolved result does not mean it
 
 **Settle operation permanently** is a separate irreversible action. If the operation was already accepted
 for your account, its receipt is returned. Otherwise it permanently prevents acceptance for your account
-with that same change identifier. Type the shown identifier to confirm. Use it only when you intend that result. A registered person can check their own delivery results even
+with that same change identifier. Type the shown identifier to confirm. Use it only when you intend that result. An enabled registered person can check their own delivery results even
 without case roles.
 
 Reloading or closing a tab keeps delivery identifiers but cannot reconstruct the authored request.
@@ -196,5 +196,4 @@ The concise event and highlighted differences come from Core. Choose **Show deta
 exact differences and the operation identity, revision and recorded time used for support.
 
 In the CLI use `claimcore case timeline REFERENCE`, optionally with `--filter facts` or `--filter work`.
-The former human `case history` and `case activity` commands are removed. JSON and CSV exports retain
-canonical values. See [integration](integrating.md) for formats, history permissions and live traversal.
+JSON and CSV exports retain canonical values. See [integration](integrating.md) for formats, history permissions and live traversal.
