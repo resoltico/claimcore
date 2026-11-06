@@ -84,6 +84,13 @@ const refusedRetry = async (page: Page, bytes: Buffer) => {
   });
   pending.release();
   await expect(page.locator(".authority-rows > tr")).toHaveCount(0);
+  // Empty rows also occur during revalidation; wait for the revoked view and its data to disappear.
+  await expect(
+    page.locator(
+      '.workspace-sidebar nav a[href="/people"], .workspace-mobile-tabs a[href="/people"]',
+    ),
+  ).toHaveCount(0);
+  await expect(page.locator(".authority-table")).toHaveCount(0);
   const resume = page.getByRole("button", {
     name: ui("en", "ui.continueAuthorityRequest"),
     exact: true,
