@@ -13,14 +13,14 @@ module internal TextReplyFormat =
     // The CLI has language selection, not a separate display-locale preference.
     // Explicit regional cultures keep numeric conventions independent of neutral-culture OS defaults.
     let displayCulture language =
-        let locale =
-            match language with
-            | "en" -> "en-GB"
-            | "lv" -> "lv-LV"
-            | "ar" -> "ar-AE"
-            | _ -> invalidArg (nameof language) "A supported CLI language is required."
+        let culture =
+            CultureInfo
+                .GetCultureInfo((LocalizationPolicy.languageOption language).displayLocale)
+                .Clone()
+            :?> CultureInfo
 
-        CultureInfo.GetCultureInfo locale
+        culture.DateTimeFormat.Calendar <- GregorianCalendar()
+        culture
 
     let label language key =
         MessageCatalogs.render language key Map.empty
@@ -69,8 +69,14 @@ module internal TextReplyFormat =
     let moneyTotal language currency total =
         moneyTotalWithScale language currency total (DecimalTotal.displayScale currency total)
 
-    let date (language: string) value =
-        (CalendarDate.value value).ToString("d MMM yyyy", displayCulture language)
+    let calendarDate language (value: DateOnly) =
+        value.ToString(
+            (LocalizationPolicy.languageOption language).datePattern,
+            displayCulture language
+        )
+
+    let date language value =
+        CalendarDate.value value |> calendarDate language
 
     let country (language: string) code =
         try

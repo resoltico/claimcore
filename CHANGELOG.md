@@ -51,6 +51,9 @@
 - Published-client fixtures drain Web logs for their full lifetime and retain bounded tails; capture metadata identifies truncation and incomplete cleanup.
 - Secondary-principal browser specs obtain real OIDC sessions at file setup, preserving authentication expiry and login admission during long suites.
 - Rate-limited host responses include Retry-After: 1 without increasing authentication or admission capacity.
+- Use Korean, Japanese, Spanish, German, Simplified Chinese or Traditional Chinese in the CLI and web; Chinese selection preserves script and regional defaults.
+- Choose regional date/number formats independently in the web; CLI dates use Gregorian conventions for the selected language and retain exact money values.
+- Contributor browser checks cover each language and layout risk without a language/theme/viewport product; reuse applicable CI evidence instead of repeating full local gates.
 
 ## [0.15.0] - 2026-11-03
 

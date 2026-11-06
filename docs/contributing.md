@@ -255,10 +255,19 @@ message map rather than displaying CLI syntax. Consequence and completion identi
 renderers must not infer them from effect names.
 
 The machine-readable [glossary](../src/ClaimCore.Protocol/Messages/Localization/glossary.json) owns the
-EN/LV/AR seed terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
+supported-language terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
 registers, banned GUI tokens and glossary alignment during generation and `--check`. Add a negative
-control when changing these checks. Latvian and Arabic linguistic changes need native-speaker review;
-record outstanding review in the PR until a reviewer has supplied it.
+control when changing these checks. New and changed translations need native-speaker review;
+record outstanding review in the PR until a reviewer has supplied it. Catalog parity checks establish
+complete keys and safe arguments, not linguistic approval.
+
+[LocalizationPolicy](../src/ClaimCore.Protocol/Messages/Localization/LocalizationPolicy.fs) owns supported
+language tags, Chinese script/region aliases, direction and default CLI display conventions. Korean uses
+South Korean conventions; Spanish and German use contemporary standard wording. Chinese has separate
+Simplified (`zh-Hans`) and Traditional (`zh-Hant`) catalogs. Explicit scripts take precedence over region;
+unqualified Chinese defaults to Simplified, while Taiwan, Hong Kong and Macao select Traditional.
+Browser date/number formats remain independent of text language. Add all three authored catalogs and
+glossary terms when adding a language; generation derives static catalogs and lazy-loading declarations.
 
 ## Theme and layout
 
@@ -359,6 +368,16 @@ browser qualification before starting tools or containers. The matrix plan also 
 tuples and counts during cheap frontend tests and spec collection, before creating its dataset.
 Direct local commands do not enforce prior check completion; apply the same sequencing when invoking
 them. CI dependency checks prevent those workflow regressions, not every possible manual misuse.
+
+Routine layout qualification uses representative risk cases rather than a Cartesian product of language,
+theme, accent and viewport. Chromium visits all 29 scenes in 14 contexts, covering every text language,
+long German text, CJK, RTL, pseudolocalization, mobile/tablet/desktop and 200% zoom. Firefox and WebKit
+visit all scenes in desktop LTR and narrow RTL contexts. The separate theme/contrast, forced-colors,
+input, security and workflow tests still apply. Language-switch coverage exercises every language and
+display format without multiplying their independent choices. Review additional combinations when a
+specific defect or deliberate UI qualification requires them; expanding the language registry must not
+silently multiply the whole workflow suite. This replaces the original overhaul's exhaustive layout
+matrix for ordinary development; its historical results remain evidence for the source they tested.
 
 After [first checkout](#first-checkout), examples for focused iteration are:
 

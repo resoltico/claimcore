@@ -1,32 +1,35 @@
-import { accents } from "../src/presentation/preferences";
+import { languages, type Language } from "../src/presentation/preferences";
 export type Dimension = {
-  language: "en" | "lv" | "ar" | "en-XA";
+  language: Language;
   mode: "light" | "dark";
   accent: "green" | "blue";
   width: number;
   zoom?: number;
 };
+/** Cover layout risks separately instead of multiplying every independent preference. */
 export const dimensions = (engine: string): Dimension[] => {
-  const result: Dimension[] = [];
-  const widths = engine === "chromium" ? [320, 390, 768, 1280] : [320, 1280];
-  const languages = engine === "chromium" ? (["en", "lv", "ar"] as const) : (["en", "ar"] as const);
-  const themes = engine === "chromium" ? (["light", "dark"] as const) : (["light"] as const);
-  for (const width of widths) {
-    for (const language of languages) {
-      for (const theme of themes) {
-        for (const accent of accents) {
-          result.push({ width, language, mode: theme, accent });
-        }
-      }
-    }
+  const shared: Dimension[] = [
+    { width: 1280, language: "en", mode: "light", accent: "green" },
+    { width: 320, language: "ar", mode: "dark", accent: "blue" },
+  ];
+  if (engine !== "chromium") {
+    return shared;
   }
-  if (engine === "chromium") {
-    result.push(
-      { width: 320, language: "en-XA", mode: "light", accent: "green" as const },
-      { width: 640, language: "en", mode: "light", accent: "green" as const, zoom: 2 },
-    );
-  }
-  return result;
+  return [
+    ...shared,
+    { width: 390, language: "en", mode: "light", accent: "green" },
+    { width: 320, language: "en", mode: "dark", accent: "blue" },
+    { width: 768, language: "en", mode: "dark", accent: "blue" },
+    { width: 390, language: "lv", mode: "dark", accent: "blue" },
+    { width: 390, language: "ko", mode: "light", accent: "green" },
+    { width: 390, language: "zh-Hans", mode: "dark", accent: "blue" },
+    { width: 390, language: "zh-Hant", mode: "light", accent: "green" },
+    { width: 390, language: "ja", mode: "dark", accent: "blue" },
+    { width: 390, language: "es", mode: "light", accent: "green" },
+    { width: 320, language: "de", mode: "light", accent: "green" },
+    { width: 320, language: "en-XA", mode: "light", accent: "green" },
+    { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 },
+  ];
 };
 export const expectedRoutes = [
   "cases-mine",
@@ -61,9 +64,8 @@ export const expectedRoutes = [
 ] as const;
 export const screenshotDimension = (dimension: Dimension): boolean =>
   dimension.zoom === undefined &&
-  ((dimension.language === "en" && [390, 1280].includes(dimension.width)) ||
-    (dimension.language === "en" && dimension.width === 320 && dimension.mode === "light") ||
-    (["lv", "ar"].includes(dimension.language) && dimension.width === 390));
+  dimension.language !== "en-XA" &&
+  (dimension.width <= 390 || (dimension.language === "en" && dimension.width === 1280));
 export const expectedCaptures = (engine: string, dimension: Dimension): number =>
   engine === "chromium" && screenshotDimension(dimension)
     ? 15 +
@@ -108,8 +110,8 @@ export type MatrixCounts = {
 };
 export const expectedEngineCounts = (engine: string): MatrixCounts =>
   engine === "chromium"
-    ? { dimensions: 50, pageLoads: 1450, axeAndReflowChecks: 1500, screenshots: 272 }
-    : { dimensions: 8, pageLoads: 232, axeAndReflowChecks: 240, screenshots: 0 };
+    ? { dimensions: 14, pageLoads: 406, axeAndReflowChecks: 420, screenshots: 166 }
+    : { dimensions: 2, pageLoads: 58, axeAndReflowChecks: 60, screenshots: 0 };
 export const assertMatrixCounts = (engine: string, actual: MatrixCounts): void => {
   const expected = expectedEngineCounts(engine);
   if (
@@ -122,34 +124,19 @@ export const assertMatrixCounts = (engine: string, actual: MatrixCounts): void =
     );
   }
 };
-const validExtra = (engine: string, d: Dimension): boolean => {
-  if (engine !== "chromium" || d.mode !== "light" || d.accent !== "green") {
-    return false;
-  }
-  if (d.language === "en-XA") {
-    return d.width === 320 && d.zoom === undefined;
-  }
-  return d.language === "en" && d.width === 640 && d.zoom === 2;
-};
-const validDimension = (engine: string, d: Dimension): boolean => {
-  if (validExtra(engine, d)) {
-    return true;
-  }
-  return (
-    d.zoom === undefined &&
-    (engine === "chromium" ? [320, 390, 768, 1280] : [320, 1280]).includes(d.width) &&
-    (engine === "chromium" ? ["en", "lv", "ar"] : ["en", "ar"]).includes(d.language) &&
-    (engine === "chromium" ? ["light", "dark"] : ["light"]).includes(d.mode) &&
-    ["green", "blue"].includes(d.accent)
-  );
-};
+const validDimension = (d: Dimension): boolean =>
+  languages.includes(d.language) &&
+  [320, 390, 640, 768, 1280].includes(d.width) &&
+  ["light", "dark"].includes(d.mode) &&
+  ["green", "blue"].includes(d.accent) &&
+  (d.zoom === undefined || (d.language === "en" && d.width === 640 && d.zoom === 2));
 export const assertMatrixPlan = (engine: string): void => {
   if (!["chromium", "firefox", "webkit"].includes(engine)) {
     throw new Error("Unknown design matrix engine");
   }
   const plan = dimensions(engine);
   if (
-    plan.some((d) => !validDimension(engine, d)) ||
+    plan.some((d) => !validDimension(d)) ||
     new Set(plan.map((d) => JSON.stringify(d))).size !== plan.length ||
     new Set(expectedRoutes).size !== 29
   ) {

@@ -1,7 +1,8 @@
 import { catalogs as coreCatalogs } from "../../src/generated/core-catalogs";
 import { catalogs as chromeCatalogs } from "../../src/generated/chrome-catalogs";
 import { installLanguage } from "../../src/presentation/languageCatalog";
-for (const language of ["en", "lv", "ar"] as const) {
+import { presentationLanguageOptions } from "@contracts/client";
+for (const { value: language } of presentationLanguageOptions) {
   installLanguage(language, coreCatalogs[language], chromeCatalogs[language]);
 }
 import { clearRecoveryFixtures } from "./recovery.fixtures";

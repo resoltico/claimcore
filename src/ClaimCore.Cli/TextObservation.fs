@@ -8,8 +8,6 @@ open ClaimCore.Protocol
 /// Observation belongs to the installation snapshot, never the client's current clock.
 module internal TextObservation =
     let line (language: string) (basis: WorkDateBasis) =
-        let culture = TextReplyFormat.displayCulture language
-
         let observed =
             try
                 TimeZoneInfo
@@ -29,7 +27,7 @@ module internal TextObservation =
             language
             (CliMessage.Observed(
                 observed,
-                basis.BusinessDate.ToString("d MMM yyyy", culture),
+                TextReplyFormat.calendarDate language basis.BusinessDate,
                 TerminalText.data basis.TimeZoneId
             ))
 

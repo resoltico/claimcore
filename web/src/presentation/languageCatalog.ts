@@ -1,3 +1,4 @@
+import { catalogLoaders } from "../generated/catalog-loaders";
 import { messageShapes as coreShapes } from "@contracts/messages";
 import { messageShapes as chromeShapes } from "../generated/chrome-messages";
 import { presentationDefaults, presentationPseudolanguage } from "@contracts/client";
@@ -61,30 +62,11 @@ export const catalogFor = (language: Language): TextCatalog => {
   }
   return catalog;
 };
-const importPair = (language: CatalogLanguage) => {
-  switch (language) {
-    case "en":
-      return Promise.all([
-        import("../../../src/ClaimCore.Protocol/Messages/Localization/en.json"),
-        import("../../locales/en.json"),
-      ]);
-    case "lv":
-      return Promise.all([
-        import("../../../src/ClaimCore.Protocol/Messages/Localization/lv.json"),
-        import("../../locales/lv.json"),
-      ]);
-    case "ar":
-      return Promise.all([
-        import("../../../src/ClaimCore.Protocol/Messages/Localization/ar.json"),
-        import("../../locales/ar.json"),
-      ]);
-  }
-};
 export const loadLanguage = async (language: Language): Promise<void> => {
   if (languageLoaded(language)) {
     return;
   }
   const selected = catalogLanguage(language);
-  const [core, chrome] = await importPair(selected);
+  const [core, chrome] = await catalogLoaders[selected]();
   installLanguage(selected, core.default, chrome.default);
 };

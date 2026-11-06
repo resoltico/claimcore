@@ -1,8 +1,8 @@
 # Engineering commands
 
 Use focused checks while editing and `bash eng/verify.sh --fast` for a broader checkpoint. Run
-`bash eng/verify.sh` before marking an implementation PR ready for review; CI still qualifies its full
-platform matrix. See the [verification policy](../docs/contributing.md#verification) for scope and reuse.
+the applicable final stages once, choosing CI or local execution as their owner. See the
+[verification policy](../docs/contributing.md#verification) for scope and evidence reuse.
 Select [growth measurements](../docs/contributing.md#growth) for a concrete performance question or an
 explicit task or release requirement. Neither growth command is part of the ordinary gate. A full
 comparison isolates the reference commit and a stable candidate snapshot, including tracked working

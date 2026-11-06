@@ -12,16 +12,9 @@ import { isHostFailure, isResponse } from "../src/protocol/client";
 import { catalogLanguage, installLanguage } from "../src/presentation/languageCatalog";
 import { preferenceKey } from "../src/presentation/preferences";
 import type { Language, DisplayLocale, Preferences } from "../src/presentation/preferences";
-import enCore from "../../src/ClaimCore.Protocol/Messages/Localization/en.json" with { type: "json" };
-import lvCore from "../../src/ClaimCore.Protocol/Messages/Localization/lv.json" with { type: "json" };
-import arCore from "../../src/ClaimCore.Protocol/Messages/Localization/ar.json" with { type: "json" };
-
-import enChrome from "../locales/en.json" with { type: "json" };
-const en = { ...enCore, ...enChrome };
-import lvChrome from "../locales/lv.json" with { type: "json" };
-const lv = { ...lvCore, ...lvChrome };
-import arChrome from "../locales/ar.json" with { type: "json" };
-const ar = { ...arCore, ...arChrome };
+import { catalogs as coreCatalogs } from "../src/generated/core-catalogs";
+import { catalogs as chromeCatalogs } from "../src/generated/chrome-catalogs";
+import type { CatalogLanguage } from "../src/presentation/languageCatalog";
 
 import type { ReviewIdentity } from "./case-workflow";
 
@@ -49,16 +42,17 @@ export const seedPresentation = async (
 /** Admit the same complete catalog pair for Node-side presentation expectations. */
 export const installTestLanguage = (language: Language): void => {
   const selected = catalogLanguage(language);
-  installLanguage(
-    selected,
-    { en: enCore, lv: lvCore, ar: arCore }[selected],
-    { en: enChrome, lv: lvChrome, ar: arChrome }[selected],
-  );
+  installLanguage(selected, coreCatalogs[selected], chromeCatalogs[selected]);
 };
-export const ui = (language: "en" | "lv" | "ar", key: keyof typeof en): string =>
-  ({ en, lv, ar })[language][key];
-export const openLabel = (language: "en" | "lv" | "ar"): string =>
-  ({ en, lv, ar })[language]["act.OPEN.label"];
+export const ui = (
+  language: CatalogLanguage,
+  key: keyof typeof coreCatalogs.en | keyof typeof chromeCatalogs.en,
+): string =>
+  key.startsWith("ui.")
+    ? chromeCatalogs[language][key as keyof typeof chromeCatalogs.en]
+    : coreCatalogs[language][key as keyof typeof coreCatalogs.en];
+export const openLabel = (language: CatalogLanguage): string =>
+  coreCatalogs[language]["act.OPEN.label"];
 type PreferenceVisit =
   { kind: "CURRENT" } | { kind: "DIALOG" } | { kind: "PAGE"; returnUrl: string };
 /** Expose the real Settings navigation without accepting a draft/uncertainty guard. */

@@ -16,11 +16,12 @@ module internal CliLanguage =
             |> Option.map (fun value -> name, value))
         |> Option.bind (fun (name, value: string) ->
             let language =
-                value.Split([| '.'; '@'; '_'; '-' |])
+                value.Split([| '.'; '@' |])
                 |> Array.head
-                |> fun value -> value.ToLowerInvariant()
+                |> fun value -> value.Replace('_', '-')
 
-            if supported language then Some(language, name) else None)
+            LocalizationPolicy.tryLanguage language
+            |> Option.map (fun language -> language, name))
         |> Option.defaultValue ("en", "default")
 
     let choose read profile =

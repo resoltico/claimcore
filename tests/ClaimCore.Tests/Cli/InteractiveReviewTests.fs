@@ -530,6 +530,24 @@ let tests =
                         (CliInvocations.usageLanguage [ "case"; "close"; "--language=" + language ])
                         language
                         "Assigned language options also localize usage errors")
+            testCase "new language confirmations require a localized affirmative" (fun () ->
+                for language, answer in
+                    [
+                        "ko", "예"
+                        "ja", "はい"
+                        "zh-Hans", "确认"
+                        "zh-Hant", "確認"
+                        "es", "SÍ"
+                        "de", "JA"
+                    ] do
+                    Expect.isTrue
+                        (CliConfirmation.confirmed language (Some answer))
+                        "Explicit localized consent"
+
+                    for refusal in [ None; Some ""; Some "no"; Some "否"; Some "not yes" ] do
+                        Expect.isFalse
+                            (CliConfirmation.confirmed language refusal)
+                            "Missing or negative answers cannot dispatch")
             testCase "explicit preview remains preview-only without asking to execute" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Accepted
                 Expect.equal (run [ "case"; "close"; "x"; "--preview" ] h) 0 "Preview completed"

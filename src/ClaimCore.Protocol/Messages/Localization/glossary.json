@@ -1,13 +1,140 @@
 {
-  "case": {"en":"case","lv":"lieta","ar":"ملف","forbidden":{"ar":["قضية","قضايا","قضيت"]}},
-  "claim": {"en":"claim","lv":"prasījums","ar":"مطالبة","forbidden":{}},
-  "claimant": {"en":"claimant","lv":"prasītājs","ar":"المطالب","forbidden":{}},
-  "insurer": {"en":"insurer","lv":"apdrošinātājs","ar":"شركة التأمين","forbidden":{}},
-  "payment decision": {"en":"payment decision","lv":"izmaksas lēmums","ar":"قرار الدفع","forbidden":{}},
-  "reminder": {"en":"reminder","lv":"atgādinājums","ar":"تذكير","forbidden":{}},
-  "next action": {"en":"next action","lv":"nākamā darbība","ar":"الإجراء التالي","forbidden":{}},
-  "responsible person": {"en":"responsible","lv":"atbildīgais","ar":"المسؤول","forbidden":{}},
-  "owner": {"en":"owner","lv":"īpašnieks","ar":"المالك","forbidden":{}},
-  "void": {"en":"void","lv":"anulēt","ar":"إبطال","forbidden":{}},
-  "erase": {"en":"erase","lv":"dzēst","ar":"محو","forbidden":{}}
+  "case": {
+    "en": "case",
+    "lv": "lieta",
+    "ar": "ملف",
+    "forbidden": {
+      "ar": [
+        "قضية",
+        "قضايا",
+        "قضيت"
+      ]
+    },
+    "ko": "건",
+    "ja": "案件",
+    "zh-Hans": "理赔档案",
+    "zh-Hant": "理賠檔案",
+    "de": "Fall",
+    "es": "expediente"
+  },
+  "claim": {
+    "en": "claim",
+    "lv": "prasījums",
+    "ar": "مطالبة",
+    "forbidden": {},
+    "ko": "청구",
+    "ja": "請求",
+    "zh-Hans": "索赔",
+    "zh-Hant": "索賠",
+    "de": "Anspruch",
+    "es": "reclamación"
+  },
+  "claimant": {
+    "en": "claimant",
+    "lv": "prasītājs",
+    "ar": "المطالب",
+    "forbidden": {},
+    "ko": "청구인",
+    "ja": "請求者",
+    "zh-Hans": "索赔人",
+    "zh-Hant": "索賠人",
+    "de": "Anspruchsteller",
+    "es": "reclamante"
+  },
+  "insurer": {
+    "en": "insurer",
+    "lv": "apdrošinātājs",
+    "ar": "شركة التأمين",
+    "forbidden": {},
+    "ko": "보험사",
+    "ja": "保険会社",
+    "zh-Hans": "保险公司",
+    "zh-Hant": "保險公司",
+    "de": "Versicherer",
+    "es": "aseguradora"
+  },
+  "payment decision": {
+    "en": "payment decision",
+    "lv": "izmaksas lēmums",
+    "ar": "قرار الدفع",
+    "forbidden": {},
+    "ko": "지급 결정",
+    "ja": "支払決定",
+    "zh-Hans": "赔付决定",
+    "zh-Hant": "賠付決定",
+    "de": "Zahlungsentscheidung",
+    "es": "decisión de pago"
+  },
+  "reminder": {
+    "en": "reminder",
+    "lv": "atgādinājums",
+    "ar": "تذكير",
+    "forbidden": {},
+    "ko": "미리 알림",
+    "ja": "リマインダー",
+    "zh-Hans": "提醒",
+    "zh-Hant": "提醒",
+    "de": "Erinnerung",
+    "es": "recordatorio"
+  },
+  "next action": {
+    "en": "next action",
+    "lv": "nākamā darbība",
+    "ar": "الإجراء التالي",
+    "forbidden": {},
+    "ko": "다음 작업",
+    "ja": "次の作業",
+    "zh-Hans": "下一事项",
+    "zh-Hant": "下一事項",
+    "de": "nächste Aufgabe",
+    "es": "próxima acción"
+  },
+  "responsible person": {
+    "en": "responsible",
+    "lv": "atbildīgais",
+    "ar": "المسؤول",
+    "forbidden": {},
+    "ko": "담당자",
+    "ja": "担当者",
+    "zh-Hans": "负责人",
+    "zh-Hant": "負責人",
+    "de": "zuständige Person",
+    "es": "persona responsable"
+  },
+  "owner": {
+    "en": "owner",
+    "lv": "īpašnieks",
+    "ar": "المالك",
+    "forbidden": {},
+    "ko": "소유자",
+    "ja": "所有者",
+    "zh-Hans": "所有者",
+    "zh-Hant": "所有者",
+    "de": "Eigentümer",
+    "es": "propietario"
+  },
+  "void": {
+    "en": "void",
+    "lv": "anulēt",
+    "ar": "إبطال",
+    "forbidden": {},
+    "ko": "무효 처리",
+    "ja": "無効化",
+    "zh-Hans": "作废",
+    "zh-Hant": "作廢",
+    "de": "für ungültig erklären",
+    "es": "anular"
+  },
+  "erase": {
+    "en": "erase",
+    "lv": "dzēst",
+    "ar": "محو",
+    "forbidden": {},
+    "ko": "영구 삭제",
+    "ja": "消去",
+    "zh-Hans": "擦除",
+    "zh-Hant": "擦除",
+    "de": "löschen",
+    "es": "borrar"
+  }
 }

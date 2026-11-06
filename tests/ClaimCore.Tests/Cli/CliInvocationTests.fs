@@ -466,6 +466,33 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 "شخص",
                 "قارئ الحالات",
                 "التثبيت"
+            | "ko" -> [ "계정 등록"; "계정 활성화"; "계정 비활성화"; "역할 부여"; "역할 회수" ], "사람", "건 조회자", "설치 환경"
+            | "ja" ->
+                [ "アカウントを登録"; "アカウントを有効化"; "アカウントを無効化"; "役割を付与"; "役割を取り消す" ], "人", "案件閲覧者", "設置環境"
+            | "zh-Hans" -> [ "注册账户"; "启用账户"; "停用账户"; "授予角色"; "撤销角色" ], "自然人", "档案查阅员", "安装实例"
+            | "zh-Hant" -> [ "註冊帳戶"; "啟用帳戶"; "停用帳戶"; "授予角色"; "撤銷角色" ], "自然人", "檔案查閱員", "安裝實例"
+            | "es" ->
+                [
+                    "Registrar una cuenta"
+                    "Activar la cuenta"
+                    "Desactivar la cuenta"
+                    "Asignar un rol"
+                    "Revocar un rol"
+                ],
+                "Persona",
+                "Lector de expedientes",
+                "Instalación"
+            | "de" ->
+                [
+                    "Konto registrieren"
+                    "Konto aktivieren"
+                    "Konto deaktivieren"
+                    "Rolle zuweisen"
+                    "Rolle entziehen"
+                ],
+                "Mensch",
+                "Fallleser",
+                "Installation"
             | _ -> failtest "Every supported language needs independently authored labels"
 
         let act =
@@ -481,9 +508,16 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
         if enabledBefore <> enabledAfter then
             let yes, no =
                 match language with
+                | "en" -> "Yes", "No"
                 | "lv" -> "Jā", "Nē"
                 | "ar" -> "نعم", "لا"
-                | _ -> "Yes", "No"
+                | "ko" -> "예", "아니요"
+                | "ja" -> "はい", "いいえ"
+                | "zh-Hans"
+                | "zh-Hant" -> "是", "否"
+                | "es" -> "Sí", "No"
+                | "de" -> "Ja", "Nein"
+                | _ -> failtest "Every supported language needs independent boolean labels"
 
             let expected =
                 (if enabledBefore then yes else no) + " → " + (if enabledAfter then yes else no)

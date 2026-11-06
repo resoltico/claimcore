@@ -312,6 +312,16 @@ let languageTests =
                         [ "LC_ALL", ""; "LC_MESSAGES", "lv_LV.UTF-8"; "LANG", "ar_EG" ],
                         ("lv", "LC_MESSAGES")
                         [ "LANG", "en_US.UTF-8" ], ("en", "LANG")
+                        [ "LANG", "ko_KR.UTF-8" ], ("ko", "LANG")
+                        [ "LANG", "ja_JP.UTF-8" ], ("ja", "LANG")
+                        [ "LANG", "es_MX.UTF-8" ], ("es", "LANG")
+                        [ "LANG", "de_CH.UTF-8" ], ("de", "LANG")
+                        [ "LANG", "zh_CN.UTF-8" ], ("zh-Hans", "LANG")
+                        [ "LANG", "zh_SG.UTF-8" ], ("zh-Hans", "LANG")
+                        [ "LANG", "zh_TW.UTF-8" ], ("zh-Hant", "LANG")
+                        [ "LANG", "zh_HK.UTF-8" ], ("zh-Hant", "LANG")
+                        [ "LANG", "zh_Hant_CN.UTF-8" ], ("zh-Hant", "LANG")
+                        [ "LANG", "zh_Hans_TW.UTF-8@modifier" ], ("zh-Hans", "LANG")
                         [ "LC_ALL", "C.UTF-8"; "LANG", "lv_LV" ], ("en", "default")
                         [], ("en", "default")
                     ] do

@@ -20,8 +20,10 @@ import { installTestLanguage } from "./localization-support";
 import { termLabel } from "../src/presentation/terms";
 import { isResponse } from "../src/protocol/client";
 import type { MatrixRoute } from "./design-matrix-fixtures";
+import { presentationDisplayOptions, presentationDefaults } from "@contracts/client";
 export const displayLocaleFor = (language: Dimension["language"]) =>
-  (({ en: "en-GB", lv: "lv-LV", ar: "ar-EG", "en-XA": "en-GB" }) as const)[language];
+  presentationDisplayOptions.find((option) => option.language === language)?.value ??
+  presentationDefaults.displayLocale;
 export const configureDimension = async (page: Page, dimension: Dimension) => {
   installTestLanguage(dimension.language);
   await retainResponseBodies(page);

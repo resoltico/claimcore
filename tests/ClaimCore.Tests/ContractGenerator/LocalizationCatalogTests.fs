@@ -114,7 +114,7 @@ let private structure () =
     let catalogs = CatalogValidation.validateCatalogs authored
     let english = catalogs["en"]
 
-    for language in [ "en"; "lv"; "ar" ] do
+    for language in LocalizationPolicy.languages do
         let templates = catalogs[language]
 
         for prefix in

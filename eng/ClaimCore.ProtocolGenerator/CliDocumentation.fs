@@ -136,7 +136,15 @@ module CliDocumentation =
             "Use the field's `-file PATH`, `-stdin` or `-editor` option for longer text, for example `--handling-summary-file summary.txt` or `--action-file action.txt`. Sources are exclusive. File/stdin/editor input converts CRLF to LF before preparation; direct protocol CR is refused. User-supplied files are preserved. Editor entry requires a terminal and `VISUAL` or `EDITOR` naming one executable, without shell expressions or arguments. Owned temporary files/directories use 0600/0700 permissions; cleanup failure prevents request preparation and reports a diagnostic."
             "Work starts empty at revision zero after OPEN. Work edits preserve financial fact revisions; reminder edits preserve both fact and work revisions. `reminder get` reads one current record, including completed/cancelled records, using parent and reminder identities. `reminder list` defaults to pending actions on active open accessible cases. Due filtering there selects individual reminder dates; case `--due` uses the earliest pending reminder. Past-due reminders remain pending. No-plan attention is a warning, not a refusal or automatic reminder."
             "`reminder complete-and-plan-next` is one atomic two-effect operation: complete one pending reminder and create exactly one next pending reminder whose ID equals the operation ID. Human output refreshes the core work view after acceptance, including missing-plan attention; JSON/NDJSON contain only the requested structured reply. Initial OPEN and subsequent reminder planning are explicitly separate operations. Work overview counts cover accessible actionable cases independently of page/search and report their server date, zone and observation instant; suspended clients do not deliver alarms."
-            "Human operations default to text. Add `--format json` for structured output or `--language en|lv|ar` to select interface text. Display language does not rewrite authored values. Human money, dates and observation footers use en-GB for English, lv-LV for Latvian and Latin-digit ar-AE for Arabic. Canonical JSON and CSV values are unchanged."
+            "Human operations default to text. Add `--format json` for structured output or `--language LANGUAGE` to select interface text. Supported languages: "
+            + (LocalizationPolicy.languages
+               |> List.map (fun value -> "`" + value + "`")
+               |> String.concat ", ")
+            + ". Display language does not rewrite authored values. CLI display cultures: "
+            + (LocalizationPolicy.languageOptions
+               |> List.map (fun option -> "`" + option.value + "` → `" + option.displayLocale + "`")
+               |> String.concat ", ")
+            + ". Dates use the Gregorian calendar; Arabic CLI output retains Latin digits. Canonical JSON and CSV values are unchanged."
             ""
             "Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON."
             ""

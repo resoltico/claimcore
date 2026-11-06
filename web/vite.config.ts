@@ -1,3 +1,4 @@
+import { bootMessages } from "./src/generated/chrome-boot.ts";
 import { fileURLToPath } from "node:url";
 import { availableParallelism } from "node:os";
 import publicAssets from "./scripts/public-assets.plugin.mjs";
@@ -34,18 +35,13 @@ export default {
             // Keep modules with different entry owners out of each other's initial payload.
             { name: "workspace", test: /\/web\/src\//u, entriesAware: true },
 
-            {
-              name: "language-en",
-              test: /\/(?:ClaimCore\.Protocol\/Messages\/Localization|web\/locales)\/en\.json/u,
-            },
-            {
-              name: "language-lv",
-              test: /\/(?:ClaimCore\.Protocol\/Messages\/Localization|web\/locales)\/lv\.json/u,
-            },
-            {
-              name: "language-ar",
-              test: /\/(?:ClaimCore\.Protocol\/Messages\/Localization|web\/locales)\/ar\.json/u,
-            },
+            ...Object.keys(bootMessages).map((value) => ({
+              name: `language-${value}`,
+              test: new RegExp(
+                `/(?:ClaimCore\\.Protocol/Messages/Localization|web/locales)/${value}\\.json`,
+                "u",
+              ),
+            })),
           ],
         },
       },
