@@ -323,6 +323,7 @@ jobs:
           path: |
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/scope.json
+            artifacts/verification/native.*/discovery*.txt
             artifacts/verification/native.*/service-captures/*.json
             artifacts/verification/native.*/cli-failure/**
 
@@ -386,6 +387,7 @@ jobs:
             artifacts/verification/frontend/completion.json
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/scope.json
+            artifacts/verification/native.*/discovery*.txt
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
             artifacts/verification/native.*/service-captures/*.json
