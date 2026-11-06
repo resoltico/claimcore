@@ -352,6 +352,7 @@ jobs:
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/service-captures/*.json
             artifacts/verification/native.*/cli-failure/**
 
   browser_diagnostic:
@@ -396,6 +397,10 @@ jobs:
           sudo apt-get install --yes --no-install-recommends libnss3-tools
           dotnet restore ClaimCore.slnx --locked-mode
           dotnet build ClaimCore.slnx --configuration Release --no-restore
+          dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
+            --configuration Release --no-build --no-restore --zero-tests-policy=strict --timeout=2m \
+            --filter 'FullyQualifiedName~owned service logs|FullyQualifiedName~bounded child failures' \
+            -- --settings=eng/expecto.acceptance.runsettings
           npm --prefix web ci
           npm --prefix web run typecheck
           npm --prefix web run build
@@ -429,6 +434,7 @@ jobs:
             artifacts/verification/native.*/results.trx
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
+            artifacts/verification/native.*/service-captures/*.json
 
   comparison:
     name: Manual same-host growth comparison

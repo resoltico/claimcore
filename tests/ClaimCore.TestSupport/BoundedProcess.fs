@@ -105,7 +105,7 @@ module BoundedProcess =
 
         readers |> Array.forall _.IsCompleted
 
-    let private stop (child: Process) started (readers: Task array) =
+    let internal stop (child: Process) started (readers: Task array) =
         let timer = Stopwatch.StartNew()
 
         let remaining () =
@@ -167,3 +167,182 @@ module BoundedProcess =
                 captureFailure kind stdout.Snapshot stderr.Snapshot (fun () ->
                     stop child started readers)
             )
+
+[<NoEquality; NoComparison>]
+type ServiceLogSnapshot =
+    {
+        Bytes: byte array
+        TotalBytes: int64
+        Complete: bool
+    }
+
+    member this.Truncated = this.TotalBytes > int64 this.Bytes.Length
+
+/// Service logs can grow throughout a fixture. Retain bytes, but never stop draining a full pipe.
+type ServiceLogCapture(maximum: int, stream: Stream, cancellation: CancellationToken) =
+    do
+        if maximum < 1 then
+            invalidArg (nameof maximum) "A service log allowance must be positive."
+
+    let gate = obj ()
+    let window = Array.zeroCreate<byte> maximum
+    let mutable cursor = 0
+    let mutable retained = 0
+    let mutable total = 0L
+
+    let append (bytes: byte array) count =
+        lock gate (fun () ->
+            if count >= maximum then
+                Buffer.BlockCopy(bytes, count - maximum, window, 0, maximum)
+                cursor <- 0
+            else
+                let first = min count (maximum - cursor)
+                Buffer.BlockCopy(bytes, 0, window, cursor, first)
+                Buffer.BlockCopy(bytes, first, window, 0, count - first)
+                cursor <- (cursor + count) % maximum
+
+            retained <- min maximum (retained + count)
+            total <- total + int64 count)
+
+    let completion =
+        task {
+            let chunk = Array.zeroCreate<byte> 8192
+            let mutable reading = true
+
+            while reading do
+                let! count = stream.ReadAsync(chunk.AsMemory(), cancellation)
+                append chunk count
+                reading <- count <> 0
+        }
+
+    member _.Completion = completion :> Task
+
+    member _.Snapshot() =
+        lock gate (fun () ->
+            let bytes = Array.zeroCreate<byte> retained
+            let start = if retained = maximum then cursor else 0
+            let first = min retained (maximum - start)
+            Buffer.BlockCopy(window, start, bytes, 0, first)
+            Buffer.BlockCopy(window, 0, bytes, first, retained - first)
+
+            {
+                Bytes = bytes
+                TotalBytes = total
+                Complete = completion.IsCompletedSuccessfully
+            })
+
+[<NoEquality; NoComparison>]
+type ServiceProcessSnapshot =
+    {
+        StandardOutput: ServiceLogSnapshot
+        StandardError: ServiceLogSnapshot
+        CleanupSucceeded: bool
+    }
+
+/// The fixture owns service lifetime; command deadlines and fail-on-output limits stay separate.
+type OwnedServiceProcess(start: ProcessStartInfo, stdoutMaximum: int, stderrMaximum: int) =
+    do
+        if
+            stdoutMaximum < 1
+            || stderrMaximum < 1
+            || not start.RedirectStandardOutput
+            || not start.RedirectStandardError
+        then
+            invalidArg
+                (nameof start)
+                "Owned service logs require redirected pipes and positive allowances."
+
+    let lifetime = new CancellationTokenSource()
+
+    let child =
+        try
+            Process.Start start
+            |> Option.ofObj
+            |> Option.defaultWith (fun () -> invalidOp "The owned service did not start.")
+        with _ ->
+            lifetime.Dispose()
+            reraise ()
+
+    let initialized = ResizeArray<Task>()
+
+    let capture maximum stream =
+        try
+            let log = ServiceLogCapture(maximum, stream, lifetime.Token)
+            initialized.Add log.Completion
+            log
+        with _ ->
+            BoundedProcess.stop child true (initialized.ToArray()) |> ignore
+            lifetime.Cancel()
+            lifetime.Dispose()
+            child.Dispose()
+            reraise ()
+
+    let output = capture stdoutMaximum child.StandardOutput.BaseStream
+    let errors = capture stderrMaximum child.StandardError.BaseStream
+    let readers = initialized.ToArray()
+    let gate = obj ()
+    let mutable stopping = 0
+    let mutable stopped: ServiceProcessSnapshot option = None
+    let mutable disposed = false
+
+    do
+        for reader in readers do
+            reader.ContinueWith(
+                Action<Task>(fun failed ->
+                    if failed.IsFaulted && Volatile.Read(&stopping) = 0 then
+                        try
+                            if not child.HasExited then
+                                child.Kill(true)
+                        with _ ->
+                            ()),
+                CancellationToken.None,
+                TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Default
+            )
+            |> ignore
+
+    member _.Id = child.Id
+    member _.HasExited = child.HasExited
+    member _.ExitCode = child.ExitCode
+    member _.WaitForExitAsync(token: CancellationToken) = child.WaitForExitAsync token
+    member _.StandardInput = child.StandardInput
+
+    member _.Output = output.Snapshot()
+    member _.Errors = errors.Snapshot()
+
+    member _.Stop() =
+        lock gate (fun () ->
+            match stopped with
+            | Some snapshot -> snapshot
+            | None ->
+                Interlocked.Exchange(&stopping, 1) |> ignore
+                let cleaned = BoundedProcess.stop child true readers
+
+                if not cleaned then
+                    lifetime.Cancel()
+
+                    try
+                        Task.WhenAll(readers).Wait(500) |> ignore
+                    with _ ->
+                        ()
+
+                let snapshot =
+                    {
+                        StandardOutput = output.Snapshot()
+                        StandardError = errors.Snapshot()
+                        CleanupSucceeded = cleaned
+                    }
+
+                stopped <- Some snapshot
+                snapshot)
+
+    interface IDisposable with
+        member this.Dispose() =
+            this.Stop() |> ignore
+
+            lock gate (fun () ->
+                if not disposed then
+                    lifetime.Cancel()
+                    lifetime.Dispose()
+                    child.Dispose()
+                    disposed <- true)

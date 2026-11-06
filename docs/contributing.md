@@ -487,6 +487,11 @@ No later passing check erases a failed run. Cleanup must preserve original failu
 
 Failed publication retains bounded stdout/stderr in the printed private fixture directory. Generated
 published binaries are removed separately; diagnostic files and other unique failure inputs remain.
+Published Web services drain logs for their fixture lifetime, retaining at most the final 8 MiB of
+stdout and 1 MiB of stderr. Their private `*.capture.json` records total and retained byte counts,
+truncation, EOF and cleanup completion; verification reports retain only this counts-and-flags metadata.
+A retained tail is not a complete log. Fixture teardown bounds
+process termination and pipe draining. Command output limits and execution deadlines remain strict.
 These directories can contain credentials and are not public report attachments. Review them privately,
 then remove only the owned fixture after its useful evidence is secured. Failure retention can grow disk
 use; it does not authorize deleting active fixtures, shared caches or unrelated containers.

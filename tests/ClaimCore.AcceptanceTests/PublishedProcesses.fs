@@ -138,17 +138,28 @@ let publicationFailure () =
     finally
         Directory.Delete(directory, true)
 
+let serviceCaptureMetadata (captured: ClaimCore.TestSupport.ServiceProcessSnapshot) =
+    let metadata (log: ClaimCore.TestSupport.ServiceLogSnapshot) =
+        {|
+            totalBytes = log.TotalBytes
+            retainedBytes = log.Bytes.Length
+            truncated = log.Truncated
+            complete = log.Complete
+        |}
+
+    System.Text.Json.JsonSerializer.SerializeToUtf8Bytes
+        {|
+            stdout = metadata captured.StandardOutput
+            stderr = metadata captured.StandardError
+            cleanupSucceeded = captured.CleanupSucceeded
+        |}
+
 type Web(binary, environment, directory, ?logPrefix: string) =
     let logPrefix = defaultArg logPrefix "web"
     let value = start "dotnet" [ binary ] environment
-    let child = Process.Start value |> nonNull
-    let deadline = new CancellationTokenSource(TimeSpan.FromMinutes(30.))
 
-    let output =
-        ClaimCore.TestSupport.BoundedProcess.read 8_388_608 child.StandardOutput.BaseStream deadline
-
-    let errors =
-        ClaimCore.TestSupport.BoundedProcess.read 1_048_576 child.StandardError.BaseStream deadline
+    let child =
+        new ClaimCore.TestSupport.OwnedServiceProcess(value, 8_388_608, 1_048_576)
 
     member _.HasExited = child.HasExited
 
@@ -169,22 +180,40 @@ type Web(binary, environment, directory, ?logPrefix: string) =
     interface IDisposable with
         member _.Dispose() =
             try
-                if not child.HasExited then
-                    child.Kill(true)
+                let captured = child.Stop()
 
-                child.WaitForExit()
-
-                FixtureFiles.write
-                    directory
-                    (logPrefix + ".stdout")
-                    (output.GetAwaiter().GetResult())
+                FixtureFiles.write directory (logPrefix + ".stdout") captured.StandardOutput.Bytes
                 |> ignore
 
-                FixtureFiles.write
-                    directory
-                    (logPrefix + ".stderr")
-                    (errors.GetAwaiter().GetResult())
+                FixtureFiles.write directory (logPrefix + ".stderr") captured.StandardError.Bytes
                 |> ignore
+
+                let metadata = serviceCaptureMetadata captured
+
+                metadata |> FixtureFiles.write directory (logPrefix + ".capture.json") |> ignore
+
+                match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
+                | null -> ()
+                | report ->
+                    let captures = Path.Combine(report, "service-captures")
+
+                    Directory.CreateDirectory(
+                        captures,
+                        UnixFileMode.UserRead
+                        ||| UnixFileMode.UserWrite
+                        ||| UnixFileMode.UserExecute
+                    )
+                    |> ignore
+
+                    FixtureFiles.write captures (Guid.NewGuid().ToString("N") + ".json") metadata
+                    |> ignore
+
+                Expect.isTrue
+                    captured.CleanupSucceeded
+                    "Owned published Web shutdown completes within its cleanup bound"
+
+                Expect.isTrue
+                    (captured.StandardOutput.Complete && captured.StandardError.Complete)
+                    "Owned published Web logs drain to EOF before capture completes"
             finally
-                deadline.Dispose()
-                child.Dispose()
+                (child :> IDisposable).Dispose()
