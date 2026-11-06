@@ -12,15 +12,17 @@ module internal TextReplyFormat =
 
     // The CLI has language selection, not a separate display-locale preference.
     // Explicit regional cultures keep numeric conventions independent of neutral-culture OS defaults.
-    let displayCulture language =
-        let culture =
-            CultureInfo
-                .GetCultureInfo((LocalizationPolicy.languageOption language).displayLocale)
-                .Clone()
-            :?> CultureInfo
+    let private displayCultures =
+        LocalizationPolicy.languageOptions
+        |> List.map (fun option ->
+            let culture =
+                CultureInfo.GetCultureInfo(option.displayLocale).Clone() :?> CultureInfo
 
-        culture.DateTimeFormat.Calendar <- GregorianCalendar()
-        culture
+            culture.DateTimeFormat.Calendar <- GregorianCalendar()
+            option.value, CultureInfo.ReadOnly culture)
+        |> Map.ofList
+
+    let displayCulture language = Map.find language displayCultures
 
     let label language key =
         MessageCatalogs.render language key Map.empty

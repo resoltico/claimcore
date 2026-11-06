@@ -1,16 +1,18 @@
 # Glossary
 
 The machine-readable [glossary seeds](../src/ClaimCore.Protocol/Messages/Localization/glossary.json)
-are checked against core and interface catalogs by the protocol generator. Use these terms consistently;
+are checked against core and interface catalogs by the protocol generator. Use these terms consistently.
+
 The interface supports English, Latvian, Arabic, Korean (South Korea), Japanese, modern standard
 Spanish and German, and separate Simplified (`zh-Hans`) and Traditional (`zh-Hant`) written Chinese.
 Regional date and number formats are independent of interface text; Chinese script selection takes
 precedence over regional defaults.
 
 The six added language catalogs are translation drafts. Native-speaker review is outstanding for Korean,
-Japanese, Spanish, German, both Chinese scripts, and the earlier Latvian/Arabic wording changes. Codex
-reviewed the six drafts' consequence, payment, profile/identity and recovery warnings against English;
-this assisted semantic review and automated completeness checks are not native linguistic approval.
+Japanese, Spanish, German, both Chinese scripts, and the earlier Latvian/Arabic wording changes.
+Assisted semantic review of all nine catalog sets checks wording against owning English and actual
+consumer behavior, including recovery, settlement, payment choices, ordering, counts and operator faults.
+These reviews and automated completeness checks do not constitute native linguistic approval.
 No human reviewer or native approval is recorded. Before release, record each reviewer's language,
 reviewed commit, catalog/context scope and resolved corrections in the PR.
 

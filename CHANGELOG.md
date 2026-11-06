@@ -58,6 +58,11 @@
 
 - Native units build their Debug closure; CI runs complete non-browser published acceptance once and qualifies each browser engine separately.
 
+- Recovery guidance distinguishes unresolved status, exact in-memory retry and account-scoped permanent settlement; an existing acceptance returns its receipt.
+- Correct payment acknowledgement choices, ordering directions, active/open counts and localized operator faults, milestone labels and name interpolation across catalogs.
+- Case lists retain summary integrity failures and reuse validated visible exact matches; outside-page lookup and disclosure checks remain.
+- Reuse immutable CLI cultures and bounded browser locale resources while preserving Gregorian dates, exact amounts and captured input formats.
+
 ## [0.15.0] - 2026-11-03
 
 - Use a fresh database with pg_trgm 1.6: case request/snapshot/ledger format 4 and work/reminder format 1 replace the baseline. Authority/Control stay at 2; old installs refuse; no migration.

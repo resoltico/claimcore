@@ -298,6 +298,11 @@ let internal assignmentAndDisclosure fixture =
             1L
             "Overview ignores text page filter but obeys scope"
 
+        Expect.equal
+            (read scopedOverview).AttentionCases
+            0L
+            "An active open case with an available assignee and future reminder is not attention work"
+
         let! mineOverview = Service.workOverview (core fixture person) { Mine = true } token
 
         Expect.equal

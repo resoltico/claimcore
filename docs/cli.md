@@ -651,7 +651,7 @@ claimcore reminder views [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh
 
 Work overview
 
-Read-only overview of accessible actionable cases, independent of current page and search, with the installation date and observation basis.
+Read-only overview of accessible active open cases, independent of the current page and search, with the installation’s current business date and observation basis.
 
 ```sh
 claimcore work overview [--mine true|false] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
@@ -709,7 +709,7 @@ claimcore case list [--cursor VALUE] [--limit N] [--lifecycle active|voided|eras
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
 | `--text` | Search text — Up to 100 characters. |  |  |
-| `--order` | Order — Order by reference, latest case-fact change, notification date or earliest pending reminder date. Dates sort oldest first; reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
+| `--order` | Order — Order by reference, latest case-fact change, notification date or earliest pending reminder date. Fact changes sort newest first; notification and reminder dates sort oldest first, with missing dates last. Reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |
@@ -731,7 +731,7 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--status` | Status filter — Restrict results to the selected open or closed statuses. Erased cases have no status. | opened, closed |  |
 | `--progress` | Payment progress — Restrict results to undecided, decided or paid cases. Erased cases have no payment progress. | undecided, decided, paid |  |
 | `--text` | Search text — Up to 100 characters. |  |  |
-| `--order` | Order — Order by reference, latest case-fact change, notification date or earliest pending reminder date. Dates sort oldest first; reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
+| `--order` | Order — Order by reference, latest case-fact change, notification date or earliest pending reminder date. Fact changes sort newest first; notification and reminder dates sort oldest first, with missing dates last. Reference breaks ties. | reference, recent, notified, follow-up | REFERENCE |
 | `--assignment` | Responsibility — Filter factual responsibility after current visibility. A case-scoped read grant alone is not an assignment. | mine, unassigned |  |
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |

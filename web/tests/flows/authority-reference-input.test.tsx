@@ -30,7 +30,7 @@ const locales = [
   },
   {
     language: "lv",
-    label: "Administratora lietas numurs",
+    label: "Lietas numurs",
     field: lvField,
     ui: lvField,
     authority: lvField,

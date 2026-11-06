@@ -173,7 +173,7 @@
   "ui.reminders": "Reminders",
   "ui.removeGrant": "Remove role",
   "ui.retryExact": "Send again",
-  "ui.retryExactDescription": "Send again uses the exact request bytes held by this page. Check outcome obtains a final answer. After reloading, only Check outcome is available because no request body is stored.",
+  "ui.retryExactDescription": "Send again uses the exact request bytes still held by this page. Check status reads the current outcome without blocking the operation; the outcome may remain unresolved. After reloading, only recovery identifiers are stored, so this page cannot resend the request. Use Recovery to check status or deliberately request permanent settlement when available.",
   "ui.retryLanguage": "Retry language",
   "ui.retryView": "Retry loading",
   "ui.returnToCase": "Return to case",

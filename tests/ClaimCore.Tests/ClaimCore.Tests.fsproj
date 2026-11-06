@@ -126,6 +126,7 @@
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
     <Compile Include="Application/WorklistAuthorizationTests.fs" />
+    <Compile Include="Application/CaseListReadSequencingTests.fs" />
     <Compile Include="Application/CaseAdviceTests.fs" />
     <Compile Include="Application/ActorResponsibilityTests.fs" />
     <Compile Include="Application/ViewCountTests.fs" />
@@ -143,6 +144,7 @@
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
     <Compile Include="Contract/MessageTemplateTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />
+    <Compile Include="ContractGenerator/SemanticCopyTests.fs" />
     <Compile Include="ContractGenerator/MessageRegisterTests.fs" />
     <Compile Include="ContractGenerator/RoleMeaningTests.fs" />
     <Compile Include="Contract/EndpointRegistryTests.fs" />

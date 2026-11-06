@@ -176,9 +176,9 @@ If ClaimCore cannot confirm whether a change was recorded, keep its identifier a
 Checking never records or blocks a change. An unresolved result does not mean it was rejected.
 **Send again**, when offered in the active editor, sends the identical reviewed request.
 
-**Settle operation permanently** is a separate irreversible action. If the operation was not accepted,
-it prevents that same change identifier from being accepted later. Type the shown identifier to confirm.
-Use it only when you intend that result. A registered person can check their own delivery results even
+**Settle operation permanently** is a separate irreversible action. If the operation was already accepted
+for your account, its receipt is returned. Otherwise it permanently prevents acceptance for your account
+with that same change identifier. Type the shown identifier to confirm. Use it only when you intend that result. A registered person can check their own delivery results even
 without case roles.
 
 Reloading or closing a tab keeps delivery identifiers but cannot reconstruct the authored request.

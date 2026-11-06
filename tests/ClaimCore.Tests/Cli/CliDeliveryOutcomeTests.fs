@@ -39,6 +39,35 @@ let tests =
                             .ExitCode
                         expected
                         "Resolution outcome controls exit")
+            testCase "resolution text retains acceptance and passive unresolved status" (fun () ->
+                let accepted =
+                    TextOperationReply.resolveLines
+                        "en"
+                        (Outcome.Succeeded(Resolved.Accepted CliReplyFixtures.receipt))
+                    |> String.concat "\n"
+
+                Expect.stringContains
+                    accepted
+                    (CliReplyFixtures.id.ToString("D"))
+                    "Existing acceptance has its receipt identity"
+
+                Expect.isFalse
+                    (accepted.Contains "permanently blocked")
+                    "Acceptance is never presented as nonacceptance"
+
+                Expect.equal
+                    (TextOperationReply.resolveLines "en" (Outcome.Succeeded Resolved.NotAccepted))
+                    [
+                        "This operation ID was not accepted and is permanently blocked for this account."
+                    ]
+                    "Only actual final nonacceptance gets this completion"
+
+                Expect.equal
+                    (TextOperationReply.statusLines
+                        "en"
+                        (Outcome.Succeeded OperationStatus.Unresolved))
+                    [ "The operation is still unresolved. This read has not blocked it." ]
+                    "Passive checking is not settlement")
             testCase "reply shape failures are ordinary results" (fun () ->
                 let invocation = frame "operation.execute"
 
