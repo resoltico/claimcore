@@ -16,7 +16,7 @@ let private suitable =
 
 /// A default is a declared, admitted, definite example; a missing positive fixture is a test defect.
 let defaultReply (endpoint: Endpoint<'Input, 'Output>) =
-    PositiveExamples.forEndpoint "wire-response-examples.json" endpoint.Token
+    PositiveExamples.forEndpoint "examples/responses.json" endpoint.Token
     |> List.map (fun value ->
         endpoint.Output.Read "$" value
         |> Result.defaultWith (fun problem -> invalidOp (endpoint.Token + ": " + string problem)))

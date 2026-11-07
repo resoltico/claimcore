@@ -203,8 +203,8 @@ let internal load () =
             Values = Dictionary()
             ContextValues = Dictionary()
             Tokens = Dictionary()
-            Requests = examples "wire-request-examples.json"
-            Replies = examples "wire-response-examples.json"
+            Requests = examples "examples/requests.json"
+            Replies = examples "examples/responses.json"
         }
 
     for definition in Api.definitions do

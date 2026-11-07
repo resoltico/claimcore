@@ -627,3 +627,7 @@ a missing comparison remains unavailable. This does not pin later pages or fetch
 Treat continuation strings as opaque positions for their issuing endpoint and resource. Follow non-null
 `nextCursor`, even after a short page. Each page authorizes again before decoding a cursor and uses its own
 snapshot. Actor summaries are not grant inventories; inspect the selected actor's grant pages separately.
+
+## Wire examples
+
+[Requests](../tests/fixtures/examples/requests.json) and [replies](../tests/fixtures/examples/responses.json) contain fixed, reviewed decoding examples and rejection controls. They are inputs to conformance checks, not generated output snapshots.

@@ -179,7 +179,7 @@ let private acceptedFrame () =
 
     use examples =
         JsonDocument.Parse(
-            File.ReadAllBytes(Path.Combine(root, "tests/fixtures/wire-response-examples.json"))
+            File.ReadAllBytes(Path.Combine(root, "tests/fixtures/examples/responses.json"))
         )
 
     let example =

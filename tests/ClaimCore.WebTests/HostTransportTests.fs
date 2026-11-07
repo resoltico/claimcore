@@ -28,7 +28,7 @@ let private body name =
     elif name = "session" || name = "session.logout" || name = "context" then
         Encoding.UTF8.GetBytes "{}"
     else
-        ClaimCore.TestSupport.PositiveExamples.forEndpoint "wire-request-examples.json" name
+        ClaimCore.TestSupport.PositiveExamples.forEndpoint "examples/requests.json" name
         |> List.head
         |> WireWriter.bytes
 

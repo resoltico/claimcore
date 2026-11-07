@@ -224,7 +224,7 @@ let private localizedReplyRendering () =
     let path =
         System.IO.Path.Combine(
             ClaimCore.TestSupport.RepositoryRoot.find (),
-            "tests/fixtures/wire-response-examples.json"
+            "tests/fixtures/examples/responses.json"
         )
 
     use examples = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllBytes path)

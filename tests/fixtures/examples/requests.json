@@ -1,0 +1,1615 @@
+{
+  "source": "Curated examples of the typed wire alternatives, with explicit rejection controls. No snapshot updater.",
+  "cases": [
+    {
+      "id": "reference-True-0",
+      "endpoint": "case.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "Demo-001"
+        }
+      }
+    },
+    {
+      "id": "session-request-0",
+      "endpoint": "session",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "session.logout-request-0",
+      "endpoint": "session.logout",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "context-request-0",
+      "endpoint": "context",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "case.list-request-0",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.history-request-0",
+      "endpoint": "case.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "detail": "SUMMARY",
+        "limit": 1,
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-01",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR"
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-2",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "KEEP"
+            },
+            "decision": {
+              "kind": "KEEP"
+            },
+            "payment": {
+              "kind": "KEEP"
+            }
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-3",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "DECIDE",
+          "values": {
+            "paymentDecisionDate": "2026-01-01",
+            "payableAmount": "0",
+            "payableCurrency": "EUR"
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-4",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "WITHDRAW_DECISION"
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-5",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "RECORD_PAYMENT",
+          "values": {
+            "paymentDate": "2026-01-01"
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-6",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CLEAR_PAYMENT"
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-8",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "REOPEN"
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-9",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "VOID",
+          "reason": "x"
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-10",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "REINSTATE",
+          "reason": "x"
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.case-request-11",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "ERASE"
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.execute.case-request-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "OPEN",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-01",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "0",
+            "claimedCurrency": "EUR"
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.observe-request-0",
+      "endpoint": "operation.observe",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "operation.execute.authority-request-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "REGISTER",
+          "profile": {
+            "displayName": "Authored fixture account"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute.authority-request-2",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "DISABLE"
+        }
+      }
+    },
+    {
+      "id": "authority.list-request-0",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "authority.grants-request-0",
+      "endpoint": "authority.grants",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "actorId": "10000000-0000-4000-8000-000000000001",
+        "limit": 1
+      }
+    },
+    {
+      "id": "operation.preview-correction-REPLACE",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "UPDATE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimed": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
+              }
+            },
+            "decision": {
+              "kind": "UPDATE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payable": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
+              }
+            },
+            "payment": {
+              "kind": "REPLACE",
+              "values": {
+                "paymentDate": "2026-01-01"
+              }
+            }
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.preview-correction-CLEAR",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "expectedRevision": 0,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "UPDATE",
+              "values": {
+                "incidentDate": "2026-01-01",
+                "incidentNotificationDate": "2026-01-01",
+                "incidentCountry": "LV",
+                "claimantName": "x",
+                "insurerName": "x",
+                "claimed": {
+                  "amount": "0",
+                  "currency": "EUR"
+                }
+              }
+            },
+            "decision": {
+              "kind": "CLEAR"
+            },
+            "payment": {
+              "kind": "CLEAR"
+            }
+          }
+        },
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "x"
+        }
+      }
+    },
+    {
+      "id": "operation.resolve-valid",
+      "endpoint": "operation.resolve",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "operation.resolve-nil",
+      "endpoint": "operation.resolve",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "operationId": "00000000-0000-0000-0000-000000000000"
+      }
+    },
+    {
+      "id": "operation.resolve-extra",
+      "endpoint": "operation.resolve",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "extra": true
+      }
+    },
+    {
+      "id": "operation.execute.authority-request-1-opposite-act",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "GRANT",
+          "role": "OWNER",
+          "scope": {
+            "kind": "INSTALLATION"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute.authority-request-2-opposite-act",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "ENABLE"
+        }
+      }
+    },
+    {
+      "id": "case.list-request-facets",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 2,
+        "lifecycle": [
+          "ACTIVE",
+          "VOIDED",
+          "ERASED"
+        ],
+        "status": [
+          "OPENED",
+          "CLOSED"
+        ],
+        "progress": [
+          "UNDECIDED",
+          "DECIDED",
+          "PAID"
+        ],
+        "text": "Rīga",
+        "order": "RECENT"
+      }
+    },
+    {
+      "id": "authority.history-all",
+      "endpoint": "authority.history",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.list-triage",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 1,
+        "order": "NOTIFIED",
+        "assignment": "MINE"
+      }
+    },
+    {
+      "id": "case.summary-all",
+      "endpoint": "case.summary",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "name": "operation.execute.by-id",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000002",
+        "target": {
+          "kind": "ID",
+          "caseId": "10000000-0000-4000-8000-000000000001"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "CLOSE"
+        }
+      }
+    },
+    {
+      "name": "authority.revoke.id",
+      "endpoint": "operation.execute",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000004",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://issuer.example/",
+          "subject": "synthetic"
+        },
+        "act": {
+          "kind": "REVOKE",
+          "role": "CASE_READER",
+          "scope": {
+            "kind": "CASE",
+            "target": {
+              "kind": "ID",
+              "caseId": "10000000-0000-4000-8000-000000000001"
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "case.get.mixed-selector",
+      "endpoint": "case.get",
+      "valid": false,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "10000000-0000-4000-8000-000000000001",
+          "caseReference": "OTHER"
+        }
+      }
+    },
+    {
+      "id": "passive-operation-status",
+      "endpoint": "operation.status",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "operationId": "10000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "partial-one-name",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimantName": "One selected claimant"
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-half-money",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimed": {
+              "amount": "12.30"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-null-required-fact",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "claimantName": null
+          }
+        }
+      }
+    },
+    {
+      "id": "partial-unknown-member",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "displayName": "not a business field"
+          }
+        }
+      }
+    },
+    {
+      "id": "retired-whole-registration-shape",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "AMEND_REGISTRATION",
+          "values": {
+            "incidentDate": "2026-01-01",
+            "incidentNotificationDate": "2026-01-02",
+            "incidentCountry": "LV",
+            "claimantName": "x",
+            "insurerName": "x",
+            "claimedAmount": "12",
+            "claimedCurrency": "EUR"
+          }
+        }
+      }
+    },
+    {
+      "id": "reminder-future-due-date",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "act": {
+          "kind": "CREATE",
+          "action": "Contact insurer",
+          "dueDate": "2027-12-31"
+        }
+      }
+    },
+    {
+      "id": "work-clear-with-omission",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "WORK",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "responsibleActor": {
+              "kind": "CLEAR"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "work-null-is-not-clear",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "WORK",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "responsibleActor": null
+          }
+        }
+      }
+    },
+    {
+      "id": "work-unknown-choice",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "WORK",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "responsibleActor": {
+              "kind": "DONE"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "correct-paid-reaffirm",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "KEEP"
+            },
+            "decision": {
+              "kind": "UPDATE",
+              "values": {
+                "payable": {
+                  "amount": "650",
+                  "currency": "EUR"
+                }
+              }
+            },
+            "payment": {
+              "kind": "REAFFIRM"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "retired-decision-replace-tag",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000041",
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "TARGETED"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "CORRECT",
+          "groups": {
+            "registration": {
+              "kind": "KEEP"
+            },
+            "decision": {
+              "kind": "REPLACE",
+              "values": {
+                "paymentDecisionDate": "2026-01-01",
+                "payableAmount": "1",
+                "payableCurrency": "EUR"
+              }
+            },
+            "payment": {
+              "kind": "KEEP"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "case-assignees-scoped-page",
+      "endpoint": "case.assignees",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "limit": 1
+      }
+    },
+    {
+      "id": "case-work-due-order-filter",
+      "endpoint": "case.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 5,
+        "assignment": "MINE",
+        "due": "OVERDUE",
+        "order": "FOLLOW_UP"
+      }
+    },
+    {
+      "id": "operation.preview.work-summary-set",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "WORK",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "expectedRevision": 0,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "handlingSummary": "  First paragraph\nSecond paragraph 😀  "
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.preview.reminder-UPDATE",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "UPDATE",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 3,
+          "action": "Review response",
+          "dueDate": "2026-11-11"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.reminder-COMPLETE",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 3
+        }
+      }
+    },
+    {
+      "id": "operation.preview.reminder-CANCEL",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "CANCEL",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 3
+        }
+      }
+    },
+    {
+      "id": "operation.preview.reminder-REOPEN",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "REOPEN",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 3,
+          "dueDate": "2026-11-12"
+        }
+      }
+    },
+    {
+      "id": "operation.preview.reminder-COMPLETE_AND_PLAN_NEXT",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE_AND_PLAN_NEXT",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 3,
+          "action": "Review response",
+          "dueDate": "2026-11-11"
+        }
+      }
+    },
+    {
+      "id": "reminder-missing-revision-refuses",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE",
+          "reminderId": "30000000-0000-4000-8000-000000000001"
+        }
+      }
+    },
+    {
+      "id": "case-work-act-retired",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "CASE",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "expectedRevision": 1,
+        "act": {
+          "kind": "UPDATE_WORK",
+          "values": {
+            "followUpDate": {
+              "kind": "SET",
+              "value": "2026-11-10"
+            }
+          }
+        }
+      }
+    },
+    {
+      "id": "reminder-list-default",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 10
+      }
+    },
+    {
+      "id": "reminder-list-PENDING",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "state": "PENDING",
+        "due": "OVERDUE",
+        "assignment": "MINE",
+        "text": "Contact",
+        "limit": 10,
+        "includeInactive": true
+      }
+    },
+    {
+      "id": "reminder-list-COMPLETED",
+      "endpoint": "reminder.list",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "state": "COMPLETED",
+        "due": "TODAY",
+        "assignment": "MINE",
+        "text": "Contact",
+        "limit": 10,
+        "includeInactive": true
+      }
+    },
+    {
+      "id": "work-overview-accessible",
+      "endpoint": "work.overview",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "case-activity-summary",
+      "endpoint": "case.activity",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "detail": "SUMMARY",
+        "limit": 10
+      }
+    },
+    {
+      "id": "reminder-direct-current-get",
+      "endpoint": "reminder.get",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "reminderId": "30000000-0000-4000-8000-000000000001"
+      }
+    },
+    {
+      "id": "case.views-empty",
+      "endpoint": "case.views",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "case.views-no-hidden-filter",
+      "endpoint": "case.views",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "view": "MINE"
+      }
+    },
+    {
+      "id": "reminder.views-empty",
+      "endpoint": "reminder.views",
+      "direction": "request",
+      "valid": true,
+      "value": {}
+    },
+    {
+      "id": "reminder.views-no-hidden-filter",
+      "endpoint": "reminder.views",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "view": "MINE"
+      }
+    },
+    {
+      "id": "case.timeline-default",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "limit": 50
+      }
+    },
+    {
+      "id": "case.timeline-facts",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "filter": "FACTS",
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.timeline-work",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "filter": "WORK",
+        "limit": 2
+      }
+    },
+    {
+      "id": "case.timeline-unknown-filter",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "filter": "OTHER",
+        "limit": 1
+      }
+    },
+    {
+      "id": "case.timeline-over-budget",
+      "endpoint": "case.timeline",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "target": {
+          "kind": "REFERENCE",
+          "caseReference": "CASE-001"
+        },
+        "limit": 51
+      }
+    },
+    {
+      "id": "operation.execute.profile-SET_PROFILE",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "SET_PROFILE",
+          "profile": {
+            "displayName": "Authored profile",
+            "contact": "Contact text"
+          }
+        }
+      }
+    },
+    {
+      "id": "operation.execute.profile-ERASE_PROFILE",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "x",
+          "subject": "x"
+        },
+        "act": {
+          "kind": "ERASE_PROFILE"
+        }
+      }
+    },
+    {
+      "id": "requests-page",
+      "endpoint": "authority.requests",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "limit": 50
+      }
+    },
+    {
+      "id": "request-dismiss-kind-key",
+      "endpoint": "authority.requests.dismiss",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "HUMAN",
+        "issuer": "https://issuer.example/",
+        "subject": "waiting"
+      }
+    },
+    {
+      "id": "request-dismiss-kind-required",
+      "endpoint": "authority.requests.dismiss",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "issuer": "https://issuer.example/",
+        "subject": "waiting"
+      }
+    },
+    {
+      "id": "operation.preview-admit-scoped-grants",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": true,
+      "value": {
+        "kind": "AUTHORITY",
+        "operationId": "11111111-2222-4333-8444-555555555555",
+        "target": {
+          "kind": "HUMAN",
+          "issuer": "https://id.example/",
+          "subject": "admitted"
+        },
+        "act": {
+          "kind": "ADMIT",
+          "profile": {
+            "displayName": "Authored",
+            "contact": "Contact"
+          },
+          "grants": [
+            {
+              "role": "CASE_READER",
+              "scope": {
+                "kind": "INSTALLATION"
+              }
+            },
+            {
+              "role": "CASE_HANDLER",
+              "scope": {
+                "kind": "CASE",
+                "target": {
+                  "kind": "REFERENCE",
+                  "caseReference": "00000000-0000-4000-8000-000000000001"
+                }
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "authority-list-unknown-role",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "value": {
+        "limit": 50,
+        "role": "CASE_SUPERVISOR"
+      },
+      "valid": false
+    },
+    {
+      "id": "authority-list-nonscalar-role",
+      "endpoint": "authority.list",
+      "direction": "request",
+      "value": {
+        "limit": 50,
+        "role": [
+          "AUDITOR"
+        ]
+      },
+      "valid": false
+    },
+    {
+      "id": "operation.preview-reminder-update-revision-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "UPDATE",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0,
+          "action": "Review response",
+          "dueDate": "2026-11-11"
+        }
+      },
+      "name": "operation.preview-reminder-update-revision-0"
+    },
+    {
+      "id": "operation.preview-reminder-complete-revision-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0
+        }
+      },
+      "name": "operation.preview-reminder-complete-revision-0"
+    },
+    {
+      "id": "operation.preview-reminder-cancel-revision-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "CANCEL",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0
+        }
+      },
+      "name": "operation.preview-reminder-cancel-revision-0"
+    },
+    {
+      "id": "operation.preview-reminder-reopen-revision-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "REOPEN",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0,
+          "dueDate": "2026-11-12"
+        }
+      },
+      "name": "operation.preview-reminder-reopen-revision-0"
+    },
+    {
+      "id": "operation.preview-reminder-complete_and_plan_next-revision-0",
+      "endpoint": "operation.preview",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE_AND_PLAN_NEXT",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0,
+          "action": "Review response",
+          "dueDate": "2026-11-11"
+        }
+      },
+      "name": "operation.preview-reminder-complete_and_plan_next-revision-0"
+    },
+    {
+      "id": "operation.execute-reminder-update-revision-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "UPDATE",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0,
+          "action": "Review response",
+          "dueDate": "2026-11-11"
+        }
+      },
+      "name": "operation.execute-reminder-update-revision-0"
+    },
+    {
+      "id": "operation.execute-reminder-complete-revision-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0
+        }
+      },
+      "name": "operation.execute-reminder-complete-revision-0"
+    },
+    {
+      "id": "operation.execute-reminder-cancel-revision-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "CANCEL",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0
+        }
+      },
+      "name": "operation.execute-reminder-cancel-revision-0"
+    },
+    {
+      "id": "operation.execute-reminder-reopen-revision-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "REOPEN",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0,
+          "dueDate": "2026-11-12"
+        }
+      },
+      "name": "operation.execute-reminder-reopen-revision-0"
+    },
+    {
+      "id": "operation.execute-reminder-complete_and_plan_next-revision-0",
+      "endpoint": "operation.execute",
+      "direction": "request",
+      "valid": false,
+      "value": {
+        "kind": "REMINDER",
+        "operationId": "10000000-0000-4000-8000-000000000001",
+        "target": {
+          "kind": "ID",
+          "caseId": "20000000-0000-4000-8000-000000000001"
+        },
+        "act": {
+          "kind": "COMPLETE_AND_PLAN_NEXT",
+          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "expectedRevision": 0,
+          "action": "Review response",
+          "dueDate": "2026-11-11"
+        }
+      },
+      "name": "operation.execute-reminder-complete_and_plan_next-revision-0"
+    }
+  ]
+}

@@ -47,7 +47,7 @@ let private examples () =
         work.Invoke()
 
     let path =
-        Path.Combine(RepositoryRoot.find (), "tests/fixtures/wire-response-examples.json")
+        Path.Combine(RepositoryRoot.find (), "tests/fixtures/examples/responses.json")
 
     use fixture = JsonDocument.Parse(File.ReadAllBytes(path).AsMemory())
     let mutable seen = Set.empty

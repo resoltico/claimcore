@@ -143,8 +143,8 @@ it("the independent wire corpus detects a defective emitted constraint", () => {
     "utf8",
   );
   const corpus = [
-    ...examples("wire-request-examples.json", false),
-    ...examples("wire-response-examples.json", true),
+    ...examples("examples/requests.json", false),
+    ...examples("examples/responses.json", true),
   ];
   expect(corpus.some((sample) => sample.valid)).toBe(true);
   expect(corpus.some((sample) => !sample.valid)).toBe(true);

@@ -75,7 +75,7 @@ let private example name =
     let path =
         Path.Combine(
             ClaimCore.TestSupport.RepositoryRoot.find (),
-            "tests/fixtures/wire-response-examples.json"
+            "tests/fixtures/examples/responses.json"
         )
 
     use document = JsonDocument.Parse(File.ReadAllBytes path)

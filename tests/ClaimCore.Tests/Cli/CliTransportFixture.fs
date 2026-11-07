@@ -23,13 +23,13 @@ let bytes (text: string) = Encoding.UTF8.GetBytes text
 let private examples = ClaimCore.TestSupport.PositiveExamples.forEndpoint
 
 let samples endpoint =
-    examples "wire-response-examples.json" endpoint |> List.map WireWriter.bytes
+    examples "examples/responses.json" endpoint |> List.map WireWriter.bytes
 
 let frame endpoint =
     ClaimCore.Json.JsonValue.Object
         [
             "endpoint", ClaimCore.Json.JsonValue.String endpoint
-            "input", examples "wire-request-examples.json" endpoint |> List.head
+            "input", examples "examples/requests.json" endpoint |> List.head
         ]
     |> WireWriter.bytes
     |> Frames.admit
@@ -210,7 +210,7 @@ let frameForReply endpoint bytes =
         | _ -> true
 
     if List.contains endpoint [ "operation.execute"; "operation.preview" ] then
-        examples "wire-request-examples.json" endpoint
+        examples "examples/requests.json" endpoint
         |> List.tryFind (fun value ->
             memberText "kind" value = family
             && familyContext value

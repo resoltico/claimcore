@@ -9,7 +9,7 @@ it("passes every authored wire example through unchanged, including positive fra
   const cases = corpusCases();
   for (const direction of ["request", "response"] as const) {
     const file = JSON.parse(
-      readFileSync(resolve(`../tests/fixtures/wire-${direction}-examples.json`), "utf8"),
+      readFileSync(resolve(`../tests/fixtures/examples/${direction}s.json`), "utf8"),
     ) as { cases: ReadonlyArray<{ name: string; id?: string; value: unknown }> };
     const actual = cases.filter((item) => item.direction === direction);
     expect(actual).toHaveLength(file.cases.length);

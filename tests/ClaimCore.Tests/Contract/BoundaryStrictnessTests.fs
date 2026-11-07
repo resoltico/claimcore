@@ -181,7 +181,7 @@ let rec private aliasKind alias declared =
 
 let private endpointStrictness () =
     let requests, replies =
-        corpus "wire-request-examples.json", corpus "wire-response-examples.json"
+        corpus "examples/requests.json", corpus "examples/responses.json"
 
     let cases =
         Api.all

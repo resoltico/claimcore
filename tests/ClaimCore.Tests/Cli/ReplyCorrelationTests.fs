@@ -76,7 +76,7 @@ let private exchange invocation value =
 
 let private correlationReview family =
     ClaimCore.TestSupport.PositiveExamples.forEndpoint
-        "wire-response-examples.json"
+        "examples/responses.json"
         "operation.preview"
     |> List.find (fun value ->
         let at path =
@@ -187,7 +187,7 @@ let private reviewedAuthorityIdentity () =
     // Use the complete independent actor shape from an existing actor page.
     let actor =
         ClaimCore.TestSupport.PositiveExamples.forEndpoint
-            "wire-response-examples.json"
+            "examples/responses.json"
             "authority.list"
         |> List.pick (fun value ->
             match

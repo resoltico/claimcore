@@ -28,7 +28,7 @@ export const corpusCases = (): CorpusCase[] => {
   const cases = (["request", "response"] as const).flatMap((direction) => {
     const raw: unknown = JSON.parse(
       readFileSync(
-        resolve(import.meta.dirname, `../../../tests/fixtures/wire-${direction}-examples.json`),
+        resolve(import.meta.dirname, `../../../tests/fixtures/examples/${direction}s.json`),
         "utf8",
       ),
     );

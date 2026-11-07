@@ -32,7 +32,7 @@ let private examples () =
                 .ReadAllBytes(
                     Path.Combine(
                         RepositoryRoot.find (),
-                        "tests/fixtures/wire-request-examples.json"
+                        "tests/fixtures/examples/requests.json"
                     )
                 )
                 .AsMemory()
