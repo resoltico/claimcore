@@ -77,8 +77,8 @@ let tests =
                         "Not an attention count"
 
                     Expect.stringContains
-                        (text "en" "endpoint.work.overview.meaning")
-                        "current business date"
+                        (text "en" "endpoint.work.views.meaning")
+                        "one snapshot"
                         "Not the installation setup date")
             testCase
                 "recorded opening milestones and Korean reference dates are not current active states or working-day rules"

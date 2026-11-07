@@ -86,20 +86,20 @@ let private oneAcceptance fixture reference =
     let page =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = reference
                     |}
-                detail = "FULL"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
-    Expect.equal (page.GetProperty("entries").GetArrayLength()) 1 "Retries append no second entry"
+    Expect.equal (page.GetProperty("items").GetArrayLength()) 1 "Retries append no second entry"
 
     let current =
         automation

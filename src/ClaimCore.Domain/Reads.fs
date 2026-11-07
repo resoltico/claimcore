@@ -3,14 +3,15 @@ namespace ClaimCore.Domain
 open System
 
 [<RequireQualifiedAccess>]
-type HistoryDetail =
+type HistoryAccess =
+    | None
     | Summary
     | Full
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
-module HistoryDetail =
+module HistoryAccess =
     let vocabulary =
-        Vocabulary.ofUnion<HistoryDetail> "historyDetail" TokenCasing.ScreamingSnake None
+        Vocabulary.ofUnion<HistoryAccess> "historyAccess" TokenCasing.ScreamingSnake None
 
 [<RequireQualifiedAccess>]
 type CaseListOrder =

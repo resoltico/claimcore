@@ -16,6 +16,12 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected read success: %A" other
 
+let private caseCount view (counts: WorkViews) =
+    counts.CaseViews |> List.find (fun row -> row.View = view) |> _.Count
+
+let private reminderCount view (counts: WorkViews) =
+    counts.ReminderViews |> List.find (fun row -> row.View = view) |> _.Count
+
 let private execute fixture core operation reference revision act =
     Service.execute
         core
@@ -293,23 +299,22 @@ let internal assignmentAndDisclosure fixture =
 
         Expect.isEmpty (read invisiblePage).Items "Independent page filter control"
 
-        let! scopedOverview =
-            Service.workOverview (core fixture person) { Mine = false } token
+        let! scopedOverview = Service.workViews (core fixture person) () token
 
         Expect.equal
-            (read scopedOverview).ActionableCases
+            (caseCount CaseView.All (read scopedOverview))
             1L
-            "Overview ignores text page filter but obeys scope"
+            "View counts ignore the text page filter but obey scope"
 
         Expect.equal
-            (read scopedOverview).AttentionCases
+            (caseCount CaseView.NeedsAttention (read scopedOverview))
             0L
             "An active open case with an available assignee and future reminder is not attention work"
 
-        let! mineOverview = Service.workOverview (core fixture person) { Mine = true } token
+        let! mineOverview = Service.workViews (core fixture person) () token
 
         Expect.equal
-            (read mineOverview).ActionableCases
+            (caseCount CaseView.Mine (read mineOverview))
             1L
             "Mine inherits current case responsibility"
 
@@ -343,8 +348,7 @@ let internal assignmentAndDisclosure fixture =
 
         acceptedAuthority ownerGrant
 
-        let! noCounts =
-            Service.workOverview (core fixture authorityOnly) { Mine = false } token
+        let! noCounts = Service.workViews (core fixture authorityOnly) () token
 
         Expect.equal
             noCounts
@@ -641,16 +645,16 @@ let internal dueFiltersAndOrder fixture =
             [ ("EUR", "3500") ]
             "EUR500 case with two reminders contributes once"
 
-        let! overview = Service.workOverview owner { Mine = false } token
+        let! overview = Service.workViews owner () token
         let overview = read overview
-        Expect.equal overview.ActionableCases 4L "Global scope"
-        Expect.equal overview.MissingPlanCases 1L "No placeholders"
-        Expect.equal overview.OverdueCases 1L "Case units"
-        Expect.equal overview.OverdueReminders 1L "Reminder units"
-        Expect.equal overview.UnassignedCases 3L "Explicit responsibility"
+        Expect.equal (caseCount CaseView.All overview) 4L "Global scope"
+        Expect.equal (caseCount CaseView.NoNextAction overview) 1L "No placeholders"
+        Expect.equal (caseCount CaseView.Overdue overview) 1L "Case units"
+        Expect.equal (reminderCount ReminderView.Overdue overview) 1L "Reminder units"
+        Expect.equal (caseCount CaseView.Unassigned overview) 3L "Explicit responsibility"
 
         Expect.equal
-            overview.AttentionCases
+            (caseCount CaseView.NeedsAttention overview)
             4L
             "The distinct union includes the available assignee’s due-today case"
 
@@ -666,10 +670,10 @@ let internal dueFiltersAndOrder fixture =
                 token
 
         accepted completed |> ignore
-        let! after = Service.workOverview owner { Mine = false } token
+        let! after = Service.workViews owner () token
 
         Expect.equal
-            (read after).MissingPlanCases
+            (caseCount CaseView.NoNextAction (read after))
             2L
             "Last completion accepts and creates monitored attention"
 
@@ -901,9 +905,11 @@ let internal reminderTiming fixture =
                         fun tx ->
                             task {
                                 let! activity =
-                                    tx.ActivityPage
+                                    tx.TimelinePage
                                         {
                                             CaseId = caseId
+                                            Filter = None
+                                            Range = None
                                             BeforeSequence = None
                                             Limit = 50
                                         }

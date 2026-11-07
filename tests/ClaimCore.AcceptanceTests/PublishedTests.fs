@@ -140,47 +140,36 @@ let private erasedHistory fixture =
     let history =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = "DEMO-0001"
                     |}
-                detail = "FULL"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
-    let entries = history.GetProperty("entries")
+    let entries = history.GetProperty("items")
     Expect.equal (entries.GetArrayLength()) 9 "All nine accepted acts retain metadata"
 
     for entry in entries.EnumerateArray() do
         Expect.equal
             (entry.GetProperty("kind").GetString())
-            "FULL"
-            "Requested receipt detail remains explicit"
+            "CASE_FACT"
+            "Erased facts retain their entry identity"
 
-        let receipt = entry.GetProperty("receipt")
-        let snapshot = receipt.GetProperty("subject").GetProperty("snapshot")
+        let changes = entry.GetProperty("changes")
 
         Expect.equal
-            (snapshot.GetProperty("kind").GetString())
+            (changes.GetProperty("kind").GetString())
             "ERASED"
-            "Business payload is erased"
+            "Business changes are erased"
 
-        Expect.equal
-            (snapshot.EnumerateObject() |> Seq.length)
-            1
-            "No historical payload retained in receipt"
-
-        let names = receipt.EnumerateObject() |> Seq.map _.Name |> Seq.sort |> Seq.toList
-
-        Expect.equal
-            names
-            [ "basis"; "operationId"; "position"; "recordedAt"; "recordedBy"; "subject" ]
-            "Receipt retains identity and ledger metadata"
+        Expect.equal (changes.EnumerateObject() |> Seq.length) 1 "No prior payload survives"
 
 let private erasedView (tombstone: JsonElement) =
     Expect.equal

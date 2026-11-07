@@ -167,10 +167,13 @@ let tests =
             "The forbidden scope is committed and visible to the actual authority loader"
 
 
-        match Service.caseViews (core servicePrincipal) () CancellationToken.None |> get with
+        let combined =
+            Service.workViews (core servicePrincipal) () CancellationToken.None |> get
+
+        match combined with
         | Outcome.Succeeded result ->
             Expect.equal
-                (result.Items |> List.map (fun item -> item.View, item.Count))
+                (result.CaseViews |> List.map (fun item -> item.View, item.Count))
                 [
                     CaseView.NeedsAttention, 1L
                     CaseView.Mine, 0L
@@ -187,10 +190,10 @@ let tests =
                 "An invalid per-case service grant excludes only its scope from every count"
         | other -> failtestf "Expected scoped counts: %A" other
 
-        match Service.reminderViews (core servicePrincipal) () CancellationToken.None |> get with
+        match combined with
         | Outcome.Succeeded result ->
             Expect.equal
-                (result.Items |> List.map _.Count)
+                (result.ReminderViews |> List.map _.Count)
                 [ 1L; 0L; 1L; 0L; 0L; 0L; 0L ]
                 "Counts exclude reminders on the unavailable scope and retain zero rows"
         | other -> failtestf "Expected empty authorized reminder counts: %A" other
@@ -213,11 +216,6 @@ let tests =
 
         for deniedPrincipal in [ denied; principal "unknown" PrincipalKey.human ] do
             Expect.equal
-                (Service.caseViews (core deniedPrincipal) () CancellationToken.None |> get)
+                (Service.workViews (core deniedPrincipal) () CancellationToken.None |> get)
                 (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "No count leaks to a caller without current read authority"
-
-            Expect.equal
-                (Service.reminderViews (core deniedPrincipal) () CancellationToken.None |> get)
-                (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-                "Reminder counts keep the same non-disclosure")
+                "No count leaks to a caller without current read authority")

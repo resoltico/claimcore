@@ -113,10 +113,7 @@ module Grammar =
             )
 
             Some JsonValue.Null
-        | None ->
-            match item.Atom with
-            | CatalogAtom.Switch(off, _) -> Some(JsonValue.String off)
-            | _ -> None
+        | None -> None
 
     let private build
         incomplete
@@ -318,13 +315,7 @@ module Grammar =
                 @ clearFlags
                 @ collectionFlags
 
-            let switches =
-                (named
-                 |> List.choose (fun input ->
-                     match input.Atom with
-                     | CatalogAtom.Switch _ -> Some(flag input.Name)
-                     | _ -> None))
-                @ clearFlags
+            let switches = clearFlags
 
             let repeated =
                 named

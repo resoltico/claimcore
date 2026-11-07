@@ -195,15 +195,11 @@ type internal PausedPageStore
 
                                     member _.ReminderPage query = tx.ReminderPage query
 
-                                    member _.WorkOverview(selection, mine) =
-                                        tx.WorkOverview(selection, mine)
-
                                     member _.CaseViewCounts selection = tx.CaseViewCounts selection
 
                                     member _.ReminderViewCounts selection =
                                         tx.ReminderViewCounts selection
 
-                                    member _.ActivityPage query = tx.ActivityPage query
                                     member _.TimelinePage query = tx.TimelinePage query
                                     member _.CaseStageFacts id = tx.CaseStageFacts id
                                     member _.PreviousEntries entries = tx.PreviousEntries entries
@@ -236,21 +232,6 @@ type internal PausedPageStore
                                         )
 
                                     member _.CaseSummary query = tx.CaseSummary query
-
-                                    member _.HistoryPage
-                                        ({
-                                             HistoryPageQuery.CaseId = id
-                                             AfterRevision = after
-                                             Limit = limit
-                                         })
-                                        =
-                                        tx.HistoryPage(
-                                            {
-                                                HistoryPageQuery.CaseId = id
-                                                AfterRevision = after
-                                                Limit = limit
-                                            }
-                                        )
 
                                     member _.AuthorityHistoryPage query =
                                         tx.AuthorityHistoryPage query

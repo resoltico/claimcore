@@ -18,7 +18,7 @@ const current: CurrentCase = caseViewInput({
   revision: 1,
   advice: {
     ...caseAdvice(["CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",
@@ -28,7 +28,7 @@ const current: CurrentCase = caseViewInput({
 import { wireReply } from "../support/contract-corpus.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {
-  throw new Error("CaseReceipt fixture absent.");
+  throw new Error("CaseOperationReceipt fixture absent.");
 }
 const receipt = accepted.outcome.data;
 const renderDashboard = () => render(<Dashboard />);

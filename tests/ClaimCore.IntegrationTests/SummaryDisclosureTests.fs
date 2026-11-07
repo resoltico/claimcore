@@ -172,29 +172,33 @@ let private summaries () =
                     "Payable currency is already disclosed"
 
                 let! history =
-                    Service.history
+                    Service.timeline
                         caller
                         {
                             Target = CaseSelector.Reference(CaseReference.format row.Reference)
                             AfterCursor = None
                             Limit = 50
-                            Detail = HistoryDetail.Summary
+                            Filter = Some TimelineFilter.Facts
                         }
                         token
                     |> Async.AwaitTask
 
                 let entries =
                     match history with
-                    | Outcome.Succeeded value -> value.Entries
+                    | Outcome.Succeeded value -> value.Items
                     | _ -> failtest "Reader has summary history"
 
-                match List.head entries with
-                | HistoryEntry.SummaryEntry entry ->
-                    Expect.equal
-                        row.ChangedAt
-                        entry.RecordedAt
-                        "Last change is the latest accepted case entry"
-                | _ -> failtest "Requested summary history"
+                let entry = List.head entries
+
+                Expect.equal
+                    row.ChangedAt
+                    entry.RecordedAt
+                    "Last change is the latest accepted fact entry"
+
+                Expect.equal
+                    entry.Changes
+                    TimelineChanges.Withheld
+                    "A summary reader receives metadata without historical facts"
         finally
             database.Fixture.Dispose()
     }

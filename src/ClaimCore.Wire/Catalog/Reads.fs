@@ -15,10 +15,8 @@ type ReadInput =
     | Page
     | DirectorySearch
     | ActorRole
-    | Detail
     | Worklist
     | Reminders
-    | Mine
     | ReminderIdentity
     | TimelineFilter
 
@@ -41,24 +39,8 @@ module ReadCatalog =
                 Inputs = [ ReadInput.CaseOperand; ReadInput.ReminderIdentity ]
             }
             {
-                Endpoint = QueryEndpoint.CaseActivity
-                Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
-            }
-            {
                 Endpoint = QueryEndpoint.ReminderList
                 Inputs = [ ReadInput.Reminders; ReadInput.Page ]
-            }
-            {
-                Endpoint = QueryEndpoint.CaseViews
-                Inputs = []
-            }
-            {
-                Endpoint = QueryEndpoint.ReminderViews
-                Inputs = []
-            }
-            {
-                Endpoint = QueryEndpoint.WorkOverview
-                Inputs = [ ReadInput.Mine ]
             }
             {
                 Endpoint = QueryEndpoint.CaseAssignees
@@ -77,8 +59,8 @@ module ReadCatalog =
                 Inputs = [ ReadInput.Worklist ]
             }
             {
-                Endpoint = QueryEndpoint.CaseHistory
-                Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
+                Endpoint = QueryEndpoint.WorkViews
+                Inputs = []
             }
             {
                 Endpoint = QueryEndpoint.OperationGet

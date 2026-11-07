@@ -109,7 +109,7 @@ const readReply = (url: string, value: string, missing: boolean) => {
           revision: 1,
           advice: {
             acts: [],
-            history: ["SUMMARY", "FULL"],
+            history: "FULL",
           },
           state: {
             kind: "ACTIVE",

@@ -152,7 +152,14 @@ let private accepted () =
         for sample in fixture.GetProperty("accepted").EnumerateArray() do
             let encoded = text "token" sample
             use json = JsonDocument.Parse(text "canonicalJson" sample)
-            let position = json.RootElement.GetProperty "after"
+
+            let position =
+                json.RootElement.GetProperty(
+                    if text "endpoint" sample = "case.timeline" then
+                        "before"
+                    else
+                        "after"
+                )
 
             let actual =
                 match text "endpoint" sample with
@@ -171,19 +178,26 @@ let private accepted () =
                         (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
                         filter
                         expected
-                | "case.history" ->
-                    Expect.equal
-                        (Cursors.decodeHistory
-                            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-                            (CaseFixtures.caseId actor)
-                            encoded)
-                        (Ok(CaseFixtures.revision (position.GetInt64())))
-                        "Independent history position"
+                | "case.timeline" ->
+                    let expected =
+                        {
+                            BeforeSequence = CaseFixtures.sequence (position.GetInt64())
+                            Range = None
+                        }
 
-                    Cursors.encodeHistory
-                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-                        (CaseFixtures.caseId actor)
-                        (CaseFixtures.revision (position.GetInt64()))
+                    Expect.equal
+                        (Cursors.decodeTimeline
+                            (Guid.Parse "90000000-0000-4000-8000-000000000001")
+                            (String('a', 64))
+                            encoded)
+                        (Ok expected)
+                        "Independent timeline sequence and scope"
+
+                    Cursors.encodeTimeline
+                        (Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (String('a', 64))
+                        None
+                        expected.BeforeSequence
                 | "authority.list" ->
                     let expected = Guid.Parse(position.GetString() |> nonNull)
 
@@ -265,16 +279,12 @@ let private refused () =
             let encoded = text "token" sample
 
             let decoded =
-                if name.StartsWith("history cursor", StringComparison.Ordinal) then
-                    Cursors.decodeHistory
-                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-                        (CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000001"))
-                        encoded
-                    |> Result.map string
-                elif name = "revision zero" then
-                    Cursors.decodeHistory
-                        (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-                        (CaseFixtures.caseId actor)
+                if
+                    name = "timeline cursor for another scope" || name = "timeline sequence zero"
+                then
+                    Cursors.decodeTimeline
+                        (Guid.Parse "90000000-0000-4000-8000-000000000001")
+                        (String((if name = "timeline sequence zero" then 'a' else 'b'), 64))
                         encoded
                     |> Result.map string
                 else
@@ -336,30 +346,6 @@ let private boundaries () =
             "Admitted role and UUID only"
 
 let private maximum () =
-    let encoded =
-        Cursors.encodeHistory
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-            (CaseFixtures.caseId actor)
-            (CaseFixtures.revision 9007199254740991L)
-
-    Expect.isLessThan encoded.Length 512 "Largest installation-bound history position fits"
-
-    Expect.equal
-        (Cursors.decodeHistory
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-            (CaseFixtures.caseId actor)
-            encoded)
-        (Ok(CaseFixtures.revision 9007199254740991L))
-        "Maximum safe revision"
-
-    Expect.equal
-        (Cursors.decodeHistory
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-            (CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000001"))
-            encoded)
-        (Error Refusal.InvalidCursor)
-        "Resource binding"
-
     let grant =
         Cursors.encodeGrants
             (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
@@ -628,8 +614,8 @@ let installationBinding =
                         match text "endpoint" sample with
                         | "case.list" ->
                             Cursors.decodeCases foreign filter encoded |> Result.map ignore
-                        | "case.history" ->
-                            Cursors.decodeHistory foreign (CaseFixtures.caseId actor) encoded
+                        | "case.timeline" ->
+                            Cursors.decodeTimeline foreign (String('a', 64)) encoded
                             |> Result.map ignore
                         | "authority.list" ->
                             Cursors.decodeActors

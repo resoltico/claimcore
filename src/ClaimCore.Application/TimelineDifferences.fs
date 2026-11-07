@@ -85,7 +85,7 @@ module internal TimelineDifferences =
                     let before =
                         before |> Option.bind (fun snapshot -> LiveCase.ofState snapshot.State)
 
-                    let difference = CaseChanges.compared before live
+                    let lifecycle = CaseChanges.lifecycle before live
 
                     let fields =
                         function
@@ -95,9 +95,7 @@ module internal TimelineDifferences =
                     Ok
                         [
                             yield!
-                                difference.Lifecycle
-                                |> Option.map TimelineChange.Lifecycle
-                                |> Option.toList
+                                lifecycle |> Option.map TimelineChange.Lifecycle |> Option.toList
                             yield! caseFields (before |> Option.map fields) (Some(fields live))
                         ]
             | _ -> fault)

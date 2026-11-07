@@ -179,25 +179,6 @@ let private roles role readable full () =
 
 
 
-        let query: HistoryRequest =
-            {
-                Target = CaseSelector.Reference(CaseReference.format current.Snapshot.Reference)
-                AfterCursor = None
-                Limit = 50
-                Detail = HistoryDetail.Full
-            }
-
-        Expect.equal
-            (Queries.selectHistory
-                (System.Guid.Parse "90000000-0000-7000-8000-000000000001")
-                owner
-                query
-                authority
-                (Some later)
-             |> Result.isOk)
-            full
-            "Full-history selection shares policy"
-
 let private stewardship () =
     let _, _, current, _ = created 205 "STEWARD-REPLAY"
     let steward = actor owner ((CaseFixtures.actorId (id 1))) [ Role.DataSteward ] []

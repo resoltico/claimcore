@@ -20,7 +20,7 @@ Human data text visibly escapes terminal controls, line/paragraph separators and
 Narrative LF paragraph breaks are trusted layout around independently escaped data segments. Optional incident description and handling summary each admit 600 Unicode scalar values, preserving authored whitespace and spelling. Reminder action text is a separate 200-scalar single-line value. Empty or whitespace-only supplied text is invalid; omission keeps an existing value and `--clear-incident-description` or `--clear-handling-summary` explicitly clears it.
 Use the field's `-file PATH`, `-stdin` or `-editor` option for longer text, for example `--handling-summary-file summary.txt` or `--action-file action.txt`. Sources are exclusive. File/stdin/editor input converts CRLF to LF before preparation; direct protocol CR is refused. User-supplied files are preserved. Editor entry requires a terminal and `VISUAL` or `EDITOR` naming one executable, without shell expressions or arguments. Owned temporary files/directories use 0600/0700 permissions; cleanup failure prevents request preparation and reports a diagnostic.
 Work starts empty at revision zero after OPEN. Work edits preserve financial fact revisions; reminder edits preserve both fact and work revisions. `reminder get` reads one current record, including completed/cancelled records, using parent and reminder identities. `reminder list` defaults to pending actions on active open accessible cases. Due filtering there selects individual reminder dates; case `--due` uses the earliest pending reminder. Past-due reminders remain pending. No-plan attention is a warning, not a refusal or automatic reminder.
-`reminder complete-and-plan-next` is one atomic two-effect operation: complete one pending reminder and create exactly one next pending reminder whose ID equals the operation ID. Human output refreshes the core work view after acceptance, including missing-plan attention; JSON/NDJSON contain only the requested structured reply. Initial OPEN and subsequent reminder planning are explicitly separate operations. Work overview counts cover accessible actionable cases independently of page/search and report their server date, zone and observation instant; suspended clients do not deliver alarms.
+`reminder complete-and-plan-next` is one atomic two-effect operation: complete one pending reminder and create exactly one next pending reminder whose ID equals the operation ID. Human output refreshes the core work view after acceptance, including missing-plan attention; JSON/NDJSON contain only the requested structured reply. Initial OPEN and subsequent reminder planning are explicitly separate operations. `work views` returns case and reminder counts from one authorized snapshot, independently of page/search, with their server date, zone and observation instant; suspended clients do not deliver alarms.
 Human operations default to text. Add `--format json` for structured output or `--language LANGUAGE` to select interface text. Supported languages: `en`, `lv`, `ar`, `ko`, `zh-Hans`, `zh-Hant`, `ja`, `es`, `de`. Display language does not rewrite authored values. CLI display cultures: `en` → `en-GB`, `lv` → `lv-LV`, `ar` → `ar-AE`, `ko` → `ko-KR`, `zh-Hans` → `zh-CN`, `zh-Hant` → `zh-TW`, `ja` → `ja-JP`, `es` → `es-ES`, `de` → `de-DE`. Dates use the Gregorian calendar; Arabic CLI output retains Latin digits. Canonical JSON and CSV values are unchanged.
 
 Top-level `claimcore` lists command families. `claimcore describe case open` describes an operation offline; `claimcore schema operation.execute request` shows its wire schema. `claimcore call` reads one JSON frame from stdin; `claimcore session` reads NDJSON.
@@ -620,46 +620,6 @@ claimcore reminder list [--case-reference VALUE] [--state pending|completed|canc
 | `--limit` | Page size — The maximum number of rows to return on this page. |  | 50 |
 | `--include-inactive` | Include inactive case work — Explicitly include work on closed or voided cases. Pending reminders retain their dates and state. |  |  |
 
-## case views
-
-Case views
-
-Count accessible cases in every case view using one authorized snapshot and business date.
-
-```sh
-claimcore case views [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-
-## reminder views
-
-Reminder views
-
-Count accessible reminders in every reminder view using one authorized snapshot and business date.
-
-```sh
-claimcore reminder views [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-
-## work overview
-
-Work overview
-
-Read-only overview of accessible active open cases, independent of the current page and search, with the installation’s current business date and observation basis.
-
-```sh
-claimcore work overview [--mine true|false] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-| `--mine` | Mine — Cases currently assigned to you within your current read access. Assignment never grants access. |  |  |
-
 ## case assignees
 
 Eligible responsible accounts
@@ -735,6 +695,19 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--due` | Follow-up state — Classify each case by its earliest pending reminder: overdue, today, upcoming, no pending reminder or inactive. Individual reminder queue dates use a separate filter. | overdue, today, upcoming, unscheduled, inactive |  |
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |
 | `--responsible-actor` | Responsible account filter — Restrict cases to the selected responsible account within your readable scope. Other filters further restrict its results. |  |  |
+
+## work views
+
+Work view counts
+
+Read case and reminder view counts from the same snapshot and date basis.
+
+```sh
+claimcore work views [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
+```
+
+| Input | Meaning | Choices | Default |
+| --- | --- | --- | --- |
 
 ## operation get
 

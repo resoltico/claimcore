@@ -75,7 +75,7 @@ type CaseAdvice =
             MaintenanceState: RegisterMaintenance
             OfferedActs: CaseActKind list
             CorrectionChoices: CorrectionChoices option
-            HistoryDetails: HistoryDetail list
+            HistoryVisibility: HistoryAccess
             RecommendedAct: CaseActKind option
             BlockedActs: CaseActRefusal list
         }
@@ -83,7 +83,7 @@ type CaseAdvice =
     member this.Maintenance = this.MaintenanceState
     member this.Acts = this.OfferedActs
     member this.Correction = this.CorrectionChoices
-    member this.History = this.HistoryDetails
+    member this.History = this.HistoryVisibility
     member this.Recommended = this.RecommendedAct
     member this.Blocked = this.BlockedActs
 
@@ -114,7 +114,7 @@ module CaseAdvice =
                     MaintenanceState = RegisterMaintenance.initial
                     OfferedActs = acts
                     CorrectionChoices = correction
-                    HistoryDetails = history
+                    HistoryVisibility = history
                     RecommendedAct = None
                     BlockedActs = blocked
                 }

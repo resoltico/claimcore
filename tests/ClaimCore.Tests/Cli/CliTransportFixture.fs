@@ -130,7 +130,7 @@ let correlatedBody invocation bytes =
             echoed
 
     let echoed =
-        if (endpoint = "case.get" || endpoint = "case.history") && tag = Some "SUCCEEDED" then
+        if (endpoint = "case.get" || endpoint = "case.timeline") && tag = Some "SUCCEEDED" then
             match
                 (at [ "target"; "caseReference" ] input
                  |> Option.bind (function

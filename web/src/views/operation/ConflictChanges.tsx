@@ -111,7 +111,7 @@ const detailFor = (snapshot: RevisionConflictSnapshot) => {
   if (snapshot.latest.current.state.kind === "ERASED") {
     return "ERASED";
   }
-  return snapshot.latest.current.advice.history.includes("FULL") ? "CURRENT" : "SUMMARY";
+  return snapshot.latest.current.advice.history === "FULL" ? "CURRENT" : "SUMMARY";
 };
 export const ConflictChanges = ({
   model,
@@ -128,7 +128,7 @@ export const ConflictChanges = ({
   }, []);
   const { changes } = snapshot.diagnostic;
   const metadataAllowed =
-    snapshot.latest === null || snapshot.latest.current.advice.history.length !== 0;
+    snapshot.latest === null || snapshot.latest.current.advice.history !== "NONE";
   const detail = detailFor(snapshot);
   const onRefused = () => {
     model.invalidateDisclosure();

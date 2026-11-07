@@ -145,7 +145,6 @@
     <Compile Include="Cli/DescriptorReplyTests.fs" />
     <Compile Include="Cli/ReviewDescriptorTests.fs" />
     <Compile Include="Cli/PresentationCodecTests.fs" />
-    <Compile Include="Cli/HistoryReplyTests.fs" />
     <Compile Include="Cli/ReminderReplyTests.fs" />
     <Compile Include="Cli/CliTransportFixture.fs" />
     <Compile Include="Cli/TransportFailureScenarios.fs" />

@@ -10,7 +10,7 @@ const current = caseViewInput({
   caseReference: "SECTION-1",
   revision: 2,
   state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice(["CORRECT", "RECORD_PAYMENT", "CLOSE", "ERASE"]), history: [] },
+  advice: { ...caseAdvice(["CORRECT", "RECORD_PAYMENT", "CLOSE", "ERASE"]), history: "NONE" },
 });
 it("offers only the Core-advised fact acts affecting this section and restores the visible trigger", async () => {
   const user = userEvent.setup();

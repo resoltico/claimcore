@@ -88,16 +88,7 @@ let private queryInput (input: CatalogDerivedInput) =
         failtestf "CLI input builders need a sample for required input %s" key
     | _, None -> []
     | CatalogArgument.Operand, Some value -> [ value ]
-    | CatalogArgument.Named, Some value ->
-        match input.Atom with
-        | CatalogAtom.Switch(off, on) ->
-            if value = off then
-                []
-            elif value = on then
-                [ flag ]
-            else
-                failtestf "Invalid independent switch sample for %s" key
-        | _ -> [ flag; value ]
+    | CatalogArgument.Named, Some value -> [ flag; value ]
 
 let queryArguments operation =
     let inputs, _ = CommandGrammar.derive operation

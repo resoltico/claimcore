@@ -13,7 +13,7 @@ beforeEach(() => {
 });
 const readable = {
   ...current,
-  advice: { ...current.advice, history: [] },
+  advice: { ...current.advice, history: "NONE" },
   work: { ...current.work, canUpdateSummary: true, canAssign: true, canCreateReminder: true },
 };
 const detail = (credential: string) => (

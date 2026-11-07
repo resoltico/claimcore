@@ -4,7 +4,7 @@ import type { useCaseNavigation } from "../routing/useCaseNavigation";
 import { useEffect, useState, type ComponentProps } from "react";
 import { ViewModule } from "./ViewModule";
 import type { Notice } from "../protocol/notices";
-import type { CurrentCase, CaseReceipt } from "../api/service";
+import type { CurrentCase, CaseOperationReceipt } from "../api/service";
 import { isCurrentCase } from "../api/service";
 import { useCaseDisclosure } from "../hooks/useCaseDisclosure";
 import { usePresentation } from "../presentation/context";
@@ -65,7 +65,7 @@ const selectAct = (current: CurrentCase, act: string): void => {
 };
 export type EditorCallbacks = {
   setLocked: (value: boolean) => void;
-  committed: (receipt: CaseReceipt) => void;
+  committed: (receipt: CaseOperationReceipt) => void;
 };
 const EditorBootstrap = ({
   route,

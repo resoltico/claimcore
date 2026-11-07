@@ -299,6 +299,3 @@ module ReceiptCodecs =
                         })
             id
         |> named "OperationReceipt"
-
-    let caseReceipt =
-        tagged "CaseReceiptSubject" [ caseVariant ] |> header |> named "CaseReceipt"

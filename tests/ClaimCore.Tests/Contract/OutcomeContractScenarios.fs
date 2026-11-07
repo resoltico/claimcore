@@ -129,12 +129,13 @@ let internal queryCodecs () =
     |> ignore
 
     admitted
-        Api.caseHistory.Output
+        Api.caseTimeline.Output
         (Outcome.Succeeded
             {
                 CaseId = CaseFixtures.caseId id
                 Reference = CaseFixtures.reference "WIRE"
-                Entries = []
+                Basis = Inputs.workBasis
+                Items = []
                 NextCursor = None
             })
 

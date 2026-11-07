@@ -40,7 +40,7 @@ const current = caseViewInput({
       { stage: "CLOSED", completed: false, date: null, amount: null },
     ],
   },
-  advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), recommended: "CLOSE", history: ["SUMMARY"] },
+  advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), recommended: "CLOSE", history: "SUMMARY" },
   state: {
     kind: "ACTIVE",
     fields: {

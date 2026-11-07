@@ -18,7 +18,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
           caseId: "20000000-0000-4000-8000-000000000001",
           caseReference: "ERASED-1",
           revision: 4,
-          advice: { acts: [], history: ["SUMMARY"] },
+          advice: { acts: [], history: "SUMMARY" },
         }),
       ),
     )
@@ -46,7 +46,7 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
     caseReference: "CLOSED-1",
     revision: 4,
     state: { kind: "ACTIVE", fields: { ...fields, status: "CLOSED" } },
-    advice: { ...caseAdvice(["CORRECT", "REOPEN"]), history: [] },
+    advice: { ...caseAdvice(["CORRECT", "REOPEN"]), history: "NONE" },
   });
   vi.mocked(fetch).mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   const onAct = vi.fn();

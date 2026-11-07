@@ -18,7 +18,7 @@ const current: CurrentCase = caseViewInput({
   caseReference: fields.caseReference,
   revision: 2,
   state: { kind: "ACTIVE", fields },
-  advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), history: [] },
+  advice: { ...caseAdvice(["CLOSE", "VOID", "ERASE"]), history: "NONE" },
 });
 it("renders grouped facts with label help, paired money and no duplicate record fields", async () => {
   const user = userEvent.setup();

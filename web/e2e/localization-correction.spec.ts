@@ -179,9 +179,7 @@ for (const status of ["CLOSED"] as const) {
           const acceptedHistory = await history(page, reference);
           expect(acceptedHistory).toHaveLength(before.revision + 1);
           expect(
-            acceptedHistory.some(
-              (entry) => entry.kind === "FULL" && entry.receipt.subject.act === "CORRECT",
-            ),
+            acceptedHistory.some((entry) => entry.kind === "CASE_FACT" && entry.act === "CORRECT"),
           ).toBe(true);
         } else {
           expectCorrectionIssue(captured.reply, refusal);

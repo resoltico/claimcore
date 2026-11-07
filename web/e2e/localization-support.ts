@@ -170,7 +170,7 @@ export const trackForegroundRequests = (page: Page) => {
     if (
       endpoints.some(
         (endpoint) =>
-          endpoint.id !== "session" && endpoint.id !== "work.overview" && endpoint.path === path,
+          endpoint.id !== "session" && endpoint.id !== "work.views" && endpoint.path === path,
       )
     ) {
       requests.push(`${request.method()} ${path}`);

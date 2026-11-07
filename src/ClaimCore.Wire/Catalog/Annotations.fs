@@ -74,17 +74,6 @@ module CatalogAnnotations =
                 )
         }
 
-    let private detail _ =
-        { annotation InteractionInput.Detail with
-            Implicit =
-                Some(
-                    BindingValue.Text(
-                        Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Summary
-                    ),
-                    "The history switch supplies SUMMARY unless FULL is requested."
-                )
-        }
-
     let private limit _ =
         { target InputTarget.Limit with
             Default = Some(BindingValue.Integer(int64 Paging.DefaultPageSize))
@@ -253,8 +242,6 @@ module CatalogAnnotations =
             yield (RequestSchemas.OperationGetRequest, WireMembers.OperationId), operationIdentity
             for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do
                 yield (owner, WireMembers.ActorId), constant (annotation InteractionInput.ActorId)
-            yield (RequestSchemas.HistoryRequest, WireMembers.Detail), detail
-            yield ("CaseActivityRequest", WireMembers.Detail), detail
             yield
                 ("ReminderListRequest", "state"),
                 constant (annotation InteractionInput.ReminderState)
@@ -274,7 +261,6 @@ module CatalogAnnotations =
             yield
                 (RequestSchemas.ActorListRequest, "role"),
                 constant (annotation InteractionInput.RoleFilter)
-            yield ("WorkOverviewRequest", "mine"), constant (annotation InteractionInput.Mine)
             yield ("ReminderGetRequest", "reminderId"), constant (target InputTarget.ReminderId)
             for owner in
                 [
@@ -282,8 +268,6 @@ module CatalogAnnotations =
                     RequestSchemas.AccessRequestsRequest
                     RequestSchemas.AssigneeRequest
                     RequestSchemas.CaseListRequest
-                    RequestSchemas.HistoryRequest
-                    "CaseActivityRequest"
                     "CaseTimelineRequest"
                     "ReminderListRequest"
                     RequestSchemas.GrantsRequest

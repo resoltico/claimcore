@@ -1,19 +1,17 @@
 import type {
   HostFailure,
+  OperationReceipt,
   RequestByEndpoint,
   ResponseByEndpoint,
   CaseView,
 } from "@contracts/client";
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
-export type {
-  CaseFields,
-  CaseView,
-  CaseReceipt,
-  OperationReview,
-  Diagnostic,
-} from "@contracts/client";
+export type { CaseFields, CaseView, OperationReview, Diagnostic } from "@contracts/client";
 export type { OperationReceipt } from "@contracts/client";
+export type CaseOperationReceipt = Omit<OperationReceipt, "subject"> & {
+  readonly subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
+};
 export type CatalogDocument = typeof productMetadata.catalog;
 export type ProductMetadata = typeof productMetadata;
 export type FieldCatalogEntry = (

@@ -55,7 +55,7 @@ it("keeps a failed history page request-local without erasing current case data"
         revision: 1,
         advice: {
           ...caseAdvice([]),
-          history: ["SUMMARY", "FULL"],
+          history: "FULL",
         },
         state: {
           kind: "ACTIVE",
@@ -93,7 +93,7 @@ const readableCurrent = () =>
       revision: 1,
       advice: {
         ...caseAdvice([]),
-        history: ["SUMMARY", "FULL"],
+        history: "FULL",
       },
       state: {
         kind: "ACTIVE",

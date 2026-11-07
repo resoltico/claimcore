@@ -260,16 +260,12 @@ module Service =
 
     let reminder = WorkQueries.reminder
     let reminders = WorkQueries.reminders
-    let workOverview = WorkQueries.overview
-    let caseViews = ViewQueries.cases
-    let reminderViews = ViewQueries.reminders
-    let activity = WorkQueries.activity
+    let workViews = ViewQueries.work
 
     let assignees = Queries.assignees
     let list = Queries.list
     let caseSummary = Queries.caseSummary
     let timeline = TimelineQueries.read
-    let history = Queries.history
 
     let operationGet services (input: OperationLookup) ct =
         task {

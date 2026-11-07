@@ -13,7 +13,7 @@ const before = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: "CASE-1",
   revision: 1,
-  advice: { ...caseAdvice(["CLOSE"]), history: [] },
+  advice: { ...caseAdvice(["CLOSE"]), history: "NONE" },
   state: {
     kind: "ACTIVE",
     fields: {

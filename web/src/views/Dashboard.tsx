@@ -17,7 +17,7 @@ import { RecoveryBanner } from "./RecoveryBanner";
 import { WorkspaceHeader } from "./WorkspaceHeader";
 import { RoutedContent } from "./RoutedContent";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import type { CaseReceipt, ServiceResponse } from "../api/service";
+import type { CaseOperationReceipt, ServiceResponse } from "../api/service";
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useEndpointCache } from "../hooks/EndpointProvider";
@@ -170,7 +170,7 @@ const AcceptedToast = ({
   close,
 }: {
   route: Route;
-  receipt: CaseReceipt | null;
+  receipt: CaseOperationReceipt | null;
   close: () => void;
 }) => {
   const p = usePresentation();
@@ -325,7 +325,9 @@ const WorkspaceRoute = (props: WorkspaceRouteProps) => (
 /** Feedback is a disclosure owned by this verified requester and session generation. */
 const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: boolean) => {
   const { state: session } = useSessionContext();
-  const [accepted, setAccepted] = useState<{ owner: object; receipt: CaseReceipt } | null>(null);
+  const [accepted, setAccepted] = useState<{ owner: object; receipt: CaseOperationReceipt } | null>(
+    null,
+  );
   const credential = session.kind === "authenticated" ? session.token : null;
   const feedbackOwner = useMemo(
     () =>
@@ -347,7 +349,7 @@ const useAcceptanceFeedback = (observedOwner: string | null, caseAvailable: bool
     clear: () => {
       setAccepted(null);
     },
-    accept: (receipt: CaseReceipt) => {
+    accept: (receipt: CaseOperationReceipt) => {
       if (feedbackOwner === null || latestFeedbackOwner.current !== feedbackOwner) {
         return false;
       }
@@ -458,7 +460,7 @@ export const Dashboard = () => {
   useNavigationLock(locked);
   const businessDate = useBusinessDate(actorContext);
   const shellContext = actorContext ?? { capabilities: [], offers: [] };
-  const committed = (receipt: CaseReceipt) => {
+  const committed = (receipt: CaseOperationReceipt) => {
     if (!feedback.accept(receipt)) {
       return;
     }

@@ -30,10 +30,10 @@ type internal HistoryInspection =
     {
         Case: StoredCase option
         Entries: StoredEntry list
-        Next: Revision option
+        Next: Sequence option
     }
 
-let internal history fixture reference after limit =
+let internal caseTimeline fixture reference before limit =
     fixture.Store.Read(
         {
             ReadOperation.Work =
@@ -48,10 +48,12 @@ let internal history fixture reference after limit =
                                 failtest "Expected a case history target")
 
                         let! page =
-                            tx.HistoryPage(
+                            tx.TimelinePage(
                                 {
-                                    HistoryPageQuery.CaseId = id
-                                    AfterRevision = after
+                                    TimelinePageQuery.CaseId = id
+                                    Filter = Some TimelineFilter.Facts
+                                    Range = None
+                                    BeforeSequence = before
                                     Limit = limit
                                 }
                             )
@@ -59,8 +61,8 @@ let internal history fixture reference after limit =
                         return
                             {
                                 Case = current
-                                Entries = page.Page.Items
-                                Next = page.Page.Next
+                                Entries = page.Items
+                                Next = page.Next
                             }
                     })
             CancellationToken = CancellationToken.None

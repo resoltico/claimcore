@@ -65,56 +65,6 @@ module internal TextWorkReply =
         @ rows page.Items
         @ TextObservation.footer language page.Items.Length page.NextCursor page.Basis true
 
-    let caseViews language (value: CaseViews) =
-        TextDescriptorValue.entries language (Descriptor.caseViews value)
+    let workViews language (value: WorkViews) =
+        TextDescriptorValue.sections language (Descriptor.workViews value)
         @ basis language value.Basis
-
-    let reminderViews language (value: ReminderViews) =
-        TextDescriptorValue.entries language (Descriptor.reminderViews value)
-        @ basis language value.Basis
-
-    let overview language (value: WorkOverview) =
-        [ line language "input.mine.label" (boolean value.Mine) ]
-        @ TextDescriptorValue.entries language (Descriptor.workOverview value)
-        @ basis language value.Basis
-
-    let activity language (page: CaseActivityPage) =
-        (page.Items
-         |> List.collect (fun item ->
-             let act, revision =
-                 match item.Subject with
-                 | ActivitySubject.Case(revision, act) ->
-                     term language CaseActKind.vocabulary act, Revision.format revision
-                 | ActivitySubject.Work(revision, act) ->
-                     term language WorkActKind.vocabulary act, Revision.format revision
-                 | ActivitySubject.Reminder(act, id, revision, _) ->
-                     term language ReminderActKind.vocabulary act + " " + ReminderId.format id,
-                     Revision.format revision
-
-             [
-                 Sequence.format item.Position.Sequence
-                 + "  "
-                 + act
-                 + "  "
-                 + revision
-                 + "  "
-                 + instant item.RecordedAt
-                 + "  "
-                 + actorName language item.RecordedBy
-             ]
-             @ (match item.Detail |> Option.map _.Subject with
-                | Some(ReceiptSubject.Work {
-                                               Snapshot = WorkDisclosure.Disclosed snapshot
-                                           }) -> work language snapshot
-                | Some(ReceiptSubject.Reminder value) ->
-                    let one (version: ReminderVersion) =
-                        match version.Snapshot with
-                        | ReminderDisclosure.Disclosed value -> reminder language value
-                        | _ -> []
-
-                    match value.Effects with
-                    | ReminderReceiptEffects.Single value -> one value
-                    | ReminderReceiptEffects.CompletedAndPlanned(completed, next) ->
-                        one completed @ one next
-                | _ -> [])))
-        @ nextLines language page.NextCursor

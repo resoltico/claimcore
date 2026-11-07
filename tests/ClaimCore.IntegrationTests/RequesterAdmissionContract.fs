@@ -40,26 +40,26 @@ let private reads fixture core =
         "history selector",
         (fun () ->
             code (
-                Service.history
+                Service.timeline
                     core
                     {
                         Target = malformed
                         Limit = 10
                         AfterCursor = None
-                        Detail = HistoryDetail.Summary
+                        Filter = None
                     }
                     token
             ))
         "history limit",
         (fun () ->
             code (
-                Service.history
+                Service.timeline
                     core
                     {
                         Target = missing
                         Limit = 0
                         AfterCursor = None
-                        Detail = HistoryDetail.Summary
+                        Filter = None
                     }
                     token
             ))
@@ -208,16 +208,16 @@ let private reads fixture core =
                     }
                     token
             ))
-        "activity limit",
+        "timeline limit",
         (fun () ->
             code (
-                Service.activity
+                Service.timeline
                     core
                     {
                         Target = missing
                         Limit = 0
                         AfterCursor = None
-                        Detail = HistoryDetail.Summary
+                        Filter = None
                     }
                     token
             ))

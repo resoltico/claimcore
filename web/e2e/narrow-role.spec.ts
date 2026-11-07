@@ -1,7 +1,12 @@
 import { showCaseActionMenu, caseActionButton } from "./case-workflow";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { showExactLookup } from "./workspace-navigation";
-import { refusedRead, noCaseWorkspace, opaqueCaseRefusal } from "./narrow-role-oracles";
+import {
+  refusedRead,
+  metadataTimeline,
+  noCaseWorkspace,
+  opaqueCaseRefusal,
+} from "./narrow-role-oracles";
 import { expect, test, type Page } from "@playwright/test";
 import {
   openAuthenticated,
@@ -81,20 +86,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator(".timeline-change")).toHaveCount(0);
-    await refusedRead(page, "case.history", async () => {
-      await browserRequest(page, "/api/case.history", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-ClaimCore-Antiforgery": await sessionToken(page),
-        },
-        body: JSON.stringify({
-          target: { kind: "REFERENCE", caseReference: fixture.reference },
-          detail: "FULL",
-          limit: 50,
-        }),
-      });
-    });
+    await metadataTimeline(page, fixture.reference);
     await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(1);
   }
   if (scoped) {

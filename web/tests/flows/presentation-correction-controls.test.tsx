@@ -16,7 +16,7 @@ import { preferenceKey } from "../../src/presentation/preferences";
 
 const paidCase: CurrentCase = {
   ...current,
-  advice: { ...caseAdvice(["CORRECT"]), history: ["SUMMARY", "FULL"] },
+  advice: { ...caseAdvice(["CORRECT"]), history: "FULL" },
 
   state: {
     ...current.state,

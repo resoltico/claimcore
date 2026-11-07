@@ -15,15 +15,11 @@ type QueryEndpoint =
     | CaseGet
     | CaseAssignees
     | CaseList
-    | CaseViews
-    | ReminderViews
     | CaseSummary
-    | CaseHistory
-    | CaseActivity
     | CaseTimeline
     | ReminderList
     | ReminderGet
-    | WorkOverview
+    | WorkViews
     | OperationGet
     | AuthorityList
     | AuthorityGrants
@@ -50,15 +46,14 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.CaseAssignees)
                 (ActorEndpoint.Query QueryEndpoint.CaseGet)
                 (ActorEndpoint.Query QueryEndpoint.CaseList)
-                (ActorEndpoint.Query QueryEndpoint.CaseViews)
-                (ActorEndpoint.Query QueryEndpoint.ReminderViews)
+
                 (ActorEndpoint.Query QueryEndpoint.CaseSummary)
-                (ActorEndpoint.Query QueryEndpoint.CaseHistory)
-                (ActorEndpoint.Query QueryEndpoint.CaseActivity)
+
                 (ActorEndpoint.Query QueryEndpoint.CaseTimeline)
                 (ActorEndpoint.Query QueryEndpoint.ReminderList)
                 (ActorEndpoint.Query QueryEndpoint.ReminderGet)
-                (ActorEndpoint.Query QueryEndpoint.WorkOverview)
+
+                (ActorEndpoint.Query QueryEndpoint.WorkViews)
                 (ActorEndpoint.Query QueryEndpoint.OperationGet)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityList)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
@@ -73,15 +68,14 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) -> "case.assignees"
              | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> "case.get"
              | (ActorEndpoint.Query QueryEndpoint.CaseList) -> "case.list"
-             | (ActorEndpoint.Query QueryEndpoint.CaseViews) -> "case.views"
-             | (ActorEndpoint.Query QueryEndpoint.ReminderViews) -> "reminder.views"
+
              | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> "case.summary"
-             | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> "case.history"
-             | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> "case.activity"
+
              | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> "case.timeline"
              | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> "reminder.list"
              | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> "reminder.get"
-             | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> "work.overview"
+
+             | (ActorEndpoint.Query QueryEndpoint.WorkViews) -> "work.views"
              | (ActorEndpoint.Query QueryEndpoint.OperationGet) -> "operation.get"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"

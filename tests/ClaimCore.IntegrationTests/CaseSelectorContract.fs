@@ -114,15 +114,15 @@ let identities (fixture: Fixture) =
             receipt
             "Resolved identity makes reference and ID retries equivalent"
 
-        let query: HistoryRequest =
+        let query: CaseTimelineRequest =
             {
                 Target = CaseSelector.Id expected
                 AfterCursor = None
                 Limit = 1
-                Detail = HistoryDetail.Full
+                Filter = Some TimelineFilter.Facts
             }
 
-        let! history = Service.history actor query token
+        let! history = Service.timeline actor query token
 
         let first =
             match history with
@@ -134,30 +134,28 @@ let identities (fixture: Fixture) =
             (expected, reference)
             "History publishes the retained identity"
 
-        match first.Entries with
-        | [ HistoryEntry.FullEntry full ] ->
+        match first.Items with
+        | [ {
+                Changes = TimelineChanges.Disclosed changes
+            } ] ->
             Expect.equal
-                full.Difference
-                (Some
-                    {
-                        Lifecycle = None
-                        Fields =
-                            [
-                                {
-                                    FieldName = BusinessField.Status
-                                    Before = Some "OPENED"
-                                    After = Some "CLOSED"
-                                }
-                            ]
-                    })
-                "The already-fetched predecessor supplies an independent bounded comparison"
-        | _ -> failtest "Expected one full receipt"
+                changes.Items
+                [
+                    TimelineChange.CaseField
+                        {
+                            FieldName = BusinessField.Status
+                            Before = Some(CaseFieldValue.Status CaseStatus.Opened)
+                            After = Some(CaseFieldValue.Status CaseStatus.Closed)
+                        }
+                ]
+                "The immediate predecessor supplies an independent bounded comparison"
+        | _ -> failtest "Expected one disclosed timeline entry"
 
-        Expect.hasLength first.Entries 1 "Bounded live page"
+        Expect.hasLength first.Items 1 "Bounded live page"
         Expect.isSome first.NextCursor "Independent older acceptance remains"
 
         let! continuation =
-            Service.history
+            Service.timeline
                 actor
                 { query with
                     Target = CaseSelector.Reference reference
@@ -168,7 +166,7 @@ let identities (fixture: Fixture) =
         match continuation with
         | Outcome.Succeeded page ->
             Expect.hasLength
-                page.Entries
+                page.Items
                 1
                 "A continuation follows the same resource through either selector"
 
@@ -205,7 +203,7 @@ let identities (fixture: Fixture) =
             "An accepted operation cannot be redirected to another case"
 
         let! moved =
-            Service.history
+            Service.timeline
                 actor
                 { query with
                     Target = CaseSelector.Id(CaseFixtures.caseId (id fixture 612))

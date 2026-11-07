@@ -12,11 +12,14 @@ const succeeded = <const T,>(data: T) => ({
   status: 200,
   value: { outcome: { kind: "SUCCEEDED" as const, data } },
 });
-const current = (history: ReadonlyArray<"SUMMARY" | "FULL">) =>
+const current = (history: "NONE" | "SUMMARY" | "FULL") =>
   caseViewInput({
     caseReference: "CASE-1",
     revision: 1,
-    advice: { acts: [], history },
+    advice: {
+      acts: [],
+      history,
+    },
     state: { kind: "ACTIVE", fields },
   });
 it("removes previous disclosed timeline changes before a downgraded disclosure response arrives", async () => {
@@ -27,8 +30,8 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
     },
   );
   mockEndpoint("case.get")
-    .mockResolvedValueOnce(succeeded(current(["SUMMARY", "FULL"])))
-    .mockResolvedValueOnce(succeeded(current(["SUMMARY"])));
+    .mockResolvedValueOnce(succeeded(current("FULL")))
+    .mockResolvedValueOnce(succeeded(current("SUMMARY")));
   const timeline = mockEndpoint("case.timeline")
     .mockResolvedValueOnce(
       succeeded(

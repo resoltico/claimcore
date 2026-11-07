@@ -148,7 +148,7 @@ let internal replayAndRefusal fixture =
                 "Projection and receipt agree"
         | _ -> failtest "Missing case"
 
-        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision 0L) 50
+        let! rows = caseTimeline fixture "CONTRACT-001" None 50
         Expect.equal (storedPage rows).Entries.Length 1 "Replay/refusal append nothing"
     }
 
@@ -252,14 +252,14 @@ let internal caseUpdate fixture =
         let receipt = accepted closed
         Expect.equal (caseReceipt receipt).Revision (CaseFixtures.revision (2L)) "One revision"
         Expect.equal (disclosedFields receipt).Status CaseStatus.Closed "Closure stored"
-        let! rows = history fixture "CONTRACT-001" (CaseFixtures.revision (0L)) 1
+        let! rows = caseTimeline fixture "CONTRACT-001" None 1
         let page = storedPage rows
         Expect.equal page.Entries.Length 1 "Bounded page"
 
         Expect.equal
             page.Next
-            (Some(CaseFixtures.revision 2L))
-            "Newest included revision owns continuation"
+            (Some page.Entries.Head.Sequence)
+            "Newest included sequence owns continuation"
 
         let revisions (entries: StoredEntry list) =
             entries
@@ -269,7 +269,7 @@ let internal caseUpdate fixture =
                 | _ -> failtest "Expected case history")
 
         Expect.equal (revisions page.Entries) [ 2L ] "First page contains newest revision"
-        let! continued = history fixture "CONTRACT-001" page.Next.Value 1
+        let! continued = caseTimeline fixture "CONTRACT-001" page.Next 1
         let continued = storedPage continued
 
         Expect.equal
@@ -278,7 +278,10 @@ let internal caseUpdate fixture =
             "Continuation returns preceding revision without duplicates"
 
         Expect.isNone continued.Next "Last page has no continuation"
-        let! exhausted = history fixture "CONTRACT-001" (CaseFixtures.revision 1L) 1
+
+        let! exhausted =
+            caseTimeline fixture "CONTRACT-001" (Some continued.Entries.Head.Sequence) 1
+
         Expect.isEmpty (storedPage exhausted).Entries "Continuation below opening revision is empty"
 
         let! operation =

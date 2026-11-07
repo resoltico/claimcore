@@ -81,8 +81,7 @@ let tests =
                             }
                             token)
 
-                do! measure "case.views" (fun () -> Service.caseViews actor () token)
-                do! measure "reminder.views" (fun () -> Service.reminderViews actor () token)
+                do! measure "work.views" (fun () -> Service.workViews actor () token)
 
                 do!
                     measure "reminder.list" (fun () ->

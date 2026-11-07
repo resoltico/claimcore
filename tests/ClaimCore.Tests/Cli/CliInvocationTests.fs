@@ -155,15 +155,7 @@ let private nonLedgerVerbExamples =
 
 let private assertNonLedgerVerbCoverage registry mapped =
     // Session routes are browser transport; preview is selected by an act option. Retired human history/activity verbs remain explicit API calls.
-    let excluded =
-        Set.ofList
-            [
-                "session"
-                "session.logout"
-                "operation.preview"
-                "case.history"
-                "case.activity"
-            ]
+    let excluded = Set.ofList [ "session"; "session.logout"; "operation.preview" ]
 
     let eligible =
         registry

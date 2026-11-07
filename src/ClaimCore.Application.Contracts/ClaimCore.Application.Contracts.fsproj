@@ -10,7 +10,6 @@
     <Compile Include="Requester.fs" />
     <Compile Include="Receipts.fs" />
     <Compile Include="Verification.fs" />
-    <Compile Include="History.fs" />
     <Compile Include="Timeline.fs" />
     <Compile Include="CasePages.fs" />
     <Compile Include="CaseTotals.fs" />

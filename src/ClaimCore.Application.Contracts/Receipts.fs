@@ -107,13 +107,3 @@ type OperationReceipt =
         RecordedBy: ActorRef
         Basis: WorkDateBasis
     }
-
-type ChangeSummary =
-    {
-        OperationId: OperationId
-        Position: LedgerPosition
-        Revision: Revision
-        Act: CaseActKind
-        RecordedAt: DateTimeOffset
-        RecordedBy: ActorId
-    }

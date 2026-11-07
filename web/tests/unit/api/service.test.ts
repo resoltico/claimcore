@@ -157,8 +157,8 @@ it("coordinates list summary and overview through complete response admission, n
     if (typeof path !== "string") {
       throw new Error("Expected a same-origin API path.");
     }
-    if (path === "/api/work.overview") {
-      return Promise.resolve(reply(wireReply("work.overview")));
+    if (path === "/api/work.views") {
+      return Promise.resolve(reply(wireReply("work.views")));
     }
     return Promise.resolve(
       new Response(
@@ -174,7 +174,7 @@ it("coordinates list summary and overview through complete response admission, n
   vi.stubGlobal("fetch", fetch);
   const list = requestEndpoint("case.list", "token", { limit: 50 });
   const summary = requestEndpoint("case.summary", "token", {});
-  const overview = requestEndpoint("work.overview", "token", {});
+  const overview = requestEndpoint("work.views", "token", {});
   await vi.waitFor(() => {
     expect(fetch).toHaveBeenCalledTimes(2);
   });
@@ -194,8 +194,8 @@ it("drains dispatched obsolete reads before admitting replacements and never dis
   const deliveredSignals: AbortSignal[] = [];
   const fetch = vi.fn<typeof globalThis.fetch>().mockImplementation((path, init) => {
     deliveredSignals.push(init!.signal!);
-    if (path === "/api/work.overview") {
-      return Promise.resolve(reply(wireReply("work.overview")));
+    if (path === "/api/work.views") {
+      return Promise.resolve(reply(wireReply("work.views")));
     }
     return Promise.resolve(
       new Response(
@@ -213,8 +213,8 @@ it("drains dispatched obsolete reads before admitting replacements and never dis
   const queued = new AbortController();
   const list = requestEndpoint("case.list", "token", { limit: 50 }, obsolete.signal);
   const summary = requestEndpoint("case.summary", "token", {});
-  const canceled = requestEndpoint("work.overview", "token", {}, queued.signal);
-  const replacement = requestEndpoint("work.overview", "token", {});
+  const canceled = requestEndpoint("work.views", "token", {}, queued.signal);
+  const replacement = requestEndpoint("work.views", "token", {});
   try {
     await vi.waitFor(() => {
       expect(fetch).toHaveBeenCalledTimes(2);

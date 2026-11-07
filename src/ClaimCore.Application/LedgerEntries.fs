@@ -835,25 +835,6 @@ module LedgerEntries =
                 Subject = subject
             })
 
-    let internal summary (current: StoredCase) (entry: StoredEntry) =
-        match entry.Subject with
-        | EntryTarget.Case(id, revision, act, _) when
-            validMetadata entry
-            && id = current.CaseId
-            && revision <= current.Snapshot.Revision
-            ->
-            Ok
-                {
-                    OperationId = entry.OperationId
-                    Position = position entry.Sequence entry.EntryHash
-                    Revision = revision
-                    Act = act
-                    RecordedAt = entry.RecordedAt
-                    RecordedBy = entry.ActorId
-                }
-        | _ -> Error CoreFault.StoreIntegrityError
-
-
 module internal OperationIdentity =
     let internal decide
         (services: ServiceContext)

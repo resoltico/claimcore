@@ -37,10 +37,10 @@ it("rejects duplicate authored identities without changing or collapsing their v
     ]);
   }).not.toThrow();
 });
-it("completes a nested receipt without adding observation metadata to its activity header", () => {
+it("completes a nested lookup receipt without adding observation metadata to its outer holder", () => {
   const position = { sequence: 5, entryHash: "a".repeat(64) };
   const identity = {
-    operationId: "10000000-0000-4000-8000-000000000001",
+    operationId: "10000000-0000-7000-8000-000000000001",
     position,
     recordedAt: "2026-08-31T04:00:00.000000Z",
     recordedBy: {
@@ -66,15 +66,11 @@ it("completes a nested receipt without adding observation metadata to its activi
   expect(completed["detail"]).toHaveProperty("basis", workBasis);
   expect(completed["recordedAt"]).toBe("2026-08-31T04:00:00.000000Z");
   expect(
-    isResponse("case.activity", {
+    isResponse("operation.get", {
+      operationId: identity.operationId,
       outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          caseId: "20000000-0000-4000-8000-000000000001",
-          caseReference: "CASE-1",
-          items: [completed],
-          nextCursor: null,
-        },
+        kind: "ACCEPTED",
+        data: { receipt: completed["detail"], byRequester: true },
       },
     }),
   ).toBe(true);

@@ -7,7 +7,7 @@ export const useCaseDisclosure = (target: CaseSelector) => {
     query.previous?.outcome.kind === "SUCCEEDED" ? query.previous.outcome.data : null;
   return {
     value,
-    historyModes: value?.advice.history ?? previous?.advice.history ?? [],
+    historyAccess: value?.advice.history ?? previous?.advice.history ?? "NONE",
     message: query.message,
     loading: query.loading,
     revalidate: query.reload,

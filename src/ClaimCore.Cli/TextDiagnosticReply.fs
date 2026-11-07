@@ -31,8 +31,6 @@ module internal TextDiagnosticReply =
                 Frames.value Api.operationPreview frame |> Option.bind target
                 Frames.value Api.caseGet frame |> Option.map _.Target
                 Frames.value Api.caseTimeline frame |> Option.map _.Target
-                Frames.value Api.caseHistory frame |> Option.map _.Target
-                Frames.value Api.caseActivity frame |> Option.map _.Target
                 Frames.value Api.reminder frame |> Option.map _.Target
                 Frames.value Api.reminders frame |> Option.bind _.Target
                 Frames.value Api.caseAssignees frame |> Option.map _.Target

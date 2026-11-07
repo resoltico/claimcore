@@ -35,15 +35,13 @@ it.each(inactive)(
       status: 200,
       value: { outcome: { kind: "SUCCEEDED", data: { requester } } },
     });
-    const cases = mockEndpoint("case.views");
-    const reminders = mockEndpoint("reminder.views");
+    const cases = mockEndpoint("work.views");
     const directory = mockEndpoint("authority.list");
     const view = render(<Dashboard />);
     expect(await screen.findByRole("heading", { level: 1 })).toHaveTextContent(
       requester.kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",
     );
     expect(cases).not.toHaveBeenCalled();
-    expect(reminders).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
     if (requester.kind === "NOT_REGISTERED") {
@@ -72,8 +70,7 @@ it.each(inactive)(
         notice: { kind: "local", reason: "unreachable" },
         dispatched: false,
       });
-    const cases = mockEndpoint("case.views");
-    const reminders = mockEndpoint("reminder.views");
+    const cases = mockEndpoint("work.views");
     const directory = mockEndpoint("authority.list");
     render(<Dashboard />);
     await screen.findByRole("heading", { level: 1 });
@@ -86,7 +83,6 @@ it.each(inactive)(
     );
     expect(screen.getByRole("button", { name: "Sign out" })).toBeVisible();
     expect(cases).not.toHaveBeenCalled();
-    expect(reminders).not.toHaveBeenCalled();
     expect(directory).not.toHaveBeenCalled();
   },
 );

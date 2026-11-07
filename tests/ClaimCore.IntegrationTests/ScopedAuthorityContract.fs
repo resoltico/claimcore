@@ -115,7 +115,7 @@ let internal checkScopedAdvice (actor: ServiceContext) reference =
         | Outcome.Succeeded value ->
             Expect.equal
                 value.Advice.History
-                [ HistoryDetail.Summary; HistoryDetail.Full ]
+                HistoryAccess.Full
                 "Case-scoped full history is advised"
 
             let correction =
@@ -200,7 +200,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
 
             Expect.equal
                 value.Advice.History
-                [ HistoryDetail.Summary ]
+                HistoryAccess.Summary
                 "Fresh advice reflects revoked full history"
 
             Expect.isFalse
@@ -208,7 +208,7 @@ let internal refusedAdvice fixture (actor: ServiceContext) pending =
                 "No stale act offer"
         | _ -> failtest "Reader remains authorized"
 
-        let! entries = history fixture pending.CaseReference (CaseFixtures.revision (0L)) 50
+        let! entries = caseTimeline fixture pending.CaseReference None 50
 
         Expect.equal
             (storedPage entries).Entries.Length

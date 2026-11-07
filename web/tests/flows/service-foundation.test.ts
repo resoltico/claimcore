@@ -15,7 +15,7 @@ describe("core act metadata", () => {
       revision: 1,
       advice: {
         ...caseAdvice([]),
-        history: ["SUMMARY", "FULL"] as const,
+        history: "FULL" as const,
       },
       state: {
         kind: "ACTIVE" as const,

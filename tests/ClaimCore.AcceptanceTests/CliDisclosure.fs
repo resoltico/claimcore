@@ -97,40 +97,33 @@ let private summaryHistory fixture reference =
     let history =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = reference
                     |}
-                detail = "SUMMARY"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
     Expect.equal
-        (history.GetProperty("entries").GetArrayLength())
+        (history.GetProperty("items").GetArrayLength())
         2
         "Stale execution and replays add no accepted entries"
 
-    automation
-        fixture
-        "case.history"
-        {|
-            target =
-                {|
-                    kind = "REFERENCE"
-                    caseReference = reference
-                |}
-            detail = "FULL"
-            limit = 50
-        |}
-        2
-    |> require "REJECTED"
-    |> ignore
+    for entry in history.GetProperty("items").EnumerateArray() do
+        let changes = entry.GetProperty("changes")
 
+        Expect.equal
+            (changes.GetProperty("kind").GetString())
+            "WITHHELD"
+            "Metadata access withholds historical values"
+
+        Expect.equal (changes.EnumerateObject() |> Seq.length) 1 "No historical facts leak"
 
 let private qualify fixture =
     let source, input, reference = original fixture

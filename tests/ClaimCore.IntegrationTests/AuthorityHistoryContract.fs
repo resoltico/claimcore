@@ -314,16 +314,12 @@ let private changingHistory (fixture: Fixture) change =
 
                                         member _.ReminderPage query = tx.ReminderPage query
 
-                                        member _.WorkOverview(selection, mine) =
-                                            tx.WorkOverview(selection, mine)
-
                                         member _.CaseViewCounts selection =
                                             tx.CaseViewCounts selection
 
                                         member _.ReminderViewCounts selection =
                                             tx.ReminderViewCounts selection
 
-                                        member _.ActivityPage query = tx.ActivityPage query
                                         member _.TimelinePage query = tx.TimelinePage query
                                         member _.CaseStageFacts id = tx.CaseStageFacts id
 
@@ -334,7 +330,6 @@ let private changingHistory (fixture: Fixture) change =
 
                                         member _.CasePage query = tx.CasePage query
                                         member _.CaseSummary query = tx.CaseSummary query
-                                        member _.HistoryPage query = tx.HistoryPage query
                                         member _.ActorPage query = tx.ActorPage query
                                         member _.GrantPage query = tx.GrantPage query
                                         member _.ActorRoleSummaries ids = tx.ActorRoleSummaries ids

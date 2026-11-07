@@ -33,26 +33,16 @@ module ViewCountCodecs =
         |> build
         |> named "ReminderViewCount"
 
-    let cases =
-        (record (fun basis items ->
+    let work =
+        (record (fun basis cases reminders ->
             {
-                CaseViews.Basis = basis
-                Items = items
+                WorkViews.Basis = basis
+                CaseViews = cases
+                ReminderViews = reminders
             })
-        : Fields<CaseViews, _>)
+        : Fields<WorkViews, _>)
         |> field "basis" _.Basis ResponseScalars.workDateBasis
-        |> field "items" _.Items (list CaseView.all.Length caseCount)
+        |> field "caseViews" _.CaseViews (list CaseView.all.Length caseCount)
+        |> field "reminderViews" _.ReminderViews (list ReminderView.all.Length reminderCount)
         |> build
-        |> named "CaseViews"
-
-    let reminders =
-        (record (fun basis items ->
-            {
-                ReminderViews.Basis = basis
-                Items = items
-            })
-        : Fields<ReminderViews, _>)
-        |> field "basis" _.Basis ResponseScalars.workDateBasis
-        |> field "items" _.Items (list ReminderView.all.Length reminderCount)
-        |> build
-        |> named "ReminderViews"
+        |> named "WorkViews"

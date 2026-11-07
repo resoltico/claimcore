@@ -40,22 +40,14 @@ module internal TextReply =
             readPresenter Api.reminder TextWorkReply.single
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList) ->
             readPresenter Api.reminders TextWorkReply.page
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkOverview) ->
-            readPresenter Api.workOverview TextWorkReply.overview
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseViews) ->
-            readPresenter Api.caseViews TextWorkReply.caseViews
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderViews) ->
-            readPresenter Api.reminderViews TextWorkReply.reminderViews
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseActivity) ->
-            readPresenter Api.caseActivity TextWorkReply.activity
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews) ->
+            readPresenter Api.workViews TextWorkReply.workViews
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet) ->
             readPresenter Api.caseGet TextCaseReply.caseLines
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
             readPresenter Api.caseAssignees TextCaseReply.assigneePage
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList) ->
             readPresenter Api.caseList TextCaseReply.casePage
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseHistory) ->
-            readPresenter Api.caseHistory TextCaseReply.historyLines
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary) ->
             readPresenter Api.caseSummary TextContextReply.summary
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) ->

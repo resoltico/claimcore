@@ -2,12 +2,14 @@ import { useEndpointCache } from "../hooks/EndpointProvider";
 import { usePresentation } from "../presentation/context";
 import { NoticeView } from "../presentation/Message";
 import { createContext, useContext, useMemo, type ReactNode } from "react";
-import type { CaseViews, ReminderViews } from "@contracts/client";
+import type { WorkViews } from "@contracts/client";
 import type { Notice } from "../protocol/notices";
 import { useEndpoint } from "../hooks/useEndpoint";
 import { useRequesterContext } from "../hooks/useRequesterContext";
 type Views<T> = { data: T | null; loading: boolean; message: Notice | null };
-export type WorkspaceViews = { cases: Views<CaseViews>; reminders: Views<ReminderViews> };
+export type CaseCounts = { basis: WorkViews["basis"]; items: WorkViews["caseViews"] };
+export type ReminderCounts = { basis: WorkViews["basis"]; items: WorkViews["reminderViews"] };
+export type WorkspaceViews = { cases: Views<CaseCounts>; reminders: Views<ReminderCounts> };
 export const WorkspaceViewsContext = createContext<WorkspaceViews | null>(null);
 /** One authenticated shell owns these snapshot counts; renderers never define their predicates. */
 export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) => {
@@ -17,39 +19,23 @@ export const WorkspaceViewsProvider = ({ children }: { children: ReactNode }) =>
     requester === null
       ? "unverified"
       : JSON.stringify([requester.installationId, requester.actorId]);
-  const cases = useEndpoint("case.views", {}, available, scope);
-  const reminders = useEndpoint("reminder.views", {}, available, scope);
-  const observedCases = cases.value ?? (cases.loading ? cases.previous : null);
-  const observedReminders = reminders.value ?? (reminders.loading ? reminders.previous : null);
-  const value = useMemo<WorkspaceViews>(
-    () => ({
+  const query = useEndpoint("work.views", {}, available, scope);
+  const observed = query.value ?? (query.loading ? query.previous : null);
+  const value = useMemo<WorkspaceViews>(() => {
+    const data = available && observed?.outcome.kind === "SUCCEEDED" ? observed.outcome.data : null;
+    return {
       cases: {
-        data:
-          available && observedCases?.outcome.kind === "SUCCEEDED"
-            ? observedCases.outcome.data
-            : null,
-        loading: cases.loading,
-        message: cases.message,
+        data: data === null ? null : { basis: data.basis, items: data.caseViews },
+        loading: query.loading,
+        message: query.message,
       },
       reminders: {
-        data:
-          available && observedReminders?.outcome.kind === "SUCCEEDED"
-            ? observedReminders.outcome.data
-            : null,
-        loading: reminders.loading,
-        message: reminders.message,
+        data: data === null ? null : { basis: data.basis, items: data.reminderViews },
+        loading: query.loading,
+        message: query.message,
       },
-    }),
-    [
-      available,
-      observedCases,
-      observedReminders,
-      cases.loading,
-      cases.message,
-      reminders.loading,
-      reminders.message,
-    ],
-  );
+    };
+  }, [available, observed, query.loading, query.message]);
   return <WorkspaceViewsContext value={value}>{children}</WorkspaceViewsContext>;
 };
 export const useWorkspaceViews = () => {

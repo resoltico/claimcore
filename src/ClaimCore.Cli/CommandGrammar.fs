@@ -19,7 +19,6 @@ type CatalogAtom =
     | Boolean
     | Choice of string list
     | Choices of string list
-    | Switch of off: string * on: string
 
 type CatalogDerivedInput =
     {
@@ -30,18 +29,7 @@ type CatalogDerivedInput =
     }
 
 module CommandGrammar =
-    /// The human command surface is narrower than the explicit protocol call surface.
-    let operations =
-        OperationCatalog.all
-        |> List.filter (fun operation ->
-            not (
-                List.contains
-                    operation.Endpoint
-                    [
-                        ActorEndpoint.Query QueryEndpoint.CaseHistory
-                        ActorEndpoint.Query QueryEndpoint.CaseActivity
-                    ]
-            ))
+    let operations = OperationCatalog.all
 
     let kebab (value: string) =
         Regex.Replace(value, "([a-z0-9])([A-Z])", "$1-$2").Replace('_', '-').ToLowerInvariant()
@@ -64,7 +52,6 @@ module CommandGrammar =
         | InteractionInput.ReminderState -> "state"
         | InteractionInput.Target InputTarget.ReminderAction -> "action"
         | InteractionInput.Target InputTarget.ReminderDueDate -> "due"
-        | InteractionInput.Detail -> "full"
         | InteractionInput.TimelineFilter -> "filter"
         | input -> InteractionInput.key input
 
@@ -115,11 +102,6 @@ module CommandGrammar =
 
             let atom =
                 match input.Name, input.Binding.Kind with
-                | InteractionInput.Detail, _ ->
-                    CatalogAtom.Switch(
-                        Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Summary,
-                        Vocabulary.token HistoryDetail.vocabulary HistoryDetail.Full
-                    )
                 | _, BindingKind.Text -> CatalogAtom.Text
                 | _, BindingKind.Integer -> CatalogAtom.Integer
                 | _, BindingKind.Boolean -> CatalogAtom.Boolean
@@ -236,7 +218,6 @@ module CommandGrammar =
             | CatalogAtom.Boolean -> "true|false"
             | CatalogAtom.Choice choices -> choices |> List.map kebab |> String.concat "|"
             | CatalogAtom.Choices choices -> choices |> List.map kebab |> String.concat "|"
-            | CatalogAtom.Switch _ -> ""
 
         let inputs, _ = derive operation
 

@@ -56,7 +56,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
     },
     advice: {
       ...caseAdvice(["CORRECT"]),
-      history: [],
+      history: "NONE",
       correction: {
         registration: ["KEEP", "UPDATE"],
         decision: ["KEEP", "UPDATE", "CLEAR"],
@@ -91,7 +91,7 @@ it("keeps a selected reminder identity bound rather than exposing a technical re
     caseReference: "CASE-1",
     revision: 1,
     state: { kind: "ACTIVE", fields },
-    advice: { ...caseAdvice([]), history: [] },
+    advice: { ...caseAdvice([]), history: "NONE" },
   });
   const onChange = vi.fn();
   render(

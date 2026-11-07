@@ -10,7 +10,6 @@ type InteractionInput =
     | Scope
     | ActorId
     | CaseId
-    | Detail
     | Lifecycle
     | Status
     | Progress
@@ -25,7 +24,6 @@ type InteractionInput =
     | ReminderState
     | ReminderDue
     | IncludeInactive
-    | Mine
     | WorkChoice of BusinessField
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -40,11 +38,9 @@ module InteractionInput =
         | InteractionInput.ReminderState -> "reminderState"
         | InteractionInput.ReminderDue -> "reminderDue"
         | InteractionInput.IncludeInactive -> "includeInactive"
-        | InteractionInput.Mine -> "mine"
         | InteractionInput.Scope -> "scope"
         | InteractionInput.ActorId -> "actorId"
         | InteractionInput.CaseId -> "caseId"
-        | InteractionInput.Detail -> "detail"
         | InteractionInput.Lifecycle -> "lifecycle"
         | InteractionInput.Status -> "status"
         | InteractionInput.Progress -> "progress"
@@ -70,12 +66,10 @@ module InteractionInput =
         | InteractionInput.ReminderState
         | InteractionInput.ReminderDue
         | InteractionInput.IncludeInactive
-        | InteractionInput.Mine
         | InteractionInput.WorkChoice _
         | InteractionInput.Scope
         | InteractionInput.ActorId
         | InteractionInput.CaseId
-        | InteractionInput.Detail
         | InteractionInput.Lifecycle
         | InteractionInput.Status
         | InteractionInput.Progress

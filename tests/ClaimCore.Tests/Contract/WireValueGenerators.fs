@@ -59,7 +59,6 @@ let internal listBounds (path: string) =
                 "CapabilityAccess.DirectRoles", 7
                 "CapabilityAccess.InstallationRoles", 7
                 "CaseAdvice.Acts", ((CaseActKind.all |> List.map CaseActKind.token)).Length
-                "CaseAdvice.History", 2
                 "ReminderReadModel.Acts",
                 ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)).Length
                 "CorrectionChoices.Registration", 2
@@ -69,8 +68,8 @@ let internal listBounds (path: string) =
                 "CorrectionChoices.Payment", 4
                 "ActorContext.Offers", 4
                 "CaseSummaryPage.Offers", 4
-                "CaseViews.Items", 11
-                "ReminderViews.Items", 7
+                "WorkViews.CaseViews", 11
+                "WorkViews.ReminderViews", 7
                 "CaseStageOutline.Completed", 4
                 "Tracker.steps", 4
                 "CaseReadModel.Attention", 6
@@ -374,9 +373,9 @@ and private freshRepresentation response source context (kind: Type) (value: obj
                     response
                     source
                     (context + ".CaseAdvice.History")
-                    typeof<HistoryDetail list>
+                    typeof<HistoryAccess>
                     (box advice.History)
-                |> Gen.map unbox<HistoryDetail list>
+                |> Gen.map unbox<HistoryAccess>
 
             let! correction =
                 if List.contains CaseActKind.Correct acts then
@@ -451,13 +450,9 @@ and private freshList response source context kind =
 
     gen {
         let! size = count minimum maximum
-        let! seed = choose source context item
 
         let entry =
-            if item = typeof<HistoryEntry> then
-                freshUnion response source context item seed
-            else
-                choose source context item |> Gen.bind (fresh response source context item)
+            choose source context item |> Gen.bind (fresh response source context item)
 
         let! entries = Gen.list (Range.singleton size) entry
         return listValue kind entries

@@ -175,7 +175,7 @@ module ResponseCodecs =
         |> build
         |> named "CaseSnapshot"
 
-    let private historyDetail = VocabularyCodec.create HistoryDetail.vocabulary
+    let private historyAccess = VocabularyCodec.create HistoryAccess.vocabulary
 
     let private authorityKind =
         VocabularyCodec.select ((<>) AuthorityKind.ProvisionOwner) AuthorityKind.vocabulary
@@ -263,7 +263,7 @@ module ResponseCodecs =
             "correction"
             (fun (_, correction, _, _, _, _) -> correction)
             correctionAdvice
-        |> field "history" (fun (_, _, history, _, _, _) -> history) (list 2 historyDetail)
+        |> field "history" (fun (_, _, history, _, _, _) -> history) historyAccess
         |> field "maintenance" (fun (_, _, _, maintenance, _, _) -> maintenance) registerMaintenance
         |> field
             "recommended"
@@ -544,8 +544,6 @@ module ResponseCodecs =
         |> named "AccessRequestPage"
 
     let position = LedgerCodecs.position
-    let changeSummary = LedgerCodecs.changeSummary
-    let fieldChange = LedgerCodecs.fieldChange
 
     let reviewFields =
         (record (fun before proposed context ->
@@ -640,101 +638,6 @@ module ResponseCodecs =
         |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
         |> build
         |> named "ActorsPage"
-
-    let private summaryEntry =
-        record id
-        |> fixedField "kind" "SUMMARY"
-        |> field "change" id changeSummary
-        |> build
-        |> map HistoryEntry.SummaryEntry (function
-            | HistoryEntry.SummaryEntry value -> value
-            | _ -> invalidArg "entry" "Expected summary history.")
-
-    let historyDifference =
-        (record (fun lifecycle fields ->
-            {
-                HistoryDifference.Lifecycle = lifecycle
-                Fields = fields
-            })
-        : Fields<HistoryDifference, _>)
-        |> field "lifecycle" _.Lifecycle (nullable LedgerCodecs.lifecycleChange)
-        |> field "fields" _.Fields (list CaseFields.declarations.Length fieldChange)
-        |> build
-        |> named "HistoryDifference"
-
-    let private fullEntry receiptCodec =
-        (record (fun receipt difference ->
-            {
-                FullHistoryEntry.Receipt = receipt
-                Difference = difference
-            })
-        : Fields<FullHistoryEntry, _>)
-        |> fixedField "kind" "FULL"
-        |> field "receipt" _.Receipt receiptCodec
-        |> field "difference" _.Difference (nullable historyDifference)
-        |> build
-        |> map HistoryEntry.FullEntry (function
-            | HistoryEntry.FullEntry value -> value
-            | _ -> invalidArg "entry" "Expected full history.")
-
-    let private historyEntriesFor receiptCodec =
-        let nonempty predicate entries =
-            not (List.isEmpty entries) && List.forall predicate entries
-
-        choice
-            "HistoryEntries"
-            [
-                branch
-                    (fun value -> value)
-                    (function
-                    | [] -> Some []
-                    | _ -> None)
-                    (boundedList 0 0 summaryEntry)
-                branch
-                    (fun value -> value)
-                    (fun entries ->
-                        if
-                            nonempty
-                                (function
-                                | HistoryEntry.SummaryEntry _ -> true
-                                | _ -> false)
-                                entries
-                        then
-                            Some entries
-                        else
-                            None)
-                    (boundedList 1 Paging.MaximumPageSize summaryEntry)
-                branch
-                    (fun value -> value)
-                    (fun entries ->
-                        if
-                            nonempty
-                                (function
-                                | HistoryEntry.FullEntry _ -> true
-                                | _ -> false)
-                                entries
-                        then
-                            Some entries
-                        else
-                            None)
-                    (boundedList 1 Paging.MaximumPageSize (fullEntry receiptCodec))
-            ]
-
-    let historyPageFor receiptCodec =
-        (record (fun id reference entries next ->
-            {
-                CaseId = id
-                Reference = reference
-                Entries = entries
-                NextCursor = next
-            })
-        : Fields<HistoryResultPage, _>)
-        |> field "caseId" _.CaseId caseId
-        |> field "caseReference" _.Reference caseReference
-        |> field "entries" _.Entries (historyEntriesFor receiptCodec)
-        |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
-        |> build
-        |> named "HistoryPage"
 
     let session =
         (record (fun v0 v1 v2 ->

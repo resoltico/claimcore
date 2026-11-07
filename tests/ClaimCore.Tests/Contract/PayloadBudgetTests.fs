@@ -78,89 +78,6 @@ let private receipt disclosure : OperationReceipt =
                 }
     }
 
-let private encodedHistory count disclosure =
-    let difference =
-        match disclosure with
-        | SnapshotDisclosure.Disclosed(LiveCase.Active fields | LiveCase.Voided fields) ->
-            Some
-                {
-                    Lifecycle = None
-                    Fields =
-                        [
-                            {
-                                FieldName = BusinessField.ClaimantName
-                                Before = Some(String(char 2, PartyName.MaximumBytes))
-                                After =
-                                    Some(
-                                        PartyName.format (Registration.claimant fields.Registration)
-                                    )
-                            }
-                            {
-                                FieldName = BusinessField.InsurerName
-                                Before = Some(String(char 2, PartyName.MaximumBytes))
-                                After =
-                                    Some(
-                                        PartyName.format (Registration.insurer fields.Registration)
-                                    )
-                            }
-                        ]
-                }
-        | _ -> None
-
-    Codec.encode
-        Api.caseHistory.Output
-        (Outcome.Succeeded
-            {
-                CaseId = (snapshot 1).CaseId
-                Reference = (snapshot 1).Reference
-                Entries =
-                    List.replicate
-                        count
-                        (HistoryEntry.FullEntry
-                            {
-                                Receipt = receipt disclosure
-                                Difference = difference
-                            })
-                NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-            })
-
-let private fullHistoryBudget () =
-    let accepted = snapshot PartyName.MaximumBytes
-
-    let bytes =
-        encodedHistory
-            50
-            (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
-
-    let perEntry = 6 * 6 * PartyName.MaximumBytes + 6 * 80 + 2048
-    let bound = 50 * perEntry + 1024
-
-    Expect.isOk
-        (CaseRecord.decodeSnapshot (CaseRecord.encodeSnapshot accepted))
-        "Permanent format admits worst escaping"
-
-    Expect.isLessThan
-        bytes.Length
-        bound
-        "Real full-page codec fits the computed field and metadata budget"
-
-    Expect.isLessThan
-        bound
-        ClaimCore.Wire.Limits.MaximumResponseBytes
-        "All fifty entries fit the response limit"
-
-    Expect.equal ClaimCore.Wire.Limits.MaximumResponseBytes 4194304 "Public response limit"
-
-    Expect.equal LedgerPayload.MaximumBytes 32768 "Permanent framed payload bound"
-
-    Expect.throws
-        (fun () ->
-            encodedHistory
-                51
-                (SnapshotDisclosure.Disclosed(LiveCase.ofState accepted.State |> Option.get))
-            |> ignore)
-        "Overproduction refuses"
-
 let private authorityFixture () =
     let prefix = "https://issuer.example/"
 
@@ -463,9 +380,6 @@ let tests =
     testList
         "bounded response codecs"
         [
-            testCase
-                "fifty full entries fit the budget derived from permanent field bounds"
-                fullHistoryBudget
             testCase "authority headers and grants have actual bounded codecs" boundedAuthority
             testCase
                 "fifty typed timeline differences fit the unchanged response budget"

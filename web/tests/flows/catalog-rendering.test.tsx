@@ -37,7 +37,7 @@ const currentFor = (kind: ActKind): CurrentCase => {
     revision: 1,
     advice: {
       ...caseAdvice([kind]),
-      history: ["SUMMARY", "FULL"],
+      history: "FULL",
     },
     state: {
       kind: kind === "REINSTATE" ? "VOIDED" : "ACTIVE",

@@ -130,7 +130,7 @@ let internal registerActors fixture (actor: ServiceContext) =
 let internal differentHistoryResource
     fixture
     (actor: ServiceContext)
-    (query: HistoryRequest)
+    (query: CaseTimelineRequest)
     cursor
     =
     task {
@@ -143,7 +143,7 @@ let internal differentHistoryResource
         accepted other |> ignore
 
         let! resource =
-            (Service.history
+            (Service.timeline
                 actor
                 ({ query with
                     Target = CaseSelector.Reference("OTHER")

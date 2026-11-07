@@ -28,7 +28,7 @@ const detail = (token = "token", reloadSignal = 0) => (
     />
   </TestSession>
 );
-const readable = (historyDetails: ReadonlyArray<"SUMMARY" | "FULL"> = ["SUMMARY", "FULL"]) =>
+const readable = (historyDetails: "NONE" | "SUMMARY" | "FULL" = "FULL") =>
   response(
     "case.get",
     "SUCCEEDED",
@@ -105,7 +105,7 @@ it.each(["access", "session"])(
   },
 );
 it("does not invent SUMMARY access for a readable case without history advice", async () => {
-  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable([]));
+  const fetch = vi.fn<typeof globalThis.fetch>().mockResolvedValueOnce(readable("NONE"));
   vi.stubGlobal("fetch", fetch);
   render(detail());
   await screen.findAllByText(fields.registration.claimantName);

@@ -22,13 +22,6 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.ReminderGet -> Route.bind Api.reminder Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
             Route.bind Api.reminders Service.reminders
-        | ActorEndpoint.Query QueryEndpoint.CaseViews -> Route.bind Api.caseViews Service.caseViews
-        | ActorEndpoint.Query QueryEndpoint.ReminderViews ->
-            Route.bind Api.reminderViews Service.reminderViews
-        | ActorEndpoint.Query QueryEndpoint.WorkOverview ->
-            Route.bind Api.workOverview Service.workOverview
-        | ActorEndpoint.Query QueryEndpoint.CaseActivity ->
-            Route.bind Api.caseActivity Service.activity
         | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
             Route.bind Api.caseTimeline Service.timeline
         | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
@@ -38,8 +31,7 @@ module internal ApiRoutes =
         | ActorEndpoint.Query QueryEndpoint.CaseList -> Route.bind Api.caseList Service.list
         | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
             Route.bind Api.caseSummary Service.caseSummary
-        | ActorEndpoint.Query QueryEndpoint.CaseHistory ->
-            Route.bind Api.caseHistory Service.history
+        | ActorEndpoint.Query QueryEndpoint.WorkViews -> Route.bind Api.workViews Service.workViews
         | ActorEndpoint.Query QueryEndpoint.OperationGet ->
             Route.bind Api.operationGet Service.operationGet
         | ActorEndpoint.Query QueryEndpoint.AuthorityList ->

@@ -357,13 +357,13 @@ const CaseDisclosure = ({
 }: CaseDetailProps) => {
   const p = usePresentation();
   const current = useCaseDisclosure(target);
-  const historyAccess = current.historyModes.join(":");
+  const { historyAccess } = current;
   const timelineSelection = useTimelineSelection(historyAccess);
   const state = current.value;
   const lookup = asCurrentCase(state);
   const mounted = useRetainedCase(lookup);
   const timeline =
-    current.historyModes.length === 0 ? null : (
+    current.historyAccess === "NONE" ? null : (
       <CaseTimeline
         key={historyAccess}
         target={target}

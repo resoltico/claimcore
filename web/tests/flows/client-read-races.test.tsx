@@ -10,7 +10,7 @@ import { operationId, response, unavailable } from "../support/service-ui.fixtur
 import { wireReply } from "../support/contract-corpus.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {
-  throw new Error("CaseReceipt fixture absent.");
+  throw new Error("CaseOperationReceipt fixture absent.");
 }
 const receipt = accepted.outcome.data;
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));

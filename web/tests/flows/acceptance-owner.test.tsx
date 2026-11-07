@@ -9,15 +9,15 @@ import { wireReply } from "../support/contract-corpus.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { referencePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";
-import type { CaseReceipt } from "../../src/api/service";
+import type { CaseOperationReceipt } from "../../src/api/service";
 import type { RequesterState_ACTIVE } from "@contracts/client";
 beforeEach(() => {
   stubViewCounts();
 });
 const audit = vi.hoisted(() => ({
   context: null as RequesterState_ACTIVE | null,
-  receipt: null as CaseReceipt | null,
-  callbacks: [] as ((receipt: CaseReceipt) => void)[],
+  receipt: null as CaseOperationReceipt | null,
+  callbacks: [] as ((receipt: CaseOperationReceipt) => void)[],
 }));
 vi.mock("../../src/hooks/useEndpoint", () => ({
   useEndpoint: (endpoint: string) => ({
@@ -32,7 +32,7 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
   }),
 }));
 vi.mock("../../src/views/RoutedContent", () => ({
-  RoutedContent: ({ committed }: { committed: (receipt: CaseReceipt) => void }) => {
+  RoutedContent: ({ committed }: { committed: (receipt: CaseOperationReceipt) => void }) => {
     audit.callbacks.push(committed);
     return (
       <button

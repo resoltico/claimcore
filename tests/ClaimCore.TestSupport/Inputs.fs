@@ -117,7 +117,8 @@ let caseAdvice state =
                 Reason = Refusal.Case(CaseRefusal.NotOffered headline)
             })
 
-    CaseAdvice.create [] None [] blocked |> Result.defaultWith invalidOp
+    CaseAdvice.create [] None HistoryAccess.None blocked
+    |> Result.defaultWith invalidOp
 
 /// Wire codecs own authored input membership and ordering; Domain supplies scalar metadata.
 let fields group =

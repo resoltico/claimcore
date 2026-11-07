@@ -646,7 +646,7 @@ for (const language of ["en", "ar"] as const) {
       caseId: target.caseId,
       caseReference: "CASE-1",
       revision: 1,
-      advice: { acts: [], history: ["SUMMARY", "FULL"] },
+      advice: { acts: [], history: "FULL" },
       state: { kind: "ACTIVE", fields: caseFields },
     });
     await page.route("**/api/case.get", (route) =>
@@ -993,7 +993,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
         kind: "ACTIVE",
         fields: { ...caseFields, registration: { ...caseFields.registration, claimantName: name } },
       },
-      advice: { acts: ["AMEND_REGISTRATION"], history: ["SUMMARY", "FULL"] },
+      advice: { acts: ["AMEND_REGISTRATION"], history: "FULL" },
     });
     return { ...value, work: { ...value.work, basis } };
   };
@@ -1431,7 +1431,7 @@ test("case panels follow compact reading order while a work draft survives respo
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: "CASE-1",
     revision: 1,
-    advice: { acts: [], history: [] },
+    advice: { acts: [], history: "NONE" },
     state: { kind: "ACTIVE", fields: caseFields },
   });
   const current = {

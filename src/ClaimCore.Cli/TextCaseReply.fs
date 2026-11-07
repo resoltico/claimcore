@@ -94,59 +94,6 @@ module internal TextCaseReply =
                            blocked.Reason)))
         @ [ TextObservation.line language value.Work.Basis ]
 
-    let historyLines language (page: HistoryResultPage) =
-        (page.Entries
-         |> List.collect (function
-             | HistoryEntry.SummaryEntry change ->
-                 [
-                     String.concat
-                         "  "
-                         [
-                             Revision.format change.Revision
-                             term language CaseActKind.vocabulary change.Act
-                             instant change.RecordedAt
-                             OperationId.format change.OperationId
-                         ]
-                 ]
-             | HistoryEntry.FullEntry full ->
-                 let receipt = full.Receipt
-
-                 let revision, act, fields =
-                     match receipt.Subject with
-                     | ReceiptSubject.Case value ->
-                         let fields =
-                             match value.Snapshot with
-                             | SnapshotDisclosure.Disclosed live ->
-                                 LiveCase.toState live
-                                 |> CaseState.fields
-                                 |> Option.map (fieldLines language)
-                                 |> Option.defaultValue []
-                             | SnapshotDisclosure.Withheld
-                             | SnapshotDisclosure.Erased -> []
-
-                         Revision.format value.Revision,
-                         term language CaseActKind.vocabulary value.Act,
-                         fields
-                     | ReceiptSubject.Work value ->
-                         Revision.format value.Revision,
-                         term language WorkActKind.vocabulary value.Act,
-                         []
-                     | ReceiptSubject.Reminder value ->
-                         "—", term language ReminderActKind.vocabulary value.Act, []
-                     | ReceiptSubject.Authority value ->
-                         "—", term language AuthorityKind.vocabulary value.Act, []
-
-                 String.concat
-                     "  "
-                     [
-                         revision
-                         act
-                         instant receipt.RecordedAt
-                         OperationId.format receipt.OperationId
-                     ]
-                 :: (fields |> List.map ((+) "  "))))
-        @ nextLines language page.NextCursor
-
     let casePage language (page: CaseSummaryPage) =
         let header = CaseListRows.textHeader language
 

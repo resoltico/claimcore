@@ -48,32 +48,19 @@ module internal ViewQueries =
             return QueryResults.readResult result
         }
 
-    let cases services () token =
+    let work services () token =
         counts
             services
             (fun tx selection ->
                 task {
-                    let! items = tx.CaseViewCounts selection
+                    let! cases = tx.CaseViewCounts selection
+                    let! reminders = tx.ReminderViewCounts selection
 
                     return
                         {
-                            CaseViews.Basis = selection.DateBasis
-                            Items = items
-                        }
-                })
-            token
-
-    let reminders services () token =
-        counts
-            services
-            (fun tx selection ->
-                task {
-                    let! items = tx.ReminderViewCounts selection
-
-                    return
-                        {
-                            ReminderViews.Basis = selection.DateBasis
-                            Items = items
+                            WorkViews.Basis = selection.DateBasis
+                            CaseViews = cases
+                            ReminderViews = reminders
                         }
                 })
             token

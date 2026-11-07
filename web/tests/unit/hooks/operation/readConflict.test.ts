@@ -17,7 +17,7 @@ const caseValue = () =>
     caseReference: "CASE-1",
     revision: 100,
     state: { kind: "ACTIVE", fields },
-    advice: { ...caseAdvice([]), history: [] },
+    advice: { ...caseAdvice([]), history: "NONE" },
     work: {
       changedAt: null,
       recordedBy: null,
@@ -153,7 +153,7 @@ it("retains an erased current-case status without inventing editable facts or a 
         caseReference: "CASE-1",
         revision: 101,
         state: { kind: "ERASED" },
-        advice: { ...caseAdvice([]), history: ["SUMMARY"] },
+        advice: { ...caseAdvice([]), history: "SUMMARY" },
       }),
     ),
   );

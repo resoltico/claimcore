@@ -289,11 +289,9 @@ let internal authorityFieldPresentation () =
             | InteractionInput.ReminderState
             | InteractionInput.ReminderDue
             | InteractionInput.IncludeInactive
-            | InteractionInput.Mine
             | InteractionInput.Scope
             | InteractionInput.ActorId
             | InteractionInput.CaseId
-            | InteractionInput.Detail
             | InteractionInput.Lifecycle
             | InteractionInput.Status
             | InteractionInput.Progress

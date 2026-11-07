@@ -271,33 +271,6 @@ module Cursors =
             | _ -> None)
             token
 
-    let encodeHistory installation (caseId: CaseId) after =
-        encode
-            installation
-            [
-                DurableNames.After, JsonValue.Integer(Revision.value after)
-                DurableNames.CaseId, JsonValue.String(CaseId.format caseId)
-                DurableNames.Kind, JsonValue.String "HISTORY"
-                DurableNames.V, JsonValue.Integer 2L
-            ]
-
-    let decodeHistory installation requested token =
-        decode
-            installation
-            MaximumTokenCharacters
-            (function
-            | JsonValue.Object [ DurableNames.After, JsonValue.Integer after
-                                 DurableNames.CaseId, JsonValue.String target
-                                 DurableNames.Kind, JsonValue.String "HISTORY"
-                                 DurableNames.V, JsonValue.Integer 2L ] when
-                after >= 1L
-                && after <= Revision.Maximum
-                && uuid CaseId.create target = Some requested
-                ->
-                Revision.create after
-            | _ -> None)
-            token
-
     let encodeAssignees installation caseId (after: ActorId) =
         encode
             installation
@@ -528,29 +501,6 @@ module Cursors =
                 match CalendarDate.parse due, uuid ReminderId.create id with
                 | Ok due, Some id -> Some(due, id)
                 | _ -> None
-            | _ -> None)
-            token
-
-    let encodeActivity installation scope sequence =
-        encode
-            installation
-            [
-                "kind", JsonValue.String "CASE_ACTIVITY"
-                "v", JsonValue.Integer 1L
-                "scope", JsonValue.String scope
-                "before", JsonValue.Integer(Sequence.value sequence)
-            ]
-
-    let decodeActivity installation scope token =
-        decode
-            installation
-            MaximumTokenCharacters
-            (function
-            | JsonValue.Object [ "before", JsonValue.Integer before
-                                 "kind", JsonValue.String "CASE_ACTIVITY"
-                                 "scope", JsonValue.String expected
-                                 "v", JsonValue.Integer 1L ] when expected = scope && before >= 1L ->
-                Sequence.create before
             | _ -> None)
             token
 

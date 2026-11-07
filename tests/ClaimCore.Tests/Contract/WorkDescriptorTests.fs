@@ -119,76 +119,45 @@ let tests =
                         Expect.isFalse
                             (output.Contains "cli.text." || output.Contains "{observed}")
                             "No missing message key or interpolation survives")
-            testCase "overview preserves independent counts and a known zero" (fun () ->
-                let reply =
-                    {
-                        Basis = basis
-                        Mine = false
-                        ActionableCases = 11L
-                        MissingPlanCases = 0L
-                        OverdueCases = 3L
-                        OverdueReminders = 4L
-                        UnassignedCases = 5L
-                        UnavailableAssigneeCases = 6L
-                        AttentionCases = 7L
-                    }
+            testCase
+                "combined view counts retain identities, zero values and producer order"
+                (fun () ->
+                    let counts: WorkViews =
+                        {
+                            Basis = basis
+                            CaseViews =
+                                [
+                                    { View = CaseView.Mine; Count = 0L }
+                                    { View = CaseView.All; Count = 9L }
+                                ]
+                            ReminderViews =
+                                [
+                                    {
+                                        View = ReminderView.Cancelled
+                                        Count = 2L
+                                    }
+                                ]
+                        }
 
-                let entries = Descriptor.workOverview reply
+                    let sections = Descriptor.workViews counts
 
-                Expect.equal
-                    (entries |> List.map (fun entry -> entry.Key, entry.Value))
-                    [
-                        "actionableCases", PresentedValue.Count 11L
-                        "missingPlanCases", PresentedValue.Count 0L
-                        "overdueCases", PresentedValue.Count 3L
-                        "overdueReminders", PresentedValue.Count 4L
-                        "unassignedCases", PresentedValue.Count 5L
-                        "unavailableAssigneeCases", PresentedValue.Count 6L
-                        "attentionCases", PresentedValue.Count 7L
-                    ]
-                    "The core determines count identity, order and value without client recomputation"
+                    Expect.equal
+                        (sections |> List.map _.TitleId)
+                        [ "label.cases"; "label.reminders" ]
+                        "Both sets belong to the combined read"
 
-                Expect.contains
-                    (TextWorkReply.overview "en" reply)
-                    "Cases without next action       : 0"
-                    "The actual human renderer retains zero rather than an absent marker")
-            testCase "view counts retain their typed identities and producer order" (fun () ->
-                let cases: CaseViews =
-                    {
-                        Basis = basis
-                        Items =
+                    Expect.equal
+                        (sections
+                         |> List.map (fun section ->
+                             section.Entries |> List.map (fun entry -> entry.LabelId, entry.Value)))
+                        [
                             [
-                                { View = CaseView.Mine; Count = 0L }
-                                { View = CaseView.All; Count = 9L }
+                                "view.MINE.label", PresentedValue.Count 0L
+                                "view.ALL.label", PresentedValue.Count 9L
                             ]
-                    }
-
-                let reminders: ReminderViews =
-                    {
-                        Basis = basis
-                        Items =
-                            [
-                                {
-                                    View = ReminderView.Cancelled
-                                    Count = 2L
-                                }
-                            ]
-                    }
-
-                Expect.equal
-                    (Descriptor.caseViews cases
-                     |> List.map (fun entry -> entry.LabelId, entry.Value))
-                    [
-                        "view.MINE.label", PresentedValue.Count 0L
-                        "view.ALL.label", PresentedValue.Count 9L
-                    ]
-                    "Case view labels and counts come from typed core values"
-
-                Expect.equal
-                    (Descriptor.reminderViews reminders
-                     |> List.map (fun entry -> entry.LabelId, entry.Value))
-                    [ "view.CANCELLED.label", PresentedValue.Count 2L ]
-                    "Reminder views do not borrow case selection rules")
+                            [ "view.CANCELLED.label", PresentedValue.Count 2L ]
+                        ]
+                        "Count identity, order and known zero come from the server")
             testCase "full case facts retain non-listed fields and pair money once" (fun () ->
                 let reference = Inputs.reference "CARD-1"
 

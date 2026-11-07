@@ -242,36 +242,34 @@ let tests =
                             text
                             (TextReplyFormat.label language (vocabulary + "." + token + ".label"))
                             "Actual per-entity labels render in all supported languages")
-            testCase
-                "retired human verbs refuse while explicit API frames remain available"
-                (fun () ->
-                    for verb in [ "history"; "activity" ] do
-                        match Grammar.prepare (fun () -> "unused") [ "case"; verb; "x" ] with
-                        | Error [ UsageError.UnknownCommand(_, suggestions) ] ->
-                            Expect.isFalse
-                                (List.contains ("case " + verb) suggestions)
-                                "Retired commands are never suggested as supported alternatives"
-                        | other ->
-                            failtestf
-                                "Retired verb must be unknown: %A"
-                                (Result.map (fun _ -> ()) other)
-
-                        for endpoint in [ "case.history"; "case.activity" ] do
-                            Expect.isSome
-                                (Api.tryFind endpoint)
-                                "Removing a human entry point does not remove explicit API access"
-
-                    Expect.equal
-                        (ExitCode.value ExitCode.Usage)
-                        64
-                        "The executable usage exit code remains sixty-four"
-
-                    for operation in CommandGrammar.operations do
+            testCase "retired history and activity verbs and API endpoints refuse" (fun () ->
+                for verb in [ "history"; "activity" ] do
+                    match Grammar.prepare (fun () -> "unused") [ "case"; verb; "x" ] with
+                    | Error [ UsageError.UnknownCommand(_, suggestions) ] ->
                         Expect.isFalse
-                            (List.contains
-                                (String.concat " " (CommandGrammar.words operation))
-                                [ "case history"; "case activity" ])
-                            "One command inventory excludes both retired verbs")
+                            (List.contains ("case " + verb) suggestions)
+                            "Retired commands are never suggested as supported alternatives"
+                    | other ->
+                        failtestf
+                            "Retired verb must be unknown: %A"
+                            (Result.map (fun _ -> ()) other)
+
+                    for endpoint in [ "case.history"; "case.activity" ] do
+                        Expect.isNone
+                            (Api.tryFind endpoint)
+                            "Retired endpoints are absent from the API"
+
+                Expect.equal
+                    (ExitCode.value ExitCode.Usage)
+                    64
+                    "The executable usage exit code remains sixty-four"
+
+                for operation in CommandGrammar.operations do
+                    Expect.isFalse
+                        (List.contains
+                            (String.concat " " (CommandGrammar.words operation))
+                            [ "case history"; "case activity" ])
+                        "One command inventory excludes both retired verbs")
             testCase "global verb help lists only supported human commands" (fun () ->
                 let help = ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Verbs)
 

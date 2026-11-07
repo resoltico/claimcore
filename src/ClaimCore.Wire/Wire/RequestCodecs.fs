@@ -640,14 +640,6 @@ module RequestCodecs =
             Fields = fields.Fields |> optionalField WireMembers.ActorId get uuid
         }
 
-    let private detail get (fields: ReadFields<'request, HistoryDetail -> 'rest>) =
-        {
-            Inputs = fields.Inputs @ [ ReadInput.Detail ]
-            Fields =
-                fields.Fields
-                |> field WireMembers.Detail get (VocabularyCodec.create HistoryDetail.vocabulary)
-        }
-
     let private pageWith
         maximum
         cursor
@@ -840,20 +832,6 @@ module RequestCodecs =
         }
         |> finishRead RequestSchemas.CaseSummaryRequest QueryEndpoint.CaseSummary
 
-    let historyRequest =
-        (read (fun reference detail cursor limit ->
-            {
-                HistoryRequest.Target = reference
-                Detail = detail
-                AfterCursor = cursor
-                Limit = limit
-            })
-        : ReadFields<HistoryRequest, _>)
-        |> caseOperand _.Target
-        |> detail _.Detail
-        |> page _.AfterCursor _.Limit
-        |> finishRead RequestSchemas.HistoryRequest QueryEndpoint.CaseHistory
-
     let timelineRequest =
         let fields =
             (read (fun target filter cursor limit ->
@@ -945,32 +923,6 @@ module RequestCodecs =
         |> optionalField "includeInactive" _.IncludeInactive boolean
         |> build
         |> named "ReminderListRequest"
-
-    let workOverviewRequest =
-        (record (fun mine ->
-            {
-                WorkOverviewRequest.Mine = defaultArg mine false
-            })
-        : Fields<WorkOverviewRequest, _>)
-        |> optionalField "mine" (fun value -> if value.Mine then Some true else None) boolean
-        |> build
-        |> named "WorkOverviewRequest"
-
-    let caseActivityRequest =
-        (record (fun target detail cursor limit ->
-            {
-                CaseActivityRequest.Target = target
-                Detail = detail
-                AfterCursor = cursor
-                Limit = limit
-            })
-        : Fields<CaseActivityRequest, _>)
-        |> field "target" _.Target caseSelector
-        |> field "detail" _.Detail (VocabularyCodec.create HistoryDetail.vocabulary)
-        |> optionalField "cursor" _.AfterCursor (boundedText 1 Paging.MaximumCaseCursorCharacters)
-        |> field "limit" _.Limit (integer 1L (int64 Paging.MaximumPageSize) |> map int int64)
-        |> build
-        |> named "CaseActivityRequest"
 
     let reminderGetRequest =
         (record (fun target reminder ->

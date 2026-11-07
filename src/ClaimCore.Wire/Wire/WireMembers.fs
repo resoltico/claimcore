@@ -120,9 +120,6 @@ module RequestSchemas =
     let CaseSummaryRequest = "CaseSummaryRequest"
 
     [<Literal>]
-    let HistoryRequest = "HistoryRequest"
-
-    [<Literal>]
     let OperationGetRequest = "OperationGetRequest"
 
     [<Literal>]

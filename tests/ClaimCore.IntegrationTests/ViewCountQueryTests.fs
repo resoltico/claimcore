@@ -21,22 +21,22 @@ let private execute fixture input =
 
 let private cases fixture expected =
     task {
-        let! pg = Service.caseViews fixture.Service () token
+        let! pg = Service.workViews fixture.Service () token
         let pg = read pg
 
         Expect.equal
-            (pg.Items |> List.map (fun item -> item.View, item.Count))
+            (pg.CaseViews |> List.map (fun item -> item.View, item.Count))
             expected
             "Counts follow the independent fixture table, in declared order including zero counts"
     }
 
 let private reminders fixture expected =
     task {
-        let! pg = Service.reminderViews fixture.Service () token
+        let! pg = Service.workViews fixture.Service () token
         let pg = read pg
 
         Expect.equal
-            (pg.Items |> List.map (fun item -> item.View, item.Count))
+            (pg.ReminderViews |> List.map (fun item -> item.View, item.Count))
             expected
             "Reminder counts follow state, current parent and due boundaries"
     }
@@ -132,21 +132,6 @@ let private qualify fixture =
                     CaseView.Voided, 6L
                     CaseView.All, 13L
                 ]
-        // The paid case has an available assignee and an upcoming plan: READY_TO_CLOSE alone keeps it in attention.
-        let! overview = Service.workOverview fixture.Service { Mine = false } token
-        let overview = read overview
-
-        Expect.equal
-            overview.AttentionCases
-            3L
-            "The CLI overview includes ready-to-close attention just like case.views"
-
-        let! mine = Service.workOverview fixture.Service { Mine = true } token
-
-        Expect.equal
-            (read mine).AttentionCases
-            1L
-            "The assigned paid case needs attention despite an available person and future plan"
 
         do!
             reminders
@@ -176,13 +161,6 @@ let private qualify fixture =
                                     Summary = WorkValue.Keep
                                 }
                     })
-
-        let! dueTodayMine = Service.workOverview fixture.Service { Mine = true } token
-
-        Expect.equal
-            (read dueTodayMine).AttentionCases
-            2L
-            "A due-today-only case also contributes independently of overdue work"
 
         do!
             execute
@@ -330,14 +308,14 @@ let private qualify fixture =
                 ))
 
         let service = scopedFixture.Service
-        let! denied = Service.caseViews service () token
+        let! denied = Service.workViews service () token
 
         Expect.equal
             denied
             (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Revocation is enforced by the count read's current authorization snapshot"
 
-        let! denied = Service.reminderViews service () token
+        let! denied = Service.workViews service () token
 
         Expect.equal
             denied

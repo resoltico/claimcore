@@ -136,11 +136,7 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
             typeof<CorrectionChoices option>
             (box advice.Correction)
 
-        collect
-            seeds
-            (context + ".CaseAdvice.History")
-            typeof<HistoryDetail list>
-            (box advice.History)
+        collect seeds (context + ".CaseAdvice.History") typeof<HistoryAccess> (box advice.History)
 
         collect
             seeds

@@ -86,22 +86,22 @@ let private onlyAcceptance fixture (submitted: Submitted) (receipt: JsonElement)
     let history =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = submitted.Reference
                     |}
-                detail = "FULL"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
-    let entries = history.GetProperty "entries"
+    let entries = history.GetProperty "items"
     Expect.equal (entries.GetArrayLength()) 1 "Retry appends exactly one acceptance in total"
-    let historical = entries[0].GetProperty "receipt"
+    let historical = entries[0]
 
     Expect.equal
         (field "operationId" historical)

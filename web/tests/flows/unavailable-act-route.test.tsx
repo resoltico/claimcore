@@ -37,7 +37,7 @@ it("keeps the workspace and renders the actual blocked state reason and recommen
       ...current.advice,
       acts: ["REOPEN"],
       recommended: "REOPEN",
-      history: [],
+      history: "NONE",
       blocked: blockedCaseActs(["REOPEN"], "CLOSED"),
     },
     state: { ...current.state, fields: { ...current.state.fields, status: "CLOSED" } },
@@ -69,7 +69,7 @@ it("renders a provided authorization reason without inventing a state explanatio
       ...current.advice,
       acts: [],
       recommended: null,
-      history: [],
+      history: "NONE",
       blocked: blockedCaseActs([]).map((item) =>
         item.act === "DECIDE" ? { act: item.act, reason } : item,
       ),

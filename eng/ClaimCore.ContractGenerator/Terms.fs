@@ -104,7 +104,7 @@ module Terms =
             rendered ActKind.vocabulary
             rendered ActFamily.vocabulary
             rendered InteractionEffect.vocabulary
-            rendered HistoryDetail.vocabulary
+            rendered HistoryAccess.vocabulary
             sectionTerms
             views CaseView.vocabulary
             views ReminderView.vocabulary

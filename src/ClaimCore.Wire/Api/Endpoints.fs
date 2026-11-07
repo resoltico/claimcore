@@ -226,19 +226,12 @@ module Api =
             RequestCodecs.empty
             (ReplyCodecs.readReply "ContextReply" ResponseCodecs.contextReply)
 
-    let caseViews =
+    let workViews =
         read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseViews))
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews))
             HttpMethod.Post
             RequestCodecs.empty
-            (ReplyCodecs.readReply "CaseViewsReply" ViewCountCodecs.cases)
-
-    let reminderViews =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderViews))
-            HttpMethod.Post
-            RequestCodecs.empty
-            (ReplyCodecs.readReply "ReminderViewsReply" ViewCountCodecs.reminders)
+            (ReplyCodecs.readReply "WorkViewsReply" ViewCountCodecs.work)
 
     let caseGet =
         read
@@ -268,15 +261,6 @@ module Api =
             RequestCodecs.caseSummaryRequest
             (ReplyCodecs.readReply "CaseSummaryReply" CaseTotalsCodecs.summary)
 
-    let caseHistory =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseHistory))
-            HttpMethod.Post
-            RequestCodecs.historyRequest
-            (ReplyCodecs.readReply
-                "HistoryReply"
-                (ResponseCodecs.historyPageFor ReceiptCodecs.caseReceipt))
-
     let caseTimeline =
         read
             (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline))
@@ -297,20 +281,6 @@ module Api =
             HttpMethod.Post
             RequestCodecs.reminderGetRequest
             (ReplyCodecs.readReply "ReminderReadReply" WorkReadCodecs.reminder)
-
-    let workOverview =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkOverview))
-            HttpMethod.Post
-            RequestCodecs.workOverviewRequest
-            (ReplyCodecs.readReply "WorkOverviewReply" WorkReadCodecs.overview)
-
-    let caseActivity =
-        read
-            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseActivity))
-            HttpMethod.Post
-            RequestCodecs.caseActivityRequest
-            (ReplyCodecs.readReply "CaseActivityReply" WorkReadCodecs.activityPage)
 
     let operationPreview =
         {
@@ -417,19 +387,14 @@ module Api =
         function
         | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> EndpointDefinition.create reminders
         | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> EndpointDefinition.create reminder
-        | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> EndpointDefinition.create workOverview
-        | (ActorEndpoint.Query QueryEndpoint.CaseActivity) -> EndpointDefinition.create caseActivity
         | (ActorEndpoint.Query QueryEndpoint.CaseTimeline) -> EndpointDefinition.create caseTimeline
         | (ActorEndpoint.Query QueryEndpoint.Context) -> EndpointDefinition.create context
         | (ActorEndpoint.Query QueryEndpoint.CaseGet) -> EndpointDefinition.create caseGet
         | (ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
             EndpointDefinition.create caseAssignees
         | (ActorEndpoint.Query QueryEndpoint.CaseList) -> EndpointDefinition.create caseList
-        | (ActorEndpoint.Query QueryEndpoint.CaseViews) -> EndpointDefinition.create caseViews
-        | (ActorEndpoint.Query QueryEndpoint.ReminderViews) ->
-            EndpointDefinition.create reminderViews
+        | (ActorEndpoint.Query QueryEndpoint.WorkViews) -> EndpointDefinition.create workViews
         | (ActorEndpoint.Query QueryEndpoint.CaseSummary) -> EndpointDefinition.create caseSummary
-        | (ActorEndpoint.Query QueryEndpoint.CaseHistory) -> EndpointDefinition.create caseHistory
         | (ActorEndpoint.Operation OperationEndpoint.Preview) ->
             EndpointDefinition.create operationPreview
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
@@ -726,8 +691,7 @@ module ReplyCorrelation =
 
         let readTarget =
             match token, kind, data with
-            | ("case.get" | "case.history" | "case.activity"), Some "SUCCEEDED", Some value ->
-                caseTarget input value
+            | "case.get", Some "SUCCEEDED", Some value -> caseTarget input value
             | "reminder.get", Some "SUCCEEDED", Some value ->
                 memberValue "item" value
                 |> Option.exists (fun item ->

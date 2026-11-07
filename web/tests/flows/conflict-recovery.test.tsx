@@ -17,12 +17,15 @@ const basis = {
 const current = (
   revision: number,
   name = "Original name",
-  history: ReadonlyArray<"SUMMARY" | "FULL"> = ["SUMMARY", "FULL"],
+  history: "NONE" | "SUMMARY" | "FULL" = "FULL",
 ) => {
   const value = caseViewInput({
     caseReference: "CASE-1",
     revision,
-    advice: { ...caseAdvice(["AMEND_REGISTRATION"]), history },
+    advice: {
+      ...caseAdvice(["AMEND_REGISTRATION"]),
+      history,
+    },
     state: {
       kind: "ACTIVE",
       fields: { ...fields, registration: { ...fields.registration, claimantName: name } },
@@ -45,7 +48,7 @@ const fact = (revision: number) =>
     act: "AMEND_REGISTRATION",
     revision,
     position: { sequence: revision, entryHash: "a".repeat(64) },
-    operationId: `10000000-0000-4000-8000-${String(revision).padStart(12, "0")}`,
+    operationId: `10000000-0000-7000-8000-${String(revision).padStart(12, "0")}`,
     recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Laila Haddad" } }),
     changes: {
       kind: "DISCLOSED",
@@ -215,7 +218,7 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
       Promise.resolve(
         typeof path === "string" && path.endsWith("operation.preview")
           ? response("operation.preview", "REJECTED", conflict)
-          : response("case.get", "SUCCEEDED", current(2, "Latest name", [])),
+          : response("case.get", "SUCCEEDED", current(2, "Latest name", "NONE")),
       ),
     );
   vi.stubGlobal("fetch", fetch);
@@ -293,7 +296,7 @@ it("hides previously disclosed changes when a continuation refusal is followed b
           current(
             reads === 1 ? 54 : 55,
             reads === 1 ? "Before access change" : "After access change",
-            reads === 1 ? ["SUMMARY", "FULL"] : [],
+            reads === 1 ? "FULL" : "NONE",
           ),
         ),
       );

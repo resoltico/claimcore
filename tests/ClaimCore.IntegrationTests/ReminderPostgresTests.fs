@@ -891,13 +891,13 @@ let private currentLookup database =
             "Singular reads carry the actual installation basis"
 
         let! history =
-            Service.activity
+            Service.timeline
                 services
                 {
                     Target = target
                     AfterCursor = None
                     Limit = 10
-                    Detail = HistoryDetail.Full
+                    Filter = Some TimelineFilter.Work
                 }
                 token
 

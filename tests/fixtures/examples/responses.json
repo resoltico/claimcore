@@ -178,7 +178,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -416,71 +416,6 @@
     {
       "name": "case.list-response-2",
       "endpoint": "case.list",
-      "value": {
-        "outcome": {
-          "kind": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "case.history-response-0",
-      "endpoint": "case.history",
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "entries": [
-              {
-                "kind": "SUMMARY",
-                "change": {
-                  "operationId": "10000000-0000-7000-8000-000000000001",
-                  "position": {
-                    "sequence": 1,
-                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
-                  },
-                  "revision": 1,
-                  "act": "OPEN",
-                  "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": "10000000-0000-7000-8000-000000000001"
-                }
-              }
-            ],
-            "nextCursor": "x",
-            "caseId": "20000000-0000-7000-8000-000000000001",
-            "caseReference": "Demo-0001"
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "case.history-response-1",
-      "endpoint": "case.history",
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "INVALID_INPUT",
-            "action": "CORRECT_INPUT",
-            "issues": [
-              {
-                "field": "incidentDate",
-                "code": "TEXT_REQUIRED"
-              }
-            ]
-          }
-        }
-      },
-      "valid": true
-    },
-    {
-      "name": "case.history-response-2",
-      "endpoint": "case.history",
       "value": {
         "outcome": {
           "kind": "FAILED",
@@ -1269,10 +1204,7 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": [
-                "SUMMARY",
-                "FULL"
-              ],
+              "history": "FULL",
               "correction": {
                 "registration": [
                   "KEEP",
@@ -1755,84 +1687,6 @@
           }
         },
         "operationId": "10000000-0000-7000-8000-000000000001"
-      }
-    },
-    {
-      "name": "history-full-DISCLOSED",
-      "endpoint": "case.history",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "entries": [
-              {
-                "kind": "FULL",
-                "receipt": {
-                  "operationId": "10000000-0000-7000-8000-000000000001",
-                  "position": {
-                    "sequence": 1,
-                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
-                  },
-                  "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": {
-                    "actorId": "10000000-0000-7000-8000-000000000001",
-                    "displayName": {
-                      "kind": "ERASED"
-                    },
-                    "principalKind": "HUMAN",
-                    "availability": "AVAILABLE"
-                  },
-                  "subject": {
-                    "kind": "CASE",
-                    "caseReference": "x",
-                    "revision": 1,
-                    "act": "OPEN",
-                    "snapshot": {
-                      "kind": "DISCLOSED",
-                      "view": {
-                        "kind": "ACTIVE",
-                        "fields": {
-                          "caseReference": "x",
-                          "status": "OPENED",
-                          "registration": {
-                            "incidentDate": "2026-01-01",
-                            "incidentNotificationDate": "2026-01-01",
-                            "incidentCountry": "LV",
-                            "claimantName": "x",
-                            "insurerName": "x",
-                            "claimedAmount": "0",
-                            "claimedCurrency": "EUR",
-                            "incidentDescription": null
-                          },
-                          "decision": {
-                            "paymentDecisionDate": "2026-01-01",
-                            "payableAmount": "0",
-                            "payableCurrency": "EUR"
-                          },
-                          "payment": {
-                            "paymentDate": "2026-01-01"
-                          },
-                          "progress": "PAID"
-                        }
-                      }
-                    },
-                    "caseId": "10000000-0000-7000-8000-000000000001"
-                  },
-                  "basis": {
-                    "observedAt": "2026-01-01T00:00:00.000000Z",
-                    "businessDate": "2026-01-01",
-                    "timeZone": "Etc/UTC"
-                  }
-                },
-                "difference": null
-              }
-            ],
-            "nextCursor": null,
-            "caseId": "10000000-0000-7000-8000-000000000001",
-            "caseReference": "x"
-          }
-        }
       }
     },
     {
@@ -2782,7 +2636,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -2865,7 +2719,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -2980,7 +2834,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -3595,96 +3449,6 @@
       "valid": true
     },
     {
-      "name": "case.history.disclosed-difference",
-      "endpoint": "case.history",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "entries": [
-              {
-                "kind": "FULL",
-                "receipt": {
-                  "operationId": "10000000-0000-7000-8000-000000000001",
-                  "position": {
-                    "sequence": 1,
-                    "entryHash": "0000000000000000000000000000000000000000000000000000000000000000"
-                  },
-                  "recordedAt": "2026-01-01T00:00:00.000000Z",
-                  "recordedBy": {
-                    "actorId": "10000000-0000-7000-8000-000000000001",
-                    "displayName": {
-                      "kind": "ERASED"
-                    },
-                    "principalKind": "HUMAN",
-                    "availability": "AVAILABLE"
-                  },
-                  "subject": {
-                    "kind": "CASE",
-                    "caseReference": "x",
-                    "revision": 1,
-                    "act": "OPEN",
-                    "snapshot": {
-                      "kind": "DISCLOSED",
-                      "view": {
-                        "kind": "ACTIVE",
-                        "fields": {
-                          "caseReference": "x",
-                          "status": "OPENED",
-                          "registration": {
-                            "incidentDate": "2026-01-01",
-                            "incidentNotificationDate": "2026-01-01",
-                            "incidentCountry": "LV",
-                            "claimantName": "x",
-                            "insurerName": "x",
-                            "claimedAmount": "0",
-                            "claimedCurrency": "EUR",
-                            "incidentDescription": null
-                          },
-                          "decision": {
-                            "paymentDecisionDate": "2026-01-01",
-                            "payableAmount": "0",
-                            "payableCurrency": "EUR"
-                          },
-                          "payment": {
-                            "paymentDate": "2026-01-01"
-                          },
-                          "progress": "PAID"
-                        }
-                      }
-                    },
-                    "caseId": "10000000-0000-7000-8000-000000000001"
-                  },
-                  "basis": {
-                    "observedAt": "2026-01-01T00:00:00.000000Z",
-                    "businessDate": "2026-01-01",
-                    "timeZone": "Etc/UTC"
-                  }
-                },
-                "difference": {
-                  "lifecycle": {
-                    "before": null,
-                    "after": "ACTIVE"
-                  },
-                  "fields": [
-                    {
-                      "field": "status",
-                      "before": null,
-                      "after": "OPENED"
-                    }
-                  ]
-                }
-              }
-            ],
-            "nextCursor": null,
-            "caseId": "10000000-0000-7000-8000-000000000001",
-            "caseReference": "x"
-          }
-        }
-      }
-    },
-    {
       "name": "meaningless-role-scope-refusal",
       "endpoint": "context",
       "valid": true,
@@ -4192,10 +3956,7 @@
                 "REINSTATE",
                 "ERASE"
               ],
-              "history": [
-                "SUMMARY",
-                "FULL"
-              ],
+              "history": "FULL",
               "correction": {
                 "registration": [
                   "KEEP",
@@ -5320,143 +5081,6 @@
       }
     },
     {
-      "name": "work-overview-False",
-      "endpoint": "work.overview",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-02T04:00:00.000000Z",
-              "businessDate": "2026-11-02",
-              "timeZone": "Europe/Riga"
-            },
-            "mine": false,
-            "actionableCases": 1,
-            "missingPlanCases": 1,
-            "overdueCases": 0,
-            "overdueReminders": 0,
-            "unassignedCases": 1,
-            "unavailableAssigneeCases": 0,
-            "attentionCases": 1
-          }
-        }
-      }
-    },
-    {
-      "name": "case-activity-all-subjects",
-      "endpoint": "case.activity",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "items": [
-              {
-                "operationId": "10000000-0000-7000-8000-000000000001",
-                "position": {
-                  "sequence": 5,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                },
-                "subject": {
-                  "kind": "CASE",
-                  "revision": 2,
-                  "act": "CLOSE"
-                },
-                "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": {
-                  "actorId": "40000000-0000-7000-8000-000000000001",
-                  "displayName": {
-                    "kind": "ERASED"
-                  },
-                  "principalKind": "HUMAN",
-                  "availability": "AVAILABLE"
-                },
-                "detail": null
-              },
-              {
-                "operationId": "10000000-0000-7000-8000-000000000001",
-                "position": {
-                  "sequence": 5,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                },
-                "subject": {
-                  "kind": "WORK",
-                  "revision": 1,
-                  "act": "UPDATE_WORK"
-                },
-                "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": {
-                  "actorId": "40000000-0000-7000-8000-000000000001",
-                  "displayName": {
-                    "kind": "ERASED"
-                  },
-                  "principalKind": "HUMAN",
-                  "availability": "AVAILABLE"
-                },
-                "detail": null
-              },
-              {
-                "operationId": "10000000-0000-7000-8000-000000000001",
-                "position": {
-                  "sequence": 5,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                },
-                "subject": {
-                  "kind": "REMINDER",
-                  "act": "COMPLETE",
-                  "reminderId": "30000000-0000-7000-8000-000000000001",
-                  "revision": 4,
-                  "next": null
-                },
-                "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": {
-                  "actorId": "40000000-0000-7000-8000-000000000001",
-                  "displayName": {
-                    "kind": "ERASED"
-                  },
-                  "principalKind": "HUMAN",
-                  "availability": "AVAILABLE"
-                },
-                "detail": null
-              },
-              {
-                "operationId": "10000000-0000-7000-8000-000000000001",
-                "position": {
-                  "sequence": 5,
-                  "entryHash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-                },
-                "subject": {
-                  "kind": "REMINDER",
-                  "act": "COMPLETE_AND_PLAN_NEXT",
-                  "reminderId": "30000000-0000-7000-8000-000000000001",
-                  "revision": 4,
-                  "next": {
-                    "reminderId": "10000000-0000-7000-8000-000000000001",
-                    "revision": 1
-                  }
-                },
-                "recordedAt": "2026-11-02T04:00:00.000000Z",
-                "recordedBy": {
-                  "actorId": "40000000-0000-7000-8000-000000000001",
-                  "displayName": {
-                    "kind": "ERASED"
-                  },
-                  "principalKind": "HUMAN",
-                  "availability": "AVAILABLE"
-                },
-                "detail": null
-              }
-            ],
-            "nextCursor": null,
-            "caseId": "20000000-0000-7000-8000-000000000001",
-            "caseReference": "NARRATIVE-REMINDERS"
-          }
-        }
-      }
-    },
-    {
       "name": "pending-reminder-not-offered",
       "endpoint": "context",
       "valid": true,
@@ -5566,62 +5190,6 @@
     {
       "name": "reminder.list-unavailable",
       "endpoint": "reminder.list",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
-          }
-        }
-      }
-    },
-    {
-      "name": "work.overview-denied",
-      "endpoint": "work.overview",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "RESOURCE_UNAVAILABLE",
-            "action": "ASK_FOR_ACCESS"
-          }
-        }
-      }
-    },
-    {
-      "name": "work.overview-unavailable",
-      "endpoint": "work.overview",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
-          }
-        }
-      }
-    },
-    {
-      "name": "case.activity-denied",
-      "endpoint": "case.activity",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "RESOURCE_UNAVAILABLE",
-            "action": "ASK_FOR_ACCESS"
-          }
-        }
-      }
-    },
-    {
-      "name": "case.activity-unavailable",
-      "endpoint": "case.activity",
       "valid": true,
       "value": {
         "outcome": {
@@ -5932,7 +5500,7 @@
               "acts": [
                 "DECIDE"
               ],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -6145,7 +5713,7 @@
               "acts": [
                 "DECIDE"
               ],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -6401,392 +5969,6 @@
               "timeZone": "Etc/UTC"
             },
             "exactReference": null
-          }
-        }
-      }
-    },
-    {
-      "name": "case.views-all-views",
-      "endpoint": "case.views",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-04T12:00:00.000000Z",
-              "businessDate": "2026-11-04",
-              "timeZone": "Etc/UTC"
-            },
-            "items": [
-              {
-                "view": "NEEDS_ATTENTION",
-                "count": 0
-              },
-              {
-                "view": "MINE",
-                "count": 1
-              },
-              {
-                "view": "OVERDUE",
-                "count": 2
-              },
-              {
-                "view": "DUE_TODAY",
-                "count": 3
-              },
-              {
-                "view": "NO_NEXT_ACTION",
-                "count": 4
-              },
-              {
-                "view": "UNASSIGNED",
-                "count": 5
-              },
-              {
-                "view": "UNDECIDED",
-                "count": 6
-              },
-              {
-                "view": "DECIDED_UNPAID",
-                "count": 7
-              },
-              {
-                "view": "CLOSED",
-                "count": 8
-              },
-              {
-                "view": "VOIDED",
-                "count": 9
-              },
-              {
-                "view": "ALL",
-                "count": 10
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "case.views-unknown-view",
-      "endpoint": "case.views",
-      "valid": false,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-04T12:00:00.000000Z",
-              "businessDate": "2026-11-04",
-              "timeZone": "Etc/UTC"
-            },
-            "items": [
-              {
-                "view": "UNSUPPORTED",
-                "count": 0
-              },
-              {
-                "view": "MINE",
-                "count": 1
-              },
-              {
-                "view": "OVERDUE",
-                "count": 2
-              },
-              {
-                "view": "DUE_TODAY",
-                "count": 3
-              },
-              {
-                "view": "NO_NEXT_ACTION",
-                "count": 4
-              },
-              {
-                "view": "UNASSIGNED",
-                "count": 5
-              },
-              {
-                "view": "UNDECIDED",
-                "count": 6
-              },
-              {
-                "view": "DECIDED_UNPAID",
-                "count": 7
-              },
-              {
-                "view": "CLOSED",
-                "count": 8
-              },
-              {
-                "view": "VOIDED",
-                "count": 9
-              },
-              {
-                "view": "ALL",
-                "count": 10
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "case.views-negative-count",
-      "endpoint": "case.views",
-      "valid": false,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-04T12:00:00.000000Z",
-              "businessDate": "2026-11-04",
-              "timeZone": "Etc/UTC"
-            },
-            "items": [
-              {
-                "view": "NEEDS_ATTENTION",
-                "count": -1
-              },
-              {
-                "view": "MINE",
-                "count": 1
-              },
-              {
-                "view": "OVERDUE",
-                "count": 2
-              },
-              {
-                "view": "DUE_TODAY",
-                "count": 3
-              },
-              {
-                "view": "NO_NEXT_ACTION",
-                "count": 4
-              },
-              {
-                "view": "UNASSIGNED",
-                "count": 5
-              },
-              {
-                "view": "UNDECIDED",
-                "count": 6
-              },
-              {
-                "view": "DECIDED_UNPAID",
-                "count": 7
-              },
-              {
-                "view": "CLOSED",
-                "count": 8
-              },
-              {
-                "view": "VOIDED",
-                "count": 9
-              },
-              {
-                "view": "ALL",
-                "count": 10
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder.views-all-views",
-      "endpoint": "reminder.views",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-04T12:00:00.000000Z",
-              "businessDate": "2026-11-04",
-              "timeZone": "Etc/UTC"
-            },
-            "items": [
-              {
-                "view": "PENDING",
-                "count": 0
-              },
-              {
-                "view": "MINE",
-                "count": 1
-              },
-              {
-                "view": "OVERDUE",
-                "count": 2
-              },
-              {
-                "view": "TODAY",
-                "count": 3
-              },
-              {
-                "view": "UPCOMING",
-                "count": 4
-              },
-              {
-                "view": "COMPLETED",
-                "count": 5
-              },
-              {
-                "view": "CANCELLED",
-                "count": 6
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder.views-unknown-view",
-      "endpoint": "reminder.views",
-      "valid": false,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-04T12:00:00.000000Z",
-              "businessDate": "2026-11-04",
-              "timeZone": "Etc/UTC"
-            },
-            "items": [
-              {
-                "view": "UNSUPPORTED",
-                "count": 0
-              },
-              {
-                "view": "MINE",
-                "count": 1
-              },
-              {
-                "view": "OVERDUE",
-                "count": 2
-              },
-              {
-                "view": "TODAY",
-                "count": 3
-              },
-              {
-                "view": "UPCOMING",
-                "count": 4
-              },
-              {
-                "view": "COMPLETED",
-                "count": 5
-              },
-              {
-                "view": "CANCELLED",
-                "count": 6
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder.views-negative-count",
-      "endpoint": "reminder.views",
-      "valid": false,
-      "value": {
-        "outcome": {
-          "kind": "SUCCEEDED",
-          "data": {
-            "basis": {
-              "observedAt": "2026-11-04T12:00:00.000000Z",
-              "businessDate": "2026-11-04",
-              "timeZone": "Etc/UTC"
-            },
-            "items": [
-              {
-                "view": "PENDING",
-                "count": -1
-              },
-              {
-                "view": "MINE",
-                "count": 1
-              },
-              {
-                "view": "OVERDUE",
-                "count": 2
-              },
-              {
-                "view": "TODAY",
-                "count": 3
-              },
-              {
-                "view": "UPCOMING",
-                "count": 4
-              },
-              {
-                "view": "COMPLETED",
-                "count": 5
-              },
-              {
-                "view": "CANCELLED",
-                "count": 6
-              }
-            ]
-          }
-        }
-      }
-    },
-    {
-      "name": "case.views-denied",
-      "endpoint": "case.views",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "RESOURCE_UNAVAILABLE",
-            "action": "ASK_FOR_ACCESS"
-          }
-        }
-      }
-    },
-    {
-      "name": "case.views-store-unavailable",
-      "endpoint": "case.views",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder.views-denied",
-      "endpoint": "reminder.views",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "REJECTED",
-          "data": {
-            "code": "RESOURCE_UNAVAILABLE",
-            "action": "ASK_FOR_ACCESS"
-          }
-        }
-      }
-    },
-    {
-      "name": "reminder.views-store-unavailable",
-      "endpoint": "reminder.views",
-      "valid": true,
-      "value": {
-        "outcome": {
-          "kind": "FAILED",
-          "data": {
-            "code": "CORE_STORE_UNAVAILABLE",
-            "action": "RETRY_SAFE"
           }
         }
       }
@@ -11423,7 +10605,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -12544,7 +11726,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -12663,7 +11845,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -12882,7 +12064,7 @@
               "acts": [
                 "OPEN"
               ],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -13099,7 +12281,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -13572,7 +12754,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -13788,7 +12970,7 @@
             },
             "advice": {
               "acts": [],
-              "history": [],
+              "history": "NONE",
               "maintenance": {
                 "active": false,
                 "generation": 0
@@ -19510,6 +18692,100 @@
             "phase": "NOT_STARTED",
             "issuedAt": "2026-08-03T09:15:27.000000Z",
             "observedAt": "2026-08-03T09:26:00.000000Z"
+          }
+        }
+      }
+    },
+    {
+      "id": "work.views-counts",
+      "name": "work.views-counts",
+      "endpoint": "work.views",
+      "valid": true,
+      "value": {
+        "outcome": {
+          "kind": "SUCCEEDED",
+          "data": {
+            "basis": {
+              "observedAt": "2026-11-04T12:00:00.000000Z",
+              "businessDate": "2026-11-04",
+              "timeZone": "Etc/UTC"
+            },
+            "caseViews": [
+              {
+                "view": "NEEDS_ATTENTION",
+                "count": 0
+              },
+              {
+                "view": "MINE",
+                "count": 1
+              },
+              {
+                "view": "OVERDUE",
+                "count": 2
+              },
+              {
+                "view": "DUE_TODAY",
+                "count": 3
+              },
+              {
+                "view": "NO_NEXT_ACTION",
+                "count": 4
+              },
+              {
+                "view": "UNASSIGNED",
+                "count": 5
+              },
+              {
+                "view": "UNDECIDED",
+                "count": 6
+              },
+              {
+                "view": "DECIDED_UNPAID",
+                "count": 7
+              },
+              {
+                "view": "CLOSED",
+                "count": 8
+              },
+              {
+                "view": "VOIDED",
+                "count": 9
+              },
+              {
+                "view": "ALL",
+                "count": 10
+              }
+            ],
+            "reminderViews": [
+              {
+                "view": "PENDING",
+                "count": 0
+              },
+              {
+                "view": "MINE",
+                "count": 1
+              },
+              {
+                "view": "OVERDUE",
+                "count": 2
+              },
+              {
+                "view": "TODAY",
+                "count": 3
+              },
+              {
+                "view": "UPCOMING",
+                "count": 4
+              },
+              {
+                "view": "COMPLETED",
+                "count": 5
+              },
+              {
+                "view": "CANCELLED",
+                "count": 6
+              }
+            ]
           }
         }
       }

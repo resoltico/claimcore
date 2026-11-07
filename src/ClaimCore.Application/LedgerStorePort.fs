@@ -310,13 +310,6 @@ type AssigneePageQuery =
         Limit: int
     }
 
-type HistoryPageQuery =
-    {
-        CaseId: CaseId
-        AfterRevision: Revision
-        Limit: int
-    }
-
 type AuthorityHistoryPageQuery =
     {
         TargetActorId: ActorId option
@@ -346,13 +339,6 @@ type Page<'Item, 'Position> =
         Next: 'Position option
     }
 
-/// The already-fetched LIMIT+1 row supplies comparison context without another read or a pinned traversal.
-type CaseHistorySlice =
-    {
-        Page: Page<StoredEntry, Revision>
-        Previous: StoredEntry option
-    }
-
 type ReminderPosition =
     {
         Due: CalendarDate
@@ -378,13 +364,6 @@ type ReminderRow =
         Reference: CaseReference
         Lifecycle: Lifecycle
         Status: CaseStatus option
-    }
-
-type ActivityPageQuery =
-    {
-        CaseId: CaseId
-        BeforeSequence: Sequence option
-        Limit: int
     }
 
 type TimelinePageQuery =
@@ -426,10 +405,8 @@ type IReadTx =
     abstract AssignedAccounts: (CaseId * ActorId) list -> Task<Map<CaseId * ActorId, ActorRef>>
     abstract ResponsibilityCounts: CaseSelection * ActorId list -> Task<Map<ActorId, int64>>
     abstract ReminderPage: ReminderPageQuery -> Task<Page<ReminderRow, ReminderPosition>>
-    abstract WorkOverview: CaseSelection * bool -> Task<WorkOverview>
     abstract CaseViewCounts: CaseSelection -> Task<CaseViewCount list>
     abstract ReminderViewCounts: CaseSelection -> Task<ReminderViewCount list>
-    abstract ActivityPage: ActivityPageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract TimelinePage: TimelinePageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract PreviousEntries: StoredEntry list -> Task<Map<Sequence, StoredEntry>>
     abstract FindOperation: OperationId -> Task<StoredOperation option>
@@ -437,7 +414,6 @@ type IReadTx =
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
 
-    abstract HistoryPage: HistoryPageQuery -> Task<CaseHistorySlice>
     abstract AuthorityHistoryPage: AuthorityHistoryPageQuery -> Task<Page<StoredEntry, Sequence>>
 
     abstract AccessRequestPage:

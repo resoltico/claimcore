@@ -39,18 +39,20 @@ let private blocked =
 [<Tests>]
 let model =
     testCase "case advice requires a complete unambiguous unavailable-act explanation" (fun () ->
-        Expect.isOk (CaseAdvice.create [] None [] blocked) "Literal complete inventory is valid"
+        Expect.isOk
+            (CaseAdvice.create [] None HistoryAccess.None blocked)
+            "Literal complete inventory is valid"
 
         Expect.isError
-            (CaseAdvice.create [] None [] (List.tail blocked))
+            (CaseAdvice.create [] None HistoryAccess.None (List.tail blocked))
             "A missing Open reason is detected"
 
         Expect.isError
-            (CaseAdvice.create [] None [] (blocked @ [ List.head blocked ]))
+            (CaseAdvice.create [] None HistoryAccess.None (blocked @ [ List.head blocked ]))
             "Duplicate reasons are detected"
 
         Expect.isError
-            (CaseAdvice.create [ CaseActKind.Void ] None [] blocked)
+            (CaseAdvice.create [ CaseActKind.Void ] None HistoryAccess.None blocked)
             "Offered acts cannot also be blocked"
 
         let invalid =
@@ -59,14 +61,14 @@ let model =
             }
 
         Expect.isError
-            (CaseAdvice.create [] None [] (invalid :: List.tail blocked))
+            (CaseAdvice.create [] None HistoryAccess.None (invalid :: List.tail blocked))
             "A no-change result is not a state-availability explanation"
 
         let advice =
             CaseAdvice.create
                 [ CaseActKind.Void ]
                 None
-                []
+                HistoryAccess.None
                 (blocked |> List.filter (fun item -> item.Act <> CaseActKind.Void))
             |> accepted
 

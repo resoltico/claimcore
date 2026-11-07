@@ -43,15 +43,11 @@ let private queries =
         QueryEndpoint.CaseGet, Consequence.Routine
         QueryEndpoint.CaseAssignees, Consequence.Routine
         QueryEndpoint.CaseList, Consequence.Routine
-        QueryEndpoint.CaseViews, Consequence.Routine
-        QueryEndpoint.ReminderViews, Consequence.Routine
         QueryEndpoint.CaseSummary, Consequence.Routine
-        QueryEndpoint.CaseHistory, Consequence.Routine
-        QueryEndpoint.CaseActivity, Consequence.Routine
         QueryEndpoint.CaseTimeline, Consequence.Routine
         QueryEndpoint.ReminderList, Consequence.Routine
         QueryEndpoint.ReminderGet, Consequence.Routine
-        QueryEndpoint.WorkOverview, Consequence.Routine
+        QueryEndpoint.WorkViews, Consequence.Routine
         QueryEndpoint.OperationGet, Consequence.Routine
         QueryEndpoint.AuthorityList, Consequence.Routine
         QueryEndpoint.AuthorityGrants, Consequence.Routine

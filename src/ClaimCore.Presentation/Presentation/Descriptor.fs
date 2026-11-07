@@ -475,6 +475,12 @@ module Descriptor =
             }
         ]
 
+    let private section title entries =
+        {
+            Section.TitleId = title
+            Entries = entries
+        }
+
     let private count key label value =
         {
             Entry.Key = key
@@ -484,31 +490,20 @@ module Descriptor =
         }
 
     /// Counts retain known zero values and the producer's order; absence is never inferred.
-    let caseViews (reply: CaseViews) =
-        reply.Items
-        |> List.map (fun item ->
-            let token = CaseView.token item.View
-            count token ("view." + token + ".label") item.Count)
+    let workViews (reply: WorkViews) =
+        let cases =
+            reply.CaseViews
+            |> List.map (fun item ->
+                let token = CaseView.token item.View
+                count token ("view." + token + ".label") item.Count)
 
-    let reminderViews (reply: ReminderViews) =
-        reply.Items
-        |> List.map (fun item ->
-            let token = ReminderView.token item.View
-            count token ("view." + token + ".label") item.Count)
+        let reminders =
+            reply.ReminderViews
+            |> List.map (fun item ->
+                let token = ReminderView.token item.View
+                count token ("view." + token + ".label") item.Count)
 
-    let workOverview (reply: WorkOverview) =
-        [
-            count "actionableCases" "label.actionableCases" reply.ActionableCases
-            count "missingPlanCases" "label.missingPlanCases" reply.MissingPlanCases
-            count "overdueCases" "label.overdueCases" reply.OverdueCases
-            count "overdueReminders" "label.overdueReminders" reply.OverdueReminders
-            count "unassignedCases" "label.unassignedCases" reply.UnassignedCases
-            count
-                "unavailableAssigneeCases"
-                "label.unavailableAssigneeCases"
-                reply.UnavailableAssigneeCases
-            count "attentionCases" "label.attentionCases" reply.AttentionCases
-        ]
+        [ section "label.cases" cases; section "label.reminders" reminders ]
 
     let private difference key label format (change: ValueChange<'value>) =
         {
@@ -752,11 +747,6 @@ module Descriptor =
             Read = read
         }
 
-    let private section title entries =
-        {
-            Section.TitleId = title
-            Entries = entries
-        }
 
     let reminderColumns =
         [

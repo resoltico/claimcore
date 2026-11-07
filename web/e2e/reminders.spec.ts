@@ -583,7 +583,7 @@ test("published reminder rows show server timing in case and queue views across 
   await openAuthenticated(page);
   const reference = `TIMING-${randomUUID()}`;
   await openCase(page, reference);
-  const observed = await workRequest(page, "work.overview", {});
+  const observed = await workRequest(page, "work.views", {});
   if (observed.outcome.kind !== "SUCCEEDED") {
     throw new Error("Expected server date basis");
   }

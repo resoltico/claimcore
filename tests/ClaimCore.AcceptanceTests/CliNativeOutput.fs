@@ -83,23 +83,20 @@ let private accepted fixture reference =
     let history =
         automation
             fixture
-            "case.history"
+            "case.timeline"
             {|
                 target =
                     {|
                         kind = "REFERENCE"
                         caseReference = reference
                     |}
-                detail = "FULL"
+                filter = "FACTS"
                 limit = 50
             |}
             0
         |> require "SUCCEEDED"
 
-    Expect.equal
-        (history.GetProperty("entries").GetArrayLength())
-        1
-        "Exactly one accepted operation"
+    Expect.equal (history.GetProperty("items").GetArrayLength()) 1 "Exactly one accepted operation"
 
 let private fallback (operation: string) (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode 4 "Undeliverable mutation confirmation remains uncertain"

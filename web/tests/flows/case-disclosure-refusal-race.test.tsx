@@ -31,7 +31,7 @@ const current: ApiResult<ServiceResponse<"case.get">> = {
         revision: 1,
         advice: {
           ...caseAdvice([]),
-          history: ["SUMMARY", "FULL"],
+          history: "FULL",
         },
         state: {
           kind: "ACTIVE",

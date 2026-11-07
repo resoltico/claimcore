@@ -4,13 +4,13 @@ import { ButtonControl as Button } from "../../ui/ButtonControl";
 import { useEffect, useRef } from "react";
 import type { Notice } from "../../protocol/notices";
 import { NoticeView } from "../../presentation/Message";
-import type { ProductMetadata, CaseReceipt } from "../../api/service";
+import type { ProductMetadata, CaseOperationReceipt } from "../../api/service";
 import { ReceiptFields } from "../../components/ReceiptFields";
 type AcceptedOperationProps = {
   definition: ProductMetadata;
-  receipt: CaseReceipt;
+  receipt: CaseOperationReceipt;
   message: Notice | null;
-  onCommitted: (receipt: CaseReceipt) => void;
+  onCommitted: (receipt: CaseOperationReceipt) => void;
 };
 const AcceptedIdentity = ({ operationId }: { operationId: string }) => (
   <p>

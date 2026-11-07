@@ -281,9 +281,9 @@ let private scopedAdvice () =
 
     for role, expectedGroups, expectedHistory in
         [
-            Role.CaseRegistrar, [ "registration" ], [ "SUMMARY" ]
-            Role.PaymentRecorder, [ "payment" ], [ "SUMMARY" ]
-            Role.CaseHandler, [ "registration"; "decision" ], [ "SUMMARY"; "FULL" ]
+            Role.CaseRegistrar, [ "registration" ], HistoryAccess.Summary
+            Role.PaymentRecorder, [ "payment" ], HistoryAccess.Summary
+            Role.CaseHandler, [ "registration"; "decision" ], HistoryAccess.Full
         ] do
         let authority =
             actor
@@ -315,11 +315,7 @@ let private scopedAdvice () =
             snapshot.Revision
             "The snapshot owns the expected revision"
 
-        let history =
-            advice.Advice.History
-            |> List.map (function
-                | HistoryDetail.Summary -> "SUMMARY"
-                | HistoryDetail.Full -> "FULL")
+        let history = advice.Advice.History
 
         Expect.equal history expectedHistory "History reflects the actual case grant"
 

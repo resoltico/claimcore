@@ -130,50 +130,9 @@ let private authorityAndCursor () =
     Expect.isFalse (Authority.validActor owner AuthorityView.empty) "Absent actor has no context"
 
 let private history () =
-    let _, entry, current, _ = created 460 "QUERY-HISTORY"
+    let _, entry, _, _ = created 460 "QUERY-HISTORY"
 
     let reader = actor owner ((CaseFixtures.actorId (id 1))) [ Role.CaseReader ] []
-    let read = Some current
-
-    let request: HistoryRequest =
-        {
-            Target = CaseSelector.Reference(CaseReference.format current.Snapshot.Reference)
-            AfterCursor = None
-            Limit = 1
-            Detail = HistoryDetail.Summary
-        }
-
-    Expect.equal
-        (Queries.selectHistory
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-            owner
-            request
-            reader
-            read)
-        (Ok(CaseFixtures.revision (0L)))
-        "Reader may select summary"
-
-    Expect.equal
-        (Queries.selectHistory
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-            owner
-            { request with
-                Detail = HistoryDetail.Full
-            }
-            reader
-            read)
-        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Reader cannot select full history"
-
-    Expect.equal
-        (Queries.selectHistory
-            (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
-            owner
-            request
-            reader
-            None)
-        (Error(Refusal.Access AccessRefusal.ResourceUnavailable))
-        "Absent case stays private"
 
     Expect.isFalse
         (LedgerEntries.canObserve

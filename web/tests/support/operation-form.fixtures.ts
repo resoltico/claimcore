@@ -15,7 +15,7 @@ export const current: CurrentCase = caseViewInput({
   revision: 4,
   advice: {
     ...caseAdvice(["AMEND_REGISTRATION", "CORRECT", "CLOSE"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",

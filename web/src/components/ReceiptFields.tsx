@@ -1,5 +1,5 @@
 import type { ReactNode } from "react";
-import type { CaseReceipt, CatalogDocument } from "../api/service";
+import type { CaseOperationReceipt, CatalogDocument } from "../api/service";
 import { usePresentation } from "../presentation/context";
 import { CaseFieldsView } from "./CaseFieldsView";
 
@@ -8,7 +8,7 @@ export const ReceiptFields = ({
   fields,
   context,
 }: {
-  subject: CaseReceipt["subject"];
+  subject: CaseOperationReceipt["subject"];
   fields: CatalogDocument["fields"];
   context: ReactNode;
 }) => {

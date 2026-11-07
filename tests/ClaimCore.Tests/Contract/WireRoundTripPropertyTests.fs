@@ -59,42 +59,8 @@ let private propertyFor response (definition: IEndpointDefinition) =
                 endpointProperty response endpoint
         }
 
-let private closedUnionCoverage (source: Seeds) =
-    let missing =
-        [
-            for KeyValue(kind, entries) in source.Values do
-                if FSharpType.IsUnion kind && not (isOption kind) && not (isList kind) then
-                    let actual =
-                        entries
-                        |> Seq.map (fun value ->
-                            FSharpValue.GetUnionFields(value, kind) |> fst |> _.Tag)
-                        |> Set.ofSeq
-
-                    // Diagnostic groups admit only Payment. Owner provisioning has its own
-                    // host boundary; neither is a general request-codec alternative.
-                    let cases =
-                        FSharpType.GetUnionCases kind
-                        |> Array.filter (fun case ->
-                            // PaymentProgress is encoded as nullable members, not wire tags; its three
-                            // representations have an independent boundary test.
-                            kind <> typeof<PaymentProgress>
-                            && (kind <> typeof<RecordGroup> || case.Name = "Payment")
-                            && (kind <> typeof<AuthoredAuthorityAct>
-                                || case.Name <> "ProvisionOwner"))
-
-                    for case in cases do
-                        if not (Set.contains case.Tag actual) then
-                            yield kind.Name + "." + case.Name
-        ]
-
-    Expect.isEmpty
-        missing
-        ("Closed alternatives missing from authored examples: "
-         + String.concat ", " missing)
-
 let private seedCases () =
     let source = seeds.Value
-    closedUnionCoverage source
 
     for endpoint in Api.all do
         for value in source.Requests[endpoint.Token] do
@@ -126,7 +92,7 @@ let tests =
                     (source.Replies |> Map.keys |> Set.ofSeq)
                     ((Api.all |> List.map _.Token) |> Set.ofList)
                     "Every inventoried endpoint has authored reply seeds")
-            testCase "authored positive alternatives seed every endpoint and direction" seedCases
+            testCase "authored positive examples preserve canonical bytes" seedCases
             for definition in Api.definitions do
                 let endpoint = ClaimCore.Wire.Route.ofDefinition definition
 

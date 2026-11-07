@@ -169,27 +169,6 @@ export const service = {
     request("case.get", credential, { target: { kind: "REFERENCE", caseReference } }, signal),
   list: (cursor: string | null, limit: number, credential: string, signal?: AbortSignal) =>
     request("case.list", credential, { ...(cursor === null ? {} : { cursor }), limit }, signal),
-  history: (
-    input: {
-      caseReference: string;
-      cursor: string | null;
-      limit: number;
-      detail?: "SUMMARY" | "FULL";
-    },
-    credential: string,
-    signal?: AbortSignal,
-  ) =>
-    request(
-      "case.history",
-      credential,
-      {
-        target: { kind: "REFERENCE", caseReference: input.caseReference },
-        ...(input.cursor === null ? {} : { cursor: input.cursor }),
-        limit: input.limit,
-        detail: input.detail ?? "SUMMARY",
-      },
-      signal,
-    ),
   authorityList: (cursor: string | null, credential: string, signal?: AbortSignal) =>
     request(
       "authority.list",

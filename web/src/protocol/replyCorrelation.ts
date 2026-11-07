@@ -222,11 +222,8 @@ const readTargetMatches = (
     return true;
   }
   const data = object(outcome["data"]);
-  if (["case.get", "case.history", "case.activity", "case.timeline"].includes(endpoint)) {
+  if (["case.get", "case.timeline"].includes(endpoint)) {
     return caseTargetMatches(request, data);
-  }
-  if (endpoint === "work.overview") {
-    return data["mine"] === (request["mine"] === true);
   }
   if (endpoint === "reminder.list") {
     return reminderPageTargetMatches(request, data);

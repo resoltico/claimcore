@@ -116,7 +116,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
     revision: 1,
     advice: {
       ...caseAdvice(["CLOSE"]),
-      history: ["SUMMARY", "FULL"],
+      history: "FULL",
     },
     state: {
       kind: "ACTIVE",
@@ -153,7 +153,7 @@ const paidCase: CurrentCase = caseViewInput({
   revision: 1,
   advice: {
     ...caseAdvice(["CORRECT"]),
-    history: ["SUMMARY", "FULL"],
+    history: "FULL",
   },
   state: {
     kind: "ACTIVE",

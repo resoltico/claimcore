@@ -10,15 +10,11 @@ module QueryConsequence =
         | QueryEndpoint.CaseGet
         | QueryEndpoint.CaseAssignees
         | QueryEndpoint.CaseList
-        | QueryEndpoint.CaseViews
-        | QueryEndpoint.ReminderViews
         | QueryEndpoint.CaseSummary
-        | QueryEndpoint.CaseHistory
-        | QueryEndpoint.CaseActivity
         | QueryEndpoint.CaseTimeline
         | QueryEndpoint.ReminderList
         | QueryEndpoint.ReminderGet
-        | QueryEndpoint.WorkOverview
+        | QueryEndpoint.WorkViews
         | QueryEndpoint.OperationGet
         | QueryEndpoint.AuthorityList
         | QueryEndpoint.AuthorityGrants

@@ -31,14 +31,6 @@ type PageRequest =
         Limit: int
     }
 
-type HistoryRequest =
-    {
-        Target: CaseSelector
-        AfterCursor: string option
-        Limit: int
-        Detail: HistoryDetail
-    }
-
 type GrantsRequest =
     {
         ActorId: Guid
@@ -98,16 +90,6 @@ type ReminderListRequest =
         AfterCursor: string option
         Limit: int
         IncludeInactive: bool option
-    }
-
-type WorkOverviewRequest = { Mine: bool }
-
-type CaseActivityRequest =
-    {
-        Target: CaseSelector
-        AfterCursor: string option
-        Limit: int
-        Detail: HistoryDetail
     }
 
 type ReminderGetRequest =
