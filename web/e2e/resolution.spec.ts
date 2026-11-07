@@ -36,12 +36,10 @@ for (const reload of [false, true]) {
   }) => {
     await openAuthenticated(page);
     const operationId = await loseAcceptedClose(page);
-    const guidance = page.getByText(
-      /^Send again repeats the exact request still held by this page\./u,
-    );
-    await expect(guidance).toContainText("operation lifetime ends");
-    await expect(guidance).toContainText("only the identity");
-    await expect(guidance).toContainText("automatically under Unconfirmed changes");
+    const guidance = page.getByText(ui("en", "ui.retryExactDescription"), { exact: true });
+    await expect(guidance).toContainText("exactly the same change");
+    await expect(guidance).toContainText("cannot be recorded twice");
+    await expect(guidance).toContainText("Unconfirmed changes");
     await expect(
       page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }),
     ).toBeVisible();

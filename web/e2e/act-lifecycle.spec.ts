@@ -17,8 +17,8 @@ const reference = (): string => `BROWSER-${randomUUID()}`;
 const decide = async (page: Page): Promise<void> => {
   await completeAct(page, "DECIDE", {
     "Payment decision date": "2026-09-03",
-    "Amount to be paid": "300.25",
-    "Currency of amount to be paid": "EUR",
+    "Payable amount": "300.25",
+    "Payable currency": "EUR",
   });
 };
 

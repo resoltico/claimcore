@@ -26,7 +26,7 @@ test("a real contract refusal prompts reload without replaying the draft", async
     await route.fulfill({ response });
   });
   await page.getByRole("button", { name: "Review changes" }).click();
-  await expect(page.getByRole("alert")).toContainText("does not match these browser assets");
+  await expect(page.getByRole("alert")).toContainText("ClaimCore was updated. Reload the page.");
   await expect(page.getByRole("button", { name: "Reload page", exact: true })).toBeVisible();
   expect(previews).toBe(1);
   expect(executions).toBe(0);

@@ -22,7 +22,12 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
   // A canceled document navigation may also cancel Firefox's outstanding fetch.
   await accepted.or(check).waitFor({ state: "visible" });
   if (await check.isVisible()) {
-    await expect(page.getByRole("alert")).toContainText("unknown");
+    await expect(
+      page.getByRole("heading", {
+        name: "We could not confirm whether this change was recorded. Send it again; it cannot be recorded twice.",
+        exact: true,
+      }),
+    ).toBeVisible();
     const saved = await recoveryRecords(page);
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
