@@ -1,18 +1,12 @@
 # Synthetic case walkthrough
 
-Work through nine accepted changes on one synthetic case: open, decide, record payment, close, reopen,
-clear the payment record, void, reinstate and erase. Use a fresh installation and matching service/CLI.
-[Getting started](../docs/getting-started.md) creates the service, identity provider and protected key ring.
-The CLI uses HTTPS and receives no database credential.
+Use a fresh installation and matching service/CLI. [Getting started](../docs/getting-started.md) supplies
+local HTTPS, identity and owner setup. Configure the CLI using
+[CLI use](../docs/integrating.md#cli-use); it receives no database credential.
+Use synthetic data only. The selected account needs Case handler and Payment recorder for all cases;
+Owner alone supplies no case rights.
 
-Use the public CLI profile from [getting started](../docs/getting-started.md#optional-cli-setup),
-or configure the connection and authentication settings in [CLI use](../docs/integrating.md#cli-use).
-Environment values override individual profile settings. For automation, supply
-its private client-secret file. For local HTTPS certificates outside system trust, configure
-the explicit CLI service and OIDC trust-root files. The selected actor needs installation `CASE_HANDLER` and `PAYMENT_RECORDER` grants.
-An installation `OWNER` grants authority; that role alone does not grant case work.
-
-From the repository root, execute the six business frames, in order:
+From the repository root, send the first six changes in order:
 
 ```sh
 claimcore call < examples/01-open.json
@@ -23,25 +17,18 @@ claimcore call < examples/05-reopen.json
 claimcore call < examples/06-correct-payment-record.json
 ```
 
-The human verbs use the same typed inputs. For example, after step three, this prints the
-same request frame as `04-close.json` without authentication or a network call:
+Each successful change returns ACCEPTED and exit 0. The case ends at version 6, open, with its payment
+date cleared. No money is transferred or refunded. Human verbs use the same typed inputs; after step
+three, inspect the next frame offline with:
 
 ```sh
 claimcore case close DEMO-0001 --expected-revision 3 --dry-run
 ```
 
-Use `help verbs` for the registry-derived grammar; omit `--dry-run` to execute, or send the
-printed frame unchanged to `call`. Verbs default to localized text; `--format json` returns a
-structured reply. The numbered JSON files remain independent, exact request examples.
+`help verbs` lists the grammar. `--preview` requests a review without recording; execution checks the
+locked current state and rights again. Verbs default to text; `--format json` exposes the typed reply.
 
-Each returns exit 0 and `ACCEPTED`. `DEMO-0001` ends at revision 6, open, with its
-payment date cleared. Payment facts are recorded assertions; no money is transferred.
-While its payload is retained and current authority permits replay, an exact resend returns
-`ALREADY_ACCEPTED` with the original acceptance metadata and currently authorized snapshot
-disclosure. A preview is advisory; execution validates the locked current state.
-
-The remaining three frames require a human `DATA_STEWARD` grant. They void the case
-for an entry error, reinstate it and erase it:
+The remaining changes require a human Data steward grant:
 
 ```sh
 claimcore call < examples/07-void.json
@@ -49,28 +36,27 @@ claimcore call < examples/08-reinstate.json
 claimcore call < examples/09-erase.json
 ```
 
-Erasure retains the CaseId, case reference and revision 9. Every historical snapshot for that
-case is erased from the live database; ledger metadata remains. This does not delete WAL, backups or copies elsewhere.
-The CLI allocates a UUIDv7 at dispatch, prints it to stderr and journals its identity.
-For an exact retry, add that ID as `input.operationId` and preserve every other input value.
-Resending an ID-less file starts a separate operation. An operation ID can first execute for ten minutes;
-a previously accepted operation remains replayable after that window.
+The erased case retains its ID, reference and version 9. Related live case/work/reminder payloads are
+removed; change metadata remains. Erasure does not remove WAL, backups or external copies.
 
-A structured reply has exactly `endpoint`, `operationId`, `delivery` and `result`.
-The first two are nullable when no request was admitted. Delivery is `NOT_SENT`,
-`DELIVERED` or `UNCERTAIN`; the result contains the typed outcome, host failure or local failure.
-Delivery does not establish acceptance; inspect the typed outcome in `result`.
-Host failures carry `code` and `phase`; HTTP status comes from the response.
+## Preserve the dispatched ID
 
-For interrupted submission, follow the [delivery recovery guide](../docs/integrating.md#delivery-recovery).
+The numbered files omit operationId. The CLI mints a UUIDv7 at dispatch, prints it to stderr and records
+its identity. First execution is allowed for ten minutes; an accepted change remains replayable after
+expiry while its retained content and current disclosure permit it.
 
-See the [glossary](../docs/glossary.md) for project terminology.
+For an exact retry, insert the printed ID as `input.operationId` and preserve every other input value.
+Resending an ID-less file creates a separate operation. Do not infer an uncertain result from another
+refusal or transport failure. Retain the exact dispatched frame until its answer is confirmed.
 
-## Recovering an uncertain operation
+Reply frames contain endpoint, operationId, delivery and result. Delivery is NOT_SENT, DELIVERED or
+UNCERTAIN; it describes transport progress, not acceptance. Successful reads and accepted receipts carry
+both typed data and the server's presentation view.
 
-Keep its exact prepared frame and identity-only attempt record. `claimcore operation get OPERATION_ID`
-returns `ACCEPTED` with a visible receipt, `PENDING` with `finalAt`, or final `NOT_ACCEPTED` for your account.
-The final absence check uses the execution lock and appends nothing. `claimcore recovery list` and
-`recovery check ATTEMPT_ID` use the current account and installation; add `--format json` for machine
-output. Interactive recovery repeats pending checks until final. Restart recovery retains identity only
-and never recreates the business payload.
+## Check an unconfirmed change
+
+`claimcore operation get OPERATION_ID` returns an accepted receipt, a pending finalAt deadline, or final
+NOT_ACCEPTED for your account after locked absence confirmation. `recovery list` and
+`recovery check ATTEMPT_ID` use the current account/installation; add `--format json` for automation.
+Interactive checks repeat pending answers until final. Restart recovery keeps identity only and cannot
+recreate a business request. See [delivery recovery](../docs/integrating.md#delivery-recovery).

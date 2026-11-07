@@ -2,30 +2,26 @@
 
 ## [Unreleased]
 
-- Recreate databases for ledger entry format 6; operation fences and retained nonacceptance controls are removed without migration.
-- Operation IDs must be UUIDv7; first execution expires after 10 minutes with 2 minutes of future clock allowance. Expiry alone does not prevent replay.
-- operation.get replaces operation.observe, operation.status and operation.resolve; supply the installation binding and handle ACCEPTED, PENDING with finalAt, and final NOT_ACCEPTED.
-- work.views replaces case.views and reminder.views in one snapshot; case.history, case.activity and work.overview are removed. Use case.timeline and CLI work views.
-- Non-English source catalogs now use `{text, source}` with English hashes; regenerate runtime catalogs. Missing or stale text falls back to English; en, lv and ar are required.
-- Read replies and accepted receipts now include a locale-neutral view; regenerate strict clients. Web and CLI render the supplied records and tables.
-- Case advice.history is now NONE, SUMMARY or FULL; case.timeline applies current disclosure rights automatically, with no request-level detail selector.
-- Reads use a per-principal FIFO of eight with two active requests and a five-second wait; full or expired queues return HTTP 429 with Retry-After: 1.
-- Browser reads cancel on navigation and show a busy notice without automatic retries; clients check the typed operation ID echo and trust server reply contents.
-- Core permits now bound each read and write pool; the default minimum connection pool is 14. Final operation lookup confirmation uses write admission.
-- Lifecycle and reminder transitions share Domain rules across execution, retained effects and verification; SQL validates structure and erasure authorization instead of act vocabulary.
-- Custom stores remove nonacceptance and fence ports; final absence uses a head-locked write callback without an append, including during maintenance.
-- CLI recovery keeps list and check; call/session fill omitted execute IDs and print them to stderr. Dry runs can omit IDs; exact retries retain the dispatched ID.
-- The web checks Unconfirmed changes automatically and shows the final-answer deadline; permanent-settlement actions and confirmations are removed.
-- ClaimCore.Protocol is split into ClaimCore.Wire and ClaimCore.Presentation; update project references and generator commands.
-- Wire conformance uses small reviewed decoding examples; behavior tests use typed builders instead of generated request/reply and CLI frame snapshots.
-- CLI conformance uses authored command inputs and typed frame checks instead of a generated frame snapshot.
-- Ten fixed durable-format examples replace the oracle corpus; byte properties and the hand-authored transition matrix remain.
-- Application store contracts run against PostgreSQL; the in-memory store double is removed.
-- Contributor tests discover vocabulary from product declarations; inventory.json and CLAIMCORE_UPDATE_GOLDENS are removed.
-- Contributor verification drops performance qualification and comparison tooling; the optional CLAIMCORE_TIMING probe prints read timings without thresholds.
-- Browser acceptance runs all Chromium cases and an @engine subset on Firefox/WebKit; the design matrix uses six representative Chromium contexts.
-- Browser file selection passes directly to Playwright; native runner filters replace TRX partitioning, and verification checks of checks are removed.
-- English and eight translations use plainer wording; counts avoid singular/plural selection, and shorter CLI help links to exact integration rules.
+- Recreate databases for ledger entry format 6. Durable changes require fresh installations; no migration or cross-version reader is provided.
+- Operation IDs must be UUIDv7. First execution expires after 10 minutes, with two minutes of future clock allowance; replay is checked before expiry.
+- operation.get replaces operation.observe, operation.status and operation.resolve; handle ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED.
+- work.views combines case/reminder counts. case.history, case.activity, work.overview, case.views and reminder.views are removed; use case.timeline for activity.
+- Read replies and accepted receipts include a locale-neutral view; regenerate strict clients. Browser and CLI render supplied records and tables; JSON/CSV retain typed data.
+- Case advice.history is NONE, SUMMARY or FULL; case.timeline applies current disclosure rights without a request-level detail selector.
+- CLI recovery keeps list/check. call/session fill omitted execution IDs and print them to stderr; exact retries retain that ID. Dry runs may omit IDs.
+- Custom stores remove fence/nonacceptance ports. Final absence uses a head-locked write callback without appending, including during maintenance.
+- ClaimCore.Protocol is split into ClaimCore.Wire and ClaimCore.Presentation; update project references and contract-generator commands.
+- Non-English authored catalogs use `{text, source}` with English hashes. Regenerate runtime catalogs; missing/stale entries fall back to English, with en, lv and ar required.
+- Configure runtime pooling for both read/write pools and ancillary calls: 14 connections at default core permits. Final lookup confirmation also uses write admission.
+- Reads use a per-principal FIFO of eight, two active reads and a five-second wait; full/expired queues return HTTP 429 and Retry-After: 1.
+- Browser reads cancel on navigation and expose busy replies without automatic retries. Clients retain structural admission and typed operation-ID echo checks.
+- Unconfirmed changes are checked automatically and show final-answer deadlines; settlement actions and confirmations are removed.
+- English and eight translations use plainer wording and labelled counts. Short CLI help links to exact integration rules; human language review remains pending.
+- Lifecycle/reminder transitions share Domain rules across execution and verification. SQL keeps structural and erasure guards; record decoding validates act vocabulary.
+- Contributor verification uses PostgreSQL store contracts, authored examples/vectors and the transition matrix; goldens, inventory.json, the memory store and oracle corpus are removed.
+- Performance qualification and comparison tooling are removed. CLAIMCORE_TIMING remains an optional diagnostic probe, excluded from verification and without thresholds.
+- Browser acceptance runs all Chromium cases and the @engine subset on Firefox/WebKit, using representative design contexts and direct Playwright file filtering.
+- Verification drops checks of checks and heavy browser diagnostic machinery; nonempty discovery, fail-on-focused checks and substantive security/behavior controls remain.
 
 ## [0.16.0] - 2026-11-06
 
