@@ -42,15 +42,9 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
   await expect(accepted).toBeVisible();
   await expect(page.locator(".success-toast")).toContainText("Case closed.");
   await expectCaseReadsSettled(page);
-  const details = page.locator("[data-record-details]");
-  await details.locator(":scope > summary").click();
   await expect(
-    details
-      .locator("dl > div")
-      .filter({ has: page.getByText("Revision", { exact: true }) })
-      .locator("dd"),
-  ).toHaveText("2");
-  await details.locator(":scope > summary").click();
+    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+  ).toContainText("2");
 };
 
 test("native beforeunload blocks document navigation only while execution is in flight", async ({
@@ -177,7 +171,7 @@ test("canonical case links reload and browser back and forward preserve the case
   await expect(page).toHaveURL(
     (url) => url.pathname === "/cases" && url.searchParams.get("view") === "NEEDS_ATTENTION",
   );
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toBeVisible();
 });
 for (const theme of ["light", "dark"] as const) {
   test(`theme ${theme} passes axe and reflows at 320px`, async ({ page }) => {

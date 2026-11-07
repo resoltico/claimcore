@@ -262,7 +262,9 @@ module internal InteractiveReview =
 
             match unpack Api.context contextReply with
             | Some(Outcome.Succeeded {
-                                         Requester = RequesterState.Active scope
+                                         Data = {
+                                                    Requester = RequesterState.Active scope
+                                                }
                                      }) ->
                 match draft.Intent with
                 | DraftIntent.Case(reference, DraftAct.Case act) when
@@ -329,7 +331,7 @@ module internal InteractiveReview =
 
             match unpack Api.caseGet response with
             | Some(Outcome.Succeeded current) ->
-                let target = CaseSelector.Id current.Snapshot.CaseId
+                let target = CaseSelector.Id current.Data.Snapshot.CaseId
 
                 match act with
                 | DraftAct.Reminder act ->
@@ -360,7 +362,10 @@ module internal InteractiveReview =
 
                         match unpack Api.reminder response with
                         | Some(Outcome.Succeeded value) ->
-                            return! submit (Reminder.revision value.Item.Reminder |> Revision.value)
+                            return!
+                                submit (
+                                    Reminder.revision value.Data.Item.Reminder |> Revision.value
+                                )
                         | _ ->
                             transport.Deliver frame response
                             return response.ExitCode
@@ -371,7 +376,7 @@ module internal InteractiveReview =
                                 CaseOperationRequest.OperationId =
                                     draft.SuppliedId |> Option.defaultWith newId
                                 Target = target
-                                ExpectedRevision = Revision.value current.Snapshot.Revision
+                                ExpectedRevision = Revision.value current.Data.Snapshot.Revision
                                 Act = act
                             }
 
@@ -383,7 +388,7 @@ module internal InteractiveReview =
                                 WorkOperationRequest.OperationId =
                                     draft.SuppliedId |> Option.defaultWith newId
                                 Target = target
-                                ExpectedRevision = Revision.value current.Work.Revision
+                                ExpectedRevision = Revision.value current.Data.Work.Revision
                                 Act = act
                             }
 
@@ -398,7 +403,7 @@ module internal InteractiveReview =
         match Validation.syntaxIntent (authoredIntent draft) with
         | None -> runValidated newId console transport draft token
         | Some issues ->
-            TextDiagnosticReply.refusalLines draft.Language (Refusal.InvalidInput issues)
+            DiagnosticText.refusalLines draft.Language (Refusal.InvalidInput issues)
             |> String.concat "\n"
             |> fun text -> Encoding.UTF8.GetBytes(text + "\n") |> console.Write
 

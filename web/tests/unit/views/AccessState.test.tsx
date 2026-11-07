@@ -33,7 +33,13 @@ it.each(inactive)(
     mockEndpoint("context").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: { outcome: { kind: "SUCCEEDED", data: { requester } } },
+      value: {
+        outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
+          kind: "SUCCEEDED",
+          data: { requester },
+        },
+      },
     });
     const cases = mockEndpoint("work.views");
     const directory = mockEndpoint("authority.list");
@@ -63,7 +69,13 @@ it.each(inactive)(
       .mockResolvedValueOnce({
         kind: "outcome",
         status: 200,
-        value: { outcome: { kind: "SUCCEEDED", data: { requester } } },
+        value: {
+          outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
+            kind: "SUCCEEDED",
+            data: { requester },
+          },
+        },
       })
       .mockResolvedValue({
         kind: "deliveryFailure",

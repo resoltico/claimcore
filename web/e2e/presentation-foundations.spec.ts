@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../tests/support/read-view.fixtures";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
 import { ui } from "./localization-support";
 import { isRequest, isResponse } from "../src/protocol/client";
@@ -314,20 +315,17 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
     }
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              observedAt: "2026-11-04T12:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: [],
-              views: [],
-              offers: [],
-            }),
-          },
-        },
+        outcome: presentedOutcome("context", "SUCCEEDED", {
+          requester: actorContextInput({
+            productVersion: "synthetic-presentation",
+            observedAt: "2026-11-04T12:00:00.000000Z",
+            businessDate: "2026-11-04",
+            timeZone: "Etc/UTC",
+            capabilities: [],
+            views: [],
+            offers: [],
+          }),
+        }),
       },
     });
   });
@@ -357,17 +355,14 @@ test("renders core view ordering, counts and row semantics without reconstructin
   await page.route("**/api/work.views", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis,
-            caseViews: [
-              { view: "OVERDUE", count: 7 },
-              { view: "NEEDS_ATTENTION", count: 2 },
-            ],
-            reminderViews: [],
-          },
-        },
+        outcome: presentedOutcome("work.views", "SUCCEEDED", {
+          basis,
+          caseViews: [
+            { view: "OVERDUE", count: 7 },
+            { view: "NEEDS_ATTENTION", count: 2 },
+          ],
+          reminderViews: [],
+        }),
       },
     }),
   );
@@ -389,31 +384,25 @@ test("renders core view ordering, counts and row semantics without reconstructin
     });
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis,
-            items: [row],
-            offers: [],
-            nextCursor: null,
-            exactReference: { caseId: row.caseId, caseReference: row.caseReference },
-          },
-        },
+        outcome: presentedOutcome("case.list", "SUCCEEDED", {
+          basis,
+          items: [row],
+          offers: [],
+          nextCursor: null,
+          exactReference: { caseId: row.caseId, caseReference: row.caseReference },
+        }),
       },
     });
   });
   await page.route("**/api/case.summary", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis,
-            counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-            claimed: [],
-            payable: [],
-          },
-        },
+        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+          basis,
+          counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+          claimed: [],
+          payable: [],
+        }),
       },
     }),
   );
@@ -422,10 +411,9 @@ test("renders core view ordering, counts and row semantics without reconstructin
   const views = page.getByRole("tablist", { name: "Case view" }).getByRole("tab");
   await expect(views).toHaveText(["Overdue 7", "Needs attention 2"]);
   await expect(views.first()).toHaveAttribute("aria-selected", "true");
-  await expect(page.locator(".case-headline")).toHaveText("Paid");
-  await expect(page.locator(".worklist-next-action")).toContainText("Core next action");
-  await expect(page.locator(".worklist-next-action")).toContainText("+2 more");
-  await expect(page.locator(".worklist-responsible")).toContainText("Responsible profile");
+  await expect(page.locator(".table-view tbody")).toContainText("Paid");
+  await expect(page.locator(".table-view tbody")).toContainText("Core next action");
+  await expect(page.locator(".table-view tbody")).toContainText("Responsible profile");
   await expect(
     page.getByRole("region", { name: "Exact reference match", exact: true }),
   ).toBeVisible();
@@ -442,20 +430,17 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            requester: actorContextInput({
-              productVersion: "synthetic-presentation",
-              observedAt: "2026-11-04T12:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-              capabilities: ["REGISTER"],
-              views: ["CASES"],
-              offers: [{ kind: "OPEN" }],
-            }),
-          },
-        },
+        outcome: presentedOutcome("context", "SUCCEEDED", {
+          requester: actorContextInput({
+            productVersion: "synthetic-presentation",
+            observedAt: "2026-11-04T12:00:00.000000Z",
+            businessDate: "2026-11-04",
+            timeZone: "Etc/UTC",
+            capabilities: ["REGISTER"],
+            views: ["CASES"],
+            offers: [{ kind: "OPEN" }],
+          }),
+        }),
       },
     }),
   );
@@ -467,25 +452,25 @@ test("shell case creation returns to the captured core view and focus without se
   await page.route("**/api/case.list", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis, items: [], offers: [], nextCursor: null, exactReference: null },
-        },
+        outcome: presentedOutcome("case.list", "SUCCEEDED", {
+          basis,
+          items: [],
+          offers: [],
+          nextCursor: null,
+          exactReference: null,
+        }),
       },
     }),
   );
   await page.route("**/api/case.summary", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis,
-            counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-            claimed: [],
-            payable: [],
-          },
-        },
+        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+          basis,
+          counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+          claimed: [],
+          payable: [],
+        }),
       },
     }),
   );
@@ -528,18 +513,15 @@ test("reminder views keep URL state and leave implicit state predicates to the c
     requests.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis: {
-              observedAt: "2026-11-04T00:00:00.000000Z",
-              businessDate: "2026-11-04",
-              timeZone: "Etc/UTC",
-            },
-            items: [],
-            nextCursor: null,
+        outcome: presentedOutcome("reminder.list", "SUCCEEDED", {
+          basis: {
+            observedAt: "2026-11-04T00:00:00.000000Z",
+            businessDate: "2026-11-04",
+            timeZone: "Etc/UTC",
           },
-        },
+          items: [],
+          nextCursor: null,
+        }),
       },
     });
   });
@@ -656,7 +638,10 @@ for (const language of ["en", "ar"] as const) {
     await page.route("**/api/case.get", (route) =>
       route.fulfill({
         json: {
-          outcome: { kind: "SUCCEEDED", data: { ...current, work: { ...current.work, basis } } },
+          outcome: presentedOutcome("case.get", "SUCCEEDED", {
+            ...current,
+            work: { ...current.work, basis },
+          }),
         },
       }),
     );
@@ -689,37 +674,34 @@ for (const language of ["en", "ar"] as const) {
       });
       return route.fulfill({
         json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: {
-              ...timelinePage([
-                input.filter === "WORK"
-                  ? {
-                      ...entry,
-                      kind: "WORK",
-                      act: "UPDATE_WORK",
-                      changes: {
-                        kind: "DISCLOSED",
-                        overview: {
-                          event: {
-                            kind: "HANDLING_SUMMARY_ADDED",
-                            messageId: "timeline.event.handlingSummaryAdded",
-                          },
-                          highlights: [{ kind: "CHANGE", index: 0 }],
+          outcome: presentedOutcome("case.timeline", "SUCCEEDED", {
+            ...timelinePage([
+              input.filter === "WORK"
+                ? {
+                    ...entry,
+                    kind: "WORK",
+                    act: "UPDATE_WORK",
+                    changes: {
+                      kind: "DISCLOSED",
+                      overview: {
+                        event: {
+                          kind: "HANDLING_SUMMARY_ADDED",
+                          messageId: "timeline.event.handlingSummaryAdded",
                         },
-                        items: [
-                          {
-                            kind: "HANDLING_SUMMARY",
-                            change: { before: null, after: "Core work change" },
-                          },
-                        ],
+                        highlights: [{ kind: "CHANGE", index: 0 }],
                       },
-                    }
-                  : entry,
-              ]),
-              basis,
-            },
-          },
+                      items: [
+                        {
+                          kind: "HANDLING_SUMMARY",
+                          change: { before: null, after: "Core work change" },
+                        },
+                      ],
+                    },
+                  }
+                : entry,
+            ]),
+            basis,
+          }),
         },
       });
     });
@@ -737,24 +719,19 @@ for (const language of ["en", "ar"] as const) {
       "2026-09-01",
     );
     const timeline = page.locator(".case-timeline-panel");
-    const highlights = timeline.locator(".timeline-changes-compact");
-    await expect(highlights.locator("del")).toContainText("JPY");
-    await expect(highlights.locator("ins")).toContainText("EUR");
+    await expect(timeline.locator(".table-view tbody > tr")).toHaveCount(1);
+    await expect(timeline).toContainText("Timeline recorder");
+    await expect(timeline).toContainText(entryOperationId);
     expect(reads).toBe(1);
     expect(retired).toEqual([]);
     await expectAccessible(page);
     await clean();
-    await timeline.locator("summary").click();
-    await expect(timeline.locator("details")).toContainText(entryOperationId);
-    const complete = timeline.locator("details .timeline-changes");
-    await expect(complete.locator("del")).toContainText("JPY");
-    await expect(complete.locator("ins")).toContainText("EUR");
     const filters = timeline.locator(".timeline-filters button");
     await filters.nth(2).click();
-    await expect(timeline).toContainText("Core work change");
+    await expect(timeline).toContainText(ui(language, "workAct.UPDATE_WORK.label"));
     expect(reads).toBe(2);
     await page.setViewportSize({ width: language === "en" ? 390 : 1440, height: 900 });
-    await expect(timeline).toContainText("Core work change");
+    await expect(timeline).toContainText(ui(language, "workAct.UPDATE_WORK.label"));
     await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => reads).toBe(3);
 
@@ -762,7 +739,7 @@ for (const language of ["en", "ar"] as const) {
       width: language === "ar" ? 390 : 1440,
       height: language === "ar" ? 844 : 1000,
     });
-    await expect(timeline).toContainText("Core work change");
+    await expect(timeline).toContainText(ui(language, "workAct.UPDATE_WORK.label"));
     await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => reads).toBe(4);
     await expectAccessible(page);
@@ -821,7 +798,11 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
       };
     }
     await page.route("**/api/context", (route) =>
-      route.fulfill({ json: { outcome: { kind: "SUCCEEDED", data: { requester } } } }),
+      route.fulfill({
+        json: {
+          outcome: presentedOutcome("context", "SUCCEEDED", { requester }),
+        },
+      }),
     );
     const resources: string[] = [];
     page.on("request", (request) => {
@@ -862,30 +843,28 @@ test("same-requester access loss retains unknown bytes and a visible departure g
   await page.route("**/api/context", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            requester: hasAccess
-              ? active
-              : {
-                  kind: "NO_ROLES",
-                  self: active.self,
-                  installationId: active.installationId,
-                  businessDate: active.businessDate,
-                  timeZone: active.timeZone,
-                },
-          },
-        },
+        outcome: presentedOutcome("context", "SUCCEEDED", {
+          requester: hasAccess
+            ? active
+            : {
+                kind: "NO_ROLES",
+                self: active.self,
+                installationId: active.installationId,
+                businessDate: active.businessDate,
+                timeZone: active.timeZone,
+              },
+        }),
       },
     }),
   );
   await page.route("**/api/authority.list", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis: presentationBasis, items: [], nextCursor: null },
-        },
+        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+          basis: presentationBasis,
+          items: [],
+          nextCursor: null,
+        }),
       },
     }),
   );
@@ -905,6 +884,7 @@ test("same-requester access loss retains unknown bytes and a visible departure g
           kind: "REVIEWED",
           data: {
             review: {
+              view: { kind: "RECORD" as const, sections: [] },
               presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "AUTHORITY",
@@ -1011,10 +991,11 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
     reads += 1;
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: reads === 1 ? view(1, "Original name") : view(3, "Latest stored name"),
-        },
+        outcome: presentedOutcome(
+          "case.get",
+          "SUCCEEDED",
+          reads === 1 ? view(1, "Original name") : view(3, "Latest stored name"),
+        ),
       },
     });
   });
@@ -1083,6 +1064,7 @@ test("conflict review keeps the authored draft and requires explicit re-preparat
           kind: "REVIEWED",
           data: {
             review: {
+              view: { kind: "RECORD" as const, sections: [] },
               presentation: {
                 changes: [
                   {
@@ -1170,33 +1152,31 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: {
-              requester: actorContextInput({
-                productVersion: "synthetic-presentation",
-                observedAt: "2026-11-04T12:00:00.000000Z",
-                businessDate: "2026-11-04",
-                timeZone: "Etc/UTC",
-                capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
-                views: ["AUTHORITY", "OPERATIONS"],
-                offers: [
-                  { kind: "AUTHORITY_ACT", act: "REGISTER" },
-                  { kind: "AUTHORITY_ACT", act: "ADMIT" },
-                ],
-              }),
-            },
-          },
+          outcome: presentedOutcome("context", "SUCCEEDED", {
+            requester: actorContextInput({
+              productVersion: "synthetic-presentation",
+              observedAt: "2026-11-04T12:00:00.000000Z",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+              capabilities: ["MANAGE_AUTHORITY", "READ_AUTHORITY"],
+              views: ["AUTHORITY", "OPERATIONS"],
+              offers: [
+                { kind: "AUTHORITY_ACT", act: "REGISTER" },
+                { kind: "AUTHORITY_ACT", act: "ADMIT" },
+              ],
+            }),
+          }),
         },
       }),
     );
     await page.route("**/api/authority.list", (route) =>
       route.fulfill({
         json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: { basis: presentationBasis, items: [], nextCursor: null },
-          },
+          outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+            basis: presentationBasis,
+            items: [],
+            nextCursor: null,
+          }),
         },
       }),
     );
@@ -1240,6 +1220,59 @@ for (const reviewLanguage of ["en", "ar"] as const) {
           kind: "REVIEWED",
           data: {
             review: {
+              view: {
+                kind: "RECORD" as const,
+                sections: [
+                  {
+                    titleId: "act.REGISTER.label",
+                    entries: [
+                      {
+                        key: "register",
+                        labelId: "field.principal.subject.label",
+                        prominence: "PRIMARY" as const,
+                        value: { kind: "IDENTIFIER" as const, value: "admission-person" },
+                      },
+                    ],
+                  },
+                  {
+                    titleId: "act.SET_PROFILE.label",
+                    entries: [
+                      {
+                        key: "profile",
+                        labelId: "field.profile.displayName.label",
+                        prominence: "PRIMARY" as const,
+                        value: { kind: "PARTY" as const, value: "Admission person" },
+                      },
+                    ],
+                  },
+                  {
+                    titleId: "act.GRANT.label",
+                    entries: [
+                      {
+                        key: "owner",
+                        labelId: "field.role.label",
+                        prominence: "PRIMARY" as const,
+                        value: {
+                          kind: "CODE" as const,
+                          vocabulary: "role" as const,
+                          token: "OWNER" as const,
+                        },
+                      },
+                    ],
+                  },
+                  {
+                    titleId: "act.GRANT.label",
+                    entries: [
+                      {
+                        key: "reader",
+                        labelId: "field.caseReference.label",
+                        prominence: "PRIMARY" as const,
+                        value: { kind: "REFERENCE" as const, value: "SYNTHETIC-1" },
+                      },
+                    ],
+                  },
+                ],
+              },
               presentation: {
                 changes: [
                   {
@@ -1373,15 +1406,13 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     expect(writes).toBe(0);
     await page.getByRole("button", { name: "Review changes", exact: true }).click();
     const review = page.getByRole("dialog");
-    await expect(review.locator(".authority-effects > li")).toHaveCount(4);
+    await expect(review.locator(".record-view > section")).toHaveCount(4);
     await expect(
       review.locator(".review-values").getByText("SYNTHETIC-1", { exact: true }),
     ).toBeVisible();
-    await review.locator(".authority-review-effects > summary").click();
     await expect(
-      review.locator(".authority-effects").getByText("SYNTHETIC-1", { exact: true }),
+      review.locator(".record-view").getByText("SYNTHETIC-1", { exact: true }),
     ).toBeVisible();
-    await review.locator(".authority-review-effects > summary").click();
     if (reviewLanguage === "ar") {
       await review.locator("[data-open-settings]").click();
       await page
@@ -1452,7 +1483,11 @@ test("case panels follow compact reading order while a work draft survives respo
   let writes = 0;
   await page.route("**/api/case.get", (route) => {
     reads += 1;
-    return route.fulfill({ json: { outcome: { kind: "SUCCEEDED", data: current } } });
+    return route.fulfill({
+      json: {
+        outcome: presentedOutcome("case.get", "SUCCEEDED", current),
+      },
+    });
   });
   page.on("request", (request) => {
     if (request.url().endsWith("/api/operation.execute")) {
@@ -1465,16 +1500,10 @@ test("case panels follow compact reading order while a work draft survives respo
     await page
       .locator(".case-workspace-compact")
       .evaluate((node) => [...node.children].map((child) => child.className)),
-  ).toEqual([
-    "case-reminders",
-    "case-fields",
-    "case-work case-responsible",
-    "case-work case-handling-summary",
-    "case-technical",
-  ]);
-  await expect(page.locator("[data-record-details]")).toHaveCount(1);
+  ).toEqual(["case-reminders", "record-view", "case-work"]);
+  await expect(page.locator(".case-workspace .record-view")).toHaveCount(1);
   await expectAccessible(page);
-  await page.getByRole("button", { name: "Change Handling summary", exact: true }).click();
+  await page.getByRole("button", { name: "Update case work", exact: true }).click();
   await page.locator('input[data-selects-fields~="handlingSummary"]').check();
   const field = page.getByRole("textbox", { name: "Handling summary", exact: true });
   await field.fill("Keep exact draft\nثانٍ 😀");
@@ -1537,7 +1566,11 @@ test("People uses core roles and state without row reads and forwards known-zero
     listing += 1;
     return route.fulfill({
       json: {
-        outcome: { kind: "SUCCEEDED", data: { basis: presentationBasis, items, nextCursor: null } },
+        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+          basis: presentationBasis,
+          items,
+          nextCursor: null,
+        }),
       },
     });
   });
@@ -1545,10 +1578,12 @@ test("People uses core roles and state without row reads and forwards known-zero
     grants += 1;
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis: presentationBasis, actor: items[0], items: [], nextCursor: null },
-        },
+        outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+          basis: presentationBasis,
+          actor: items[0],
+          items: [],
+          nextCursor: null,
+        }),
       },
     });
   });
@@ -1563,10 +1598,13 @@ test("People uses core roles and state without row reads and forwards known-zero
     listInputs.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { items: [], nextCursor: null, offers: [], exactReference: null, basis },
-        },
+        outcome: presentedOutcome("case.list", "SUCCEEDED", {
+          items: [],
+          nextCursor: null,
+          offers: [],
+          exactReference: null,
+          basis,
+        }),
       },
     });
   });
@@ -1574,15 +1612,12 @@ test("People uses core roles and state without row reads and forwards known-zero
     summaryInputs.push(route.request().postDataJSON());
     return route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis,
-            counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-            claimed: [],
-            payable: [],
-          },
-        },
+        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+          basis,
+          counts: { total: 0, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+          claimed: [],
+          payable: [],
+        }),
       },
     });
   });
@@ -1591,7 +1626,6 @@ test("People uses core roles and state without row reads and forwards known-zero
   const row = table.getByRole("row").filter({ hasText: "Authority owner" });
   await expect(row).toContainText("Enabled with roles");
   await expect(row).toContainText("Owner");
-  await expect(row).toContainText("Case-specific grants: 0");
   await expect(table).not.toContainText("do-not-use-subject");
   await expect(table.getByRole("row").filter({ hasText: "Disabled person" })).toContainText(
     "Disabled",
@@ -1600,7 +1634,7 @@ test("People uses core roles and state without row reads and forwards known-zero
   expect(grants).toBe(0);
   await expectAccessible(page);
   await row.getByRole("link").click();
-  const profile = page.locator(".actor-summary");
+  const profile = page.getByRole("dialog");
   await expect(
     profile.getByRole("link", { name: "Matching cases: 0", exact: true }),
   ).toHaveAttribute("href", `/cases?view=ALL&responsibleActor=${actorId}`);
@@ -1632,18 +1666,15 @@ for (const [language, displayLocale, dismiss, separator] of [
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: {
-              requester: actorContextInput({
-                ...presentationBasis,
-                productVersion: "synthetic-presentation",
-                capabilities: ["REGISTER"],
-                views: ["CASES"],
-                offers: [{ kind: "OPEN" }],
-              }),
-            },
-          },
+          outcome: presentedOutcome("context", "SUCCEEDED", {
+            requester: actorContextInput({
+              ...presentationBasis,
+              productVersion: "synthetic-presentation",
+              capabilities: ["REGISTER"],
+              views: ["CASES"],
+              offers: [{ kind: "OPEN" }],
+            }),
+          }),
         },
       }),
     );

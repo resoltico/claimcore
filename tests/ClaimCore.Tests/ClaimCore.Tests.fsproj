@@ -8,7 +8,6 @@
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="Support/CliExamples.fs" />
-    <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <Compile Include="Support/PostgresBaselineTests.fs" />
@@ -128,9 +127,10 @@
     <Compile Include="Contract/OutcomeContractScenarios.fs" />
     <Compile Include="Contract/InputContractScenarios.fs" />
     <Compile Include="Contract/ContractTests.fs" />
-    <Compile Include="Contract/PayloadBudgetTests.fs" />
+    <Compile Include="Contract/ResponseLimitTests.fs" />
     <Compile Include="Contract/ListedCaseFieldTests.fs" />
     <Compile Include="Contract/WorkDescriptorTests.fs" />
+    <Compile Include="Contract/PresentedViewTests.fs" />
     <Compile Include="Contract/SchemaFormatTests.fs" />
     <Compile Include="ContractGenerator/ContractArtifactTests.fs" />
     <Compile Include="Contract/CatalogBindingTests.fs" />

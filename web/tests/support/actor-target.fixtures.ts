@@ -1,3 +1,4 @@
+import { presentedOutcome } from "./read-view.fixtures";
 import { workBasis } from "./inputs";
 import { expect } from "vitest";
 import { fireEvent } from "@testing-library/react";
@@ -33,7 +34,12 @@ export const grantsFor = (actor = firstActor): ApiResult<ServiceResponse<"author
   kind: "outcome",
   status: 200,
   value: {
-    outcome: { kind: "SUCCEEDED", data: { basis: workBasis, actor, items: [], nextCursor: null } },
+    outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+      basis: workBasis,
+      actor,
+      items: [],
+      nextCursor: null,
+    }),
   },
 });
 export const setupActorTargets = (
@@ -55,40 +61,34 @@ export const setupActorTargets = (
     status: 200,
     value: {
       ...context,
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          requester: {
-            ...context.outcome.data.requester,
-            views: ["AUTHORITY"],
-            offers: installationOffers(offered),
-          },
+      outcome: presentedOutcome("context", "SUCCEEDED", {
+        requester: {
+          ...context.outcome.data.requester,
+          views: ["AUTHORITY"],
+          offers: installationOffers(offered),
         },
-      },
+      }),
     },
   });
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          basis: workBasis,
-          items: [
-            {
-              ...firstActor,
-              actor: {
-                ...firstActor.actor,
-                displayName: { kind: "NAMED", value: "stale-list-first" },
-              },
-              principal: { ...firstActor.principal, subject: "stale-list-first" },
+      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [
+          {
+            ...firstActor,
+            actor: {
+              ...firstActor.actor,
+              displayName: { kind: "NAMED", value: "stale-list-first" },
             },
-            secondActor,
-          ],
-          nextCursor: null,
-        },
-      },
+            principal: { ...firstActor.principal, subject: "stale-list-first" },
+          },
+          secondActor,
+        ],
+        nextCursor: null,
+      }),
     },
   });
   mockEndpoint("authority.grants").mockImplementation((_credential, input) =>

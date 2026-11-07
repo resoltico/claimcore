@@ -104,7 +104,14 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
                     calls.Add frame
                     let response = remaining.Dequeue()
 
-                    CliReply.result frame (Api.caseList.Output.Write response)
+                    CliReply.result
+                        frame
+                        (Api.caseList.Output.Write(
+                            Presented.outcome
+                                (fun (page: CaseSummaryPage) ->
+                                    Descriptor.tableView Descriptor.caseSummaryColumns page.Items)
+                                response
+                        ))
                     |> Fixtures.accepted
                     |> Task.FromResult
             Deliver =
@@ -113,7 +120,7 @@ let private run arguments (replies: Outcome<CaseSummaryPage> list) =
                         if pending.Format = VerbFormat.Json then
                             reply.Bytes
                         else
-                            TextReply.bytesFor pending.Language (Some frame) reply.Frame
+                            ReplyText.bytesFor pending.Language (Some frame) reply.Frame
 
                     output.Write bytes
                     output.WriteByte(byte '\n')
@@ -251,7 +258,7 @@ let tests =
 
                         Expect.stringContains
                             rendered
-                            (TextReplyFormat.label "en" "field.responsibleActor.label")
+                            (ReplyTextFormat.label "en" "field.responsibleActor.label")
                             "The wide layout retains the actual actor column"
 
                         Expect.stringContains
@@ -279,7 +286,7 @@ let tests =
                         match ServiceReply.value Api.caseList reply with
                         | Some(Outcome.Succeeded page) ->
                             Expect.equal
-                                page.Items.Head.Responsible
+                                page.Data.Items.Head.Responsible
                                 (Some actor)
                                 "JSON retains the exact typed actor value"
                         | other -> failtestf "Expected structured case page: %A" other

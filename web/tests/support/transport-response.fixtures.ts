@@ -1,3 +1,5 @@
+import { fixtureView } from "./read-view.fixtures";
+import type { PresentedView } from "@contracts/client";
 import { ReadableStream } from "node:stream/web";
 import { vi } from "vitest";
 import { isObject } from "../../src/protocol/client";
@@ -10,7 +12,7 @@ const requestAddress = (value: RequestInfo | URL): string => {
   }
   return value.url;
 };
-const envelope = (endpoint: string, kind: string, original: unknown) => {
+const envelope = (endpoint: string, kind: string, original: unknown, view: PresentedView) => {
   const body = vi
     .mocked(globalThis.fetch)
     .mock?.calls.findLast(([path]) => requestAddress(path).endsWith(`/api/${endpoint}`))?.[1]?.body;
@@ -26,7 +28,11 @@ const envelope = (endpoint: string, kind: string, original: unknown) => {
   }
   return {
     ...echo,
-    outcome: { kind, data },
+    outcome: {
+      kind,
+      data,
+      ...(["SUCCEEDED", "ACCEPTED", "ALREADY_ACCEPTED"].includes(kind) ? { view } : {}),
+    },
   };
 };
 /** Synthetic server replies are built from the bytes handed to the mocked platform transport. */
@@ -35,13 +41,14 @@ export const transportResponse = (
   kind: string,
   original: unknown,
   status: number,
+  view: PresentedView = fixtureView(endpoint, kind, original),
 ): Response =>
   new Response(
     new ReadableStream<Uint8Array>(
       {
         pull(controller) {
           controller.enqueue(
-            new TextEncoder().encode(JSON.stringify(envelope(endpoint, kind, original))),
+            new TextEncoder().encode(JSON.stringify(envelope(endpoint, kind, original, view))),
           );
           controller.close();
         },

@@ -25,6 +25,11 @@ const fixtureData = (endpoint: string, kind: string, data: unknown): unknown => 
       ...(typeof data === "object" && data !== null ? data : {}),
     };
   }
+  // Editor observations carry the wire view locally; it is a sibling of data in HTTP replies.
+  if (endpoint === "case.get" && typeof data === "object" && data !== null && "view" in data) {
+    const { view: _view, ...facts } = data;
+    return positiveValue(facts);
+  }
   return positiveValue(data);
 };
 export const response = (endpoint: string, kind: string, data: unknown, status = 200): Response =>

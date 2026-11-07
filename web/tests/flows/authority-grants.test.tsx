@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import {
   chooseAdmissionRole,
   closePersonDetails,
@@ -48,24 +49,21 @@ const grants = (
   kind: "outcome",
   status: 200,
   value: {
-    outcome: {
-      kind: "SUCCEEDED",
-      data: {
-        basis: workBasis,
-        actor: actor(actorId),
-        items: [
-          {
-            role: "CASE_READER",
-            scope: {
-              kind: "CASE",
-              caseId,
-              caseReference: reference,
-            },
+    outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+      basis: workBasis,
+      actor: actor(actorId),
+      items: [
+        {
+          role: "CASE_READER",
+          scope: {
+            kind: "CASE",
+            caseId,
+            caseReference: reference,
           },
-        ],
-        nextCursor,
-      },
-    },
+        },
+      ],
+      nextCursor,
+    }),
   },
 });
 const pending = <T,>() => {
@@ -86,30 +84,24 @@ const reads = (offered = true) => {
     status: 200,
     value: {
       ...context,
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          requester: {
-            ...context.outcome.data.requester,
-            offers: installationOffers(["ADMIT", "GRANT"]),
-            views: offered ? ["AUTHORITY"] : [],
-          },
+      outcome: presentedOutcome("context", "SUCCEEDED", {
+        requester: {
+          ...context.outcome.data.requester,
+          offers: installationOffers(["ADMIT", "GRANT"]),
+          views: offered ? (["AUTHORITY"] as const) : [],
         },
-      },
+      }),
     },
   });
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          basis: workBasis,
-          items: [actor(first, "listed"), actor(second, "listed")],
-          nextCursor: null,
-        },
-      },
+      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [actor(first, "listed"), actor(second, "listed")],
+        nextCursor: null,
+      }),
     },
   });
 };
@@ -185,15 +177,15 @@ it("loads and clears the selected grant page without request-per-row reads", asy
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(actors[0]!);
   await screen.findByText("Only part of this actor’s grants is shown.");
-  expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(1);
+  expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(1);
   expect(request).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
   await screen.findByText("SECOND");
-  expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(2);
+  expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(2);
   expect(request).toHaveBeenCalledTimes(2);
   fireEvent.click(screen.getByRole("button", { name: "Reload grants" }));
   await waitFor(() => {
-    expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(0);
+    expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(0);
   });
   await act(() =>
     Promise.resolve().then(() => {
@@ -201,7 +193,7 @@ it("loads and clears the selected grant page without request-per-row reads", asy
     }),
   );
   await screen.findByText(`GRANT-${first}`);
-  expect(document.querySelectorAll(".actor-grant-items > li")).toHaveLength(1);
+  expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(1);
   expect(screen.queryByText("SECOND")).toBeNull();
   expect(request).toHaveBeenCalledTimes(3);
   await closePersonDetails();
@@ -363,10 +355,11 @@ const actorPage = (
   kind: "outcome",
   status: 200,
   value: {
-    outcome: {
-      kind: "SUCCEEDED",
-      data: { basis: workBasis, items: ids.map((id) => actor(id, "listed")), nextCursor },
-    },
+    outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      basis: workBasis,
+      items: ids.map((id) => actor(id, "listed")),
+      nextCursor,
+    }),
   },
 });
 const focusedBack = closePersonDetails;

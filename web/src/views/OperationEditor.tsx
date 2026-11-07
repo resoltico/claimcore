@@ -1,4 +1,4 @@
-import { CaseFacts } from "./case/CaseFacts";
+import { RecordView } from "../ui/RecordView";
 import { CaseHeadline } from "../components/CaseHeadline";
 import { CaseProgress } from "./case/CaseProgress";
 import { captureAmountEntry, normalizeAmountValues } from "../presentation/amountEntry";
@@ -50,6 +50,22 @@ const useCaseOperation = (props: OperationEditorProps) => {
   }, [model.receipt, commit]);
   return { model, navigation, commit };
 };
+const CurrentObservation = ({
+  current,
+}: {
+  current: NonNullable<OperationEditorProps["current"]>;
+}) => (
+  <section className="case-detail">
+    <h1>
+      <bdi>{current.caseReference}</bdi>
+    </h1>
+    <CaseHeadline value={current.headline} />
+    <CaseProgress value={current.stages} />
+    {current.view.kind === "RECORD" ? (
+      <RecordView view={current.view} timeZone={current.work.basis.timeZone} />
+    ) : null}
+  </section>
+);
 export const OperationEditor = (props: OperationEditorProps) => {
   const { model, navigation, commit } = useCaseOperation(props);
   const requester = useRequesterContext();
@@ -74,14 +90,7 @@ export const OperationEditor = (props: OperationEditorProps) => {
   return (
     <>
       {current === null || props.disclosureAvailable === false ? null : (
-        <section className="case-detail">
-          <h1>
-            <bdi>{current.caseReference}</bdi>
-          </h1>
-          <CaseHeadline value={current.headline} />
-          <CaseProgress value={current.stages} />
-          <CaseFacts values={current.state.fields} fields={props.definition.catalog.fields} />
-        </section>
+        <CurrentObservation current={current} />
       )}
       <OperationDiscard model={model} onClose={navigation.close} />
       <OperationPanel

@@ -267,7 +267,7 @@ let private localizedReplyRendering () =
 
             for language in LocalizationPolicy.languages do
                 let rendered =
-                    ClaimCore.Cli.TextReply.bytes language frame |> Encoding.UTF8.GetString
+                    ClaimCore.Cli.ReplyText.bytes language frame |> Encoding.UTF8.GetString
 
                 Expect.isTrue
                     (rendered.EndsWith("\n", StringComparison.Ordinal))
@@ -407,7 +407,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
                 FrameResult.Reply(
                     ClaimCore.Tests.CliReplies.ofValue
                         Api.operationPreview
-                        (PresentedPreviewReply.ofCore response)
+                        (PresentedPreviewReply.ofCore None response)
                 )
         }
 
@@ -419,7 +419,7 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
 
     for language in LocalizationPolicy.languages do
         let rendered =
-            ClaimCore.Cli.TextReply.bytesFor language (Some invocation) frame
+            ClaimCore.Cli.ReplyText.bytesFor language (Some invocation) frame
             |> Encoding.UTF8.GetString
 
         let labels, human, reader, installation =

@@ -1,5 +1,5 @@
 import { selectFact } from "../support/field-entry";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { render, screen } from "../support/presentation-test-support";
@@ -9,7 +9,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields } from "../support/service-ui.fixtures";
 import { previewReply } from "../support/presentation-state.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,

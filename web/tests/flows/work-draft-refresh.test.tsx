@@ -41,7 +41,7 @@ it("retains a work draft through same-owner session refresh while masking the un
   vi.stubGlobal("fetch", fetch);
   const view = render(detail("before"));
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Change Handling summary" }));
+  await user.click(await screen.findByRole("button", { name: "Update case work" }));
   expect(screen.getByRole("dialog", { name: "Update case work" })).toHaveFocus();
   await user.click(
     document.querySelector<HTMLInputElement>('input[data-selects-fields~="handlingSummary"]')!,
@@ -53,7 +53,7 @@ it("retains a work draft through same-owner session refresh while masking the un
   await waitFor(() => {
     expect(screen.queryByRole("textbox", { name: "Handling summary" })).toBeNull();
   });
-  expect(document.querySelector(".case-fields")).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
   expect(document.querySelector(".case-work")).toBeNull();
   await act(async () => {
     release(response("case.get", "SUCCEEDED", readable));
@@ -66,7 +66,7 @@ it("retains a work draft through same-owner session refresh while masking the un
   expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   await user.click(await screen.findByRole("button", { name: "Discard and leave" }));
-  expect(await screen.findByRole("button", { name: "Change Handling summary" })).toHaveFocus();
+  expect(await screen.findByRole("button", { name: "Update case work" })).toHaveFocus();
 });
 
 it("keeps one draft owner across compact and desktop panel layouts without sending a mutation", async () => {
@@ -79,15 +79,9 @@ it("keeps one draft owner across compact and desktop panel layouts without sendi
     [...view.container.querySelector(".case-workspace-compact")!.children].map(
       (node) => node.className,
     ),
-  ).toEqual([
-    "case-reminders",
-    "case-fields",
-    "case-work case-responsible",
-    "case-work case-handling-summary",
-    "case-technical",
-  ]);
-  expect(view.container.querySelectorAll("[data-record-details]")).toHaveLength(1);
-  await user.click(screen.getByRole("button", { name: "Change Handling summary" }));
+  ).toEqual(["case-reminders", "record-view", "case-work"]);
+  expect(view.container.querySelectorAll(".case-workspace .record-view")).toHaveLength(1);
+  await user.click(screen.getByRole("button", { name: "Update case work" }));
   await user.click(
     document.querySelector<HTMLInputElement>('input[data-selects-fields~="handlingSummary"]')!,
   );
@@ -100,6 +94,6 @@ it("keeps one draft owner across compact and desktop panel layouts without sendi
   viewport.wide = false;
   view.rerender(detail("same-owner"));
   expect(screen.getByRole("textbox", { name: "Handling summary" })).toBe(field);
-  expect(view.container.querySelectorAll("[data-record-details]")).toHaveLength(1);
+  expect(view.container.querySelectorAll(".case-workspace .record-view")).toHaveLength(1);
   expect(fetch.mock.calls.every(([url]) => String(url) === "/api/case.get")).toBe(true);
 });

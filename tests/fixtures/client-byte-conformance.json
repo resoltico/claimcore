@@ -169,7 +169,7 @@
       "endpoint": "session",
       "direction": "response",
       "valid": true,
-      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null}}}"
+      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"authenticated\":true,\"contractIdentity\":\"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"antiforgeryToken\":null},\"view\":{\"kind\":\"RECORD\",\"sections\":[]}}}"
     },
     {
       "id": "response-duplicate",
@@ -287,6 +287,13 @@
       "valid": true,
       "text": "{\"kind\":\"AUTHORITY\",\"operationId\":\"10000000-0000-7000-8000-000000000001\",\"target\":{\"kind\":\"SERVICE\",\"issuer\":\"https://issuer.example/\",\"subject\":\"🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂🙂\"},\"act\":{\"kind\":\"REGISTER\",\"profile\":{\"displayName\":\"Authored fixture account\",\"contact\":null}}}",
       "serverIdentityValid": false
+    },
+    {
+      "id": "response-missing-view",
+      "endpoint": "session.logout",
+      "direction": "response",
+      "valid": false,
+      "text": "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":null}}"
     }
   ]
 }

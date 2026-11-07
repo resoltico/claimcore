@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import * as serviceApi from "../../src/api/service";
 import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
@@ -34,7 +35,11 @@ const entry = (actorId = first, sequence = 31): AuthorityHistoryEntry => ({
 const page = (entries: ReadonlyArray<AuthorityHistoryEntry>, nextCursor: string | null = null) =>
   new Response(
     JSON.stringify({
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, entries, nextCursor } },
+      outcome: presentedOutcome("authority.history", "SUCCEEDED", {
+        basis: workBasis,
+        entries,
+        nextCursor,
+      }),
     }),
     { status: 200, headers: { "content-type": "application/json" } },
   );
@@ -75,20 +80,17 @@ beforeEach(() => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          requester: actorContextInput({
-            productVersion: "0.15.0",
-            businessDate: workBasis.businessDate,
-            timeZone: workBasis.timeZone,
-            observedAt: workBasis.observedAt,
-            capabilities: ["READ_AUTHORITY"],
-            views: ["OPERATIONS"],
-            offers: [],
-          }),
-        },
-      },
+      outcome: presentedOutcome("context", "SUCCEEDED", {
+        requester: actorContextInput({
+          productVersion: "0.15.0",
+          businessDate: workBasis.businessDate,
+          timeZone: workBasis.timeZone,
+          observedAt: workBasis.observedAt,
+          capabilities: ["READ_AUTHORITY"],
+          views: ["OPERATIONS"],
+          offers: [],
+        }),
+      }),
     },
   });
 });
@@ -103,7 +105,9 @@ it("sends the direct actor URL filter on every page without a people lookup", as
   const view = showHistory();
   await userEvent.setup().click(await screen.findByRole("button", { name: "Load more history" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".history-list > li")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+    2,
+  );
   expect(fetch).toHaveBeenCalledTimes(2);
   expect(requestAt(fetch, 0)).toEqual({ limit: 50, actorId: first });
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
@@ -165,7 +169,9 @@ it("cancels an obsolete actor observation and ignores a late page from an uncoop
     }),
   );
   expect(screen.queryByText("Current target one")).toBeNull();
-  expect(view.container.querySelectorAll(".history-list > li")).toHaveLength(1);
+  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+    1,
+  );
   expect(fetch).toHaveBeenCalledTimes(3);
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: second });
 });
@@ -209,7 +215,9 @@ it("retains only the same history page on transient delivery failure and retries
   expect(screen.getByText("Current target one")).toBeVisible();
   await user.click(screen.getByRole("button", { name: "Load more history" }));
   await screen.findByText("Enable account");
-  expect(view.container.querySelectorAll(".history-list > li")).toHaveLength(2);
+  expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
+    2,
+  );
   expect(requestAt(fetch, 1)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
   expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first, cursor: "older-page" });
 });

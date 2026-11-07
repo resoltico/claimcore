@@ -9,7 +9,6 @@ export const lintProjects = [
       "scripts",
       "prettier.config.mjs",
       "oxlint.config.ts",
-      "typed-presentation-lint.config.ts",
       "browser-transport-lint.config.ts",
       "vite.config.ts",
       "playwright.config.ts",

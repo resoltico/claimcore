@@ -1,6 +1,6 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
@@ -40,6 +40,7 @@ const editor = (current: CurrentCase | null, initialAct: "OPEN" | "CLOSE" | "COR
 const preparedResponse = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",
@@ -110,7 +111,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
 });
 it("retries the frozen request after delivery loss despite a changed current revision", async () => {
   const user = userEvent.setup();
-  const current: CurrentCase = caseViewInput({
+  const current: CurrentCase = currentCaseInput({
     caseId: "20000000-0000-4000-8000-000000000001",
     caseReference: fields.caseReference,
     revision: 1,
@@ -147,7 +148,7 @@ it("retries the frozen request after delivery loss despite a changed current rev
   expect(sentDraft(1).expectedRevision).toBe(1);
   expect(await screen.findByText("This case has changed")).toBeVisible();
 });
-const paidCase: CurrentCase = caseViewInput({
+const paidCase: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,

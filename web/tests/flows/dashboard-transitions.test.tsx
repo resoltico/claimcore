@@ -2,7 +2,7 @@ import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls"
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { changeField } from "../support/field-entry";
-import { caseViewInput, caseSummaryInput } from "../support/inputs";
+import { currentCaseInput, caseSummaryInput } from "../support/inputs";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
@@ -12,7 +12,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
 import * as operationIds from "../../src/operation/operationId";
 import { context, fields, response, runtime } from "../support/service-ui.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
@@ -76,7 +76,7 @@ it("returns from a selected case through Dashboard's detail-back transition", as
   );
   expect(
     await screen.findByRole("heading", {
-      name: current.state.fields.registration.claimantName,
+      name: "Case detail",
     }),
   ).toBeVisible();
   await user.click(getButton("Back to cases"));
@@ -109,7 +109,7 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
   expect(getButton("Sign out")).not.toBeDisabled();
   expect(
     await screen.findByRole("heading", {
-      name: current.state.fields.registration.claimantName,
+      name: "Case detail",
     }),
   ).toBeVisible();
 });
@@ -135,6 +135,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
         return Promise.resolve(
           response("operation.preview", "REVIEWED", {
             review: {
+              view: { kind: "RECORD" as const, sections: [] },
               presentation: { changes: [], unchanged: [] },
               subject: {
                 kind: "CASE",
@@ -195,7 +196,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
 
   expect(
     await screen.findByRole("heading", {
-      name: current.state.fields.registration.claimantName,
+      name: "Case detail",
     }),
   ).toBeVisible();
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");

@@ -1,6 +1,6 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { selectFact } from "../support/field-entry";
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { chooseOption } from "../support/choice-entry";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import userEvent from "@testing-library/user-event";
@@ -10,7 +10,7 @@ import { deferredResponse, editor, previewReply } from "../support/presentation-
 import { fields } from "../support/service-ui.fixtures";
 import { type CurrentCase } from "../../src/api/service";
 import { wireResponse } from "../support/reply.fixtures";
-const current: CurrentCase = caseViewInput({
+const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,

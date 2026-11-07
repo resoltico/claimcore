@@ -20,7 +20,7 @@ module PresentationCodecs =
     let MaximumKeyCharacters = 256
 
     let MaximumCodes =
-        max Role.all.Length (max Capability.all.Length (Vocabulary.all View.vocabulary).Length)
+        max ActKind.all.Length (max Role.all.Length Capability.all.Length)
 
     let private textMaximum =
         max IncidentDescription.MaximumBytes HandlingSummary.MaximumBytes
@@ -127,6 +127,18 @@ module PresentationCodecs =
             codeVariant many Capability.vocabulary
             codeVariant many ReminderState.vocabulary
             codeVariant many PresentedBoolean.vocabulary
+            codeVariant many CorrectionGroupAction.vocabulary
+            codeVariant many ActKind.vocabulary
+            codeVariant many WorkActKind.vocabulary
+            codeVariant many ReminderActKind.vocabulary
+            codeVariant many CaseStageKind.vocabulary
+            codeVariant many CaseAttention.vocabulary
+            codeVariant many AccountState.vocabulary
+            codeVariant many PrincipalKind.vocabulary
+            codeVariant many RequesterKind.vocabulary
+            codeVariant many ClaimCore.Application.Contracts.View.vocabulary
+            codeVariant many CaseDue.vocabulary
+            codeVariant many ReminderDue.vocabulary
         ]
         |> taggedOn "vocabulary" (if many then "PresentedCodes" else "PresentedCode")
 
@@ -323,3 +335,89 @@ module PresentationCodecs =
         |> field "unchanged" _.Unchanged (list MaximumEntries unchanged)
         |> build
         |> named "ReviewPresentation"
+
+    let private entry =
+        (record (fun key label prominence value ->
+            {
+                Entry.Key = key
+                LabelId = label
+                Prominence = prominence
+                Value = value
+            })
+        : Fields<Entry, _>)
+        |> field "key" _.Key key
+        |> field "labelId" _.LabelId messageId
+        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
+        |> field "value" _.Value value
+        |> build
+        |> named "PresentedEntry"
+
+    let private section =
+        (record (fun title entries ->
+            {
+                Section.TitleId = title
+                Entries = entries
+            })
+        : Fields<Section, _>)
+        |> field "titleId" _.TitleId messageId
+        |> field "entries" _.Entries (list MaximumEntries entry)
+        |> build
+        |> named "PresentedSection"
+
+    let private column =
+        (record (fun key label prominence money ->
+            {
+                Column.Key = key
+                LabelId = label
+                Prominence = prominence
+                IsMoney = money
+            })
+        : Fields<Column, _>)
+        |> field "key" _.Key key
+        |> field "labelId" _.LabelId messageId
+        |> field "prominence" _.Prominence (VocabularyCodec.create Prominence.vocabulary)
+        |> field "isMoney" _.IsMoney boolean
+        |> build
+        |> named "PresentedColumn"
+
+    let view =
+        tagged
+            "PresentedView"
+            [
+                variant
+                    "RECORD"
+                    View.Record
+                    (function
+                    | View.Record sections -> Some sections
+                    | _ -> None)
+                    (record id |> field "sections" id (list MaximumEntries section))
+                variant
+                    "TABLE"
+                    View.Table
+                    (function
+                    | View.Table(columns, rows) -> Some(columns, rows)
+                    | _ -> None)
+                    (record (fun columns rows -> columns, rows)
+                     |> field "columns" fst (list MaximumEntries column)
+                     |> field "rows" snd (list 50 (list MaximumEntries value)))
+            ]
+
+        |> mapResult
+            (fun path view ->
+                match view with
+                | View.Table(columns, rows) when
+                    rows |> List.exists (fun row -> row.Length <> columns.Length)
+                    ->
+                    Error
+                        {
+                            Path = path
+                            Reason = "Each table row must have one value per column."
+                        }
+                | _ -> Ok view)
+            id
+
+    let presented codec =
+        (record (fun data view -> { Presented.Data = data; View = view })
+        : Fields<Presented<'data>, _>)
+        |> field "data" _.Data codec
+        |> field "view" _.View view

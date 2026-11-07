@@ -80,10 +80,7 @@ it("mutation guards require usable receipts and closed receipt grammar rather th
     expect(
       isResponse("operation.execute", {
         operationId: "11111111-1111-4111-8111-111111111111",
-        outcome: {
-          kind: "ACCEPTED",
-          data,
-        },
+        outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "ACCEPTED", data },
       }),
     ).toBe(false);
   }
@@ -94,6 +91,7 @@ it("session replies reject accepted operation receipts", () => {
   expect(
     isResponse("session", {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "ACCEPTED",
         data: accepted.outcome.data,
       },
@@ -191,6 +189,7 @@ it("admits only valid ordered timeline highlight references and resolves only th
   };
   const frame = (changes: unknown) => ({
     outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
       kind: "SUCCEEDED",
       data: { ...timelinePage(), items: [{ ...timelineEntry(), changes }] },
     },

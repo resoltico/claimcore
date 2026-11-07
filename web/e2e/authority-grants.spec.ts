@@ -29,9 +29,18 @@ const expectAuthorityControlsContained = async (page: Page) => {
       ) {
         continue;
       }
+      const scroll = control.closest(".table-view");
+      const viewport = scroll?.getBoundingClientRect();
+      const visibleLeft =
+        viewport === undefined ? bounds.left : Math.max(bounds.left, viewport.left);
+      const visibleRight =
+        viewport === undefined ? bounds.right : Math.min(bounds.right, viewport.right);
+      if (visibleRight <= visibleLeft) {
+        continue;
+      }
       count += 1;
-      left = Math.min(left, bounds.left);
-      right = Math.max(right, bounds.right);
+      left = Math.min(left, visibleLeft);
+      right = Math.max(right, visibleRight);
     }
     return { panelLeft: panelBounds.left, panelRight: panelBounds.right, count, left, right };
   });
@@ -56,20 +65,16 @@ const checkPresentation = async (page: Page, complete: boolean, count: number, n
     await expect(view.getByRole("status")).toHaveText(
       ui(language, complete ? "ui.grantsEnd" : "ui.grantsPartial"),
     );
-    await expect(view.locator(".actor-grant-items > li")).toHaveCount(count);
+    await expect(view.locator(".table-view tbody > tr")).toHaveCount(count);
     await noHorizontalOverflow(page, "narrow");
     await expectAuthorityControlsContained(page);
   }
 };
 
 const clickPersonCell = async (page: Page) => {
-  const cell = page.locator(".authority-rows > tr > td").first();
-  await cell.scrollIntoViewIfNeeded();
-  const point = await cell.evaluate((element) => {
-    const bounds = element.getBoundingClientRect();
-    return { x: bounds.x + bounds.width / 2, y: bounds.y + bounds.height / 2 };
-  });
-  await page.mouse.click(point.x, point.y);
+  const link = page.locator('a[id^="actor-grants-"]').first();
+  await link.scrollIntoViewIfNeeded();
+  await link.click();
 };
 
 test("selected authority grants use bounded core pages and survive presentation changes at narrow width", async ({
@@ -84,8 +89,8 @@ test("selected authority grants use bounded core pages and survive presentation 
   await seedPresentation(page, "en-XA", "ar-EG");
   await openAuthenticated(page, "⟦Cààsëës⟧");
   await page.getByRole("link").and(page.locator('nav a[href="/people"]')).click();
-  const table = page.getByRole("table").and(page.locator(".authority-table"));
-  await expect(table.getByRole("columnheader")).toHaveCount(4);
+  const table = page.locator(".table-view table").first();
+  await expect(table.getByRole("columnheader")).toHaveCount(9);
   await expect(table.locator("thead")).toBeVisible();
   const selected = page.locator('a[id^="actor-grants-"]').first();
   await expect(selected).toBeVisible();
@@ -108,7 +113,7 @@ test("selected authority grants use bounded core pages and survive presentation 
   const view = page.getByRole("dialog");
   expect(await view.evaluate((element) => element.contains(document.activeElement))).toBe(true);
   await expect(view.locator(".ui-dialog-title")).toHaveText(name.value);
-  await expect(view.locator(".actor-grant-items > li")).toHaveCount(data.items.length);
+  await expect(view.locator(".table-view tbody > tr")).toHaveCount(data.items.length);
   await checkPresentation(page, data.nextCursor === null, data.items.length, name.value);
   expect(grantRequests).toHaveLength(1);
   await expectAccessible(page);

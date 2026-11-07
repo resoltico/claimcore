@@ -1,3 +1,4 @@
+import { casePath } from "../routing/routes";
 import { ViewTabs } from "../ui/ViewTabs";
 import { isTerm } from "../presentation/terms";
 import "./worklist/worklist.css";
@@ -19,7 +20,7 @@ import {
   type WorklistQuery,
 } from "../routing/worklistQuery";
 import { WorklistToolbar } from "./worklist/WorklistToolbar";
-import { CaseRow } from "./worklist/CaseRow";
+import { PageTables } from "../ui/PageTables";
 import { useWorkspaceViews, WorkspaceViewsStatus } from "./WorkspaceViews";
 type Props = { onSelect: (target: CaseSelector) => void };
 const casePage = (response: ServiceResponse<"case.list">) =>
@@ -42,21 +43,6 @@ const useWorklist = () => {
     query,
     change,
   };
-};
-const WorklistColumns = () => {
-  const p = usePresentation();
-  return (
-    <thead className="worklist-columns">
-      <tr>
-        <th scope="col">{p.text("ui.caseParties")}</th>
-        <th scope="col">{p.text("ui.caseState")}</th>
-        <th scope="col">{p.text("ui.reminderAction")}</th>
-        <th scope="col">{p.fieldLabel("responsibleActor")}</th>
-        <th scope="col">{p.text("ui.claimedPayable")}</th>
-        <th scope="col">{p.text("label.changedAt")}</th>
-      </tr>
-    </thead>
-  );
 };
 type Page = ReturnType<typeof useWorklist>;
 const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
@@ -155,14 +141,21 @@ const WorklistResults = ({ page, onSelect }: { page: Page; onSelect: Props["onSe
   return (
     <>
       <ExactResult value={exact} onSelect={onSelect} />
-      <table className="worklist-table">
-        <WorklistColumns />
-        <tbody className="case-list worklist-rows">
-          {page.items.map((value) => (
-            <CaseRow key={value.caseReference} value={value} onSelect={onSelect} />
-          ))}
-        </tbody>
-      </table>
+      <PageTables
+        views={page.views}
+        rowLink={(index) => {
+          const item = page.items[index];
+          return item === undefined
+            ? undefined
+            : {
+                href: casePath(item.caseId),
+                id: `case-${item.caseId}`,
+                follow: () => {
+                  onSelect({ kind: "ID", caseId: item.caseId });
+                },
+              };
+        }}
+      />
       {page.cursor === null ? null : (
         <button
           type="button"

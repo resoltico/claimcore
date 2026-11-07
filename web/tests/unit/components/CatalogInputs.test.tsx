@@ -2,7 +2,7 @@ import { useState } from "react";
 import userEvent from "@testing-library/user-event";
 import { within } from "@testing-library/react";
 import { initialOperationValues } from "../../../src/operation/operationForm";
-import { caseViewInput } from "../../support/inputs";
+import { currentCaseInput } from "../../support/inputs";
 import { fields } from "../../support/service-ui.fixtures";
 import { caseAdvice } from "../../support/case-advice.fixtures";
 import { expect, it, vi } from "vitest";
@@ -38,7 +38,7 @@ it("uses the binding vocabulary to label an option at an unfamiliar catalog path
 });
 
 it("keeps a draft's now-unavailable correction choice visible and selected without offering it", () => {
-  const current = caseViewInput({
+  const current = currentCaseInput({
     caseReference: "CASE-1",
     revision: 3,
     state: {
@@ -87,7 +87,7 @@ it("keeps a draft's now-unavailable correction choice visible and selected witho
   expect(onChange).not.toHaveBeenCalled();
 });
 it("keeps a selected reminder identity bound rather than exposing a technical retargeting field", () => {
-  const current = caseViewInput({
+  const current = currentCaseInput({
     caseReference: "CASE-1",
     revision: 1,
     state: { kind: "ACTIVE", fields },

@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { timelinePage } from "../support/timeline.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
@@ -5,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { stubDashboardContext } from "../support/dashboard-context.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { caseSummaryInput, workBasis } from "../support/inputs";
+import { caseViewInput, caseSummaryInput, workBasis } from "../support/inputs";
 import { current } from "../support/presentation-state.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { navigate } from "../../src/routing/navigation";
@@ -38,10 +39,13 @@ it.each([
         kind: "outcome",
         status: 200,
         value: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: { basis: workBasis, exactReference: null, offers: [], items, nextCursor: null },
-          },
+          outcome: presentedOutcome("case.list", "SUCCEEDED", {
+            basis: workBasis,
+            exactReference: null,
+            offers: [],
+            items,
+            nextCursor: null,
+          }),
         },
       }) as const;
     const pending = Promise.withResolvers<ReturnType<typeof page>>();
@@ -55,30 +59,26 @@ it.each([
       kind: "outcome",
       status: 200,
       value: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            basis: workBasis,
-            counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
-            claimed: [],
-            payable: [],
-          },
-        },
+        outcome: presentedOutcome("case.summary", "SUCCEEDED", {
+          basis: workBasis,
+          counts: { total: 1, lifecycle: [], status: [], progress: [], assignment: [], due: [] },
+          claimed: [],
+          payable: [],
+        }),
       },
     });
     mockEndpoint("case.get").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: { outcome: { kind: "SUCCEEDED", data: current } },
+      value: {
+        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+      },
     });
     mockEndpoint("case.timeline").mockResolvedValue({
       kind: "outcome",
       status: 200,
       value: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: timelinePage(),
-        },
+        outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
       },
     });
     const scroll = vi.fn();
@@ -88,7 +88,7 @@ it.each([
     const user = userEvent.setup();
     render(<Dashboard />);
     await user.click(await screen.findByRole("link", { name: current.caseReference }));
-    await screen.findByRole("heading", { name: current.state.fields.registration.claimantName });
+    await screen.findByRole("heading", { name: "Case detail" });
     await user.click(screen.getByRole("button", { name: "Back to cases" }));
     await waitFor(() => {
       expect(location.pathname + location.search).toBe("/cases?view=ALL&q=CASE&order=RECENT");

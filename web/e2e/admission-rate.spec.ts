@@ -63,6 +63,6 @@ test("bounds repeated published login admission and recovers after its window", 
     description: String(challenges.filter((status) => status === 429).length),
   });
   await progress("rate-login-ready");
-  await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
   await expectAccessible(page);
 });

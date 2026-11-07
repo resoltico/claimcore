@@ -83,7 +83,7 @@ export const noCaseWorkspace = async (page: Page) => {
   }
   await expect(signOut).toBeVisible();
   await expect(page.getByRole("link", { name: "Cases", exact: true })).toHaveCount(0);
-  await expect(page.getByRole("heading", { name: "Cases", exact: true })).toHaveCount(0);
+  await expect(page.getByRole("heading", { name: "Cases", exact: true, level: 1 })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await expect(
     page.getByRole("button", { name: "Open by exact reference", exact: true }),

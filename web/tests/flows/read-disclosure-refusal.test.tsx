@@ -24,6 +24,7 @@ const initial: ApiResult<ListResponse> = {
   status: 200,
   value: {
     outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
       kind: "SUCCEEDED",
       data: {
         basis: workBasis,

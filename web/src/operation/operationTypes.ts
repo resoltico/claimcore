@@ -1,12 +1,12 @@
 import type { DateEntryPart, DateEntryDrafts } from "./dateEntryDraft";
 import type {
-  OperationReceipt,
   OperationReview,
   OperationInput,
   Diagnostic_REVISION_CONFLICT,
   CaseView,
+  PresentedView,
 } from "@contracts/client";
-import type { CurrentCase } from "../protocol/types";
+import type { OperationReceipt, CurrentCase } from "../protocol/types";
 import type { Notice } from "../protocol/notices";
 import type { CatalogEntryIdentity } from "../protocol/catalogAssembly";
 import type { FormValues, FormValue } from "../protocol/forms";
@@ -26,7 +26,10 @@ export type ConflictSource = LocalSource & {
     input: Exclude<OperationInput, { kind: "AUTHORITY" }>;
   };
 };
-export type ConflictObservation = { readonly current: CaseView; readonly revision: number | null };
+export type ConflictObservation = {
+  readonly current: CaseView & { readonly view: PresentedView };
+  readonly revision: number | null;
+};
 export type RevisionConflictSnapshot = {
   readonly identity: EffectIdentity;
   readonly source: ConflictSource;

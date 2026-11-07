@@ -53,20 +53,20 @@ module OutcomePresentation =
 
     let classifyExecute =
         function
-        | ExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
-        | ExecuteResult.AlreadyAccepted _ ->
+        | PresentedExecuteResult.Accepted _ -> classification ReplyKind.Accepted ExitCode.Success
+        | PresentedExecuteResult.AlreadyAccepted _ ->
             classification ReplyKind.AlreadyAccepted ExitCode.Success
-        | ExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
-        | ExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
-        | ExecuteResult.OutcomeUnknown ->
+        | PresentedExecuteResult.Rejected _ -> classification ReplyKind.Rejected ExitCode.Rejected
+        | PresentedExecuteResult.Failed _ -> classification ReplyKind.Failed ExitCode.Failed
+        | PresentedExecuteResult.OutcomeUnknown ->
             classification ReplyKind.OutcomeUnknown ExitCode.OutcomeUnknown
 
     let classifyOperationGet =
         function
-        | Outcome.Succeeded(OperationLookupResult.Accepted _) ->
+        | Outcome.Succeeded(PresentedLookupResult.Accepted _) ->
             classification ReplyKind.Accepted ExitCode.Success
-        | Outcome.Succeeded(OperationLookupResult.Pending _) ->
+        | Outcome.Succeeded(PresentedLookupResult.Pending _) ->
             classification ReplyKind.Pending ExitCode.OutcomeUnknown
-        | Outcome.Succeeded OperationLookupResult.NotAccepted ->
+        | Outcome.Succeeded PresentedLookupResult.NotAccepted ->
             classification ReplyKind.NotAccepted ExitCode.Rejected
         | outcome -> classify outcome

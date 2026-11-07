@@ -33,7 +33,7 @@ export const useOperationObservation = (initialOperationId = "") => {
     setOperationId: changeOperationId,
     receipt:
       submitted !== null && query.value?.outcome.kind === "ACCEPTED"
-        ? query.value.outcome.data.receipt
+        ? { ...query.value.outcome.data.receipt, view: query.value.outcome.view }
         : null,
     message: submitted === null ? null : query.message,
     loading: submitted !== null && query.loading,

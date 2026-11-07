@@ -16,6 +16,7 @@ for (const language of ["en", "lv", "ar"] as const) {
     await seed(page, { language });
     const reply = {
       outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
         kind: "SUCCEEDED",
         data: {
           requester: actorContextInput({

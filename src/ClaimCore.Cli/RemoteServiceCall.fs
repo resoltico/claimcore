@@ -145,7 +145,9 @@ module RemoteServiceCall =
                 | FrameResult.Reply value ->
                     match ServiceReply.value Api.context value with
                     | Some(ClaimCore.Application.Contracts.Outcome.Succeeded {
-                                                                                 Requester = ClaimCore.Application.Contracts.RequesterState.Active context
+                                                                                 Data = {
+                                                                                            Requester = ClaimCore.Application.Contracts.RequesterState.Active context
+                                                                                        }
                                                                              }) -> return Ok context
                     | Some(ClaimCore.Application.Contracts.Outcome.Succeeded _) ->
                         return

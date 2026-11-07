@@ -55,7 +55,7 @@ let private authorityReview () =
                 )
         }
 
-    CliReplies.ofValue Api.operationPreview (PresentedPreviewReply.ofCore reply)
+    CliReplies.ofValue Api.operationPreview (PresentedPreviewReply.ofCore None reply)
 
 let rec private unknownAuthority =
     function
@@ -101,7 +101,7 @@ let tests =
             testCase "authority review uses the typed branch and localized grants" (fun () ->
                 for language in [ "en"; "lv"; "ar" ] do
                     let lines =
-                        TextReply.resultLines language None (FrameResult.Reply(authorityReview ()))
+                        ReplyText.resultLines language None (FrameResult.Reply(authorityReview ()))
 
                     let text = String.concat "\n" lines
 
@@ -134,7 +134,7 @@ let tests =
                         let render endpoint reply =
                             let typed = CliReplies.ofValue endpoint reply
 
-                            TextReply.resultLines language None (FrameResult.Reply typed)
+                            ReplyText.resultLines language None (FrameResult.Reply typed)
                             |> String.concat "\n"
 
                         let outputs =
@@ -145,48 +145,73 @@ let tests =
                                     (ResponseExamples.defaultReply Api.caseSummary)
                                 render
                                     Api.authorityList
-                                    (Outcome.Succeeded
-                                        {
-                                            Basis = Inputs.workBasis
-                                            Items = [ account ]
-                                            NextCursor = Some "opaque-cursor"
-                                        })
+                                    (Outcome.Succeeded(
+                                        Presented.create
+                                            (fun (page: ActorReviewPage) ->
+                                                Descriptor.tableView
+                                                    Descriptor.actorColumns
+                                                    page.Items)
+                                            {
+                                                Basis = Inputs.workBasis
+                                                Items = [ account ]
+                                                NextCursor = Some "opaque-cursor"
+                                            }
+                                    ))
                                 render
                                     Api.authorityGrants
-                                    (Outcome.Succeeded
-                                        {
-                                            Basis = Inputs.workBasis
-                                            Actor = account
-                                            Items =
-                                                [
-                                                    {
-                                                        Role = Role.CaseReader
-                                                        Scope = GrantScope.Installation
-                                                    }
-                                                ]
-                                            NextCursor = None
-                                        })
+                                    (Outcome.Succeeded(
+                                        Presented.create
+                                            (fun (page: AuthorityGrantPage) ->
+                                                Descriptor.tableView
+                                                    Descriptor.grantColumns
+                                                    page.Items)
+                                            {
+                                                Basis = Inputs.workBasis
+                                                Actor = account
+                                                Items =
+                                                    [
+                                                        {
+                                                            Role = Role.CaseReader
+                                                            Scope = GrantScope.Installation
+                                                        }
+                                                    ]
+                                                NextCursor = None
+                                            }
+                                    ))
                                 render
                                     Api.authorityRequests
-                                    (Outcome.Succeeded
-                                        {
-                                            Basis = Inputs.workBasis
-                                            Items =
-                                                [
-                                                    {
-                                                        Principal = account.Principal
-                                                        FirstSeen = Inputs.workBasis.ObservedAt
-                                                        LastSeen = Inputs.workBasis.ObservedAt
-                                                        Claims =
-                                                            RequesterClaims.admit
-                                                                (Some "Request name")
-                                                                None
-                                                                (Some "person@example.test")
-                                                    }
-                                                ]
-                                            NextCursor = None
-                                        })
-                                render Api.authorityRequestsDismiss (Outcome.Succeeded())
+                                    (Outcome.Succeeded(
+                                        Presented.create
+                                            (fun (page: AccessRequestPage) ->
+                                                Descriptor.tableView
+                                                    Descriptor.accessRequestColumns
+                                                    page.Items)
+                                            {
+                                                Basis = Inputs.workBasis
+                                                Items =
+                                                    [
+                                                        {
+                                                            Principal = account.Principal
+                                                            FirstSeen = Inputs.workBasis.ObservedAt
+                                                            LastSeen = Inputs.workBasis.ObservedAt
+                                                            Claims =
+                                                                RequesterClaims.admit
+                                                                    (Some "Request name")
+                                                                    None
+                                                                    (Some "person@example.test")
+                                                        }
+                                                    ]
+                                                NextCursor = None
+                                            }
+                                    ))
+                                render
+                                    Api.authorityRequestsDismiss
+                                    (Outcome.Succeeded(
+                                        Presented.create
+                                            (Descriptor.dismissedAccessRequest
+                                             >> Descriptor.recordView)
+                                            ()
+                                    ))
                             ]
 
                         for output in outputs do
@@ -224,11 +249,21 @@ let hostReplyPresentation =
                     }
 
                 let rendered =
-                    TextReply.resultLines
+                    ReplyText.resultLines
                         language
                         None
                         (FrameResult.Reply(
-                            CliReplies.ofValue Api.session (Outcome.Succeeded session)
+                            CliReplies.ofValue
+                                Api.session
+                                (Outcome.Succeeded(
+                                    Presented.create
+                                        (fun (reply: Session) ->
+                                            Descriptor.session
+                                                reply.Authenticated
+                                                reply.ContractIdentity
+                                            |> Descriptor.recordView)
+                                        session
+                                ))
                         ))
                     |> String.concat "\n"
 
@@ -237,7 +272,7 @@ let hostReplyPresentation =
                     "Session data has an explicit human projection"
 
                 let rejected =
-                    TextReply.resultLines
+                    ReplyText.resultLines
                         language
                         None
                         (FrameResult.Reply(
@@ -253,10 +288,18 @@ let hostReplyPresentation =
                     "Real host read refusals use typed diagnostics"
 
                 let logout =
-                    TextReply.resultLines
+                    ReplyText.resultLines
                         language
                         None
-                        (FrameResult.Reply(CliReplies.ofValue Api.logout (Outcome.Succeeded())))
+                        (FrameResult.Reply(
+                            CliReplies.ofValue
+                                Api.logout
+                                (Outcome.Succeeded(
+                                    Presented.create
+                                        (Descriptor.dismissedAccessRequest >> Descriptor.recordView)
+                                        ()
+                                ))
+                        ))
                     |> String.concat "\n"
 
                 Expect.stringContains
@@ -304,11 +347,20 @@ let assigneePresentation =
 
             for language in LocalizationPolicy.languages do
                 let text =
-                    TextReply.resultLines
+                    ReplyText.resultLines
                         language
                         None
                         (FrameResult.Reply(
-                            CliReplies.ofValue Api.caseAssignees (Outcome.Succeeded page)
+                            CliReplies.ofValue
+                                Api.caseAssignees
+                                (Outcome.Succeeded(
+                                    Presented.create
+                                        (fun (page: AssigneePage) ->
+                                            Descriptor.tableView
+                                                Descriptor.assigneeColumns
+                                                page.Items)
+                                        page
+                                ))
                         ))
                     |> String.concat "\n"
 

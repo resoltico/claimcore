@@ -13,27 +13,23 @@ import {
 } from "./localization-support";
 import { preferenceKey } from "../src/presentation/preferences";
 
-test("updates visible detail and expanded history immediately with independent format and no new reads", async ({
+test("updates supplied records and timeline immediately with independent format and no new reads", async ({
   page,
 }) => {
   await openAuthenticated(page);
   const reference = `LANGUAGE-HISTORY-${randomUUID()}`;
   const opening = await openCase(page, reference);
   const history = page
-    .locator(".case-timeline > .timeline-entry > details")
+    .locator(".case-timeline-panel .table-view tbody > tr")
     .filter({ hasText: opening.operationId });
   await expect(history).toHaveCount(1);
   await expect(history).toBeVisible();
-  await history.locator(":scope > summary").click();
-  await expect(history).toHaveAttribute("open", "");
   await selectFormat(page, "ar-EG");
   const original = await history.elementHandle();
   const requests = trackForegroundRequests(page);
   for (const language of ["ar", "en", "lv", "en"] as const) {
     await selectLanguage(page, language);
-    await expect(
-      page.getByRole("heading", { name: "Synthetic claimant", exact: true }),
-    ).toBeVisible();
+    await expect(page.getByText("Synthetic claimant", { exact: true }).first()).toBeVisible();
     await expect(
       page.getByRole("heading", { name: ui(language, "ui.timeline.title"), exact: true }),
     ).toBeVisible();
@@ -43,15 +39,10 @@ test("updates visible detail and expanded history immediately with independent f
         .locator(".case-actions > summary")
         .filter({ hasText: ui(language, "ui.moreCaseActions") }),
     ).toBeVisible();
-    await expect(history).toHaveAttribute("open", "");
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);
     await expectPreferences(page, { displayLocale: "ar-EG" });
     await expect(
-      history
-        .locator("..")
-        .locator(".timeline-change")
-        .filter({ has: page.getByText(ui(language, "field.claimedAmount.label"), { exact: true }) })
-        .locator("ins"),
+      page.locator(".case-workspace .record-view [data-entry='claimedAmount']"),
     ).toContainText("١٬٢٠٠٫٥٠");
   }
   expect(requests).toHaveLength(0);
@@ -82,7 +73,7 @@ test("preserves language and independent display preferences through real logout
   await expectPreferences(page, { language: "ar" });
   await expectPreferences(page, { displayLocale: "lv-LV" });
   await expect(
-    page.getByRole("heading", { name: ui("ar", "ui.cases"), exact: true }),
+    page.getByRole("heading", { name: ui("ar", "ui.cases"), exact: true, level: 1 }),
   ).toBeVisible();
   expect(
     await page.evaluate(

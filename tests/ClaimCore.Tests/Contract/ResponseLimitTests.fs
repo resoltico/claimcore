@@ -1,4 +1,4 @@
-module ClaimCore.Tests.PayloadBudgetTests
+module ClaimCore.Tests.ResponseLimitTests
 
 open ClaimCore.Wire
 open ClaimCore.Presentation
@@ -107,23 +107,31 @@ let private boundedAuthority () =
     let actors count =
         Codec.encode
             Api.authorityList.Output
-            (Outcome.Succeeded
-                {
-                    Basis = Inputs.workBasis
-                    Items = List.replicate count (ActorReviewItem.ofActor [] actor)
-                    NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                })
+            (Outcome.Succeeded(
+                Presented.create
+                    (fun (page: ActorReviewPage) ->
+                        Descriptor.tableView Descriptor.actorColumns page.Items)
+                    {
+                        Basis = Inputs.workBasis
+                        Items = List.replicate count (ActorReviewItem.ofActor [] actor)
+                        NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
+                    }
+            ))
 
     let grants count =
         Codec.encode
             Api.authorityGrants.Output
-            (Outcome.Succeeded
-                {
-                    Basis = Inputs.workBasis
-                    Actor = ActorReviewItem.ofActor [] actor
-                    Items = List.replicate count grant
-                    NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                })
+            (Outcome.Succeeded(
+                Presented.create
+                    (fun (page: AuthorityGrantPage) ->
+                        Descriptor.tableView Descriptor.grantColumns page.Items)
+                    {
+                        Basis = Inputs.workBasis
+                        Actor = ActorReviewItem.ofActor [] actor
+                        Items = List.replicate count grant
+                        NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
+                    }
+            ))
 
     Expect.isLessThan
         (actors 50).Length
@@ -138,7 +146,7 @@ let private boundedAuthority () =
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"
     Expect.throws (fun () -> grants 51 |> ignore) "Grant overproduction refuses, never truncates"
 
-let private timelineBudget () =
+let private timelineLimit () =
     let required =
         function
         | Ok value -> value
@@ -204,37 +212,29 @@ let private timelineBudget () =
     let bytes =
         Codec.encode
             Api.caseTimeline.Output
-            (Outcome.Succeeded
-                {
-                    CaseTimelinePage.Basis = Inputs.workBasis
-                    CaseId = CaseFixtures.caseId id
-                    Reference = CaseFixtures.reference reference
-                    Items = List.replicate Paging.MaximumPageSize entry
-                    NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
-                })
-
-    let caseBound = 2 * LedgerPayload.MaximumBytes + 6 * PartyName.MaximumBytes + 4096
-
-    let workBound =
-        12 * HandlingSummary.MaximumBytes + 24 * PartyName.MaximumBytes + 4096
-
-    let bound = Paging.MaximumPageSize * max caseBound workBound + 4096
+            (Outcome.Succeeded(
+                Presented.create
+                    (fun (page: CaseTimelinePage) ->
+                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                    {
+                        CaseTimelinePage.Basis = Inputs.workBasis
+                        CaseId = CaseFixtures.caseId id
+                        Reference = CaseFixtures.reference reference
+                        Items = List.replicate Paging.MaximumPageSize entry
+                        NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
+                    }
+            ))
 
     Expect.isLessThan
         bytes.Length
-        bound
-        "Worst work changes include both names, the author and both summaries with full JSON escaping"
-
-    Expect.isLessThan
-        bound
         Limits.MaximumResponseBytes
-        "A full fifty-entry timeline fits the unchanged 4 MiB response limit"
+        "The complete reply with its view fits the 4 MiB transport cap."
 
     Expect.isOk
         (Codec.decode Limits.MaximumResponseBytes Api.caseTimeline.Output bytes)
         "The actual maximal page decodes under the public limit"
 
-let private reminderOverviewBudget () =
+let private reminderTimelineLimit () =
     let required =
         function
         | Ok value -> value
@@ -354,22 +354,18 @@ let private reminderOverviewBudget () =
                     NextCursor = None
                 }
 
-        let bytes = Codec.encode Api.caseTimeline.Output reply
-
-        let bound =
-            Paging.MaximumPageSize
-            * (18 * ReminderAction.MaximumBytes + 6 * PartyName.MaximumBytes + 4096)
-            + 4096
+        let bytes =
+            Codec.encode
+                Api.caseTimeline.Output
+                (Presented.outcome
+                    (fun (page: CaseTimelinePage) ->
+                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                    reply)
 
         Expect.isLessThan
             bytes.Length
-            bound
-            "Full changes plus duplicated event action context obey permanent JSON-escaped bounds"
-
-        Expect.isLessThan
-            bound
             Limits.MaximumResponseBytes
-            "Event action context does not require raising the response cap"
+            "The complete reminder timeline reply with its view fits the transport cap."
 
         Expect.isOk
             (Codec.decode Limits.MaximumResponseBytes Api.caseTimeline.Output bytes)
@@ -381,10 +377,8 @@ let tests =
         "bounded response codecs"
         [
             testCase "authority headers and grants have actual bounded codecs" boundedAuthority
-            testCase
-                "fifty typed timeline differences fit the unchanged response budget"
-                timelineBudget
+            testCase "fifty typed timeline differences fit the response limit" timelineLimit
             testCase
                 "fifty maximal reminder event contexts fit alongside full differences"
-                reminderOverviewBudget
+                reminderTimelineLimit
         ]

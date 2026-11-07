@@ -1,4 +1,4 @@
-import { caseViewInput } from "../support/inputs";
+import { currentCaseInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
@@ -9,7 +9,7 @@ import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/reply.fixtures";
 describe("core act metadata", () => {
   it("keeps optional registration facts unselected and builds scoped input from the root schema", () => {
-    const current = caseViewInput({
+    const current = currentCaseInput({
       caseId: "20000000-0000-4000-8000-000000000001",
       caseReference: fields.caseReference,
       revision: 1,
@@ -66,6 +66,7 @@ describe("catalogue-bound requests", () => {
         JSON.stringify({
           ...valid,
           outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
             kind: "SUCCEEDED",
             data: {
               items: null,

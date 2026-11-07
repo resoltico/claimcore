@@ -16,9 +16,9 @@ module internal WorkRefresh =
             ServiceReply.value Api.operationExecute value
             |> Option.bind (fun reply ->
                 match reply.Outcome with
-                | ExecuteResult.Accepted receipt
-                | ExecuteResult.AlreadyAccepted receipt ->
-                    match receipt.Subject with
+                | PresentedExecuteResult.Accepted receipt
+                | PresentedExecuteResult.AlreadyAccepted receipt ->
+                    match receipt.Data.Subject with
                     | ReceiptSubject.Work work -> Some work.CaseId
                     | ReceiptSubject.Reminder reminder -> Some reminder.CaseId
                     | ReceiptSubject.Case value when

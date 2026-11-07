@@ -2,7 +2,7 @@ import { expect, it, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { selectFact } from "../support/field-entry";
-import { caseViewInput, actorRefInput } from "../support/inputs";
+import { currentCaseInput, actorRefInput } from "../support/inputs";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
 import { definition, fields, response } from "../support/service-ui.fixtures";
@@ -19,7 +19,7 @@ const current = (
   name = "Original name",
   history: "NONE" | "SUMMARY" | "FULL" = "FULL",
 ) => {
-  const value = caseViewInput({
+  const value = currentCaseInput({
     caseReference: "CASE-1",
     revision,
     advice: {
@@ -119,6 +119,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
       return Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
+            view: { kind: "RECORD" as const, sections: [] },
             presentation: { changes: [], unchanged: [] },
             subject: {
               kind: "CASE",

@@ -10,7 +10,11 @@ it("selects the first core view and changes views without adding hidden state pr
     kind: "outcome",
     status: 200,
     value: {
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [], nextCursor: null } },
+      outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
+        kind: "SUCCEEDED",
+        data: { basis: workBasis, items: [], nextCursor: null },
+      },
     },
   });
   navigate("/reminders?q=literal", true);
@@ -35,7 +39,11 @@ it("requires explicit manual filters for inactive work and never sends interface
     kind: "outcome",
     status: 200,
     value: {
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [], nextCursor: null } },
+      outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
+        kind: "SUCCEEDED",
+        data: { basis: workBasis, items: [], nextCursor: null },
+      },
     },
   });
   navigate("/reminders?view=PENDING&q=literal", true);

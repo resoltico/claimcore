@@ -108,5 +108,5 @@ test("rejects absent routes and malformed published Web service admission before
     "ANTIFORGERY_REJECTED",
   );
   await rejectMalformedAuthenticatedPosts(page, token);
-  await expect(page.getByRole("heading", { name: "Cases" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Cases", level: 1 })).toBeVisible();
 });

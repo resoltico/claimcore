@@ -6,7 +6,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Wire
 open ClaimCore.Presentation
 
-module internal AuthorityHistoryRows =
+module internal AuthorityHistoryCsv =
     let private principal (value: PrincipalKey) =
         let kind, issuer, subject = PrincipalKey.parts value
         [ Vocabulary.token PrincipalKind.vocabulary kind; issuer; subject; ""; ""; "" ]
@@ -34,11 +34,11 @@ module internal AuthorityHistoryRows =
     let values (entry: AuthorityHistoryEntry) =
         [
             Sequence.format entry.Sequence
-            TextReplyFormat.instant entry.RecordedAt
+            ReplyTextFormat.instant entry.RecordedAt
             ActorId.format entry.RecordedBy.ActorId
-            TextReplyFormat.actorName LocalizationPolicy.defaultLanguage entry.RecordedBy
+            ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage entry.RecordedBy
             ActorId.format entry.Target.ActorId
-            TextReplyFormat.actorName LocalizationPolicy.defaultLanguage entry.Target
+            ReplyTextFormat.actorName LocalizationPolicy.defaultLanguage entry.Target
             AuthorityKind.token (AuthorityHistoryFacts.kind entry.Facts)
         ]
         @ facts entry.Facts

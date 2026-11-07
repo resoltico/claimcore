@@ -170,7 +170,7 @@ it("keeps authorized history pagination and discards a late page on session repl
       name: "Load 50 more",
     }),
   );
-  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(1);
+  expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(1);
   const signal = fetch.mock.calls[2]?.[1]?.signal;
   const body = fetch.mock.calls[2]?.[1]?.body;
   if (typeof body !== "string") {
@@ -181,14 +181,14 @@ it("keeps authorized history pagination and discards a late page on session repl
   };
   expect(request.cursor).toBe("continuation");
   view.rerender(detail("replacement"));
-  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(0);
+  expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(0);
   expect(signal?.aborted).toBe(true);
   await act(async () => {
     nextPage.release(history());
     await nextPage.promise;
   });
   await screen.findByRole("alert");
-  expect(document.querySelectorAll(".case-timeline li")).toHaveLength(0);
+  expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(0);
   expect(fetch).toHaveBeenCalledTimes(4);
 });
 it("appends an authorized next history page without dropping current advice", async () => {
@@ -206,7 +206,9 @@ it("appends an authorized next history page without dropping current advice", as
     }),
   );
   await waitFor(() => {
-    expect(document.querySelectorAll(".case-timeline li")).toHaveLength(2);
+    expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(
+      2,
+    );
   });
   expect(screen.getAllByText(fields.registration.claimantName)[0]).toBeVisible();
   expect(

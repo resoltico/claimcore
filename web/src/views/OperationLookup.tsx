@@ -1,9 +1,4 @@
-import { IdentifierValue } from "../components/IdentifierValue";
-import { actorName } from "../presentation/actorName";
-import { renderCatalogKey } from "../presentation/messages";
-import { operationEntryForInput } from "../protocol/operationCatalog";
-import { WorkReceiptView } from "./work/WorkReceiptView";
-import { IdentifierMessage } from "../presentation/IdentifierMessage";
+import { RecordView } from "../ui/RecordView";
 import { navigate } from "../routing/navigation";
 import { NoticeView } from "../presentation/Message";
 import { FieldError } from "react-aria-components/FieldError";
@@ -17,107 +12,22 @@ import { Label } from "react-aria-components/Label";
 import { TextField } from "react-aria-components/TextField";
 import type { ProductMetadata, OperationReceipt } from "../api/service";
 import { useOperationObservation } from "../hooks/useOperationObservation";
-import { ReceiptFields } from "../components/ReceiptFields";
 type OperationLookupProps = {
   definition: ProductMetadata;
   initialOperationId?: string;
   onLockChange?: (locked: boolean) => void;
 };
-const ReceiptBody = ({
-  receipt,
-  definition,
-}: {
-  receipt: OperationReceipt;
-  definition: ProductMetadata;
-}) => {
-  const p = usePresentation();
-  const actLabel =
-    receipt.subject.kind === "REMINDER"
-      ? renderCatalogKey(
-          p,
-          operationEntryForInput({ kind: receipt.subject.kind, act: { kind: receipt.subject.act } })
-            .labelId,
-        )
-      : p.term("act", receipt.subject.act);
-  if (receipt.subject.kind === "AUTHORITY") {
-    const target = receipt.subject.targetActor;
-    const id = target.kind === "DISCLOSED" ? target.actor.actorId : target.actorId;
-    return (
-      <section className="authority-receipt">
-        {target.kind === "DISCLOSED" ? (
-          <p>
-            {p.text("ui.authorityReceipt", { act: actLabel, actor: actorName(p, target.actor) })}
-          </p>
-        ) : (
-          <>
-            <p>{actLabel}</p>
-            <p>{p.text("ui.snapshotWithheld")}</p>
-          </>
-        )}
-        <details>
-          <summary>{p.text("label.recordDetails")}</summary>
-          <IdentifierValue value={id} />
-        </details>
-      </section>
-    );
-  }
-  if (receipt.subject.kind === "WORK" || receipt.subject.kind === "REMINDER") {
-    return <WorkReceiptView receipt={receipt} />;
-  }
-  return (
-    <ReceiptFields
-      subject={receipt.subject}
-      fields={definition.catalog.fields}
-      context={
-        <IdentifierMessage
-          id="ui.observedContext"
-          values={{ operationId: receipt.operationId }}
-          argument="operationId"
-        />
-      }
-    />
-  );
-};
-const ReceiptView = ({
-  receipt,
-  definition,
-}: {
-  receipt: OperationReceipt;
-  definition: ProductMetadata;
-}) => {
-  const p = usePresentation();
-  return (
-    <>
-      <p>
-        <IdentifierMessage
-          id="ui.observedReceipt"
-          values={{
-            operationId: receipt.operationId,
-            act:
-              receipt.subject.kind === "REMINDER"
-                ? renderCatalogKey(
-                    p,
-                    operationEntryForInput({
-                      kind: receipt.subject.kind,
-                      act: { kind: receipt.subject.act },
-                    }).labelId,
-                  )
-                : p.term("act", receipt.subject.act),
-            actor: actorName(p, receipt.recordedBy),
-          }}
-          argument="operationId"
-        />
-      </p>
-      <ReceiptBody receipt={receipt} definition={definition} />
-    </>
-  );
-};
+const ReceiptView = ({ receipt }: { receipt: OperationReceipt; definition: ProductMetadata }) =>
+  receipt.view.kind === "RECORD" ? (
+    <RecordView view={receipt.view} timeZone={receipt.basis.timeZone} />
+  ) : null;
 const ObservationFeedback = ({ message }: { message: Notice | null }) =>
   message === null ? null : (
     <p className="error" role="alert">
       <NoticeView value={message} />
     </p>
   );
+
 export const OperationLookup = ({ definition, initialOperationId }: OperationLookupProps) => {
   const p = usePresentation();
   const { operationId, setOperationId, receipt, message, loading, observe } =

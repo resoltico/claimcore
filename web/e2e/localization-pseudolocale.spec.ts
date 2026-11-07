@@ -118,12 +118,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
       value: { writeText: () => Promise.reject(new Error("Synthetic clipboard denial")) },
     }),
   );
-  // W3 places copyable identifiers in Record details; displayed facts no longer have an amount-copy toggle.
-  const details = page.locator(".case-technical");
-  await details.locator(":scope > summary").click();
-  const reference = details
-    .locator("dl > div")
-    .filter({ has: page.getByText(values.caseReference, { exact: true }) });
+  const reference = page.locator(".case-workspace .record-view [data-entry='caseReference']");
   await reference.getByRole("button").focus();
   await reference.getByRole("button").click();
   await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
@@ -132,7 +127,7 @@ test("keeps expanded accepted-value layout and canonical clipboard on the normal
   await expect(page.locator(".success-toast")).toContainText("Case opened.");
   expect(toast).not.toBeNull();
   await expect(reference.getByRole("textbox")).toHaveValue(values.caseReference);
-  await expect(page.locator('.field-row[data-field-name="claimedAmount"] bdi').first()).toHaveText(
-    "١٫٠٠",
+  await expect(page.locator('.record-view [data-entry="claimedAmount"] bdi').first()).toHaveText(
+    "١٫٠٠ EUR",
   );
 });

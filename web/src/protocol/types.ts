@@ -1,6 +1,8 @@
 import type {
   HostFailure,
-  OperationReceipt,
+  OperationReceipt as ReceiptData,
+  PresentedView,
+  WorkDateBasis,
   RequestByEndpoint,
   ResponseByEndpoint,
   CaseView,
@@ -8,7 +10,8 @@ import type {
 import type { productMetadata } from "./productMetadata";
 import type { Notice } from "./notices";
 export type { CaseFields, CaseView, OperationReview, Diagnostic } from "@contracts/client";
-export type { OperationReceipt } from "@contracts/client";
+export type OperationReceipt = ReceiptData & { readonly view: PresentedView };
+export type PresentedPage = { readonly view: PresentedView; readonly basis: WorkDateBasis };
 export type CaseOperationReceipt = Omit<OperationReceipt, "subject"> & {
   readonly subject: Extract<OperationReceipt["subject"], { kind: "CASE" }>;
 };
@@ -27,9 +30,12 @@ type Success<K extends keyof ResponseByEndpoint> = Extract<
   { kind: "SUCCEEDED" }
 >["data"];
 export type CurrentCase = Omit<CaseView, "state"> & {
+  readonly view: PresentedView;
   readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }>;
 };
-export const isCurrentCase = (value: CaseView): value is CurrentCase =>
+export const isCurrentCase = <T extends CaseView>(
+  value: T,
+): value is T & { readonly state: Extract<CaseView["state"], { kind: "ACTIVE" | "VOIDED" }> } =>
   value.state.kind !== "ERASED";
 export type CaseSummary = Success<"case.list">["items"][number];
 export type SessionSnapshot = Success<"session">;

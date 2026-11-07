@@ -126,7 +126,7 @@ const completion = (
     if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return {
         type: "RECORD",
-        receipt: outcome.data,
+        receipt: { ...outcome.data, view: outcome.view },
         identity: effect.identity,
       };
     }
@@ -177,7 +177,7 @@ const runNetwork = async (
         return {
           type: "RECORD",
           identity: effect.identity,
-          receipt: result.value.outcome.data.receipt,
+          receipt: { ...result.value.outcome.data.receipt, view: result.value.outcome.view },
         };
       }
       if (result.value.outcome.kind === "PENDING") {
@@ -264,12 +264,8 @@ const readCaseDisclosure = async (
       controller.signal,
     );
     if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
-      const value = result.value.outcome.data;
-      if (
-        isCurrentCase(value) &&
-        value.caseId === effect.caseId &&
-        value.caseReference.toUpperCase() === effect.reference.toUpperCase()
-      ) {
+      const value = { ...result.value.outcome.data, view: result.value.outcome.view };
+      if (isCurrentCase(value)) {
         return { type: "DISCLOSED", identity: effect.identity, value };
       }
       return {

@@ -104,7 +104,7 @@ export const openApplication = async (page: Page, heading: string | RegExp): Pro
   page.on("response", assetError);
   try {
     await page.goto("/", { waitUntil: "commit" });
-    await expect(page.getByRole("heading", { name: heading, exact: true })).toBeVisible({
+    await expect(page.getByRole("heading", { name: heading, exact: true, level: 1 })).toBeVisible({
       timeout: 10_000,
     });
   } catch (error) {
@@ -357,7 +357,7 @@ export const login = async (
   const authenticated =
     workspaceHeading === null
       ? page.locator(".workspace-header")
-      : page.getByRole("heading", { name: workspaceHeading, exact: true });
+      : page.getByRole("heading", { name: workspaceHeading, exact: true, level: 1 });
   try {
     await authenticated.or(page.locator(".login-card h1")).first().waitFor({ timeout: 5_000 });
   } catch {

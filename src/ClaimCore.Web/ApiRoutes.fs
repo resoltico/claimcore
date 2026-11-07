@@ -19,39 +19,97 @@ module internal ApiRoutes =
     // fsharplint:disable-next-line CyclomaticComplexity
     let route =
         function
-        | ActorEndpoint.Query QueryEndpoint.ReminderGet -> Route.bind Api.reminder Service.reminder
+        | ActorEndpoint.Query QueryEndpoint.ReminderGet ->
+            Route.read
+                Api.reminder
+                (fun (reply: ReminderRead) ->
+                    Descriptor.reminder reply.Item |> Descriptor.recordView)
+                Service.reminder
         | ActorEndpoint.Query QueryEndpoint.ReminderList ->
-            Route.bind Api.reminders Service.reminders
+            Route.read
+                Api.reminders
+                (fun (reply: ReminderPage) ->
+                    Descriptor.tableView Descriptor.reminderColumns reply.Items)
+                Service.reminders
         | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
-            Route.bind Api.caseTimeline Service.timeline
-        | ActorEndpoint.Query QueryEndpoint.Context -> Route.bind Api.context Service.context
-        | ActorEndpoint.Query QueryEndpoint.CaseGet -> Route.bind Api.caseGet Service.get
+            Route.read
+                Api.caseTimeline
+                (fun (reply: CaseTimelinePage) ->
+                    Descriptor.tableView Descriptor.timelineColumns reply.Items)
+                Service.timeline
+        | ActorEndpoint.Query QueryEndpoint.Context ->
+            Route.read Api.context (Descriptor.context >> Descriptor.recordView) Service.context
+        | ActorEndpoint.Query QueryEndpoint.CaseGet ->
+            Route.read Api.caseGet (Descriptor.caseView >> Descriptor.recordView) Service.get
         | ActorEndpoint.Query QueryEndpoint.CaseAssignees ->
-            Route.bind Api.caseAssignees Service.assignees
-        | ActorEndpoint.Query QueryEndpoint.CaseList -> Route.bind Api.caseList Service.list
+            Route.read
+                Api.caseAssignees
+                (fun (reply: AssigneePage) ->
+                    Descriptor.tableView Descriptor.assigneeColumns reply.Items)
+                Service.assignees
+        | ActorEndpoint.Query QueryEndpoint.CaseList ->
+            Route.read
+                Api.caseList
+                (fun (reply: CaseSummaryPage) ->
+                    Descriptor.tableView Descriptor.caseSummaryColumns reply.Items)
+                Service.list
         | ActorEndpoint.Query QueryEndpoint.CaseSummary ->
-            Route.bind Api.caseSummary Service.caseSummary
-        | ActorEndpoint.Query QueryEndpoint.WorkViews -> Route.bind Api.workViews Service.workViews
+            Route.read
+                Api.caseSummary
+                (Descriptor.caseTotals >> Descriptor.recordView)
+                Service.caseSummary
+        | ActorEndpoint.Query QueryEndpoint.WorkViews ->
+            Route.read
+                Api.workViews
+                (Descriptor.workViews >> Descriptor.recordView)
+                Service.workViews
         | ActorEndpoint.Query QueryEndpoint.OperationGet ->
-            Route.bind Api.operationGet Service.operationGet
+            Route.bind Api.operationGet (fun services input token ->
+                task {
+                    let! reply = Service.operationGet services input token in
+                    return PresentedLookupReply.ofCore reply
+                })
         | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
-            Route.bind Api.authorityList Service.actors
+            Route.read
+                Api.authorityList
+                (fun (reply: ActorReviewPage) ->
+                    Descriptor.tableView Descriptor.actorColumns reply.Items)
+                Service.actors
         | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
-            Route.bind Api.authorityGrants Service.grants
+            Route.read
+                Api.authorityGrants
+                (fun (reply: AuthorityGrantPage) ->
+                    Descriptor.tableView Descriptor.grantColumns reply.Items)
+                Service.grants
         | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
-            Route.bind Api.authorityHistory Service.authorityHistory
+            Route.read
+                Api.authorityHistory
+                (fun (reply: AuthorityHistoryPage) ->
+                    Descriptor.tableView Descriptor.authorityHistoryColumns reply.Entries)
+                Service.authorityHistory
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
-            Route.bind Api.authorityRequests Service.accessRequests
+            Route.read
+                Api.authorityRequests
+                (fun (reply: AccessRequestPage) ->
+                    Descriptor.tableView Descriptor.accessRequestColumns reply.Items)
+                Service.accessRequests
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
-            Route.bind Api.authorityRequestsDismiss Service.dismissAccessRequest
+            Route.read
+                Api.authorityRequestsDismiss
+                (Descriptor.dismissedAccessRequest >> Descriptor.recordView)
+                Service.dismissAccessRequest
         | ActorEndpoint.Operation OperationEndpoint.Preview ->
             Route.bind Api.operationPreview (fun services input token ->
                 task {
                     let! reply = Service.preview services input token in
-                    return PresentedPreviewReply.ofCore reply
+                    return PresentedPreviewReply.ofCore (Some input) reply
                 })
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
-            Route.bind Api.operationExecute Service.execute
+            Route.bind Api.operationExecute (fun services input token ->
+                task {
+                    let! reply = Service.execute services input token in
+                    return PresentedExecuteReply.ofCore reply
+                })
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with

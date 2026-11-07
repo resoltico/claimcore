@@ -1,4 +1,4 @@
-import { caseViewInput } from "./inputs";
+import { currentCaseInput } from "./inputs";
 import { caseAdvice } from "./case-advice.fixtures";
 import { screen, waitFor } from "@testing-library/react";
 import type { ComponentProps } from "react";
@@ -9,7 +9,7 @@ import { useRoute } from "../../src/routing/useRoute";
 import type userEvent from "@testing-library/user-event";
 import { OperationEditor } from "../../src/views/OperationEditor";
 import { definition, fields, response, runtime } from "./service-ui.fixtures";
-export const current: CurrentCase = caseViewInput({
+export const current: CurrentCase = currentCaseInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,
   revision: 1,
@@ -55,6 +55,7 @@ export const previewReply = (index = 0): Response => {
   const draft = draftAt(index);
   return response("operation.preview", "REVIEWED", {
     review: {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: { changes: [], unchanged: [] },
       subject: {
         kind: "CASE",

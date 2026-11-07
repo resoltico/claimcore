@@ -4,7 +4,11 @@ import {
   subscribeBusinessDates,
 } from "../../../src/api/businessDateObservation";
 const response = (date: string) => ({
-  outcome: { kind: "SUCCEEDED", data: { basis: { businessDate: date } } },
+  outcome: {
+    view: { kind: "RECORD" as const, sections: [] },
+    kind: "SUCCEEDED",
+    data: { basis: { businessDate: date } },
+  },
 });
 it("publishes only date-bearing successful observations dispatched in the current scope", () => {
   const observed = vi.fn();
@@ -22,7 +26,13 @@ it("publishes only date-bearing successful observations dispatched in the curren
   captureBusinessDateObserver(
     "case.list",
     "current",
-  )({ outcome: { kind: "SUCCEEDED", data: { items: [] } } });
+  )({
+    outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
+      kind: "SUCCEEDED",
+      data: { items: [] },
+    },
+  });
   expect(observed).not.toHaveBeenCalled();
   captureBusinessDateObserver("case.list", "current")(response("2026-11-05"));
   expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
@@ -39,7 +49,13 @@ it("observes the case workspace's owned work-date basis", () => {
   captureBusinessDateObserver(
     "case.get",
     "current",
-  )({ outcome: { kind: "SUCCEEDED", data: { work: { basis: { businessDate: "2026-11-05" } } } } });
+  )({
+    outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
+      kind: "SUCCEEDED",
+      data: { work: { basis: { businessDate: "2026-11-05" } } },
+    },
+  });
   expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
   close();
 });
@@ -85,7 +101,13 @@ it("ignores a stale dispatch and a context response for a different installation
     captureBusinessDateObserver(
       "context",
       "current",
-    )({ outcome: { kind: "SUCCEEDED", data: { ...data, businessDate: "2026-11-06" } } });
+    )({
+      outcome: {
+        view: { kind: "RECORD" as const, sections: [] },
+        kind: "SUCCEEDED",
+        data: { ...data, businessDate: "2026-11-06" },
+      },
+    });
   }
   expect(observed).toHaveBeenCalledExactlyOnceWith("2026-11-05");
   const late = captureBusinessDateObserver("case.list", "current");

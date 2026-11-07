@@ -11,6 +11,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
   kind: "outcome",
   value: {
     outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
       kind: "SUCCEEDED",
       data: {
         basis: workBasis,
@@ -33,6 +34,7 @@ const result = (reference: string): ApiResult<ListResponse> => ({
 const selectPage = (response: ListResponse) =>
   response.outcome.kind === "SUCCEEDED"
     ? {
+        basis: response.outcome.data.basis,
         items: response.outcome.data.items.map((item) => item.caseReference),
         nextCursor: response.outcome.data.nextCursor,
       }

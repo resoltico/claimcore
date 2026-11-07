@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../../support/read-view.fixtures";
 import { workBasis } from "../../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { act, fireEvent, within } from "@testing-library/react";
@@ -33,10 +34,11 @@ const setup = (
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, items: [actor], nextCursor: cursor },
-      },
+      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [actor],
+        nextCursor: cursor,
+      }),
     },
   });
   const select = vi.fn();
@@ -53,13 +55,13 @@ const setup = (
 it("shows core account state and raw roles with one native person link and no row grant reads", async () => {
   const grants = mockEndpoint("authority.grants");
   const select = setup(true);
-  const table = screen.getByRole("table", { name: "People & access" });
+  const table = await screen.findByRole("table", { name: "People & access" });
   await within(table).findByText(displayName);
   expect(
     within(table)
       .getAllByRole("columnheader")
       .map((header) => header.textContent),
-  ).toEqual(["Person", "Roles", "Access to", "Status"]);
+  ).toEqual(["Name", "Account status", "Role", "Contact details"]);
   for (const header of within(table).getAllByRole("columnheader")) {
     expect(header).toHaveAttribute("scope", "col");
   }
@@ -68,15 +70,13 @@ it("shows core account state and raw roles with one native person link and no ro
   });
   expect(within(table).getAllByRole("link")).toHaveLength(1);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
-  expect(within(table).getAllByRole("cell")[1]).toHaveTextContent("Owner");
-  expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Installation");
-  expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Case-specific grants: 0");
-  expect(within(table).getAllByRole("cell")[3]).toHaveTextContent("Enabled with roles");
+  expect(within(table).getAllByRole("cell")[2]).toHaveTextContent("Owner");
+  expect(within(table).getAllByRole("cell")[1]).toHaveTextContent("Enabled with roles");
   expect(within(table).queryByText("No roles")).toBeNull();
   expect(within(table).getByText("support@example.invalid")).toBeVisible();
   expect(grants).not.toHaveBeenCalled();
   expect(link).toHaveAttribute("href", `/people/${actorId}`);
-  expect(link.querySelector("bdi")).toHaveAttribute("title", displayName);
+  expect(link.querySelector("bdi")).not.toBeNull();
   expect(within(table).queryByText(subject)).toBeNull();
   const user = userEvent.setup();
   for (let index = 0; index < 10 && document.activeElement !== link; index += 1) {
@@ -91,7 +91,7 @@ it("shows core account state and raw roles with one native person link and no ro
 });
 it("keeps disclosed table facts without offering a person link when grants are not readable", async () => {
   setup(false, { state: "DISABLED", roles: [] });
-  const table = screen.getByRole("table", { name: "People & access" });
+  const table = await screen.findByRole("table", { name: "People & access" });
   await within(table).findByText(displayName);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
   expect(within(table).queryByRole("link")).toBeNull();
@@ -125,10 +125,11 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, items: [selected], nextCursor: null },
-      },
+      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [selected],
+        nextCursor: null,
+      }),
     },
   });
   const user = userEvent.setup();
@@ -149,6 +150,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
       status: 200,
       value: {
         outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
           kind: "SUCCEEDED",
           data: {
             basis: workBasis,

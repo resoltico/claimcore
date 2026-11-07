@@ -7,6 +7,7 @@ open System.Threading
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.Wire
 open ClaimCore.Json
@@ -43,8 +44,8 @@ let tests =
                     Api.operationExecute
                     input
                     {
-                        ExecuteReply.OperationId = echoed
-                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                        PresentedExecuteReply.OperationId = echoed
+                        Outcome = PresentedExecuteResult.Failed CoreFault.StoreUnavailable
                     }
 
             Expect.equal
@@ -82,7 +83,7 @@ let tests =
                         OperationReply.OperationId = echoed
                         Outcome =
                             Outcome.Succeeded(
-                                OperationLookupResult.Pending(
+                                PresentedLookupResult.Pending(
                                     OperationLifetime.finalAt (CaseFixtures.operationId operation)
                                 )
                             )

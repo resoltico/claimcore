@@ -22,7 +22,7 @@ module internal VerbRunner =
         if prepared.Format = VerbFormat.Json then
             reply.Bytes
         else
-            TextReply.bytesFor prepared.Language (Some frame) reply.Frame
+            ReplyText.bytesFor prepared.Language (Some frame) reply.Frame
 
     let private pages (io: VerbConsole) (processor: RemoteFrameProcessor) prepared token =
         let pageIO =
@@ -72,9 +72,9 @@ module internal VerbRunner =
                 output
                     Api.operationExecute
                     {
-                        ClaimCore.Application.Contracts.ExecuteReply.OperationId =
+                        PresentedExecuteReply.OperationId =
                             ClaimCore.Application.Contracts.OperationInput.operationId input
-                        Outcome = ClaimCore.Application.Contracts.ExecuteResult.Rejected refusal
+                        Outcome = PresentedExecuteResult.Rejected refusal
                     }
             | None ->
                 let input = Frames.value Api.operationPreview invocation |> Option.get
@@ -192,7 +192,7 @@ module internal VerbRunner =
                             fun frame reply ->
                                 processor.Deliver(
                                     (fun response ->
-                                        TextReply.bytesFor
+                                        ReplyText.bytesFor
                                             draft.Language
                                             (Some frame)
                                             response.Frame),

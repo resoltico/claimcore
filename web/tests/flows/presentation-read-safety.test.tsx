@@ -1,3 +1,4 @@
+import { transportResponse } from "../support/transport-response.fixtures";
 import { timelinePage, timelineEntry } from "../support/timeline.fixtures";
 import { stubWorklistSummary } from "../support/worklist-summary.fixtures";
 import { caseViewInput, caseSummaryInput } from "../support/inputs";
@@ -92,6 +93,20 @@ const readReply = (url: string, value: string, missing: boolean) => {
     });
   }
   if (url.endsWith("/case.timeline")) {
+    if (!missing) {
+      return transportResponse("case.timeline", "SUCCEEDED", historyReply(value), 200, {
+        kind: "TABLE",
+        columns: [
+          {
+            key: "serverReference",
+            labelId: "field.caseReference.label",
+            prominence: "PRIMARY",
+            isMoney: false,
+          },
+        ],
+        rows: [[{ kind: "REFERENCE", value }]],
+      });
+    }
     return response(
       "case.timeline",
       missing ? "REJECTED" : "SUCCEEDED",
@@ -142,18 +157,28 @@ const checkDetail = async (value: string, points: string | null, missing: boolea
     const directStatus = view.container.querySelectorAll(".case-header-state .badge");
     expect(directStatus).toHaveLength(missing ? 0 : 1);
     if (missing) {
-      expect(view.container.querySelector(".case-fields")).toBeNull();
+      expect(view.container.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
     } else {
-      expect(view.container.querySelector(".case-timeline li")).not.toBeNull();
+      expect(
+        view.container.querySelector(".case-timeline-panel .table-view tbody > tr"),
+      ).not.toBeNull();
     }
   });
   if (missing) {
-    expect(view.container.querySelector(".case-fields, .case-timeline li")).toBeNull();
+    expect(
+      view.container.querySelector(
+        '.record-view [data-entry="claimantName"], .case-timeline-panel .table-view tbody > tr',
+      ),
+    ).toBeNull();
     expect(view.container).not.toHaveTextContent(fields.registration.claimantName);
     expect(view.container.querySelector("#acts-title")).toBeNull();
   } else {
-    assertSafe(view.container.querySelector("[data-record-details]")!, value, points);
-    assertSafe(view.container.querySelector(".case-timeline li")!, value, points);
+    assertSafe(view.container.querySelector(".record-view")!, value, points);
+    assertSafe(
+      view.container.querySelector(".case-timeline-panel .table-view tbody > tr")!,
+      value,
+      points,
+    );
   }
   view.unmount();
 };
@@ -173,9 +198,9 @@ it.each(languages)(
       );
       const list = render(<CaseList onSelect={vi.fn()} />);
       await waitFor(() => {
-        expect(list.container.querySelector(".worklist-row")).not.toBeNull();
+        expect(list.container.querySelector(".table-view tbody > tr")).not.toBeNull();
       });
-      assertSafe(list.container.querySelector(".worklist-row")!, value, points);
+      assertSafe(list.container.querySelector(".table-view tbody > tr")!, value, points);
       list.unmount();
       await checkDetail(value, points, false);
       await checkDetail(value, points, true);

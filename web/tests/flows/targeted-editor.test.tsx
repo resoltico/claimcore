@@ -1,3 +1,5 @@
+import { caseViewInput } from "../support/inputs";
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { Dashboard } from "../../src/views/Dashboard";
 import { actPath } from "../../src/routing/routes";
 import { navigate } from "../../src/routing/navigation";
@@ -98,7 +100,9 @@ it.each([
     const read = mockEndpoint("case.get").mockResolvedValue({
       kind: "outcome",
       status: 200,
-      value: { outcome: { kind: "SUCCEEDED", data: current } },
+      value: {
+        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+      },
     });
     const execute = vi.spyOn(service, "execute");
     const path = actPath({ kind: "ID", caseId: current.caseId }, "AMEND_REGISTRATION");

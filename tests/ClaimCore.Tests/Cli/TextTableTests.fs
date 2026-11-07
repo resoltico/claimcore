@@ -226,18 +226,18 @@ let terminalCells =
                             "zh-Hant", "2026年11月6日"
                         ] do
                         Expect.equal
-                            (TextReplyFormat.calendarDate language (System.DateOnly(2026, 11, 6)))
+                            (ReplyTextFormat.calendarDate language (System.DateOnly(2026, 11, 6)))
                             expected
                             "Culture-appropriate Gregorian order"
 
                         Expect.equal
-                            (TextReplyFormat.money language (Inputs.money "12345.6789" "EUR"))
+                            (ReplyTextFormat.money language (Inputs.money "12345.6789" "EUR"))
                             "12,345.6789 EUR"
                             "Canonical fractional text is exact"
 
                     for language in [ "de"; "es" ] do
                         Expect.equal
-                            (TextReplyFormat.money language (Inputs.money "12345.6789" "EUR"))
+                            (ReplyTextFormat.money language (Inputs.money "12345.6789" "EUR"))
                             "12.345,6789 EUR"
                             "Grouping does not change the amount"
 

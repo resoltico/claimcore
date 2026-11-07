@@ -83,13 +83,16 @@ let internal integerLexemes () =
 
                         OperationId = id
                         Outcome =
-                            ExecuteResult.Accepted
-                                { receipt with
-                                    Position =
-                                        { position with
-                                            Sequence = (CaseFixtures.sequence (sequence))
-                                        }
-                                }
+                            PresentedExecuteResult.Accepted(
+                                ClaimCore.TestSupport.ResponseExamples.presentReceipt (
+                                    { receipt with
+                                        Position =
+                                            { position with
+                                                Sequence = (CaseFixtures.sequence (sequence))
+                                            }
+                                    }
+                                )
+                            )
                     }
                 |> ignore)
             "Accepted sequence bounds"
@@ -115,16 +118,19 @@ let internal retainedText () =
 
         admitted
             Api.caseGet.Output
-            (Outcome.Succeeded
-                {
-                    Mine = false
-                    Work = Inputs.workView snapshot.State
-                    Stages = Inputs.stageDisplay snapshot.State
-                    Snapshot = snapshot
-                    Headline = CaseHeadline.Undecided
-                    Attention = []
-                    Advice = Inputs.caseAdvice snapshot.State
-                })
+            (Outcome.Succeeded(
+                Presented.create
+                    (Descriptor.caseView >> Descriptor.recordView)
+                    {
+                        Mine = false
+                        Work = Inputs.workView snapshot.State
+                        Stages = Inputs.stageDisplay snapshot.State
+                        Snapshot = snapshot
+                        Headline = CaseHeadline.Undecided
+                        Attention = []
+                        Advice = Inputs.caseAdvice snapshot.State
+                    }
+            ))
 
         |> ignore
 

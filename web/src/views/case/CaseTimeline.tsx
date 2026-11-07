@@ -1,3 +1,4 @@
+import { PageTables } from "../../ui/PageTables";
 import { useCallback, useState } from "react";
 import { resolveTimelineHighlights } from "@contracts/client";
 import type {
@@ -189,7 +190,7 @@ export const CaseTimeline = ({
     select,
     onDisclosureRefused,
   );
-  const observedAt = result.page?.basis.observedAt;
+
   return (
     <section
       className="case-timeline-panel"
@@ -223,9 +224,7 @@ export const CaseTimeline = ({
         </p>
       )}
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}
-      {observedAt === undefined ? null : (
-        <TimelineEntries items={result.items} observedAt={observedAt} detail="CURRENT" />
-      )}
+      <PageTables views={result.views} />
       {result.page !== null && result.items.length === 0 && !result.loading ? (
         <p>{p.text("ui.timeline.empty")}</p>
       ) : null}

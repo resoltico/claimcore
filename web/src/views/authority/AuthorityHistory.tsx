@@ -1,113 +1,17 @@
+import { casePath } from "../../routing/routes";
+import { navigate } from "../../routing/navigation";
+import { PageTables } from "../../ui/PageTables";
 import { useCallback } from "react";
 import type { AuthorityHistoryEntry } from "@contracts/client";
 import type { ServiceResponse } from "../../api/service";
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import { ActorIdentity, RecordedTime } from "../../components/ActorIdentity";
-import { casePath } from "../../routing/routes";
-import { followLink } from "../../routing/followLink";
-import { navigate } from "../../routing/navigation";
 const select = (reply: ServiceResponse<"authority.history">) =>
   reply.outcome.kind === "SUCCEEDED"
-    ? { items: reply.outcome.data.entries, nextCursor: reply.outcome.data.nextCursor }
+    ? { ...reply.outcome.data, items: reply.outcome.data.entries }
     : null;
 type HistoryPage = NonNullable<ReturnType<typeof select>>;
-const HistoryFacts = ({ entry }: { entry: AuthorityHistoryEntry }) => {
-  const p = usePresentation();
-  const { act } = entry;
-  if (act.kind === "REGISTER" || act.kind === "PROVISION_OWNER") {
-    return <p>{p.term("principalKind", act.principal.kind)}</p>;
-  }
-  if (act.kind === "SET_PROFILE") {
-    return act.profile === null ? (
-      <p>{p.text("ui.timeline.withheld")}</p>
-    ) : (
-      <dl>
-        <dt>{p.fieldLabel("profile.displayName")}</dt>
-        <dd>
-          <bdi>{act.profile.displayName}</bdi>
-        </dd>
-        {act.profile.contact === null ? null : (
-          <>
-            <dt>{p.fieldLabel("profile.contact")}</dt>
-            <dd>
-              <bdi>{act.profile.contact}</bdi>
-            </dd>
-          </>
-        )}
-      </dl>
-    );
-  }
-  if (act.kind !== "GRANT" && act.kind !== "REVOKE") {
-    return null;
-  }
-  const { scope } = act;
-  return (
-    <p>
-      {p.term("role", act.role)} ·{" "}
-      {scope.kind === "CASE" ? (
-        <a
-          href={casePath(scope.caseId)}
-          onClick={(event) => {
-            followLink(event, () => {
-              navigate(casePath(scope.caseId));
-            });
-          }}
-        >
-          <bdi dir="ltr" className="identifier-value">
-            {scope.caseReference}
-          </bdi>
-        </a>
-      ) : (
-        p.term("scope", scope.kind)
-      )}
-    </p>
-  );
-};
-const HistoryEntries = ({ items }: { items: ReadonlyArray<AuthorityHistoryEntry> }) => {
-  const p = usePresentation();
-  return (
-    <ol className="history-list">
-      {items.map((entry) => (
-        <li key={entry.sequence}>
-          <header>
-            <RecordedTime value={entry.recordedAt} />
-            <strong>{p.term("act", entry.act.kind)}</strong>
-          </header>
-          <dl className="history-attribution">
-            <dt>{p.text("ui.targetActor")}</dt>
-            <dd>
-              <ActorIdentity actor={entry.target} />
-            </dd>
-            <dt>{p.text("ui.recordedBy")}</dt>
-            <dd>
-              <ActorIdentity actor={entry.recordedBy} />
-            </dd>
-          </dl>
-          <HistoryFacts entry={entry} />
-          <details>
-            <summary>{p.text("label.recordDetails")}</summary>
-            <dl>
-              <dt>{p.text("ui.exactUtc")}</dt>
-              <dd>
-                <time dateTime={entry.recordedAt}>{entry.recordedAt}</time>
-              </dd>
-              <dt>{p.text("ui.targetActor")}</dt>
-              <dd>
-                <bdi dir="ltr">{entry.target.actorId}</bdi>
-              </dd>
-              <dt>{p.text("ui.recordedBy")}</dt>
-              <dd>
-                <bdi dir="ltr">{entry.recordedBy.actorId}</bdi>
-              </dd>
-            </dl>
-          </details>
-        </li>
-      ))}
-    </ol>
-  );
-};
 export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
   const p = usePresentation();
   const input = useCallback(
@@ -132,7 +36,26 @@ export const AuthorityHistory = ({ actorId }: { actorId: string }) => {
           <NoticeView value={page.message} />
         </p>
       )}
-      <HistoryEntries items={page.items} />
+      <PageTables
+        views={page.views}
+        rowLink={(index) => {
+          const item = page.items[index];
+          if (
+            item === undefined ||
+            (item.act.kind !== "GRANT" && item.act.kind !== "REVOKE") ||
+            item.act.scope.kind !== "CASE"
+          ) {
+            return undefined;
+          }
+          const href = casePath(item.act.scope.caseId);
+          return {
+            href,
+            follow: () => {
+              navigate(href);
+            },
+          };
+        }}
+      />
 
       <button type="button" disabled={page.loading} onClick={() => void page.load(null)}>
         {p.text("ui.reloadHistory")}

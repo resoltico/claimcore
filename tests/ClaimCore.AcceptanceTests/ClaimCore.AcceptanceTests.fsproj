@@ -2,7 +2,6 @@
   <ItemGroup>
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
-    <Compile Include="TestRegistration.fs" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />

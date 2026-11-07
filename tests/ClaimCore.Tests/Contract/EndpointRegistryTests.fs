@@ -53,8 +53,8 @@ let private readReplies () =
 
     for value in
         [
-            Outcome.Succeeded true
-            Outcome.Succeeded false
+            Outcome.Succeeded(Presented.create (fun _ -> Descriptor.recordView []) true)
+            Outcome.Succeeded(Presented.create (fun _ -> Descriptor.recordView []) false)
             Outcome.Rejected Refusal.InvalidCursor
             Outcome.Failed CoreFault.StoreUnavailable
         ] do
@@ -154,6 +154,7 @@ let private mutationReplies () =
         roundTrip
             ReplyCodecs.preview
             (PresentedPreviewReply.ofCore
+                None
                 {
                     PreviewReply.OperationId = id
                     Outcome = outcome
@@ -161,17 +162,21 @@ let private mutationReplies () =
 
     for outcome in
         [
-            ExecuteResult.Accepted receipt
-            ExecuteResult.AlreadyAccepted receipt
-            ExecuteResult.Rejected Refusal.IdempotencyConflict
-            ExecuteResult.Failed CoreFault.StoreUnavailable
-            ExecuteResult.OutcomeUnknown
+            PresentedExecuteResult.Accepted(
+                Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
+            )
+            PresentedExecuteResult.AlreadyAccepted(
+                Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt
+            )
+            PresentedExecuteResult.Rejected Refusal.IdempotencyConflict
+            PresentedExecuteResult.Failed CoreFault.StoreUnavailable
+            PresentedExecuteResult.OutcomeUnknown
         ] do
         roundTrip
             ReplyCodecs.execute
             {
 
-                ExecuteReply.OperationId = id
+                PresentedExecuteReply.OperationId = id
                 Outcome = outcome
             }
 

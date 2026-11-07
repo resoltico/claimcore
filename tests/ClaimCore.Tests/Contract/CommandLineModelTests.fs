@@ -35,7 +35,8 @@ let tests =
 
                 Expect.contains
                     CliIdentity.supportedExitCodes
-                    (OutcomePresentation.classifyExecute ExecuteResult.OutcomeUnknown).ExitCode
+                    (OutcomePresentation.classifyExecute PresentedExecuteResult.OutcomeUnknown)
+                        .ExitCode
                     "Unknown delivery is supported"
 
                 for code in [ ExitCode.Usage; ExitCode.InternalError; ExitCode.Cancelled ] do

@@ -49,6 +49,7 @@ const disclosedCurrent = {
 const preview = () =>
   response("operation.preview", "REVIEWED", {
     review: {
+      view: { kind: "RECORD" as const, sections: [] },
       presentation: {
         changes: [
           {
@@ -180,9 +181,7 @@ it.each(["access", "session"] as const)(
         name: "Recorded change",
       }),
     ).toBeVisible();
-    expect(
-      screen.getByText("The recorded fields are withheld under your current access rights."),
-    ).toBeVisible();
+    expect(screen.getByText("Details are not disclosed.")).toBeVisible();
     expect(document.body).not.toHaveTextContent(currentCanary);
     expect(document.body).not.toHaveTextContent(reviewCanary);
     expect(screen.queryByRole("alert")).toBeNull();

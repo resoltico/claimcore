@@ -33,6 +33,18 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "role",
+                "labelId": "field.role.label",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": []
           }
         }
       },
@@ -76,6 +88,25 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "recordedAt",
+                "labelId": "label.recordedAt",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "INSTANT",
+                  "value": "2026-01-01T00:00:00.000000Z"
+                }
+              ]
+            ]
           }
         }
       },
@@ -139,6 +170,46 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "actor",
+                "labelId": "field.profile.displayName.label",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "ACTOR",
+                  "value": {
+                    "actorId": "10000000-0000-7000-8000-000000000001",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "Synthetic person"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "DISABLED"
+                  }
+                }
+              ],
+              [
+                {
+                  "kind": "ACTOR",
+                  "value": {
+                    "actorId": "10000000-0000-7000-8000-000000000001",
+                    "displayName": {
+                      "kind": "ERASED"
+                    },
+                    "principalKind": "SERVICE",
+                    "availability": "DISABLED"
+                  }
+                }
+              ]
+            ]
           }
         }
       }
@@ -172,6 +243,25 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "firstSeen",
+                "labelId": "label.firstSeen",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "INSTANT",
+                  "value": "2026-11-04T00:00:00.000000Z"
+                }
+              ]
+            ]
           }
         }
       }
@@ -183,7 +273,11 @@
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
-          "data": null
+          "data": null,
+          "view": {
+            "kind": "RECORD",
+            "sections": []
+          }
         }
       }
     },
@@ -212,6 +306,33 @@
               }
             ],
             "nextCursor": null
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "actor",
+                "labelId": "field.profile.displayName.label",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "ACTOR",
+                  "value": {
+                    "actorId": "10000000-0000-7000-8000-000000000001",
+                    "displayName": {
+                      "kind": "NAMED",
+                      "value": "حساب متاح"
+                    },
+                    "principalKind": "HUMAN",
+                    "availability": "AVAILABLE"
+                  }
+                }
+              ]
+            ]
           }
         }
       }
@@ -428,6 +549,25 @@
                 }
               ]
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "caseReference",
+                    "labelId": "field.caseReference.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "REFERENCE",
+                      "value": "x"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       },
@@ -547,6 +687,37 @@
               "caseId": "20000000-0000-7000-8000-000000000001",
               "caseReference": "CASE-001"
             }
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "caseReference",
+                "labelId": "field.caseReference.label",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "REFERENCE",
+                  "value": "CASE-001"
+                }
+              ],
+              [
+                {
+                  "kind": "REFERENCE",
+                  "value": "CASE-002"
+                }
+              ],
+              [
+                {
+                  "kind": "REFERENCE",
+                  "value": "CASE-003"
+                }
+              ]
+            ]
           }
         }
       }
@@ -649,6 +820,10 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }
@@ -934,6 +1109,37 @@
               }
             ],
             "nextCursor": null
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "recordedAt",
+                "labelId": "label.recordedAt",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "INSTANT",
+                  "value": "2026-01-01T12:00:00.000000Z"
+                }
+              ],
+              [
+                {
+                  "kind": "INSTANT",
+                  "value": "2026-01-01T12:00:00.000000Z"
+                }
+              ],
+              [
+                {
+                  "kind": "INSTANT",
+                  "value": "2026-01-01T12:00:00.000000Z"
+                }
+              ]
+            ]
           }
         }
       },
@@ -1019,6 +1225,10 @@
                 }
               ]
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }
@@ -1086,6 +1296,25 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       },
@@ -1156,6 +1385,25 @@
               }
             },
             "byRequester": true
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         },
         "operationId": "10000000-0000-7000-8000-000000000001"
@@ -1375,6 +1623,10 @@
                     "labelId": "input.lifecycle.label"
                   }
                 ]
+              },
+              "view": {
+                "kind": "RECORD",
+                "sections": []
               }
             }
           }
@@ -1423,6 +1675,25 @@
               "active": true,
               "timing": "UPCOMING"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "action",
+                    "labelId": "field.reminderAction.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "TEXT",
+                      "value": "Contact insurer"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       }
@@ -1521,6 +1792,37 @@
               }
             ],
             "nextCursor": null
+          },
+          "view": {
+            "kind": "TABLE",
+            "columns": [
+              {
+                "key": "action",
+                "labelId": "field.reminderAction.label",
+                "prominence": "PRIMARY",
+                "isMoney": false
+              }
+            ],
+            "rows": [
+              [
+                {
+                  "kind": "TEXT",
+                  "value": "Contact insurer"
+                }
+              ],
+              [
+                {
+                  "kind": "TEXT",
+                  "value": "Contact insurer"
+                }
+              ],
+              [
+                {
+                  "kind": "TEXT",
+                  "value": "Contact insurer"
+                }
+              ]
+            ]
           }
         }
       }
@@ -1535,6 +1837,10 @@
             "authenticated": false,
             "contractIdentity": "0000000000000000000000000000000000000000000000000000000000000000",
             "antiforgeryToken": "x"
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       },
@@ -1546,7 +1852,11 @@
       "value": {
         "outcome": {
           "kind": "SUCCEEDED",
-          "data": null
+          "data": null,
+          "view": {
+            "kind": "RECORD",
+            "sections": []
+          }
         }
       },
       "valid": true
@@ -1641,6 +1951,10 @@
                 "count": 6
               }
             ]
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }
@@ -1696,6 +2010,25 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       },
@@ -1752,6 +2085,25 @@
               "businessDate": "2026-11-02",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       }
@@ -1808,6 +2160,25 @@
               "businessDate": "2026-11-02",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       }
@@ -2007,6 +2378,10 @@
                   }
                 ],
                 "unchanged": []
+              },
+              "view": {
+                "kind": "RECORD",
+                "sections": []
               }
             }
           }
@@ -2118,6 +2493,10 @@
                   }
                 ],
                 "unchanged": []
+              },
+              "view": {
+                "kind": "RECORD",
+                "sections": []
               }
             }
           }
@@ -2241,6 +2620,10 @@
                   }
                 ],
                 "unchanged": []
+              },
+              "view": {
+                "kind": "RECORD",
+                "sections": []
               }
             }
           }
@@ -2298,6 +2681,25 @@
               "businessDate": "2026-01-01",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       },
@@ -2429,6 +2831,25 @@
               }
             },
             "byRequester": true
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": [
+              {
+                "titleId": "label.recordDetails",
+                "entries": [
+                  {
+                    "key": "operationId",
+                    "labelId": "field.operationId.label",
+                    "prominence": "PRIMARY",
+                    "value": {
+                      "kind": "IDENTIFIER",
+                      "value": "10000000-0000-7000-8000-000000000001"
+                    }
+                  }
+                ]
+              }
+            ]
           }
         }
       }

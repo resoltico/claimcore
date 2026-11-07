@@ -113,7 +113,10 @@ let private reminderRevisionAdmission () =
             Api.operationExecute.Output
             {
                 OperationId = operationId
-                Outcome = ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable)
+                Outcome =
+                    PresentedExecuteResult.Rejected(
+                        Refusal.Access AccessRefusal.ResourceUnavailable
+                    )
             }
 
     let mutable exchanges = 0
@@ -210,8 +213,8 @@ let private reminderRevisionAdmission () =
 
 let private pageBounds () =
     let directory =
-        match ResponseExamples.defaultReply Api.authorityGrants with
-        | Outcome.Succeeded page -> page
+        match (ResponseExamples.defaultReply Api.authorityGrants) with
+        | Outcome.Succeeded page -> page.Data
         | _ -> failtest "Successful directory input"
 
     let timeline =
@@ -229,36 +232,45 @@ let private pageBounds () =
             "authority.list",
             Codec.encode
                 Api.authorityList.Output
-                (Outcome.Succeeded
-                    {
-                        ActorReviewPage.Basis = Inputs.workBasis
-                        Items = [ directory.Actor ]
-                        NextCursor = None
-                    })
+                (Presented.outcome
+                    (fun (page: ActorReviewPage) ->
+                        Descriptor.tableView Descriptor.actorColumns page.Items)
+                    (Outcome.Succeeded
+                        {
+                            ActorReviewPage.Basis = Inputs.workBasis
+                            Items = [ directory.Actor ]
+                            NextCursor = None
+                        }))
             "authority.grants",
             Codec.encode
                 Api.authorityGrants.Output
-                (Outcome.Succeeded
-                    { directory with
-                        Items =
-                            [
-                                {
-                                    Role = Role.CaseReader
-                                    Scope = GrantScope.Installation
-                                }
-                            ]
-                    })
+                (Presented.outcome
+                    (fun (page: AuthorityGrantPage) ->
+                        Descriptor.tableView Descriptor.grantColumns page.Items)
+                    (Outcome.Succeeded
+                        { directory with
+                            Items =
+                                [
+                                    {
+                                        Role = Role.CaseReader
+                                        Scope = GrantScope.Installation
+                                    }
+                                ]
+                        }))
             "case.timeline",
             Codec.encode
                 Api.caseTimeline.Output
-                (Outcome.Succeeded
-                    {
-                        CaseTimelinePage.Basis = Inputs.workBasis
-                        CaseId = ResponseExamples.snapshot.CaseId
-                        Reference = ResponseExamples.snapshot.Reference
-                        Items = [ timeline ]
-                        NextCursor = None
-                    })
+                (Presented.outcome
+                    (fun (page: CaseTimelinePage) ->
+                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                    (Outcome.Succeeded
+                        {
+                            CaseTimelinePage.Basis = Inputs.workBasis
+                            CaseId = ResponseExamples.snapshot.CaseId
+                            Reference = ResponseExamples.snapshot.Reference
+                            Items = [ timeline ]
+                            NextCursor = None
+                        }))
         ]
 
     for endpoint, baseline in pages do

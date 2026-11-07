@@ -28,7 +28,13 @@ vi.mock("../../src/hooks/useEndpoint", () => ({
     value:
       endpoint !== "context" || audit.context === null
         ? null
-        : { outcome: { kind: "SUCCEEDED", data: { requester: audit.context } } },
+        : {
+            outcome: {
+              view: { kind: "RECORD" as const, sections: [] },
+              kind: "SUCCEEDED",
+              data: { requester: audit.context },
+            },
+          },
   }),
 }));
 vi.mock("../../src/views/RoutedContent", () => ({
@@ -63,7 +69,11 @@ const start = async () => {
   if (example.outcome.kind !== "ACCEPTED" || example.outcome.data.subject.kind !== "CASE") {
     throw new Error("Need the independent accepted-case corpus");
   }
-  audit.receipt = { ...example.outcome.data, subject: example.outcome.data.subject };
+  audit.receipt = {
+    ...example.outcome.data,
+    subject: example.outcome.data.subject,
+    view: example.outcome.view,
+  };
   audit.context = {
     ...baseContext,
     actorId: audit.receipt.recordedBy.actorId,

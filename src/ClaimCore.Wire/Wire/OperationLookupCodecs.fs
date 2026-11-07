@@ -25,24 +25,36 @@ module OperationLookupCodecs =
                 [
                     variant
                         "ACCEPTED"
-                        (OperationLookupResult.Accepted >> Outcome.Succeeded)
+                        (PresentedLookupResult.Accepted >> Outcome.Succeeded)
                         (function
-                        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, byRequester)) ->
+                        | Outcome.Succeeded(PresentedLookupResult.Accepted(receipt, byRequester)) ->
                             Some(receipt, byRequester)
                         | _ -> None)
-                        (data accepted)
+                        (record (fun data view ->
+                            let receipt, byRequester = data in
+
+                            {
+                                Presented.Data = receipt
+                                View = view
+                            },
+                            byRequester)
+                         |> field
+                             "data"
+                             (fun (receipt, byRequester) -> receipt.Data, byRequester)
+                             accepted
+                         |> field "view" (fun (receipt, _) -> receipt.View) PresentationCodecs.view)
                     variant
                         "PENDING"
-                        (OperationLookupResult.Pending >> Outcome.Succeeded)
+                        (PresentedLookupResult.Pending >> Outcome.Succeeded)
                         (function
-                        | Outcome.Succeeded(OperationLookupResult.Pending finalAt) -> Some finalAt
+                        | Outcome.Succeeded(PresentedLookupResult.Pending finalAt) -> Some finalAt
                         | _ -> None)
                         (data pending)
                     variant
                         "NOT_ACCEPTED"
-                        (fun () -> Outcome.Succeeded OperationLookupResult.NotAccepted)
+                        (fun () -> Outcome.Succeeded PresentedLookupResult.NotAccepted)
                         (function
-                        | Outcome.Succeeded OperationLookupResult.NotAccepted -> Some()
+                        | Outcome.Succeeded PresentedLookupResult.NotAccepted -> Some()
                         | _ -> None)
                         (data nullValue)
                     variant

@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { workBasis } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { expect, it } from "vitest";
@@ -11,10 +12,13 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, exactReference: null, offers: [], items: [], nextCursor: null },
-      },
+      outcome: presentedOutcome("case.list", "SUCCEEDED", {
+        basis: workBasis,
+        exactReference: null,
+        offers: [],
+        items: [],
+        nextCursor: null,
+      }),
     },
   });
   const actor = {
@@ -37,17 +41,23 @@ it("focuses the selected person dialog and restores its originating control on r
     kind: "outcome",
     status: 200,
     value: {
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [actor], nextCursor: null } },
+      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [actor],
+        nextCursor: null,
+      }),
     },
   });
   mockEndpoint("authority.grants").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, actor, items: [], nextCursor: null },
-      },
+      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+        basis: workBasis,
+        actor,
+        items: [],
+        nextCursor: null,
+      }),
     },
   });
   const user = userEvent.setup();

@@ -55,3 +55,10 @@ module Route =
                                     }
                         })
         }
+
+    let read endpoint describe invoke =
+        bind endpoint (fun context input token ->
+            task {
+                let! outcome = invoke context input token
+                return Presented.outcome describe outcome
+            })

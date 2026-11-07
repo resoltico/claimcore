@@ -154,7 +154,7 @@ let private cancellationPolicy () =
         | ExecuteResult.Accepted _ -> ()
         | _ -> failtest "An admitted mutation completes with the noncancelled dispatch token."
 
-        Api.operationExecute.Output.Write execute
+        Api.operationExecute.Output.Write(PresentedExecuteReply.ofCore execute)
         |> Api.admitOutput (Api.tryFind "operation.execute" |> Option.get)
         |> admitted
         |> ignore

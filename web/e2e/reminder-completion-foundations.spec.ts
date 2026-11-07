@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../tests/support/read-view.fixtures";
 import { writeFile } from "node:fs/promises";
 import { expect, test } from "@playwright/test";
 import { captureCheckpoint, observe, seed } from "./presentation-probe";
@@ -113,24 +114,21 @@ for (const language of ["en", "lv", "ar"] as const) {
         await page.route("**/api/context", (route) =>
           route.fulfill({
             json: {
-              outcome: {
-                kind: "SUCCEEDED",
-                data: {
-                  requester: actorContextInput({
-                    productVersion: "synthetic-presentation",
-                    ...basis,
-                    capabilities: [
-                      "READ_CASE",
-                      "READ_HISTORY",
-                      "MANAGE_CASE_WORK",
-                      "CLOSE",
-                      "STEWARD",
-                    ],
-                    views: ["CASES", "OPERATIONS"],
-                    offers: [],
-                  }),
-                },
-              },
+              outcome: presentedOutcome("context", "SUCCEEDED", {
+                requester: actorContextInput({
+                  productVersion: "synthetic-presentation",
+                  ...basis,
+                  capabilities: [
+                    "READ_CASE",
+                    "READ_HISTORY",
+                    "MANAGE_CASE_WORK",
+                    "CLOSE",
+                    "STEWARD",
+                  ],
+                  views: ["CASES", "OPERATIONS"],
+                  offers: [],
+                }),
+              }),
             },
           }),
         );
@@ -149,17 +147,30 @@ for (const language of ["en", "lv", "ar"] as const) {
           },
         };
         await page.route("**/api/case.get", (route) =>
-          route.fulfill({ json: { outcome: { kind: "SUCCEEDED", data: view } } }),
+          route.fulfill({
+            json: {
+              outcome: presentedOutcome("case.get", "SUCCEEDED", view),
+            },
+          }),
         );
         await page.route("**/api/case.timeline", (route) =>
           route.fulfill({
-            json: { outcome: { kind: "SUCCEEDED", data: { ...timelinePage([]), basis } } },
+            json: {
+              outcome: presentedOutcome("case.timeline", "SUCCEEDED", {
+                ...timelinePage([]),
+                basis,
+              }),
+            },
           }),
         );
         await page.route("**/api/reminder.list", (route) =>
           route.fulfill({
             json: {
-              outcome: { kind: "SUCCEEDED", data: { basis, items: rows, nextCursor: null } },
+              outcome: presentedOutcome("reminder.list", "SUCCEEDED", {
+                basis,
+                items: rows,
+                nextCursor: null,
+              }),
             },
           }),
         );
@@ -192,6 +203,7 @@ for (const language of ["en", "lv", "ar"] as const) {
               kind: "REVIEWED",
               data: {
                 review: {
+                  view: { kind: "RECORD" as const, sections: [] },
                   presentation: {
                     changes: [
                       {
@@ -242,7 +254,7 @@ for (const language of ["en", "lv", "ar"] as const) {
         if (mobile) {
           await expect(page.locator(".case-action-bar")).toBeVisible();
           await expect(page.locator(".workspace-mobile-tabs")).toBeHidden();
-          const last = page.locator("[data-record-details] > summary");
+          const last = page.locator(".case-workspace .record-view button").last();
           await last.focus();
           await expect
             .poll(async () => {

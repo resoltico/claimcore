@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -6,7 +7,7 @@ import {
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { timelinePage } from "../support/timeline.fixtures";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
-import { workBasis, actorContextInput } from "../support/inputs";
+import { caseViewInput, workBasis, actorContextInput } from "../support/inputs";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
@@ -51,10 +52,9 @@ const contextFor = (
       : []),
   ];
   return outcome({
-    outcome: {
-      kind: "SUCCEEDED",
-      data: { requester: actorContextInput({ ...source, views, capabilities, offers }) },
-    },
+    outcome: presentedOutcome("context", "SUCCEEDED", {
+      requester: actorContextInput({ ...source, views, capabilities, offers }),
+    }),
   });
 };
 const deferred = <T,>() => {
@@ -86,10 +86,13 @@ const beginUnknownAuthority = async (user: ReturnType<typeof userEvent.setup>) =
 const authorityReads = () => {
   mockEndpoint("case.list").mockResolvedValue(
     outcome({
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, exactReference: null, offers: [], items: [], nextCursor: null },
-      },
+      outcome: presentedOutcome("case.list", "SUCCEEDED", {
+        basis: workBasis,
+        exactReference: null,
+        offers: [],
+        items: [],
+        nextCursor: null,
+      }),
     }),
   );
   const actor = {
@@ -111,10 +114,11 @@ const authorityReads = () => {
   mockEndpoint("authority.list")
     .mockResolvedValueOnce(
       outcome({
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis: workBasis, items: [actor], nextCursor: null },
-        },
+        outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+          basis: workBasis,
+          items: [actor],
+          nextCursor: null,
+        }),
       }),
     )
     .mockResolvedValue(outcome({ outcome: unavailable }));
@@ -188,14 +192,15 @@ it("keeps the requested case route while an actual read refusal removes every cu
     },
   };
   const caseRead = mockEndpoint("case.get")
-    .mockResolvedValueOnce(outcome({ outcome: { kind: "SUCCEEDED", data: visible } }))
+    .mockResolvedValueOnce(
+      outcome({
+        outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(visible)),
+      }),
+    )
     .mockResolvedValue(outcome({ outcome: unavailable }));
   mockEndpoint("case.timeline").mockResolvedValue(
     outcome({
-      outcome: {
-        kind: "SUCCEEDED",
-        data: timelinePage(),
-      },
+      outcome: presentedOutcome("case.timeline", "SUCCEEDED", timelinePage()),
     }),
   );
   navigate(referencePath(current.caseReference));
@@ -223,7 +228,7 @@ it("keeps the requested case route while an actual read refusal removes every cu
   });
   expect(screen.getByRole("heading", { name: "Case detail", level: 1 })).toBeVisible();
   expect(document.body).not.toHaveTextContent("CURRENT_FACT_CANARY");
-  expect(document.querySelector(".case-fields")).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
 });
 
 it.each(["NO_ROLES", "DISABLED"] as const)(
@@ -251,7 +256,9 @@ it.each(["NO_ROLES", "DISABLED"] as const)(
     mockEndpoint("context")
       .mockResolvedValueOnce(active)
       .mockResolvedValueOnce(
-        outcome({ outcome: { kind: "SUCCEEDED", data: { requester: inactive } } }),
+        outcome({
+          outcome: presentedOutcome("context", "SUCCEEDED", { requester: inactive }),
+        }),
       )
       .mockResolvedValue(active);
     authorityReads();
@@ -323,7 +330,11 @@ it.each(["actor", "installation"] as const)(
     };
     mockEndpoint("context")
       .mockResolvedValueOnce(active)
-      .mockResolvedValueOnce(outcome({ outcome: { kind: "SUCCEEDED", data: { requester } } }))
+      .mockResolvedValueOnce(
+        outcome({
+          outcome: presentedOutcome("context", "SUCCEEDED", { requester }),
+        }),
+      )
       .mockResolvedValue(active);
     authorityReads();
     authorityPreview();

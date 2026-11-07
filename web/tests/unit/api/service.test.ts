@@ -72,7 +72,10 @@ afterEach(() => {
   vi.useRealTimers();
 });
 it("checks the typed execute operation echo before accepting delivery", async () => {
-  const matching = { operationId: operation, outcome: { kind: "ACCEPTED", data: receipt } };
+  const matching = {
+    operationId: operation,
+    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "ACCEPTED", data: receipt },
+  };
   vi.stubGlobal("fetch", vi.fn().mockResolvedValueOnce(reply(matching)));
   expect((await service.execute(prepared(), "csrf", installation)).kind).toBe("outcome");
   vi.mocked(fetch).mockResolvedValueOnce(
@@ -86,7 +89,11 @@ it("lookup keeps its installation binding and rejects an operation echo mismatch
   vi.stubGlobal("fetch", vi.fn());
   for (const outcome of [
     { kind: "NOT_ACCEPTED", data: null },
-    { kind: "ACCEPTED", data: { receipt, byRequester: true } },
+    {
+      view: { kind: "RECORD" as const, sections: [] },
+      kind: "ACCEPTED",
+      data: { receipt, byRequester: true },
+    },
   ]) {
     vi.mocked(fetch).mockResolvedValueOnce(reply({ operationId: operation, outcome }));
     const matching = await service.operationGet(operation, "csrf", installation);

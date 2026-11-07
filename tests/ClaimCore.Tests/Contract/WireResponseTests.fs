@@ -203,7 +203,9 @@ let private frames () =
             Delivery = DeliveryState.Delivered
             Result =
                 FrameResult.Reply(
-                    ClaimCore.Tests.CliReplies.ofValue Api.logout (Outcome.Succeeded())
+                    ClaimCore.Tests.CliReplies.ofValue
+                        Api.logout
+                        (Outcome.Succeeded(Presented.create (fun () -> Descriptor.recordView []) ()))
                 )
         }
 

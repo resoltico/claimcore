@@ -1,52 +1,34 @@
 import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
-import { ReceiptFields } from "../../src/components/ReceiptFields";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { wireReply, authorityReceipt } from "../support/reply.fixtures";
-import { definition, response } from "../support/service-ui.fixtures";
-it.each([
-  ["WITHHELD", "The recorded fields are withheld under your current access rights."],
-  ["ERASED", "Erased — only the case reference and revision remain."],
-] as const)("presents %s distinctly without recorded fields", (tag, message) => {
-  const source = wireReply("operation.execute").outcome;
-  if (source.kind !== "ACCEPTED" || source.data.subject.kind !== "CASE") {
-    throw new Error("Case receipt fixture absent.");
-  }
-  const view = render(
-    <ReceiptFields
-      subject={{
-        ...source.data.subject,
-        snapshot: {
-          kind: tag,
-        },
-      }}
-      fields={definition.catalog.fields}
-      context="Synthetic receipt"
-    />,
-  );
-  expect(screen.getByText(message)).toBeVisible();
-  expect(view.container.querySelector(".case-fields")).toBeNull();
-});
-it("observes authority receipts as attributed metadata without assuming a case snapshot", async () => {
-  const source = {
-    kind: "ACCEPTED",
-    data: { receipt: authorityReceipt(), byRequester: true },
-  } as const;
-  if (source.kind !== "ACCEPTED" || source.data.receipt.subject.kind !== "AUTHORITY") {
-    throw new Error("Authority receipt fixture absent.");
-  }
+import { authorityReceipt } from "../support/reply.fixtures";
+import { definition } from "../support/service-ui.fixtures";
+import { transportResponse } from "../support/transport-response.fixtures";
+
+it("renders the supplied receipt view without assuming a case snapshot", async () => {
+  const receipt = authorityReceipt();
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValueOnce(response("operation.get", "ACCEPTED", source.data)),
+    vi.fn().mockImplementation(() =>
+      transportResponse("operation.get", "ACCEPTED", { receipt, byRequester: true }, 200, {
+        kind: "RECORD",
+        sections: [
+          {
+            titleId: "label.recordDetails",
+            entries: [
+              {
+                key: "future-actor",
+                labelId: "label.recordedBy",
+                prominence: "PRIMARY",
+                value: { kind: "ACTOR", value: receipt.recordedBy },
+              },
+            ],
+          },
+        ],
+      }),
+    ),
   );
-  render(
-    <OperationLookup
-      definition={definition}
-      initialOperationId={source.data.receipt.operationId}
-    />,
-  );
-  expect(
-    await screen.findByText(/Authority act Provision owner for actor Synthetic target/u),
-  ).toBeVisible();
-  expect(document.querySelector(".case-fields")).toBeNull();
+  render(<OperationLookup definition={definition} initialOperationId={receipt.operationId} />);
+  expect(await screen.findByText("Synthetic recorder")).toBeVisible();
+  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
 });

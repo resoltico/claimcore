@@ -48,12 +48,17 @@ module HostRoutes =
                 return
                     Endpoint.reply
                         Api.session
-                        (Outcome.Succeeded
-                            {
-                                Authenticated = authenticated
-                                ContractIdentity = ContractIdentity.value
-                                AntiforgeryToken = token
-                            })
+                        (Outcome.Succeeded(
+                            Presented.create
+                                (fun reply ->
+                                    Descriptor.session reply.Authenticated reply.ContractIdentity
+                                    |> Descriptor.recordView)
+                                {
+                                    Authenticated = authenticated
+                                    ContractIdentity = ContractIdentity.value
+                                    AntiforgeryToken = token
+                                }
+                        ))
                     |> fun reply -> RouteSupport.reply reply context
         }
 
@@ -87,7 +92,14 @@ module HostRoutes =
                                 context.User <- ClaimsPrincipal(ClaimsIdentity())
 
                                 return
-                                    Endpoint.reply Api.logout (Outcome.Succeeded())
+                                    Endpoint.reply
+                                        Api.logout
+                                        (Outcome.Succeeded(
+                                            Presented.create
+                                                (fun () ->
+                                                    Descriptor.logout () |> Descriptor.recordView)
+                                                ()
+                                        ))
                                     |> fun reply -> RouteSupport.reply reply context
                 | _ -> return RouteSupport.hostFailure context HostFailureReason.SessionRejected
         }

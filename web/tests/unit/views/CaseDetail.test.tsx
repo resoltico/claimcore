@@ -37,7 +37,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
   );
   expect(await screen.findByText(/Erased — only/u)).toBeVisible();
   expect(document.body).toHaveTextContent("ERASED-1");
-  expect(document.querySelector(".case-fields")).toBeNull();
+  expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
   expect(screen.queryByText("Available acts")).toBeNull();
 });
 
@@ -68,6 +68,6 @@ it("shows Core-offered alternatives when an unavailable act has no recommendatio
   expect(callout).toHaveTextContent("Case state: Closed");
   expect(within(callout).getByRole("button", { name: /Correct case facts/u })).toBeVisible();
   await user.click(within(callout).getByRole("button", { name: /Reopen/u }));
-  expect(onAct).toHaveBeenCalledWith(current, "REOPEN");
+  expect(onAct).toHaveBeenCalledWith(expect.objectContaining(current), "REOPEN");
   expect(callout.querySelector(".primary")).toBeNull();
 });

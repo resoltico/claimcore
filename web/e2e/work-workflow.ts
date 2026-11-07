@@ -51,7 +51,7 @@ export const reviewReminderCompletion = async (
     );
     const circle = row.getByRole("button", {
       name: ui(await languageOf(page), "act.REMINDER_COMPLETE.label"),
-      exact: true,
+      exact: false,
     });
     const originId = await circle.getAttribute("id");
     await circle.click();
@@ -93,11 +93,11 @@ export const selectReminderAction = async (
   const language = await languageOf(page);
   const trigger = row.getByRole("button", {
     name: ui(language, "label.availableActs"),
-    exact: true,
+    exact: false,
   });
   await settlePopupTriggerScroll(trigger);
   await trigger.click();
-  const menu = page.getByRole("menu", { name: ui(language, "label.availableActs"), exact: true });
+  const menu = page.getByRole("menu", { name: ui(language, "label.availableActs"), exact: false });
   await expect(menu).toHaveCount(1);
   await expect(menu).toBeVisible();
   await menu
@@ -219,8 +219,8 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
       expect(fresh.outcome.data.item.reminder.revision).toBe(version.revision);
     }
   }
-  await expect(current.locator(".case-responsible")).toBeVisible();
-  await expect(current.locator(".case-handling-summary")).toBeVisible();
+  await expect(current.locator(".record-view [data-entry='responsible']")).toBeVisible();
+  await expect(current.locator(".record-view [data-entry='handlingSummary']")).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
   return receipt;

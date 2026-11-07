@@ -53,7 +53,9 @@ it("requests one unfiltered timeline, shows names and core differences, and rese
     filter: "WORK",
   });
   await waitFor(() => {
-    expect(view.container.querySelectorAll(".case-timeline > li")).toHaveLength(1);
+    expect(
+      view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+    ).toHaveLength(1);
   });
 });
 it("follows only the issued cursor, clears refused continuations and retries without a cursor", async () => {
@@ -81,13 +83,15 @@ it("follows only the issued cursor, clears refused continuations and retries wit
     limit: 50,
     cursor: "issued",
   });
-  expect(view.container.querySelectorAll(".case-timeline > li")).toHaveLength(0);
+  expect(
+    view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+  ).toHaveLength(0);
   expect(refused).not.toHaveBeenCalled();
   await user.click(screen.getByRole("button", { name: "Try again" }));
   await screen.findByText("Timeline recorder");
   expect(JSON.parse(requestText(fetch.mock.calls[2]?.[1]?.body))).toEqual({ target, limit: 50 });
 });
-it("shows page-boundary differences immediately and appends work entries in core order", async () => {
+it("uses the supplied event table and appends pages in core order", async () => {
   const first = timelineEntry({
     revision: 2,
     changes: {
@@ -129,17 +133,19 @@ it("shows page-boundary differences immediately and appends work entries in core
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
-  await waitFor(() => {
-    expect(view.container.querySelector(".timeline-changes-compact")).toHaveTextContent(
-      "Core after",
-    );
-  });
+  await screen.findByText("Timeline recorder");
+  expect(view.container).not.toHaveTextContent("Core before");
+  expect(view.container).not.toHaveTextContent("Core after");
   expect(fetch).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "Load 50 more" }));
   await waitFor(() => {
-    expect(view.container.querySelectorAll(".case-timeline > li")).toHaveLength(2);
+    expect(
+      view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),
+    ).toHaveLength(2);
   });
-  expect(view.container.querySelector(".case-timeline > li")).toHaveTextContent("Core after");
+  const rows = view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr");
+  expect(rows[0]).toHaveTextContent("Open a case");
+  expect(rows[1]).toHaveTextContent("Update case work");
 });
 
 it("renders only Core-selected highlights while keeping every exact difference in details", async () => {
@@ -298,7 +304,7 @@ it.each([
   { kind: "REFERENCE", caseReference: "CASE-1" },
   { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
 ] as const)(
-  "retains the same expanded row for equivalent $kind selectors and reloads changed selectors",
+  "retains the same supplied row for equivalent $kind selectors and reloads changed selectors",
   async (selector) => {
     const next = {
       release: (): void => {
@@ -327,15 +333,12 @@ it.each([
     vi.stubGlobal("fetch", fetch);
     const view = render(<CaseTimeline target={selector} />);
     await screen.findByText("Timeline recorder");
-    const original = view.container.querySelector("details")!;
-    await userEvent.setup().click(original.querySelector("summary")!);
-    expect(original).toHaveAttribute("open");
+    const original = view.container.querySelector(".table-view tbody tr")!;
     await act(async () => {
       view.rerender(<CaseTimeline target={{ ...selector }} />);
       await Promise.resolve();
     });
-    expect(view.container.querySelector("details")).toBe(original);
-    expect(original).toHaveAttribute("open");
+    expect(view.container.querySelector(".table-view tbody tr")).toBe(original);
     expect(fetch).toHaveBeenCalledTimes(1);
 
     const changed =
@@ -357,7 +360,6 @@ it.each([
       await Promise.resolve();
     });
     await screen.findByText("Timeline recorder");
-    expect(view.container.querySelector("details")).not.toBe(original);
-    expect(view.container.querySelector("details")).not.toHaveAttribute("open");
+    expect(view.container.querySelector(".table-view tbody tr")).not.toBe(original);
   },
 );

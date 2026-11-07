@@ -8,7 +8,7 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Presentation
 
-module internal CaseListRows =
+module internal CaseCsv =
     [<NoEquality; NoComparison>]
     type private CsvColumn =
         {
@@ -64,7 +64,7 @@ module internal CaseListRows =
                 row.NextAction |> Option.map (fun next -> CaseDue.token next.DueState))
             column "pendingReminders" (fun row ->
                 Some(row.PendingReminders.ToString(CultureInfo.InvariantCulture)))
-            column "changedAt" (fun row -> Some(TextReplyFormat.instant row.ChangedAt))
+            column "changedAt" (fun row -> Some(ReplyTextFormat.instant row.ChangedAt))
             {
                 Key = "basis.businessDate"
                 Value =
@@ -90,15 +90,3 @@ module internal CaseListRows =
             |> List.map (fun column -> column.Value basis row |> Option.defaultValue "")
             |> csv)
         |> Array.concat
-
-    let textHeaderWith options language =
-        TextTable.header language options Descriptor.caseSummaryColumns
-
-    let textRowsWith options language rows =
-        TextTable.rows language options Descriptor.caseSummaryColumns rows
-
-    let textHeader language =
-        textHeaderWith (TextTable.environment ()) language
-
-    let textRows language rows =
-        textRowsWith (TextTable.environment ()) language rows

@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -6,7 +7,7 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { service, type ServiceResponse } from "../../src/api/service";
 import type { ReminderReadModel } from "@contracts/client";
 import { current } from "../support/presentation-state.fixtures";
-import { workBasis, actorRefInput } from "../support/inputs";
+import { caseViewInput, workBasis, actorRefInput } from "../support/inputs";
 import { runtime } from "../support/service-ui.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 const row: ReminderReadModel = {
@@ -31,13 +32,19 @@ const setup = () => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [row], nextCursor: null } },
+      outcome: presentedOutcome("reminder.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [row],
+        nextCursor: null,
+      }),
     },
   });
   const read = mockEndpoint("case.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: { outcome: { kind: "SUCCEEDED", data: current } },
+    value: {
+      outcome: presentedOutcome("case.get", "SUCCEEDED", caseViewInput(current)),
+    },
   });
   const preview = vi.spyOn(service, "preview").mockImplementation((prepared) =>
     Promise.resolve({
@@ -49,6 +56,7 @@ const setup = () => {
           kind: "REVIEWED",
           data: {
             review: {
+              view: { kind: "RECORD" as const, sections: [] },
               presentation: {
                 changes: [
                   {
@@ -86,30 +94,27 @@ const setup = () => {
       status: 200,
       value: {
         operationId: prepared.input.operationId,
-        outcome: {
-          kind: "ACCEPTED",
-          data: {
-            operationId: prepared.input.operationId,
-            position: { sequence: 4, entryHash: "a".repeat(64) },
-            recordedAt: workBasis.observedAt,
-            recordedBy: actorRefInput(),
-            basis: workBasis,
-            subject: {
-              kind: "REMINDER",
-              caseId: current.caseId,
-              caseReference: current.caseReference,
-              act: "COMPLETE",
-              effects: {
-                kind: "SINGLE",
-                reminder: {
-                  reminderId: completed.reminderId,
-                  revision: 4,
-                  snapshot: { kind: "DISCLOSED", view: completed },
-                },
+        outcome: presentedOutcome("operation.execute", "ACCEPTED", {
+          operationId: prepared.input.operationId,
+          position: { sequence: 4, entryHash: "a".repeat(64) },
+          recordedAt: workBasis.observedAt,
+          recordedBy: actorRefInput(),
+          basis: workBasis,
+          subject: {
+            kind: "REMINDER",
+            caseId: current.caseId,
+            caseReference: current.caseReference,
+            act: "COMPLETE",
+            effects: {
+              kind: "SINGLE",
+              reminder: {
+                reminderId: completed.reminderId,
+                revision: 4,
+                snapshot: { kind: "DISCLOSED", view: completed },
               },
             },
           },
-        },
+        }),
       } satisfies ServiceResponse<"operation.execute">,
     }),
   );
@@ -122,7 +127,7 @@ const setup = () => {
 it("opens a compact completion preview from an explicit row action and writes only after confirmation", async () => {
   const { read, preview, execute } = setup();
   const user = userEvent.setup();
-  const complete = await screen.findByRole("button", { name: "Complete reminder" });
+  const complete = await screen.findByRole("button", { name: /^Complete reminder/u });
   expect(read).not.toHaveBeenCalled();
   expect(preview).not.toHaveBeenCalled();
   expect(execute).not.toHaveBeenCalled();
@@ -181,7 +186,7 @@ it("keeps the selected frozen completion after a refusal and masks queue facts t
       }),
     );
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Complete reminder" }));
+  await user.click(await screen.findByRole("button", { name: /^Complete reminder/u }));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
   await user.click(await screen.findByRole("button", { name: "Send again" }));

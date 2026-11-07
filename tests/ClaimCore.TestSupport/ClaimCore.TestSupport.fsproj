@@ -38,7 +38,6 @@
     <Compile Include="TestServerFixture.fs" />
     <Compile Include="MetricObservations.fs" />
     <Compile Include="MetricsAcceptance.fs" />
-    <Compile Include="TestGuards.fs" />
   </ItemGroup>
   <ItemGroup>
     <FrameworkReference Include="Microsoft.AspNetCore.App" />

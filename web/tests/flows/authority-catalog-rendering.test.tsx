@@ -58,6 +58,7 @@ const AuthorityBinding = () => {
 const contextReply = (): Response =>
   response("context", {
     outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
       kind: "SUCCEEDED",
       data: {
         requester: actorContextInput({
@@ -92,6 +93,7 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
       return Promise.resolve(
         response("authority.list", {
           outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
             kind: "SUCCEEDED",
             data: { basis: workBasis, items: [], nextCursor: null },
           },
@@ -121,6 +123,7 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
       response("operation.execute", {
         operationId: parsed.operationId,
         outcome: {
+          view: { kind: "RECORD" as const, sections: [] },
           kind: "ACCEPTED",
           data: authorityReceipt(parsed),
         },

@@ -27,25 +27,37 @@ module internal CaseListCommand =
         | FrameResult.Reply _ -> invalidOp "A case page must retain its requested endpoint."
         | _ -> None
 
-    let private header options (io: ReadPageIO) (prepared: PreparedVerb) =
+    let private header (io: ReadPageIO) (prepared: PreparedVerb) =
         match prepared.Format with
-        | VerbFormat.Csv -> io.Output CaseListRows.csvHeader
-        | VerbFormat.Text ->
-            io.Output(text [ CaseListRows.textHeaderWith options prepared.Language ])
+        | VerbFormat.Csv -> io.Output CaseCsv.csvHeader
+        | VerbFormat.Text -> ()
         | VerbFormat.Json -> ()
 
     let private rows
+        includeHeader
         options
         (io: ReadPageIO)
         (prepared: PreparedVerb)
         frame
         response
-        (page: CaseSummaryPage)
+        (presented: Presented<CaseSummaryPage>)
         =
+        let page = presented.Data
+
         match prepared.Format with
-        | VerbFormat.Csv -> io.Output(CaseListRows.csvRows page.Basis page.Items)
+        | VerbFormat.Csv -> io.Output(CaseCsv.csvRows page.Basis page.Items)
         | VerbFormat.Text ->
-            io.Output(text (CaseListRows.textRowsWith options prepared.Language page.Items))
+            io.Output(
+                text (
+                    (if includeHeader then
+                         ViewText.renderWith
+                     else
+                         ViewText.renderRowsWith)
+                        options
+                        prepared.Language
+                        presented.View
+                )
+            )
 
             io.Output(
                 text (
@@ -61,7 +73,7 @@ module internal CaseListCommand =
 
     let private failure (io: ReadPageIO) (prepared: PreparedVerb) cursor frame response =
         if prepared.Format = VerbFormat.Csv then
-            io.Errors(TextReply.bytesFor prepared.Language (Some frame) response.Frame)
+            io.Errors(ReplyText.bytesFor prepared.Language (Some frame) response.Frame)
         else
             io.Deliver frame response
 
@@ -81,8 +93,9 @@ module internal CaseListCommand =
 
             let mutable cursor = request.Page.AfterCursor
             let mutable running = true
+            let mutable includeHeader = true
             let mutable code = ExitCode.value ExitCode.Success
-            header options io prepared
+            header io prepared
 
             while running && not token.IsCancellationRequested do
                 let current =
@@ -97,8 +110,10 @@ module internal CaseListCommand =
                 let! response = io.Exchange frame token
 
                 match page response with
-                | Some(Outcome.Succeeded result) ->
-                    rows options io prepared frame response result
+                | Some(Outcome.Succeeded presented) ->
+                    let result = presented.Data
+                    rows includeHeader options io prepared frame response presented
+                    includeHeader <- false
 
                     if prepared.All && result.NextCursor.IsSome then
                         if result.NextCursor = cursor then
@@ -107,7 +122,7 @@ module internal CaseListCommand =
                         cursor <- result.NextCursor
                     else
                         if prepared.Format = VerbFormat.Csv then
-                            TextReplyFormat.nextLines prepared.Language result.NextCursor
+                            ReplyTextFormat.nextLines prepared.Language result.NextCursor
                             |> text
                             |> io.Errors
 

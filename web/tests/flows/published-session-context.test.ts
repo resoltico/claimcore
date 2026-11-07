@@ -11,11 +11,21 @@ const active = actorContextInput({
   views: ["AUTHORITY"],
   offers: [],
 });
-const reply = (requester: unknown) => ({ outcome: { kind: "SUCCEEDED", data: { requester } } });
+const reply = (requester: unknown) => ({
+  outcome: {
+    view: { kind: "RECORD" as const, sections: [] },
+    kind: "SUCCEEDED",
+    data: { requester },
+  },
+});
 it("admits the current ACTIVE owner context rather than a retired flat shape", () => {
   expect(isResponse("context", reply(active))).toBe(true);
   expect(isActiveOwnerContext(reply(active))).toBe(true);
-  expect(isActiveOwnerContext({ outcome: { kind: "SUCCEEDED", data: active } })).toBe(false);
+  expect(
+    isActiveOwnerContext({
+      outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data: active },
+    }),
+  ).toBe(false);
 });
 it.each([
   { ...active, capabilities: [] },

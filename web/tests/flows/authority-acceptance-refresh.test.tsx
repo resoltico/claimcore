@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { openPersonEditor, chooseAdmissionRole } from "../support/people-drawer.fixtures";
 import { workBasis } from "../support/inputs";
 import {
@@ -66,7 +67,11 @@ const listing = (): ApiResult<ServiceResponse<"authority.list">> => ({
   kind: "outcome",
   status: 200,
   value: {
-    outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [existing], nextCursor: null } },
+    outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+      basis: workBasis,
+      items: [existing],
+      nextCursor: null,
+    }),
   },
 });
 const acceptance = (
@@ -97,10 +102,12 @@ const selectEnabled = async () => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, actor: existing, items: [], nextCursor: null },
-      },
+      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+        basis: workBasis,
+        actor: existing,
+        items: [],
+        nextCursor: null,
+      }),
     },
   });
   const user = userEvent.setup();

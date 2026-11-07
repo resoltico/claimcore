@@ -28,7 +28,7 @@ module internal TextObservation =
             language
             (CliMessage.Observed(
                 observed,
-                TextReplyFormat.calendarDate language basis.BusinessDate,
+                ReplyTextFormat.calendarDate language basis.BusinessDate,
                 TerminalText.data basis.TimeZoneId
             ))
 

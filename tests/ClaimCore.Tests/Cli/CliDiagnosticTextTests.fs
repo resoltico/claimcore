@@ -29,7 +29,7 @@ let private assertTarget target identity violation code parameters =
     let parameters = Map.ofList parameters
 
     for language in LocalizationPolicy.languages do
-        let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
+        let rendered = ReplyText.bytes language (frame refusal) |> Encoding.UTF8.GetString
         let label = MessageCatalogs.render language identity Map.empty
 
         let message = MessageCatalogs.render language ("diagnostic." + code) parameters
@@ -124,7 +124,7 @@ let private assertOptionalTarget refusal identity code =
     let source = Frames.encode (frame refusal)
 
     for language in LocalizationPolicy.languages do
-        let rendered = TextReply.bytes language (frame refusal) |> Encoding.UTF8.GetString
+        let rendered = ReplyText.bytes language (frame refusal) |> Encoding.UTF8.GetString
 
         let message = MessageCatalogs.render language ("diagnostic." + code) Map.empty
 
@@ -192,7 +192,7 @@ let accumulated =
 
         for language in LocalizationPolicy.languages do
             let lines =
-                TextReply.bytes language (frame refusal)
+                ReplyText.bytes language (frame refusal)
                 |> Encoding.UTF8.GetString
                 |> fun text -> text.Split('\n')
 
@@ -227,7 +227,7 @@ let nextAndConflicts =
                 (fun () ->
                     for language in LocalizationPolicy.languages do
                         let unchanged =
-                            TextDiagnosticReply.refusalLines
+                            DiagnosticText.refusalLines
                                 language
                                 (Refusal.Case CaseRefusal.CorrectionNoChanges)
                             |> String.concat "\n"
@@ -237,7 +237,7 @@ let nextAndConflicts =
                             "Do not print internal next-action tokens"
 
                         let access =
-                            TextDiagnosticReply.refusalLines
+                            DiagnosticText.refusalLines
                                 language
                                 (Refusal.Access(AccessRefusal.NotAuthorized Capability.Steward))
                             |> String.concat "\n"
@@ -331,7 +331,7 @@ let nextAndConflicts =
 
                     for language in LocalizationPolicy.languages do
                         let output =
-                            TextDiagnosticReply.refusalLinesFor language (Some "CASE-1") refusal
+                            DiagnosticText.refusalLinesFor language (Some "CASE-1") refusal
                             |> String.concat "\n"
 
                         Expect.stringContains output "Editor 1" "First supplied author"

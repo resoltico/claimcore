@@ -203,6 +203,8 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
 
 type Stub() =
     let calls = ResizeArray<string>()
+    let inputs = ResizeArray<IEndpointInput>()
+    member _.Inputs = List.ofSeq inputs
     member _.Calls = List.ofSeq calls
     member val RuntimeAvailable = true with get, set
     member val Error: exn option = None with get, set
@@ -269,6 +271,7 @@ type Stub() =
                 this.Invoke
                     "operation.preview"
                     (PresentedPreviewReply.ofCore
+                        (Some input)
                         {
                             PreviewReply.OperationId = OperationInput.operationId input
                             Outcome = outcome
@@ -296,6 +299,7 @@ type Stub() =
                                 ExecuteReply.OperationId = OperationInput.operationId input
                                 Outcome = outcome
                             }
+                            |> PresentedExecuteReply.ofCore
                 })
         | ActorEndpoint.Query query ->
             let definition =
@@ -307,5 +311,8 @@ type Stub() =
                 { new IEndpointVisitor<ClaimCore.Web.Route> with
                     member _.Visit<'Input, 'Output>(endpoint: Endpoint<'Input, 'Output>) =
                         let reply = ResponseExamples.defaultReply endpoint
-                        Route.bind endpoint (fun _ _ _ -> this.Invoke endpoint.Token reply)
+
+                        Route.bind endpoint (fun _ input _ ->
+                            inputs.Add(EndpointValues.input endpoint input)
+                            this.Invoke endpoint.Token reply)
                 }

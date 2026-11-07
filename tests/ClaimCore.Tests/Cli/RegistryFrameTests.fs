@@ -171,8 +171,9 @@ let private results () =
             Api.operationExecute
             {
 
-                ExecuteReply.OperationId = id
-                Outcome = ExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
+                PresentedExecuteReply.OperationId = id
+                Outcome =
+                    PresentedExecuteResult.Rejected(Refusal.Authority AuthorityRefusal.LastOwner)
             }
 
     frameRoundTrip (reply (FrameResult.Reply output) DeliveryState.Delivered)
@@ -211,8 +212,8 @@ let private exits () =
             Api.operationExecute
             {
 
-                ExecuteReply.OperationId = id
-                Outcome = ExecuteResult.OutcomeUnknown
+                PresentedExecuteReply.OperationId = id
+                Outcome = PresentedExecuteResult.OutcomeUnknown
             }
 
     Expect.equal
@@ -242,8 +243,8 @@ let private refusingFrames () =
         ClaimCore.Tests.CliReplies.ofValue
             Api.operationExecute
             {
-                ExecuteReply.OperationId = id
-                Outcome = ExecuteResult.OutcomeUnknown
+                PresentedExecuteReply.OperationId = id
+                Outcome = PresentedExecuteResult.OutcomeUnknown
             }
 
     let invalid =

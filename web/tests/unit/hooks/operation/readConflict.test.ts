@@ -10,7 +10,9 @@ import type { ConflictSource, OperationEffect } from "../../../../src/operation/
 const succeeded = <const T>(data: T) => ({
   kind: "outcome" as const,
   status: 200,
-  value: { outcome: { kind: "SUCCEEDED" as const, data } },
+  value: {
+    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+  },
 });
 const caseValue = () =>
   caseViewInput({

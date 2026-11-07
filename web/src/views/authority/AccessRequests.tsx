@@ -1,3 +1,5 @@
+import { PageTables } from "../../ui/PageTables";
+import { PageRow } from "../../ui/PageRow";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AccessRequest } from "@contracts/client";
 import { requestEndpoint, resultNotice, type ServiceResponse } from "../../api/service";
@@ -7,8 +9,6 @@ import { useCredential, useSessionContext } from "../../session/SessionContext";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
 import type { Notice } from "../../protocol/notices";
-import { RecordedTime } from "../../components/ActorIdentity";
-import { CharacterWarning } from "../../components/BusinessValue";
 import { Button } from "../../ui/Button";
 import { Dialog } from "../../ui/Dialog";
 import "./access-requests.css";
@@ -24,51 +24,6 @@ const input = (cursor: string | null) => ({ limit: 50, ...(cursor === null ? {} 
 const select = (reply: ServiceResponse<"authority.requests">) =>
   reply.outcome.kind === "SUCCEEDED" ? reply.outcome.data : null;
 type RequestPage = NonNullable<ReturnType<typeof select>>;
-const RequestIdentity = ({ request }: { request: AccessRequest }) => {
-  const p = usePresentation();
-  return (
-    <>
-      <p>{p.term("principalKind", request.principal.kind)}</p>
-      <p>
-        {p.fieldLabel("principal.issuer")}: <bdi dir="ltr">{request.principal.issuer}</bdi>
-      </p>
-      <p>{p.text("ui.requests.hints")}</p>
-      <dl>
-        {(
-          [
-            ["label.requestedName", request.claims.name],
-            ["label.requestedUsername", request.claims.preferredUsername],
-            ["label.requestedEmail", request.claims.email],
-          ] as const
-        ).map(([label, value]) =>
-          value === undefined ? null : (
-            <div key={label}>
-              <dt>{p.text(label)}</dt>
-              <dd>
-                <bdi>{value}</bdi>
-                <CharacterWarning value={value} />
-              </dd>
-            </div>
-          ),
-        )}
-      </dl>
-      <details>
-        <summary>{p.text("label.recordDetails")}</summary>
-        <dl>
-          <dt>{p.fieldLabel("principal.issuer")}</dt>
-          <dd>
-            <bdi dir="ltr">{request.principal.issuer}</bdi>
-          </dd>
-          <dt>{p.fieldLabel("principal.subject")}</dt>
-          <dd>
-            <bdi dir="ltr">{request.principal.subject}</bdi>
-            <CharacterWarning value={request.principal.subject} />
-          </dd>
-        </dl>
-      </details>
-    </>
-  );
-};
 const RequestFeedback = ({
   loading,
   dismissed,
@@ -178,20 +133,11 @@ const AvailableRequests = ({
         notice={notice}
         empty={page.items.length === 0}
       />
-      <ul className="access-requests-list">
-        {page.items.map((request) => (
-          <li key={JSON.stringify(request.principal)}>
-            <RequestIdentity request={request} />
-            <dl>
-              <dt>{p.text("label.firstSeen")}</dt>
-              <dd>
-                <RecordedTime value={request.firstSeen} />
-              </dd>
-              <dt>{p.text("label.lastSeen")}</dt>
-              <dd>
-                <RecordedTime value={request.lastSeen} />
-              </dd>
-            </dl>
+      <PageTables
+        views={page.views}
+        renderActions={(index) => {
+          const request = page.items[index];
+          return request === undefined ? null : (
             <div className="access-request-actions">
               <Button
                 isDisabled={disabled || !mayAdmit}
@@ -212,9 +158,10 @@ const AvailableRequests = ({
                 {p.text("endpoint.authority.requests.dismiss.label")}
               </Button>
             </div>
-          </li>
-        ))}
-      </ul>
+          );
+        }}
+      />
+
       <Button
         variant="secondary"
         isDisabled={disabled || page.loading}
@@ -266,7 +213,13 @@ const AvailableRequests = ({
           </>
         }
       >
-        {selected === null ? null : <RequestIdentity request={selected} />}
+        {selected === null ? null : (
+          <PageRow
+            views={page.views}
+            index={page.items.indexOf(selected)}
+            titleId="label.accessRequest"
+          />
+        )}
       </Dialog>
     </section>
   );

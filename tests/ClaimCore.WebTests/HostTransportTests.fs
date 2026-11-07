@@ -43,21 +43,21 @@ let private loggedIn ready work =
     }
     |> _.GetAwaiter().GetResult()
 
-let private actorTarget endpoint (response: byte array) =
+let private actorTarget (stub: Stub) endpoint =
     if endpoint = "authority.grants" then
-        use request = JsonDocument.Parse(ReadOnlyMemory(body endpoint))
-        use result = JsonDocument.Parse(ReadOnlyMemory response)
+        let expected =
+            Codec.decode Limits.MaximumRequestBytes Api.authorityGrants.Input (body endpoint)
+            |> Result.defaultWith (string >> failtest)
+
+        let actual =
+            stub.Inputs
+            |> List.choose (EndpointValues.tryInput Api.authorityGrants)
+            |> List.last
 
         Expect.equal
-            (result.RootElement
-                .GetProperty("outcome")
-                .GetProperty("data")
-                .GetProperty("actor")
-                .GetProperty("actor")
-                .GetProperty("actorId")
-                .GetString())
-            (request.RootElement.GetProperty("actorId").GetString())
-            "Typed grant dispatch retains the requested target"
+            actual
+            expected
+            "The handler receives the typed target; its configured response is independent."
 
 let private catalogueRoutes () =
     loggedIn true (fun host token ->
@@ -80,7 +80,7 @@ let private catalogueRoutes () =
                     (StrictJson.read 100000 response |> Result.bind (Api.admitOutput endpoint))
                     "Typed response schema"
 
-                actorTarget (Api.id endpoint) response
+                actorTarget host.HandlerStub (Api.id endpoint)
 
             Expect.equal
                 (host.HandlerStub.Calls |> List.sort)
@@ -269,7 +269,10 @@ let private businessFormatRefusals () =
 
         let! _ = host.Login()
         let! token = host.Token()
-        let source = Encoding.UTF8.GetString commandInput
+        let fresh = ClaimCore.TestSupport.OperationIds.fresh ()
+
+        let source =
+            (Encoding.UTF8.GetString commandInput).Replace(string operationId, string fresh)
 
         for before, after, field in
             [
@@ -290,7 +293,7 @@ let private businessFormatRefusals () =
 
             match Codec.decode 100000 Api.operationExecute.Output response with
             | Ok {
-                     Outcome = ExecuteResult.Rejected value
+                     Outcome = PresentedExecuteResult.Rejected value
                  } ->
                 match value with
                 | Refusal.InvalidInput issues ->
@@ -327,8 +330,14 @@ let private authorityPreview () =
 
         let! _ = host.Login()
         let! token = host.Token()
+        let fresh = ClaimCore.TestSupport.OperationIds.fresh ()
+
+        let input =
+            (Encoding.UTF8.GetString authorityBody).Replace(string operationId, string fresh)
+            |> Encoding.UTF8.GetBytes
+
         let original = fixture.EntryCount
-        let! status, response = host.Call("operation.preview", authorityBody, token)
+        let! status, response = host.Call("operation.preview", input, token)
         Expect.equal status 200 "Authority preview uses the unified route"
 
         match Codec.decode 100000 Api.operationPreview.Output response with
@@ -339,7 +348,7 @@ let private authorityPreview () =
                                                                              Presentation = presentation
                                                                          })
              } ->
-            Expect.equal id operationId "Original operation identity"
+            Expect.equal id fresh "Original operation identity"
             Expect.isNone review.Target "Registration has no accepted target yet"
             Expect.isFalse review.Before.Enabled "Registration begins absent"
             Expect.isTrue review.After.Enabled "Registration proposes enabled authority"
@@ -354,14 +363,16 @@ let private authorityPreview () =
         | _ -> failtest "Expected an authority review"
 
         Expect.equal fixture.EntryCount original "Preview records nothing"
-        let! status, response = host.Call("operation.execute", authorityBody, token)
+        let! status, response = host.Call("operation.execute", input, token)
         Expect.equal status 200 "Execute the reviewed input unchanged"
 
         match Codec.decode 100000 Api.operationExecute.Output response with
         | Ok {
-                 Outcome = ExecuteResult.Accepted {
-                                                      Subject = ReceiptSubject.Authority receipt
-                                                  }
+                 Outcome = PresentedExecuteResult.Accepted {
+                                                               Data = {
+                                                                          Subject = ReceiptSubject.Authority receipt
+                                                                      }
+                                                           }
              } ->
             Expect.equal
                 (receipt.Effects |> List.map _.Act)
@@ -485,7 +496,7 @@ let private principalAdmission () =
 
             match Codec.decode 100000 Api.operationExecute.Output response with
             | Ok {
-                     Outcome = ExecuteResult.Rejected refusal
+                     Outcome = PresentedExecuteResult.Rejected refusal
                  } ->
                 Expect.equal
                     (Error refusal)

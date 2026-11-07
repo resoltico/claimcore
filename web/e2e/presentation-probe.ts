@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../tests/support/read-view.fixtures";
 import type { DisplayLocale } from "../src/presentation/preferences";
 import { writeFile } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
@@ -70,14 +71,11 @@ export const observe = async (
   await page.route("**/api/session", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: {
-            authenticated,
-            contractIdentity: consumerContractIdentity,
-            antiforgeryToken: authenticated ? "synthetic-presentation" : null,
-          },
-        },
+        outcome: presentedOutcome("session", "SUCCEEDED", {
+          authenticated,
+          contractIdentity: consumerContractIdentity,
+          antiforgeryToken: authenticated ? "synthetic-presentation" : null,
+        }),
       },
     }),
   );
@@ -89,26 +87,25 @@ export const observe = async (
     };
     await page.route("**/api/work.views", (route) =>
       route.fulfill({
-        json: { outcome: { kind: "SUCCEEDED", data: { ...workViewsFixture, basis } } },
+        json: {
+          outcome: presentedOutcome("work.views", "SUCCEEDED", { ...workViewsFixture, basis }),
+        },
       }),
     );
     await page.route("**/api/context", (route) =>
       route.fulfill({
         json: {
-          outcome: {
-            kind: "SUCCEEDED",
-            data: {
-              requester: actorContextInput({
-                productVersion: "synthetic-presentation",
-                observedAt: "2026-11-04T12:00:00.000000Z",
-                businessDate: "2026-11-04",
-                timeZone: "Etc/UTC",
-                capabilities: ["READ_CASE", "READ_AUTHORITY"],
-                views: ["CASES", "AUTHORITY", "OPERATIONS"],
-                offers: [],
-              }),
-            },
-          },
+          outcome: presentedOutcome("context", "SUCCEEDED", {
+            requester: actorContextInput({
+              productVersion: "synthetic-presentation",
+              observedAt: "2026-11-04T12:00:00.000000Z",
+              businessDate: "2026-11-04",
+              timeZone: "Etc/UTC",
+              capabilities: ["READ_CASE", "READ_AUTHORITY"],
+              views: ["CASES", "AUTHORITY", "OPERATIONS"],
+              offers: [],
+            }),
+          }),
         },
       }),
     );
@@ -142,10 +139,11 @@ export const seed = async (
   await page.route("**/api/authority.requests", (route) =>
     route.fulfill({
       json: {
-        outcome: {
-          kind: "SUCCEEDED",
-          data: { basis: presentationBasis, items: [], nextCursor: null },
-        },
+        outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+          basis: presentationBasis,
+          items: [],
+          nextCursor: null,
+        }),
       },
     }),
   );

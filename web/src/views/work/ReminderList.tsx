@@ -1,8 +1,10 @@
+import { casePath } from "../../routing/routes";
+import { navigate } from "../../routing/navigation";
+import { PageTables } from "../../ui/PageTables";
 import "./reminder-list.css";
 import { Button } from "../../ui/Button";
 import { Menu, MenuItem, MenuTrigger } from "react-aria-components/Menu";
 import { Popover } from "react-aria-components/ComboBox";
-import { ActorIdentity } from "../../components/ActorIdentity";
 import { useCallback, useRef } from "react";
 import type {
   CaseSelector,
@@ -15,12 +17,6 @@ import type {
 import { useEndpointPage } from "../../hooks/useEndpointPage";
 import { usePresentation } from "../../presentation/context";
 import { NoticeView } from "../../presentation/Message";
-import { CharacterWarning } from "../../components/BusinessValue";
-import { CopyValue } from "../../components/CopyValue";
-import { IdentifierValue } from "../../components/IdentifierValue";
-import { casePath } from "../../routing/routes";
-import { navigate } from "../../routing/navigation";
-import { followLink } from "../../routing/followLink";
 import { renderCatalogKey } from "../../presentation/messages";
 import { operationEntry } from "../../protocol/operationCatalog";
 
@@ -56,8 +52,7 @@ const ReminderActions = ({
             id={`reminder-${row.reminder.reminderId}-COMPLETE`}
             variant="secondary"
             className="reminder-complete"
-            aria-label={label("COMPLETE")}
-            aria-describedby={`reminder-action-${row.reminder.reminderId}`}
+            aria-label={`${label("COMPLETE")} · ${row.reminder.action}`}
             onPress={() => {
               onAct(row, "COMPLETE", `reminder-${row.reminder.reminderId}-COMPLETE`);
             }}
@@ -73,8 +68,7 @@ const ReminderActions = ({
               variant="secondary"
               className="reminder-overflow"
               ref={overflow}
-              aria-label={p.text("label.availableActs")}
-              aria-describedby={`reminder-action-${row.reminder.reminderId}`}
+              aria-label={`${p.text("label.availableActs")} · ${row.reminder.action}`}
             >
               <span aria-hidden="true">⋯</span>
             </Button>
@@ -99,73 +93,6 @@ const ReminderActions = ({
         )}
       </div>
     </>
-  );
-};
-const ReminderRow = ({
-  row,
-  basis,
-  target,
-  onAct,
-}: {
-  row: ReminderReadModel;
-  basis: WorkDateBasis;
-  target: CaseSelector | undefined;
-  onAct: ReminderActHandler | undefined;
-}) => {
-  const p = usePresentation();
-  return (
-    <li
-      className="reminder-row"
-      data-muted={!row.active || row.reminder.state !== "PENDING" || undefined}
-    >
-      <ReminderActions row={row} onAct={onAct} />
-      <div className="reminder-content">
-        <p className="reminder-action" id={`reminder-action-${row.reminder.reminderId}`}>
-          <bdi dir="auto">{row.reminder.action}</bdi>
-          <CharacterWarning value={row.reminder.action} />
-        </p>
-        <div className="reminder-meta">
-          <time className="reminder-due" dateTime={row.reminder.dueDate}>
-            <bdi dir="ltr">{p.date(row.reminder.dueDate)}</bdi>
-          </time>
-          {row.timing === null ? null : (
-            <span className="reminder-timing" data-timing={row.timing}>
-              {p.term("reminderDue", row.timing)}
-            </span>
-          )}
-          <span className="reminder-state">{p.term("reminderState", row.reminder.state)}</span>
-          {target === undefined ? (
-            <a
-              href={casePath(row.reminder.caseId)}
-              onClick={(event) => {
-                followLink(event, () => {
-                  navigate(casePath(row.reminder.caseId));
-                });
-              }}
-            >
-              <bdi dir="ltr">{row.caseReference}</bdi>
-            </a>
-          ) : null}
-        </div>
-        <details className="reminder-record-details">
-          <summary>{p.text("ui.reminderDetails")}</summary>
-          <p>{p.text("ui.reminderObserved")}</p>
-          <p>{p.text("ui.reminderRevision", { revision: p.integer(row.reminder.revision) })}</p>
-          <IdentifierValue value={row.reminder.reminderId} />{" "}
-          <CopyValue label={p.text("ui.reminderDetails")} value={row.reminder.reminderId} />
-          <p>
-            {p.text("ui.markedAt")}: <bdi dir="ltr">{row.recordedAt}</bdi>
-          </p>
-          <p>
-            {p.text("ui.markedBy")}: <ActorIdentity actor={row.recordedBy} />
-          </p>
-          <p className="observation-basis">
-            {p.text("ui.workDateBasis", { date: p.date(basis.businessDate), zone: basis.timeZone })}
-          </p>
-          {row.active ? null : <p>{p.text("ui.caseWorkInactive")}</p>}
-        </details>
-      </div>
-    </li>
   );
 };
 export const ReminderList = ({
@@ -207,17 +134,26 @@ export const ReminderList = ({
       {result.items.length === 0 && !result.loading && result.message === null ? (
         <p>{p.text("ui.noReminders")}</p>
       ) : null}
-      <ol className="reminder-list-items">
-        {result.items.map(({ item: row, basis }) => (
-          <ReminderRow
-            key={`${row.reminder.reminderId}:${row.reminder.revision}`}
-            row={row}
-            basis={basis}
-            target={target}
-            onAct={onAct}
-          />
-        ))}
-      </ol>
+      <PageTables
+        views={result.views}
+        rowLink={(index) => {
+          const row = result.items[index]?.item;
+          if (target !== undefined || row === undefined) {
+            return undefined;
+          }
+          const href = casePath(row.reminder.caseId);
+          return {
+            href,
+            follow: () => {
+              navigate(href);
+            },
+          };
+        }}
+        renderActions={(index) => {
+          const row = result.items[index]?.item;
+          return row === undefined ? null : <ReminderActions row={row} onAct={onAct} />;
+        }}
+      />
       {result.page === null || result.items.length > 0 ? null : (
         <details>
           <summary>{p.text("label.recordDetails")}</summary>

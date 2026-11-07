@@ -37,7 +37,7 @@ export default async function setup(): Promise<void> {
     const page = await context.newPage();
     await page.goto(baseURL, { waitUntil: "commit" });
     await login(page);
-    await page.getByRole("heading", { name: "Cases" }).waitFor();
+    await page.getByRole("heading", { name: "Cases", level: 1 }).waitFor();
     const state = resolve(output, "authenticated-state.json");
     await context.storageState({ path: state });
     await chmod(state, 0o600);

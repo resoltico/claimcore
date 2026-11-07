@@ -150,12 +150,14 @@ let private harness language answer scenario =
                                          }
                                  })
                              |> Option.defaultValue caseReply
+                             |> Presented.create (Descriptor.caseView >> Descriptor.recordView)
                          ))
             | "operation.preview" ->
                 response
                     frame
                     Api.operationPreview.Output
                     (PresentedPreviewReply.ofCore
+                        None
                         {
                             OperationId = operationId ()
                             Outcome =
@@ -229,14 +231,18 @@ let private harness language answer scenario =
                         OperationId = operationId ()
                         Outcome =
                             if scenario = Scenario.Stale then
-                                ExecuteResult.Rejected(
+                                PresentedExecuteResult.Rejected(
                                     Refusal.RevisionConflict(
                                         RevisionConflictInfo.at (CaseFixtures.revision 8L)
                                         |> RevisionConflictInfo.explain ConflictChanges.Withheld
                                     )
                                 )
                             else
-                                ExecuteResult.Accepted receipt
+                                PresentedExecuteResult.Accepted(
+                                    Presented.create
+                                        (Descriptor.receipt >> Descriptor.recordView)
+                                        receipt
+                                )
                     }
             | _ -> failtest "An interactive case flow cannot dispatch another endpoint"
 
@@ -258,7 +264,7 @@ let private harness language answer scenario =
                 Deliver =
                     fun frame reply ->
                         text.Add(
-                            TextReply.bytesFor language (Some frame) reply.Frame
+                            ReplyText.bytesFor language (Some frame) reply.Frame
                             |> Encoding.UTF8.GetString
                         )
             }

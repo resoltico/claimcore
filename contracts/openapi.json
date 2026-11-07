@@ -2408,11 +2408,15 @@
           },
           "data": {
             "type": "null"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "AccessRequestDismissRequest": {
@@ -2546,11 +2550,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/AccessRequestPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "AccessRequestsRequest": {
@@ -2897,11 +2905,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/ActorsPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "AssigneePage": {
@@ -3012,11 +3024,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/AssigneePage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "AssigneeRequest": {
@@ -3631,11 +3647,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/AuthorityHistoryPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "AuthorityHistoryRequest": {
@@ -5757,11 +5777,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/CasesPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "CaseReadReply": {
@@ -5838,11 +5862,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseView"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "CaseRef": {
@@ -6353,11 +6381,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseWorklistSummary"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "CaseSummaryRequest": {
@@ -6836,11 +6868,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/CaseTimelinePage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "CaseTimelineRequest": {
@@ -7494,11 +7530,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/RequesterContext"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "Correction": {
@@ -8224,11 +8264,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "ExecuteResult.ALREADY_ACCEPTED": {
@@ -8240,11 +8284,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "ExecuteResult.FAILED": {
@@ -8516,11 +8564,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/GrantsPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "GrantsRequest": {
@@ -9387,11 +9439,15 @@
           },
           "data": {
             "type": "null"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "Money": {
@@ -9658,11 +9714,15 @@
               "receipt",
               "byRequester"
             ]
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "OperationLookupResult.FAILED": {
@@ -9791,11 +9851,15 @@
           },
           "presentation": {
             "$ref": "#/components/schemas/ReviewPresentation"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "subject",
-          "presentation"
+          "presentation",
+          "view"
         ]
       },
       "Payment": {
@@ -9959,6 +10023,42 @@
           },
           {
             "$ref": "#/components/schemas/PresentedCode.boolean"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.correction"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.act"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.workAct"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.reminderAct"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.caseStage"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.attention"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.accountState"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.principalKind"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.requesterState"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.view"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.due"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCode.reminderDue"
           }
         ],
         "discriminator": {
@@ -9970,9 +10070,121 @@
             "scope": "#/components/schemas/PresentedCode.scope",
             "capability": "#/components/schemas/PresentedCode.capability",
             "reminderState": "#/components/schemas/PresentedCode.reminderState",
-            "boolean": "#/components/schemas/PresentedCode.boolean"
+            "boolean": "#/components/schemas/PresentedCode.boolean",
+            "correction": "#/components/schemas/PresentedCode.correction",
+            "act": "#/components/schemas/PresentedCode.act",
+            "workAct": "#/components/schemas/PresentedCode.workAct",
+            "reminderAct": "#/components/schemas/PresentedCode.reminderAct",
+            "caseStage": "#/components/schemas/PresentedCode.caseStage",
+            "attention": "#/components/schemas/PresentedCode.attention",
+            "accountState": "#/components/schemas/PresentedCode.accountState",
+            "principalKind": "#/components/schemas/PresentedCode.principalKind",
+            "requesterState": "#/components/schemas/PresentedCode.requesterState",
+            "view": "#/components/schemas/PresentedCode.view",
+            "due": "#/components/schemas/PresentedCode.due",
+            "reminderDue": "#/components/schemas/PresentedCode.reminderDue"
           }
         }
+      },
+      "PresentedCode.accountState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "accountState"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "ACTIVE",
+              "NO_ROLES",
+              "DISABLED"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.act": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "act"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "OPEN",
+              "AMEND_REGISTRATION",
+              "CORRECT",
+              "DECIDE",
+              "WITHDRAW_DECISION",
+              "RECORD_PAYMENT",
+              "CLEAR_PAYMENT",
+              "CLOSE",
+              "REOPEN",
+              "VOID",
+              "REINSTATE",
+              "ERASE",
+              "PROVISION_OWNER",
+              "REGISTER",
+              "GRANT",
+              "REVOKE",
+              "ENABLE",
+              "DISABLE",
+              "SET_PROFILE",
+              "ERASE_PROFILE",
+              "ADMIT",
+              "UPDATE_WORK",
+              "REMINDER_CREATE",
+              "REMINDER_UPDATE",
+              "REMINDER_COMPLETE",
+              "REMINDER_CANCEL",
+              "REMINDER_REOPEN",
+              "REMINDER_COMPLETE_AND_PLAN_NEXT"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.attention": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "attention"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "OVERDUE",
+              "DUE_TODAY",
+              "NO_NEXT_ACTION",
+              "UNASSIGNED",
+              "ASSIGNEE_UNAVAILABLE",
+              "READY_TO_CLOSE"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
       },
       "PresentedCode.boolean": {
         "type": "object",
@@ -10029,6 +10241,83 @@
           "token"
         ]
       },
+      "PresentedCode.caseStage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "caseStage"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "OPENED",
+              "DECIDED",
+              "PAID",
+              "CLOSED"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.correction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "correction"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "KEEP",
+              "REPLACE",
+              "UPDATE",
+              "CLEAR",
+              "REAFFIRM"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.due": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "due"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING",
+              "UNSCHEDULED",
+              "INACTIVE"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
       "PresentedCode.lifecycle": {
         "type": "object",
         "additionalProperties": false,
@@ -10053,6 +10342,80 @@
           "token"
         ]
       },
+      "PresentedCode.principalKind": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "principalKind"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "HUMAN",
+              "SERVICE"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.reminderAct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "reminderAct"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "CREATE",
+              "UPDATE",
+              "COMPLETE",
+              "CANCEL",
+              "REOPEN",
+              "COMPLETE_AND_PLAN_NEXT"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.reminderDue": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "reminderDue"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "OVERDUE",
+              "TODAY",
+              "UPCOMING"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
       "PresentedCode.reminderState": {
         "type": "object",
         "additionalProperties": false,
@@ -10068,6 +10431,31 @@
               "PENDING",
               "COMPLETED",
               "CANCELLED"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.requesterState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "requesterState"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "ACTIVE",
+              "NO_ROLES",
+              "DISABLED",
+              "NOT_REGISTERED"
             ]
           }
         },
@@ -10151,6 +10539,50 @@
           "token"
         ]
       },
+      "PresentedCode.view": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "view"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "enum": [
+              "CASES",
+              "AUTHORITY",
+              "OPERATIONS"
+            ]
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
+      "PresentedCode.workAct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "workAct"
+          },
+          "kind": {
+            "const": "CODE"
+          },
+          "token": {
+            "const": "UPDATE_WORK"
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "token"
+        ]
+      },
       "PresentedCodes": {
         "oneOf": [
           {
@@ -10173,6 +10605,42 @@
           },
           {
             "$ref": "#/components/schemas/PresentedCodes.boolean"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.correction"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.act"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.workAct"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.reminderAct"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.caseStage"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.attention"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.accountState"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.principalKind"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.requesterState"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.view"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.due"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedCodes.reminderDue"
           }
         ],
         "discriminator": {
@@ -10184,9 +10652,136 @@
             "scope": "#/components/schemas/PresentedCodes.scope",
             "capability": "#/components/schemas/PresentedCodes.capability",
             "reminderState": "#/components/schemas/PresentedCodes.reminderState",
-            "boolean": "#/components/schemas/PresentedCodes.boolean"
+            "boolean": "#/components/schemas/PresentedCodes.boolean",
+            "correction": "#/components/schemas/PresentedCodes.correction",
+            "act": "#/components/schemas/PresentedCodes.act",
+            "workAct": "#/components/schemas/PresentedCodes.workAct",
+            "reminderAct": "#/components/schemas/PresentedCodes.reminderAct",
+            "caseStage": "#/components/schemas/PresentedCodes.caseStage",
+            "attention": "#/components/schemas/PresentedCodes.attention",
+            "accountState": "#/components/schemas/PresentedCodes.accountState",
+            "principalKind": "#/components/schemas/PresentedCodes.principalKind",
+            "requesterState": "#/components/schemas/PresentedCodes.requesterState",
+            "view": "#/components/schemas/PresentedCodes.view",
+            "due": "#/components/schemas/PresentedCodes.due",
+            "reminderDue": "#/components/schemas/PresentedCodes.reminderDue"
           }
         }
+      },
+      "PresentedCodes.accountState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "accountState"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ACTIVE",
+                "NO_ROLES",
+                "DISABLED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.act": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "act"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPEN",
+                "AMEND_REGISTRATION",
+                "CORRECT",
+                "DECIDE",
+                "WITHDRAW_DECISION",
+                "RECORD_PAYMENT",
+                "CLEAR_PAYMENT",
+                "CLOSE",
+                "REOPEN",
+                "VOID",
+                "REINSTATE",
+                "ERASE",
+                "PROVISION_OWNER",
+                "REGISTER",
+                "GRANT",
+                "REVOKE",
+                "ENABLE",
+                "DISABLE",
+                "SET_PROFILE",
+                "ERASE_PROFILE",
+                "ADMIT",
+                "UPDATE_WORK",
+                "REMINDER_CREATE",
+                "REMINDER_UPDATE",
+                "REMINDER_COMPLETE",
+                "REMINDER_CANCEL",
+                "REMINDER_REOPEN",
+                "REMINDER_COMPLETE_AND_PLAN_NEXT"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.attention": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "attention"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OVERDUE",
+                "DUE_TODAY",
+                "NO_NEXT_ACTION",
+                "UNASSIGNED",
+                "ASSIGNEE_UNAVAILABLE",
+                "READY_TO_CLOSE"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
       },
       "PresentedCodes.boolean": {
         "type": "object",
@@ -10207,7 +10802,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
           }
         },
         "required": [
@@ -10244,7 +10839,99 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.caseStage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "caseStage"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OPENED",
+                "DECIDED",
+                "PAID",
+                "CLOSED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.correction": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "correction"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "KEEP",
+                "REPLACE",
+                "UPDATE",
+                "CLEAR",
+                "REAFFIRM"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.due": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "due"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OVERDUE",
+                "TODAY",
+                "UPCOMING",
+                "UNSCHEDULED",
+                "INACTIVE"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
           }
         },
         "required": [
@@ -10273,7 +10960,96 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.principalKind": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "principalKind"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "HUMAN",
+                "SERVICE"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.reminderAct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "reminderAct"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CREATE",
+                "UPDATE",
+                "COMPLETE",
+                "CANCEL",
+                "REOPEN",
+                "COMPLETE_AND_PLAN_NEXT"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.reminderDue": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "reminderDue"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "OVERDUE",
+                "TODAY",
+                "UPCOMING"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
           }
         },
         "required": [
@@ -10302,7 +11078,37 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.requesterState": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "requesterState"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "ACTIVE",
+                "NO_ROLES",
+                "DISABLED",
+                "NOT_REGISTERED"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
           }
         },
         "required": [
@@ -10335,7 +11141,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
           }
         },
         "required": [
@@ -10363,7 +11169,7 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
           }
         },
         "required": [
@@ -10391,13 +11197,133 @@
               ]
             },
             "minItems": 0,
-            "maxItems": 11
+            "maxItems": 28
           }
         },
         "required": [
           "vocabulary",
           "kind",
           "tokens"
+        ]
+      },
+      "PresentedCodes.view": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "view"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "enum": [
+                "CASES",
+                "AUTHORITY",
+                "OPERATIONS"
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedCodes.workAct": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "vocabulary": {
+            "const": "workAct"
+          },
+          "kind": {
+            "const": "CODES"
+          },
+          "tokens": {
+            "type": "array",
+            "items": {
+              "const": "UPDATE_WORK"
+            },
+            "minItems": 0,
+            "maxItems": 28
+          }
+        },
+        "required": [
+          "vocabulary",
+          "kind",
+          "tokens"
+        ]
+      },
+      "PresentedColumn": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "labelId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "prominence": {
+            "enum": [
+              "PRIMARY",
+              "SECONDARY",
+              "DETAIL"
+            ]
+          },
+          "isMoney": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "key",
+          "labelId",
+          "prominence",
+          "isMoney"
+        ]
+      },
+      "PresentedEntry": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "labelId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "prominence": {
+            "enum": [
+              "PRIMARY",
+              "SECONDARY",
+              "DETAIL"
+            ]
+          },
+          "value": {
+            "$ref": "#/components/schemas/PresentedValue"
+          }
+        },
+        "required": [
+          "key",
+          "labelId",
+          "prominence",
+          "value"
         ]
       },
       "PresentedField": {
@@ -10827,6 +11753,30 @@
           "value"
         ]
       },
+      "PresentedSection": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "titleId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "entries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedEntry"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "titleId",
+          "entries"
+        ]
+      },
       "PresentedValue": {
         "oneOf": [
           {
@@ -10838,6 +11788,79 @@
           {
             "$ref": "#/components/schemas/PresentedCodes"
           }
+        ]
+      },
+      "PresentedView": {
+        "oneOf": [
+          {
+            "$ref": "#/components/schemas/PresentedView.RECORD"
+          },
+          {
+            "$ref": "#/components/schemas/PresentedView.TABLE"
+          }
+        ],
+        "discriminator": {
+          "propertyName": "kind",
+          "mapping": {
+            "RECORD": "#/components/schemas/PresentedView.RECORD",
+            "TABLE": "#/components/schemas/PresentedView.TABLE"
+          }
+        }
+      },
+      "PresentedView.RECORD": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "RECORD"
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "kind",
+          "sections"
+        ]
+      },
+      "PresentedView.TABLE": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "TABLE"
+          },
+          "columns": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedColumn"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "rows": {
+            "type": "array",
+            "items": {
+              "type": "array",
+              "items": {
+                "$ref": "#/components/schemas/PresentedValue"
+              },
+              "minItems": 0,
+              "maxItems": 324
+            },
+            "minItems": 0,
+            "maxItems": 50
+          }
+        },
+        "required": [
+          "kind",
+          "columns",
+          "rows"
         ]
       },
       "PreviewReply": {
@@ -10890,11 +11913,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/OperationReceipt"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "PreviewResult.FAILED": {
@@ -12020,11 +13047,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/ReminderPage"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "ReminderListRequest": {
@@ -12276,11 +13307,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/ReminderRead"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "ReminderReceiptEffects": {
@@ -13149,11 +14184,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/Session"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       },
       "SnapshotDisclosure": {
@@ -14346,11 +15385,15 @@
           },
           "data": {
             "$ref": "#/components/schemas/WorkViews"
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "kind",
-          "data"
+          "data",
+          "view"
         ]
       }
     }

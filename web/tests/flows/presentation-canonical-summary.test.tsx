@@ -1,13 +1,12 @@
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
-import { CaseFieldsView } from "../../src/components/CaseFieldsView";
+import { RecordView } from "../../src/ui/RecordView";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults, resolveLanguage, preferenceKey } from "../../src/presentation/preferences";
-import { definition, fields } from "../support/service-ui.fixtures";
 import { render, screen } from "../support/presentation-test-support";
 
 it.each(["en", "lv", "ar"])(
-  "copies canonical summary business values and null markers in %s",
+  "copies supplied canonical values and absent markers in %s",
   async (language) => {
     const user = userEvent.setup();
     const copy = vi.fn().mockResolvedValue(undefined);
@@ -17,27 +16,43 @@ it.each(["en", "lv", "ar"])(
     });
     localStorage.setItem(
       preferenceKey,
-      JSON.stringify({
-        version: 3,
-        language,
-        displayLocale: "ar-EG",
-        mode: "system" as const,
-        accent: "green" as const,
-      }),
+      JSON.stringify({ ...defaults, version: 3, language, displayLocale: "ar-EG" }),
     );
     render(
-      <CaseFieldsView
-        values={{
-          ...fields,
-          registration: {
-            ...fields.registration,
-            claimedAmount: "999999999999999999.0100",
-            claimantName: "A\u0308 العربية\u200D",
-          },
+      <RecordView
+        view={{
+          kind: "RECORD",
+          sections: [
+            {
+              titleId: "subject.CASE.label",
+              entries: [
+                {
+                  key: "exactMoney",
+                  labelId: "field.claimedAmount.label",
+                  prominence: "PRIMARY",
+                  value: {
+                    kind: "MONEY",
+                    amount: "999999999999999999.0100",
+                    currency: "EUR",
+                    displayScale: 4,
+                  },
+                },
+                {
+                  key: "authored",
+                  labelId: "field.claimantName.label",
+                  prominence: "PRIMARY",
+                  value: { kind: "PARTY", value: "A\u0308 العربية\u200D" },
+                },
+                {
+                  key: "missing",
+                  labelId: "field.paymentDate.label",
+                  prominence: "DETAIL",
+                  value: { kind: "ABSENT", reasonId: "label.notRecorded" },
+                },
+              ],
+            },
+          ],
         }}
-        revision={9007199254740991}
-        fields={definition.catalog.fields}
-        context="synthetic"
       />,
     );
     const p = createPresenter({
@@ -47,19 +62,12 @@ it.each(["en", "lv", "ar"])(
     });
     await user.click(
       screen.getByRole("button", {
-        name: p.text("ui.copy", { label: p.text("ui.acceptedSummary") }),
+        name: p.text("ui.copy", { label: p.text("label.recordDetails") }),
       }),
     );
-    const value: unknown = copy.mock.calls[0]?.[0];
-    expect(typeof value).toBe("string");
-    expect(value).toContain("9007199254740991");
-    expect(value).toContain("999999999999999999.0100");
-    expect(value).toContain("2026-09-01");
-    expect(value).toContain("A\u0308 العربية\u200D");
-    expect(value).toContain("EUR");
-    expect(value).toContain("OPENED");
-    expect(
-      typeof value === "string" && value.split("\n").filter((line) => line.endsWith(": null")),
-    ).toHaveLength(5);
+    expect(copy).toHaveBeenCalledWith(
+      "exactMoney: 999999999999999999.0100 EUR\nauthored: A\u0308 العربية\u200D\nmissing: null",
+    );
+    expect(document.querySelector('bdi[dir="ltr"]')).not.toBeNull();
   },
 );

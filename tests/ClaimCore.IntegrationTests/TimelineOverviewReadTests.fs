@@ -763,7 +763,14 @@ let tests =
                         }
 
                     let bytes =
-                        Codec.encode Api.caseTimeline.Output (Outcome.Succeeded reply)
+                        Codec.encode
+                            Api.caseTimeline.Output
+                            (Outcome.Succeeded(
+                                Presented.create
+                                    (fun (page: CaseTimelinePage) ->
+                                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                                    reply
+                            ))
                         |> Encoding.UTF8.GetString
 
                     Expect.isFalse

@@ -10,8 +10,8 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
-module internal TextDiagnosticReply =
-    open TextReplyFormat
+module internal DiagnosticText =
+    open ReplyTextFormat
 
     let diagnosticTargetIdentity target =
         ContractDiscovery.inputLabel (InteractionInput.Target target)
@@ -94,8 +94,7 @@ module internal TextDiagnosticReply =
             match conflict.Changes with
             | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
             | Some(ConflictChanges.Page page) ->
-                (page.Entries
-                 |> List.collect (Descriptor.timelineEntry >> TextDescriptorValue.sections language))
+                []
                 @ (match reference, page.NextCursor with
                    | Some reference, Some cursor ->
                        [

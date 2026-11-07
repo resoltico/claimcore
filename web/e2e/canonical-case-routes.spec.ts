@@ -70,7 +70,7 @@ test("case inspection restores the live work query, selected row focus and scrol
   await page.getByRole("tab", { name: /^All(?:\s|$)/u }).click();
   await expect(page).toHaveURL((url) => url.searchParams.get("view") === "ALL");
   await page.waitForLoadState("networkidle");
-  const rows = page.locator(".worklist-row");
+  const rows = page.locator(".table-view tbody > tr");
   expect(await rows.count()).toBeGreaterThan(1);
   const selected = rows.last().getByRole("link");
   await selected.scrollIntoViewIfNeeded();

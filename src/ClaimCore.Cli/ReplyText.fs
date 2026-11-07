@@ -8,8 +8,8 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
-module internal TextReply =
-    open TextReplyFormat
+module internal ReplyText =
+    open ReplyTextFormat
 
     type private Presenter = string -> Invocation option -> ServiceReply -> string list
 
@@ -22,67 +22,103 @@ module internal TextReply =
 
     let private read endpoint render =
         presenter endpoint (fun language request outcome ->
-            TextDiagnosticReply.readLinesFor
+            DiagnosticText.readLinesFor
                 language
-                (TextDiagnosticReply.reference request)
+                (DiagnosticText.reference request)
                 (render language)
                 outcome)
 
     let private readPresenter endpoint render = read endpoint render |> snd
+
+    let private pagePresenter endpoint metadata =
+        readPresenter endpoint (fun language (reply: Presented<_>) ->
+            let count, cursor, basis = metadata reply.Data
+
+            ViewText.render language reply.View
+            @ TextObservation.footer language count cursor basis false)
+
+    let private observedPresenter endpoint basis =
+        readPresenter endpoint (fun language (reply: Presented<_>) ->
+            ViewText.render language reply.View
+            @ [ TextObservation.line language (basis reply.Data) ])
 
     // This exhaustive endpoint table guarantees every human reply selects a typed renderer.
     // fsharplint:disable-next-line CyclomaticComplexity
     let private presenterFor =
         function
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseTimeline) ->
-            readPresenter Api.caseTimeline TextTimelineReply.page
+            pagePresenter
+                Api.caseTimeline
+                (fun (page: ClaimCore.Application.Contracts.CaseTimelinePage) ->
+                    page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderGet) ->
-            readPresenter Api.reminder TextWorkReply.single
+            observedPresenter
+                Api.reminder
+                (fun (reply: ClaimCore.Application.Contracts.ReminderRead) -> reply.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.ReminderList) ->
-            readPresenter Api.reminders TextWorkReply.page
+            pagePresenter Api.reminders (fun (page: ClaimCore.Application.Contracts.ReminderPage) ->
+                page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.WorkViews) ->
-            readPresenter Api.workViews TextWorkReply.workViews
+            observedPresenter
+                Api.workViews
+                (fun (reply: ClaimCore.Application.Contracts.WorkViews) -> reply.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseGet) ->
-            readPresenter Api.caseGet TextCaseReply.caseLines
+            observedPresenter
+                Api.caseGet
+                (fun (reply: ClaimCore.Application.Contracts.CaseReadModel) -> reply.Work.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseAssignees) ->
-            readPresenter Api.caseAssignees TextCaseReply.assigneePage
+            pagePresenter
+                Api.caseAssignees
+                (fun (page: ClaimCore.Application.Contracts.AssigneePage) ->
+                    page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseList) ->
-            readPresenter Api.caseList TextCaseReply.casePage
+            pagePresenter
+                Api.caseList
+                (fun (page: ClaimCore.Application.Contracts.CaseSummaryPage) ->
+                    page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.CaseSummary) ->
-            readPresenter Api.caseSummary TextContextReply.summary
+            observedPresenter
+                Api.caseSummary
+                (fun (reply: ClaimCore.Application.Contracts.CaseWorklistSummary) -> reply.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) ->
-            readPresenter Api.context TextContextReply.context
+            readPresenter Api.context (fun language reply -> ViewText.render language reply.View)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
-            readPresenter Api.authorityList TextAuthorityReply.actorPage
+            pagePresenter
+                Api.authorityList
+                (fun (page: ClaimCore.Application.Contracts.ActorReviewPage) ->
+                    page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
-            readPresenter Api.authorityGrants TextAuthorityReply.grantPage
+            pagePresenter
+                Api.authorityGrants
+                (fun (page: ClaimCore.Application.Contracts.AuthorityGrantPage) ->
+                    page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityHistory) ->
-            readPresenter Api.authorityHistory TextAuthorityReply.historyPage
+            pagePresenter
+                Api.authorityHistory
+                (fun (page: ClaimCore.Application.Contracts.AuthorityHistoryPage) ->
+                    page.Entries.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequests) ->
-            readPresenter Api.authorityRequests TextAuthorityReply.requests
+            pagePresenter
+                Api.authorityRequests
+                (fun (page: ClaimCore.Application.Contracts.AccessRequestPage) ->
+                    page.Items.Length, page.NextCursor, page.Basis)
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss) ->
-            readPresenter Api.authorityRequestsDismiss (fun language () ->
-                [ label language "label.requestDismissed" ])
+            readPresenter Api.authorityRequestsDismiss (fun language reply ->
+                ViewText.render language reply.View)
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
-            presenter Api.operationPreview TextOperationReply.previewLines |> snd
+            presenter Api.operationPreview OperationText.previewLines |> snd
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
             presenter Api.operationExecute (fun language request reply ->
-                TextOperationReply.executeLinesFor language request reply)
+                OperationText.executeLinesFor language request reply)
             |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
             presenter Api.operationGet (fun language _ reply ->
-                TextOperationReply.getLines language reply.Outcome)
+                OperationText.getLines language reply.Outcome)
             |> snd
         | EndpointId.Host HostEndpoint.Session ->
-            readPresenter Api.session (fun language session ->
-                TextDescriptorValue.sections
-                    language
-                    (ClaimCore.Presentation.Descriptor.session
-                        session.Authenticated
-                        session.ContractIdentity))
+            readPresenter Api.session (fun language reply -> ViewText.render language reply.View)
         | EndpointId.Host HostEndpoint.Logout ->
-            readPresenter Api.logout (fun language () ->
-                TextDescriptorValue.sections language (ClaimCore.Presentation.Descriptor.logout ()))
+            readPresenter Api.logout (fun language reply -> ViewText.render language reply.View)
 
     let private replyLines language request (reply: ServiceReply) =
         presenterFor reply.Route.Id language request reply

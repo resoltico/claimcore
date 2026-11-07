@@ -61,6 +61,27 @@ type Entry =
 type Section =
     { TitleId: string; Entries: Entry list }
 
+type Column =
+    {
+        Key: string
+        LabelId: string
+        Prominence: Prominence
+        IsMoney: bool
+    }
+
+[<RequireQualifiedAccess>]
+type View =
+    | Record of Section list
+    | Table of columns: Column list * rows: PresentedValue list list
+
+type Presented<'data> = { Data: 'data; View: View }
+
+module Presented =
+    let create describe data = { Data = data; View = describe data }
+
+    let outcome describe =
+        Outcome.fold (create describe >> Outcome.Succeeded) Outcome.Rejected Outcome.Failed
+
 /// Column metadata is independent of values, so empty pages and absent facts retain stable headers.
 [<NoEquality; NoComparison>]
 type EntryDefinition<'reply> =
@@ -137,15 +158,36 @@ type PresentedReview =
     {
         Subject: PresentedReviewSubject
         Presentation: ReviewPresentation
+        View: View
     }
 
 [<RequireQualifiedAccess>]
 type PresentedPreviewed =
     | Reviewed of PresentedReview
-    | AlreadyAccepted of OperationReceipt
+    | AlreadyAccepted of Presented<OperationReceipt>
 
 type PresentedPreviewReply =
     {
         OperationId: Guid
         Outcome: Outcome<PresentedPreviewed>
     }
+
+[<RequireQualifiedAccess>]
+type PresentedExecuteResult =
+    | Accepted of Presented<OperationReceipt>
+    | AlreadyAccepted of Presented<OperationReceipt>
+    | Rejected of Refusal
+    | Failed of CoreFault
+    | OutcomeUnknown
+
+type PresentedExecuteReply =
+    {
+        OperationId: Guid
+        Outcome: PresentedExecuteResult
+    }
+
+[<RequireQualifiedAccess>]
+type PresentedLookupResult =
+    | Accepted of Presented<OperationReceipt> * byRequester: bool
+    | Pending of finalAt: DateTimeOffset
+    | NotAccepted

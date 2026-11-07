@@ -60,16 +60,11 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   await expect(page.getByRole("link", { name: "Open a case", exact: true })).toHaveCount(0);
   await findCase(page, fixture.reference);
   await expect(page.locator(".case-header-state")).toBeVisible();
-  await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(1);
-  const history = page.locator(".case-timeline");
-  await expect(history.locator("details")).toHaveCount(1);
-  await history.locator("details > summary").click();
-  if (role === "CASE_HANDLER") {
-    await expect(history.locator(".timeline-change").first()).toBeVisible();
-    await expect(history).toContainText("Synthetic claimant");
-    await expect(history).toContainText("Synthetic insurer");
-  } else {
-    await expect(history.locator(".timeline-change")).toHaveCount(0);
+  await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(1);
+  const history = page.locator(".case-timeline-panel");
+  await expect(history.locator(".table-view tbody > tr")).toHaveCount(1);
+  if (role !== "CASE_HANDLER") {
+    await expect(history).toContainText("Changes are not disclosed.");
     await expect(history).not.toContainText("Synthetic claimant");
     await expect(history).not.toContainText("Synthetic insurer");
   }
@@ -87,13 +82,15 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
     await expect(history.locator(".timeline-change")).toHaveCount(0);
     await metadataTimeline(page, fixture.reference);
-    await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(1);
+    await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(1);
   }
   if (scoped) {
     await page.getByRole("button", { name: "Back to cases", exact: true }).click();
     await refusedRead(page, "case.get", () => findCase(page, fixture.unrelated));
     await expect(
-      page.locator(".case-header-state, .case-fields, .case-work, .case-timeline-panel"),
+      page.locator(
+        ".case-header-state, .record-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+      ),
     ).toHaveCount(0);
   }
 };
@@ -150,7 +147,11 @@ for (const [name, role, scoped] of cases) {
         readCase(narrow, fixture, role, scoped));
     } else {
       await noCaseWorkspace(narrow);
-      await expect(narrow.locator(".case-fields, .case-work, .case-timeline-panel")).toHaveCount(0);
+      await expect(
+        narrow.locator(
+          ".record-view [data-entry='claimantName'], .case-work, .case-timeline-panel",
+        ),
+      ).toHaveCount(0);
       await opaqueCaseRefusal(narrow, fixture.reference);
     }
     await test.step("Check narrow view accessibility", () => expectAccessible(narrow));

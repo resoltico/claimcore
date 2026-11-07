@@ -128,7 +128,16 @@ let reviews =
                         "The retained assignment is explicit"
 
                     let text =
-                        TextOperationReply.reviewLines "en" None review |> String.concat "\n"
+                        OperationText.previewLines
+                            "en"
+                            None
+                            (PresentedPreviewReply.ofCore
+                                None
+                                {
+                                    PreviewReply.OperationId = System.Guid.Empty
+                                    Outcome = Outcome.Succeeded(Previewed.Reviewed review)
+                                })
+                        |> String.concat "\n"
 
                     Expect.stringContains
                         text
@@ -257,7 +266,11 @@ let reviews =
                         }
 
                     let output =
-                        TextOperationReply.receiptLines "en" false receipt |> String.concat "\n"
+                        OperationText.receiptLines
+                            "en"
+                            false
+                            (Presented.create (Descriptor.receipt >> Descriptor.recordView) receipt)
+                        |> String.concat "\n"
 
                     Expect.stringContains
                         output
@@ -278,7 +291,7 @@ let reviews =
 
                     Expect.stringContains
                         output
-                        (TextReplyFormat.instant receipt.RecordedAt)
+                        (ReplyTextFormat.instant receipt.RecordedAt)
                         "Original recording time remains separate")
         ]
 

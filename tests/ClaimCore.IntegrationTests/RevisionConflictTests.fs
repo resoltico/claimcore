@@ -98,7 +98,8 @@ let tests =
                          | _ -> false))
                     "Full-history authority receives typed differences"
 
-                let encoded = Codec.encode Api.operationExecute.Output stale
+                let encoded =
+                    Codec.encode Api.operationExecute.Output (PresentedExecuteReply.ofCore stale)
 
                 Expect.isLessThan
                     encoded.Length

@@ -4,7 +4,6 @@
     <ProjectReference Include="../../src/ClaimCore.Json/ClaimCore.Json.fsproj" />
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="FailureDiagnosticsTests.fs" />
-    <Compile Include="TestRegistration.fs" />
     <Compile Include="ObservedTransactions.fs" />
     <Compile Include="OperationLookupTests.fs" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />

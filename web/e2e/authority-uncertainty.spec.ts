@@ -163,7 +163,7 @@ test("authority review and uncertainty survive locale changes while refusal clea
     await openAuthenticated(steward, "⟦Cààsëës⟧", stewardCookies);
     const subject = `authority-uncertain-${randomUUID()}`;
     await goToView(steward, "people");
-    const priorActor = steward.locator(".authority-rows .actor-subject").first();
+    const priorActor = steward.locator(".table-view tbody .actor-identity").first();
     await expect(priorActor).toBeVisible();
     const priorName = (await priorActor.innerText()).trim();
     expect(priorName.length).toBeGreaterThan(0);

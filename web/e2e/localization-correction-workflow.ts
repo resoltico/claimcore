@@ -90,7 +90,11 @@ const acceptSetup = async (
   if (outcome.data.subject.kind !== "CASE") {
     throw new Error("Expected case receipt.");
   }
-  const receipt: CaseOperationReceipt = { ...outcome.data, subject: outcome.data.subject };
+  const receipt: CaseOperationReceipt = {
+    ...outcome.data,
+    subject: outcome.data.subject,
+    view: outcome.view,
+  };
   const revision = request.expectedRevision + 1;
   expect(receipt.operationId).toBe(request.operationId);
   if (request.target.kind !== "REFERENCE") {
@@ -134,13 +138,9 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
   await (await showExactLookup(page)).fill(reference);
   await page.getByRole("button", { name: "Open by exact reference", exact: true }).click();
   await expect(page.locator("#case-detail-title")).toBeVisible();
-  const details = page.locator(".case-technical");
-  await details.locator(":scope > summary").click();
-  const factRevision = details
-    .locator("dl > div")
-    .filter({ has: page.getByText("Revision", { exact: true }) });
-  await expect(factRevision.locator("dd")).toHaveText(String(revision));
-  await details.locator(":scope > summary").click();
+  await expect(
+    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+  ).toContainText(String(revision));
 };
 export const chooseGroups = async (page: Page, modes: Modes, language: "en" | "lv" | "ar") => {
   await selectLanguage(page, language);

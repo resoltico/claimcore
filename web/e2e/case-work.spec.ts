@@ -71,9 +71,9 @@ test("records future planned work and scoped responsibility, then finds the case
   expect(accepted.outcome.data.work.followUpDate).toBe(planned);
   await expect(
     page
-      .locator(".reminder-list .reminder-row")
+      .locator(".reminder-list .table-view tbody > tr")
       .filter({ hasText: "Request the remaining documents" })
-      .locator(".reminder-timing"),
+      .locator("[data-column='timing']"),
   ).toHaveText("Upcoming");
   await expectAccessible(page);
   await goToView(page, "cases");

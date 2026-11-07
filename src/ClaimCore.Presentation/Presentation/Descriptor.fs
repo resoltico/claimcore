@@ -794,6 +794,12 @@ module Descriptor =
                 PresentedValue.Identifier(Sequence.format item.Position.Sequence))
             column "operationId" "field.operationId.label" Prominence.Detail false (fun item ->
                 PresentedValue.Identifier(OperationId.format item.OperationId))
+            column "changes" "label.changes" Prominence.Secondary false (fun item ->
+                match item.Changes with
+                | TimelineChanges.Disclosed disclosure ->
+                    PresentedValue.Count(int64 disclosure.Items.Length)
+                | TimelineChanges.Withheld -> PresentedValue.Message "label.changesWithheld"
+                | TimelineChanges.Erased -> PresentedValue.Message "label.changesErased")
         ]
 
     let assigneeColumns =
@@ -903,6 +909,20 @@ module Descriptor =
                 PresentedValue.Actor item.RecordedBy)
             column "target" "label.targetAccount" Prominence.Primary false (fun item ->
                 PresentedValue.Actor item.Target)
+            column
+                "scopeReference"
+                "field.caseReference.label"
+                Prominence.Secondary
+                false
+                (fun item ->
+                    match item.Facts with
+                    | AuthorityHistoryFacts.Granted {
+                                                        Scope = GrantScope.Case(_, reference)
+                                                    }
+                    | AuthorityHistoryFacts.Revoked {
+                                                        Scope = GrantScope.Case(_, reference)
+                                                    } -> PresentedValue.Reference reference
+                    | _ -> absent)
             column "details" "label.details" Prominence.Primary false (fun item ->
                 match item.Facts with
                 | AuthorityHistoryFacts.Granted grant
@@ -1012,41 +1032,40 @@ module Descriptor =
                 (optional PresentedValue.Party item.Email)
         ]
 
-    let accessRequest (item: AccessRequest) =
-        let kind, issuer, subject = PrincipalKey.parts item.Principal
-
+    let accessRequestColumns =
         [
-            section
-                "label.accessRequest"
-                (claims item.Claims
-                 @ [
-                     value
-                         "principalKind"
-                         "field.principal.kind.label"
-                         Prominence.Secondary
-                         (code PrincipalKind.vocabulary kind)
-                     value
-                         "issuer"
-                         "field.principal.issuer.label"
-                         Prominence.Detail
-                         (PresentedValue.Identifier issuer)
-                     value
-                         "subject"
-                         "field.principal.subject.label"
-                         Prominence.Detail
-                         (PresentedValue.Identifier subject)
-                     value
-                         "firstSeen"
-                         "label.firstSeen"
-                         Prominence.Secondary
-                         (PresentedValue.Instant item.FirstSeen)
-                     value
-                         "lastSeen"
-                         "label.lastSeen"
-                         Prominence.Secondary
-                         (PresentedValue.Instant item.LastSeen)
-                 ])
+            column
+                "nameHint"
+                "label.requestedName"
+                Prominence.Primary
+                false
+                (fun (item: AccessRequest) -> optional PresentedValue.Party item.Claims.Name)
+            column "usernameHint" "label.requestedUsername" Prominence.Secondary false (fun item ->
+                optional PresentedValue.Party item.Claims.PreferredUsername)
+            column "emailHint" "label.requestedEmail" Prominence.Secondary false (fun item ->
+                optional PresentedValue.Party item.Claims.Email)
+            column
+                "principalKind"
+                "field.principal.kind.label"
+                Prominence.Secondary
+                false
+                (fun item ->
+                    let kind, _, _ = PrincipalKey.parts item.Principal in
+                    code PrincipalKind.vocabulary kind)
+            column "issuer" "field.principal.issuer.label" Prominence.Detail false (fun item ->
+                let _, issuer, _ = PrincipalKey.parts item.Principal in
+                PresentedValue.Identifier issuer)
+            column "subject" "field.principal.subject.label" Prominence.Detail false (fun item ->
+                let _, _, subject = PrincipalKey.parts item.Principal in
+                PresentedValue.Identifier subject)
+            column "firstSeen" "label.firstSeen" Prominence.Secondary false (fun item ->
+                PresentedValue.Instant item.FirstSeen)
+            column "lastSeen" "label.lastSeen" Prominence.Secondary false (fun item ->
+                PresentedValue.Instant item.LastSeen)
         ]
+
+    let accessRequest item =
+        [ section "label.accessRequest" (entries accessRequestColumns item) ]
 
     let context (reply: ContextReply) =
         let state, details =
@@ -1561,23 +1580,34 @@ module Descriptor =
             consequence @ intent
         | None -> []
 
+    let private reaffirmedPayment input review =
+        match input, review with
+        | Some(OperationInput.Case {
+                                       Act = CaseAct.Correct { Payment = PaymentChange.Reaffirm }
+                                   }),
+          OperationReview.Case { Before = Some before } ->
+            before.State
+            |> CaseState.fields
+            |> Option.bind (fun fields -> PaymentProgress.paymentDate fields.Progress)
+            |> Option.toList
+            |> List.map (fun date ->
+                section
+                    "group.payment.label"
+                    [
+                        value
+                            "paymentDate"
+                            "field.paymentDate.label"
+                            Prominence.Primary
+                            (PresentedValue.Date date)
+                    ])
+        | _ -> []
+
     let operationReview input review =
         let described = reviewValues review
 
         { described with
-            Effects = authoredDetails input @ described.Effects
+            Effects = authoredDetails input @ reaffirmedPayment input review @ described.Effects
         }
-
-    /// Clients render the supplied presentation; only disclosed effect/context metadata is projected here.
-    let presentedReviewDetails input (review: PresentedReview) =
-        let effects, basis =
-            match review.Subject with
-            | PresentedReviewSubject.Case value -> [], value.Context.Basis
-            | PresentedReviewSubject.Work value -> [], value.Context.Basis
-            | PresentedReviewSubject.Reminder value -> [], value.Context.Basis
-            | PresentedReviewSubject.Authority value -> authorityEffects value.Effects, value.Basis
-
-        authoredDetails input @ effects, basis
 
     let private receiptHeader reference act =
         section
@@ -1809,5 +1839,38 @@ module Descriptor =
                         "label.accountState"
                         Prominence.Primary
                         (PresentedValue.Message "label.signedOut")
+                ]
+        ]
+
+    let recordView sections = View.Record sections
+
+    let tableView (definitions: EntryDefinition<'row> list) rows =
+        let columns =
+            definitions
+            |> List.map (fun definition ->
+                {
+                    Column.Key = definition.Key
+                    LabelId = definition.LabelId
+                    Prominence = definition.Prominence
+                    IsMoney = definition.IsMoney
+                })
+
+        View.Table(
+            columns,
+            rows
+            |> List.map (fun row -> definitions |> List.map (fun definition -> definition.Read row))
+        )
+
+
+    let dismissedAccessRequest () =
+        [
+            section
+                "label.accessRequest"
+                [
+                    value
+                        "result"
+                        "label.action"
+                        Prominence.Primary
+                        (PresentedValue.Message "label.requestDismissed")
                 ]
         ]

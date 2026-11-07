@@ -9,7 +9,7 @@ open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
-module internal TextReplyFormat =
+module internal ReplyTextFormat =
 
     // The CLI has language selection, not a separate display-locale preference.
     // Explicit regional cultures keep numeric conventions independent of neutral-culture OS defaults.

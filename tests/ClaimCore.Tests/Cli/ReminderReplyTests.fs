@@ -5,6 +5,7 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Cli
+open ClaimCore.Presentation
 
 let private required result =
     result |> Result.defaultWith (fun issue -> failtestf "%A" issue)
@@ -44,16 +45,11 @@ let private basis: WorkDateBasis =
 
 let private render language dateBasis value =
     [
-        TextWorkReply.single language { Basis = dateBasis; Item = value }
-        TextWorkReply.page
-            language
-            {
-                Basis = dateBasis
-                Items = [ value ]
-                NextCursor = None
-            }
+        ViewText.render language (Descriptor.reminder value |> Descriptor.recordView)
+        ViewText.render language (Descriptor.tableView Descriptor.reminderColumns [ value ])
     ]
-    |> List.map (String.concat "\n")
+    |> List.map (fun lines ->
+        lines @ [ TextObservation.line language dateBasis ] |> String.concat "\n")
 
 [<Tests>]
 let tests =
@@ -158,8 +154,34 @@ let tests =
                 testCase
                     (language + " historical reminder presenter does not invent current timing")
                     (fun () ->
+                        let historical = reminder ReminderState.Pending
+
+                        let receipt =
+                            { ClaimCore.TestSupport.ResponseExamples.receipt with
+                                Subject =
+                                    ReceiptSubject.Reminder
+                                        {
+                                            CaseId =
+                                                ClaimCore.TestSupport
+                                                    .ResponseExamples.snapshot.CaseId
+                                            Reference =
+                                                CaseReference.parse "CLI-TIMING" |> required
+                                            Act = ReminderActKind.Create
+                                            Effects =
+                                                ReminderReceiptEffects.Single
+                                                    {
+                                                        ReminderId = Reminder.id historical
+                                                        Revision = Revision.first
+                                                        Snapshot =
+                                                            ReminderDisclosure.Disclosed historical
+                                                    }
+                                        }
+                            }
+
                         let text =
-                            TextWorkReply.reminder language (reminder ReminderState.Pending)
+                            ViewText.render
+                                language
+                                (Descriptor.receipt receipt |> Descriptor.recordView)
                             |> String.concat "\n"
 
                         for label in inactive :: labels do

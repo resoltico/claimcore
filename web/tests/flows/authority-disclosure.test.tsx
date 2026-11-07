@@ -1,3 +1,4 @@
+import { fixtureView } from "../support/read-view.fixtures";
 import {
   openPersonEditor,
   chooseAdmissionRole,
@@ -81,6 +82,11 @@ const success = <K extends "context" | "authority.list">(
       ...value,
       outcome: {
         ...value.outcome,
+        view: fixtureView("authority.list", "SUCCEEDED", {
+          basis: workBasis,
+          items: [disclosedActor],
+          nextCursor: null,
+        }),
         data: {
           basis: workBasis,
           items: [disclosedActor],
@@ -424,7 +430,11 @@ const authorityRecoveryDelivery = (first: "lost" | "unknown") =>
         ...accepted,
         value: {
           operationId: prepared.input.operationId,
-          outcome: { kind: "ALREADY_ACCEPTED" as const, data: accepted.value.outcome.data },
+          outcome: {
+            view: { kind: "RECORD" as const, sections: [] },
+            kind: "ALREADY_ACCEPTED" as const,
+            data: accepted.value.outcome.data,
+          },
         },
       });
     });

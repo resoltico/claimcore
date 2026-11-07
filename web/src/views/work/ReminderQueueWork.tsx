@@ -35,7 +35,10 @@ const SelectedReminder = ({
     disclosureAvailable,
     selection.readId,
   );
-  const current = query.value?.outcome.kind === "SUCCEEDED" ? query.value.outcome.data : null;
+  const current =
+    query.value?.outcome.kind === "SUCCEEDED"
+      ? { ...query.value.outcome.data, view: query.value.outcome.view }
+      : null;
   const [parent, setParent] = useState<CurrentCase | null>(null);
   if (parent === null && current !== null && isCurrentCase(current)) {
     setParent(current);

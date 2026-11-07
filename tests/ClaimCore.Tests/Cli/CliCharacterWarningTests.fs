@@ -82,16 +82,26 @@ let private example kind =
     let endpoint, value =
         match kind with
         | Current ->
-            "case.get", Api.caseGet.Output.Write(Outcome.Succeeded ResponseExamples.caseRead)
+            "case.get",
+            Api.caseGet.Output.Write(
+                Outcome.Succeeded(
+                    Presented.create
+                        (Descriptor.caseView >> Descriptor.recordView)
+                        ResponseExamples.caseRead
+                )
+            )
         | Reviewed ->
             "operation.preview", Api.operationPreview.Output.Write ResponseExamples.preview
         | Accepted ->
             "operation.execute",
             Api.operationExecute.Output.Write
                 {
-                    ExecuteReply.OperationId =
+                    PresentedExecuteReply.OperationId =
                         OperationId.value ResponseExamples.receipt.OperationId
-                    Outcome = ExecuteResult.Accepted ResponseExamples.receipt
+                    Outcome =
+                        PresentedExecuteResult.Accepted(
+                            ResponseExamples.presentReceipt ResponseExamples.receipt
+                        )
                 }
 
     endpoint, JsonNode.Parse(WireWriter.bytes value) |> nonNull
@@ -132,6 +142,25 @@ let private rendered exampleName customize verify =
     let endpoint, document = example exampleName
     customize document
 
+    // These synthetic server facts changed before presentation was computed at the host binding.
+    let updateView codec describe =
+        let data = memberPath [ "outcome"; "data" ] document
+
+        let core =
+            Codec.decode
+                Limits.MaximumResponseBytes
+                codec
+                (Encoding.UTF8.GetBytes(data.ToJsonString()))
+            |> Result.defaultWith (fun _ -> failtest "Authored server facts")
+
+        let outcome = memberPath [ "outcome" ] document
+        outcome["view"] <- JsonNode.Parse(Codec.encode PresentationCodecs.view (describe core))
+
+    match exampleName with
+    | Current -> updateView ResponseCodecs.caseView (Descriptor.caseView >> Descriptor.recordView)
+    | Accepted -> updateView ReceiptCodecs.receipt (Descriptor.receipt >> Descriptor.recordView)
+    | Reviewed -> ()
+
     let value =
         StrictJson.read
             Limits.MaximumResponseBytes
@@ -154,7 +183,7 @@ let private rendered exampleName customize verify =
     let original = Array.copy bytes
 
     for language in LocalizationPolicy.languages do
-        let text = TextReply.bytes language frame |> Encoding.UTF8.GetString
+        let text = ReplyText.bytes language frame |> Encoding.UTF8.GetString
         verify language text
         Expect.isTrue (bytes = original) "Human annotations never mutate the structured reply bytes"
 
@@ -352,8 +381,11 @@ let private terminalDataBoundaries () =
     for language in LocalizationPolicy.languages do
         for text in
             [
-                TextAuthorityReply.actorRow language (ActorReviewItem.ofActor [] actor)
-                TextReplyFormat.displayed language (Some dangerous)
+                ViewText.render
+                    language
+                    (Descriptor.actor (ActorReviewItem.ofActor [] actor) |> Descriptor.recordView)
+                |> String.concat "\n"
+                ReplyTextFormat.displayed language (Some dangerous)
                 UsageText.render language [] [ UsageError.ExtraOperand dangerous ]
             ] do
             Expect.isFalse (text.Contains(char 27)) "Human data must never emit ESC"

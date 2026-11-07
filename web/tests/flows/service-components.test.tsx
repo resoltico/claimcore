@@ -4,11 +4,10 @@ import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { isEndpointId } from "../../src/protocol/client";
 import { CopyValue } from "../../src/components/CopyValue";
-import { CaseFieldsView } from "../../src/components/CaseFieldsView";
 import { CatalogField } from "../../src/components/CatalogField";
 import { LabeledTextInput } from "../../src/components/LabeledTextInput";
 import { hasSuspiciousCharacters, suspiciousCodePoints } from "../../src/utils/text";
-import { definition, fields } from "../support/service-ui.fixtures";
+import { definition } from "../support/service-ui.fixtures";
 
 it("copies safe values and provides an accessible fallback when clipboard access is unavailable", async () => {
   const user = userEvent.setup();
@@ -72,46 +71,4 @@ it("keeps generated endpoint inventory callable and presents suspicious Unicode 
     "U+2029",
   ]);
   expect(suspiciousCodePoints("العربية\u200D")).toEqual(["U+200D"]);
-});
-
-it("renders absent and suspicious accepted values without changing the recorded text", () => {
-  render(
-    <CaseFieldsView
-      values={{ ...fields, caseReference: "A\u202E", payment: null }}
-      revision={1}
-      fields={definition.catalog.fields}
-      context="synthetic current case"
-    />,
-  );
-  expect(screen.getAllByText("Not recorded")).toHaveLength(3);
-  expect(screen.getByText("Contains U+202E")).toBeVisible();
-  expect(screen.queryByText("Handling summary")).toBeNull();
-  expect(screen.queryByText("Responsible")).toBeNull();
-});
-
-it("gives simultaneous current and historical case fields distinct heading IDs", () => {
-  const snapshot = { fields, revision: 1 };
-  render(
-    <>
-      <CaseFieldsView
-        values={snapshot.fields}
-        revision={snapshot.revision}
-        fields={definition.catalog.fields}
-        context="first snapshot"
-      />
-      <CaseFieldsView
-        values={snapshot.fields}
-        revision={snapshot.revision}
-        fields={definition.catalog.fields}
-        context="second snapshot"
-      />
-    </>,
-  );
-  const sections = screen.getAllByRole("region", { name: /snapshot/u });
-  expect(sections).toHaveLength(2);
-  const headings = sections.map((section) => section.getAttribute("aria-labelledby"));
-  expect(headings[0]).not.toBe(headings[1]);
-  for (const id of headings) {
-    expect(document.getElementById(id ?? "")?.textContent).toContain("snapshot");
-  }
 });

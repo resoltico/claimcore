@@ -8,7 +8,9 @@ export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
   const tag = await page.locator("html").getAttribute("lang");
   const language = catalogLanguage(languages.find((candidate) => candidate === tag) ?? "en");
   const retryBusy = async (scope: Locator) => {
-    const busy = scope.getByRole("alert").filter({ hasText: ui(language, "host.RATE_LIMITED") });
+    const busy = scope
+      .locator(":scope > [role=alert]")
+      .filter({ hasText: ui(language, "host.RATE_LIMITED") });
     if (await busy.isVisible()) {
       await scope.getByRole("button", { name: ui(language, "ui.tryAgain"), exact: true }).click();
     }
@@ -18,7 +20,9 @@ export const expectCaseReadsSettled = async (page: Page): Promise<void> => {
   const workspaceBusy = page
     .locator("main > [role=alert]")
     .filter({ hasText: ui(language, "host.RATE_LIMITED") });
-  const busy = current.getByRole("alert").filter({ hasText: ui(language, "host.RATE_LIMITED") });
+  const busy = current
+    .locator(":scope > [role=alert]")
+    .filter({ hasText: ui(language, "host.RATE_LIMITED") });
   await expect
     .poll(
       async () =>

@@ -238,7 +238,7 @@ let tests =
                     "No work or financial value can be rendered"
 
                 Expect.isFalse
-                    (TextCaseReply.caseLines "en" reply
+                    (ViewText.render "en" (Descriptor.caseView reply |> Descriptor.recordView)
                      |> List.exists (fun line -> line.Contains "SECRET"))
                     "Actual human output cannot disclose stale work")
             testCase "reminder descriptor preserves actor and due date as typed values" (fun () ->

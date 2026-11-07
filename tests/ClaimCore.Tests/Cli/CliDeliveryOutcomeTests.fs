@@ -25,12 +25,16 @@ let tests =
                 for outcome, expected in
                     [
                         Outcome.Succeeded(
-                            OperationLookupResult.Accepted(CliReplyFixtures.receipt, true)
+                            PresentedLookupResult.Accepted(
+                                ClaimCore.TestSupport.ResponseExamples.presentReceipt
+                                    CliReplyFixtures.receipt,
+                                true
+                            )
                         ),
                         0
-                        (Outcome.Succeeded OperationLookupResult.NotAccepted), 2
+                        (Outcome.Succeeded PresentedLookupResult.NotAccepted), 2
                         (Outcome.Succeeded(
-                            OperationLookupResult.Pending(
+                            PresentedLookupResult.Pending(
                                 System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
                             )
                         )),
@@ -52,10 +56,14 @@ let tests =
                         "Lookup outcome controls exit")
             testCase "lookup text retains acceptance and pending deadline" (fun () ->
                 let accepted =
-                    TextOperationReply.getLines
+                    OperationText.getLines
                         "en"
                         (Outcome.Succeeded(
-                            OperationLookupResult.Accepted(CliReplyFixtures.receipt, true)
+                            PresentedLookupResult.Accepted(
+                                ClaimCore.TestSupport.ResponseExamples.presentReceipt
+                                    CliReplyFixtures.receipt,
+                                true
+                            )
                         ))
                     |> String.concat "\n"
 
@@ -69,17 +77,17 @@ let tests =
                     "Acceptance is never presented as nonacceptance"
 
                 Expect.equal
-                    (TextOperationReply.getLines
+                    (OperationText.getLines
                         "en"
-                        (Outcome.Succeeded OperationLookupResult.NotAccepted))
+                        (Outcome.Succeeded PresentedLookupResult.NotAccepted))
                     [ "This change was not recorded for your account." ]
                     "Only actual final nonacceptance gets this completion"
 
                 Expect.equal
-                    (TextOperationReply.getLines
+                    (OperationText.getLines
                         "en"
                         (Outcome.Succeeded(
-                            OperationLookupResult.Pending(
+                            PresentedLookupResult.Pending(
                                 System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
                             )
                         )))
@@ -99,7 +107,7 @@ let tests =
                                 {
                                     OperationReply.OperationId = operation
                                     Outcome =
-                                        Outcome.Succeeded(OperationLookupResult.Pending finalAt)
+                                        Outcome.Succeeded(PresentedLookupResult.Pending finalAt)
                                 })
 
                     use output = new System.IO.MemoryStream()
@@ -147,7 +155,7 @@ let tests =
                         {
                             OperationId = CliReplyFixtures.id
                             Outcome =
-                                ExecuteResult.Rejected(
+                                PresentedExecuteResult.Rejected(
                                     Refusal.Access AccessRefusal.ResourceUnavailable
                                 )
                         }

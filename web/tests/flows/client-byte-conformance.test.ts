@@ -113,7 +113,9 @@ it("bounds timeline, directory and grant pages at fifty items", () => {
           endpoint,
           direction: "response",
           valid,
-          text: JSON.stringify({ outcome: { kind: "SUCCEEDED", data } }),
+          text: JSON.stringify({
+            outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED", data },
+          }),
         }),
       ).toBe(valid);
     }

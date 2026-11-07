@@ -109,6 +109,7 @@ let private run words (answer: string option) =
                                 frame
                                 Api.operationPreview
                                 (PresentedPreviewReply.ofCore
+                                    (Some(OperationInput.Authority authority))
                                     {
                                         PreviewReply.OperationId = authority.OperationId
                                         Outcome =
@@ -160,8 +161,13 @@ let private run words (answer: string option) =
                                 frame
                                 Api.operationExecute
                                 {
-                                    ExecuteReply.OperationId = authority.OperationId
-                                    Outcome = ExecuteResult.Accepted receipt
+                                    PresentedExecuteReply.OperationId = authority.OperationId
+                                    Outcome =
+                                        PresentedExecuteResult.Accepted(
+                                            Presented.create
+                                                (Descriptor.receipt >> Descriptor.recordView)
+                                                receipt
+                                        )
                                 }
                         else
                             failtest "Unexpected exchange"
@@ -170,7 +176,7 @@ let private run words (answer: string option) =
             Deliver =
                 fun frame reply ->
                     output.Append(
-                        TextReply.bytesFor "en" (Some frame) reply.Frame |> Encoding.UTF8.GetString
+                        ReplyText.bytesFor "en" (Some frame) reply.Frame |> Encoding.UTF8.GetString
                     )
                     |> ignore
         }

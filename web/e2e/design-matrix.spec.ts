@@ -95,10 +95,7 @@ const paidCorrectionReview = async (run: Run) => {
   }
 };
 const historyComparison = async (page: Page) => {
-  const first = page.locator(".case-timeline > .timeline-entry").first();
-  await expect(first).toBeVisible();
-  await first.locator(":scope > details > summary").click();
-  await expect(first.locator("details .timeline-changes")).toBeVisible();
+  await expect(page.locator(".case-timeline-panel .table-view tbody > tr").first()).toBeVisible();
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {

@@ -1,5 +1,5 @@
-import type { EndpointId, RequestByEndpoint } from "@contracts/client";
-import type { ServiceResponse } from "../api/service";
+import type { WorkDateBasis, EndpointId, RequestByEndpoint } from "@contracts/client";
+import type { PresentedPage, ServiceResponse } from "../api/service";
 import { requestEndpoint } from "../api/service";
 import { useEndpointCache } from "./EndpointProvider";
 import { canonicalInput, typedResult, type EndpointCache } from "./endpointCache";
@@ -10,7 +10,11 @@ import type { Dispatch, SetStateAction } from "react";
 import { resultNotice, type ApiResult, type EndpointOutcome } from "../api/service";
 import { isDisclosureRefused } from "../api/outcomes";
 
-type Page<T> = { readonly items: ReadonlyArray<T>; readonly nextCursor: string | null };
+type Page<T> = {
+  readonly items: ReadonlyArray<T>;
+  readonly nextCursor: string | null;
+  readonly basis: WorkDateBasis;
+};
 
 type PageSinks<T, P> = {
   onDisclosureRefused: ((notice?: Notice) => void) | undefined;
@@ -19,6 +23,7 @@ type PageSinks<T, P> = {
   setMessage: Dispatch<SetStateAction<Notice | null>>;
   setLoading: Dispatch<SetStateAction<boolean>>;
   setPage: Dispatch<SetStateAction<P | null>>;
+  setViews: Dispatch<SetStateAction<PresentedPage[]>>;
 };
 
 const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
@@ -45,6 +50,7 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
       sinks.setItems([]);
       sinks.setCursor(null);
       sinks.setPage(null);
+      sinks.setViews([]);
     }
     sinks.setMessage(resultNotice(result));
   } else {
@@ -53,6 +59,10 @@ const fetchPage = async <R extends EndpointOutcome, T, P extends Page<T>>(
     );
     sinks.setCursor(page.nextCursor);
     sinks.setPage(page);
+    if (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED") {
+      const presented = { view: result.value.outcome.view, basis: page.basis };
+      sinks.setViews((previous) => (cursor === null ? [presented] : [...previous, presented]));
+    }
   }
   sinks.setLoading(false);
 };
@@ -76,6 +86,7 @@ const usePageLoader = <R extends EndpointOutcome, T, P extends Page<T>>(
         sinks.setItems([]);
         sinks.setCursor(null);
         sinks.setPage(null);
+        sinks.setViews([]);
       }
       sinks.setLoading(true);
       sinks.setMessage(null);
@@ -106,9 +117,10 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
   const [message, setMessage] = useState<Notice | null>(null);
   const [loading, setLoading] = useState(false);
   const [page, setPage] = useState<P | null>(null);
+  const [views, setViews] = useState<PresentedPage[]>([]);
   const sinks = useMemo(
-    () => ({ setItems, setCursor, setMessage, setLoading, setPage, onDisclosureRefused }),
-    [setItems, setCursor, setMessage, setLoading, setPage, onDisclosureRefused],
+    () => ({ setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureRefused }),
+    [setItems, setCursor, setMessage, setLoading, setPage, setViews, onDisclosureRefused],
   );
   const { load, abort } = usePageLoader(request, select, sinks);
 
@@ -125,7 +137,7 @@ const usePages = <R extends EndpointOutcome, T, P extends Page<T> = Page<T>>(
     };
   }, [abort, load]);
 
-  return { items, cursor, message, loading, page, load };
+  return { items, cursor, message, loading, page, views, load };
 };
 
 type PageSource<K extends EndpointId> = {

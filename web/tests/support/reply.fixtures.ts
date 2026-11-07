@@ -1,3 +1,4 @@
+import { fixtureView } from "./read-view.fixtures";
 import type {
   EndpointId,
   OperationReceipt,
@@ -15,7 +16,9 @@ const operationId = "10000000-0000-7000-8000-000000000001";
 const caseId = "20000000-0000-4000-8000-000000000001";
 const position = { sequence: 1, entryHash: "a".repeat(64) };
 const actor = () => actorRefInput({ displayName: { kind: "NAMED", value: "Synthetic recorder" } });
-const succeeded = <T>(data: T) => ({ outcome: { kind: "SUCCEEDED" as const, data } });
+const succeeded = <T>(data: T) => ({
+  outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+});
 const caseReceipt = (): OperationReceipt => ({
   operationId,
   position,
@@ -149,24 +152,46 @@ const replies: Replies = {
   "authority.requests.dismiss": () => succeeded(null),
   "operation.execute": (subject) => ({
     operationId,
-    outcome: { kind: "ACCEPTED", data: subject === "CASE" ? caseReceipt() : authorityReceipt() },
+    outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
+      kind: "ACCEPTED",
+      data: subject === "CASE" ? caseReceipt() : authorityReceipt(),
+    },
   }),
   "operation.preview": () => ({ operationId, outcome: { kind: "REVIEWED", data: { review } } }),
   "operation.get": () => ({
     operationId,
-    outcome: { kind: "ACCEPTED", data: { receipt: caseReceipt(), byRequester: true } },
+    outcome: {
+      view: { kind: "RECORD" as const, sections: [] },
+      kind: "ACCEPTED",
+      data: { receipt: caseReceipt(), byRequester: true },
+    },
   }),
 };
 /** Behavioral inputs are typed builders; literal decoding examples have a separate reader. */
 export const wireReply = <K extends EndpointId>(
   endpoint: K,
   subject: Subject = "CASE",
-): ResponseByEndpoint[K] => structuredClone(replies[endpoint](subject));
+): ResponseByEndpoint[K] => {
+  const reply = structuredClone(replies[endpoint](subject));
+  if ("view" in reply.outcome) {
+    Object.assign(reply.outcome, {
+      view: fixtureView(endpoint, reply.outcome.kind, reply.outcome.data),
+    });
+  }
+  return reply;
+};
 export const wireResponse = (
   endpoint: EndpointId,
   status = 200,
   subject: Subject = "CASE",
 ): Response => {
   const value = wireReply(endpoint, subject);
-  return transportResponse(endpoint, value.outcome.kind, value.outcome.data, status);
+  return transportResponse(
+    endpoint,
+    value.outcome.kind,
+    value.outcome.data,
+    status,
+    "view" in value.outcome ? value.outcome.view : undefined,
+  );
 };

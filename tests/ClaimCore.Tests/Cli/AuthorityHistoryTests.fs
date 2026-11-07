@@ -60,7 +60,7 @@ let private csvSubjects () =
         }
 
     let csv =
-        Array.append AuthorityHistoryRows.csvHeader (AuthorityHistoryRows.csvRows [ entry ])
+        Array.append AuthorityHistoryCsv.csvHeader (AuthorityHistoryCsv.csvRows [ entry ])
 
     use source = new StringReader(Encoding.UTF8.GetString csv)
     use reader = new TextFieldParser(source)
@@ -78,14 +78,25 @@ let private csvSubjects () =
             NextCursor = None
         }
 
-    let text = TextAuthorityReply.historyPage "en" page |> String.concat "\n"
+    let text =
+        ViewText.render "en" (Descriptor.tableView Descriptor.authorityHistoryColumns page.Entries)
+        |> String.concat "\n"
 
     Expect.isFalse
         (text.Contains "{\"")
         "The authority table renders human text; exact identity is retained in CSV and JSON"
 
     use json =
-        JsonDocument.Parse(Codec.encode Api.authorityHistory.Output (Outcome.Succeeded page))
+        JsonDocument.Parse(
+            Codec.encode
+                Api.authorityHistory.Output
+                (Outcome.Succeeded(
+                    Presented.create
+                        (fun (page: AuthorityHistoryPage) ->
+                            Descriptor.tableView Descriptor.authorityHistoryColumns page.Entries)
+                        page
+                ))
+        )
 
     let data =
         json.RootElement.GetProperty("outcome").GetProperty("data").GetProperty("entries")

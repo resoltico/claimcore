@@ -23,7 +23,7 @@ module internal RecoveryCommand =
         {
             Bytes =
                 if options.Text then
-                    TextReply.bytes options.Language value.Frame
+                    ReplyText.bytes options.Language value.Frame
                 else
                     Array.append value.Bytes [| byte '\n' |]
             ExitCode = value.ExitCode
@@ -138,25 +138,14 @@ module internal RecoveryCommand =
                                             | _ -> None
 
                                         match outcome with
-                                        | Some(Outcome.Succeeded(OperationLookupResult.Pending _)) when
+                                        | Some(Outcome.Succeeded(PresentedLookupResult.Pending _)) when
                                             console.IsInteractive
                                             && access.Configuration.Mode =
                                                 RemoteClientMode.Interactive
                                             ->
                                             console.Write (reply options false response).Bytes
                                             do! System.Threading.Tasks.Task.Delay(1000, cancelled)
-                                        | Some(Outcome.Succeeded(OperationLookupResult.Accepted(receipt,
-                                                                                                _))) when
-                                            not (RecoveryJournal.matchesReceipt record receipt)
-                                            ->
-                                            completed <-
-                                                Some(
-                                                    CliReply.local ClientFailure.InvalidResponse
-                                                    |> CliReply.forAttempt
-                                                        frame
-                                                        DeliveryState.Uncertain
-                                                )
-                                        | Some(Outcome.Succeeded(OperationLookupResult.Accepted _ | OperationLookupResult.NotAccepted)) ->
+                                        | Some(Outcome.Succeeded(PresentedLookupResult.Accepted _ | PresentedLookupResult.NotAccepted)) ->
                                             if access.IsCurrent token then
                                                 match RecoveryJournal.remove directory record with
                                                 | Ok() -> ()

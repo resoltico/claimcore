@@ -16,6 +16,7 @@ const stubReview = (before: "ACTIVE" | "VOIDED", after: "ACTIVE" | "VOIDED" | "E
       Promise.resolve(
         response("operation.preview", "REVIEWED", {
           review: {
+            view: { kind: "RECORD" as const, sections: [] },
             presentation: {
               changes: [
                 {

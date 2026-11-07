@@ -342,8 +342,8 @@ module Api =
             Unavailable =
                 fun input ->
                     {
-                        ExecuteReply.OperationId = OperationInput.operationId input
-                        Outcome = ExecuteResult.Failed CoreFault.StoreUnavailable
+                        PresentedExecuteReply.OperationId = OperationInput.operationId input
+                        Outcome = PresentedExecuteResult.Failed CoreFault.StoreUnavailable
                     }
         }
 

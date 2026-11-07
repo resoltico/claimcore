@@ -8,15 +8,9 @@ import { completeAct, openCase, lookupCase, caseActionButton } from "./case-work
 import { expectAccessible, openAuthenticated } from "./session-helpers";
 
 const expectRevision = async (page: Page, revision: string) => {
-  const details = page.locator("[data-record-details]");
-  await details.locator(":scope > summary").click();
   await expect(
-    details
-      .locator("dl > div")
-      .filter({ has: page.getByText("Revision", { exact: true }) })
-      .locator("dd"),
-  ).toHaveText(revision);
-  await details.locator(":scope > summary").click();
+    page.locator(".case-workspace .record-view [data-entry='revision'] dd"),
+  ).toContainText(revision);
 };
 const reference = (): string => `BROWSER-${randomUUID()}`;
 
@@ -40,15 +34,12 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await decide(page);
   await completeAct(page, "WITHDRAW_DECISION");
   await expectRevision(page, "4");
-  await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(4);
+  await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(4);
   const opening = page
-    .locator(".case-timeline > .timeline-entry")
+    .locator(".case-timeline-panel .table-view tbody > tr")
     .filter({ hasText: opened.operationId });
   await expect(opening).toHaveCount(1);
-  await opening.locator(":scope > details > summary").click();
-  await expect(opening.locator(".timeline-change").first()).toBeVisible();
-  await expect(opening).toContainText("Synthetic claimant");
-  await expect(opening).toContainText("1,200.50");
+  await expect(opening).toContainText("Open a case");
   await expect(opening).toContainText(opened.operationId);
   await expect(await caseActionButton(page, "CLOSE", "en")).toBeVisible();
   await expectAccessible(page);
@@ -57,7 +48,7 @@ test("publishes open, amendment, decision, withdrawal, full history and operatio
   await (await showOperationLookup(page)).fill(opened.operationId);
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(
-    page.getByText(`Accepted operation ${opened.operationId}`, { exact: false }),
+    page.locator(".record-view").getByText(opened.operationId, { exact: true }),
   ).toBeVisible();
   await expectAccessible(page);
 
@@ -80,6 +71,6 @@ test("publishes payment, correction, close and reopen with current-case parity",
   await expect(page.getByText("Closed", { exact: true }).first()).toBeVisible();
   await completeAct(page, "REOPEN");
   await expectRevision(page, "6");
-  await expect(page.locator(".case-timeline > .timeline-entry")).toHaveCount(6);
+  await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(6);
   await expectAccessible(page);
 });

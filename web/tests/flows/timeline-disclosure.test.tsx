@@ -1,3 +1,5 @@
+import type { CaseView, CaseTimelinePage } from "@contracts/client";
+import { fixtureView } from "../support/read-view.fixtures";
 import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
@@ -7,10 +9,38 @@ import { caseViewInput } from "../support/inputs";
 import { timelineEntry, timelinePage } from "../support/timeline.fixtures";
 import { fields, definition } from "../support/service-ui.fixtures";
 import { CaseDetail } from "../../src/views/CaseDetail";
-const succeeded = <const T,>(data: T) => ({
+const succeeded = <const T extends CaseView | CaseTimelinePage>(data: T) => ({
   kind: "outcome" as const,
   status: 200,
-  value: { outcome: { kind: "SUCCEEDED" as const, data } },
+  value: {
+    outcome: {
+      kind: "SUCCEEDED" as const,
+      data,
+      view:
+        "items" in data
+          ? {
+              kind: "TABLE" as const,
+              columns: [
+                {
+                  key: "future-private-fact",
+                  labelId: "field.handlingSummary.label",
+                  prominence: "PRIMARY" as const,
+                  isMoney: false,
+                },
+              ],
+              rows: data.items.map((item) => [
+                {
+                  kind: "TEXT" as const,
+                  value:
+                    item.changes.kind === "DISCLOSED"
+                      ? "PRIOR_FULL_PAYLOAD_CANARY"
+                      : "These changes are not available to this account.",
+                },
+              ]),
+            }
+          : fixtureView("case.get", "SUCCEEDED", data),
+    },
+  },
 });
 const current = (history: "NONE" | "SUMMARY" | "FULL") =>
   caseViewInput({
@@ -67,7 +97,7 @@ it("removes previous disclosed timeline changes before a downgraded disclosure r
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findAllByText("PRIOR_FULL_PAYLOAD_CANARY")).toHaveLength(2);
+  expect(await screen.findAllByText("PRIOR_FULL_PAYLOAD_CANARY")).toHaveLength(1);
   const user = userEvent.setup();
   const controls = document.querySelector(".case-reminder-controls")!;
   expect(controls).not.toHaveAttribute("open");

@@ -22,13 +22,13 @@ module internal AuthorityHistoryCommand =
 
             match page with
             | Some(Outcome.Succeeded page) ->
-                io.Output AuthorityHistoryRows.csvHeader
-                io.Output(AuthorityHistoryRows.csvRows page.Entries)
-                let next = TextReplyFormat.nextLines prepared.Language page.NextCursor
+                io.Output AuthorityHistoryCsv.csvHeader
+                io.Output(AuthorityHistoryCsv.csvRows page.Data.Entries)
+                let next = ReplyTextFormat.nextLines prepared.Language page.Data.NextCursor
 
                 if not next.IsEmpty then
                     io.Errors(Encoding.UTF8.GetBytes(String.concat "\n" next + "\n"))
-            | _ -> io.Errors(TextReply.bytesFor prepared.Language (Some frame) reply.Frame)
+            | _ -> io.Errors(ReplyText.bytesFor prepared.Language (Some frame) reply.Frame)
 
             return
                 if token.IsCancellationRequested then

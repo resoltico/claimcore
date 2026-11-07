@@ -1,10 +1,11 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { stubViewCounts } from "../support/dashboard-context.fixtures";
 import userEvent from "@testing-library/user-event";
 import { chooseOption } from "../support/choice-entry";
 import { chooseRoleForReview } from "../support/authority-input.fixtures";
 import { beforeEach, expect, it, vi } from "vitest";
-import { act, fireEvent, within } from "@testing-library/react";
+import { act, fireEvent } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { Dashboard } from "../../src/views/Dashboard";
@@ -240,12 +241,7 @@ it("opens one named person panel and prefills profile edits only from its curren
   const person = await screen.findByRole("dialog", { name: "server-first" });
   expect(screen.getAllByRole("dialog")).toHaveLength(1);
   expect(person).not.toHaveTextContent("stale-list-first");
-  expect(
-    within(person.querySelector<HTMLDetailsElement>(".actor-record-details")!).getByText(
-      firstActor.principal.subject,
-      { selector: "bdi", exact: true },
-    ),
-  ).not.toBeVisible();
+  expect(person.querySelector(".actor-record-details")).toBeNull();
   const user = userEvent.setup();
   await user.click(await screen.findByRole("button", { name: /^Update profile:/u }));
   await waitFor(() => {
@@ -270,22 +266,19 @@ it("opens a row revocation with the exact supplied principal, role and case refe
   getEndpointMock("authority.grants").mockResolvedValue({
     ...reply,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          ...reply.value.outcome.data,
-          items: [
-            {
-              role: "CASE_READER",
-              scope: {
-                kind: "CASE",
-                caseId: "20000000-0000-4000-8000-000000000001",
-                caseReference: "CASE-FROM-GRANT",
-              },
+      outcome: presentedOutcome("authority.grants", "SUCCEEDED", {
+        ...reply.value.outcome.data,
+        items: [
+          {
+            role: "CASE_READER",
+            scope: {
+              kind: "CASE",
+              caseId: "20000000-0000-4000-8000-000000000001",
+              caseReference: "CASE-FROM-GRANT",
             },
-          ],
-        },
-      },
+          },
+        ],
+      }),
     },
   });
   actorRoute();

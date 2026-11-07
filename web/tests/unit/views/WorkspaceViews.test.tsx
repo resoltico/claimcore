@@ -15,7 +15,9 @@ import type { WorkViews, RequesterState_ACTIVE } from "@contracts/client";
 const result = (data: WorkViews) => ({
   kind: "outcome" as const,
   status: 200,
-  value: { outcome: { kind: "SUCCEEDED" as const, data } },
+  value: {
+    outcome: { view: { kind: "RECORD" as const, sections: [] }, kind: "SUCCEEDED" as const, data },
+  },
 });
 const Probe = () => {
   const value = useWorkspaceViews();

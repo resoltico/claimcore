@@ -134,7 +134,7 @@ let tests =
                                 }
                         }
 
-                let supplied = PresentedReview.ofCore review
+                let supplied = PresentedReview.ofCore None review
 
                 let change =
                     supplied.Presentation.Changes
@@ -171,6 +171,7 @@ let producerBudgets =
             let encode review =
                 let reply =
                     PresentedPreviewReply.ofCore
+                        None
                         {
                             PreviewReply.OperationId = CliReplyFixtures.id
                             Outcome = Outcome.Succeeded(Previewed.Reviewed review)
@@ -369,7 +370,7 @@ let primaryAuthorityChanges =
                         Effects = [ AuthorityReviewEffect.Grant installation ]
                     }
 
-                let result = PresentedReview.ofCore (OperationReview.Authority value)
+                let result = PresentedReview.ofCore None (OperationReview.Authority value)
 
                 let keys =
                     (result.Presentation.Changes |> List.map _.Key)

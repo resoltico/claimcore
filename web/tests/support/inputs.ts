@@ -1,6 +1,7 @@
+import { fixtureView } from "./read-view.fixtures";
 import { isCaseAct } from "../../src/operation/metadata";
 import { blockedCaseActs } from "./blocked-case-acts.fixtures";
-import type { CaseSummary as Summary } from "../../src/protocol/types";
+import type { CurrentCase, CaseSummary as Summary } from "../../src/protocol/types";
 import type {
   RequesterState_ACTIVE,
   ActorRef,
@@ -85,7 +86,8 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   const { state } = value;
   const active = state.kind === "ACTIVE" && state.fields.status === "OPENED";
   return {
-    ...value,
+    caseReference: value.caseReference,
+    revision: value.revision,
     advice: {
       recommended: null,
       blocked: blockedCaseActs(
@@ -193,7 +195,7 @@ export const principal = (changes: Partial<Principal> = {}): Principal => ({
 type SummarySeed = Partial<Omit<Summary, "state">> & {
   state?: { kind: "ERASED" } | { kind: "ACTIVE" | "VOIDED"; fields?: ListedCaseFields };
 };
-export const listedFieldsInput: ListedCaseFields = {
+const listedFieldsInput: ListedCaseFields = {
   claimantName: "Synthetic claimant",
   insurerName: "Synthetic insurer",
   claimedAmount: "12.34",
@@ -394,3 +396,9 @@ export const positiveValue = (seed: unknown): unknown => {
   };
   return complete(seed);
 };
+
+/** An editor observation includes the independently authored wire presentation. */
+export const currentCaseInput = (value: LiveViewSeed): CurrentCase => ({
+  ...caseViewInput(value),
+  view: fixtureView("case.get", "SUCCEEDED", caseViewInput(value)),
+});

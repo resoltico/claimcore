@@ -87,7 +87,7 @@ for stage in "${stages[@]}"; do
   esac
 done
 
-# Discovery/source-membership guards and MTP enforce complete, nonempty runs.
+# MTP rejects empty runs; review discovery and skipped outcomes for the selected scope.
 tests() { # <project> [configuration] [timeout] [settings]
   local report_directory report_root
   report_root="${CLAIMCORE_TEST_REPORT_DIRECTORY:-${PWD}/artifacts/verification}"

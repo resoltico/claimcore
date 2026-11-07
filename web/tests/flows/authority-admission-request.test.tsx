@@ -1,3 +1,4 @@
+import { presentedOutcome } from "../support/read-view.fixtures";
 import { it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
@@ -24,34 +25,36 @@ const setup = (manage: boolean) => {
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: {
-          requester: actorContextInput({
-            ...context,
-            capabilities: manage ? ["MANAGE_AUTHORITY", "READ_AUTHORITY"] : ["READ_AUTHORITY"],
-            offers: manage ? [{ kind: "AUTHORITY_ACT", act: "ADMIT" }] : [],
-            views: ["AUTHORITY"],
-          }),
-        },
-      },
+      outcome: presentedOutcome("context", "SUCCEEDED", {
+        requester: actorContextInput({
+          ...context,
+          capabilities: manage ? ["MANAGE_AUTHORITY", "READ_AUTHORITY"] : ["READ_AUTHORITY"],
+          offers: manage ? [{ kind: "AUTHORITY_ACT", act: "ADMIT" }] : [],
+          views: ["AUTHORITY"],
+        }),
+      }),
     },
   });
   mockEndpoint("authority.list").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: { kind: "SUCCEEDED", data: { basis: workBasis, items: [], nextCursor: null } },
+      outcome: presentedOutcome("authority.list", "SUCCEEDED", {
+        basis: workBasis,
+        items: [],
+        nextCursor: null,
+      }),
     },
   });
   const requests = mockEndpoint("authority.requests").mockResolvedValue({
     kind: "outcome",
     status: 200,
     value: {
-      outcome: {
-        kind: "SUCCEEDED",
-        data: { basis: workBasis, items: [request], nextCursor: null },
-      },
+      outcome: presentedOutcome("authority.requests", "SUCCEEDED", {
+        basis: workBasis,
+        items: [request],
+        nextCursor: null,
+      }),
     },
   });
   render(<AuthorityPanel onLockChange={vi.fn()} />);
