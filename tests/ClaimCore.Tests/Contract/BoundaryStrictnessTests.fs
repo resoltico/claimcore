@@ -8,7 +8,8 @@ open Expecto
 open Hedgehog
 open Hedgehog.FSharp
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.Json
 open ClaimCore.TestSupport

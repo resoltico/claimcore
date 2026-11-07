@@ -11,7 +11,7 @@ RUN --mount=type=cache,target=/root/.npm \
     && npm install --global "npm@$(node -p 'require("./web/package.json").engines.npm')" \
     && npm --prefix web ci
 COPY contracts ./contracts
-COPY src/ClaimCore.Protocol/Messages/Localization ./src/ClaimCore.Protocol/Messages/Localization
+COPY src/ClaimCore.Presentation/Messages/Localization ./src/ClaimCore.Presentation/Messages/Localization
 COPY web/tsconfig.base.json web/tsconfig.app.json web/tsconfig.protocol.json web/vite.config.ts web/index.html ./web/
 COPY web/src ./web/src
 COPY web/public ./web/public

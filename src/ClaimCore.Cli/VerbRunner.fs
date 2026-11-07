@@ -5,7 +5,8 @@ open System.IO
 open System.Threading
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<NoEquality; NoComparison>]
 type internal VerbConsole =
@@ -103,7 +104,7 @@ module internal VerbRunner =
                 output
                     Api.operationPreview
                     {
-                        ClaimCore.Protocol.PresentedPreviewReply.OperationId =
+                        ClaimCore.Presentation.PresentedPreviewReply.OperationId =
                             ClaimCore.Application.Contracts.OperationInput.operationId input
                         Outcome = ClaimCore.Application.Contracts.Outcome.Rejected refusal
                     }

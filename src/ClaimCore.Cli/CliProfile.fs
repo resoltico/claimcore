@@ -5,7 +5,8 @@ open System.IO
 open System.Security.Cryptography
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.HostSecurity
 
 /// Only public connection settings and presentation language belong to the profile format.

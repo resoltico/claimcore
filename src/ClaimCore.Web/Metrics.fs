@@ -4,7 +4,8 @@ open System
 open System.Collections.Generic
 open System.Diagnostics
 open ClaimCore.Application
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Postgres
 
 [<RequireQualifiedAccess>]

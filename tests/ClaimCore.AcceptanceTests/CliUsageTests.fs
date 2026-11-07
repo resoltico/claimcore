@@ -6,7 +6,8 @@ open System.Text
 open System.Collections.Generic
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.TestSupport
 
 type private Example =

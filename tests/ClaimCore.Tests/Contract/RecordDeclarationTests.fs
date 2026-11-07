@@ -1,12 +1,13 @@
 module ClaimCore.Tests.RecordDeclarationTests
 
-open ClaimCore.ProtocolGeneration
+open ClaimCore.ContractGeneration
 
 open System
 open System.IO
 open System.Text.Json
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.Domain
 open ClaimCore.TestSupport
@@ -135,7 +136,7 @@ let private actGroups () =
 
 let private locales () =
     let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Protocol/Messages/Localization")
+        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Presentation/Messages/Localization")
 
     for language in LocalizationPolicy.languages do
         use document =

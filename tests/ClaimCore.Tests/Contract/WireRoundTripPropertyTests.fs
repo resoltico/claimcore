@@ -1,6 +1,7 @@
 module ClaimCore.Tests.WireRoundTripPropertyTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -127,7 +128,7 @@ let tests =
                     "Every inventoried endpoint has authored reply seeds")
             testCase "authored positive alternatives seed every endpoint and direction" seedCases
             for definition in Api.definitions do
-                let endpoint = ClaimCore.Protocol.Route.ofDefinition definition
+                let endpoint = ClaimCore.Wire.Route.ofDefinition definition
 
                 testCase (Api.id endpoint + " request DTO property") (fun () ->
                     run (wireName endpoint false) (propertyFor false definition))

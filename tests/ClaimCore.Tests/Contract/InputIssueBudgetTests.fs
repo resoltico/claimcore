@@ -1,7 +1,8 @@
 module ClaimCore.Tests.InputIssueBudgetTests
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<Tests>]
 let tests =

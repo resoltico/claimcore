@@ -1,7 +1,8 @@
 module ClaimCore.Tests.CliCharacterWarningTests
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Application.Contracts
 
 open System.IO

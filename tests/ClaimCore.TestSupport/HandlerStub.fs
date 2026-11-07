@@ -4,7 +4,8 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Web
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 
 open System

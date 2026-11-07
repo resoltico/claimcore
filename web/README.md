@@ -11,7 +11,7 @@ no database access. [Browser and host](../docs/operating.md#identity-and-hosting
 - [operation/operationForm.ts](src/operation/operationForm.ts) assembles exact member paths, tagged branches and diagnostic focus from typed catalog bindings; [hooks/operation/useOperation.ts](src/hooks/operation/useOperation.ts) retains the exact prepared request, consent and prior uncertainty for CASE, AUTHORITY, WORK and REMINDER.
 - [views/work](src/views/work/) renders work overview, handling summaries and reminder planning through the shared operation coordinator. Reminder rows use server timing and their originating page basis.
 - [views](src/views/) render context-authorized navigation, cases/history, operation review/recovery and Access administration. Domain/Application own validation, available acts and outcome meaning.
-- [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Protocol/Messages/Localization/) and browser-owned [chrome catalogs](locales/) for the [supported languages](../docs/glossary.md). Complete core/chrome language pairs load on demand and activate with direction. Raw amount entries keep
+- [presentation](src/presentation/) combines generated messages from the shared [core catalogs](../src/ClaimCore.Presentation/Messages/Localization/) and browser-owned [chrome catalogs](locales/) for the [supported languages](../docs/glossary.md). Complete core/chrome language pairs load on demand and activate with direction. Raw amount entries keep
   their entry locale; display preferences do not reinterpret them. View loading retains active operation
   ownership and exposes explicit retry/reload on failure. Record translation-review scope and reviewer identity as described in the [glossary](../docs/glossary.md). Language/display preferences persist in browser storage. The [integration guide](../docs/integrating.md#delivery-recovery) owns interrupted-delivery behavior.
 
@@ -45,7 +45,7 @@ builds need no test fixtures.
 Case review renders core-supplied field changes and lifecycle states; authority review renders the supplied
 before/after state. History renders core-supplied differences without comparing snapshots in the view.
 Prepared requests keep the exact reviewed bytes. Wire admission rejects unknown members; OpenAPI is not
-bundled. Pseudolocalization runs at runtime. The [F# generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns the tracked [contracts](../contracts/), [CLI reference](../docs/cli.md) and [browser chrome messages](src/generated/chrome-messages.ts); web commands consume generated outputs without invoking .NET. Ordinary .NET builds do not run npm.
+bundled. Pseudolocalization runs at runtime. The [F# generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns the tracked [contracts](../contracts/), [CLI reference](../docs/cli.md) and [browser chrome messages](src/generated/chrome-messages.ts); web commands consume generated outputs without invoking .NET. Ordinary .NET builds do not run npm.
 
 [Development](../docs/contributing.md#verification) owns the frontend stage and real-browser qualification, including complete three-engine PR qualification, isolated engine jobs and serial workers within each stateful fixture. Formatting, type-aware lint, module boundaries, unit completion, audit, licenses, Knip and notices are checked. CSS is checked through formatting and browser layout/accessibility, without a separate semantic linter.
 

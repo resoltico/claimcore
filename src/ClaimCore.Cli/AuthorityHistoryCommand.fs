@@ -4,7 +4,8 @@ open System.Text
 open System.Threading
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 module internal AuthorityHistoryCommand =
     let run (io: ReadPageIO) (prepared: PreparedVerb) token =

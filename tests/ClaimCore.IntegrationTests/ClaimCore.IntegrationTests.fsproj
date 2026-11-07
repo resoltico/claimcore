@@ -6,7 +6,8 @@
     <Compile Include="FailureDiagnosticsTests.fs" />
     <Compile Include="TestRegistration.fs" />
     <Compile Include="ObservedTransactions.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <Compile Include="StoreContractReads.fs" />
     <Compile Include="LedgerWriteContract.fs" />
     <Compile Include="CaseDisclosureContract.fs" />

@@ -92,7 +92,7 @@ let private ambientEffects () =
     for name in
         [
             "ClaimCore.Json"
-            "ClaimCore.Protocol"
+            "ClaimCore.Wire"
             "ClaimCore.Domain"
             "ClaimCore.Application.Contracts"
             "ClaimCore.RecordFormat"
@@ -134,7 +134,7 @@ let private importedReference () =
             "Unused imported project edge is evaluated"
 
         Expect.isFalse
-            (ProjectReferences.permitted "ClaimCore.Protocol" references)
+            (ProjectReferences.permitted "ClaimCore.Wire" references)
             "Only Web and Database may declare this edge"
     finally
         directory.Delete true
@@ -175,7 +175,7 @@ let private postgres () =
     rejects ArchitectureRule.Postgres typeof<PostgresReference>
 
 let private serializer () =
-    for name in [ "ClaimCore.Json"; "ClaimCore.Protocol"; "ClaimCore.RecordFormat" ] do
+    for name in [ "ClaimCore.Json"; "ClaimCore.Wire"; "ClaimCore.RecordFormat" ] do
         check ArchitectureRule.Serializer (Assembly.Load name)
 
     rejects ArchitectureRule.Serializer typeof<JsonSerializerCall>
@@ -308,7 +308,7 @@ let private shapeControls () =
                 TaskMember = "JsonTask"
             }
             {
-                Assembly = "ClaimCore.Protocol"
+                Assembly = "ClaimCore.Wire"
                 Direct = typeof<ProtocolFromDomain>
                 DirectMember = "ProtocolDirect"
                 Task = typeof<ProtocolFromDomainTask>
@@ -342,7 +342,7 @@ let private shapeControls () =
         (domainTargets |> List.map (fun target -> target.Assembly) |> List.sort)
         ([
             "ClaimCore.Json"
-            "ClaimCore.Protocol"
+            "ClaimCore.Wire"
             "ClaimCore.Application"
             "ClaimCore.RecordFormat"
             "ClaimCore.Postgres"
@@ -483,6 +483,6 @@ let tests =
                 publishedClosure
             testCase "JSON, Contract and RecordFormat avoid JsonSerializer" serializer
             testCase "closed wire vocabularies use the typed codec adapter" (fun () ->
-                check ArchitectureRule.ClosedVocabularyCodecs (Assembly.Load "ClaimCore.Protocol")
+                check ArchitectureRule.ClosedVocabularyCodecs (Assembly.Load "ClaimCore.Wire")
                 rejects ArchitectureRule.ClosedVocabularyCodecs typeof<DirectEnumeration>)
         ]

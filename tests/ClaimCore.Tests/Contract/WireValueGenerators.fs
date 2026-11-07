@@ -1,7 +1,8 @@
 module ClaimCore.Tests.WireValueGenerators
 
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json

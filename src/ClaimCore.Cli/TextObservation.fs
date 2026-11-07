@@ -3,7 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Observation belongs to the installation snapshot, never the client's current clock.
 module internal TextObservation =

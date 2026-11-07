@@ -4,7 +4,8 @@ open ClaimCore.TestSupport
 
 open System
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 
 let today = DateOnly(2026, 10, 26)

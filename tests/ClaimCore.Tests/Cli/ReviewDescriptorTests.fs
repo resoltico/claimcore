@@ -5,8 +5,9 @@ open Expecto
 open Microsoft.FSharp.Reflection
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 

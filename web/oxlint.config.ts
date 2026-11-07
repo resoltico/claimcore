@@ -432,9 +432,9 @@ const config: OxlintConfig = defineConfig({
                 target: "../contracts/messages.ts",
                 from: root,
                 except: [
-                  "../src/ClaimCore.Protocol/Messages/Localization/en.json",
-                  "../src/ClaimCore.Protocol/Messages/Localization/lv.json",
-                  "../src/ClaimCore.Protocol/Messages/Localization/ar.json",
+                  "../src/ClaimCore.Presentation/Messages/Localization/en.json",
+                  "../src/ClaimCore.Presentation/Messages/Localization/lv.json",
+                  "../src/ClaimCore.Presentation/Messages/Localization/ar.json",
                   "./src/protocol/",
                   "../contracts/",
                 ].map(allowed),

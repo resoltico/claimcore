@@ -9,7 +9,8 @@
     <ProjectReference Include="../ClaimCore.TestSupport/ClaimCore.TestSupport.fsproj" />
     <Compile Include="Support/CliExamples.fs" />
     <Compile Include="TestRegistration.fs" />
-    <ProjectReference Include="../../src/ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <Compile Include="Support/PostgresBaselineTests.fs" />
     <Compile Include="Support/PropertyHarness.fs" />
     <Compile Include="Support/PropertyHarnessTests.fs" />
@@ -194,7 +195,7 @@
     <Compile Include="Support/DocumentationTests.fs" />
   </ItemGroup>
   <ItemGroup>
-    <ProjectReference Include="../../eng/ClaimCore.ProtocolGenerator/ClaimCore.ProtocolGenerator.fsproj" />
+    <ProjectReference Include="../../eng/ClaimCore.ContractGenerator/ClaimCore.ContractGenerator.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Cli/ClaimCore.Cli.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />

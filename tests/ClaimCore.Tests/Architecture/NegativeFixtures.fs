@@ -1,7 +1,8 @@
 namespace ClaimCore.Tests.Architecture.NegativeFixtures
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Threading.Tasks
@@ -52,7 +53,7 @@ type FileReaderCall =
 /// A compiled wire-codec dependency must never enter a durable grammar.
 type WireCodecCall =
     static member Read() =
-        ClaimCore.Protocol.RequestCodecs.caseRequest.Schema
+        ClaimCore.Wire.RequestCodecs.caseRequest.Schema
 
 /// Distinct names let controls select compiler-generated bodies as well as declaring types.
 type AmbientShapes =

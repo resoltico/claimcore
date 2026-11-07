@@ -1,6 +1,7 @@
 module ClaimCore.AcceptanceTests.MetricsTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto

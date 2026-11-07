@@ -5,7 +5,8 @@ open System.Diagnostics
 open System.IO
 open System.Text
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Text is acquired before operation preparation. The resulting LF text is reviewed/frozen exactly.
 module internal TextInputs =

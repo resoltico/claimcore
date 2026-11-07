@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliDeliveryOutcomeTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open Expecto
 open ClaimCore.Domain

@@ -1,7 +1,8 @@
 module ClaimCore.Tests.VerificationFoldTests
 
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Expecto

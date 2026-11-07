@@ -2,7 +2,8 @@ module ClaimCore.Tests.OutcomeContractScenarios
 
 open ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System

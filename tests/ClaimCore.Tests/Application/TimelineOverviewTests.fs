@@ -8,8 +8,9 @@ open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 

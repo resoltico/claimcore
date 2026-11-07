@@ -5,7 +5,8 @@ open System.Reflection
 open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -30,7 +31,7 @@ module ContractDiscovery =
            |> String.concat "")
 
     let private openapi () =
-        WireWriter.indentedBytes ClaimCore.Protocol.OpenApi.document
+        WireWriter.indentedBytes ClaimCore.Wire.OpenApi.document
 
     let catalogue () =
         let endpoints =

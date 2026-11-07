@@ -37,7 +37,8 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Json | Strict JSON values, writers, codecs and schemas |
 | Domain | JSON-free values and identifiers, typed acts, accepted state, business refusals, authority policy and decisions |
 | Application.Contracts | Use-case requests, replies, advice, paging and faults over Domain |
-| Protocol | Wire codecs, endpoints, catalog, renderer-neutral messages and presentation policy, shared command-line contracts |
+| Presentation | Renderer-neutral values, descriptors, localization and shared human-output contracts |
+| Wire | Endpoint declarations, codecs, catalog bindings, OpenAPI and build identity; references Presentation |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
 | Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
 | Postgres | Transaction primitives, projections and installation administration |
@@ -192,11 +193,11 @@ and permanent decoding; SQL retains durable token, identity, revision, erasure a
 After a declaration, codec or message change:
 
 ```sh
-dotnet run --project eng/ClaimCore.ProtocolGenerator --configuration Release --no-restore -- --output contracts
-dotnet run --project eng/ClaimCore.ProtocolGenerator --configuration Release --no-restore -- --check
+dotnet run --project eng/ClaimCore.ContractGenerator --configuration Release --no-restore -- --output contracts
+dotnet run --project eng/ClaimCore.ContractGenerator --configuration Release --no-restore -- --check
 ```
 
-The [generator](../eng/ClaimCore.ProtocolGenerator/Program.fs) owns its exact inventory under
+The [generator](../eng/ClaimCore.ContractGenerator/Program.fs) owns its exact inventory under
 [contracts](../contracts/), [the CLI reference](cli.md) and [browser chrome metadata](../web/src/generated/chrome-messages.ts), its bootstrap text and the
 explicit test catalog loaders in [web/src/generated](../web/src/generated/).
 Check mode refuses missing, stale or extra outputs and does not repair them. Review generated diffs with their
@@ -215,7 +216,7 @@ preservation in each supported browser engine. Build or schema checks alone do n
 Protocol publishes semantic operation/input metadata; CLI owns verbs, flags, operands, switches and
 synopses. The generator renders the command reference through CLI grammar. The public catalog has no
 `synopsis` field. Core owns domain wording and scalar guidance; renderer catalogs contain interaction text.
-Request codecs own input structure. [WireMembers](../src/ClaimCore.Protocol/Wire/WireMembers.fs) supplies technical
+Request codecs own input structure. [WireMembers](../src/ClaimCore.Wire/Wire/WireMembers.fs) supplies technical
 member names; catalog annotations identify meaning by named schema definition/member. Finite codec
 vocabularies supply the catalog's choice/group and constant vocabulary names; group annotations supply
 correction advice identity. Generation rejects finite inputs without a vocabulary. Browser form state
@@ -236,7 +237,7 @@ Keep expected rule outcomes independent of production codecs and validators.
 
 ## Core presentation and copy
 
-[Descriptor](../src/ClaimCore.Protocol/Presentation/Descriptor.fs) owns typed business presentation:
+[Descriptor](../src/ClaimCore.Presentation/Presentation/Descriptor.fs) owns typed business presentation:
 case headlines, attention, recommendations, change summaries and actor names come from the core.
 CLI and web adapt inputs and render these values; they must not rank actions or recreate business rules.
 Case and reminder view predicates, rows and counts use the same authorized read snapshot. Exercise
@@ -253,15 +254,15 @@ wire syntax for CLI help, documentation and information tips. GUI diagnostics us
 message map rather than displaying CLI syntax. Consequence and completion identities are core metadata;
 renderers must not infer them from effect names.
 
-The machine-readable [glossary](../src/ClaimCore.Protocol/Messages/Localization/glossary.json) owns the
-supported-language terms. [MessageRegisters](../eng/ClaimCore.ProtocolGenerator/MessageRegisters.fs) checks
+The machine-readable [glossary](../src/ClaimCore.Presentation/Messages/Localization/glossary.json) owns the
+supported-language terms. [MessageRegisters](../eng/ClaimCore.ContractGenerator/MessageRegisters.fs) checks
 registers, banned GUI tokens and glossary alignment during generation and `--check`. Add a negative
 control when changing these checks. Review changed translations against owning English and actual
 consumer behavior. Record reviewer identity, language, source and context scope, distinguishing
 AI-assisted review from human linguistic approval. Catalog parity checks establish complete keys
 and safe arguments, not linguistic approval.
 
-[LocalizationPolicy](../src/ClaimCore.Protocol/Messages/Localization/LocalizationPolicy.fs) owns supported
+[LocalizationPolicy](../src/ClaimCore.Presentation/Messages/Localization/LocalizationPolicy.fs) owns supported
 language tags, Chinese script/region aliases, direction and default CLI display conventions. Korean uses
 South Korean conventions; Spanish and German use contemporary standard wording. Chinese has separate
 Simplified (`zh-Hans`) and Traditional (`zh-Hant`) catalogs. Explicit scripts take precedence over region;

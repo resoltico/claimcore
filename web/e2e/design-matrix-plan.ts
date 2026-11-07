@@ -104,7 +104,7 @@ export const expectedEngineCounts = (engine: string): MatrixCounts =>
   engine === "chromium"
     ? { dimensions: 6, pageLoads: 174, axeAndReflowChecks: 180, screenshots: 60 }
     : { dimensions: 2, pageLoads: 58, axeAndReflowChecks: 60, screenshots: 0 };
-export const assertMatrixCounts = (engine: string, actual: MatrixCounts): void => {
+const assertMatrixCounts = (engine: string, actual: MatrixCounts): void => {
   const expected = expectedEngineCounts(engine);
   if (
     Object.keys(expected).some(

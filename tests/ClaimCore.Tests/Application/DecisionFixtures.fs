@@ -4,7 +4,8 @@ open ClaimCore.TestSupport
 
 open System
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application
 open ClaimCore.Application.Contracts

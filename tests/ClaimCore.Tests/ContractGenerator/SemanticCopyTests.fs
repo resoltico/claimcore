@@ -1,8 +1,9 @@
 module ClaimCore.Tests.SemanticCopyTests
 
 open Expecto
-open ClaimCore.Protocol
-open ClaimCore.ProtocolGeneration
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.ContractGeneration
 
 let private catalogs =
     AuthoredMessages.all () |> Map.map (fun _ entries -> Map.ofList entries)

@@ -1,6 +1,7 @@
 module ClaimCore.Tests.RegistryFrameTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Cli
 

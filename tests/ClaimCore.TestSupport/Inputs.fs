@@ -5,7 +5,8 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let activeContext (reply: ContextReply) =
@@ -181,7 +182,7 @@ let private groupInput (codec: ClaimCore.Json.Codec<'value>) group overrides =
 
 let registration: RegistrationInput =
     groupInput
-        ClaimCore.Protocol.RequestCodecs.registration
+        ClaimCore.Wire.RequestCodecs.registration
         "registration"
         (Map.ofList [ "incidentNotificationDate", "2026-08-03"; "insurerName", "Synthetic Insurer" ])
 
@@ -209,13 +210,13 @@ let registrationOn incident notification =
 
 let decision: DecisionInput =
     groupInput
-        ClaimCore.Protocol.RequestCodecs.decision
+        ClaimCore.Wire.RequestCodecs.decision
         "decision"
         (Map.ofList [ "paymentDecisionDate", "2026-08-15"; "payableAmount", "750.00" ])
 
 let payment: PaymentInput =
     groupInput
-        ClaimCore.Protocol.RequestCodecs.payment
+        ClaimCore.Wire.RequestCodecs.payment
         "payment"
         (Map.ofList [ "paymentDate", "2026-08-20" ])
 

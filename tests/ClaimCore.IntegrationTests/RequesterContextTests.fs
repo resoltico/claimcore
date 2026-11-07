@@ -5,7 +5,8 @@ open System.Threading.Tasks
 open Expecto
 open Npgsql
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Postgres

@@ -1,6 +1,6 @@
 # Glossary
 
-The machine-readable [glossary seeds](../src/ClaimCore.Protocol/Messages/Localization/glossary.json)
+The machine-readable [glossary seeds](../src/ClaimCore.Presentation/Messages/Localization/glossary.json)
 are checked against core and interface catalogs by the protocol generator. Use these terms consistently.
 
 The interface supports English, Latvian, Arabic, Korean (South Korea), Japanese, modern standard

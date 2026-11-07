@@ -3,13 +3,14 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open System.Text
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
 
 module internal TextOperationReply =
-    open ClaimCore.Protocol.Presentation
+    open ClaimCore.Presentation
 
     open TextReplyFormat
     open TextDiagnosticReply

@@ -5,7 +5,8 @@ open System.Threading
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 [<NoEquality; NoComparison>]

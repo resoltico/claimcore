@@ -6,7 +6,8 @@ open System.Threading.Tasks
 open ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.TestSupport
 open Expecto
 open ShellConsoleFixture

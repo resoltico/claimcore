@@ -9,7 +9,8 @@ open Expecto
 open ClaimCore.Application
 open ClaimCore.Web
 open ClaimCore.Web.Composition
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -26,10 +27,7 @@ let private applicationExamples () =
         JsonDocument.Parse(
             File
                 .ReadAllBytes(
-                    Path.Combine(
-                        RepositoryRoot.find (),
-                        "tests/fixtures/examples/requests.json"
-                    )
+                    Path.Combine(RepositoryRoot.find (), "tests/fixtures/examples/requests.json")
                 )
                 .AsMemory()
         )

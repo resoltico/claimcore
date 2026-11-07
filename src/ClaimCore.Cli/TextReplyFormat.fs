@@ -4,7 +4,8 @@ open System
 open System.Globalization
 open System.Numerics
 open System.Text
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 

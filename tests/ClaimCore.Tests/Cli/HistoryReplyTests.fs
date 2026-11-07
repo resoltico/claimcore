@@ -5,7 +5,8 @@ open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
@@ -29,7 +30,7 @@ let private page entries =
 
 let private validator () =
     let document =
-        ClaimCore.Protocol.OpenApi.document
+        ClaimCore.Wire.OpenApi.document
         |> WireWriter.bytes
         |> Encoding.UTF8.GetString
         |> JsonNode.Parse

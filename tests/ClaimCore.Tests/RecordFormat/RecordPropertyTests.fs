@@ -9,7 +9,8 @@ open System.Text.Json
 open Expecto
 open Hedgehog
 open Hedgehog.FSharp
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.RecordFormat
 open ClaimCore.Tests.PropertyHarness

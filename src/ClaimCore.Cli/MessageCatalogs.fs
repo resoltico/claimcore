@@ -4,7 +4,8 @@ open System
 open System.Reflection
 open System.Text.Json
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Resource I/O belongs to the client; catalog admission and rendering remain pure.
 module internal MessageCatalogs =

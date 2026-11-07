@@ -3,8 +3,9 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open ClaimCore.Domain
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 
 /// Text escaping and locale formatting are interface responsibilities; every value kind is explicit.
 module internal TextDescriptorValue =

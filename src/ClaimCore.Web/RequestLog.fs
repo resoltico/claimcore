@@ -2,7 +2,8 @@ namespace ClaimCore.Web
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open Microsoft.Extensions.Logging

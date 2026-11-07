@@ -2,7 +2,8 @@ module internal ClaimCore.IntegrationTests.VerificationSupport
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Threading

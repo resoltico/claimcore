@@ -6,7 +6,8 @@ open System.Text.Json
 open Expecto
 open global.Json.Schema
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private witnesses =

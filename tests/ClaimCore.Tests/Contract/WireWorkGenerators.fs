@@ -2,7 +2,8 @@ module ClaimCore.Tests.WireWorkGenerators
 
 open System
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Application.Contracts
 open Hedgehog
 open Hedgehog.FSharp

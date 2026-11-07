@@ -1,6 +1,7 @@
 module ClaimCore.Tests.PayloadBudgetTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 
@@ -145,10 +146,10 @@ let private fullHistoryBudget () =
 
     Expect.isLessThan
         bound
-        ClaimCore.Protocol.Limits.MaximumResponseBytes
+        ClaimCore.Wire.Limits.MaximumResponseBytes
         "All fifty entries fit the response limit"
 
-    Expect.equal ClaimCore.Protocol.Limits.MaximumResponseBytes 4194304 "Public response limit"
+    Expect.equal ClaimCore.Wire.Limits.MaximumResponseBytes 4194304 "Public response limit"
 
     Expect.equal LedgerPayload.MaximumBytes 32768 "Permanent framed payload bound"
 
@@ -209,12 +210,12 @@ let private boundedAuthority () =
 
     Expect.isLessThan
         (actors 50).Length
-        ClaimCore.Protocol.Limits.MaximumResponseBytes
+        ClaimCore.Wire.Limits.MaximumResponseBytes
         "Maximal admitted actor headers fit"
 
     Expect.isLessThan
         (grants 50).Length
-        ClaimCore.Protocol.Limits.MaximumResponseBytes
+        ClaimCore.Wire.Limits.MaximumResponseBytes
         "Maximal scoped grants and target header fit"
 
     Expect.throws (fun () -> actors 51 |> ignore) "Actor overproduction refuses, never truncates"

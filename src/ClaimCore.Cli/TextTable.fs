@@ -3,7 +3,7 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open ClaimCore.Domain
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Presentation
 
 [<NoEquality; NoComparison>]
 type internal TextTableOptions = { Width: int; BoldHeader: bool }

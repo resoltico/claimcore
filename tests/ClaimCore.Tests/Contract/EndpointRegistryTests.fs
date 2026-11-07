@@ -4,7 +4,8 @@ open ClaimCore.TestSupport
 
 open ClaimCore.Web
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Text
@@ -221,7 +222,7 @@ let private structuralIdentity () =
         "The independent OpenAPI parser admits the registry document."
 
 let private hostFailures () =
-    for reason in ClaimCore.Protocol.HostFailureReason.all do
+    for reason in ClaimCore.Wire.HostFailureReason.all do
         let expected = HostFailureCodecs.ofReason reason
 
         Expect.equal

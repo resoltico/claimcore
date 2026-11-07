@@ -1,6 +1,7 @@
 module ClaimCore.IntegrationTests.DiagnosticEvidence
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.TestSupport
 

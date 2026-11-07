@@ -3,7 +3,8 @@ module ClaimCore.Tests.AuthorityDecisionTests
 open ClaimCore.TestSupport
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application

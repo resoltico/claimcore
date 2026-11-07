@@ -113,7 +113,7 @@ let progressWire =
                     Progress = progress
                 }
 
-            let codec = ClaimCore.Protocol.ResponseCodecs.caseFields
+            let codec = ClaimCore.Wire.ResponseCodecs.caseFields
             let value = codec.Write fields
 
             Expect.equal

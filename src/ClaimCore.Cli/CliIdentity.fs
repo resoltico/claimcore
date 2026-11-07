@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System.Reflection
 

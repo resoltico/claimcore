@@ -409,7 +409,7 @@ let private supplementary fixture =
                 BusinessField.ClaimedAmount, "1.0000"
             ]
             ClaimCore.TestSupport.Inputs.registration
-        |> ClaimCore.Json.Codec.encode ClaimCore.Protocol.RequestCodecs.registration
+        |> ClaimCore.Json.Codec.encode ClaimCore.Wire.RequestCodecs.registration
 
     use registration = JsonDocument.Parse values
 

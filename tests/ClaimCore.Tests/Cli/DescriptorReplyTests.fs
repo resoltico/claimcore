@@ -5,7 +5,8 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
@@ -289,7 +290,7 @@ let assigneePresentation =
                     NextCursor = Some "next-page"
                 }
 
-            let columns = ClaimCore.Protocol.Presentation.Descriptor.assigneeColumns
+            let columns = ClaimCore.Presentation.Descriptor.assigneeColumns
 
             Expect.equal
                 (columns |> List.find (fun column -> column.Key = "actor")).Prominence

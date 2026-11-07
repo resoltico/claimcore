@@ -3,7 +3,8 @@ namespace ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.IO

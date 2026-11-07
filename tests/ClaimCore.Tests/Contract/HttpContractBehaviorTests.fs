@@ -6,11 +6,12 @@ open System.Text.Json.Nodes
 open Expecto
 open global.Json.Schema
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private document () =
-    ClaimCore.Protocol.OpenApi.document
+    ClaimCore.Wire.OpenApi.document
     |> WireWriter.bytes
     |> Encoding.UTF8.GetString
     |> JsonNode.Parse
@@ -138,7 +139,7 @@ let private fixedDescriptions () =
                     "Description is the referenced HTTP status"
 
 let private responseLabels () =
-    let descriptions = prose [] ClaimCore.Protocol.OpenApi.document
+    let descriptions = prose [] ClaimCore.Wire.OpenApi.document
     Expect.isNonEmpty descriptions "Required response labels are present."
 
     for path, value in descriptions do
@@ -194,7 +195,7 @@ let private reachable () =
         "Discriminator targets must resolve too."
 
     Expect.isFalse
-        (Map.containsKey "CaseRequest" ClaimCore.Protocol.OpenApi.definitions)
+        (Map.containsKey "CaseRequest" ClaimCore.Wire.OpenApi.definitions)
         "Unscoped request definitions are not published."
 
 let private diagnosticRevisions () =

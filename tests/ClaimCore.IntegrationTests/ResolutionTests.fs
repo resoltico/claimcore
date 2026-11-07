@@ -8,7 +8,8 @@ open System.Threading
 open System.Threading.Tasks
 open Expecto
 open ClaimCore.Application
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Postgres

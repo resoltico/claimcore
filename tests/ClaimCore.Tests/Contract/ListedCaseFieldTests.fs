@@ -4,8 +4,9 @@ open System.Text
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Json
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 

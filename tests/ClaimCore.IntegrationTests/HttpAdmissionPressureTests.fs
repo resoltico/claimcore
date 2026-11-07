@@ -18,7 +18,8 @@ open ClaimCore.Application
 open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Postgres
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.TestSupport.TestServerFixture

@@ -9,7 +9,8 @@ open System.Text
 open System.Text.Json
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 let private configurationRefusals (fixture: PublishedFixture.Fixture) =
     let source = Some(Encoding.UTF8.GetBytes "{\"endpoint\":\"context\",\"input\":{}}")

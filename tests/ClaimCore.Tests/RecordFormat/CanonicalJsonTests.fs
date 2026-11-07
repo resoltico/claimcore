@@ -1,7 +1,8 @@
 module ClaimCore.Tests.CanonicalJsonTests
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System

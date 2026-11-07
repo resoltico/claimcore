@@ -2,7 +2,8 @@ module ClaimCore.Tests.ProgressContractTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 

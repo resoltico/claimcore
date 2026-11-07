@@ -3,7 +3,8 @@ module ClaimCore.IntegrationTests.HostingTests
 open ClaimCore.Application
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 

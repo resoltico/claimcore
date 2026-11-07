@@ -1,7 +1,8 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<RequireQualifiedAccess>]
 type CliCommand =

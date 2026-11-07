@@ -3,7 +3,8 @@ module ClaimCore.Tests.CliReplyFixtures
 open ClaimCore.TestSupport
 
 open System
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json

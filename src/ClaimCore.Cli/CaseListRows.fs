@@ -4,8 +4,9 @@ open System.Globalization
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.Presentation
 
 module internal CaseListRows =
     [<NoEquality; NoComparison>]

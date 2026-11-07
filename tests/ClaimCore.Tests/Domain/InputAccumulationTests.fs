@@ -85,9 +85,9 @@ let private targets =
 
 let private catalogRank target =
     let inputs =
-        ClaimCore.Protocol.OperationCatalog.derive (
-            ClaimCore.Protocol.CatalogOperation.Act(
-                ClaimCore.Protocol.ActKind.Case CaseActKind.AmendRegistration
+        ClaimCore.Wire.OperationCatalog.derive (
+            ClaimCore.Wire.CatalogOperation.Act(
+                ClaimCore.Presentation.ActKind.Case CaseActKind.AmendRegistration
             )
         )
         |> fun bindings -> bindings.Inputs
@@ -197,13 +197,13 @@ let phase2 =
 
             Expect.isLessThanOrEqual
                 actual.Length
-                ClaimCore.Protocol.DiagnosticCodecs.MaximumInputIssues
+                ClaimCore.Wire.DiagnosticCodecs.MaximumInputIssues
                 "The worst phase-two field checks fit the bounded issue envelope"
 
             let inputs =
-                ClaimCore.Protocol.OperationCatalog.derive (
-                    ClaimCore.Protocol.CatalogOperation.Act(
-                        ClaimCore.Protocol.ActKind.Case CaseActKind.Correct
+                ClaimCore.Wire.OperationCatalog.derive (
+                    ClaimCore.Wire.CatalogOperation.Act(
+                        ClaimCore.Presentation.ActKind.Case CaseActKind.Correct
                     )
                 )
                 |> fun bindings -> bindings.Inputs

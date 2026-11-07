@@ -2,7 +2,8 @@ module ClaimCore.Tests.DiagnosticRegistryTests
 
 open Expecto
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 [<Tests>]
 let tests =

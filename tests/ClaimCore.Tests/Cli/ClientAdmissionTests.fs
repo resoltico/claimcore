@@ -11,7 +11,8 @@ open System.Net.Http.Headers
 open System.Threading
 open System.Threading.Tasks
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Json

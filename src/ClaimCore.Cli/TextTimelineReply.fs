@@ -2,7 +2,7 @@ namespace ClaimCore.Cli
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Presentation
 
 /// Render only typed core differences; history and disclosure are never reconstructed here.
 module internal TextTimelineReply =

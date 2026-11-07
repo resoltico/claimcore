@@ -1,6 +1,7 @@
 module ClaimCore.TestSupport.ResponseExamples
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 let private suitable =
     function

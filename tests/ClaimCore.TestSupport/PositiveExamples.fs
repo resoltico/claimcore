@@ -3,7 +3,8 @@ module ClaimCore.TestSupport.PositiveExamples
 open System.Text
 open System.Text.Json
 open ClaimCore.Json
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Supply behavior-test inputs only. Exact-byte assertions read their raw sources.
 let value (sample: JsonElement) =

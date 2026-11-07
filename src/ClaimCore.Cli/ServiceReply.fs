@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 /// An admitted wire reply retains its endpoint-owned classification and original member order.

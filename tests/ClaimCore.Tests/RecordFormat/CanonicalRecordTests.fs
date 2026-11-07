@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CanonicalRecordTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 open System
@@ -239,10 +240,10 @@ let private malformedIdentity () =
                 ))
 
         let wire =
-            ClaimCore.Protocol.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
+            ClaimCore.Wire.RequestCodecs.caseRequest.Write(Inputs.caseRequest request)
 
         let admitted =
-            ClaimCore.Protocol.RequestCodecs.caseRequest.Read "$" wire
+            ClaimCore.Wire.RequestCodecs.caseRequest.Read "$" wire
             |> Fixtures.accepted
             |> Inputs.referencedCase
 

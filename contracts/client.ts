@@ -1,4 +1,4 @@
-/* Generated from ClaimCore.Protocol registry codecs. Do not edit. */
+/* Generated from ClaimCore.Wire registry codecs. Do not edit. */
 export type AccessRequest = { readonly "principal": Principal; readonly "firstSeen": string; readonly "lastSeen": string; readonly "claims": RequesterClaims; };
 export type AccessRequestDismissReply = { readonly "outcome": AccessRequestDismissReply_Outcome; };
 export type AccessRequestDismissReply_Outcome = AccessRequestDismissReply_Outcome_SUCCEEDED | AccessRequestDismissReply_Outcome_REJECTED | AccessRequestDismissReply_Outcome_FAILED;

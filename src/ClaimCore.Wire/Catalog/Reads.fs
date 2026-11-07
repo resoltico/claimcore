@@ -1,0 +1,119 @@
+namespace ClaimCore.Wire
+
+open ClaimCore.Presentation
+
+open ClaimCore.Domain
+open ClaimCore.Application.Contracts
+
+[<RequireQualifiedAccess>]
+type ReadInput =
+    | CaseOperand
+    | OperationOperand
+    | ActorOperand
+    | PrincipalOperand
+    | ActorFilter
+    | Page
+    | DirectorySearch
+    | ActorRole
+    | Detail
+    | Worklist
+    | Reminders
+    | Mine
+    | ReminderIdentity
+    | TimelineFilter
+
+type ReadDeclaration =
+    {
+        Endpoint: QueryEndpoint
+        Inputs: ReadInput list
+    }
+
+
+module ReadCatalog =
+    let declarations =
+        [
+            {
+                Endpoint = QueryEndpoint.CaseTimeline
+                Inputs = [ ReadInput.CaseOperand; ReadInput.TimelineFilter; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.ReminderGet
+                Inputs = [ ReadInput.CaseOperand; ReadInput.ReminderIdentity ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseActivity
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.ReminderList
+                Inputs = [ ReadInput.Reminders; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseViews
+                Inputs = []
+            }
+            {
+                Endpoint = QueryEndpoint.ReminderViews
+                Inputs = []
+            }
+            {
+                Endpoint = QueryEndpoint.WorkOverview
+                Inputs = [ ReadInput.Mine ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseAssignees
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseGet
+                Inputs = [ ReadInput.CaseOperand ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseList
+                Inputs = [ ReadInput.Page; ReadInput.Worklist ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseSummary
+                Inputs = [ ReadInput.Worklist ]
+            }
+            {
+                Endpoint = QueryEndpoint.CaseHistory
+                Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.Observe
+                Inputs = [ ReadInput.OperationOperand ]
+            }
+            {
+                Endpoint = QueryEndpoint.Status
+                Inputs = [ ReadInput.OperationOperand ]
+            }
+            {
+                Endpoint = QueryEndpoint.Resolve
+                Inputs = [ ReadInput.OperationOperand ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityList
+                Inputs = [ ReadInput.DirectorySearch; ReadInput.ActorRole; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityGrants
+                Inputs = [ ReadInput.ActorOperand; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityHistory
+                Inputs = [ ReadInput.ActorFilter; ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityRequests
+                Inputs = [ ReadInput.Page ]
+            }
+            {
+                Endpoint = QueryEndpoint.AuthorityRequestsDismiss
+                Inputs = [ ReadInput.PrincipalOperand ]
+            }
+            {
+                Endpoint = QueryEndpoint.Context
+                Inputs = []
+            }
+        ]

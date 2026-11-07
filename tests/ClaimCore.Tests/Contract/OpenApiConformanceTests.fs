@@ -9,14 +9,13 @@ open Expecto
 open Microsoft.OpenApi
 open global.Json.Schema
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 
 let private emitted () =
-    ClaimCore.Protocol.OpenApi.document
-    |> WireWriter.bytes
-    |> Encoding.UTF8.GetString
+    ClaimCore.Wire.OpenApi.document |> WireWriter.bytes |> Encoding.UTF8.GetString
 
 let private parser () =
     let result = OpenApiDocument.Parse(emitted (), "json")

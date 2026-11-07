@@ -1,7 +1,7 @@
 namespace ClaimCore.Cli
 
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Presentation
 
 module internal TextContextReply =
     let context language (reply: ContextReply) =

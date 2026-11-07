@@ -6,7 +6,8 @@
     <Compile Include="FrameFailures.fs" />
     <Compile Include="Localization/CliMessages.fs" />
     <ProjectReference Include="../ClaimCore.Json/ClaimCore.Json.fsproj" />
-    <ProjectReference Include="../ClaimCore.Protocol/ClaimCore.Protocol.fsproj" />
+    <ProjectReference Include="../ClaimCore.Wire/ClaimCore.Wire.fsproj" />
+    <ProjectReference Include="../ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <ProjectReference Include="../ClaimCore.Domain/ClaimCore.Domain.fsproj" />
     <Compile Include="AssemblyInfo.fs" />
     <Compile Include="CliIdentity.fs" />
@@ -84,7 +85,7 @@
   </ItemGroup>
   <ItemGroup>
     <EmbeddedResource Include="Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
-    <EmbeddedResource Include="../ClaimCore.Protocol/Messages/Localization/*.json" Exclude="../ClaimCore.Protocol/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="../ClaimCore.Presentation/Messages/Localization/*.json" Exclude="../ClaimCore.Presentation/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <PackageReference Include="Wcwidth" />
     <PackageReference Include="Duende.IdentityModel" />

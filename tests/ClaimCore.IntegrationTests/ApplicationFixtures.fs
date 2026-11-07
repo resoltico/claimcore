@@ -1,7 +1,8 @@
 module internal ClaimCore.IntegrationTests.ApplicationFixtures
 
 open ClaimCore.TestSupport
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Threading.Tasks

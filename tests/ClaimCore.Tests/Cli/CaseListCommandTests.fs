@@ -8,7 +8,8 @@ open System.Threading.Tasks
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
@@ -237,7 +238,7 @@ let tests =
                     Expect.stringContains
                         (TextDescriptorValue.render
                             "en"
-                            (ClaimCore.Protocol.Presentation.PresentedValue.Actor actor))
+                            (ClaimCore.Presentation.PresentedValue.Actor actor))
                         "Agent\\u{001B}[31m\\u{202E}B\\\\u{202E}"
                         "The actual typed formatter distinguishes controls from literal escapes before layout"
 

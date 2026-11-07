@@ -1,6 +1,7 @@
 namespace ClaimCore.Cli
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -39,7 +40,7 @@ type Invocation =
             AttemptId: Guid
             InstallationId: Guid option
             Typed: IEndpointInput
-            Target: ClaimCore.Protocol.Route
+            Target: ClaimCore.Wire.Route
             Input: JsonValue
             Bytes: byte array
         }
@@ -96,7 +97,7 @@ module Frames =
                         AttemptId = Guid.NewGuid()
                         InstallationId = None
                         Typed = EndpointValues.input endpoint input
-                        Target = ClaimCore.Protocol.Route.describe endpoint
+                        Target = ClaimCore.Wire.Route.describe endpoint
                         Input = value
                         Bytes = bytes
                     }

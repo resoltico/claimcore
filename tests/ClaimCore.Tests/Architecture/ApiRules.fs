@@ -100,7 +100,7 @@ let vocabularyModules () =
     [
         "ClaimCore.Domain"
         "ClaimCore.Application.Contracts"
-        "ClaimCore.Protocol"
+        "ClaimCore.Wire"
         "ClaimCore.RecordFormat"
         "ClaimCore.Application"
         "ClaimCore.Postgres"
@@ -137,7 +137,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         nonEmptyTargets architecture label provider
 
     let protocol () =
-        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+        Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Wire")
         |> targets "wire namespace"
 
     match name with
@@ -172,7 +172,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types()
                 .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+                .ResideInAssembly(Assembly.Load "ClaimCore.Wire")
                 .Or()
                 .HaveFullNameMatching(pattern)
             |> targets "durable spelling boundary"
@@ -193,7 +193,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
 
         clauses.FollowCustomCondition(
             System.Func<IType, bool>(fun candidate ->
-                candidate.FullName = "ClaimCore.Protocol.VocabularyCodec"
+                candidate.FullName = "ClaimCore.Wire.VocabularyCodec"
                 || (candidate.Dependencies
                     |> Seq.forall (fun dependency ->
                         match dependency with
@@ -295,7 +295,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
     | ArchitectureRule.DomainBoundary ->
         for assembly in
             [
-                "ClaimCore.Protocol"
+                "ClaimCore.Wire"
                 "ClaimCore.Application"
                 "ClaimCore.RecordFormat"
                 "ClaimCore.Json"
@@ -308,7 +308,7 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
         clauses.NotDependOnAny(
             Types()
                 .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Protocol")
+                .ResideInAssembly(Assembly.Load "ClaimCore.Wire")
                 .Or()
                 .ResideInAssembly(Assembly.Load "ClaimCore.Application")
                 .Or()

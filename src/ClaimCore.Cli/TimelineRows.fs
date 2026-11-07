@@ -4,7 +4,7 @@ open System.Globalization
 open System.Text
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Presentation
 
 /// A new timeline CSV projects the same typed descriptor values using canonical, unlocalized scalars.
 module internal TimelineRows =

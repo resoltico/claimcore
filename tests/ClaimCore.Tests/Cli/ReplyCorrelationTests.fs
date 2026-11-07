@@ -8,7 +8,8 @@ open Expecto
 open ClaimCore.Cli
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 open ClaimCore.TestSupport
 open ClaimCore.Tests.CliTransportFixture
@@ -75,9 +76,7 @@ let private exchange invocation value =
     send handler invocation
 
 let private correlationReview family =
-    ClaimCore.TestSupport.PositiveExamples.forEndpoint
-        "examples/responses.json"
-        "operation.preview"
+    ClaimCore.TestSupport.PositiveExamples.forEndpoint "examples/responses.json" "operation.preview"
     |> List.find (fun value ->
         let at path =
             path

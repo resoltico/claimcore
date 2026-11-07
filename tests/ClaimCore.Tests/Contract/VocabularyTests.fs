@@ -3,7 +3,8 @@ module ClaimCore.Tests.VocabularyTests
 open System
 open ClaimCore.TestSupport
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 
 [<RequireQualifiedAccess>]

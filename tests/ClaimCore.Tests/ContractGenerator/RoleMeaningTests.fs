@@ -3,8 +3,9 @@ module ClaimCore.Tests.RoleMeaningTests
 open System
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
-open ClaimCore.ProtocolGeneration
+open ClaimCore.Wire
+open ClaimCore.Presentation
+open ClaimCore.ContractGeneration
 open ClaimCore.Application
 open ClaimCore.Application.Contracts
 

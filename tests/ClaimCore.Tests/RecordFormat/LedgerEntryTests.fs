@@ -1,6 +1,7 @@
 module ClaimCore.Tests.LedgerEntryTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System
 open System.Globalization

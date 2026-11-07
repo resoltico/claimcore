@@ -13,7 +13,7 @@ let tests =
         "CLI regional display cultures"
         [
             testCase "prepared display cultures are shared and immutable" (fun () ->
-                for language in ClaimCore.Protocol.LocalizationPolicy.languages do
+                for language in ClaimCore.Presentation.LocalizationPolicy.languages do
                     let culture = TextReplyFormat.displayCulture language
                     Expect.isTrue culture.IsReadOnly "Culture is not mutable shared state"
 

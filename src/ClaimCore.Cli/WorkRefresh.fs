@@ -4,7 +4,8 @@ open System.Threading
 open System.Threading.Tasks
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 /// Human output obtains a fresh core work view after acceptance. It never infers missing-plan
 /// counts from the single bounded effect, changes the accepted result, or adds machine-output frames.

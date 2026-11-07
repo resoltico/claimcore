@@ -1,7 +1,8 @@
 module ClaimCore.Tests.RetiredVocabularyTests
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 [<Tests>]

@@ -1,7 +1,8 @@
 module ClaimCore.Tests.CliTransportFixture
 
 open Expecto
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts

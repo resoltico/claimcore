@@ -2,7 +2,8 @@ module ClaimCore.Tests.ConsequenceTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Json
 
 let private acts =
@@ -98,7 +99,7 @@ let tests =
 
                 for query, expected in queries do
                     Expect.equal
-                        (Consequence.ofQuery query)
+                        (QueryConsequence.ofQuery query)
                         expected
                         "SETTLE is the Resolve query, not a read-only consequence")
             testCase "catalog entries emit the authoritative consequence and round trip" (fun () ->

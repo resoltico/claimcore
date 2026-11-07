@@ -1,6 +1,7 @@
 module ClaimCore.Tests.TransportFailureScenarios
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -127,19 +128,19 @@ let internal requestBytes () =
 
 let internal failurePhases () =
     for endpoint in Api.all do
-        for reason in ClaimCore.Protocol.HostFailureReason.all do
+        for reason in ClaimCore.Wire.HostFailureReason.all do
             use handler =
                 new Handler(fun _ ->
                     Task.FromResult(
                         response
-                            (ClaimCore.Protocol.HostFailureReason.status reason)
+                            (ClaimCore.Wire.HostFailureReason.status reason)
                             (HostFailureCodecs.encode reason)
                     ))
 
             let expected =
                 if
                     ((Api.requiresInstallation endpoint)
-                     && ClaimCore.Protocol.HostFailureReason.phase reason
+                     && ClaimCore.Wire.HostFailureReason.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
                     4

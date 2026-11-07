@@ -1,6 +1,7 @@
 module ClaimCore.WebTests.PrincipalAdmissionTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 
 open System

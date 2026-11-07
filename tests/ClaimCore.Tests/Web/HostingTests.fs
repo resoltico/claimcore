@@ -1,6 +1,7 @@
 module ClaimCore.Tests.HostingTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 

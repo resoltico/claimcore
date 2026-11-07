@@ -1,6 +1,7 @@
 module ClaimCore.Tests.CliDiagnosticTextTests
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 open System.Text
 open Expecto

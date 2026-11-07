@@ -3,7 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.Globalization
 open System.Text
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -95,12 +96,12 @@ module internal TextReply =
             readPresenter Api.session (fun language session ->
                 TextDescriptorValue.sections
                     language
-                    (ClaimCore.Protocol.Presentation.Descriptor.session session))
+                    (ClaimCore.Presentation.Descriptor.session
+                        session.Authenticated
+                        session.ContractIdentity))
         | EndpointId.Host HostEndpoint.Logout ->
             readPresenter Api.logout (fun language () ->
-                TextDescriptorValue.sections
-                    language
-                    (ClaimCore.Protocol.Presentation.Descriptor.logout ()))
+                TextDescriptorValue.sections language (ClaimCore.Presentation.Descriptor.logout ()))
 
     let private replyLines language request (reply: ServiceReply) =
         presenterFor reply.Route.Id language request reply

@@ -6,7 +6,8 @@ open System.Text
 open System.Text.Json
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 
 let private invoke cli arguments source =
     ProcessRunner.dotnet 8_000 cli arguments (Dictionary<string, string>()) source

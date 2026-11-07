@@ -2,7 +2,8 @@ module ClaimCore.Tests.CliExamples
 
 open Expecto
 open ClaimCore.Cli
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Domain
 open ClaimCore.TestSupport
 

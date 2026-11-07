@@ -2,7 +2,8 @@ module ClaimCore.TestSupport.LedgerWriteContract
 
 open ClaimCore.TestSupport
 
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open System
 open System.Threading
 open System.Threading.Tasks

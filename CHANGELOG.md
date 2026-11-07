@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- ClaimCore.Protocol is split into ClaimCore.Wire and ClaimCore.Presentation; update project references and generator commands.
 - Wire conformance uses curated decoding examples and rejection controls; generated request/reply snapshots and presentation golden comparisons are removed.
 - CLI conformance uses authored command inputs and typed frame checks instead of a generated frame snapshot.
 - Ten fixed durable-format examples replace the oracle corpus; byte properties and the hand-authored transition matrix remain.

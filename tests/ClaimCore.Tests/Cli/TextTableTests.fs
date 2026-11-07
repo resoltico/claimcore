@@ -2,7 +2,7 @@ module ClaimCore.Tests.TextTableTests
 
 open Expecto
 open ClaimCore.Domain
-open ClaimCore.Protocol.Presentation
+open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 

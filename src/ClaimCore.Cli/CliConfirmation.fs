@@ -3,7 +3,8 @@ namespace ClaimCore.Cli
 open System
 open System.Text
 open ClaimCore.Domain
-open ClaimCore.Protocol
+open ClaimCore.Wire
+open ClaimCore.Presentation
 open ClaimCore.Application.Contracts
 
 [<NoEquality; NoComparison>]

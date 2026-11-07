@@ -110,7 +110,7 @@ export function caseViewInput(value: CaseViewSeed): CaseView {
   };
 }
 export const actorRefInput = (value: Partial<ActorRef> = {}): ActorRef => ({
-  actorId: actorId,
+  actorId,
   displayName: { kind: "NAMED", value: "Named account" },
   principalKind: "HUMAN",
   availability: "AVAILABLE",
@@ -233,9 +233,15 @@ const payloadGroup = (group: Group | undefined, kind: unknown): Group | undefine
   if (kind === "REPLACE") {
     return group;
   }
-  if (kind === "OPEN") return "registration";
-  if (kind === "DECIDE") return "decision";
-  if (kind === "RECORD_PAYMENT") return "payment";
+  if (kind === "OPEN") {
+    return "registration";
+  }
+  if (kind === "DECIDE") {
+    return "decision";
+  }
+  if (kind === "RECORD_PAYMENT") {
+    return "payment";
+  }
   return undefined;
 };
 // Authored positive examples override builder defaults. Unknown members remain for strict admission.
