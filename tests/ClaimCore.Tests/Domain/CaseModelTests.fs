@@ -95,7 +95,7 @@ let private matrix =
     testCase "independent state table governs all inventoried acts and advertisements" (fun () ->
         Expect.equal
             TransitionOracle.samples.Length
-            (Inventory.tokens "caseActs").Length
+            ((CaseActKind.all |> List.map CaseActKind.token)).Length
             "Complete act vocabulary"
 
         let refusedStates =

@@ -113,14 +113,14 @@ let private tokenAt path expected (bytes: byte array) =
 let private caseActs = Inputs.caseActs
 
 let private principalKinds =
-    Inventory.tokens "principalKinds"
+    (Vocabulary.entries PrincipalKind.vocabulary |> List.map snd)
     |> List.map (fun token ->
         Vocabulary.tryParse PrincipalKind.vocabulary token |> Option.get, token)
 
 let private statuses = [ CaseStatus.Opened, "OPENED"; CaseStatus.Closed, "CLOSED" ]
 
 let private roles =
-    Inventory.tokens "roles"
+    (Role.all |> List.map Role.token)
     |> List.map (fun token -> Role.parse token |> Option.get, token)
 
 let private scopes reference =
@@ -165,7 +165,11 @@ let private inventories () =
         Inputs.registration, Inputs.decision, Inputs.payment
 
     let acts = caseActs registration decision payment "reason"
-    Expect.equal acts.Length (Inventory.tokens "caseActs").Length "Inventoried case kinds"
+
+    Expect.equal
+        acts.Length
+        ((CaseActKind.all |> List.map CaseActKind.token)).Length
+        "Inventoried case kinds"
 
     Expect.equal
         (acts |> List.map (fst >> CaseAct.kind) |> Set.ofList)
@@ -185,7 +189,11 @@ let private inventories () =
         "Principal inventory"
 
     Expect.equal (roles |> List.map fst |> Set.ofList) (Set.ofList Role.all) "Role inventory"
-    Expect.equal roles.Length (Inventory.tokens "roles").Length "Every role occurs every trial"
+
+    Expect.equal
+        roles.Length
+        ((Role.all |> List.map Role.token)).Length
+        "Every role occurs every trial"
 
     Expect.equal
         (scopes "ref"

@@ -507,10 +507,10 @@ the extension behind. Use the existing `DatabaseScenarios.resetForInitialization
 fresh-initialization scenarios. Schema-only refusal and restore controls have different prerequisites;
 do not broaden their cleanup or weaken the initializer's strict duplicate-object refusal.
 
-Independent closed inventories live in [inventory.json](../tests/fixtures/inventory.json), authored by hand
-rather than generated from product declarations. Input builders belong to
-[Inputs.fs](../tests/ClaimCore.TestSupport/Inputs.fs) and
-[inputs.ts](../web/tests/support/inputs.ts); expected outputs and rule witnesses remain independent.
+Tests discover vocabulary from the product declarations. The reviewed, generated `contracts/` diff
+records vocabulary changes; the hand-authored transition matrix and rule witnesses remain independent.
+Input builders belong to [Inputs.fs](../tests/ClaimCore.TestSupport/Inputs.fs) and
+[inputs.ts](../web/tests/support/inputs.ts). Builders supply inputs, never expected rule results.
 The authored seed-corpus admission test identifies missing positive examples. Dependent properties still
 fail when that corpus is invalid; do not turn those failures into skips.
 

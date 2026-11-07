@@ -28,40 +28,25 @@ let private roundTrip codec value =
         (Ok value)
         "The shared model crosses its codec unchanged."
 
-let rec private inputMembers definitions =
-    function
-    | Schema.Ref name -> inputMembers definitions (Map.find name definitions)
-    | Schema.Object(members, _) -> members |> List.map fst |> Set.ofList
-    | _ -> failtest "Inventoried read inputs require an object schema."
-
 let private registry () =
-    let rows =
-        Api.all
-        |> List.map (fun endpoint -> endpoint.Token, endpoint.Method.Method, endpoint.Effect)
+    let tokens = Api.all |> List.map _.Token
+    Expect.equal (Set.ofList tokens).Count tokens.Length "Endpoint tokens are unique"
 
-
-    let expected =
-        Inventory.rows "endpoints"
-        |> List.map (fun row ->
-            row.GetProperty("token").GetString() |> nonNull,
-            row.GetProperty("method").GetString() |> nonNull,
-            row.GetProperty("effect").GetString() |> nonNull)
-
-    Expect.equal
-        (rows
-         |> List.map (fun (token, method, effect) -> token, method, string effect)
-         |> List.sort)
-        (List.sort expected)
-        "The registry contains exactly the independently inventoried methods and effects."
-
-    for KeyValue(token, expected) in Inventory.readInputs do
-        let route = Api.tryFind token |> Option.get
-
+    for endpoint in Api.all do
         Expect.equal
-            (inputMembers route.InputDefinitions route.InputSchema)
-            expected
-            ("Read input inventory: " + token)
+            endpoint.Method.Method
+            (if endpoint.Token = "session" then "GET" else "POST")
+            "Only the session query uses GET"
 
+        let expectedEffect =
+            match endpoint.Token with
+            | "operation.execute" -> EndpointEffect.LedgerExecution
+            | "session.logout"
+            | "operation.resolve"
+            | "authority.requests.dismiss" -> EndpointEffect.OperationalWrite
+            | _ -> EndpointEffect.Read
+
+        Expect.equal endpoint.Effect expectedEffect "Only declared mutations write state"
 
 let private readReplies () =
     let codec = ReplyCodecs.readReply "BooleanReply" Codec.boolean
@@ -268,7 +253,7 @@ let tests =
     testList
         "typed endpoint registry"
         [
-            testCase "inventoried endpoints own method and mutation classification" registry
+            testCase "endpoints own unique names, methods and mutation classification" registry
             testCase "one read envelope carries success, refusal and fault" readReplies
             testCase "preview and execution share receipt and refusal models" mutationReplies
             testCase "identity includes only the registry's structural OpenAPI" structuralIdentity

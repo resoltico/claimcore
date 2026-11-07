@@ -13,8 +13,6 @@ open ClaimCore.Tests.AuthorityPolicyInputs
 
 
 let private matrix () =
-    Expect.equal (Role.all |> List.map Role.token) (Inventory.tokens "roles") "Inventoried roles"
-
     Expect.isTrue
         (Set.ofList Role.all = (expectedRoles |> List.map (fun (role, _, _) -> role) |> Set.ofList))
         "Exact role inventory"

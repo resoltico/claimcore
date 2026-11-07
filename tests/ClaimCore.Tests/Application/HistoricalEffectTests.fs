@@ -208,9 +208,7 @@ let tests =
             testCase "the authored effect matrix covers every permanent case act" (fun () ->
                 Expect.equal
                     (cases |> List.map (fun (token, _, _, _) -> token) |> Set.ofList)
-                    (Inventory.rows "caseActs"
-                     |> List.map (fun row -> row.GetProperty("token").GetString() |> nonNull)
-                     |> Set.ofList)
+                    (CaseActKind.all |> List.map CaseActKind.token |> Set.ofList)
                     "Closed independent act inventory")
             for token, before, act, expected in cases do
                 testCase

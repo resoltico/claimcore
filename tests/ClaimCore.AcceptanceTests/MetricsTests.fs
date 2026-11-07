@@ -1,5 +1,7 @@
 module ClaimCore.AcceptanceTests.MetricsTests
 
+open ClaimCore.Protocol
+
 open System
 open Expecto
 open ClaimCore.TestSupport
@@ -16,7 +18,7 @@ let private expectedKeys =
 
 let private allowedValues =
     function
-    | "endpoint" -> "unknown" :: Inventory.tokens "endpoints"
+    | "endpoint" -> "unknown" :: (Api.all |> List.map _.Token)
     | "result" -> [ "succeeded"; "refused"; "failed"; "host_failure" ]
     | "reason" -> [ "logout"; "expired"; "invalid" ]
     | _ -> failtest "A tag key must be declared"

@@ -36,11 +36,6 @@ let tests =
                     "host.INTERNAL"
                     "Canonical host code is unambiguous"
 
-                Expect.equal
-                    (DiagnosticCodecs.definitions |> List.map _.Id |> Set.ofList)
-                    (Inventory.tokens "refusalCodes" |> Set.ofList)
-                    "Every refusal is independently inventoried"
-
                 let tooLong = DiagnosticCode.all["TOO_LONG"]
                 Expect.equal tooLong.MessageKey "diagnostic.TOO_LONG" "An issue resolves directly"
 

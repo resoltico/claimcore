@@ -34,12 +34,18 @@ let internal listBounds (path: string) =
     let maximum =
         Map.ofList
             [
-                "CaseListFilter`1.Lifecycles", (Inventory.tokens "caseLifecycles").Length
-                "CaseListFilter`1.Statuses", (Inventory.tokens "caseStatuses").Length
-                "CaseListFilter`1.Progress", (Inventory.tokens "caseProgress").Length
-                "CaseWorklistCounts.Lifecycles", (Inventory.tokens "caseLifecycles").Length
-                "CaseWorklistCounts.Statuses", (Inventory.tokens "caseStatuses").Length
-                "CaseWorklistCounts.Progress", (Inventory.tokens "caseProgress").Length
+                "CaseListFilter`1.Lifecycles",
+                ((Vocabulary.entries Lifecycle.vocabulary |> List.map snd)).Length
+                "CaseListFilter`1.Statuses",
+                ((Vocabulary.entries CaseStatus.vocabulary |> List.map snd)).Length
+                "CaseListFilter`1.Progress",
+                ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length
+                "CaseWorklistCounts.Lifecycles",
+                ((Vocabulary.entries Lifecycle.vocabulary |> List.map snd)).Length
+                "CaseWorklistCounts.Statuses",
+                ((Vocabulary.entries CaseStatus.vocabulary |> List.map snd)).Length
+                "CaseWorklistCounts.Progress",
+                ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length
                 "CaseWorklistCounts.Assignment", 2
                 "CaseWorklistCounts.Due", 5
                 "ActorReviewItem.Roles", 7
@@ -51,9 +57,10 @@ let internal listBounds (path: string) =
                 "AuthorityState.Access", 11
                 "CapabilityAccess.DirectRoles", 7
                 "CapabilityAccess.InstallationRoles", 7
-                "CaseAdvice.Acts", (Inventory.tokens "caseActs").Length
+                "CaseAdvice.Acts", ((CaseActKind.all |> List.map CaseActKind.token)).Length
                 "CaseAdvice.History", 2
-                "ReminderReadModel.Acts", (Inventory.tokens "reminderActs").Length
+                "ReminderReadModel.Acts",
+                ((Vocabulary.entries ReminderActKind.vocabulary |> List.map snd)).Length
                 "CorrectionChoices.Registration", 2
                 "ActorContext.Capability", 11
                 "ActorContext.View", 3
@@ -67,11 +74,11 @@ let internal listBounds (path: string) =
                 "Tracker.steps", 4
                 "CaseReadModel.Attention", 6
                 "CaseSummary.Attention", 6
-                "CaseReviewChanges.Fields", Inventory.fieldCount
+                "CaseReviewChanges.Fields", CaseFields.declarations.Length
                 "ReviewPresentation.Changes", 324
                 "ReviewPresentation.Unchanged", 324
-                "HistoryDifference.Fields", Inventory.fieldCount
-                "Disclosed.Item", Inventory.fieldCount + 1
+                "HistoryDifference.Fields", CaseFields.declarations.Length
+                "Disclosed.Item", CaseFields.declarations.Length + 1
                 "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context

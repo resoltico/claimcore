@@ -45,17 +45,46 @@ let complete arguments =
 
             prepare (remaining - 1) (arguments @ additions)
 
-    prepare Inventory.fieldCount arguments
+    prepare CaseFields.declarations.Length arguments
+
+let private inputSamples =
+    Map.ofList
+        [
+            "caseReference", "SYNTHETIC"
+            "operationId", "10000000-0000-4000-8000-000000000001"
+            "actorId", "10000000-0000-4000-8000-000000000001"
+            "limit", "5"
+            "cursor", "synthetic"
+            "detail", "FULL"
+            "lifecycle", "ACTIVE"
+            "status", "OPENED"
+            "progress", "UNDECIDED"
+            "text", "synthetic"
+            "order", "REFERENCE"
+            "responsibleActor", "00000000-0000-4000-8000-000000000042"
+            "handlingSummary", "Current handling context"
+            "incidentDescription", "Incident details"
+            "reminderAction", "Contact insurer"
+            "reminderDueDate", "2026-11-10"
+            "reminderId", "10000000-0000-4000-8000-000000000007"
+            "expectedWorkRevision", "0"
+            "expectedReminderRevision", "1"
+            "profile.displayName", "Authored"
+            "profile.contact", "Contact"
+            "principal.kind", "HUMAN"
+            "principal.issuer", "https://issuer.example/"
+            "principal.subject", "waiting"
+        ]
 
 let private queryInput (input: CatalogDerivedInput) =
     let key = InteractionInput.key input.Name
-    let sample = Map.tryFind key Inventory.cliSamples
+    let sample = Map.tryFind key inputSamples
     let flag = "--" + CommandGrammar.kebab (CommandGrammar.inputName input.Name)
 
     match input.Argument, sample with
     | CatalogArgument.Implicit, _ -> []
     | _, None when input.Binding.Required && input.Binding.Default.IsNone ->
-        failtestf "Independent CLI inventory needs a sample for required input %s" key
+        failtestf "CLI input builders need a sample for required input %s" key
     | _, None -> []
     | CatalogArgument.Operand, Some value -> [ value ]
     | CatalogArgument.Named, Some value ->

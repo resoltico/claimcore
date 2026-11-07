@@ -152,8 +152,7 @@ let progressSets =
         [ CaseProgress.Undecided; CaseProgress.Decided; CaseProgress.Paid ]
     ]
 
-let orders =
-    [ CaseListOrder.Reference; CaseListOrder.Recent; CaseListOrder.Notified ]
+let orders = Vocabulary.all CaseListOrder.vocabulary
 
 let limits = [ 1; 2; 3; 5; 50 ]
 

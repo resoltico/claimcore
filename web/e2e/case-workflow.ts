@@ -7,7 +7,7 @@ import { registration } from "../tests/support/inputs";
 import type { CaseFields } from "../src/api/service";
 import { showExactLookup } from "./workspace-navigation";
 import { fillBusinessField, fillNamedField } from "./typed-entry";
-import { inventory } from "../tests/support/inventory";
+import { productMetadata } from "../src/protocol/productMetadata";
 import { expect, type Page, type Response } from "@playwright/test";
 
 import { isHostFailure, isResponse } from "../src/protocol/client";
@@ -39,7 +39,9 @@ const visibleFieldCount = (fields: CaseFields): number =>
       count +
       (fields[group] === null
         ? 0
-        : inventory.groups[group].filter((field) => field.kind !== "CURRENCY").length),
+        : productMetadata.catalog.fields.filter(
+            (field) => field.group === group && field.scalar.kind !== "CURRENCY",
+          ).length),
     0,
   );
 const responseJson = async (response: Response, phase: "SUBMIT" | "PREVIEW"): Promise<unknown> => {
@@ -150,11 +152,7 @@ export const startOpen = async (
       await fillBusinessField(page, name, value);
     }
   }
-  const reference = inventory.specialFields.find((field) => field.kind === "REFERENCE");
-  if (reference === undefined) {
-    throw new Error("E2E_REFERENCE_INVENTORY_MISSING");
-  }
-  await fillBusinessField(page, reference.key, caseReference);
+  await fillBusinessField(page, "caseReference", caseReference);
   await progress("open-filled");
 };
 
@@ -278,7 +276,11 @@ export const openCase = async (page: Page, caseReference: string): Promise<Revie
   await progress("open-detail");
   await expect(
     page.locator("section.case-fields .case-fact-card").first().locator(".field-row"),
-  ).toHaveCount(inventory.groups.registration.filter((field) => field.kind !== "CURRENCY").length);
+  ).toHaveCount(
+    productMetadata.catalog.fields.filter(
+      (field) => field.group === "registration" && field.scalar.kind !== "CURRENCY",
+    ).length,
+  );
   return identity;
 };
 

@@ -118,12 +118,12 @@ let tests =
 
                 Expect.equal
                     (source.Requests |> Map.keys |> Set.ofSeq)
-                    (Inventory.tokens "endpoints" |> Set.ofList)
+                    ((Api.all |> List.map _.Token) |> Set.ofList)
                     "Every inventoried endpoint has authored request seeds"
 
                 Expect.equal
                     (source.Replies |> Map.keys |> Set.ofSeq)
-                    (Inventory.tokens "endpoints" |> Set.ofList)
+                    ((Api.all |> List.map _.Token) |> Set.ofList)
                     "Every inventoried endpoint has authored reply seeds")
             testCase "authored positive alternatives seed every endpoint and direction" seedCases
             for definition in Api.definitions do

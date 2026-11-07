@@ -8,23 +8,22 @@ open Hedgehog.FSharp
 open ClaimCore.Tests.WireScalarGenerators
 
 let private members group admitted =
-    Inventory.fields group
-    |> List.map (fun row ->
-        let token = row.GetProperty("key").GetString() |> nonNull
-        let field = Vocabulary.tryParse BusinessField.vocabulary token |> Option.get
-        let kind = row.GetProperty("kind").GetString() |> nonNull
+    Inputs.fields group
+    |> List.map (fun (row, _) ->
+        let field = row.Field
+        let kind = row.Kind
 
         let generator =
             if not admitted then
                 arbitraryText
             else
                 match kind with
-                | "DATE" -> date
-                | "COUNTRY" -> uppercase 2
-                | "CURRENCY" -> uppercase 3
-                | "AMOUNT" -> amount
-                | "NAME"
-                | "DESCRIPTION" -> scalarText
+                | FieldValueKind.CalendarDate -> date
+                | FieldValueKind.Country -> uppercase 2
+                | FieldValueKind.Currency -> uppercase 3
+                | FieldValueKind.Amount -> amount
+                | FieldValueKind.PartyName
+                | FieldValueKind.IncidentDescription -> scalarText
                 | _ -> invalidOp "The independent group inventory requires a value generator."
 
         generator |> Gen.map (fun value -> field, value))

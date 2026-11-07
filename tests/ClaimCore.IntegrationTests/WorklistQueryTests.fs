@@ -63,8 +63,8 @@ let private walk pair filter limit expected =
             finished <- cursor.IsNone
     }
 
-let private coversInventory key token sets =
-    let declared = Inventory.tokens key |> Set.ofList
+let private coversVocabulary vocabulary token sets =
+    let declared = Vocabulary.entries vocabulary |> List.map snd |> Set.ofList
     let actual = sets |> List.map (List.map token >> Set.ofList) |> Set.ofList
 
     Expect.equal
@@ -190,14 +190,14 @@ let private views pair =
 let private facets pair =
     task {
         do! namedQueues pair
-        coversInventory "caseLifecycles" Lifecycle.token lifecycleSets
-        coversInventory "caseStatuses" CaseStatus.token statusSets
-        coversInventory "caseProgress" CaseProgress.token progressSets
+        coversVocabulary Lifecycle.vocabulary Lifecycle.token lifecycleSets
+        coversVocabulary CaseStatus.vocabulary CaseStatus.token statusSets
+        coversVocabulary CaseProgress.vocabulary CaseProgress.token progressSets
 
         Expect.equal
             (orders |> List.map CaseListOrder.token |> Set.ofList)
-            (Inventory.tokens "caseOrders" |> Set.ofList)
-            "Every independently inventoried order executes"
+            ((Vocabulary.entries CaseListOrder.vocabulary |> List.map snd) |> Set.ofList)
+            "Every declared order executes"
 
         let mutable scenarios = 0
 
@@ -213,12 +213,12 @@ let private facets pair =
 
         Expect.equal
             scenarios
-            ((1 <<< (Inventory.tokens "caseLifecycles").Length)
-             * (1 <<< (Inventory.tokens "caseStatuses").Length)
-             * (1 <<< (Inventory.tokens "caseProgress").Length)
-             * (Inventory.tokens "caseOrders").Length
+            ((1 <<< ((Vocabulary.entries Lifecycle.vocabulary |> List.map snd)).Length)
+             * (1 <<< ((Vocabulary.entries CaseStatus.vocabulary |> List.map snd)).Length)
+             * (1 <<< ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length)
+             * ((Vocabulary.entries CaseListOrder.vocabulary |> List.map snd)).Length
              * limits.Length)
-            "All 8 lifecycle sets × 4 status sets × 8 progress sets × 2 orders × 5 page sizes execute"
+            "Every facet set, declared order and page size executes"
     }
 
 let private search pair =

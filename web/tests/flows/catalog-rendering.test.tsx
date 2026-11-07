@@ -1,6 +1,5 @@
 import { reviewConfirm, waitForReviewConfirm } from "../support/review-controls";
 import { caseViewInput } from "../support/inputs";
-import { inventory } from "../support/inventory";
 import { createPresenter } from "../../src/presentation/presenter";
 import { defaults } from "../../src/presentation/preferences";
 import userEvent from "@testing-library/user-event";
@@ -255,7 +254,11 @@ const assertInputMetadata = () => {
 it.each(acts)(
   "renders, reviews and submits real case act $kind through production transport",
   async (act) => {
-    expect(acts).toHaveLength(inventory.caseActs.length);
+    expect(acts).toHaveLength(
+      productMetadata.catalog.entries.filter(
+        (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
+      ).length,
+    );
     assertInputMetadata();
     const calls: Dispatch<CaseInput>[] = [];
     vi.stubGlobal("fetch", caseTransport(calls));

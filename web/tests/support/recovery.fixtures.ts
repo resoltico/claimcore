@@ -1,4 +1,4 @@
-import { inventory } from "./inventory";
+import { actorId } from "./inputs";
 import {
   sameRecoveryScope,
   type RecoveryJournal,
@@ -8,7 +8,7 @@ import {
 export const recoveryScope: RecoveryScope = {
   serviceOrigin: typeof location === "undefined" ? "https://service.example" : location.origin,
   installationId: "90000000-0000-4000-8000-000000000001",
-  actorId: inventory.cliSamples.actorId,
+  actorId,
 };
 const records = new Map<string, RecoveryRecord>();
 const key = (record: RecoveryRecord) =>

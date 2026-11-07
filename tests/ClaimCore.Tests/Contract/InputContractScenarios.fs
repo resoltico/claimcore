@@ -264,12 +264,12 @@ let internal authorityFieldPresentation () =
 
     Expect.equal
         (root.GetProperty("fields").GetArrayLength())
-        Inventory.fieldCount
+        CaseFields.declarations.Length
         "Protocol labels add no business fields"
 
     Expect.equal
         (Set.ofList names)
-        (Inventory.tokens "technicalInputs" |> Set.ofList)
+        ((InteractionInput.technical |> List.map InteractionInput.key) |> Set.ofList)
         "Every catalog-owned technical input has presentation metadata"
 
     for field in fields do

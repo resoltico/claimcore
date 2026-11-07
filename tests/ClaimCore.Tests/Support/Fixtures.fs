@@ -24,7 +24,7 @@ let completeAdviceWire (raw: string) =
     let paused = (maintenance["active"] |> nonNull).GetValue<bool>()
     let blocked = JsonArray()
 
-    for token in Inventory.tokens "caseActs" do
+    for token in (CaseActKind.all |> List.map CaseActKind.token) do
         if not (Set.contains token offered) then
             let item = JsonObject()
             item["act"] <- JsonValue.Create token

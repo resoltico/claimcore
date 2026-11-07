@@ -155,7 +155,8 @@ let tests =
             testCase "all inventoried finding identifiers are explicitly covered" (fun () ->
                 Expect.equal
                     (findingCases |> List.map (fst >> VerificationFinding.token) |> Set.ofList)
-                    (Inventory.tokens "verificationFindings" |> Set.ofList)
+                    ((VerificationFinding.all |> List.map (fst >> VerificationFinding.token))
+                     |> Set.ofList)
                     "Closed independent finding inventory"
 
                 Expect.equal

@@ -177,16 +177,6 @@ let private nonLedgerVerbs () =
             let actual = Frames.endpoint admitted |> Api.id
             Expect.equal actual endpoint "A read or operational verb selects its registry endpoint"
 
-            let expectedEffect =
-                ClaimCore.TestSupport.Inventory.rows "endpoints"
-                |> List.find (fun row -> row.GetProperty("token").GetString() = endpoint)
-                |> fun row -> row.GetProperty("effect").GetString() |> nonNull
-
-            Expect.equal
-                (string (Api.effect (Frames.endpoint admitted)))
-                expectedEffect
-                "Independent inventory agrees with the verb's actual effect"
-
             actual)
 
     assertNonLedgerVerbCoverage Api.all mapped

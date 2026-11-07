@@ -1,21 +1,14 @@
 import { caseViewInput } from "../support/inputs";
-import { businessFieldCount, inventory } from "../support/inventory";
 import { caseAdvice } from "../support/case-advice.fixtures";
 import { beforeEach, describe, it, expect, vi } from "vitest";
 import { service } from "../../src/api/service";
 import { initialOperationValues, assembleOperation } from "../../src/operation/operationForm";
 import { operationEntry } from "../../src/protocol/operationCatalog";
-import { fields, definition } from "../support/service-ui.fixtures";
+import { fields } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
 import { wireResponse } from "../support/contract-corpus.fixtures";
 describe("core act metadata", () => {
   it("keeps optional registration facts unselected and builds scoped input from the root schema", () => {
-    expect(definition.catalog.fields).toHaveLength(businessFieldCount);
-    expect(
-      definition.catalog.entries.filter(
-        (entry) => entry.endpoint === "operation.execute" && entry.subject === "CASE",
-      ),
-    ).toHaveLength(inventory.caseActs.length);
     const current = caseViewInput({
       caseId: "20000000-0000-4000-8000-000000000001",
       caseReference: fields.caseReference,

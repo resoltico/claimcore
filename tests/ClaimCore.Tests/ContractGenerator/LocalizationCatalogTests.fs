@@ -176,13 +176,6 @@ let independentWording =
 [<Tests>]
 let termRegistry =
     testCase "rendered vocabularies have distinct names and qualified token keys" (fun () ->
-        let expected = Inventory.tokens "renderedVocabularies" |> Set.ofList
-
-        Expect.equal
-            (Terms.all |> List.map _.Name |> Set.ofList)
-            expected
-            "Every rendered vocabulary is named"
-
         let first = Terms.all.Head
 
         Expect.throws
