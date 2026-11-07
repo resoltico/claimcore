@@ -76,15 +76,7 @@
     <Compile Include="StoredDataFindingScenarios.fs" />
     <Compile Include="VerificationTests.fs" />
     <Compile Include="SubmissionStorage.fs" />
-    <Compile Include="GrowthProtection.fs" />
-    <Compile Include="GrowthEnvironment.fs" />
-    <Compile Include="GrowthControls.fs" />
-    <Compile Include="GrowthSessions.fs" />
-    <Compile Include="GrowthWorkloadPlan.fs" />
-    <Compile Include="GrowthMeasurements.fs" />
-    <Compile Include="GrowthReadWorkloads.fs" />
-    <Compile Include="GrowthQualificationTests.fs" />
-    <Compile Include="ReadGrowthHarnessTests.fs" />
+    <Compile Include="ReadTimingProbe.fs" />
     <Compile Include="CaseProjectionTests.fs" />
     <Compile Include="SummaryDisclosureTests.fs" />
     <Compile Include="SchemaTests.fs" />

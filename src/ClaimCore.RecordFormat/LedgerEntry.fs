@@ -82,7 +82,7 @@ module LedgerEntry =
         BinaryPrimitives.WriteUInt32BigEndian(Span bytes, value)
         bytes
 
-    // The permanent act-byte table is exhaustive; splitting it would obscure the frozen grammar.
+    // The act-byte table is exhaustive for the current format.
     // fsharplint:disable-next-line CyclomaticComplexity
     let actCode =
         function

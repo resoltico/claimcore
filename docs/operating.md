@@ -375,7 +375,7 @@ load offers explicit retry or an interface reload; an unsuccessful language acti
 previous working language and direction. Reload only after protecting an unresolved operation's
 identity through Recovery; a reload cannot reconstruct a discarded in-memory request body.
 
-## Serialized writes and verification growth
+## Serialized writes and verification
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
 entries while retaining folded case/actor/grant state, accepted-operation identities, immutable reference
@@ -388,9 +388,5 @@ policy. Unknown stored act, role or principal-kind tokens are corruption; verifi
 `VERIFIED` and `DIVERGED` are structured results; provider failures remain failures. Checkpoint sequences
 are canonical nonnegative integers and hashes are lowercase hexadecimal. The checkpoint must belong to the
 verified chain; the ledger may extend beyond it.
-
-Select [synthetic growth measurements](contributing.md#growth) for the performance question or agreed
-release scope. Qualify actual storage, workloads and concurrency separately; synthetic measurements
-establish neither an SLA nor production capacity.
 
 See [Integrating](integrating.md) for result handling and [Support](../SUPPORT.md) for redacted reporting.

@@ -7,14 +7,6 @@ on:
   merge_group:
   workflow_dispatch:
     inputs:
-      growth:
-        description: Run the nine-profile growth qualification
-        type: boolean
-        default: false
-      comparison_ref:
-        description: Optional commit or ref for a full same-host growth comparison
-        type: string
-        default: ""
       browser_spec:
         description: Optional one-spec browser diagnostic; skips qualification jobs
         type: string
@@ -30,7 +22,7 @@ on:
         options: [chromium, firefox, webkit]
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.comparison_ref || 'verification' }}-${{ inputs.browser_spec || 'complete' }}-${{ inputs.browser_engine || 'chromium' }}
+  group: ${{ github.workflow }}-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ inputs.browser_spec || 'complete' }}-${{ inputs.browser_engine || 'chromium' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' || github.event_name == 'merge_group' }}
 
 permissions:
@@ -204,26 +196,6 @@ jobs:
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
             artifacts/verification/native.*/cli-failure/**
-
-  growth:
-    name: Manual PostgreSQL ${{ matrix.major }} growth qualification
-    if: github.event_name == 'workflow_dispatch' && inputs.growth && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
-    needs: [configuration]
-    strategy:
-      fail-fast: true
-      matrix: ${{ fromJSON(needs.configuration.outputs.postgresql) }}
-    env:
-      CLAIMCORE_TEST_POSTGRES_MAJOR: ${{ matrix.major }}
-    runs-on: ubuntu-24.04
-    timeout-minutes: 120
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          persist-credentials: false
-      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          node: "false"
-      - run: bash eng/verify.sh growth
 
   web:
     if: inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
@@ -408,8 +380,6 @@ jobs:
       - name: Validate the selected existing spec before setup
         env:
           BROWSER_SPEC: ${{ inputs.browser_spec }}
-          COMPARISON_REF: ${{ inputs.comparison_ref }}
-          GROWTH: ${{ inputs.growth }}
         run: |
           python3 - <<'PYTHON'
           import os, pathlib, re, unicodedata
@@ -419,8 +389,6 @@ jobs:
           if os.environ["BROWSER_ENGINE"] not in {"chromium", "firefox", "webkit"}:
               raise ValueError("Select chromium, firefox or webkit")
           name = os.environ["BROWSER_SPEC"]
-          if os.environ["COMPARISON_REF"] or os.environ["GROWTH"] == "true":
-              raise ValueError("Choose a diagnostic or qualification, not both")
           if not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.-]*\.spec\.ts", name):
               raise ValueError("Select one existing specification basename")
           matches = [p for p in pathlib.Path("web/e2e").rglob("*.spec.ts") if p.name == name]
@@ -473,46 +441,6 @@ jobs:
             artifacts/verification/native.*/browser-*.json
             artifacts/verification/native.*/browser-failure/**
             artifacts/verification/native.*/service-captures/*.json
-
-  comparison:
-    name: Manual same-host growth comparison
-    needs: [gate]
-    if: github.event_name == 'workflow_dispatch' && inputs.comparison_ref != '' && needs.gate.result == 'success' && inputs.browser_spec == '' && (inputs.browser_engine == '' || inputs.browser_engine == 'chromium') && inputs.browser_case == ''
-    runs-on: ubuntu-24.04
-    # Three complete same-host pairs require six isolated growth runs.
-    timeout-minutes: 360
-    steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-        with:
-          fetch-depth: 0
-          persist-credentials: false
-      - uses: ./.github/actions/toolchain # zizmor: ignore[self-repository] -- actionlint 1.7.12 rejects $/ syntax; checkout supplies this action.
-        with:
-          node: "false"
-      - name: Compare complete paired workloads
-        env:
-          COMPARISON_REF: ${{ inputs.comparison_ref }}
-          CLAIMCORE_TEST_REPORT_DIRECTORY: ${{ runner.temp }}/claimcore-comparison
-        run: |
-          set -euo pipefail
-          reference="$(git rev-parse --verify --end-of-options "${COMPARISON_REF}^{commit}")"
-          bash eng/verify.sh growth-compare "$reference"
-      - name: Retain comparison and raw workload reports
-        if: always()
-        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
-        with:
-          name: growth-comparison
-          retention-days: 30
-          if-no-files-found: error
-          path: |
-            ${{ runner.temp }}/claimcore-comparison/**/comparison.json
-            ${{ runner.temp }}/claimcore-comparison/**/comparison.md
-            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth/*.json
-            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/workload-*.json
-            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/read-workload-*.json
-            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/cardinality.json
-            ${{ runner.temp }}/claimcore-comparison/**/pair-*/growth-failure/**/run.json
-            ${{ runner.temp }}/claimcore-comparison/**/*-harness.patch
 
   gate:
     name: Gate

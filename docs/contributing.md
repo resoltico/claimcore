@@ -3,7 +3,7 @@
 Use this guide for a source checkout, an implementation change or a verification report. The
 [case-work guide](case-work.md) owns user-facing meaning; [operating](operating.md) owns deployment and
 custody procedures. See the [glossary](glossary.md) for terminology.
-Start with [verification](#verification) to choose checks for editing, PR readiness or growth measurements.
+Start with [verification](#verification) to choose checks for editing, PR readiness.
 
 ## First checkout
 
@@ -147,9 +147,7 @@ stops new leases and waits for current holders to finish provider cleanup before
 ## Transactions and durable formats
 
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
-[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Permanent scalar grammars used
-to decode retained records may only be relaxed under the same format number. Tightening requires a
-separately authorized format change. Independent permanent-limit vectors in
+[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Durable format changes require a fresh installation. Decoders accept only the current format tag. Independent permanent-limit vectors in
 [record-format-vectors.json](../tests/fixtures/record-format-vectors.json) protect retained-record decoding.
 [DurableNames.fs](../src/ClaimCore.RecordFormat/DurableNames.fs) owns exhaustive literal spellings;
 [RecordLimits.fs](../src/ClaimCore.RecordFormat/RecordLimits.fs) owns the 65,536-byte request-record ceiling.
@@ -353,7 +351,6 @@ Use three phases, and select the scope before starting a command:
 | Browser behavior or stale test | Affected unit file or focused published diagnostic | Relevant behavior passes on the current source |
 | Layout or copy | One representative populated frame; full axe and relevant bounds | A final visual set or another engine is needed for the claim |
 | Documentation only | Links, command/behavior claims, existing documentation checks | Product or generated inputs also changed |
-| Performance | An existing targeted workload; see [Growth](#growth) | Evidence or explicit acceptance requires the full comparison |
 
 There is no automatic full-gate requirement after each edit or commit. Reuse passing evidence while its
 relevant source, configuration, dependencies, platform and purpose still apply. After a change, rerun
@@ -362,11 +359,10 @@ frozen-byte/ownership and hard resource limits intact. A failed check needs diag
 method or scope does not turn its previous failure into a pass.
 
 Explicit task acceptance and required clean/independent checks still apply. Track additional requirements
-(such as a full growth comparison or field retest) separately from the ordinary `Gate`. Focused runs,
+(such as a field retest) separately from the ordinary `Gate`. Focused runs,
 smoke selections and partial matrices establish only their reported scope, never unrun qualification.
 
-CI enforces the order: published browsers wait for frontend checks, and a full comparison waits for a
-successful ordinary `Gate`. The workflow stage rejects regressions in those dependencies and partial
+CI enforces the order: published browsers wait for frontend checks. The workflow stage rejects regressions in those dependencies and partial
 browser qualification before starting tools or containers. The matrix plan also checks its required
 tuples and counts during cheap frontend tests and spec collection, before creating its dataset.
 Direct local commands do not enforce prior check completion; apply the same sequencing when invoking
@@ -465,7 +461,7 @@ spec instead of restarting complete suites and replaying unrelated passing tests
 For a Linux-only browser failure, dispatch the existing CI workflow with `browser_spec` set to that
 basename and optional `browser_engine=chromium|firefox|webkit` (default Chromium), for example
 `gh workflow run ci.yml --ref BRANCH -f browser_spec=presentation-foundations.spec.ts -f browser_engine=webkit`.
-This runs only the explicitly partial one-file diagnostic; qualification, growth and `Gate` jobs are
+This runs only the explicitly partial one-file diagnostic; qualification and `Gate` jobs are
 skipped. Invalid or ambiguous spec names and unknown engines fail before setup. A nondefault engine
 without `browser_spec` fails configuration and blocks qualification jobs; ordinary dispatches keep full
 qualification. Chromium is also installed for CLI authentication bootstrap when the selected test
@@ -483,7 +479,7 @@ bash eng/verify.sh
 ```
 
 The fast gate includes clean npm installation, audits, lint, types, tests and builds; it is a checkpoint,
-not a required edit loop. The second command runs all default stages, excluding growth. Before the first
+not a required edit loop. The second command runs all default stages, with no performance qualification. Before the first
 acceptance run, install NSS `certutil` (`libnss3-tools` on Ubuntu, `nss` on Homebrew). The configuration
 acceptance checks inspect actual isolated CA trust. After changing the Playwright version, install the locked engines and system dependencies:
 
@@ -506,8 +502,6 @@ execute in order and stop at failure:
 | acceptance-native | Complete published service/CLI and deployment cases, once |
 | acceptance-browser | Complete browser scope for selected engines, with isolated fixture/bootstrap/readback |
 | acceptance | Native scope once, followed by complete browser scope |
-| growth | Separate synthetic contention and verifier qualification |
-| growth-compare REF | Three alternating same-host pairs against a committed reference, with relative budgets |
 
 Pure tests restore and build their actual Debug dependency closure without optimization for visible
 compiled negative controls. They do not require a solution-wide Release build; each Release consumer
@@ -515,7 +509,7 @@ builds its own current prerequisites. Shared store-contract scenarios run agains
 double and PostgreSQL. Native
 projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
 skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
-PostgreSQL/growth split. CI runs complete non-browser published acceptance once and assigns each
+PostgreSQL stage. CI runs complete non-browser published acceptance once and assigns each
 complete browser engine to a separate job. Both owners are required by Gate. Before fixtures,
 `eng/acceptance-scope.py` collects the full native test inventory and partitions it into disjoint native
 and browser subsets; afterward it checks the executed TRX names/outcomes against that scope, including
@@ -581,32 +575,13 @@ from the builders and prepares CLI frames from their authored arguments; it leav
 unchanged. Rerun the affected byte/contract tests without update mode, then complete the final required
 qualification. Updating goldens never resolves permanent-format failures.
 
-## Growth
+An optional read timing probe is available for an observed problem. It prints elapsed times only:
 
-Performance measurements are optional unless a task or release plan requires them. They are separate
-from the ordinary `Gate`. State the concrete question, affected workload and reference before starting;
-use the smallest existing diagnostic that answers it. A correction to UI copy, selectors or formatting
-does not by itself call for a new growth run.
+```sh
+CLAIMCORE_TIMING=1 dotnet test --project tests/ClaimCore.IntegrationTests/ClaimCore.IntegrationTests.fsproj --filter 'FullyQualifiedName~opt-in read timing probe'
+```
 
-| Need | Existing command | Claim |
-| --- | --- | --- |
-| One write profile | `CLAIMCORE_GROWTH_PROFILE=1000:1 bash eng/verify.sh growth` | Current-source observation, not full qualification |
-| Investigate a write regression | `CLAIMCORE_GROWTH_PROFILE=10000:1 bash eng/verify.sh growth-compare REF` | Targeted diagnostic; successful budgets still exit 2 |
-| Required full comparison | `bash eng/verify.sh growth-compare REF` | Three same-host pairs, six complete runs |
-
-A full comparison repeatedly seeds large populations and may take hours. Start it after relevant
-product code and workload fingerprints are stable and ordinary correctness qualification has passed
-for those inputs. CI enforces this with the ordinary `Gate` dependency; for a local comparison, first
-confirm applicable passing correctness evidence. Do not run a
-full observation and a full comparison merely for duplicate coverage. Reuse existing results only when
-their inputs, platform and question still apply; changed relevant code requires new evidence. Explicit
-acceptance criteria remain binding, and a diagnostic or incomplete run never becomes a full pass.
-
-Keep the existing throughput, latency, verification and resource limits. Inspect failures and current
-progress before repeating a run; fix a bad prerequisite or method rather than weakening a check.
-For workload definitions, source capture, reference equivalence, reports and cleanup, see
-[Performance measurements](performance.md). The [workload plan](../tests/ClaimCore.IntegrationTests/GrowthWorkloadPlan.fs)
-owns the exact populations and keys.
+It is excluded from verification stages and has no performance thresholds or report files.
 
 ## Dependencies
 
