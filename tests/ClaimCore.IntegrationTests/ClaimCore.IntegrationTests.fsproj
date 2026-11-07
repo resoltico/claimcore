@@ -64,6 +64,7 @@
     <Compile Include="CaseStageTests.fs" />
     <Compile Include="CaseAdviceQueryTests.fs" />
     <Compile Include="CommittedCancellationTests.fs" />
+    <Compile Include="AssignmentReferenceTests.fs" />
     <Compile Include="PaginationScenarios.fs" />
     <Compile Include="PositionPaginationTests.fs" />
     <Compile Include="AuthorityContinuationTests.fs" />
