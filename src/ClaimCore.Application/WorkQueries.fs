@@ -48,18 +48,18 @@ module internal WorkQueries =
         if not permitted then
             []
         else
-            match Reminder.state value, status with
-            | ReminderState.Pending, Some CaseStatus.Opened ->
-                [
-                    ReminderActKind.Update
-                    ReminderActKind.Complete
-                    ReminderActKind.CompleteAndPlanNext
-                    ReminderActKind.Cancel
-                ]
-            | ReminderState.Pending, _ -> [ ReminderActKind.Complete; ReminderActKind.Cancel ]
-            | (ReminderState.Completed | ReminderState.Cancelled), Some CaseStatus.Opened ->
-                [ ReminderActKind.Reopen ]
-            | _ -> []
+            [
+                ReminderActKind.Update
+                ReminderActKind.Complete
+                ReminderActKind.CompleteAndPlanNext
+                ReminderActKind.Cancel
+                ReminderActKind.Reopen
+            ]
+            |> List.filter (fun act ->
+                (ReminderState.after act (Some(Reminder.state value))).IsSome
+                && (status = Some CaseStatus.Opened
+                    || act = ReminderActKind.Complete
+                    || act = ReminderActKind.Cancel))
 
     let reminder (services: ServiceContext) (request: ReminderGetRequest) token =
         task {

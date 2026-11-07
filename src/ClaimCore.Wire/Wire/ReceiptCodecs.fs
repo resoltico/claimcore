@@ -244,13 +244,13 @@ module ReceiptCodecs =
         |> build
 
     let private valid (receipt: OperationReceipt) =
-        let reminder parent state (version: ReminderVersion) =
+        let reminder parent act (version: ReminderVersion) =
             match version.Snapshot with
             | ReminderDisclosure.Disclosed value ->
                 Reminder.id value = version.ReminderId
                 && Reminder.revision value = version.Revision
                 && Reminder.caseId value = parent
-                && Reminder.state value = state
+                && ReminderState.isResultOf act (Reminder.state value)
             | ReminderDisclosure.Withheld
             | ReminderDisclosure.Erased -> true
 
@@ -267,18 +267,12 @@ module ReceiptCodecs =
                 completed.ReminderId <> next.ReminderId
                 && next.ReminderId = ReminderId.ofOperationId receipt.OperationId
                 && next.Revision = Revision.first
-                && reminder value.CaseId ReminderState.Completed completed
-                && reminder value.CaseId ReminderState.Pending next
+                && reminder value.CaseId ReminderActKind.CompleteAndPlanNext completed
+                && reminder value.CaseId ReminderActKind.Create next
             | ReminderActKind.CompleteAndPlanNext, _ -> false
             | _, ReminderReceiptEffects.CompletedAndPlanned _ -> false
             | act, ReminderReceiptEffects.Single version ->
-                let state =
-                    match act with
-                    | ReminderActKind.Complete -> ReminderState.Completed
-                    | ReminderActKind.Cancel -> ReminderState.Cancelled
-                    | _ -> ReminderState.Pending
-
-                reminder value.CaseId state version
+                reminder value.CaseId act version
                 && (act <> ReminderActKind.Create
                     || (version.ReminderId = ReminderId.ofOperationId receipt.OperationId
                         && version.Revision = Revision.first))

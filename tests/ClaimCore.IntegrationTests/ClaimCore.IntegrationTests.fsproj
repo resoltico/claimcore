@@ -30,6 +30,7 @@
     <Compile Include="RequesterAdmissionContract.fs" />
     <Compile Include="StoreContractTests.fs" />
     <Compile Include="VerificationSupport.fs" />
+    <Compile Include="StructuralBaselineTests.fs" />
     <Compile Include="SummaryAttributionPostgresTests.fs" />
     <Compile Include="RequesterAdmissionPostgresTests.fs" />
     <Compile Include="NamedRowTests.fs" />

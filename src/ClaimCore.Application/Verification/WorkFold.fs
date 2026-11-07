@@ -227,24 +227,10 @@ module internal WorkFold =
                 do! check (terminalCleanup || parent.Status = CaseStatus.Opened)
 
                 let! state =
-                    match subject.Act, previous with
-                    | ReminderActKind.Create, None -> Ok ReminderState.Pending
-                    | (ReminderActKind.Update | ReminderActKind.CompleteAndPlanNext), Some old when
-                        old.State = ReminderState.Pending
-                        ->
-                        Ok(
-                            if subject.Act = ReminderActKind.Update then
-                                ReminderState.Pending
-                            else
-                                ReminderState.Completed
-                        )
-                    | ReminderActKind.Complete, Some old when old.State = ReminderState.Pending ->
-                        Ok ReminderState.Completed
-                    | ReminderActKind.Cancel, Some old when old.State = ReminderState.Pending ->
-                        Ok ReminderState.Cancelled
-                    | ReminderActKind.Reopen, Some old when old.State <> ReminderState.Pending ->
-                        Ok ReminderState.Pending
-                    | _ -> Error(divergence at VerificationFinding.StateSequence)
+                    ReminderState.after subject.Act (previous |> Option.map _.State)
+                    |> function
+                        | Some state -> Ok state
+                        | None -> Error(divergence at VerificationFinding.StateSequence)
 
                 do!
                     check (
@@ -317,7 +303,8 @@ module internal WorkFold =
                             id
                             { history with
                                 Revision = Revision.first
-                                State = ReminderState.Pending
+                                State =
+                                    ReminderState.after ReminderActKind.Create None |> Option.get
                                 Snapshot = next
                                 MissingPayloadAt = (if entry.Payload.IsNone then at else None)
                                 PresentPayloadAt = (if entry.Payload.IsSome then at else None)

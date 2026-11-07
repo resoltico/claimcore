@@ -16,7 +16,7 @@ type internal Applicable<'r, 'd, 'du, 'p, 's> =
     | Reopening of Claim
     | Voiding of Claim * 's
     | Reinstating of Claim * 's
-    | Erasing
+    | Erasing of Lifecycle
 
 module internal Transitions =
     let private notOffered (claim: Claim) =
@@ -97,7 +97,7 @@ module internal Transitions =
         function
         | CaseAct.Void reason -> Ok(Applicable.Voiding(claim, reason))
         | CaseAct.Reinstate _ -> Error(notOffered claim)
-        | CaseAct.Bare BareAct.Erase -> Ok Applicable.Erasing
+        | CaseAct.Bare BareAct.Erase -> Ok(Applicable.Erasing Lifecycle.Active)
         | _ -> invalidOp "A business act cannot enter stewardship rules."
 
     let private active claim act =
@@ -114,7 +114,7 @@ module internal Transitions =
         function
         | CaseAct.Void _ -> Error(CaseRefusal.NotOffered CaseHeadline.Voided)
         | CaseAct.Reinstate reason -> Ok(Applicable.Reinstating(claim, reason))
-        | CaseAct.Bare BareAct.Erase -> Ok Applicable.Erasing
+        | CaseAct.Bare BareAct.Erase -> Ok(Applicable.Erasing Lifecycle.Voided)
         | _ -> invalidOp "A business act cannot enter stewardship rules."
 
     let private voided claim act =
@@ -128,8 +128,20 @@ module internal Transitions =
         | CaseState.Voided claim -> voided claim act
         | CaseState.Active claim -> active claim act
 
-    let private businessChange before after =
-        Some before, after |> Result.map CaseState.Active
+    let private stateAfter before act fields =
+        Lifecycle.after before act
+        |> Option.map (fun state -> CaseState.ofLifecycle state fields)
+        |> Option.defaultWith (fun () ->
+            invalidOp "Applicable evidence requires a structural lifecycle transition.")
+
+    let private businessChange act before after =
+        Some before, after |> Result.map (stateAfter Lifecycle.Active act)
+
+    let private erased before =
+        // Erasure carries only lifecycle evidence, never business payload.
+        match Lifecycle.after before CaseActKind.Erase with
+        | Some Lifecycle.Erased -> None, Ok CaseState.Erased
+        | _ -> invalidOp "Applicable erasure evidence requires an erased result."
 
     /// The proof supplies the decision for payment changes; no state shape is recovered by a partial operation.
     let private change evidence =
@@ -138,7 +150,7 @@ module internal Transitions =
             RegistrationUpdate.apply update claim.Facts
             |> InputValidation.registrationMerge
             |> Result.map (fun facts -> { claim with Facts = facts })
-            |> businessChange claim
+            |> businessChange CaseActKind.AmendRegistration claim
         | Applicable.Correcting(claim, correction) ->
             CaseCorrections.apply claim.Facts claim.Progress correction
             |> Result.map (fun (facts, progress) ->
@@ -146,9 +158,10 @@ module internal Transitions =
                     Facts = facts
                     Progress = progress
                 })
-            |> businessChange claim
+            |> businessChange CaseActKind.Correct claim
         | Applicable.Deciding(claim, decision) ->
             businessChange
+                CaseActKind.Decide
                 claim
                 (Ok
                     { claim with
@@ -156,6 +169,7 @@ module internal Transitions =
                     })
         | Applicable.Withdrawing claim ->
             businessChange
+                CaseActKind.WithdrawDecision
                 claim
                 (Ok
                     { claim with
@@ -163,6 +177,7 @@ module internal Transitions =
                     })
         | Applicable.Paying(claim, decision, payment) ->
             businessChange
+                CaseActKind.RecordPayment
                 claim
                 (Ok
                     { claim with
@@ -170,6 +185,7 @@ module internal Transitions =
                     })
         | Applicable.Unpaying(claim, decision) ->
             businessChange
+                CaseActKind.ClearPayment
                 claim
                 (Ok
                     { claim with
@@ -177,6 +193,7 @@ module internal Transitions =
                     })
         | Applicable.Closing claim ->
             businessChange
+                CaseActKind.Close
                 claim
                 (Ok
                     { claim with
@@ -184,6 +201,7 @@ module internal Transitions =
                     })
         | Applicable.Reopening claim ->
             businessChange
+                CaseActKind.Reopen
                 claim
                 (Ok
                     { claim with
@@ -192,18 +210,16 @@ module internal Transitions =
         | Applicable.Voiding(claim, reason) ->
             Some claim,
             Reason.admit reason
-            |> Result.map (fun _ -> CaseState.Voided claim)
+            |> Result.map (fun _ -> stateAfter Lifecycle.Active CaseActKind.Void claim)
             |> Result.mapError (fun violation ->
                 Refusal.invalidInput (InputTarget.Reason, violation))
         | Applicable.Reinstating(claim, reason) ->
             Some claim,
             Reason.admit reason
-            |> Result.map (fun _ -> CaseState.Active claim)
+            |> Result.map (fun _ -> stateAfter Lifecycle.Voided CaseActKind.Reinstate claim)
             |> Result.mapError (fun violation ->
                 Refusal.invalidInput (InputTarget.Reason, violation))
-        | Applicable.Erasing ->
-            // Erasure consumes no business payload and performs no new scalar admission.
-            None, Ok CaseState.Erased
+        | Applicable.Erasing before -> erased before
 
     let private ordered =
         function
@@ -230,7 +246,7 @@ module internal Transitions =
                 CaseCorrections.admission today before correction
             | Applicable.Voiding _
             | Applicable.Reinstating _
-            | Applicable.Erasing -> Ok()
+            | Applicable.Erasing _ -> Ok()
             | Applicable.Amending(current, update) ->
                 StateValidation.assertionsAgainst
                     today

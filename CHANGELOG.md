@@ -10,6 +10,7 @@
 - Reads use a per-principal FIFO of eight with two active requests and a five-second wait; full or expired queues return HTTP 429 with Retry-After: 1.
 - Browser reads cancel on navigation and show a busy notice without automatic retries; clients check the typed operation ID echo and trust server reply contents.
 - Core permits now bound each read and write pool; the default minimum connection pool is 14. Final operation lookup confirmation uses write admission.
+- Lifecycle and reminder transitions share Domain rules across execution, retained effects and verification; SQL validates structure and erasure authorization instead of act vocabulary.
 - Custom stores remove nonacceptance and fence ports; final absence uses a head-locked write callback without an append, including during maintenance.
 - CLI recovery keeps list and check; call/session fill omitted execute IDs and print them to stderr. Dry runs can omit IDs; exact retries retain the dispatched ID.
 - The web checks Unconfirmed changes automatically and shows the final-answer deadline; permanent-settlement actions and confirmations are removed.

@@ -19,6 +19,46 @@ type ReminderState =
     | Completed
     | Cancelled
 
+[<RequireQualifiedAccess>]
+type ReminderActKind =
+    | Create
+    | Update
+    | Complete
+    | Cancel
+    | Reopen
+    | CompleteAndPlanNext
+
+module ReminderActKind =
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+module ReminderState =
+    let vocabulary =
+        Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None
+
+    let all = Vocabulary.all vocabulary
+    let token = Vocabulary.token vocabulary
+
+    /// Retained structural transitions do not depend on current parent or permission policy.
+    let after act previous =
+        match act, previous with
+        | ReminderActKind.Create, None -> Some ReminderState.Pending
+        | ReminderActKind.Update, Some ReminderState.Pending -> Some ReminderState.Pending
+        | (ReminderActKind.Complete | ReminderActKind.CompleteAndPlanNext),
+          Some ReminderState.Pending -> Some ReminderState.Completed
+        | ReminderActKind.Cancel, Some ReminderState.Pending -> Some ReminderState.Cancelled
+        | ReminderActKind.Reopen, Some(ReminderState.Completed | ReminderState.Cancelled) ->
+            Some ReminderState.Pending
+        | _ -> None
+
+    /// A disclosed result may omit its predecessor while retaining its act's structural state.
+    let isResultOf act state =
+        None :: (all |> List.map Some)
+        |> List.exists (fun before -> after act before = Some state)
+
 /// Each accepted version is bounded independently of the number of other reminders.
 /// Completion attribution belongs to the accepting ledger event, never caller input.
 type Reminder =
@@ -108,7 +148,7 @@ module Reminder =
             Revision = Revision.first
             Action = plan.Action
             Due = plan.Due
-            State = ReminderState.Pending
+            State = ReminderState.after ReminderActKind.Create None |> Option.get
         }
 
     let private admit (plan: ReminderPlan) =
@@ -116,11 +156,17 @@ module Reminder =
         |> Result.map (fun _ -> ())
         |> Result.mapError ReminderRefusal.InvalidAction
 
-    let private pending reminder =
-        if reminder.State = ReminderState.Pending then
-            Ok()
-        else
-            Error ReminderRefusal.PendingRequired
+    let private nextState act reminder =
+        ReminderState.after act (Some reminder.State)
+        |> Option.map Ok
+        |> Option.defaultValue (
+            Error(
+                if act = ReminderActKind.Reopen then
+                    ReminderRefusal.TerminalRequired
+                else
+                    ReminderRefusal.PendingRequired
+            )
+        )
 
     let private changed state (reminder: Reminder) =
         { reminder with
@@ -129,41 +175,41 @@ module Reminder =
         }
 
     let private update reminder (plan: ReminderPlan) =
-        pending reminder
-        |> Result.bind (fun () -> if reminder.Action = plan.Action then Ok() else admit plan)
-        |> Result.bind (fun () ->
-            if reminder.Action = plan.Action && reminder.Due = plan.Due then
-                Error ReminderRefusal.NoChanges
-            else
-                { changed ReminderState.Pending reminder with
-                    Action = plan.Action
-                    Due = plan.Due
-                }
-                |> ReminderEffects.Changed
-                |> Ok)
+        nextState ReminderActKind.Update reminder
+        |> Result.bind (fun state ->
+            (if reminder.Action = plan.Action then Ok() else admit plan)
+            |> Result.bind (fun () ->
+                if reminder.Action = plan.Action && reminder.Due = plan.Due then
+                    Error ReminderRefusal.NoChanges
+                else
+                    { changed state reminder with
+                        Action = plan.Action
+                        Due = plan.Due
+                    }
+                    |> ReminderEffects.Changed
+                    |> Ok))
 
     let private reopen reminder due =
-        if reminder.State = ReminderState.Pending then
-            Error ReminderRefusal.TerminalRequired
-        else
-            { changed ReminderState.Pending reminder with
+        nextState ReminderActKind.Reopen reminder
+        |> Result.map (fun state ->
+            { changed state reminder with
                 Due = due
             }
-            |> ReminderEffects.Changed
-            |> Ok
+            |> ReminderEffects.Changed)
 
     let private completeAndPlan operation newIdReserved reminder plan =
-        pending reminder
-        |> Result.bind (fun () -> admit plan)
-        |> Result.bind (fun () ->
-            if newIdReserved || ReminderId.ofOperationId operation = reminder.Id then
-                Error ReminderRefusal.IdentityReserved
-            else
-                ReminderEffects.CompletedAndPlanned(
-                    changed ReminderState.Completed reminder,
-                    create operation reminder.CaseId plan
-                )
-                |> Ok)
+        nextState ReminderActKind.CompleteAndPlanNext reminder
+        |> Result.bind (fun state ->
+            admit plan
+            |> Result.bind (fun () ->
+                if newIdReserved || ReminderId.ofOperationId operation = reminder.Id then
+                    Error ReminderRefusal.IdentityReserved
+                else
+                    ReminderEffects.CompletedAndPlanned(
+                        changed state reminder,
+                        create operation reminder.CaseId plan
+                    )
+                    |> Ok))
 
     let private change operation newIdReserved isOpen reminder act =
         let openRequired =
@@ -177,13 +223,11 @@ module Reminder =
         else
             match act with
             | ReminderChange.Complete ->
-                pending reminder
-                |> Result.map (fun () ->
-                    changed ReminderState.Completed reminder |> ReminderEffects.Changed)
+                nextState ReminderActKind.Complete reminder
+                |> Result.map (fun state -> changed state reminder |> ReminderEffects.Changed)
             | ReminderChange.Cancel ->
-                pending reminder
-                |> Result.map (fun () ->
-                    changed ReminderState.Cancelled reminder |> ReminderEffects.Changed)
+                nextState ReminderActKind.Cancel reminder
+                |> Result.map (fun state -> changed state reminder |> ReminderEffects.Changed)
             | ReminderChange.Reopen due -> reopen reminder due
             | ReminderChange.Update plan -> update reminder plan
             | ReminderChange.CompleteAndPlanNext plan ->
@@ -225,22 +269,6 @@ module Reminder =
                         Error(ReminderRefusal.RevisionConflict reminder.Revision)
                     | Some reminder -> change operation newIdReserved isOpen reminder act
 
-
-[<RequireQualifiedAccess>]
-type ReminderActKind =
-    | Create
-    | Update
-    | Complete
-    | Cancel
-    | Reopen
-    | CompleteAndPlanNext
-
-module ReminderActKind =
-    let vocabulary =
-        Vocabulary.ofUnion<ReminderActKind> "reminderAct" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
 
 type ReminderPlanInput = { Action: string; Due: string }
 
@@ -291,13 +319,6 @@ module ReminderDue =
             Some ReminderDue.Today
         else
             Some ReminderDue.Upcoming
-
-module ReminderState =
-    let vocabulary =
-        Vocabulary.ofUnion<ReminderState> "reminderState" TokenCasing.ScreamingSnake None
-
-    let all = Vocabulary.all vocabulary
-    let token = Vocabulary.token vocabulary
 
 module ReminderCommand =
     let parent =

@@ -21,21 +21,16 @@ type CaseHistory =
 
 module internal CaseFold =
     let private nextState sequence previous act =
-        let state =
-            previous |> Option.map _.State |> Option.defaultValue (CaseState.Active())
+        let before =
+            previous
+            |> Option.map (_.State >> CaseState.lifecycle)
+            |> Option.defaultValue Lifecycle.Active
 
-        let refuse () =
-            Error(divergence (Some sequence) VerificationFinding.StateSequence)
-
-        match act, state with
-        | _, CaseState.Erased -> refuse ()
-        | CaseActKind.Void, CaseState.Active() -> Ok(CaseState.Voided())
-        | CaseActKind.Reinstate, CaseState.Voided() -> Ok(CaseState.Active())
-        | CaseActKind.Void, CaseState.Voided()
-        | CaseActKind.Reinstate, CaseState.Active() -> refuse ()
-        | CaseActKind.Erase, _ -> Ok CaseState.Erased
-        | _, CaseState.Voided() -> refuse ()
-        | _, CaseState.Active() -> Ok(CaseState.Active())
+        Lifecycle.after before act
+        |> Option.map (fun state -> CaseState.ofLifecycle state ())
+        |> function
+            | Some state -> Ok state
+            | None -> Error(divergence (Some sequence) VerificationFinding.StateSequence)
 
     let private snapshot sequence state reference payload =
         match payload with
