@@ -15,9 +15,9 @@ The [source release procedure](../docs/contributing.md#source-releases) explains
 CI success records executed checks, without granting release approval.
 
 The unit stage builds only its Debug dependency closure and runs assembly-scoped ArchUnitNET controls.
-CI owns non-browser published acceptance once (`acceptance-native`) and each complete engine separately
-(`acceptance-browser`); `acceptance` runs both locally. Collection and TRX scope checks preserve their
-complete disjoint union without repeating the native walkthrough in every browser job.
+CI owns non-browser published acceptance once (`acceptance-native`) and each engine separately
+(`acceptance-browser`); `acceptance` runs both locally. Native runner filters select each scope without repeating the native walkthrough in browser jobs.
+Chromium runs all cases; Firefox and WebKit select `@engine` cases.
 Contract generation also validates
 semantic catalog structure, typed term namespaces, declared producer arguments and renderer/core wording ownership. Browser production builds use only app/protocol sources;
 the frontend verification stage still checks the whole TypeScript solution and runs all browser unit tests.

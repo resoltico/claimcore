@@ -22,7 +22,7 @@ const openAccessibleLogin = async (page: Page): Promise<void> => {
   ).toBeVisible();
 };
 
-test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports", async ({
+test("keeps published login, editor, review, receipt and history accessible at narrow and zoomed viewports @engine", async ({
   page,
 }) => {
   test.setTimeout(freshLoginWorkflowTimeout);

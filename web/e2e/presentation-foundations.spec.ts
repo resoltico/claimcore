@@ -132,7 +132,7 @@ test("keeps presentation controls in Settings and applies persisted choices with
   await clean();
 });
 
-test("select-only listbox supports keyboard search, commit, Escape and focus return under CSP", async ({
+test("select-only listbox supports keyboard search, commit, Escape and focus return under CSP @engine", async ({
   page,
 }) => {
   const clean = await observe(page);

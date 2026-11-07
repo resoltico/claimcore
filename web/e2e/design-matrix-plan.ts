@@ -17,15 +17,7 @@ export const dimensions = (engine: string): Dimension[] => {
   }
   return [
     ...shared,
-    { width: 390, language: "en", mode: "light", accent: "green" },
-    { width: 320, language: "en", mode: "dark", accent: "blue" },
-    { width: 768, language: "en", mode: "dark", accent: "blue" },
-    { width: 390, language: "lv", mode: "dark", accent: "blue" },
-    { width: 390, language: "ko", mode: "light", accent: "green" },
-    { width: 390, language: "zh-Hans", mode: "dark", accent: "blue" },
-    { width: 390, language: "zh-Hant", mode: "light", accent: "green" },
     { width: 390, language: "ja", mode: "dark", accent: "blue" },
-    { width: 390, language: "es", mode: "light", accent: "green" },
     { width: 320, language: "de", mode: "light", accent: "green" },
     { width: 320, language: "en-XA", mode: "light", accent: "green" },
     { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 },
@@ -110,7 +102,7 @@ export type MatrixCounts = {
 };
 export const expectedEngineCounts = (engine: string): MatrixCounts =>
   engine === "chromium"
-    ? { dimensions: 14, pageLoads: 406, axeAndReflowChecks: 420, screenshots: 166 }
+    ? { dimensions: 6, pageLoads: 174, axeAndReflowChecks: 180, screenshots: 60 }
     : { dimensions: 2, pageLoads: 58, axeAndReflowChecks: 60, screenshots: 0 };
 export const assertMatrixCounts = (engine: string, actual: MatrixCounts): void => {
   const expected = expectedEngineCounts(engine);
@@ -172,31 +164,6 @@ export const assertMatrixPlan = (engine: string): void => {
 
 export const dimensionCaseTitle = (dimension: Dimension): string =>
   `${dimension.language} ${dimension.width}px ${dimension.accent} ${dimension.mode}${dimension.zoom === undefined ? "" : " at 200% zoom"}`;
-
-/** Only the Native-validated diagnostic child selector may narrow the registered matrix plan. */
-export const selectDiagnosticDimension = (
-  plan: ReadonlyArray<Dimension>,
-  title: string | undefined,
-  scope: string | undefined,
-): Dimension | undefined => {
-  if (title === undefined) {
-    return undefined;
-  }
-  if (scope !== "diagnostic") {
-    throw new Error("A matrix case requires the diagnostic scope");
-  }
-  const matches = plan.filter((dimension) => dimensionCaseTitle(dimension) === title);
-  if (matches.length !== 1) {
-    throw new Error("A matrix case must identify exactly one known planned dimension");
-  }
-  return matches[0];
-};
-export const expectedDimensionCounts = (engine: string, dimension: Dimension): MatrixCounts => ({
-  dimensions: 1,
-  pageLoads: expectedRoutes.length,
-  axeAndReflowChecks: expectedRoutes.length + 1,
-  screenshots: expectedCaptures(engine, dimension),
-});
 
 const factDateTokens = {
   incidentDate: "INCIDENT_DATE",

@@ -68,7 +68,7 @@ const keys = [
   "subject",
 ];
 
-test("real IndexedDB keeps independent attempts across pages with one operation ID", async ({
+test("real IndexedDB keeps independent attempts across pages with one operation ID @engine", async ({
   page,
   context,
 }) => {
@@ -159,7 +159,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   await second.close();
 });
 
-test("tab loss after transaction commit and before notification leaves identity for final resolution", async ({
+test("tab loss after transaction commit and before notification leaves identity for final resolution @engine", async ({
   page,
   context,
 }) => {
@@ -269,7 +269,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   await replacement.close();
 });
 
-test("a lost accepted reply survives tab closure and resolves without resubmission", async ({
+test("a lost accepted reply survives tab closure and resolves without resubmission @engine", async ({
   page,
   context,
 }) => {
@@ -313,7 +313,7 @@ test("a lost accepted reply survives tab closure and resolves without resubmissi
   await replacement.close();
 });
 
-test("a real blocked open refuses preparation and retains the earlier record", async ({
+test("a real blocked open refuses preparation and retains the earlier record @engine", async ({
   page,
   context,
 }) => {
@@ -396,7 +396,7 @@ test("a real blocked open refuses preparation and retains the earlier record", a
   await holder.close();
 });
 
-test("the actual adapter closes a version-changed connection and preserves committed identity", async ({
+test("the actual adapter closes a version-changed connection and preserves committed identity @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -527,7 +527,7 @@ test("the actual adapter closes a version-changed connection and preserves commi
   });
 });
 
-test("same-identity workspace refresh settles a pending recovery without resubmission", async ({
+test("same-identity workspace refresh settles a pending recovery without resubmission @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);
@@ -605,7 +605,7 @@ test("same-identity workspace refresh settles a pending recovery without resubmi
   }
 });
 
-test("real IndexedDB retains only current work and reminder identities and refuses old-format records without deleting them", async ({
+test("real IndexedDB retains only current work and reminder identities and refuses old-format records without deleting them @engine", async ({
   page,
 }) => {
   await openAuthenticated(page);

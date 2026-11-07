@@ -19,7 +19,7 @@ test.beforeAll(async ({ browser, baseURL }) => {
   stewardCookies = await authenticateSteward(browser, baseURL);
 });
 
-test("stewardship review preserves exact reason through pseudolocale, Arabic RTL and narrow keyboard interaction", async ({
+test("stewardship review preserves exact reason through pseudolocale, Arabic RTL and narrow keyboard interaction @engine", async ({
   page,
   browser,
 }) => {

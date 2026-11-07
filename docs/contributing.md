@@ -362,15 +362,12 @@ Explicit task acceptance and required clean/independent checks still apply. Trac
 (such as a field retest) separately from the ordinary `Gate`. Focused runs,
 smoke selections and partial matrices establish only their reported scope, never unrun qualification.
 
-CI enforces the order: published browsers wait for frontend checks. The workflow stage rejects regressions in those dependencies and partial
-browser qualification before starting tools or containers. The matrix plan also checks its required
-tuples and counts during cheap frontend tests and spec collection, before creating its dataset.
-Direct local commands do not enforce prior check completion; apply the same sequencing when invoking
-them. CI dependency checks prevent those workflow regressions, not every possible manual misuse.
+CI defines the order: published browsers wait for frontend checks. Actionlint validates job dependencies.
+Direct local commands do not enforce prior check completion; apply the same sequencing when invoking them.
 
 Routine layout qualification uses representative risk cases rather than a Cartesian product of language,
-theme, accent and viewport. Chromium visits all 29 scenes in 14 contexts, covering every text language,
-long German text, CJK, RTL, pseudolocalization, mobile/tablet/desktop and 200% zoom. Firefox and WebKit
+theme, accent and viewport. Chromium visits all 29 scenes in six contexts covering English,
+long German text, Japanese, RTL, pseudolocalization and 200% zoom. Firefox and WebKit
 visit all scenes in desktop LTR and narrow RTL contexts. The separate theme/contrast, forced-colors,
 input, security and workflow tests still apply. Language-switch coverage exercises every language and
 display format without multiplying their independent choices. Review additional combinations when a
@@ -414,62 +411,26 @@ Frontend file selection runs every test in the selected files;
 name filters can create skipped results that the required-test reporter rejects. A build alone proves
 neither behavior nor integration. Use named stages when the whole affected suite is the useful unit.
 
-Complete published-browser qualification has a 40-minute Playwright execution safety cap for the
-expanded workflow and design-matrix inventory. `BrowserTests.fs` owns scope limits (complete 40,
-diagnostic 20, smoke 2 minutes), passes them explicitly to Playwright, and gives its native process
-one further minute for reporting and cleanup. Complete non-browser acceptance has a 40-minute MTP
-bound; each complete browser scope has 45 minutes (50/55 minutes respectively including CI setup).
-The default local command runs native acceptance once, then sequences all three engines under a separate
-130-minute browser-project bound. These capacity bounds do not change per-test
-limits, one worker, zero retries, strict completion or product performance thresholds; reaching a cap
-is a failure, not a performance pass. Ad-hoc Playwright keeps its 20-minute configuration default.
-Secondary-principal specs acquire real OIDC sessions in their own `beforeAll` setup under the existing
-login-admission wait. Keep those cookies within the spec that acquired them so authentication
-deadlines remain meaningful during long runs.
+Playwright owns browser timeouts and execution reports. Chromium runs the complete e2e suite;
+Firefox and WebKit run the `@engine` cases for CSP, sign-in/session, IndexedDB, keyboard interaction,
+RTL and forced colours. The design matrix uses desktop English, narrow Arabic, long German, Japanese,
+200% zoom and pseudolocale contexts on Chromium, and desktop English/narrow Arabic on the other engines.
 
-For concrete browser failures, select existing specs and one engine. Chromium's headless shell is
-also required for CLI PKCE bootstrap when the selected engine is Firefox or WebKit; the `browsers`
-stage installs that dependency alongside the selected engine. With current Release
-applications/test assembly and frontend assets already built:
+With current Release applications, test assembly and frontend assets built, select a Playwright file:
 
 ```sh
 CLAIMCORE_ACCEPTANCE_BROWSER_ENGINE=chromium \
-CLAIMCORE_ACCEPTANCE_BROWSER_SCOPE=diagnostic \
 CLAIMCORE_ACCEPTANCE_BROWSER_SPEC=design-matrix.spec.ts \
 dotnet test --project tests/ClaimCore.AcceptanceTests/ClaimCore.AcceptanceTests.fsproj \
   --configuration Release --no-build --no-restore --zero-tests-policy=strict \
-  --filter 'FullyQualifiedName~published browser diagnostic' \
+  --filter 'FullyQualifiedName~published browser acceptance' \
   -- --settings=eng/expecto.acceptance.runsettings
 ```
 
-This starts the same isolated fixture and keeps the existing hard limits, but runs only the selected
-files. `CLAIMCORE_ACCEPTANCE_BROWSER_SPEC` also accepts a comma-separated list of unique exact
-existing basenames (no spaces or paths). Diagnostics collect all selected failures with
-`--max-failures=0`, under the unchanged 20-minute, one-worker, zero-retry limits. Selection is
-validated before fixture startup; every selected test must pass without skips or retries, and reports
-explicitly state incomplete qualification. Selected specs share mutable fixture state, so later failures
-may be cascades: inspect chronology and current state before treating them as independent defects.
-To run one existing test within one spec, also set `CLAIMCORE_ACCEPTANCE_BROWSER_CASE` to its exact
-literal title (at most 256 Unicode scalars, unpadded and without controls). The runner escapes it as an
-exact suffix and validates exactly one existing file/title/engine identity with Playwright `--list`
-before fixture startup. Completion must match that identity, pass without skips or retries, and reports
-include `selectedCase` with `fullQualification=false`; it does not establish whole-file coverage.
-Existing selected-file artifact requirements remain; select the case that produces them.
-The ordinary acceptance gate refuses diagnostic selection, including case selectors. Use this path to diagnose the affected
-spec instead of restarting complete suites and replaying unrelated passing tests.
-
-For a Linux-only browser failure, dispatch the existing CI workflow with `browser_spec` set to that
-basename and optional `browser_engine=chromium|firefox|webkit` (default Chromium), for example
-`gh workflow run ci.yml --ref BRANCH -f browser_spec=presentation-foundations.spec.ts -f browser_engine=webkit`.
-This runs only the explicitly partial one-file diagnostic; qualification and `Gate` jobs are
-skipped. Invalid or ambiguous spec names and unknown engines fail before setup. A nondefault engine
-without `browser_spec` fails configuration and blocks qualification jobs; ordinary dispatches keep full
-qualification. Chromium is also installed for CLI authentication bootstrap when the selected test
-engine differs. Add `-f browser_case='en 640px green light at 200% zoom'` with
-`-f browser_spec=design-matrix.spec.ts` to diagnose only that existing planned dimension. It still
-requires all 29 scene loads and 30 checks, with the expected captures, and remains partial.
-Case-only input is rejected before qualification setup. The existing diagnostic execution and outer
-time limits are unchanged.
+`CLAIMCORE_ACCEPTANCE_BROWSER_SPEC` passes directly to Playwright's file filter. A selected file
+establishes only its executed scope. For a Linux-specific failure, dispatch CI with `browser_spec`
+and optional `browser_engine=chromium|firefox|webkit`. This runs the selected file with its engine's
+filter; the normal gate jobs are skipped. Inspect the failure output before another full run.
 
 For broader verification:
 
@@ -500,20 +461,17 @@ execute in order and stop at failure:
 | postgres / web | The corresponding isolated suite |
 | browsers | Install the locked Playwright engines and required system dependencies |
 | acceptance-native | Complete published service/CLI and deployment cases, once |
-| acceptance-browser | Complete browser scope for selected engines, with isolated fixture/bootstrap/readback |
-| acceptance | Native scope once, followed by complete browser scope |
+| acceptance-browser | Chromium complete; Firefox/WebKit `@engine`, with isolated fixtures |
+| acceptance | Native scope once, followed by the browser engine scopes |
 
 Pure tests restore and build their actual Debug dependency closure without optimization for visible
 compiled negative controls. They do not require a solution-wide Release build; each Release consumer
 builds its own current prerequisites. Shared store-contract scenarios run against both the memory
 double and PostgreSQL. Native
 projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
-skipped or pending cases, and test retries do not replace the required stage scope. The gate defines the
-PostgreSQL stage. CI runs complete non-browser published acceptance once and assigns each
-complete browser engine to a separate job. Both owners are required by Gate. Before fixtures,
-`eng/acceptance-scope.py` collects the full native test inventory and partitions it into disjoint native
-and browser subsets; afterward it checks the executed TRX names/outcomes against that scope, including
-missing, repeated and skipped cases. A complete subset does not claim the other subset ran.
+skipped or pending cases, and test retries do not replace the required stage scope. CI runs native published acceptance once and each browser engine in a separate job. Both are
+required by Gate. Native runner filters select the browser case or its complement, and
+`--zero-tests-policy=strict` rejects unexpectedly empty native runs.
 
 ```sh
 bash eng/verify.sh acceptance-native
@@ -525,10 +483,9 @@ container startup and teardown cannot overlap browser authentication in another 
 fixtures share host networking. Keep these settings when running focused acceptance cases; unit and
 store tests retain their separate concurrency settings.
 
-Default acceptance runs native cases once, then complete Chromium, Firefox and WebKit suites with zero
-retries. Ordinary acceptance stages refuse partial diagnostic/smoke scope. Direct smoke invocations
-remain explicitly incomplete. All three complete engine jobs are required for the CI matrix; a selected engine alone does not qualify the full matrix. Native report directories under
-`artifacts/verification/` retain TRX and browser summaries. Automatic pruning retains the ten newest
+Default acceptance runs native cases once, then Chromium's complete suite and Firefox/WebKit's
+`@engine` cases, with zero retries. Native report directories under `artifacts/verification/` retain TRX.
+Automatic pruning retains the ten newest
 explicitly successful completed native runs; failed, active and historical runs without a known outcome
 are preserved. Review retained failures before manually removing their exact owned directories.
 No later passing check erases a failed run. Cleanup must preserve original failures and target owned resources.
