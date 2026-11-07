@@ -348,7 +348,7 @@ let authorityRequest operationId target act : ClaimCore.Domain.AuthorityRequest 
             Act = act
         }
 
-/// Inventory supplies the alternatives and expected tokens; codecs construct inputs only.
+/// Authored act alternatives construct inputs; expectations stay with their behavior tests.
 let caseActs registration decision payment reason =
     let groups =
         JsonValue.Object
@@ -470,80 +470,3 @@ let authorityEffects grants =
             yield AuthorityEffect.Grant grant, "GRANT"
             yield AuthorityEffect.Revoke grant, "REVOKE"
     ]
-
-// Positive JSON seeds are authored overrides, not expectations. Missing fields come from the
-// same input builders; unknown members and supplied values are never discarded or normalized.
-let private groupBaselines =
-    Map.ofList
-        [
-            "registration", RequestCodecs.registration.Write registration
-            "decision", RequestCodecs.decision.Write decision
-            "payment", RequestCodecs.payment.Write payment
-        ]
-
-let private groupOverride group members =
-    match groupBaselines[group] with
-    | JsonValue.Object baseline ->
-        let supplied = Map.ofList members
-        let keys = baseline |> List.map fst |> Set.ofList
-
-        JsonValue.Object(
-            (baseline
-             |> List.map (fun (key, value) ->
-                 key, Map.tryFind key supplied |> Option.defaultValue value))
-            @ (members |> List.filter (fun (key, _) -> not (Set.contains key keys)))
-        )
-    | _ -> failtest "A group builder must produce an object."
-
-let private payloadGroup group members =
-    match members |> List.tryFind (fst >> (=) "kind") |> Option.map snd with
-    | Some(JsonValue.String "REPLACE") -> group
-    | Some(JsonValue.String token) ->
-        CaseActKind.parse token
-        |> Option.bind (fun kind ->
-            match (CaseActKind.describe kind).Payload with
-            | ActPayload.Registration -> Some "registration"
-            | ActPayload.Decision -> Some "decision"
-            | ActPayload.Payment -> Some "payment"
-            | _ -> None)
-    | _ -> None
-
-let private maintenanceDefaults fields =
-    let keys = fields |> List.map fst |> Set.ofList
-    let advice = Set.contains "acts" keys && Set.contains "history" keys
-    let context = Set.contains "installationId" keys && Set.contains "capabilities" keys
-
-    if (advice || context) && not (Set.contains "maintenance" keys) then
-        fields
-        @ [
-            "maintenance",
-            JsonValue.Object
-                [ "active", JsonValue.Boolean false; "generation", JsonValue.Integer 0L ]
-        ]
-    else
-        fields
-
-let positiveValue value =
-    let rec complete group =
-        function
-        | JsonValue.Object members ->
-            let payload = payloadGroup group members
-
-            let fields =
-                members
-                |> List.map (fun (key, value) ->
-                    let child =
-                        if key = "values" then payload
-                        elif Map.containsKey key groupBaselines then Some key
-                        else None
-
-                    key, complete child value)
-
-            match group with
-            | Some group when not (members |> List.exists (fst >> (=) "kind")) ->
-                groupOverride group fields
-            | _ -> JsonValue.Object(maintenanceDefaults fields)
-        | JsonValue.Array values -> JsonValue.Array(List.map (complete None) values)
-        | value -> value
-
-    complete None value

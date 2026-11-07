@@ -82,8 +82,7 @@ module Frames =
     let inputBytes (invocation: Invocation) = Array.copy invocation.Bytes
 
     let operationId invocation =
-        JsonValue.tryMember "operationId" (input invocation)
-        |> Option.bind (fun value -> Codec.uuid.Read "$.operationId" value |> Result.toOption)
+        EndpointValues.operationId invocation.Typed
 
     /// Typed in-process callers materialize once; only external frames require byte admission.
     let create (endpoint: Endpoint<'input, 'output>) input =
@@ -159,7 +158,8 @@ module Frames =
                                                     binding: Endpoint<'request, 'reply>,
                                                     value: 'request
                                                 ) =
-                                                binding.Correlation value
+                                                binding.Correlation
+                                                |> Option.map (fun echo -> echo.Request value)
                                                 |> Option.bind OperationId.create
                                                 |> Option.isSome
                                         }

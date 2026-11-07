@@ -263,9 +263,14 @@ type Host
     member _.ClearLog() =
         sink.GetStringBuilder().Clear() |> ignore
 
-    member _.Send
-        (method: HttpMethod, path: string, body: byte array option, headers: (string * string) list)
-        =
+    member _.SendResponse
+        (
+            method: HttpMethod,
+            path: string,
+            body: byte array option,
+            headers: (string * string) list,
+            ?cancellationToken: System.Threading.CancellationToken
+        ) =
         task {
             use request = new HttpRequestMessage(method, path)
             request.Headers.Host <- origin.Authority
@@ -285,7 +290,12 @@ type Host
                 content.Headers.ContentType <- MediaTypeHeaderValue.Parse "application/json"
                 request.Content <- content)
 
-            use! response = client.SendAsync request
+            let! response =
+                client.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead,
+                    defaultArg cancellationToken System.Threading.CancellationToken.None
+                )
 
             match response.Headers.TryGetValues "Set-Cookie" with
             | true, values ->
@@ -294,6 +304,12 @@ type Host
                     cookies <- Map.add (pair.Split('=', 2)[0]) pair cookies
             | _ -> ()
 
+            return response
+        }
+
+    member this.Send(method, path, body, headers) =
+        task {
+            use! response = this.SendResponse(method, path, body, headers)
             let! payload = response.Content.ReadAsByteArrayAsync()
             return int response.StatusCode, payload
         }
@@ -323,8 +339,16 @@ type Host
     member this.Login() =
         this.Send(HttpMethod.Post, "/__test/login", None, [])
 
-    member this.Call(endpoint, body, token, ?fingerprint: string, ?installation: string) =
-        this.Send(
+    member this.CallResponse
+        (
+            endpoint,
+            body,
+            token,
+            ?fingerprint: string,
+            ?installation: string,
+            ?cancellationToken: System.Threading.CancellationToken
+        ) =
+        this.SendResponse(
             HttpMethod.Post,
             "/api/" + endpoint,
             Some body,
@@ -333,8 +357,24 @@ type Host
                 "X-ClaimCore-Antiforgery", token
                 "ClaimCore-Contract", defaultArg fingerprint (ContractIdentity.value)
                 "ClaimCore-Installation", defaultArg installation (installationId.ToString("D"))
-            ]
+            ],
+            ?cancellationToken = cancellationToken
         )
+
+    member this.Call(endpoint, body, token, ?fingerprint: string, ?installation: string) =
+        task {
+            use! response =
+                this.CallResponse(
+                    endpoint,
+                    body,
+                    token,
+                    ?fingerprint = fingerprint,
+                    ?installation = installation
+                )
+
+            let! payload = response.Content.ReadAsByteArrayAsync()
+            return int response.StatusCode, payload
+        }
 
     interface IDisposable with
         member _.Dispose() =

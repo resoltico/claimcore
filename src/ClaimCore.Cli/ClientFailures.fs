@@ -75,12 +75,7 @@ module CliReply =
         |> Result.mapError (fun _ -> CliFailure.InvalidResponse)
         |> Result.bind (fun typed ->
             if
-                not (
-                    ReplyCorrelation.matches
-                        (Frames.endpoint invocation).Token
-                        (Frames.input invocation)
-                        reply
-                )
+                not (EndpointValues.echoesOperationId (Frames.operationId invocation) typed.Typed)
             then
                 Error CliFailure.InvalidResponse
             else

@@ -37,7 +37,8 @@ module Route =
                     endpoint.Input.Read "$" value
                     |> Result.map (fun input ->
                         {
-                            OperationId = endpoint.Correlation input
+                            OperationId =
+                                endpoint.Correlation |> Option.map (fun echo -> echo.Request input)
                             Invoke =
                                 fun context cancellation completed ->
                                     task {

@@ -16,46 +16,6 @@ let wireName endpoint response =
     let direction = if response then "reply" else "request"
     ClaimCore.Wire.Api.id endpoint + " " + direction + " round trip"
 
-let private wirePropertyNames =
-    [
-        for endpoint in ClaimCore.Wire.Api.all do
-            yield wireName endpoint false
-            yield wireName endpoint true
-    ]
-    |> Set.ofList
-
-let private propertyNames =
-    set
-        [
-            "CLI undeclared flag admission"
-            "endpoint member and kind strictness"
-            "canonical JSON round trip"
-            "canonical JSON spelling"
-            "stewardship revision"
-            "stewardship durable record"
-            "authority durable record"
-            "ledger payload framing"
-            "ledger hash"
-            "calendar date"
-            "money amount"
-            "currency code"
-            "business text"
-            "permanent case inventory"
-            "permanent snapshot inventory"
-            "permanent authority inventory"
-            "case request record"
-            "operation identity fingerprint"
-            "case transition sequence"
-            "state act eligibility"
-            "invocation byte decoder"
-            "durable record byte decoder"
-            "case act slots"
-            "authority act traversal"
-            "input issue subsets"
-            "mixed admission subsets"
-            "recommended case act safety"
-        ]
-
 let private fixedBaseSeed = 0x434C41494D434F52UL
 
 let sequenceMaximum () = 20
@@ -101,9 +61,6 @@ let private requireComplete propertyName report =
     | GaveUp -> failtest (failureText propertyName report)
 
 let run propertyName (property: Property<bool>) =
-    if not (Set.contains propertyName (Set.union propertyNames wirePropertyNames)) then
-        invalidArg (nameof propertyName) "Use one registered property name."
-
     let executable = Property.falseToFailure property
 
     let report = Property.reportWith (config propertyName) executable

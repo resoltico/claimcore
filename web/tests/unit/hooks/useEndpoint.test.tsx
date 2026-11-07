@@ -173,7 +173,7 @@ it("starts a changed read input at the same cursor while its cancelled predecess
   });
   expect(view.result.current.items).toEqual(["full"]);
 });
-it("does not start a queued initial page read after its owner unmounts", async () => {
+it("does not start a scheduled initial page read after its owner unmounts", async () => {
   const request = vi.fn((_cursor: string | null, _signal: AbortSignal) =>
     Promise.resolve(result("fresh")),
   );

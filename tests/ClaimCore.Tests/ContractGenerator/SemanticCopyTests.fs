@@ -63,23 +63,10 @@ let tests =
                             "Reference breaks ties"
                         ] do
                         Expect.stringContains rule witness "Matches the declared SQL ordering")
-            testCase
-                "active open work is distinct from attention and uses the current business date"
-                (fun () ->
-                    Expect.equal
-                        (text "de" "label.actionableCases")
-                        "Aktive offene Fälle"
-                        "Not an attention count"
-
-                    Expect.equal
-                        (text "es" "label.actionableCases")
-                        "Expedientes activos y abiertos"
-                        "Not an attention count"
-
-                    Expect.stringContains
-                        (text "en" "endpoint.work.views.meaning")
-                        "one snapshot"
-                        "Not the installation setup date")
+            testCase "combined view counts name their shared snapshot and date basis" (fun () ->
+                let meaning = text "en" "endpoint.work.views.meaning"
+                Expect.stringContains meaning "same snapshot" "Both count sets share one snapshot"
+                Expect.stringContains meaning "date basis" "The date belongs to that snapshot")
             testCase
                 "recorded opening milestones and Korean reference dates are not current active states or working-day rules"
                 (fun () ->

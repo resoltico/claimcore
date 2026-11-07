@@ -1,7 +1,7 @@
 import type { WorkViews } from "@contracts/client";
 import type { CaseCounts, ReminderCounts } from "../../src/views/WorkspaceViews";
 import { workBasis } from "./inputs";
-export const caseViewsFixture: CaseCounts = {
+const caseViewsFixture: CaseCounts = {
   basis: workBasis,
   items: [
     { view: "NEEDS_ATTENTION", count: 0 },
@@ -17,7 +17,7 @@ export const caseViewsFixture: CaseCounts = {
     { view: "ALL", count: 0 },
   ],
 };
-export const reminderViewsFixture: ReminderCounts = {
+const reminderViewsFixture: ReminderCounts = {
   basis: workBasis,
   items: [
     { view: "PENDING", count: 0 },

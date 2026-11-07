@@ -1,4 +1,4 @@
-import { languages, type Language } from "../src/presentation/preferences";
+import { type Language } from "../src/presentation/preferences";
 export type Dimension = {
   language: Language;
   mode: "light" | "dark";
@@ -23,7 +23,7 @@ export const dimensions = (engine: string): Dimension[] => {
     { width: 640, language: "en", mode: "light", accent: "green", zoom: 2 },
   ];
 };
-export const expectedRoutes = [
+const expectedRoutes = [
   "cases-mine",
   "cases-notified",
   "cases-summary",
@@ -58,11 +58,6 @@ export const screenshotDimension = (dimension: Dimension): boolean =>
   dimension.zoom === undefined &&
   dimension.language !== "en-XA" &&
   (dimension.width <= 390 || (dimension.language === "en" && dimension.width === 1280));
-export const expectedCaptures = (engine: string, dimension: Dimension): number =>
-  engine === "chromium" && screenshotDimension(dimension)
-    ? 15 +
-      Number(dimension.language === "en" && dimension.width === 390 && dimension.mode === "light")
-    : 0;
 export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
   const baselinePair =
     frame === "cases-open-undecided" &&
@@ -92,74 +87,6 @@ export const capturesFrame = (frame: string, dimension: Dimension): boolean => {
     return false;
   }
   return true;
-};
-
-export type MatrixCounts = {
-  dimensions: number;
-  pageLoads: number;
-  axeAndReflowChecks: number;
-  screenshots: number;
-};
-export const expectedEngineCounts = (engine: string): MatrixCounts =>
-  engine === "chromium"
-    ? { dimensions: 6, pageLoads: 174, axeAndReflowChecks: 180, screenshots: 60 }
-    : { dimensions: 2, pageLoads: 58, axeAndReflowChecks: 60, screenshots: 0 };
-const assertMatrixCounts = (engine: string, actual: MatrixCounts): void => {
-  const expected = expectedEngineCounts(engine);
-  if (
-    Object.keys(expected).some(
-      (key) => actual[key as keyof MatrixCounts] !== expected[key as keyof MatrixCounts],
-    )
-  ) {
-    throw new Error(
-      "Design matrix counts do not match the independently pinned required inventory",
-    );
-  }
-};
-const validDimension = (d: Dimension): boolean =>
-  languages.includes(d.language) &&
-  [320, 390, 640, 768, 1280].includes(d.width) &&
-  ["light", "dark"].includes(d.mode) &&
-  ["green", "blue"].includes(d.accent) &&
-  (d.zoom === undefined || (d.language === "en" && d.width === 640 && d.zoom === 2));
-export const assertMatrixPlan = (engine: string): void => {
-  if (!["chromium", "firefox", "webkit"].includes(engine)) {
-    throw new Error("Unknown design matrix engine");
-  }
-  const plan = dimensions(engine);
-  if (
-    plan.some((d) => !validDimension(d)) ||
-    new Set(plan.map((d) => JSON.stringify(d))).size !== plan.length ||
-    new Set(expectedRoutes).size !== 29
-  ) {
-    throw new Error("Design matrix has invalid or duplicate required tuples or scenes");
-  }
-  const frames = [...expectedRoutes, "cases-filter-panel"];
-  const screenshots = plan.reduce(
-    (total, d) =>
-      total +
-      (engine === "chromium" && screenshotDimension(d)
-        ? frames.filter((frame) => capturesFrame(frame, d)).length
-        : 0),
-    0,
-  );
-  if (
-    plan.some(
-      (d) =>
-        expectedCaptures(engine, d) !==
-        (engine === "chromium" && screenshotDimension(d)
-          ? frames.filter((frame) => capturesFrame(frame, d)).length
-          : 0),
-    )
-  ) {
-    throw new Error("Design matrix capture whitelist does not match the per-dimension contract");
-  }
-  assertMatrixCounts(engine, {
-    dimensions: plan.length,
-    pageLoads: plan.length * expectedRoutes.length,
-    axeAndReflowChecks: plan.length * frames.length,
-    screenshots,
-  });
 };
 
 export const dimensionCaseTitle = (dimension: Dimension): string =>

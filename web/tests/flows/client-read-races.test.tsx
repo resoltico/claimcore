@@ -7,7 +7,7 @@ import { useSession } from "../../src/session/useSession";
 import { deferredResponse } from "../support/presentation-state.fixtures";
 import { operationId, response, unavailable } from "../support/service-ui.fixtures";
 
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {
   throw new Error("CaseOperationReceipt fixture absent.");
@@ -32,7 +32,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   act(() => {
     result.current.setOperationId("00000000-0000-4000-8000-000000000099");
   });
-  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
+  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   await act(async () => {
     await result.current.observe();
   });
@@ -41,7 +41,7 @@ it("coalesces observation and discards an older receipt after changing the opera
     diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
   });
   await act(async () => {
-    first.resolve(response("operation.get", "SUCCEEDED", receipt));
+    first.resolve(response("operation.get", "ACCEPTED", { receipt, byRequester: true }));
     await old;
   });
   expect(result.current.receipt).toBeNull();
@@ -51,7 +51,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   });
 });
 
-it("drains observation on unmount without delivering a late receipt", async () => {
+it("aborts observation on unmount without delivering a late receipt", async () => {
   const pending = deferredResponse();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(pending.promise);
@@ -63,9 +63,9 @@ it("drains observation on unmount without delivering a late receipt", async () =
     task = result.current.observe();
   });
   unmount();
-  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
+  expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(true);
   await act(async () => {
-    pending.resolve(response("operation.get", "SUCCEEDED", receipt));
+    pending.resolve(response("operation.get", "ACCEPTED", { receipt, byRequester: true }));
     await pending.promise;
     await task;
   });

@@ -6,7 +6,6 @@ import type { SessionState } from "../session/useSession";
 import { AccessState } from "./AccessState";
 import { useCaseNavigation } from "../routing/useCaseNavigation";
 import { WorkspaceViewsProvider } from "./WorkspaceViews";
-import { ReadRetryStatus } from "./ReadRetryStatus";
 import { MaintenanceNotice } from "../components/MaintenanceNotice";
 import { RecoveryProvider } from "../recovery/RecoveryContext";
 import "./workspace.css";
@@ -501,7 +500,6 @@ export const Dashboard = () => {
                   }}
                 />
                 <RecoveryBanner />
-                <ReadRetryStatus />
                 {businessDate.changedDate === null ? null : (
                   <BusinessDateNotice
                     date={businessDate.changedDate}

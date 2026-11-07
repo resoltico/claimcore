@@ -8,7 +8,6 @@ import type { ServiceResponse } from "../src/protocol/types";
 import { checkActionHierarchy } from "./action-hierarchy";
 import { checkAuthorityTable } from "./authority-table-checks";
 import { retainResponseBodies } from "./response-bodies";
-import { createHash } from "node:crypto";
 import { tmpdir } from "node:os";
 import { mkdir, realpath, writeFile } from "node:fs/promises";
 import { isAbsolute, relative, resolve, sep } from "node:path";
@@ -168,7 +167,7 @@ const assertReadResponse = async (
   if (route.endpoint === undefined || !isResponse(route.endpoint, payload)) {
     throw new Error("E2E_MATRIX_READ_REPLY_INVALID");
   }
-  expect(payload.outcome.kind).toBe("SUCCEEDED");
+  expect(payload.outcome.kind).toBe(route.endpoint === "operation.get" ? "ACCEPTED" : "SUCCEEDED");
   if (route.endpoint === "case.list" && isResponse("case.list", payload)) {
     await assertListPresentation(page, payload, route, dimension);
   }
@@ -682,15 +681,4 @@ export const captureFrame = async (
   });
   await info.attach(`design-${frame}`, { path, contentType: "image/png" });
   return path;
-};
-export const writeMatrixReport = async (
-  info: TestInfo,
-  report: Readonly<Record<string, unknown>>,
-  name = "design-matrix-counts",
-) => {
-  const root = await matrixEvidenceDirectory();
-  const id = createHash("sha256").update(info.testId).digest("hex").slice(0, 16);
-  const path = resolve(root, `${info.project.name}-${name}-${id}.json`);
-  await writeFile(path, `${JSON.stringify(report, null, 2)}\n`, { mode: 0o600 });
-  await info.attach(name, { path, contentType: "application/json" });
 };

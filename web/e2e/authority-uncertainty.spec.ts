@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice, goToView } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
@@ -23,7 +24,7 @@ const ownerGrant = async (page: Page, active: boolean) => {
   const source = await syntheticPrincipals();
   await applyAuthority(page, {
     kind: "AUTHORITY",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "HUMAN", issuer: source.issuer, subject: source.stewardSubject },
     act: { kind: active ? "GRANT" : "REVOKE", role: "OWNER", scope: { kind: "INSTALLATION" } },
   });

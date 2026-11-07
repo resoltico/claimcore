@@ -39,7 +39,7 @@ const AuthorityEditor = () => {
 };
 
 it.each(["CASE", "AUTHORITY"] as const)(
-  "rejects a structurally valid mismatched %s review and preserves its exact draft for a fresh review",
+  "rejects a mismatched %s operation ID echo and preserves its exact draft for a fresh review",
   async (kind) => {
     const bodies: string[] = [];
     vi.mocked(fetch).mockImplementation((_path, init) => {
@@ -66,7 +66,7 @@ it.each(["CASE", "AUTHORITY"] as const)(
           principalKind: "HUMAN",
           availability: "NOT_ELIGIBLE",
         },
-        principal: { ...principal, subject: bad ? "OTHER" : principal.subject },
+        principal,
         contact: null,
         state: "NO_ROLES",
         roles: [],
@@ -78,7 +78,7 @@ it.each(["CASE", "AUTHORITY"] as const)(
         access: [],
       };
       const reply = {
-        operationId: input.operationId,
+        operationId: bad ? "20000000-0000-7000-8000-000000000099" : input.operationId,
         outcome: {
           kind: "REVIEWED",
           data: {
@@ -89,7 +89,7 @@ it.each(["CASE", "AUTHORITY"] as const)(
                   ? {
                       kind: "CASE",
                       before: snapshot,
-                      after: { ...snapshot, revision: bad ? 999 : snapshot.revision + 1 },
+                      after: { ...snapshot, revision: snapshot.revision + 1 },
                       context: { ...workBasis, productVersion: "synthetic" },
                     }
                   : {

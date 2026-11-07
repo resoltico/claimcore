@@ -49,6 +49,13 @@ module EndpointIds =
         | EndpointId.Actor value -> Vocabulary.token ActorEndpoint.vocabulary value
 
 [<NoEquality; NoComparison>]
+type OperationEcho<'Input, 'Output> =
+    {
+        Request: 'Input -> System.Guid
+        Reply: 'Output -> System.Guid
+    }
+
+[<NoEquality; NoComparison>]
 type Endpoint<'In, 'Out> =
     {
         Id: EndpointId
@@ -57,7 +64,7 @@ type Endpoint<'In, 'Out> =
         Input: Codec<'In>
         Output: Codec<'Out>
         Classify: 'Out -> ReplyClass
-        Correlation: 'In -> System.Guid option
+        Correlation: OperationEcho<'In, 'Out> option
         Unavailable: 'In -> 'Out
     }
 
@@ -78,6 +85,20 @@ type IEndpointOutput =
     abstract Accept<'result> : IEndpointOutputVisitor<'result> -> 'result
 
 module EndpointValues =
+    let operationId (input: IEndpointInput) =
+        input.Accept
+            { new IEndpointInputVisitor<System.Guid option> with
+                member _.Visit<'input, 'output>(endpoint: Endpoint<'input, 'output>, value) =
+                    endpoint.Correlation |> Option.map (fun echo -> echo.Request value)
+            }
+
+    let echoesOperationId expected (output: IEndpointOutput) =
+        output.Accept
+            { new IEndpointOutputVisitor<bool> with
+                member _.Visit<'input, 'output>(endpoint: Endpoint<'input, 'output>, value) =
+                    (endpoint.Correlation |> Option.map (fun echo -> echo.Reply value)) = expected
+            }
+
     let input (endpoint: Endpoint<'input, 'output>) value =
         { new IEndpointInput with
             member _.Accept<'result>(visitor: IEndpointInputVisitor<'result>) =
@@ -199,7 +220,7 @@ module Api =
             Input = input
             Output = output
             Classify = OutcomePresentation.classify
-            Correlation = fun _ -> None
+            Correlation = None
             Unavailable = fun _ -> Outcome.Failed CoreFault.StoreUnavailable
         }
 
@@ -290,7 +311,12 @@ module Api =
             Input = RequestCodecs.operationInput
             Output = ReplyCodecs.preview
             Classify = OutcomePresentation.classifyPreview
-            Correlation = OperationInput.operationId >> Some
+            Correlation =
+                Some
+                    {
+                        Request = OperationInput.operationId
+                        Reply = _.OperationId
+                    }
             Unavailable =
                 fun input ->
                     {
@@ -307,7 +333,12 @@ module Api =
             Input = RequestCodecs.operationInput
             Output = ReplyCodecs.execute
             Classify = fun reply -> OutcomePresentation.classifyExecute reply.Outcome
-            Correlation = OperationInput.operationId >> Some
+            Correlation =
+                Some
+                    {
+                        Request = OperationInput.operationId
+                        Reply = _.OperationId
+                    }
             Unavailable =
                 fun input ->
                     {
@@ -316,7 +347,11 @@ module Api =
                     }
         }
 
-    let private lookup id output classify =
+    let private lookup
+        id
+        (output: Codec<OperationReply<'result>>)
+        (classify: OperationReply<'result> -> ReplyClass)
+        : Endpoint<OperationLookup, OperationReply<'result>> =
         {
             Id = id
             Method = HttpMethod.Post
@@ -324,7 +359,12 @@ module Api =
             Input = RequestCodecs.operationGetRequest
             Output = output
             Classify = classify
-            Correlation = fun input -> Some input.OperationId
+            Correlation =
+                Some
+                    {
+                        Request = _.OperationId
+                        Reply = _.OperationId
+                    }
             Unavailable =
                 fun input ->
                     {
@@ -452,318 +492,3 @@ module Api =
 
     let admitOutput (endpoint: Route) value =
         endpoint.NormalizeOutput value |> Result.map ignore
-
-/// Transport identity admission follows structural decoding and precedes any client certainty.
-module ReplyCorrelation =
-    let private memberValue name value = JsonValue.tryMember name value
-
-    let private text =
-        function
-        | JsonValue.String value -> Some value
-        | _ -> None
-
-    let private stringMember name value =
-        memberValue name value |> Option.bind text
-
-    let private guid name value =
-        memberValue name value
-        |> Option.bind (fun value -> Codec.uuid.Read "$" value |> Result.toOption)
-
-    let private sameReference left right =
-        match left, right with
-        | Some left, Some right -> CaseReference.key left = CaseReference.key right
-        | _ -> false
-
-    let private caseTarget input actual =
-        match memberValue "target" input with
-        | None -> false
-        | Some selector ->
-            match stringMember "kind" selector with
-            | Some "REFERENCE" ->
-                sameReference
-                    (stringMember "caseReference" selector)
-                    (stringMember "caseReference" actual)
-            | Some "ID" ->
-                let expected = guid "caseId" selector
-                expected.IsSome && guid "caseId" actual = expected
-            | _ -> false
-
-    let private integerMember name value =
-        memberValue name value
-        |> Option.bind (function
-            | JsonValue.Integer value -> Some value
-            | _ -> None)
-
-    let private reminderEffects preview input receipt =
-        let act = memberValue "act" input
-        let tag = act |> Option.bind (stringMember "kind")
-        let expectedId = act |> Option.bind (guid "reminderId")
-        let expectedRevision = act |> Option.bind (integerMember "expectedRevision")
-        let successor = expectedRevision |> Option.map ((+) 1L)
-        let operation = guid "operationId" input
-        let effects = memberValue "effects" receipt
-
-        let version (expectedId: System.Guid option) (expectedRevision: int64 option) value =
-            expectedId.IsSome
-            && guid "reminderId" value = expectedId
-            && expectedRevision.IsSome
-            && integerMember "revision" value = expectedRevision
-
-        match tag, effects with
-        | Some "COMPLETE_AND_PLAN_NEXT", Some effects ->
-            stringMember "kind" effects = Some "COMPLETED_AND_PLANNED"
-            && (memberValue "completed" effects |> Option.exists (version expectedId successor))
-            && (memberValue "next" effects |> Option.exists (version operation (Some 1L)))
-        | Some tag, Some effects ->
-            stringMember "kind" effects =
-                Some(
-                    if preview then
-                        (if tag = "CREATE" then "CREATED" else "CHANGED")
-                    else
-                        "SINGLE"
-                )
-            && (memberValue "reminder" effects
-                |> Option.exists (
-                    version
-                        (if tag = "CREATE" then operation else expectedId)
-                        (if tag = "CREATE" then Some 1L else successor)
-                ))
-        | _ -> false
-
-    let private newFamilyReceipt input subject =
-        let family = stringMember "kind" input
-        let act = memberValue "act" input |> Option.bind (stringMember "kind")
-
-        stringMember "kind" subject = family
-        && caseTarget input subject
-        && stringMember "act" subject = act
-        && (match family with
-            | Some "WORK" ->
-                integerMember "revision" subject =
-                    (integerMember "expectedRevision" input |> Option.map ((+) 1L))
-            | Some "REMINDER" -> reminderEffects false input subject
-            | _ -> false)
-
-    let private observedParent input subject =
-        memberValue "parent" subject
-        |> Option.exists (fun parent ->
-            caseTarget input parent
-            && sameReference
-                (stringMember "caseReference" parent)
-                (stringMember "caseReference" subject)
-            && (match stringMember "kind" subject with
-                | Some "WORK" ->
-                    memberValue "proposed" subject
-                    |> Option.exists (fun work -> guid "caseId" work = guid "caseId" parent)
-                | Some "REMINDER" -> guid "caseId" subject = guid "caseId" parent
-                | _ -> false))
-
-    let private createdReceiptIdentity receipt =
-        let operation = guid "operationId" receipt
-
-        memberValue "subject" receipt
-        |> Option.exists (fun subject ->
-            match stringMember "kind" subject, stringMember "act" subject with
-            | Some "CASE", Some "OPEN" -> guid "caseId" subject = operation
-            | Some "AUTHORITY", Some("REGISTER" | "ADMIT" | "PROVISION_OWNER") ->
-                memberValue "targetActor" subject
-                |> Option.exists (fun target ->
-                    let actor =
-                        match stringMember "kind" target with
-                        | Some "DISCLOSED" ->
-                            memberValue "actor" target |> Option.bind (guid "actorId")
-                        | Some "WITHHELD" -> guid "actorId" target
-                        | _ -> None
-
-                    actor.IsSome && actor = operation)
-            | _ -> true)
-
-    let private caseReview input subject =
-        let expected = integerMember "expectedRevision" input
-        let after = memberValue "after" subject
-        let before = memberValue "before" subject
-
-        let opening =
-            memberValue "act" input |> Option.bind (stringMember "kind") = Some "OPEN"
-
-        stringMember "kind" subject = Some "CASE"
-        && expected.IsSome
-        && (after
-            |> Option.exists (fun after ->
-                caseTarget input after
-                && integerMember "revision" after = (expected |> Option.map ((+) 1L))
-                && (if opening then
-                        expected = Some 0L
-                        && before = Some JsonValue.Null
-                        && guid "caseId" after = guid "operationId" input
-                    else
-                        before
-                        |> Option.exists (fun before ->
-                            caseTarget input before
-                            && integerMember "revision" before = expected
-                            && guid "caseId" before = guid "caseId" after
-                            && sameReference
-                                (stringMember "caseReference" before)
-                                (stringMember "caseReference" after)))))
-
-    let private principalMatches expected actual =
-        [ "kind"; "issuer"; "subject" ]
-        |> List.forall (fun field ->
-            let value = stringMember field expected
-            value.IsSome && stringMember field actual = value)
-
-    let private authorityReview input subject =
-        match
-            memberValue "target" input, memberValue "act" input, memberValue "effects" subject
-        with
-        | Some principal, Some act, Some(JsonValue.Array effects) ->
-            let tag = stringMember "kind" act
-            let creating = tag = Some "REGISTER" || tag = Some "ADMIT"
-
-            let identity =
-                if creating then
-                    memberValue "target" subject = Some JsonValue.Null
-                else
-                    memberValue "target" subject
-                    |> Option.bind (memberValue "principal")
-                    |> Option.exists (principalMatches principal)
-
-            let expectedKinds =
-                match tag, memberValue "grants" act with
-                | Some "ADMIT", Some(JsonValue.Array grants) ->
-                    "REGISTER" :: "SET_PROFILE" :: List.replicate grants.Length "GRANT"
-                | Some "REGISTER", _ -> [ "REGISTER"; "SET_PROFILE" ]
-                | Some tag, _ -> [ tag ]
-                | _ -> []
-
-            stringMember "kind" subject = Some "AUTHORITY"
-            && identity
-            && List.map (stringMember "kind") effects = List.map Some expectedKinds
-            && (effects
-                |> List.forall (fun effect ->
-                    match stringMember "kind" effect with
-                    | Some("REGISTER" | "PROVISION_OWNER") ->
-                        memberValue "principal" effect
-                        |> Option.exists (principalMatches principal)
-                    | _ -> true))
-        | _ -> false
-
-    let matches token input reply =
-        let outcome = memberValue "outcome" reply
-        let kind = outcome |> Option.bind (stringMember "kind")
-        let data = outcome |> Option.bind (memberValue "data")
-        let operation = guid "operationId" input
-
-        let operationEndpoint =
-            List.contains token [ "operation.execute"; "operation.preview"; "operation.get" ]
-
-        let envelope =
-            not operationEndpoint
-            || (operation.IsSome && guid "operationId" reply = operation)
-
-        let receipt =
-            match kind, token with
-            | Some "ACCEPTED", "operation.get" -> data |> Option.bind (memberValue "receipt")
-            | Some("ACCEPTED" | "ALREADY_ACCEPTED"), _ -> data
-            | _ -> None
-
-        let receiptIdentity =
-            receipt
-            |> Option.forall (fun value ->
-                guid "operationId" value = operation && createdReceiptIdentity value)
-
-        let receiptTarget =
-            receipt
-            |> Option.forall (fun receipt ->
-                match stringMember "kind" input, memberValue "subject" receipt with
-                | Some "CASE", Some subject ->
-                    stringMember "kind" subject = Some "CASE"
-                    && caseTarget input subject
-                    && stringMember "act" subject =
-                        (memberValue "act" input |> Option.bind (stringMember "kind"))
-                | Some "AUTHORITY", Some subject ->
-                    stringMember "kind" subject = Some "AUTHORITY"
-                    && stringMember "act" subject =
-                        (memberValue "act" input |> Option.bind (stringMember "kind"))
-                | Some("WORK" | "REMINDER"), Some subject -> newFamilyReceipt input subject
-                | Some("CASE" | "WORK" | "REMINDER" | "AUTHORITY"), None -> false
-                | _ -> true)
-
-        let readTarget =
-            match token, kind, data with
-            | "case.get", Some "SUCCEEDED", Some value -> caseTarget input value
-            | "reminder.get", Some "SUCCEEDED", Some value ->
-                memberValue "item" value
-                |> Option.exists (fun item ->
-                    (memberValue "reminder" item
-                     |> Option.exists (fun reminder ->
-                         let actual =
-                             match reminder with
-                             | JsonValue.Object fields ->
-                                 JsonValue.Object(
-                                     ("caseReference",
-                                      memberValue "caseReference" item
-                                      |> Option.defaultValue JsonValue.Null)
-                                     :: fields
-                                 )
-                             | _ -> reminder
-
-                         caseTarget input actual
-                         && guid "reminderId" reminder = guid "reminderId" input
-                         && (match
-                                 memberValue "target" input |> Option.bind (stringMember "kind")
-                             with
-                             | Some "ID" ->
-                                 memberValue "target" input
-                                 |> Option.exists (fun selector ->
-                                     guid "caseId" selector = guid "caseId" reminder)
-                             | _ -> true))))
-            | "authority.grants", Some "SUCCEEDED", Some value ->
-                memberValue "actor" value
-                |> Option.bind (memberValue "actor")
-                |> Option.exists (fun actor -> guid "actorId" actor = guid "actorId" input)
-            | _ -> true
-
-        let previewTarget =
-            match token, kind, stringMember "kind" input, data with
-            | "operation.preview", Some "REVIEWED", Some "CASE", Some data ->
-                memberValue "review" data
-                |> Option.bind (memberValue "subject")
-                |> Option.exists (caseReview input)
-            | "operation.preview", Some "REVIEWED", Some "AUTHORITY", Some data ->
-                memberValue "review" data
-                |> Option.bind (memberValue "subject")
-                |> Option.exists (authorityReview input)
-            | "operation.preview", Some "REVIEWED", Some "WORK", Some data ->
-                memberValue "review" data
-                |> Option.bind (memberValue "subject")
-                |> Option.exists (fun subject ->
-                    stringMember "kind" subject = Some "WORK"
-                    && observedParent input subject
-                    && (memberValue "proposed" subject
-                        |> Option.exists (fun proposed ->
-                            let actual =
-                                match proposed with
-                                | JsonValue.Object fields ->
-                                    JsonValue.Object(
-                                        ("caseReference",
-                                         memberValue "caseReference" subject
-                                         |> Option.defaultValue JsonValue.Null)
-                                        :: fields
-                                    )
-                                | _ -> proposed
-
-                            caseTarget input actual
-                            && integerMember "revision" proposed =
-                                (integerMember "expectedRevision" input |> Option.map ((+) 1L)))))
-            | "operation.preview", Some "REVIEWED", Some "REMINDER", Some data ->
-                memberValue "review" data
-                |> Option.bind (memberValue "subject")
-                |> Option.exists (fun subject ->
-                    stringMember "kind" subject = Some "REMINDER"
-                    && observedParent input subject
-                    && caseTarget input subject
-                    && reminderEffects true input subject)
-            | _ -> true
-
-        envelope && receiptIdentity && receiptTarget && readTarget && previewTarget

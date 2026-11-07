@@ -139,7 +139,7 @@ let internal failurePhases () =
 
             let expected =
                 if
-                    ((Api.requiresInstallation endpoint)
+                    ((Api.executesLedger endpoint)
                      && ClaimCore.Wire.HostFailureReason.phase reason
                         <> Some ExecutionPhase.NotStarted)
                 then
@@ -317,7 +317,7 @@ let internal malformedBusinessInput () =
                     (Frames.inputBytes invocation)
                     "Prepared malformed business content is frozen before dispatch."
 
-                return response 200 rejected
+                return response 200 (echoedBody invocation rejected)
             })
 
     let reply = send handler invocation

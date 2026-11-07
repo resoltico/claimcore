@@ -53,13 +53,7 @@ const attemptFeedback = (
     return { kind: "pending", finalAt: outcome.data.finalAt };
   }
   if (outcome.kind === "ACCEPTED") {
-    const { receipt, byRequester } = outcome.data;
-    if (
-      byRequester &&
-      (receipt.subject.kind !== record.subject || receipt.subject.act !== record.act)
-    ) {
-      return { kind: "notice", notice: { kind: "local", reason: "incomplete" } };
-    }
+    const { byRequester } = outcome.data;
     return {
       kind: "final",
       notice: byRequester

@@ -15,7 +15,8 @@ open ClaimCore.Application
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 
-let operationId = Guid.Parse "40000000-0000-4000-8000-000000000001"
+let operationId =
+    OperationIds.numberedAt (DateTimeOffset(2026, 10, 13, 0, 0, 0, TimeSpan.Zero)) 4001
 
 let position: LedgerPosition =
     {

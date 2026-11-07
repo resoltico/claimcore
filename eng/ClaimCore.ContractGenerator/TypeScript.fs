@@ -68,6 +68,22 @@ module TypeScript =
             |})
         |> JsonSerializer.Serialize
 
+    let private correlationMap () =
+        Api.definitions
+        |> List.map (fun definition ->
+            let enabled =
+                definition.Accept
+                    { new IEndpointVisitor<bool> with
+                        member _.Visit<'input, 'output>(endpoint: Endpoint<'input, 'output>) =
+                            endpoint.Correlation.IsSome
+                    }
+
+            quote (EndpointIds.token definition.Id)
+            + ": "
+            + (if enabled then "true" else "false"))
+        |> String.concat ", "
+        |> fun members -> "{ " + members + " }"
+
     let private profile () =
         {|
             maximumResponseBytes = Limits.MaximumResponseBytes
@@ -164,6 +180,7 @@ module TypeScript =
             endpointMap "ResponseByEndpoint" true
             "export type OutcomeByEndpoint = { readonly [E in keyof ResponseByEndpoint]: ResponseByEndpoint[E][\"outcome\"] };"
             "export const endpoints = " + endpoints () + " as const;"
+            "export const correlationOf = " + correlationMap () + " as const;"
             "export type EndpointId = (typeof endpoints)[number][\"id\"];"
             yield! presentationConstants ()
             "export const consumerContractIdentity = " + quote identity + ";"

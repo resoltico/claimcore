@@ -4,7 +4,7 @@ import { mockEndpoint } from "../support/endpoint-mocks";
 import { act } from "@testing-library/react";
 import { afterEach, expect, it, vi } from "vitest";
 import { service } from "../../src/api/service";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { hook, preview, rejected } from "../support/operation-hook.fixtures";
 afterEach(() => vi.restoreAllMocks());
 it.each([false, true])(

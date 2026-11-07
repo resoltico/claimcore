@@ -194,7 +194,6 @@
   "ui.shell.businessDateChanged": "Darba datums tagad ir {date}. Atsvaidziniet, lai atjauninātu termiņus.",
   "ui.shell.checkNow": "Pārbaudīt tagad",
   "ui.shell.people": "Cilvēki un piekļuve",
-  "ui.shell.retryingRead": "Aizņemts — mēģina vēlreiz",
   "ui.shell.searchCases": "Meklēt lietas",
   "ui.shell.unresolved": "{count} izmaiņas, iespējams, nav reģistrētas",
   "ui.shell.unresolvedOne": "Iespējams, ka viena izmaiņa nav reģistrēta",

@@ -13,7 +13,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { CaseFieldsView } from "../../src/components/CaseFieldsView";
 import { CatalogField } from "../../src/components/CatalogField";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { context, definition, fields, runtime, response } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({

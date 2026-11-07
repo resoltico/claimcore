@@ -1,5 +1,5 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { freshLoginWorkflowTimeout } from "./admission-window";
-import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { applyAuthority, syntheticPrincipals } from "./authority-setup";
 import { configureRole, prepareRoleFixture } from "./narrow-role-fixture";
@@ -14,7 +14,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
     for (const role of ownerRoles) {
       await applyAuthority(page, {
         kind: "AUTHORITY",
-        operationId: randomUUID(),
+        operationId: mintOperationId(),
         target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
         act: { kind: active ? "GRANT" : "REVOKE", role, scope: { kind: "INSTALLATION" } },
       });
@@ -25,7 +25,7 @@ const ownerGrants = async (page: Page, active: boolean) => {
       for (const role of changed.reverse()) {
         await applyAuthority(page, {
           kind: "AUTHORITY",
-          operationId: randomUUID(),
+          operationId: mintOperationId(),
           target: { kind: "HUMAN", issuer: source.issuer, subject: source.ownerSubject },
           act: { kind: "GRANT", role, scope: { kind: "INSTALLATION" } },
         });
@@ -62,7 +62,7 @@ test("disabled actor keeps authenticated public bootstrap but cannot read cases"
   const enable = (enabled: boolean) =>
     applyAuthority(page, {
       kind: "AUTHORITY",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: fixture.principal,
       act: { kind: enabled ? "ENABLE" : "DISABLE" },
     });

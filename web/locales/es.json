@@ -194,7 +194,6 @@
   "ui.shell.businessDateChanged": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",
   "ui.shell.checkNow": "Comprobar ahora",
   "ui.shell.people": "Personas y acceso",
-  "ui.shell.retryingRead": "Ocupado: reintentando",
   "ui.shell.searchCases": "Buscar expedientes",
   "ui.shell.unresolved": "Puede que no se hayan registrado {count} cambios",
   "ui.shell.unresolvedOne": "Puede que no se haya registrado 1 cambio",

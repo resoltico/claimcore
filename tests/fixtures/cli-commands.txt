@@ -39,11 +39,9 @@ reminder complete R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expec
 reminder cancel R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --operation-id 11111111-2222-7333-8444-555555555555
 reminder reopen R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
 reminder complete-and-plan-next R-1 --reminder-id 10000000-0000-4000-8000-000000000007 --expected-reminder-revision 3 --action Review --due 2027-12-31 --operation-id 11111111-2222-7333-8444-555555555555
-work overview --mine true
+work views
 reminder list --limit 5 --due overdue --assignment mine
 reminder get R-1 --reminder-id 10000000-0000-4000-8000-000000000007
-case views
-reminder views
 case list --view needs-attention --limit 5
 reminder list --view completed --limit 5
 case timeline CASE-001 --filter facts --limit 1

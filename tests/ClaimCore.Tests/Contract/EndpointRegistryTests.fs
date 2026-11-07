@@ -292,14 +292,19 @@ let handlerCallTypes =
         let endpointTypes = endpoint.GetGenericArguments()
 
         let correlation =
-            (endpoint.GetProperty("Correlation") |> nonNull).PropertyType.GetGenericArguments()
-
-        Expect.equal correlation[0] endpointTypes[0] "Correlation receives the typed input"
+            (endpoint.GetProperty("Correlation") |> nonNull).PropertyType.GetGenericArguments()[0]
 
         Expect.equal
-            correlation[1]
-            typeof<Guid option>
-            "Correlation returns an optional operation id"
+            (correlation.GetGenericTypeDefinition())
+            typedefof<OperationEcho<_, _>>
+            "The optional correlation carries a typed request/reply pair"
+
+        for name, expected in [ "Request", endpointTypes[0]; "Reply", endpointTypes[1] ] do
+            let functionTypes =
+                (correlation.GetProperty(name) |> nonNull).PropertyType.GetGenericArguments()
+
+            Expect.equal functionTypes[0] expected "Each side keeps its nominal endpoint type"
+            Expect.equal functionTypes[1] typeof<Guid> "Each side supplies only the operation ID"
 
         let unavailable =
             (endpoint.GetProperty("Unavailable") |> nonNull).PropertyType.GetGenericArguments()

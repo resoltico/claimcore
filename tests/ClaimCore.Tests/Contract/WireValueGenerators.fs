@@ -77,24 +77,16 @@ let internal listBounds (path: string) =
                 "CaseReviewChanges.Fields", CaseFields.declarations.Length
                 "ReviewPresentation.Changes", 324
                 "ReviewPresentation.Unchanged", 324
-                "HistoryDifference.Fields", CaseFields.declarations.Length
-                "Disclosed.Item", CaseFields.declarations.Length + 1
                 "TimelineDisclosure.Items", CaseFields.declarations.Length + 1
             ]
         |> Map.tryFind context
         |> Option.defaultValue 50
 
     let minimum =
-        if context = "AuthorityAdmission`2.Grants" then
-            1
-        elif context = "CaseStageOutline.Completed" then
-            1
-        elif context = "Tracker.steps" then
-            4
-        elif path.Contains("HistoryEntries.", StringComparison.Ordinal) then
-            1
-        else
-            0
+        if context = "AuthorityAdmission`2.Grants" then 1
+        elif context = "CaseStageOutline.Completed" then 1
+        elif context = "Tracker.steps" then 4
+        else 0
 
     minimum, maximum
 
@@ -379,15 +371,14 @@ and private freshRepresentation response source context (kind: Type) (value: obj
 
             let! correction =
                 if List.contains CaseActKind.Correct acts then
-                    choose source (context + ".CaseAdvice.Correction") typeof<CorrectionChoices>
-                    |> Gen.bind (
-                        fresh
-                            response
-                            source
-                            (context + ".CaseAdvice.Correction")
-                            typeof<CorrectionChoices>
+                    Gen.constant (
+                        Some
+                            {
+                                CorrectionChoices.Registration = Amendment.actions
+                                Decision = Change.actions
+                                Payment = PaymentChange.actions
+                            }
                     )
-                    |> Gen.map (unbox<CorrectionChoices> >> Some)
                 else
                     Gen.constant None
 
@@ -448,15 +439,19 @@ and private freshList response source context kind =
     let item = kind.GetGenericArguments()[0]
     let minimum, maximum = listBounds context
 
-    gen {
-        let! size = count minimum maximum
+    if not (source.Values.ContainsKey item) then
+        // Empty authored lists do not invent an element template. Boundary tests own overproduction.
+        Gen.constant (listValue kind [])
+    else
+        gen {
+            let! size = count minimum maximum
 
-        let entry =
-            choose source context item |> Gen.bind (fresh response source context item)
+            let entry =
+                choose source context item |> Gen.bind (fresh response source context item)
 
-        let! entries = Gen.list (Range.singleton size) entry
-        return listValue kind entries
-    }
+            let! entries = Gen.list (Range.singleton size) entry
+            return listValue kind entries
+        }
 
 and private freshRecord response source context kind value =
     if kind = typeof<TimelineDisclosure> then

@@ -23,38 +23,10 @@ let private admitted result =
     |> Result.defaultWith (fun _ -> failtest "Expected admitted synthetic request")
 
 let private applicationExamples () =
-    use document =
-        JsonDocument.Parse(
-            File
-                .ReadAllBytes(
-                    Path.Combine(RepositoryRoot.find (), "tests/fixtures/examples/requests.json")
-                )
-                .AsMemory()
-        )
-
-    document.RootElement.GetProperty("cases").EnumerateArray()
-    |> Seq.filter (fun example -> example.GetProperty("valid").GetBoolean())
-    |> Seq.map (fun example ->
-        let endpoint =
-            example.GetProperty("endpoint").GetString()
-            |> nonNull
-            |> Api.tryFind
-            |> Option.get
-
-        let input =
-            example
-                .GetProperty("value")
-                .GetRawText()
-                .Replace("\"issuer\": \"x\"", "\"issuer\": \"https://issuer.example/\"")
-            |> Encoding.UTF8.GetBytes
-            |> StrictJson.read Limits.MaximumRequestBytes
-            |> admitted
-            |> Inputs.positiveValue
-
-        endpoint, input)
-    |> Seq.filter (fun (endpoint, _) ->
-        Api.id endpoint <> "session" && Api.id endpoint <> "session.logout")
-    |> Seq.toList
+    RequestInputs.values ()
+    |> List.filter (fun (endpoint, _) ->
+        endpoint.Id <> EndpointId.Host HostEndpoint.Session
+        && endpoint.Id <> EndpointId.Host HostEndpoint.Logout)
 
 // This is a server invariant, asserted independently from any client admission helper.
 let private assertServerIdentity endpoint input reply =

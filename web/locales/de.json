@@ -194,7 +194,6 @@
   "ui.shell.businessDateChanged": "Das Geschäftsdatum ist jetzt {date}. Aktualisieren Sie, um Fälligkeiten anzupassen.",
   "ui.shell.checkNow": "Jetzt prüfen",
   "ui.shell.people": "Personen und Zugriff",
-  "ui.shell.retryingRead": "Ausgelastet — erneuter Versuch",
   "ui.shell.searchCases": "Fälle suchen",
   "ui.shell.unresolved": "{count} Änderungen wurden möglicherweise nicht erfasst",
   "ui.shell.unresolvedOne": "1 Änderung wurde möglicherweise nicht erfasst",

@@ -123,6 +123,33 @@ const acceptedWorkSubmission = (family: "WORK" | "REMINDER", input: unknown, pay
   return { input, envelope: payload.operationId, receipt: payload.outcome.data };
 };
 
+export const workRequest = async <K extends keyof RequestByEndpoint>(
+  page: Page,
+  endpoint: K,
+  body: RequestByEndpoint[K],
+) => {
+  const token = await sessionToken(page);
+  const entry = endpoints.find((value) => value.id === endpoint)!;
+  const result = await browserRequest(page, entry.path, {
+    method: entry.method,
+    headers: {
+      "Content-Type": "application/json",
+      "X-ClaimCore-Antiforgery": token,
+      ...(entry.requiresInstallation
+        ? { "ClaimCore-Installation": await installationId(page, token) }
+        : {}),
+    },
+    body: JSON.stringify(body),
+  });
+  if (result.status !== 200 || !isResponse(endpoint, result.payload)) {
+    const detail = isHostFailure(result.payload, result.status)
+      ? result.payload.hostFailure.code
+      : "INVALID_RESPONSE";
+    throw new Error(`E2E_WORK_READBACK_HTTP_${result.status}_${detail}`);
+  }
+  return result.payload;
+};
+
 export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") => {
   await retainResponseBodies(page);
   const language = await languageOf(page);
@@ -162,44 +189,39 @@ export const recordWorkReview = async (page: Page, family: "WORK" | "REMINDER") 
     input.kind === "WORK"
       ? "act.UPDATE_WORK.label"
       : (`act.REMINDER_${input.act.kind}.label` as const);
-  const doneId =
-    input.kind === "WORK"
-      ? "act.UPDATE_WORK.done"
-      : (`act.REMINDER_${input.act.kind}.done` as const);
   expect(label).toBe(ui(language, labelId));
   await expect(page.getByRole("dialog")).toHaveCount(0);
   const current = page.locator(".case-detail");
-  // This status returns only with current authorized disclosure, after accepted read refreshes.
-  await expect(current.getByText(ui(language, doneId), { exact: true })).toBeVisible();
+  await expectCaseReadsSettled(page);
+  // A workspace retry revalidates identity and may discard transient success text.
+  // The accepted response and fresh authorized version establish completion independently.
+  if (receipt.subject.kind === "WORK") {
+    const fresh = await workRequest(page, "case.get", {
+      target: { kind: "ID", caseId: receipt.subject.caseId },
+    });
+    if (fresh.outcome.kind !== "SUCCEEDED") {
+      throw new Error("Authorized work readback required");
+    }
+    expect(fresh.outcome.data.work.revision).toBe(receipt.subject.revision);
+  } else if (receipt.subject.kind === "REMINDER") {
+    const versions =
+      receipt.subject.effects.kind === "SINGLE"
+        ? [receipt.subject.effects.reminder]
+        : [receipt.subject.effects.completed, receipt.subject.effects.next];
+    for (const version of versions) {
+      const fresh = await workRequest(page, "reminder.get", {
+        target: { kind: "ID", caseId: receipt.subject.caseId },
+        reminderId: version.reminderId,
+      });
+      if (fresh.outcome.kind !== "SUCCEEDED") {
+        throw new Error("Authorized reminder readback required");
+      }
+      expect(fresh.outcome.data.item.reminder.revision).toBe(version.revision);
+    }
+  }
   await expect(current.locator(".case-responsible")).toBeVisible();
   await expect(current.locator(".case-handling-summary")).toBeVisible();
   await expect(current.locator(".case-reminders")).toBeVisible();
   await expectCaseReadsSettled(page);
   return receipt;
-};
-export const workRequest = async <K extends keyof RequestByEndpoint>(
-  page: Page,
-  endpoint: K,
-  body: RequestByEndpoint[K],
-) => {
-  const token = await sessionToken(page);
-  const entry = endpoints.find((value) => value.id === endpoint)!;
-  const result = await browserRequest(page, entry.path, {
-    method: entry.method,
-    headers: {
-      "Content-Type": "application/json",
-      "X-ClaimCore-Antiforgery": token,
-      ...(entry.requiresInstallation
-        ? { "ClaimCore-Installation": await installationId(page, token) }
-        : {}),
-    },
-    body: JSON.stringify(body),
-  });
-  if (result.status !== 200 || !isResponse(endpoint, result.payload)) {
-    const detail = isHostFailure(result.payload, result.status)
-      ? result.payload.hostFailure.code
-      : "INVALID_RESPONSE";
-    throw new Error(`E2E_WORK_READBACK_HTTP_${result.status}_${detail}`);
-  }
-  return result.payload;
 };

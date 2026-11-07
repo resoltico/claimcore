@@ -1,3 +1,5 @@
+import { expectCaseReadsSettled } from "./case-readiness";
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { chooseChoice } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
@@ -236,6 +238,7 @@ test("a lost compound acknowledgement retries the identical pair without another
   await expect(page.getByRole("dialog")).toHaveCount(0);
   expect(captured).toHaveLength(2);
   expect(captured[1]).toBe(captured[0]);
+  await expectCaseReadsSettled(page);
   const replacement = page.locator(".reminder-list li");
   await expect(replacement).toHaveCount(1);
   await expect(replacement).toContainText("Replacement after uncertainty");
@@ -266,7 +269,7 @@ for (const language of ["en", "lv", "ar"] as const) {
       });
       await seedPresentation(page, language, locale);
       await openAuthenticated(page, ui(language, "ui.cases"));
-      const caseId = randomUUID();
+      const caseId = mintOperationId();
       const reference = `LOCAL-WORK-${randomUUID()}`;
       const prefix = "الملخص\n\n";
       const text = `${prefix}${"😀".repeat(600 - Array.from(prefix).length)}`;
@@ -348,7 +351,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   ] as const) {
     const seeded = await workRequest(page, "operation.execute", {
       kind: "CASE",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: revision,
       act,
@@ -379,7 +382,7 @@ test("paid description correction preserves payment, then a closed case accepts 
   await recordReviewed(page);
   const closed = await workRequest(page, "operation.execute", {
     kind: "CASE",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     expectedRevision: 4,
     act: { kind: "CLOSE" },
@@ -501,7 +504,7 @@ test("a reminder revision change after compound preview refuses both effects wit
   const frozenBytes = (await previewed).request().postData();
   const concurrent = await workRequest(page, "operation.execute", {
     kind: "REMINDER",
-    operationId: randomUUID(),
+    operationId: mintOperationId(),
     target: { kind: "REFERENCE", caseReference: reference },
     act: {
       kind: "UPDATE",
@@ -596,7 +599,7 @@ test("published reminder rows show server timing in case and queue views across 
   for (const [index, dueDate] of ["0001-01-01", businessDate, "9999-12-31"].entries()) {
     const accepted = await workRequest(page, "operation.execute", {
       kind: "REMINDER",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       act: { kind: "CREATE", action: actions[index]!, dueDate },
     });
@@ -638,7 +641,7 @@ test("published reminder rows show server timing in case and queue views across 
     await openAuthenticated(steward, "Cases", stewardCookies);
     const voided = await workRequest(steward, "operation.execute", {
       kind: "CASE",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "REFERENCE", caseReference: reference },
       expectedRevision: 1,
       act: { kind: "VOID", reason: "Synthetic timing test entry error" },

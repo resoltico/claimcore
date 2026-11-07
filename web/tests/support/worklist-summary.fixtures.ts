@@ -1,5 +1,5 @@
 import { mockEndpoint } from "./endpoint-mocks";
-import { wireReply } from "./contract-corpus.fixtures";
+import { wireReply } from "./reply.fixtures";
 
 /** An independent summary response accompanies list-only flow fixtures; SummaryBand tests exercise its transport. */
 export const stubWorklistSummary = () =>

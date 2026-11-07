@@ -14,7 +14,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 
 beforeEach(() => {
   authorityPreview();

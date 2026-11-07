@@ -323,24 +323,24 @@ Admission is per Web process, with no multi-host quota or response-time guarante
 [admission policy](../src/ClaimCore.Web/Admission.fs) owns the bounded resource budgets. A process admits
 at most 24 requests before authentication, two cookie validations, two bearer validations, two interactive
 authentication stages and four session-provider calls.
-Actor work has separate pools of four ordinary reads, four register writes and two passive recovery reads.
-One canonical authenticated principal can hold two ordinary reads, one write and one recovery read;
-caller-supplied IDs and headers cannot select a different admission identity. Completed identities do not
-remain in a partition cache.
+Actor work has separate read and write pools, each bounded by the configured core permit count (four by default).
+One canonical authenticated principal has two active reads, a FIFO of eight queued reads, and one active write.
+Queued reads wait at most five seconds and are removed when the client aborts. Caller-supplied IDs and headers
+cannot select a different admission identity. Completed identities do not remain in a partition cache.
 
-The browser separately bounds reads within each document and drains dispatched obsolete responses.
-That client coordination does not combine the activity of multiple tabs, CLI processes or Web hosts.
-All clients remain subject to the server limits, including HTTP 429 admission refusals. Rate-limited
-responses include `Retry-After: 1`; this is a retry hint, not a larger authentication or admission budget.
+The browser sends reads directly and cancels obsolete requests when navigation changes. An HTTP 429 shows one
+busy notice; there is no client admission mirror or automatic retry. Rate-limited responses include
+`Retry-After: 1`; this is a retry hint, not a larger authentication or admission budget.
 
-`CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
-`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and operation lookup do not queue.
-The bounded write queue leaves ingress slots for authentication and reads. Operation lookup shares read
-admission; final absence also confirms under the ledger head, without changing stored business state.
+`CLAIMCORE_WEB_CORE_PERMITS` bounds each process read and write pool (1–4, default 4).
+`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). The write queue leaves ingress slots for other work.
+Operation lookup shares read admission. Only final absence confirmation also acquires the write budget and
+confirms under the ledger head; it does not append or change stored business state.
 
-The private runtime connection string must enable pooling and supply enough connections for all workload
-budgets and both readiness probes: 16 at the defaults. `POOL_CAPACITY_INSUFFICIENT` identifies this setup
-problem without printing connection values. Lowering only the provider pool is not an admission policy.
+The private runtime connection string must enable pooling and supply enough connections for both workload
+pools, session storage and both readiness probes: `2 * CORE_PERMITS + 6`, or 14 at the defaults.
+`POOL_CAPACITY_INSUFFICIENT` identifies this setup problem without printing connection values.
+Lowering only the provider pool is not an admission policy.
 Other processes and owner tools require their own capacity planning.
 
 Permits and runtime leases last through the awaited provider operation and cleanup. A canceled client or

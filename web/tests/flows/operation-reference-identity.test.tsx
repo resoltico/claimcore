@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { OperationEditor } from "../../src/views/OperationEditor";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { previewForRequest } from "../support/preview-request.fixtures";
 import { definition, fields, response, runtime } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({

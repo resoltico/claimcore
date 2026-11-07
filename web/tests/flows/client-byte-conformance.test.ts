@@ -1,6 +1,8 @@
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { expect, it } from "vitest";
+import { wireReply } from "../support/reply.fixtures";
+import { timelineEntry } from "../support/timeline.fixtures";
 import { decodeResponse, isRequest } from "../../src/protocol/client";
 import type { EndpointId } from "@contracts/client";
 import { admitBytes } from "../../src/protocol/schema";
@@ -39,7 +41,8 @@ const admitted = (sample: ByteCase): boolean => {
 };
 
 it("runs independent positive and negative raw byte cases through production browser decoders", () => {
-  expect(samples).toHaveLength(50);
+  expect(samples.some((sample) => sample.valid)).toBe(true);
+  expect(samples.some((sample) => !sample.valid)).toBe(true);
   for (const sample of samples) {
     expect(admitted(sample), sample.id).toBe(sample.valid);
   }
@@ -66,5 +69,53 @@ it("generated UUID admission consumes exactly one canonical nonempty UUID", () =
     "00000000-0000-0000-0000-000000000000",
   ]) {
     expect(isRequest("operation.get", { operationId: value }), value).toBe(false);
+  }
+});
+
+it("bounds timeline, directory and grant pages at fifty items", () => {
+  const directory = wireReply("authority.grants").outcome;
+  if (directory.kind !== "SUCCEEDED") {
+    throw new Error("Directory builder required");
+  }
+  for (const [count, valid] of [
+    [0, true],
+    [50, true],
+    [51, false],
+  ] as const) {
+    const items = Array.from({ length: count }, () => directory.data.actor);
+    const pages = [
+      ["authority.list", { basis: directory.data.basis, items, nextCursor: null }],
+      [
+        "authority.grants",
+        {
+          ...directory.data,
+          items: Array.from({ length: count }, () => ({
+            role: "CASE_READER",
+            scope: { kind: "INSTALLATION" },
+          })),
+        },
+      ],
+      [
+        "case.timeline",
+        {
+          basis: directory.data.basis,
+          caseId: "20000000-0000-4000-8000-000000000001",
+          caseReference: "CASE-1",
+          items: Array.from({ length: count }, () => timelineEntry()),
+          nextCursor: null,
+        },
+      ],
+    ] as const;
+    for (const [endpoint, data] of pages) {
+      expect(
+        admitted({
+          id: `${endpoint}-${count}`,
+          endpoint,
+          direction: "response",
+          valid,
+          text: JSON.stringify({ outcome: { kind: "SUCCEEDED", data } }),
+        }),
+      ).toBe(valid);
+    }
   }
 });

@@ -208,7 +208,6 @@
   "ui.shell.businessDateChanged": "تاريخ العمل الآن هو {date}. حدّث لتحديث تواريخ الاستحقاق.",
   "ui.shell.checkNow": "تحقق الآن",
   "ui.shell.people": "الأشخاص والصلاحيات",
-  "ui.shell.retryingRead": "مشغول — جارٍ إعادة المحاولة",
   "ui.shell.searchCases": "البحث عن الملفات",
   "ui.shell.unresolved": "قد لا تكون {count} من التغييرات قد سُجلت",
   "ui.shell.unresolvedOne": "قد لا يكون تغيير واحد قد سُجل",

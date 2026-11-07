@@ -6,7 +6,8 @@ import {
   type TimelineChanges_DISCLOSED,
 } from "@contracts/client";
 import { isResponse, isObject, isEndpointId, isHostFailure } from "../../../src/protocol/client";
-import { corpusCases, wireReply, hostCases } from "../../support/contract-corpus.fixtures";
+import { decodingExamples, hostCases } from "../../support/decoding-examples.fixtures";
+import { wireReply } from "../../support/reply.fixtures";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
 import { runInNewContext } from "node:vm";
@@ -20,7 +21,7 @@ const ordinal = (left: string, right: string): number => {
 };
 it("all positive authored response families supply the consumed browser shape", () => {
   const reached = new Set<string>();
-  for (const sample of corpusCases().filter(
+  for (const sample of decodingExamples().filter(
     (candidate) => candidate.direction === "response" && candidate.valid,
   )) {
     expect(isResponse(sample.endpoint, sample.value), sample.id).toBe(true);

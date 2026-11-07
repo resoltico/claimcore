@@ -1,7 +1,6 @@
 import { sameDateEntryDraft, withoutDateEntries } from "./dateEntryDraft";
 import { isCurrentCase } from "../protocol/types";
 import { conflictFromRefusal, sameConflictTarget } from "./operationConflict";
-import { receiptCorrelates } from "../protocol/replyCorrelation";
 import { roleAdmitted } from "./roleAvailability";
 import { operationEntry } from "../protocol/operationCatalog";
 import { inputErrors } from "./inputErrors";
@@ -396,7 +395,7 @@ const record = (
     return state;
   }
   const source = operationSource(state.operation);
-  if (source === null || !receiptCorrelates(source.prepared.input, action.receipt)) {
+  if (source === null) {
     return state;
   }
   return append(

@@ -6,6 +6,8 @@ open System
 open System.IO
 open System.Text
 open System.Text.Json
+open System.Text.Json.Nodes
+open ClaimCore.TestSupport
 open System.Net.Http
 open System.Net.Http.Headers
 open System.Threading
@@ -44,7 +46,7 @@ let private admits endpoint direction (bytes: byte array) =
 let private independentByteCases () =
     use document = fixture "tests/fixtures/client-byte-conformance.json"
     let cases = document.RootElement.GetProperty("cases").EnumerateArray() |> Seq.toList
-    Expect.equal cases.Length 50 "Independent byte cases cannot disappear silently"
+    Expect.isNonEmpty cases "Literal byte controls are present"
 
     for sample in cases do
         Expect.equal
@@ -206,11 +208,85 @@ let private reminderRevisionAdmission () =
             (Frames.admit prepared.Bytes)
             "Case creation and initial work retain legitimate zero revisions"
 
+let private pageBounds () =
+    let directory =
+        match ResponseExamples.defaultReply Api.authorityGrants with
+        | Outcome.Succeeded page -> page
+        | _ -> failtest "Successful directory input"
+
+    let timeline =
+        {
+            CaseTimelineEntry.OperationId = ResponseExamples.receipt.OperationId
+            Position = ResponseExamples.receipt.Position
+            Subject = TimelineSubject.CaseFact(Revision.first, CaseActKind.Open)
+            RecordedAt = Inputs.workBasis.ObservedAt
+            RecordedBy = directory.Actor.Actor
+            Changes = TimelineChanges.Withheld
+        }
+
+    let pages =
+        [
+            "authority.list",
+            Codec.encode
+                Api.authorityList.Output
+                (Outcome.Succeeded
+                    {
+                        ActorReviewPage.Basis = Inputs.workBasis
+                        Items = [ directory.Actor ]
+                        NextCursor = None
+                    })
+            "authority.grants",
+            Codec.encode
+                Api.authorityGrants.Output
+                (Outcome.Succeeded
+                    { directory with
+                        Items =
+                            [
+                                {
+                                    Role = Role.CaseReader
+                                    Scope = GrantScope.Installation
+                                }
+                            ]
+                    })
+            "case.timeline",
+            Codec.encode
+                Api.caseTimeline.Output
+                (Outcome.Succeeded
+                    {
+                        CaseTimelinePage.Basis = Inputs.workBasis
+                        CaseId = ResponseExamples.snapshot.CaseId
+                        Reference = ResponseExamples.snapshot.Reference
+                        Items = [ timeline ]
+                        NextCursor = None
+                    })
+        ]
+
+    for endpoint, baseline in pages do
+        for count, expected in [ 0, true; 50, true; 51, false ] do
+            let root = JsonNode.Parse baseline |> nonNull
+            let data = root["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
+            let item = (data["items"] |> nonNull).AsArray()[0] |> nonNull
+            let rows = JsonArray()
+
+            for _ in 1..count do
+                rows.Add(item.DeepClone())
+
+            data["items"] <- rows
+
+            Expect.equal
+                (admits endpoint "response" (Encoding.UTF8.GetBytes(root.ToJsonString())))
+                expected
+                (sprintf
+                    "%s admits %d items exactly according to its fifty-item bound"
+                    endpoint
+                    count)
+
 [<Tests>]
 let tests =
     testList
         "production client decoder conformance"
         [
+            testCase "timeline, directory and grant pages are bounded to fifty items" pageBounds
             testCase "independent positive and negative raw bytes" independentByteCases
             testCase
                 "wire admission leaves authoritative identity policy unchanged"

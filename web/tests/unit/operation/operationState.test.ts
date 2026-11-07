@@ -18,7 +18,7 @@ import {
   secondId,
   effect,
 } from "../../support/operation-identity.fixtures";
-import { wireReply } from "../../support/contract-corpus.fixtures";
+import { wireReply } from "../../support/reply.fixtures";
 
 const submitted = (state = reviewed(), id = "execute") =>
   operationReducer(operationReducer(state, { type: "EXECUTE", identity: effect(id) }), {

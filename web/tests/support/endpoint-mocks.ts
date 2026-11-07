@@ -39,12 +39,14 @@ export const mockEndpoint = <K extends EndpointId>(endpoint: K) => {
   if (!vi.isMockFunction(api.requestEndpoint)) {
     handlers.clear();
     const original = api.requestEndpoint;
-    vi.spyOn(api, "requestEndpoint").mockImplementation((id, credential, input, signal) => {
-      const handler = handlers.get(id);
-      return handler === undefined
-        ? original(id, credential, input, signal)
-        : handler(credential, input, signal);
-    });
+    vi.spyOn(api, "requestEndpoint").mockImplementation(
+      (id, credential, input, signal, installationId) => {
+        const handler = handlers.get(id);
+        return handler === undefined
+          ? original(id, credential, input, signal, installationId)
+          : handler(credential, input, signal);
+      },
+    );
   }
   handlers.set(endpoint, (credential, input, signal) => {
     if (!isRequest(endpoint, input)) {

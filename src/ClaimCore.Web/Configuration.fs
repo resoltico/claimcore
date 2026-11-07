@@ -79,7 +79,11 @@ module Configuration =
                     WebSetting.JsonLimit
                     Limits.MaximumRequestBytes
                     Limits.MaximumRequestBytes
-            CorePermitLimit = boundedInt WebSetting.CorePermits 4 4
+            CorePermitLimit =
+                boundedInt
+                    WebSetting.CorePermits
+                    AdmissionPolicy.maximumCorePermits
+                    AdmissionPolicy.maximumCorePermits
             CoreQueueLimit =
                 boundedInt
                     WebSetting.CoreQueue

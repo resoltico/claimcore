@@ -323,7 +323,7 @@ it("hides previously disclosed changes when a continuation refusal is followed b
   expect(field).toHaveValue("My retained draft");
   expect(previews).toBe(1);
 });
-it("discards a late draining conflict page when explicit re-preparation replaces its owner", async () => {
+it("discards a late conflict page when explicit re-preparation replaces its owner", async () => {
   const conflict: Diagnostic_REVISION_CONFLICT = {
     code: "REVISION_CONFLICT",
     action: "REVIEW_LATEST",
@@ -374,8 +374,8 @@ it("discards a late draining conflict page when explicit re-preparation replaces
   await user.click(screen.getByRole("button", { name: "Review against latest" }));
   await waitFor(() => {
     expect(previewCount).toBe(2);
-  }); // Dispatched reads drain under the admission budget; the obsolete caller still discards their payload.
-  expect(pageCall?.[1]?.signal?.aborted).toBe(false);
+  }); // An uncooperative transport may finish late; its obsolete owner still discards the payload.
+  expect(pageCall?.[1]?.signal?.aborted).toBe(true);
   release(
     response("case.timeline", "SUCCEEDED", {
       ...timelinePage([

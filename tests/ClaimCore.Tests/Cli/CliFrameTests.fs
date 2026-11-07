@@ -277,7 +277,6 @@ let private exampleFrames () =
         let input =
             StrictJson.read Limits.MaximumRequestBytes (File.ReadAllBytes path)
             |> Fixtures.accepted
-            |> ClaimCore.TestSupport.Inputs.positiveValue
             |> WireWriter.bytes
 
         let invocation = Frames.admit input |> Fixtures.accepted

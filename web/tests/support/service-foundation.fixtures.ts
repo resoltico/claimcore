@@ -8,7 +8,7 @@ export const caseFields: CaseFields = {
   decision: null,
   payment: null,
 };
-export const operationId = "10000000-0000-4000-8000-000000000001";
+export const operationId = "10000000-0000-7000-8000-000000000001";
 export const review: OperationReview = {
   presentation: { changes: [], unchanged: [] },
   subject: {

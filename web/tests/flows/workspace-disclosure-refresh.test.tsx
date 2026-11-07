@@ -12,8 +12,7 @@ import { beforeEach, expect, it, vi } from "vitest";
 import { act } from "@testing-library/react";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { mockEndpoint } from "../support/endpoint-mocks";
-import { corpusCases } from "../support/contract-corpus.fixtures";
-import { isResponse } from "../../src/protocol/client";
+import { wireReply } from "../support/reply.fixtures";
 import { authorityPreview } from "../support/authority-operation.fixtures";
 import { current } from "../support/presentation-state.fixtures";
 import { useEndpoint } from "../../src/hooks/useEndpoint";
@@ -32,16 +31,11 @@ const unavailable = {
 const contextFor = (
   views: ReadonlyArray<"CASES" | "AUTHORITY" | "OPERATIONS">,
 ): ApiResult<ServiceResponse<"context">> => {
-  const sample = corpusCases().find((row) => row.id === "context-all-advice");
-  if (
-    sample === undefined ||
-    !isResponse("context", sample.value) ||
-    sample.value.outcome.kind !== "SUCCEEDED" ||
-    sample.value.outcome.data.requester.kind !== "ACTIVE"
-  ) {
-    throw new Error("Missing complete context fixture.");
+  const sample = wireReply("context");
+  if (sample.outcome.kind !== "SUCCEEDED" || sample.outcome.data.requester.kind !== "ACTIVE") {
+    throw new Error("Active requester builder required.");
   }
-  const source = sample.value.outcome.data.requester;
+  const source = sample.outcome.data.requester;
   const capabilities = source.capabilities.filter((capability) =>
     capability === "MANAGE_AUTHORITY" || capability === "READ_AUTHORITY"
       ? views.includes("AUTHORITY")

@@ -29,9 +29,7 @@ let private body name =
     elif name = "session" || name = "session.logout" || name = "context" then
         Encoding.UTF8.GetBytes "{}"
     else
-        ClaimCore.TestSupport.PositiveExamples.forEndpoint "examples/requests.json" name
-        |> List.head
-        |> WireWriter.bytes
+        ClaimCore.TestSupport.RequestInputs.forEndpoint name |> WireWriter.bytes
 
 let private parse bytes = JsonDocument.Parse(bytes: byte array)
 

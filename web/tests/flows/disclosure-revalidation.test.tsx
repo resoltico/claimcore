@@ -63,7 +63,7 @@ const stubReads = (kind: string, retainCurrent: boolean) => {
               ...context,
               advice: {
                 ...context.advice,
-                history: revoked ? ["SUMMARY"] : ["SUMMARY", "FULL"],
+                history: revoked ? "SUMMARY" : "FULL",
               },
             }),
       );

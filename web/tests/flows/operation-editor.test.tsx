@@ -7,7 +7,7 @@ import { beforeEach, it, expect, vi } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen, waitFor } from "../support/presentation-test-support";
 import { editor, previewReply, deferredResponse } from "../support/presentation-state.fixtures";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { response, operationId } from "../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("returns focus to the drawer review action after returning to editing", async () => {

@@ -102,7 +102,7 @@ let private corpus filename =
     |> Seq.map (fun sample ->
         let endpoint = nonNull (sample.GetProperty("endpoint").GetString())
 
-        let value = PositiveExamples.value sample
+        let value = DecodingExamples.value sample
 
         endpoint, value)
     |> Seq.groupBy fst

@@ -1,8 +1,4 @@
-import { retryRead } from "./readRetry";
-import { captureReadRetryNotice } from "./readRetryNotice";
 import { captureBusinessDateObserver } from "./businessDateObservation";
-import { ReadAdmission } from "./readAdmission";
-import { replyCorrelates } from "../protocol/replyCorrelation";
 import type { PreparedRequest } from "../protocol/preparedRequest";
 import { sendHttp } from "./transport";
 import { responseBytes } from "./responseBytes";
@@ -15,6 +11,7 @@ import {
   endpoints,
   strictByteProfile,
   consumerContractIdentity,
+  correlationOf,
 } from "@contracts/client";
 import { admitBytes } from "../protocol/schema";
 import { isHostFailure, isResponse } from "../protocol/client";
@@ -22,7 +19,6 @@ export type * from "../protocol/types";
 export { isCurrentCase } from "../protocol/types";
 export { isMutationUncertain, resultNotice } from "./outcomes";
 const responseLimit = strictByteProfile.maximumResponseBytes;
-const readAdmission = new ReadAdmission();
 const readJson = async (response: Response, signal: AbortSignal): Promise<unknown> => {
   if (
     response.headers.get("content-type")?.split(";", 1)[0]?.trim().toLowerCase() !==
@@ -37,14 +33,28 @@ const readJson = async (response: Response, signal: AbortSignal): Promise<unknow
     return null;
   }
 };
+const echoesOperationId = <K extends EndpointId>(
+  id: K,
+  input: RequestByEndpoint[K] | undefined,
+  reply: ServiceResponse<K>,
+): boolean =>
+  !correlationOf[id] ||
+  (input !== undefined &&
+    "operationId" in input &&
+    "operationId" in reply &&
+    input.operationId === reply.operationId);
+
 const result = async <K extends EndpointId>(
   id: K,
   response: Response,
   signal: AbortSignal,
-  input: unknown,
+  input: RequestByEndpoint[K] | undefined,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   const value = await readJson(response, signal);
-  if (response.status === 200 && isResponse(id, value) && replyCorrelates(id, input, value)) {
+  if (signal.aborted) {
+    return { kind: "deliveryFailure", notice: localNotice("cancelled") };
+  }
+  if (response.status === 200 && isResponse(id, value) && echoesOperationId(id, input, value)) {
     return { kind: "outcome", value, status: response.status };
   }
   if (isHostFailure(value, response.status)) {
@@ -57,7 +67,7 @@ const send = <K extends EndpointId>(
   credential: string | undefined,
   body: string | undefined,
   signal: AbortSignal,
-  input: unknown,
+  input: RequestByEndpoint[K] | undefined,
   installationId?: string,
 ): Promise<ApiResult<ServiceResponse<K>>> => {
   if (signal.aborted) {
@@ -100,45 +110,30 @@ const send = <K extends EndpointId>(
     headers["Content-Type"] = "application/json";
   }
   const observeDate = captureBusinessDateObserver(id, credential);
-  const retryNotice = captureReadRetryNotice(credential);
   const network = async (deliveredSignal: AbortSignal): Promise<ApiResult<ServiceResponse<K>>> => {
     if (deliveredSignal.aborted) {
       return { kind: "deliveryFailure", notice: localNotice("cancelled"), dispatched: false };
     }
     try {
-      const attempt = async () => {
-        const response = await sendHttp(endpoint, headers, body, deliveredSignal);
-        return {
-          result: await result(id, response, deliveredSignal, input),
-          retryAfter: response.headers.get("Retry-After"),
-        };
-      };
-      const reply =
-        endpoint.effect === "READ"
-          ? await retryRead(attempt, AbortSignal.any([signal, deliveredSignal]), retryNotice)
-          : (await attempt()).result;
+      const response = await sendHttp(endpoint, headers, body, deliveredSignal);
+      const reply = await result(id, response, deliveredSignal, input);
       if (!signal.aborted && !deliveredSignal.aborted && reply.kind === "outcome") {
         observeDate(reply.value);
       }
       return reply;
     } catch {
-      return { kind: "deliveryFailure", notice: localNotice("unreachable") };
+      return {
+        kind: "deliveryFailure",
+        notice: localNotice(deliveredSignal.aborted ? "cancelled" : "unreachable"),
+      };
     }
   };
-  if (endpoint.effect !== "READ") {
-    return network(signal);
-  }
-  return readAdmission.run(signal, async () => {
-    // Obsolete observations still drain their bounded response after dispatch. Aborting the
-    // fetch can finish before the server releases its request capacity.
-    const reply = await withinResponseDeadline(network);
-    return signal.aborted ? { kind: "deliveryFailure", notice: localNotice("cancelled") } : reply;
-  });
+  return network(signal);
 };
 const request = <K extends EndpointId>(
   id: K,
   credential: string | undefined,
-  body: object | undefined,
+  body: RequestByEndpoint[K] | undefined,
   signal?: AbortSignal,
   installationId?: string,
 ) =>

@@ -6,7 +6,7 @@ import userEvent from "@testing-library/user-event";
 import { act } from "@testing-library/react";
 import { findButton, getButton, render, screen } from "../support/presentation-test-support";
 import { current, deferredResponse, draftAt, editor } from "../support/presentation-state.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { fields, response, runtime, unavailable } from "../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 const refusal = (kind: "access" | "session") =>

@@ -194,7 +194,6 @@
   "ui.shell.businessDateChanged": "业务日期现为 {date}。请刷新以更新到期日期。",
   "ui.shell.checkNow": "立即检查",
   "ui.shell.people": "人员与访问权限",
-  "ui.shell.retryingRead": "繁忙，正在重试",
   "ui.shell.searchCases": "搜索档案",
   "ui.shell.unresolved": "有 {count} 项更改可能尚未记录",
   "ui.shell.unresolvedOne": "有 1 项更改可能尚未记录",

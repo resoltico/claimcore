@@ -2,8 +2,7 @@ import { expect, it, vi } from "vitest";
 import { render, screen } from "../support/presentation-test-support";
 import { ReceiptFields } from "../../src/components/ReceiptFields";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { corpusCases, wireReply } from "../support/contract-corpus.fixtures";
-import { isResponse } from "../../src/protocol/client";
+import { wireReply, authorityReceipt } from "../support/reply.fixtures";
 import { definition, response } from "../support/service-ui.fixtures";
 it.each([
   ["WITHHELD", "The recorded fields are withheld under your current access rights."],
@@ -29,11 +28,10 @@ it.each([
   expect(view.container.querySelector(".case-fields")).toBeNull();
 });
 it("observes authority receipts as attributed metadata without assuming a case snapshot", async () => {
-  const sample = corpusCases().find((row) => row.id === "owner-provisioning-own-observation");
-  if (sample === undefined || !isResponse("operation.get", sample.value)) {
-    throw new Error("Owner provisioning observation fixture absent.");
-  }
-  const source = sample.value.outcome;
+  const source = {
+    kind: "ACCEPTED",
+    data: { receipt: authorityReceipt(), byRequester: true },
+  } as const;
   if (source.kind !== "ACCEPTED" || source.data.receipt.subject.kind !== "AUTHORITY") {
     throw new Error("Authority receipt fixture absent.");
   }
@@ -47,12 +45,8 @@ it("observes authority receipts as attributed metadata without assuming a case s
       initialOperationId={source.data.receipt.operationId}
     />,
   );
-  const target = source.data.receipt.subject.targetActor;
-  if (target.kind === "DISCLOSED") {
-    expect(await screen.findByText("Provision owner", { exact: false })).toBeVisible();
-  } else {
-    expect(await screen.findByText("Provision owner", { exact: true })).toBeVisible();
-    expect(document.querySelector(".authority-receipt > p")).not.toHaveTextContent(target.actorId);
-  }
+  expect(
+    await screen.findByText(/Authority act Provision owner for actor Synthetic target/u),
+  ).toBeVisible();
   expect(document.querySelector(".case-fields")).toBeNull();
 });

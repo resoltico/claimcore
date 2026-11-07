@@ -194,7 +194,6 @@
   "ui.shell.businessDateChanged": "業務日が{date}になりました。期限を更新するには再読み込みしてください。",
   "ui.shell.checkNow": "今すぐ確認",
   "ui.shell.people": "利用者とアクセス権限",
-  "ui.shell.retryingRead": "混雑中 — 読み取りを再試行中",
   "ui.shell.searchCases": "案件を検索",
   "ui.shell.unresolved": "{count}件の変更が記録されていない可能性があります",
   "ui.shell.unresolvedOne": "1件の変更が記録されていない可能性があります",

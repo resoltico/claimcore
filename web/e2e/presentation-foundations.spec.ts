@@ -292,7 +292,7 @@ for (const language of ["en", "ar"] as const) {
   }
 }
 
-test("read admission retry stays non-blocking and honors the server delay under CSP", async ({
+test("a busy read shows one notice and waits for explicit retry under CSP", async ({
   page,
   browserName,
 }) => {
@@ -301,10 +301,11 @@ test("read admission retry stays non-blocking and honors the server delay under 
     browserName === "firefox" ? [] : [/server responded with a status of 429/u];
   const clean = await observe(page, true, expectedConsole);
   await seed(page);
-  const dispatches: number[] = [];
+  let dispatches = 0;
+  await page.clock.install();
   await page.route("**/api/context", (route) => {
-    dispatches.push(Date.now());
-    if (dispatches.length === 1) {
+    dispatches += 1;
+    if (dispatches === 1) {
       return route.fulfill({
         status: 429,
         headers: { "Retry-After": "1" },
@@ -331,13 +332,15 @@ test("read admission retry stays non-blocking and honors the server delay under 
     });
   });
   await page.goto("/settings", { waitUntil: "commit" });
-  await expect(page.getByText("Busy — retrying", { exact: true })).toBeVisible();
+  await expect(page.getByRole("alert")).toContainText("Request admission is busy.");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("radio", { name: "Blue", exact: true }).check();
   await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");
-  await expect.poll(() => dispatches.length).toBe(2);
-  expect(dispatches[1]! - dispatches[0]!).toBeGreaterThanOrEqual(1000);
-  await expect(page.getByText("Busy — retrying", { exact: true })).toHaveCount(0);
+  await page.clock.runFor(1500);
+  expect(dispatches).toBe(1);
+  await page.getByRole("button", { name: "Try again", exact: true }).click();
+  await expect.poll(() => dispatches).toBe(2);
+  await expect(page.getByRole("alert")).toHaveCount(0);
   await clean();
 });
 
@@ -351,17 +354,18 @@ test("renders core view ordering, counts and row semantics without reconstructin
     businessDate: "2026-11-04",
     timeZone: "Etc/UTC",
   };
-  await page.route("**/api/case.views", (route) =>
+  await page.route("**/api/work.views", (route) =>
     route.fulfill({
       json: {
         outcome: {
           kind: "SUCCEEDED",
           data: {
             basis,
-            items: [
+            caseViews: [
               { view: "OVERDUE", count: 7 },
               { view: "NEEDS_ATTENTION", count: 2 },
             ],
+            reminderViews: [],
           },
         },
       },
@@ -837,8 +841,13 @@ for (const kind of ["NOT_REGISTERED", "NO_ROLES", "DISABLED"] as const) {
 
 test("same-requester access loss retains unknown bytes and a visible departure guard under CSP", async ({
   page,
+  browserName,
 }) => {
-  const clean = await observe(page, true);
+  const clean = await observe(
+    page,
+    true,
+    browserName === "firefox" ? [] : [/server responded with a status of 401/u],
+  );
   await seed(page);
   const active = actorContextInput({
     productVersion: "synthetic-presentation",
@@ -1336,20 +1345,12 @@ for (const reviewLanguage of ["en", "ar"] as const) {
     expect(
       reads.filter(
         (url) =>
-          ![
-            "session",
-            "context",
-            "authority.list",
-            "authority.requests",
-            "case.views",
-            "reminder.views",
-          ].some((endpoint) => url.endsWith(`/api/${endpoint}`)),
+          !["session", "context", "authority.list", "authority.requests", "work.views"].some(
+            (endpoint) => url.endsWith(`/api/${endpoint}`),
+          ),
       ),
     ).toEqual([]);
-    expect(reads.filter((url) => url.endsWith("/api/case.views")).length).toBeLessThanOrEqual(1);
-    expect(reads.filter((url) => url.endsWith("/api/reminder.views")).length).toBeLessThanOrEqual(
-      1,
-    );
+    expect(reads.filter((url) => url.endsWith("/api/work.views")).length).toBeLessThanOrEqual(1);
     const beforeSettingsReads = [...reads];
     await page.getByRole("button", { name: "Settings", exact: true }).click();
     await expect(page).toHaveURL(/\/settings$/u);

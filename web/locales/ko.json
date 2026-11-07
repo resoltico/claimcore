@@ -194,7 +194,6 @@
   "ui.shell.businessDateChanged": "업무 기준일이 {date}(으)로 변경되었습니다. 기한을 업데이트하려면 새로고침하세요.",
   "ui.shell.checkNow": "지금 확인",
   "ui.shell.people": "사람 및 접근 권한",
-  "ui.shell.retryingRead": "처리 중 — 조회 재시도 중",
   "ui.shell.searchCases": "건 검색",
   "ui.shell.unresolved": "변경 {count}개가 기록되지 않았을 수 있습니다",
   "ui.shell.unresolvedOne": "변경 1개가 기록되지 않았을 수 있습니다",

@@ -1,3 +1,4 @@
+import { timelinePage } from "../../support/timeline.fixtures";
 import userEvent from "@testing-library/user-event";
 import { within } from "@testing-library/react";
 import { caseAdvice } from "../../support/case-advice.fixtures";
@@ -23,7 +24,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
       ),
     )
     .mockResolvedValueOnce(
-      response("case.history", "SUCCEEDED", { entries: [], nextCursor: null }),
+      response("case.timeline", "SUCCEEDED", { ...timelinePage([]), caseReference: "ERASED-1" }),
     );
   render(
     <CaseDetail

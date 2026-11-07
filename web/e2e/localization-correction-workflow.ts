@@ -1,7 +1,7 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showExactLookup, chooseChoice } from "./workspace-navigation";
 import { fillControl } from "./typed-entry";
 import { registration } from "../tests/support/inputs";
-import { randomUUID } from "node:crypto";
 import type { CaseFields, OperationDraft, CaseOperationReceipt } from "../src/protocol/types";
 import { expect, type Page } from "@playwright/test";
 import { startAct } from "./case-workflow";
@@ -116,7 +116,7 @@ export const paidCase = async (page: Page, reference: string, status: "OPENED" |
       token,
       {
         kind: "CASE",
-        operationId: randomUUID(),
+        operationId: mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: revision,
         act: step.act,

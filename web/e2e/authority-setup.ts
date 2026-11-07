@@ -69,7 +69,9 @@ export const applyAuthority = async (page: Page, body: RequestByEndpoint["operat
       return;
     }
     if (outcome.kind !== "OUTCOME_UNKNOWN") {
-      throw new Error("Synthetic authority action was refused.");
+      throw new Error(
+        `Synthetic authority action ${outcome.kind}: ${"data" in outcome && outcome.data !== null && "code" in outcome.data ? outcome.data.code : "unconfirmed"}`,
+      );
     }
   }
   throw new Error("Synthetic authority completion remains unconfirmed; original request retained.");

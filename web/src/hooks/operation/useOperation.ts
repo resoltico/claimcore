@@ -3,7 +3,6 @@ import { operationId as mintOperationId, operationIssuedAt } from "../../operati
 import type { DateEntryPart } from "../../operation/dateEntryDraft";
 import { readConflict } from "./readConflict";
 import { latestOperationValues } from "../../operation/operationConflict";
-import { receiptCorrelates, replyCorrelates } from "../../protocol/replyCorrelation";
 import { SessionContext } from "../../session/SessionContext";
 import { useRequesterContext } from "../useRequesterContext";
 import { useRecoveryJournal } from "../../recovery/JournalContext";
@@ -110,13 +109,9 @@ const dirtyValues = (left: FormValues, right: FormValues): boolean =>
   Object.keys(left).length !== Object.keys(right).length ||
   Object.entries(left).some(([key, value]) => right[key] !== value);
 type Reply = ApiResult<ServiceResponse<"operation.execute"> | ServiceResponse<"operation.preview">>;
-const incompleteSuccess = (result: Reply): boolean =>
-  result.kind === "outcome" &&
-  ["ACCEPTED", "ALREADY_ACCEPTED", "REVIEWED"].includes(result.value.outcome.kind);
-const completionNotice = (result: Reply): Notice =>
-  incompleteSuccess(result) ? { kind: "local", reason: "incomplete" } : resultNotice(result);
+const completionNotice = (result: Reply): Notice => resultNotice(result);
 const completionUncertain = (effect: { kind: string }, result: Reply): boolean =>
-  effect.kind === "EXECUTE" && (mutationUncertain(result) || incompleteSuccess(result));
+  effect.kind === "EXECUTE" && mutationUncertain(result);
 const completion = (
   effect: Extract<
     OperationEffect,
@@ -128,20 +123,14 @@ const completion = (
 ): OperationAction => {
   if (result.kind === "outcome") {
     const { outcome } = result.value;
-    if (
-      (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") &&
-      receiptCorrelates(effect.source.prepared.input, outcome.data)
-    ) {
+    if (outcome.kind === "ACCEPTED" || outcome.kind === "ALREADY_ACCEPTED") {
       return {
         type: "RECORD",
         receipt: outcome.data,
         identity: effect.identity,
       };
     }
-    if (
-      outcome.kind === "REVIEWED" &&
-      replyCorrelates("operation.preview", effect.source.prepared.input, result.value)
-    ) {
+    if (outcome.kind === "REVIEWED") {
       return {
         type: "REVIEW",
         review: outcome.data.review,
@@ -184,10 +173,7 @@ const runNetwork = async (
       if (result.value.outcome.kind === "ACCEPTED" && !result.value.outcome.data.byRequester) {
         return { type: "NOT_ACCEPTED", identity: effect.identity, id: mintOperationId() };
       }
-      if (
-        result.value.outcome.kind === "ACCEPTED" &&
-        receiptCorrelates(effect.source.prepared.input, result.value.outcome.data.receipt)
-      ) {
+      if (result.value.outcome.kind === "ACCEPTED") {
         return {
           type: "RECORD",
           identity: effect.identity,

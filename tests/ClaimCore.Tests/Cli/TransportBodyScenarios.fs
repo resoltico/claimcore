@@ -28,7 +28,7 @@ let internal successfulBody endpoint invocation =
             "SUCCEEDED"
 
     samples endpoint
-    |> List.map (correlatedBody invocation)
+    |> List.map (echoedBody invocation)
     |> List.find (fun body ->
         use document = JsonDocument.Parse(ReadOnlyMemory body)
 

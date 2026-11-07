@@ -136,7 +136,7 @@ it("does not reconstruct or filter authoritative rows from a requested actor ID"
   expect(requestAt(fetch, 0)).toEqual({ limit: 50, actorId: first });
 });
 
-it("cancels an obsolete actor observation while draining its dispatched read and ignores the late page", async () => {
+it("cancels an obsolete actor observation and ignores a late page from an uncooperative transport", async () => {
   const requests = vi.spyOn(serviceApi, "requestEndpoint");
   const late = pending<Response>();
   const fetch = vi
@@ -157,8 +157,7 @@ it("cancels an obsolete actor observation while draining its dispatched read and
     ([endpoint]) => endpoint === "authority.history",
   );
   expect(historyRequests[1]![3]?.aborted).toBe(true);
-  // Dispatched reads retain their bounded admission slot until their response drains.
-  expect(fetch.mock.calls[1]![1]?.signal?.aborted).toBe(false);
+  expect(fetch.mock.calls[1]![1]?.signal?.aborted).toBe(true);
   expect(screen.queryByText("Current target one")).toBeNull();
   await act(() =>
     Promise.resolve().then(() => {

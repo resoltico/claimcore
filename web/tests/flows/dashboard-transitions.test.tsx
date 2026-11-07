@@ -10,7 +10,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import type { CurrentCase } from "../../src/api/service";
 import { Dashboard } from "../../src/views/Dashboard";
-import { previewForRequest } from "../support/preview-request.fixtures";
+import * as operationIds from "../../src/operation/operationId";
 import { context, fields, response, runtime } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
@@ -25,7 +25,7 @@ const current: CurrentCase = caseViewInput({
     fields,
   },
 });
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 const accepted = wireReply("operation.execute");
 if (accepted.outcome.kind !== "ACCEPTED") {
   throw new Error("CaseOperationReceipt fixture absent.");
@@ -57,26 +57,6 @@ const queueDetail = () => {
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockResolvedValueOnce(response("case.get", "SUCCEEDED", current));
   fetch.mockResolvedValueOnce(response("case.timeline", "SUCCEEDED", timelinePage()));
-};
-const queueAcceptedOpen = (): void => {
-  const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(
-    response("operation.execute", "ACCEPTED", {
-      ...receipt,
-      subject: {
-        ...receipt.subject,
-        kind: "CASE",
-        caseReference: fields.caseReference,
-        snapshot: {
-          kind: "DISCLOSED",
-          view: {
-            kind: "ACTIVE",
-            fields,
-          },
-        },
-      },
-    }),
-  );
 };
 it("returns from a selected case through Dashboard's detail-back transition", async () => {
   const user = userEvent.setup();
@@ -133,41 +113,68 @@ it("opens a metadata-derived act from Dashboard's current-case transition", asyn
     }),
   ).toBeVisible();
 });
-const queueOpenPreview = () => {
-  const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockImplementationOnce(
-    previewForRequest(
-      response("operation.preview", "REVIEWED", {
-        review: {
-          presentation: { changes: [], unchanged: [] },
-          subject: {
-            kind: "CASE",
-            before: null,
-            after: {
-              caseId: "20000000-0000-4000-8000-000000000001",
-              caseReference: fields.caseReference,
-              revision: 1,
-              state: {
-                kind: "ACTIVE",
-                fields,
-              },
-            },
-
-            context: runtime,
-          },
-        },
-      }),
-    ),
-  );
-};
 it("returns an accepted open operation to Dashboard through its committed transition", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  queueDefinitionAndList();
-  vi.spyOn(crypto, "randomUUID").mockReturnValueOnce("20000000-0000-4000-8000-000000000001");
-  queueOpenPreview();
-  queueAcceptedOpen();
-  queueDetail();
+  const creation = operationIds.operationId();
+  vi.spyOn(operationIds, "operationId").mockReturnValue(creation);
+  fetch.mockImplementation((path) => {
+    if (typeof path !== "string") {
+      throw new Error("Expected an API path");
+    }
+    switch (path) {
+      case "/api/case.list":
+        return Promise.resolve(
+          response("case.list", "SUCCEEDED", {
+            items: [],
+            offers: context.offers,
+            nextCursor: null,
+          }),
+        );
+      case "/api/operation.preview":
+        return Promise.resolve(
+          response("operation.preview", "REVIEWED", {
+            review: {
+              presentation: { changes: [], unchanged: [] },
+              subject: {
+                kind: "CASE",
+                before: null,
+                after: {
+                  caseId: creation,
+                  caseReference: "CASE-1",
+                  revision: 1,
+                  state: { kind: "ACTIVE", fields },
+                },
+                context: runtime,
+              },
+            },
+          }),
+        );
+      case "/api/operation.execute":
+        return Promise.resolve(
+          response("operation.execute", "ACCEPTED", {
+            ...receipt,
+            operationId: creation,
+            subject: {
+              kind: "CASE",
+              caseId: creation,
+              caseReference: "CASE-1",
+              revision: 1,
+              act: "OPEN",
+              snapshot: { kind: "DISCLOSED", view: { kind: "ACTIVE", fields } },
+            },
+          }),
+        );
+      case "/api/case.get":
+        return Promise.resolve(response("case.get", "SUCCEEDED", { ...current, caseId: creation }));
+      case "/api/case.timeline":
+        return Promise.resolve(
+          response("case.timeline", "SUCCEEDED", { ...timelinePage(), caseId: creation }),
+        );
+      default:
+        throw new Error(`Unexpected transition request: ${path}`);
+    }
+  });
   renderDashboard();
   await user.click(await screen.findByRole("link", { name: "Open a case" }));
   await screen.findByLabelText("Case reference");
@@ -194,7 +201,7 @@ it("returns an accepted open operation to Dashboard through its committed transi
   const currentRead = fetch.mock.calls.findLast(([path]) => path === "/api/case.get");
   expect(JSON.parse(typeof currentRead?.[1]?.body === "string" ? currentRead[1].body : "")).toEqual(
     {
-      target: { kind: "ID", caseId: "20000000-0000-4000-8000-000000000001" },
+      target: { kind: "ID", caseId: creation },
     },
   );
 });

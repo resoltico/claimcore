@@ -94,7 +94,7 @@ it("ignores a stale dispatch and a context response for a different installation
   expect(observed).toHaveBeenCalledTimes(1);
 });
 
-it("does not publish an aborted validated read after its transport eventually drains", async () => {
+it("does not publish an aborted validated read when its transport eventually finishes", async () => {
   const { service } = await import("../../../src/api/service");
   const { response: transportResponse } = await import("../../support/service-ui.fixtures");
   const observed = vi.fn();

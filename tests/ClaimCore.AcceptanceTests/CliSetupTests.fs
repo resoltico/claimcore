@@ -176,19 +176,8 @@ let evidenceTests =
         ]
 
 let private acceptedFrame () =
-    let root = RepositoryRoot.find ()
-
-    use examples =
-        JsonDocument.Parse(
-            File.ReadAllBytes(Path.Combine(root, "tests/fixtures/examples/responses.json"))
-        )
-
-    let example =
-        examples.RootElement.GetProperty("cases").EnumerateArray()
-        |> Seq.find (fun entry ->
-            entry.GetProperty("name").GetString() = "operation.execute.authority-response-0")
-
-    let reply = example.GetProperty("value")
+    use source = JsonDocument.Parse(ResponseExamples.authorityReplyBytes ())
+    let reply = source.RootElement
 
     JsonSerializer.Serialize
         {|

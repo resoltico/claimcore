@@ -5,7 +5,7 @@ import { render } from "../support/presentation-test-support";
 import { Dashboard } from "../../src/views/Dashboard";
 import { SessionContext } from "../../src/session/SessionContext";
 import { context as baseContext } from "../support/service-ui.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { navigate } from "../../src/routing/navigation";
 import { referencePath } from "../../src/routing/routes";
 import type { SessionState } from "../../src/session/useSession";

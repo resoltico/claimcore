@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { openRecovery, showExactLookup, showOperationLookup } from "./workspace-navigation";
 import { randomUUID } from "node:crypto";
 
@@ -23,10 +24,9 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await openRecovery(page);
   const operation = await showOperationLookup(page);
   await page.waitForLoadState("networkidle");
-  // Direct Recovery navigation starts a new document and its authenticated shell reads.
-  expect([...requests].sort()).toEqual(
-    ["POST /api/context", "POST /api/case.views", "POST /api/reminder.views"].sort(),
-  );
+  await expect(page.locator('.workspace-sidebar a[href="/cases"]')).toBeVisible();
+  // Wait for the verified workspace before checking its authenticated reads.
+  expect([...requests].sort()).toEqual(["POST /api/context", "POST /api/work.views"].sort());
   requests.length = 0;
   await expect(operation).toHaveAccessibleName("Exact operation ID");
   await operation.fill("not-an-operation-id");
@@ -44,7 +44,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   const translated = await page.getByRole("alert").textContent();
   expect(translated).toBeTruthy();
   await expect(operation).toHaveAccessibleDescription(translated ?? "");
-  await operation.fill(randomUUID());
+  await operation.fill(mintOperationId());
   await expect(operation).not.toHaveAttribute("aria-invalid");
   const observe = endpoints.find((endpoint) => endpoint.id === "operation.get");
   expect(observe).toBeDefined();
@@ -52,9 +52,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await expectAccessible(page);
 });
 
-test("hides absent case and operation identities behind neutral access refusals", async ({
-  page,
-}) => {
+test("keeps absent cases private and unknown operation outcomes pending", async ({ page }) => {
   await openAuthenticated(page);
   await (await showExactLookup(page)).fill(`ABSENT-${randomUUID()}`);
   await (await showExactLookup(page)).press("Enter");
@@ -64,7 +62,7 @@ test("hides absent case and operation identities behind neutral access refusals"
   await expect(page.getByText(ui("en", "ui.loadingHistory"), { exact: true })).toHaveCount(0);
   await expectAccessible(page);
   await openRecovery(page);
-  await (await showOperationLookup(page)).fill(randomUUID());
+  await (await showOperationLookup(page)).fill(mintOperationId());
   await page.getByRole("button", { name: "Look up recorded result" }).click();
   await expect(page.getByRole("alert").first()).toBeVisible();
   await expect(page.getByText("Operation was not observed.", { exact: true })).toHaveCount(0);

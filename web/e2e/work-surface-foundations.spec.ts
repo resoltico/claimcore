@@ -1,3 +1,4 @@
+import { expectCaseReadsSettled } from "./case-readiness";
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { openCase, reviewDraft, startAct } from "./case-workflow";
@@ -40,6 +41,7 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
   }
   await expect(accepted).toBeVisible();
   await expect(page.locator(".success-toast")).toContainText("Case closed.");
+  await expectCaseReadsSettled(page);
   const details = page.locator("[data-record-details]");
   await details.locator(":scope > summary").click();
   await expect(
@@ -88,7 +90,9 @@ test("native beforeunload blocks document navigation only while execution is in 
     execution.release();
     await recoverAcceptedClose(page, identity.operationId);
     await page.goto("/recovery", { waitUntil: "commit" });
-    await expect(page.getByRole("heading", { name: "Recovery", exact: true })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Unconfirmed changes", exact: true }),
+    ).toBeVisible();
     expect(dialogs).toEqual(["beforeunload"]);
   } finally {
     execution.release();

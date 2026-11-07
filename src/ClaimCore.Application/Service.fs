@@ -33,6 +33,12 @@ module Service =
             Principal = principal
         }
 
+    /// Hosts may decorate storage with request-scoped resource admission.
+    let mapStore transform (services: ServiceContext) =
+        { services with
+            Store = transform services.Store
+        }
+
     let withClaims claims (services: ServiceContext) = { services with Claims = claims }
 
     let private mutationResult =

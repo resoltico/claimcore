@@ -307,12 +307,10 @@ Browser unit tests mirror `web/src` under `web/tests/unit`; cross-module scenari
 without a matching source module. Categories, explicit rules and overrides together define the effective
 policy; review the complete `oxlint --print-config` output when changing it.
 
-[ReadAdmission](../web/src/api/readAdmission.ts) bounds complete read responses per document. Queued
-obsolete reads never dispatch. Once handed off, [service](../web/src/api/service.ts) drains a read under
-its own 20-second response deadline while the obsolete consumer discards its outcome. The caller has a
-separate 20-second deadline that includes queue time; draining can continue after that caller deadline.
-Cancellation does not establish that the server released capacity. Writes keep their cancellation and
-uncertainty rules. This client admission state is local to one document.
+[Server admission](../src/ClaimCore.Web/Admission.fs) owns read concurrency and the bounded per-principal FIFO.
+[Service transport](../web/src/api/service.ts) propagates navigation cancellation and shows a busy reply once;
+there is no browser admission mirror, automatic read retry or obsolete-response drain. The independent
+20-second transport deadline bounds consumption. Writes retain their delivery-uncertainty rules.
 
 Keep files and functions focused by responsibility. File length, parameter counts and change-locality
 measurements are review guidance, not representation requirements. Correctness, dependency, compiler,

@@ -9,7 +9,7 @@ import type {
 import { workBasis } from "./inputs";
 import { vi } from "vitest";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
-import { wireReply } from "./contract-corpus.fixtures";
+import { wireReply } from "./reply.fixtures";
 type AuthorityInput = Extract<
   Parameters<typeof service.preview>[0]["input"],
   { kind: "AUTHORITY" }

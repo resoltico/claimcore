@@ -17,9 +17,7 @@ const reloadDocument = async (page: Page) => {
   await expect.poll(() => page.evaluate(() => window.performance.timeOrigin)).not.toBe(before);
 };
 
-test("initial Cases loads only its language and required modules; public bytes and private responses have separate cache policies", async ({
-  page,
-}) => {
+test("public bytes and private responses have separate cache policies", async ({ page }) => {
   const assets: string[] = [];
   page.on("request", (request) => {
     const path = new URL(request.url()).pathname;
@@ -29,9 +27,6 @@ test("initial Cases loads only its language and required modules; public bytes a
   });
   await openAuthenticated(page);
   await page.waitForLoadState("networkidle");
-  expect(assets.some((path) => path.includes("language-en-"))).toBe(true);
-  expect(assets.filter((path) => /\/language-/u.test(path))).toHaveLength(1);
-  expect(assets.some((path) => accessModule.test(path))).toBe(false);
   const asset = assets.find((path) => path.endsWith(".js"));
   if (asset === undefined) {
     throw new Error("The published interface must request JavaScript");

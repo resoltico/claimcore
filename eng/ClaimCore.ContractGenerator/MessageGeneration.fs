@@ -212,7 +212,9 @@ module MessageGeneration =
                     + quote language
                     + ": () => Promise.all([import("
                     + quote (
-                        "../../../src/ClaimCore.Presentation/Messages/Localization/" + language + ".json"
+                        "../../../src/ClaimCore.Presentation/Messages/Localization/"
+                        + language
+                        + ".json"
                     )
                     + "), import("
                     + quote ("../../locales/" + language + ".json")

@@ -152,7 +152,6 @@
     <Compile Include="Cli/CliTransportTests.fs" />
     <Compile Include="Cli/CliSignalDeliveryTests.fs" />
     <Compile Include="Cli/CliDeliveryOutcomeTests.fs" />
-    <Compile Include="Cli/ReplyCorrelationTests.fs" />
     <Compile Include="Cli/InteractiveReviewTests.fs" />
     <Compile Include="Cli/AuthorityInteractiveReviewTests.fs" />
     <Compile Include="Cli/ClientAdmissionTests.fs" />
@@ -190,6 +189,7 @@
     <Compile Include="Contract/InputDiagnosticTests.fs" />
     <Compile Include="Contract/RetiredVocabularyTests.fs" />
     <Compile Include="Contract/DiagnosticRegistryTests.fs" />
+    <Compile Include="Cli/OperationEchoTests.fs" />
     <Compile Include="Cli/StandardSinkTests.fs" />
     <Compile Include="Support/DocumentationChecks.fs" />
     <Compile Include="Support/DocumentationTests.fs" />

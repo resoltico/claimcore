@@ -232,36 +232,20 @@ let private lookupVerb () =
         "Caller supplies operation ID only"
 
 let private localizedReplyRendering () =
-    let path =
-        System.IO.Path.Combine(
-            ClaimCore.TestSupport.RepositoryRoot.find (),
-            "tests/fixtures/examples/responses.json"
-        )
-
-    use examples = System.Text.Json.JsonDocument.Parse(System.IO.File.ReadAllBytes path)
-
-    for example in examples.RootElement.GetProperty("cases").EnumerateArray() do
-        if example.GetProperty("valid").GetBoolean() then
-            let reply = ClaimCore.TestSupport.PositiveExamples.value example
+    for endpoint in Api.all do
+        for encoded in ClaimCore.TestSupport.ResponseExamples.samples endpoint.Token do
+            let reply =
+                StrictJson.read Limits.MaximumResponseBytes encoded
+                |> Result.defaultWith (string >> failtest)
 
             let frame =
                 {
-                    Endpoint =
-                        Some(
-                            example.GetProperty("endpoint").GetString()
-                            |> nonNull
-                            |> ClaimCore.Tests.CliReplies.endpointId
-                        )
+                    Endpoint = Some endpoint.Id
                     OperationId = None
                     Delivery = DeliveryState.Delivered
                     Result =
                         FrameResult.Reply(
-                            ServiceReply.read
-                                (Api.tryFind (
-                                    example.GetProperty("endpoint").GetString() |> nonNull
-                                 )
-                                 |> Option.get)
-                                reply
+                            ServiceReply.read endpoint reply
                             |> Result.defaultWith (fun _ -> failtest "Frozen DTO")
                         )
                 }
@@ -279,7 +263,7 @@ let private localizedReplyRendering () =
             Expect.equal
                 (Frames.encode frame)
                 expected
-                "Typed admission preserves the authored JSON member order and byte representation"
+                "Typed frames preserve the provided JSON member order and bytes"
 
             for language in LocalizationPolicy.languages do
                 let rendered =

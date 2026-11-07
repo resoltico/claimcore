@@ -21,7 +21,7 @@ open ClaimCore.TestSupport
 open ClaimCore.Tests.PropertyHarness
 
 
-// The corpus supplies closed alternatives; generators below construct fresh typed values without
+// Small examples supply typed templates; generators construct fresh values without
 // consulting a codec or its schema. Business strings may violate today's admission policy.
 [<NoEquality; NoComparison>]
 type internal Seeds =
@@ -167,9 +167,7 @@ let rec internal collect (seeds: Seeds) context (kind: Type) (value: obj | null)
 let internal admitted =
     function
     | Ok value -> value
-    | Error _ ->
-        failtest
-            "The authored positive seed corpus must admit completely; see test: authored seed corpus admits every endpoint and direction."
+    | Error _ -> failtest "A literal decoding example was refused by its declared codec."
 
 let internal examples filename =
     let path = Path.Combine(RepositoryRoot.find (), "tests/fixtures", filename)
@@ -180,7 +178,7 @@ let internal examples filename =
     |> Seq.map (fun sample ->
         let endpoint = sample.GetProperty("endpoint").GetString() |> nonNull
 
-        let value = PositiveExamples.value sample
+        let value = DecodingExamples.value sample
 
         endpoint, value)
     |> Seq.groupBy fst

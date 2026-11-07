@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { goToView } from "./workspace-navigation";
 import { inputMessage } from "./input-accessibility-messages";
 import { expectInputRefusal } from "./input-refusal-expectations";
@@ -76,7 +77,7 @@ test("authority refusal preserves authored input through Settings and needs a fr
     },
     body: JSON.stringify({
       kind: "AUTHORITY",
-      operationId: randomUUID(),
+      operationId: mintOperationId(),
       target: { kind: "HUMAN", issuer: "", subject: subjectValue },
       act: {
         kind: "ADMIT",

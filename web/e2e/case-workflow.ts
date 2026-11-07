@@ -93,6 +93,7 @@ export const recordReviewed = async (page: Page): Promise<void> => {
   }
   await expect(page.locator("#case-detail-title")).toBeVisible();
   await expect(page.locator(".success-toast")).toBeVisible();
+  await expectCaseReadsSettled(page);
   const receipt = outcome.data;
   if (receipt.subject.kind !== "CASE") {
     throw new Error("Expected a case receipt.");

@@ -298,33 +298,36 @@ test("a real blocked open refuses preparation and retains the earlier record @en
         };
       }),
   );
-  const blocked = await page.evaluate(async (selectedScope) => {
-    const adapterPath = "/__claimcore_qa__/recovery/indexedJournal.js";
-    const protocolPath = "/__claimcore_qa__/protocol/recoveryJournal";
-    const journalModule = (await import(adapterPath)) as typeof IndexedJournalModule;
-    const protocol = (await import(protocolPath)) as typeof RecoveryModule;
-    // The injected factory requests an upgrade so the browser emits a genuine blocked event.
-    const factory = { open: (name: string) => indexedDB.open(name, 2) } as IDBFactory;
-    let dispatched = false;
-    const record: RecoveryRecord = {
-      ...selectedScope,
-      format: 2,
-      operationId: crypto.randomUUID(),
-      attemptId: crypto.randomUUID(),
-      subject: "CASE",
-      act: "OPEN",
-    };
-    const prepared = await protocol.journalBeforeSend(
-      journalModule.createIndexedJournal(factory),
-      record,
-      () => true,
-      () => {
-        dispatched = true;
-        return Promise.resolve();
-      },
-    );
-    return { result: prepared, dispatched };
-  }, scope);
+  const blocked = await page.evaluate(
+    async ({ selectedScope, id }) => {
+      const adapterPath = "/__claimcore_qa__/recovery/indexedJournal.js";
+      const protocolPath = "/__claimcore_qa__/protocol/recoveryJournal";
+      const journalModule = (await import(adapterPath)) as typeof IndexedJournalModule;
+      const protocol = (await import(protocolPath)) as typeof RecoveryModule;
+      // The injected factory requests an upgrade so the browser emits a genuine blocked event.
+      const factory = { open: (name: string) => indexedDB.open(name, 2) } as IDBFactory;
+      let dispatched = false;
+      const record: RecoveryRecord = {
+        ...selectedScope,
+        format: 2,
+        operationId: id,
+        attemptId: crypto.randomUUID(),
+        subject: "CASE",
+        act: "OPEN",
+      };
+      const prepared = await protocol.journalBeforeSend(
+        journalModule.createIndexedJournal(factory),
+        record,
+        () => true,
+        () => {
+          dispatched = true;
+          return Promise.resolve();
+        },
+      );
+      return { result: prepared, dispatched };
+    },
+    { selectedScope: scope, id: newOperationId() },
+  );
   expect(blocked).toEqual({ result: { kind: "notSent", reason: "storage" }, dispatched: false });
   // Destroy the blocked requester before releasing the old connection; it can never send later.
   await page.close();
@@ -509,7 +512,7 @@ test("same-identity workspace refresh completes an in-flight lookup without resu
   }, record);
   try {
     await ready.promise;
-    await expect(page.getByRole("button", { name: "Check now", exact: true })).toBeDisabled();
+    expect(await records(page, scope)).toEqual([record]);
     await goToView(page, "cases");
     const refreshed = page.waitForResponse((response) => response.url().endsWith("/api/context"));
     await openCase(page, `RECOVERY-REFRESH-${randomUUID()}`);

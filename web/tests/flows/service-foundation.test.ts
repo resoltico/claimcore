@@ -6,7 +6,7 @@ import { initialOperationValues, assembleOperation } from "../../src/operation/o
 import { operationEntry } from "../../src/protocol/operationCatalog";
 import { fields } from "../support/service-ui.fixtures";
 import { endpoints, consumerContractIdentity } from "@contracts/client";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 describe("core act metadata", () => {
   it("keeps optional registration facts unselected and builds scoped input from the root schema", () => {
     const current = caseViewInput({

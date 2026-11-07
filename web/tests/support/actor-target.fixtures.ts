@@ -5,7 +5,7 @@ import { screen, waitFor } from "./presentation-test-support";
 import { mockEndpoint } from "./endpoint-mocks";
 import { authorityPreview } from "./authority-operation.fixtures";
 import { installationOffers } from "./installation-advice.fixtures";
-import { wireReply } from "./contract-corpus.fixtures";
+import { wireReply } from "./reply.fixtures";
 import type { ApiResult, ServiceResponse } from "../../src/api/service";
 import { navigate } from "../../src/routing/navigation";
 export const firstActor = {

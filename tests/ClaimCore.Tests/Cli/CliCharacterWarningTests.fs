@@ -10,6 +10,7 @@ open System.Text
 open System.Text.Json
 open System.Text.Json.Nodes
 open Expecto
+open ClaimCore.TestSupport
 open ClaimCore.Json
 open ClaimCore.Cli
 
@@ -72,22 +73,28 @@ let private warningBudget () =
     Expect.equal repeated.CodePoints [ "U+180E" ] "Repeated invisible points consume one slot"
     Expect.isFalse repeated.Truncated "Duplicate occurrences do not cause truncation"
 
-let private example name =
-    let path =
-        Path.Combine(
-            ClaimCore.TestSupport.RepositoryRoot.find (),
-            "tests/fixtures/examples/responses.json"
-        )
+type private Example =
+    | Current
+    | Reviewed
+    | Accepted
 
-    use document = JsonDocument.Parse(File.ReadAllBytes path)
+let private example kind =
+    let endpoint, value =
+        match kind with
+        | Current ->
+            "case.get", Api.caseGet.Output.Write(Outcome.Succeeded ResponseExamples.caseRead)
+        | Reviewed ->
+            "operation.preview", Api.operationPreview.Output.Write ResponseExamples.preview
+        | Accepted ->
+            "operation.execute",
+            Api.operationExecute.Output.Write
+                {
+                    ExecuteReply.OperationId =
+                        OperationId.value ResponseExamples.receipt.OperationId
+                    Outcome = ExecuteResult.Accepted ResponseExamples.receipt
+                }
 
-    let row =
-        document.RootElement.GetProperty("cases").EnumerateArray()
-        |> Seq.find (fun row -> row.GetProperty("name").GetString() = name)
-
-    row.GetProperty("endpoint").GetString() |> nonNull,
-    JsonNode.Parse(WireWriter.bytes (ClaimCore.TestSupport.PositiveExamples.value row))
-    |> nonNull
+    endpoint, JsonNode.Parse(WireWriter.bytes value) |> nonNull
 
 let private memberPath (path: string list) (root: JsonNode) =
     path |> List.fold (fun (node: JsonNode) key -> node[key] |> nonNull) root
@@ -109,11 +116,8 @@ let private reviewFields side root =
         ]
         root
 
-let private historyFields root =
-    let entry =
-        (memberPath [ "outcome"; "data"; "entries" ] root).AsArray()[0] |> nonNull
-
-    memberPath [ "receipt"; "subject"; "snapshot"; "view"; "fields"; "registration" ] entry
+let private receiptFields root =
+    memberPath [ "outcome"; "data"; "subject"; "snapshot"; "view"; "fields"; "registration" ] root
 
 let private annotated language value points =
     let annotation =
@@ -161,7 +165,7 @@ let private rendered exampleName customize verify =
 let private currentWarnings () =
     for value, points in warningCases do
         rendered
-            "case.get-response-0"
+            Current
             (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
             (fun language text ->
                 Expect.isTrue
@@ -176,7 +180,7 @@ let private previewWarnings () =
     let after = "Synthetic👩‍💻After"
 
     rendered
-        "review-all-fields"
+        Reviewed
         (fun root ->
             (reviewFields "before" root)["claimantName"] <- JsonValue.Create "Snapshot before"
             (reviewFields "after" root)["claimantName"] <- JsonValue.Create "Snapshot after"
@@ -203,18 +207,18 @@ let private previewWarnings () =
                 (text.Contains(expected, System.StringComparison.Ordinal))
                 "Both differing review sides retain their own value and independent warning")
 
-let private fullHistoryWarnings () =
+let private acceptedWarnings () =
     for value, points in warningCases do
         rendered
-            "history-full-DISCLOSED"
-            (fun root -> (historyFields root)["claimantName"] <- JsonValue.Create value)
+            Accepted
+            (fun root -> (receiptFields root)["claimantName"] <- JsonValue.Create value)
             (fun language text ->
                 Expect.isTrue
                     (text.Contains(
                         annotated language value points,
                         System.StringComparison.Ordinal
                     ))
-                    "Full history retains the accepted value and localized warning")
+                    "An accepted receipt retains its value and localized warning")
 
 let private humanBudgetAndOrdinaryControl () =
     let values = "Synthetic᠎​‌‍⁠⁡⁢⁣⁤"
@@ -233,7 +237,7 @@ let private humanBudgetAndOrdinaryControl () =
         ]
 
     rendered
-        "case.get-response-0"
+        Current
         (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create values)
         (fun language text ->
             Expect.isTrue
@@ -246,7 +250,7 @@ let private humanBudgetAndOrdinaryControl () =
 
     for value in [ "Synthetic Name"; "Synthétic"; "SyntheticName"; "Synthetic😀👩💻" ] do
         rendered
-            "case.get-response-0"
+            Current
             (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
             (fun language text ->
                 let label = MessageCatalogs.render language "field.claimantName.label" Map.empty
@@ -272,17 +276,17 @@ let private retainedTerminalControls () =
             "Embedded breaks are visibly data"
 
     rendered
-        "case.get-response-0"
+        Current
         (fun root -> (currentFields root)["claimantName"] <- JsonValue.Create value)
         verify
 
     rendered
-        "history-full-DISCLOSED"
-        (fun root -> (historyFields root)["claimantName"] <- JsonValue.Create value)
+        Accepted
+        (fun root -> (receiptFields root)["claimantName"] <- JsonValue.Create value)
         verify
 
     rendered
-        "review-all-fields"
+        Reviewed
         (fun root ->
             let changes =
                 (memberPath [ "outcome"; "data"; "review"; "presentation"; "changes" ] root)
@@ -368,7 +372,7 @@ let tests =
         "CLI character warning text"
         [
             testCase
-                "retained current history and review business text escapes terminal controls"
+                "retained current, accepted and reviewed business text escapes terminal controls"
                 retainedTerminalControls
             testCase
                 "terminal encoding escapes controls but preserves Arabic and joining"
@@ -385,7 +389,7 @@ let tests =
                 warningBudget
             testCase "current case values warn in every language" currentWarnings
             testCase "core-supplied differing preview sides warn in every language" previewWarnings
-            testCase "full history accepted values warn in every language" fullHistoryWarnings
+            testCase "accepted values warn in every language" acceptedWarnings
             testCase
                 "human annotations are bounded and ordinary text stays unannotated"
                 humanBudgetAndOrdinaryControl

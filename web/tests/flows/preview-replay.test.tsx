@@ -2,7 +2,7 @@ import { it, expect, vi, beforeEach } from "vitest";
 import userEvent from "@testing-library/user-event";
 import { render, screen } from "../support/presentation-test-support";
 import { editor, previewReply } from "../support/presentation-state.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { response } from "../support/service-ui.fixtures";
 beforeEach(() => vi.stubGlobal("fetch", vi.fn()));
 it("readonly preview can be repeated with its unchanged exact draft after lost output", async () => {

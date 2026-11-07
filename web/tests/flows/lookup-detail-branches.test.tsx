@@ -7,7 +7,7 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, expect, it, vi } from "vitest";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { OperationLookup } from "../../src/views/OperationLookup";
-import { hostCases } from "../support/contract-corpus.fixtures";
+import { hostCases } from "../support/decoding-examples.fixtures";
 import { CaseList } from "../../src/views/CaseList";
 import {
   unavailable,

@@ -128,6 +128,28 @@ module internal ApiRoutes =
 
         | _ -> None
 
+    let private confirmationStore (admission: PrincipalAdmission) principal (store: IStore) =
+        { new IStore with
+            member _.Context query = store.Context query
+            member _.Read operation = store.Read operation
+
+            member _.Write operation =
+                task {
+                    let! acquired =
+                        admission.Acquire(
+                            principal,
+                            RequestWorkload.Write,
+                            operation.CancellationToken
+                        )
+
+                    match acquired with
+                    | None -> return raise (WorkloadAdmissionRejectedException())
+                    | Some lease ->
+                        use _owned = lease
+                        return! store.Write operation
+                }
+        }
+
     let handle handler configuration withActor (context: HttpContext) =
         let endpoint = handler.Description
 
@@ -188,6 +210,16 @@ module internal ApiRoutes =
                                                 (AuthenticatedPrincipals.claims principal)
                                                 core
 
+                                        let core =
+                                            match endpoint.Id with
+                                            | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+                                                Service.mapStore
+                                                    (confirmationStore
+                                                        admission
+                                                        (AuthenticatedPrincipals.key principal))
+                                                    core
+                                            | _ -> core
+
                                         task {
                                             if
                                                 Api.requiresInstallation endpoint
@@ -198,26 +230,25 @@ module internal ApiRoutes =
                                                     )
                                                 )
                                             then
-                                                return Error()
+                                                return Error HostFailureReason.InstallationMismatch
                                             else
-                                                let! reply =
-                                                    prepared.Invoke
-                                                        (Some core)
-                                                        cancellation
-                                                        (fun () ->
-                                                            RouteSupport.markCompleted context)
+                                                try
+                                                    let! reply =
+                                                        prepared.Invoke
+                                                            (Some core)
+                                                            cancellation
+                                                            (fun () ->
+                                                                RouteSupport.markCompleted context)
 
-                                                return Ok reply
+                                                    return Ok reply
+                                                with :? WorkloadAdmissionRejectedException ->
+                                                    return Error HostFailureReason.RateLimited
                                         })
 
                                 match result with
-                                | Some(Error()) ->
+                                | Some(Error reason) ->
                                     RouteSupport.markCompleted context
-
-                                    return
-                                        RouteSupport.hostFailure
-                                            context
-                                            HostFailureReason.InstallationMismatch
+                                    return RouteSupport.hostFailure context reason
                                 | Some(Ok reply) -> return RouteSupport.reply reply context
                                 | None ->
                                     RouteSupport.markCompleted context

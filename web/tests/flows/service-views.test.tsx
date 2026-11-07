@@ -12,7 +12,7 @@ import type { CurrentCase } from "../../src/api/service";
 import { CaseDetail } from "../../src/views/CaseDetail";
 import { CaseList } from "../../src/views/CaseList";
 import { Dashboard } from "../../src/views/Dashboard";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 import { context, definition, fields, operationId, response } from "../support/service-ui.fixtures";
 const current: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
@@ -109,7 +109,7 @@ const historyWithTwoReceipts = () =>
       timelineEntry(),
       timelineEntry({
         position: { sequence: 2, entryHash: "b".repeat(64) },
-        operationId: "20000000-0000-4000-8000-000000000002",
+        operationId: "20000000-0000-7000-8000-000000000002",
       }),
     ],
     "next",

@@ -7,11 +7,14 @@
 - operation.get replaces operation.observe, operation.status and operation.resolve; supply the installation binding and handle ACCEPTED, PENDING with finalAt, and final NOT_ACCEPTED.
 - work.views replaces case.views and reminder.views in one snapshot; case.history, case.activity and work.overview are removed. Use case.timeline and CLI work views.
 - Case advice.history is now NONE, SUMMARY or FULL; case.timeline applies current disclosure rights automatically, with no request-level detail selector.
+- Reads use a per-principal FIFO of eight with two active requests and a five-second wait; full or expired queues return HTTP 429 with Retry-After: 1.
+- Browser reads cancel on navigation and show a busy notice without automatic retries; clients check the typed operation ID echo and trust server reply contents.
+- Core permits now bound each read and write pool; the default minimum connection pool is 14. Final operation lookup confirmation uses write admission.
 - Custom stores remove nonacceptance and fence ports; final absence uses a head-locked write callback without an append, including during maintenance.
 - CLI recovery keeps list and check; call/session fill omitted execute IDs and print them to stderr. Dry runs can omit IDs; exact retries retain the dispatched ID.
 - The web checks Unconfirmed changes automatically and shows the final-answer deadline; permanent-settlement actions and confirmations are removed.
 - ClaimCore.Protocol is split into ClaimCore.Wire and ClaimCore.Presentation; update project references and generator commands.
-- Wire conformance uses curated decoding examples and rejection controls; generated request/reply snapshots and presentation golden comparisons are removed.
+- Wire conformance uses small reviewed decoding examples; behavior tests use typed builders instead of generated request/reply and CLI frame snapshots.
 - CLI conformance uses authored command inputs and typed frame checks instead of a generated frame snapshot.
 - Ten fixed durable-format examples replace the oracle corpus; byte properties and the hand-authored transition matrix remain.
 - Application store contracts run against PostgreSQL; the in-memory store double is removed.

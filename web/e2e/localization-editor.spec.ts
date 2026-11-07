@@ -1,3 +1,4 @@
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { registration } from "../tests/support/inputs";
 import { fillBusinessField } from "./typed-entry";
 import { expectInputRefusal } from "./input-refusal-expectations";
@@ -75,7 +76,7 @@ const malformedCalendarBoundary = async (page: Page, reference: string) => {
       },
       body: JSON.stringify({
         kind: "CASE",
-        operationId: randomUUID(),
+        operationId: mintOperationId(),
         target: { kind: "REFERENCE", caseReference: reference },
         expectedRevision: 0,
         act: { kind: "OPEN", values: registration({ incidentDate }) },

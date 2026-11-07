@@ -237,12 +237,12 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
                 "AuthorityProjection"
                 "AuthorityQuery"
                 "CasePageQuery"
-                "HistoryPageQuery"
                 "ActorPageQuery"
                 "GrantPageQuery"
-                "FenceKey"
                 "Page"
                 "ReadOperation"
+                "ContextQuery"
+                "ContextFacts"
                 "WriteOperation"
             ]
             |> List.map System.Text.RegularExpressions.Regex.Escape

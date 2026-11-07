@@ -15,7 +15,7 @@ import userEvent from "@testing-library/user-event";
 import { Dashboard } from "../../src/views/Dashboard";
 import { AuthorityPanel } from "../../src/views/AuthorityPanel";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 beforeEach(() => {
   stubViewCounts();
 });

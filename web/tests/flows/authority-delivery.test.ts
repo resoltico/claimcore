@@ -5,7 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useOperation } from "../../src/hooks/operation/useOperation";
 import { service, type ApiResult, type ServiceResponse } from "../../src/api/service";
 import { authorityAcceptance, authorityPreview } from "../support/authority-operation.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 beforeEach(() => {
   authorityPreview();
 });

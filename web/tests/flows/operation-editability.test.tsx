@@ -9,7 +9,7 @@ import { render, screen, waitFor } from "../support/presentation-test-support";
 import { deferredResponse, editor, previewReply } from "../support/presentation-state.fixtures";
 import { fields } from "../support/service-ui.fixtures";
 import { type CurrentCase } from "../../src/api/service";
-import { wireResponse } from "../support/contract-corpus.fixtures";
+import { wireResponse } from "../support/reply.fixtures";
 const current: CurrentCase = caseViewInput({
   caseId: "20000000-0000-4000-8000-000000000001",
   caseReference: fields.caseReference,

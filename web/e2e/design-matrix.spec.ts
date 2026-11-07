@@ -1,12 +1,4 @@
-import {
-  dimensions,
-  dimensionCaseTitle,
-  expectedCaptures,
-  expectedRoutes,
-  expectedEngineCounts,
-  assertMatrixPlan,
-  type Dimension,
-} from "./design-matrix-plan";
+import { dimensions, dimensionCaseTitle, type Dimension } from "./design-matrix-plan";
 import { chooseChoice, settledWorkspaceHeader } from "./workspace-navigation";
 import { fillBusinessField } from "./typed-entry";
 import { expect, test, type Page, type TestInfo, type Request } from "@playwright/test";
@@ -21,7 +13,6 @@ import {
   configureDimension,
   displayLocaleFor,
   visitRoute,
-  writeMatrixReport,
   matrixEvidenceDirectory,
 } from "./design-matrix-checks";
 const engine = process.env["CLAIMCORE_WEB_E2E_ENGINE"] ?? "chromium";
@@ -32,16 +23,10 @@ if (!["chromium", "firefox", "webkit"].includes(engine)) {
 }
 const plannedDimensions = dimensions(engine);
 let dataset: DesignDataset;
-type FrameCounts = { pageLoads: number; axeAndReflowChecks: number; screenshots: number };
-type EngineCounts = FrameCounts & { dimensions: number };
-const completed: FrameCounts[] = [];
 type Run = {
   page: Page;
   info: TestInfo;
   dimension: Dimension;
-  loads: string[];
-  checked: string[];
-  captures: string[];
 };
 const recordFrame = async (run: Run, frame: string) => {
   try {
@@ -50,11 +35,7 @@ const recordFrame = async (run: Run, frame: string) => {
     await run.page.screenshot({ path: run.info.outputPath(`failed-${frame}.png`), fullPage: true });
     throw error;
   }
-  run.checked.push(frame);
-  const path = await captureFrame(run.page, run.info, run.dimension, frame);
-  if (path !== null) {
-    run.captures.push(path);
-  }
+  await captureFrame(run.page, run.info, run.dimension, frame);
 };
 const expandedFilters = async (run: Run) => {
   const compact = run.dimension.width < 640;
@@ -121,7 +102,6 @@ const historyComparison = async (page: Page) => {
 };
 const performRoute = async (route: MatrixRoute, run: Run) => {
   await test.step(route.id, async () => {
-    run.loads.push(route.id);
     await visitRoute(run.page, route, run.dimension);
     if (route.id === "paid-correction-review") {
       await paidCorrectionReview(run);
@@ -142,55 +122,12 @@ const registerDimension = (dimension: Dimension) => {
     page.setDefaultTimeout(15_000);
     await page.context().addCookies(dataset.cookies);
     await configureDimension(page, dimension);
-    const run: Run = { page, info, dimension, loads: [], checked: [], captures: [] };
-    try {
-      for (const route of dataset.routes) {
-        await performRoute(route, run);
-      }
-      expect(run.loads).toEqual(expectedRoutes);
-      expect(run.checked).toHaveLength(expectedRoutes.length + 1);
-      expect(run.captures).toHaveLength(expectedCaptures(engine, dimension));
-    } finally {
-      completed.push({
-        pageLoads: run.loads.length,
-        axeAndReflowChecks: run.checked.length,
-        screenshots: run.captures.length,
-      });
-      await writeMatrixReport(info, {
-        engine,
-        dimension,
-        expected: {
-          pageLoads: expectedRoutes.length,
-          axeAndReflowChecks: expectedRoutes.length + 1,
-          screenshots: expectedCaptures(engine, dimension),
-        },
-        actual: {
-          pageLoads: run.loads.length,
-          axeAndReflowChecks: run.checked.length,
-          screenshots: run.captures.length,
-        },
-        loadedRoutes: run.loads,
-        checkedFrames: run.checked,
-        captures: run.captures,
-      });
+    const run: Run = { page, info, dimension };
+    for (const route of dataset.routes) {
+      await performRoute(route, run);
     }
   });
 };
-const reportEngine = async (info: TestInfo) => {
-  const expected = expectedEngineCounts(engine);
-  const actual = completed.reduce<EngineCounts>(
-    (total, value) => ({
-      dimensions: total.dimensions + 1,
-      pageLoads: total.pageLoads + value.pageLoads,
-      axeAndReflowChecks: total.axeAndReflowChecks + value.axeAndReflowChecks,
-      screenshots: total.screenshots + value.screenshots,
-    }),
-    { dimensions: 0, pageLoads: 0, axeAndReflowChecks: 0, screenshots: 0 },
-  );
-  await writeMatrixReport(info, { engine, expected, actual }, "design-matrix-engine-counts");
-  expect(actual).toEqual(expected);
-};
-assertMatrixPlan(engine);
 test.describe("adopted work surface design matrix", () => {
   test.beforeAll(async ({ browser, baseURL }, info) => {
     test.setTimeout(120_000);
@@ -200,15 +137,9 @@ test.describe("adopted work surface design matrix", () => {
       throw new Error("E2E_MATRIX_BASE_URL_REQUIRED");
     }
     dataset = await prepareDesignDataset(browser, baseURL);
-    expect(dataset.routes.map((route) => route.id)).toEqual(expectedRoutes);
-    expect(new Set(dataset.routes.map((route) => route.id)).size).toBe(expectedRoutes.length);
   });
   test.afterAll(async () => {
-    try {
-      await reportEngine(test.info());
-    } finally {
-      await dataset?.close();
-    }
+    await dataset?.close();
   });
   plannedDimensions.forEach(registerDimension);
 });

@@ -12,7 +12,7 @@ import type { ReviewPresentation, RequestByEndpoint } from "@contracts/client";
 import type { CurrentCase } from "../../src/api/service";
 import type { ActKind } from "../../src/operation/metadata";
 import { caseAdvice } from "../support/case-advice.fixtures";
-import { wireReply } from "../support/contract-corpus.fixtures";
+import { wireReply } from "../support/reply.fixtures";
 import { caseFields } from "../support/service-foundation.fixtures";
 import { fillRegistrationInputs } from "../support/registration-inputs.fixtures";
 import { runtime, input, response, type Dispatch } from "../support/catalog-transport.fixtures";
