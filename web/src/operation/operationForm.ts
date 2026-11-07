@@ -1,3 +1,4 @@
+import { operationId } from "./operationId";
 import { operationEntry } from "../protocol/operationCatalog";
 import { buildRequest } from "../protocol/client";
 import type { FormValues, FormValue } from "../protocol/forms";
@@ -81,7 +82,7 @@ export const initialOperationValues = (
   subject: "CASE" | "AUTHORITY" | "WORK" | "REMINDER",
   kind: string,
   current: CurrentCase | null,
-  id = crypto.randomUUID(),
+  id = operationId(),
 ): FormValues => {
   const definition = operationEntry({ subject, kind });
   const values: Record<string, FormValue> = {};

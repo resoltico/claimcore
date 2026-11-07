@@ -17,15 +17,18 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected current read: %A" other
 
-let private caseAct actor number reference revision act =
-    Service.execute actor (Inputs.caseOperation (request number reference revision act)) token
+let private caseAct fixture actor number reference revision act =
+    Service.execute
+        actor
+        (Inputs.caseOperation (request fixture number reference revision act))
+        token
 
-let private reminder actor number target act =
+let private reminder fixture actor number target act =
     Service.execute
         actor
         (OperationInput.Reminder
             {
-                OperationId = id number
+                OperationId = id fixture number
                 Target = target
                 Act = act
             })
@@ -55,18 +58,20 @@ let private storeRead (fixture: Fixture) work =
     }
 
 let private find fixture number =
-    storeRead fixture (fun tx -> tx.FindReminder(ReminderId.create (id number) |> Option.get))
+    storeRead fixture (fun tx ->
+        tx.FindReminder(ReminderId.create (id fixture number) |> Option.get))
 
-let private opened actor number reference =
+let private opened fixture actor number reference =
     task {
-        let! result = caseAct actor number reference 0L (CaseAct.Open registration)
+        let! result = caseAct fixture actor number reference 0L (CaseAct.Open registration)
         return accepted result |> caseReceipt |> _.CaseId
     }
 
-let private seed actor number target text =
+let private seed fixture actor number target text =
     task {
         let! result =
             reminder
+                fixture
                 actor
                 number
                 target
@@ -80,10 +85,10 @@ let private snapshot (row: StoredReminder option) = (Option.get row).Snapshot |>
 let internal independentRevisions fixture =
     task {
         let! actor = caseWorker fixture
-        let! parent = opened actor 100 "REMINDER-CONCURRENCY"
+        let! parent = opened fixture actor 100 "REMINDER-CONCURRENCY"
         let target = CaseSelector.Id parent
-        do! seed actor 101 target "Original first action"
-        do! seed actor 102 target "Original second action"
+        do! seed fixture actor 101 target "Original first action"
+        do! seed fixture actor 102 target "Original second action"
 
         let patch =
             { Inputs.registrationUpdate registration with
@@ -92,7 +97,7 @@ let internal independentRevisions fixture =
 
         let financial =
             Inputs.caseOperation (
-                request 103 "REMINDER-CONCURRENCY" 1L (CaseAct.AmendRegistration patch)
+                request fixture 103 "REMINDER-CONCURRENCY" 1L (CaseAct.AmendRegistration patch)
             )
 
         let! preview = Service.preview actor financial token
@@ -105,11 +110,12 @@ let internal independentRevisions fixture =
             Task.WhenAll(
                 [|
                     reminder
+                        fixture
                         actor
                         104
                         target
                         (AuthoredReminderAct.Update(
-                            id 101,
+                            id fixture 101,
                             1L,
                             {
                                 Action = "First independent edit"
@@ -117,11 +123,12 @@ let internal independentRevisions fixture =
                             }
                         ))
                     reminder
+                        fixture
                         actor
                         105
                         target
                         (AuthoredReminderAct.Update(
-                            id 102,
+                            id fixture 102,
                             1L,
                             {
                                 Action = "Second independent edit"
@@ -155,11 +162,12 @@ let internal independentRevisions fixture =
             Task.WhenAll(
                 [|
                     reminder
+                        fixture
                         actor
                         106
                         target
                         (AuthoredReminderAct.Update(
-                            id 101,
+                            id fixture 101,
                             2L,
                             {
                                 Action = "Concurrent edit A"
@@ -167,11 +175,12 @@ let internal independentRevisions fixture =
                             }
                         ))
                     reminder
+                        fixture
                         actor
                         107
                         target
                         (AuthoredReminderAct.Update(
-                            id 101,
+                            id fixture 101,
                             2L,
                             {
                                 Action = "Concurrent edit B"
@@ -221,7 +230,7 @@ let internal independentRevisions fixture =
                         actor
                         (OperationInput.Work
                             {
-                                OperationId = id 108
+                                OperationId = id fixture 108
                                 Target = target
                                 ExpectedRevision = 0L
                                 Act =
@@ -229,18 +238,21 @@ let internal independentRevisions fixture =
                                         {
                                             Responsible =
                                                 WorkValue.Set(
-                                                    ActorId.format (CaseFixtures.actorId (id 1))
+                                                    ActorId.format (
+                                                        CaseFixtures.actorId (id fixture 1)
+                                                    )
                                                 )
                                             Summary = WorkValue.Keep
                                         }
                             })
                         token
                     reminder
+                        fixture
                         actor
                         109
                         target
                         (AuthoredReminderAct.Update(
-                            id 102,
+                            id fixture 102,
                             2L,
                             {
                                 Action = "Edit alongside assignment"
@@ -274,20 +286,21 @@ let internal independentRevisions fixture =
 let internal closeAndCompound fixture =
     task {
         let! actor = caseWorker fixture
-        let! parent = opened actor 100 "REMINDER-CLOSE-RACE"
+        let! parent = opened fixture actor 100 "REMINDER-CLOSE-RACE"
         let target = CaseSelector.Id parent
-        do! seed actor 101 target "Original outstanding action"
+        do! seed fixture actor 101 target "Original outstanding action"
 
         let! replies =
             Task.WhenAll(
                 [|
-                    caseAct actor 102 "REMINDER-CLOSE-RACE" 1L (CaseAct.Bare BareAct.Close)
+                    caseAct fixture actor 102 "REMINDER-CLOSE-RACE" 1L (CaseAct.Bare BareAct.Close)
                     reminder
+                        fixture
                         actor
                         103
                         target
                         (AuthoredReminderAct.CompleteAndPlanNext(
-                            id 101,
+                            id fixture 101,
                             1L,
                             {
                                 Action = "Replacement outstanding action"
@@ -338,7 +351,7 @@ let internal erasureRaces fixture =
         let! stewardship =
             grant
                 actor
-                (id 19)
+                (id fixture 19)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -350,16 +363,16 @@ let internal erasureRaces fixture =
 
         for number, reference, compound in
             [ 100, "ERASE-CREATE-RACE", false; 200, "ERASE-COMPOUND-RACE", true ] do
-            let! parent = opened actor number reference
+            let! parent = opened fixture actor number reference
             let target = CaseSelector.Id parent
 
             if compound then
-                do! seed actor (number + 1) target "Erasable source action"
+                do! seed fixture actor (number + 1) target "Erasable source action"
 
             let act =
                 if compound then
                     AuthoredReminderAct.CompleteAndPlanNext(
-                        id (number + 1),
+                        id fixture (number + 1),
                         1L,
                         {
                             Action = "Erasable replacement action"
@@ -376,8 +389,8 @@ let internal erasureRaces fixture =
             let! replies =
                 Task.WhenAll(
                     [|
-                        caseAct actor (number + 3) reference 1L (CaseAct.Bare BareAct.Erase)
-                        reminder actor (number + 2) target act
+                        caseAct fixture actor (number + 3) reference 1L (CaseAct.Bare BareAct.Erase)
+                        reminder fixture actor (number + 2) target act
                     |]
                 )
 
@@ -392,7 +405,9 @@ let internal erasureRaces fixture =
 
                 let! entry =
                     storeRead fixture (fun tx ->
-                        tx.FindOperation(OperationId.create (id (number + 2)) |> Option.get))
+                        tx.FindOperation(
+                            OperationId.create (id fixture (number + 2)) |> Option.get
+                        ))
 
                 Expect.isNone (Option.get entry).Root.Payload "Related ledger payload cleared"
                 Expect.isNone (Option.get entry).Root.PayloadNonce "Related nonce cleared"
@@ -426,21 +441,21 @@ let internal revocationAndCompound fixture =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 10)
+                        (id fixture 10)
                         person
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
                 token
 
         acceptedAuthority registered
-        let! parent = opened actor 100 "REVOKE-COMPOUND-RACE"
+        let! parent = opened fixture actor 100 "REVOKE-COMPOUND-RACE"
         let target = CaseSelector.Id parent
 
         for number, role in [ 11, Role.CaseHandler; 12, Role.CaseReader ] do
             let! granted =
                 grant
                     actor
-                    (id number)
+                    (id fixture number)
                     person
                     {
                         Role = role
@@ -450,15 +465,15 @@ let internal revocationAndCompound fixture =
 
             acceptedAuthority granted
 
-        do! seed actor 101 target "Permission-sensitive action"
+        do! seed fixture actor 101 target "Permission-sensitive action"
 
         let request =
             {
-                ReminderOperationRequest.OperationId = id 103
+                ReminderOperationRequest.OperationId = id fixture 103
                 Target = target
                 Act =
                     AuthoredReminderAct.CompleteAndPlanNext(
-                        id 101,
+                        id fixture 101,
                         1L,
                         {
                             Action = "Replacement after authorised completion"
@@ -479,7 +494,7 @@ let internal revocationAndCompound fixture =
                 [|
                     grant
                         actor
-                        (id 102)
+                        (id fixture 102)
                         person
                         {
                             Role = Role.CaseHandler
@@ -517,7 +532,10 @@ let internal revocationAndCompound fixture =
         let! after =
             Service.execute
                 handler
-                (OperationInput.Reminder { request with OperationId = id 104 })
+                (OperationInput.Reminder
+                    { request with
+                        OperationId = id fixture 104
+                    })
                 token
 
         Expect.equal
@@ -531,11 +549,12 @@ let internal revocationAndCompound fixture =
 let internal notOffered fixture =
     task {
         let! actor = caseWorker fixture
-        let! parent = opened actor 100 "REMINDER-STATE"
+        let! parent = opened fixture actor 100 "REMINDER-STATE"
         let target = CaseSelector.Id parent
-        do! seed actor 101 target "Inspect current state"
+        do! seed fixture actor 101 target "Inspect current state"
 
-        let change number act = reminder actor number target act
+        let change number act =
+            reminder fixture actor number target act
 
         let expect refusal (reply: ExecuteReply) =
             Expect.equal
@@ -543,20 +562,25 @@ let internal notOffered fixture =
                 (ExecuteResult.Rejected refusal)
                 "Current business state is reported only after authorization"
 
-        let! pending = change 102 (AuthoredReminderAct.Reopen(id 101, 1L, "2026-11-11"))
+        let! pending =
+            change 102 (AuthoredReminderAct.Reopen(id fixture 101, 1L, "2026-11-11"))
+
         expect (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Pending)) pending
-        let! completed = change 103 (AuthoredReminderAct.Complete(id 101, 1L))
+        let! completed = change 103 (AuthoredReminderAct.Complete(id fixture 101, 1L))
         accepted completed |> ignore
-        let! repeated = change 104 (AuthoredReminderAct.Complete(id 101, 2L))
+        let! repeated = change 104 (AuthoredReminderAct.Complete(id fixture 101, 2L))
         expect (Refusal.Reminder(ReminderRuleRefusal.NotOffered ReminderState.Completed)) repeated
-        let! reopened = change 105 (AuthoredReminderAct.Reopen(id 101, 2L, "2026-11-11"))
+
+        let! reopened =
+            change 105 (AuthoredReminderAct.Reopen(id fixture 101, 2L, "2026-11-11"))
+
         accepted reopened |> ignore
-        let! cancelled = change 106 (AuthoredReminderAct.Cancel(id 101, 3L))
+        let! cancelled = change 106 (AuthoredReminderAct.Cancel(id fixture 101, 3L))
         accepted cancelled |> ignore
 
         let update =
             AuthoredReminderAct.Update(
-                id 101,
+                id fixture 101,
                 4L,
                 {
                     Action = "Updated action"
@@ -571,16 +595,19 @@ let internal notOffered fixture =
             unavailable
 
         let! closed =
-            caseAct actor 108 "REMINDER-STATE" 1L (AuthoredCaseAct.Bare BareAct.Close)
+            caseAct fixture actor 108 "REMINDER-STATE" 1L (AuthoredCaseAct.Bare BareAct.Close)
 
         accepted closed |> ignore
-        let! parentClosed = change 109 (AuthoredReminderAct.Reopen(id 101, 4L, "2026-11-11"))
+
+        let! parentClosed =
+            change 109 (AuthoredReminderAct.Reopen(id fixture 101, 4L, "2026-11-11"))
+
         expect (Refusal.Case(CaseRefusal.NotOffered CaseHeadline.Closed)) parentClosed
 
         let revoke number role =
             grant
                 actor
-                (id number)
+                (id fixture number)
                 fixture.Owner
                 {
                     Role = role

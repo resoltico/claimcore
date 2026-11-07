@@ -151,7 +151,7 @@ let private initialize
                 "owner.principal"
                 (JsonSerializer.Serialize
                     {|
-                        operationId = Guid.NewGuid().ToString("D")
+                        operationId = Guid.CreateVersion7().ToString("D")
                         issuer = identity.Issuer
                         subject = IdentityRealm.ownerSubject
                         profile =

@@ -49,14 +49,14 @@ let internal target subject =
     PrincipalKey.human "https://issuer.example/" subject
     |> Result.defaultWith (string >> failtest)
 
-let internal register (actor: ServiceContext) n principal =
+let internal register fixture (actor: ServiceContext) n principal =
     task {
         let! outcome =
             (Service.execute
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id n)
+                        (id fixture n)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))

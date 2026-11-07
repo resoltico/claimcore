@@ -266,7 +266,7 @@ let private reaffirmations () =
         "All-KEEP never creates a revision"
 
 let private scopedAdvice () =
-    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
     let snapshot = Case.snapshot (paid ())
 
     let target = snapshot.CaseId
@@ -353,7 +353,7 @@ let private absentCorrectionValues () =
         "Decision presence does not permit introducing a payment through correction"
 
 let private noUsableCorrectionOffer () =
-    let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+    let installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
 
     let snapshot =
         opened ()
@@ -481,7 +481,7 @@ let denialDisclosure =
 
             let input: UnvalidatedCaseRequest =
                 {
-                    OperationId = Guid.Parse "70000000-0000-4000-8000-000000000893"
+                    OperationId = Guid.Parse "70000000-0000-7000-8000-000000000893"
                     CaseReference = "DENIAL-DISCLOSURE"
                     ExpectedRevision = 1L
                     Act = CaseAct.Void "Recorded in error"
@@ -492,7 +492,7 @@ let denialDisclosure =
             let readable =
                 ClaimCore.Tests.DecisionFixtures.actor
                     ClaimCore.Tests.DecisionFixtures.owner
-                    (CaseFixtures.actorId (Guid.Parse "70000000-0000-4000-8000-000000000894"))
+                    (CaseFixtures.actorId (Guid.Parse "70000000-0000-7000-8000-000000000894"))
                     [ Role.CaseReader ]
                     []
 

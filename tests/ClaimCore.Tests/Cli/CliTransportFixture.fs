@@ -96,9 +96,8 @@ let correlatedBody invocation bytes =
         |> Option.map (fun id -> replace "operationId" (JsonValue.String(id.ToString("D"))) root)
         |> Option.defaultValue root
 
-    let receipt =
-        List.contains tag [ Some "ACCEPTED"; Some "ALREADY_ACCEPTED" ]
-        || endpoint = "operation.observe" && tag = Some "SUCCEEDED"
+    let receipt = List.contains tag [ Some "ACCEPTED"; Some "ALREADY_ACCEPTED" ]
+
 
     let echoed =
         if receipt then
@@ -106,7 +105,10 @@ let correlatedBody invocation bytes =
                 Frames.operationId invocation
                 |> Option.map (fun id ->
                     update
-                        [ "outcome"; "data"; "operationId" ]
+                        (if endpoint = "operation.get" then
+                             [ "outcome"; "data"; "receipt"; "operationId" ]
+                         else
+                             [ "outcome"; "data"; "operationId" ])
                         (JsonValue.String(id.ToString("D")))
                         echoed)
                 |> Option.defaultValue echoed
@@ -259,7 +261,7 @@ let send handler frame =
     RemoteServiceCall.send
         client
         {
-            InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+            InstallationId = Some(System.Guid.Parse "90000000-0000-7000-8000-000000000001")
             Service = (Uri "https://localhost/")
             Authorization = (AuthenticationHeaderValue("Bearer", "synthetic-token"))
         }

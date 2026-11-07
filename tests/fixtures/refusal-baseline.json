@@ -361,8 +361,8 @@
       ]
     },
     {
-      "code": "OPERATION_RESOLVED",
-      "action": "ReadCurrent",
+      "code": "OPERATION_ID_OUT_OF_WINDOW",
+      "action": "CorrectInput",
       "target": "operationId"
     },
     {

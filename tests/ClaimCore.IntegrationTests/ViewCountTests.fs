@@ -16,9 +16,6 @@ let private principal subject create =
     create "https://counts.example/" subject
     |> Result.defaultWith (fun _ -> failtest "Valid principal")
 
-let private id number =
-    Guid.Parse(sprintf "e91ca25a-4e72-4f36-b28b-%012d" number)
-
 [<Tests>]
 let tests =
     testCase "view counts preserve scope corruption exclusions and non-disclosure" (fun () ->
@@ -29,6 +26,8 @@ let tests =
         let database =
             PostgresFixture.createFor adminPrincipal
             |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let id = StoreFixtures.id database.Fixture
 
         use _owned =
             { new IDisposable with

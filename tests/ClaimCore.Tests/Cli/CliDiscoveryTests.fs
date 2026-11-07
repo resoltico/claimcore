@@ -9,7 +9,7 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 open ClaimCore.Domain
 
-let private identity () = "11111111-2222-4333-8444-555555555555"
+let private identity () = "11111111-2222-7333-8444-555555555555"
 
 let private inspect arguments =
     match CliInvocations.admit arguments with

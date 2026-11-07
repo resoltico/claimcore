@@ -539,7 +539,7 @@ let tests =
 [<Tests>]
 let installationBinding =
     testCaseAsync
-        "stale installation binding cannot execute or commit a resolution fence"
+        "stale installation binding cannot execute or inspect operations in another installation"
         (async {
             use! fixture =
                 OidcCoreFixture.createFor oidc.Issuer.AbsoluteUri "synthetic-human"
@@ -555,9 +555,9 @@ let installationBinding =
             for endpoint, input in
                 [
                     "operation.execute", body "operation.execute"
-                    "operation.resolve",
+                    "operation.get",
                     Encoding.UTF8.GetBytes
-                        "{\"operationId\":\"10000000-0000-4000-8000-000000000099\"}"
+                        "{\"operationId\":\"10000000-0000-7000-8000-000000000099\"}"
                 ] do
                 let! status, response =
                     host.Call(
@@ -581,21 +581,18 @@ let installationBinding =
                     "NOT_STARTED"
                     "The stale request did not start"
 
-            Expect.equal fixture.EntryCount before "No acceptance or control was appended"
+            Expect.equal fixture.EntryCount before "No acceptance was appended"
 
             let! status, _ =
                 host.Call(
-                    "operation.resolve",
+                    "operation.get",
                     Encoding.UTF8.GetBytes
-                        "{\"operationId\":\"10000000-0000-4000-8000-000000000099\"}",
+                        "{\"operationId\":\"10000000-0000-7000-8000-000000000099\"}",
                     token
                 )
                 |> Async.AwaitTask
 
             Expect.equal status 200 "Matching installation positive control"
 
-            Expect.equal
-                fixture.EntryCount
-                (before + 1)
-                "The matching resolution commits its control"
+            Expect.equal fixture.EntryCount before "The matching lookup appends nothing"
         })

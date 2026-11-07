@@ -74,8 +74,6 @@ module CommandGrammar =
         | Some(ActKind.Work WorkActKind.UpdateWork) -> [ "work"; "update" ]
         | Some(ActKind.Reminder kind) -> [ "reminder"; kebab (ReminderActKind.token kind) ]
         | Some(ActKind.Authority kind) -> [ "authority"; kebab (AuthorityKind.token kind) ]
-        | None when entry.Endpoint = ActorEndpoint.Query QueryEndpoint.Resolve ->
-            [ "operation"; "settle" ]
         | None -> (ActorEndpoint.token entry.Endpoint).Split('.') |> List.ofArray
 
     /// Prefer the complete command when one command is also a prefix of another.

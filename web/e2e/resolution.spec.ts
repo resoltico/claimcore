@@ -13,7 +13,8 @@ import { recoveryRecords } from "./recovery-storage";
 import { isResponse } from "../src/protocol/client";
 
 const loseAcceptedClose = async (page: Page) => {
-  await openCase(page, `RESOLVE-${randomUUID()}`);
+  await page.route("**/api/operation.get", (route) => route.abort("connectionfailed"));
+  await openCase(page, `UNCONFIRMED-${randomUUID()}`);
   await startAct(page, "CLOSE", "en");
   await reviewDraft(page);
   await confirmReview(page);
@@ -36,11 +37,11 @@ for (const reload of [false, true]) {
     await openAuthenticated(page);
     const operationId = await loseAcceptedClose(page);
     const guidance = page.getByText(
-      /^Send again uses the exact request bytes still held by this page\./u,
+      /^Send again repeats the exact request still held by this page\./u,
     );
-    await expect(guidance).toContainText("the outcome may remain unresolved");
-    await expect(guidance).toContainText("only recovery identifiers are stored");
-    await expect(guidance).toContainText("permanent settlement when available");
+    await expect(guidance).toContainText("operation lifetime ends");
+    await expect(guidance).toContainText("only the identity");
+    await expect(guidance).toContainText("automatically under Unconfirmed changes");
     await expect(
       page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true }),
     ).toBeVisible();
@@ -74,15 +75,16 @@ for (const reload of [false, true]) {
         page.getByRole("button", { name: ui("en", "ui.retryExact"), exact: true }),
       ).toBeVisible();
     }
-    const resolved = page.waitForResponse((reply) => reply.url().endsWith("/api/operation.status"));
-    const check = reload
-      ? page
-          .getByRole("status")
-          .filter({ hasText: operationId })
-          .getByRole("button", { name: ui("en", "ui.checkUnresolvedOperation"), exact: true })
-      : page.getByRole("button", { name: ui("en", "ui.checkOutcome"), exact: true });
-    await check.click();
-    expect((await resolved).status()).toBe(200);
+    const resolved = page.waitForResponse(
+      (reply) => reply.url().endsWith("/api/operation.get") && reply.status() === 200,
+    );
+    await page.unroute("**/api/operation.get");
+    const value: unknown = await (await resolved).json();
+    expect(
+      isResponse("operation.get", value) &&
+        value.outcome.kind === "ACCEPTED" &&
+        value.outcome.data.receipt.operationId === operationId,
+    ).toBe(true);
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
     await expectAccessible(page);
   });

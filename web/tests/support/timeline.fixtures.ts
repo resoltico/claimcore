@@ -4,7 +4,7 @@ export const timelineEntry = (
   value: Partial<Extract<CaseTimelineEntry, { kind: "CASE_FACT" }>> = {},
 ): CaseTimelineEntry => ({
   kind: "CASE_FACT",
-  operationId: "10000000-0000-4000-8000-000000000001",
+  operationId: "10000000-0000-7000-8000-000000000001",
   position: { sequence: 1, entryHash: "a".repeat(64) },
   recordedAt: "2026-11-02T12:00:00.000000Z",
   recordedBy: actorRefInput({ displayName: { kind: "NAMED", value: "Timeline recorder" } }),

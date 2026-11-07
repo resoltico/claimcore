@@ -38,7 +38,7 @@ it("explicit uncertainty is retained while definite rejection and cancellation r
 
 import { service, requestEndpoint } from "../../../src/api/service";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
-const operation = "10000000-0000-4000-8000-000000000001";
+const operation = "10000000-0000-7000-8000-000000000001";
 const installation = "90000000-0000-4000-8000-000000000001";
 const receipt = {
   basis: {
@@ -92,27 +92,24 @@ it("real fetch admission checks execute envelope and receipt identities before a
     expect(isMutationUncertain(result)).toBe(true);
   }
 });
-it("resolve and observe reject a different operation envelope and matching final replies pass", async () => {
+it("lookup keeps its installation binding and rejects an operation echo mismatch", async () => {
   vi.stubGlobal("fetch", vi.fn());
-  for (const endpoint of ["resolve", "observe"] as const) {
-    const outcome =
-      endpoint === "resolve"
-        ? { kind: "NOT_ACCEPTED", data: null }
-        : { kind: "SUCCEEDED", data: receipt };
+  for (const outcome of [
+    { kind: "NOT_ACCEPTED", data: null },
+    { kind: "ACCEPTED", data: { receipt, byRequester: true } },
+  ]) {
     vi.mocked(fetch).mockResolvedValueOnce(reply({ operationId: operation, outcome }));
-    const matching =
-      endpoint === "resolve"
-        ? await service.resolve(operation, "csrf", installation)
-        : await service.observe(operation, "csrf");
+    const matching = await service.operationGet(operation, "csrf", installation);
     expect(matching.kind).toBe("outcome");
+    expect(vi.mocked(fetch).mock.calls.at(-1)?.[1]?.headers).toMatchObject({
+      "ClaimCore-Installation": installation,
+    });
     vi.mocked(fetch).mockResolvedValueOnce(
       reply({ operationId: "90000000-0000-4000-8000-000000000099", outcome }),
     );
-    const refused =
-      endpoint === "resolve"
-        ? await service.resolve(operation, "csrf", installation)
-        : await service.observe(operation, "csrf");
-    expect(refused.kind).toBe("deliveryFailure");
+    expect((await service.operationGet(operation, "csrf", installation)).kind).toBe(
+      "deliveryFailure",
+    );
   }
 });
 it.each([

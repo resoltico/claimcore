@@ -71,7 +71,6 @@ type CaseStageFacts =
 
 [<RequireQualifiedAccess>]
 type EntryTarget =
-    | NonAcceptance of targetOperationId: OperationId
     | Case of caseId: CaseId * revision: Revision * act: CaseActKind * businessDate: DateOnly
     | Authority of targetActorId: ActorId * act: AuthorityKind
     | Work of WorkEntryMetadata
@@ -147,7 +146,6 @@ module StoredOperation =
 
             let accepted =
                 match root.Subject with
-                | EntryTarget.NonAcceptance _ -> false
                 | _ -> true
 
             if
@@ -341,26 +339,6 @@ type GrantPageQuery =
         Limit: int
     }
 
-type FenceKey =
-    {
-        ActorId: ActorId
-        OperationId: OperationId
-    }
-
-/// Point reads retain enough metadata to validate the control node without scanning history.
-type RetainedControl =
-    {
-        Entry: StoredEntry
-        PreviousHash: EntryHash
-    }
-
-/// A derived fence is evidence only when it agrees with its retained committed control.
-type NonAcceptanceEvidence =
-    {
-        Control: RetainedControl option
-        ProjectedAt: DateTimeOffset option
-    }
-
 /// A page carries only rows and a continuation position from the same transaction snapshot.
 type Page<'Item, 'Position> =
     {
@@ -455,7 +433,6 @@ type IReadTx =
     abstract TimelinePage: TimelinePageQuery -> Task<Page<StoredEntry, Sequence>>
     abstract PreviousEntries: StoredEntry list -> Task<Map<Sequence, StoredEntry>>
     abstract FindOperation: OperationId -> Task<StoredOperation option>
-    abstract NonAcceptance: FenceKey -> Task<NonAcceptanceEvidence>
 
     abstract CasePage: CasePageQuery -> Task<Page<CasePageItem, CaseListPosition>>
     abstract CaseSummary: CaseSelection -> Task<CaseWorklistSummary>
@@ -486,7 +463,6 @@ type IWriteTx =
     abstract DismissAccessRequest: PrincipalKey -> Task<unit>
     abstract ProjectAuthority: AuthorityProjection -> Task<unit>
     abstract ProjectWorkChange: WorkChangeProjection -> Task<unit>
-    abstract Fence: FenceKey -> Task<unit>
 
 [<NoEquality; NoComparison>]
 type ReadOperation<'result> =

@@ -68,8 +68,8 @@ are owned by
 Maintenance uses database-owner credentials, independently of application OWNER grants. Inspect
 `claimcore-database status`, then use `maintenance enter`. Entry takes the ledger head, so earlier accepted
 register transactions commit or roll back before entry commits. It pauses new case, work, reminder and
-authority writes, initial owner provisioning and new final-resolution controls. Existing acceptance and
-final-control observations remain readable. Authorized reads, passive status and authentication/session
+authority writes and initial owner provisioning. Replay and operation lookup remain readable. A locked
+final-absence confirmation appends nothing and is allowed during maintenance. Authorized reads and authentication/session
 operations continue under their existing rules. Read advice is a snapshot; execution checks actual mode
 under the head.
 
@@ -88,7 +88,7 @@ It neither auto-enters nor auto-resumes maintenance, resets sessions, rewrites b
 the operational generation. Inspect the result and verify before explicitly resuming.
 
 Expired-session pruning is independent of register maintenance. It skips locked rows, rechecks deadlines
-under row locks and leaves live tickets, history, fences and key material intact. `expiredAtObservation`
+under row locks and leaves live tickets, history and key material intact. `expiredAtObservation`
 is the statement snapshot's count; `deleted` is the bounded action result. Concurrent renewal/logout or
 other pruning can make them differ. These are observations, not a pinned session inventory.
 
@@ -125,7 +125,11 @@ Logout deletes the session row; renewal updates an existing live row and cannot 
 already admitted before logout may finish.
 
 Database UTC idle and absolute deadlines survive restarts. Each row keeps its original durations; new
-settings affect new sessions. Backward clock observations refuse authentication. Arbitrary clock changes,
+settings affect new sessions. Backward clock observations refuse authentication.
+Operation finality also requires a nondecreasing database clock: the ledger-head lock serializes
+execution and final absence checks, while PostgreSQL `clock_timestamp()` supplies wall time. Synchronize
+time by slewing. Before a backward clock adjustment, pause writers and keep them paused until database
+time has passed its previous value. The bounded-operation contract does not cover backward clock steps. Arbitrary clock changes,
 load balancers and key-distribution arrangements require deployment-specific qualification. Session lookup
 waits for storage asynchronously and does not take the ledger-head or session-creation-cap lock.
 
@@ -170,12 +174,12 @@ checkpoint before reopening actor access. A data-only restore into an initialize
 Use a full database backup that includes the `pg_trgm` extension declaration and the dependent
 indexes; a dump limited to the `claimcore` schema does not include that extension dependency.
 An older restore behind the checkpoint is detectable; inspecting one primary cannot establish that no
-newer acceptance or recovery control existed elsewhere.
+newer acceptance existed elsewhere.
 
 Inspect restored status while traffic and owner mutations remain isolated. Enter register-write maintenance
 explicitly before any reconstruction. If authoritative verification succeeds but projections diverge, run
 `claimcore-database rebuild --expect SEQUENCE:HASH` using the independently retained checkpoint. Rebuild refuses damaged history or a bad
-head/checkpoint. It replaces cases, actors, grants and fences atomically using snapshot-compatible row
+head/checkpoint. It replaces cases, actors and grants atomically using snapshot-compatible row
 replacement; it leaves the ledger, head and live sessions unchanged. Preserve the returned prior divergence
 for investigation. Rebuild can reconstruct erased identities, but cannot recreate erased business content.
 
@@ -262,14 +266,10 @@ The append-only guard permits parent-scoped fact/work/reminder payload clearing.
 an accepted ERASE; verification detects the missing erasure. A hostile owner able to rewrite the schema and
 all evidence remains outside that protection.
 
-Final nonacceptance is an actor/operation-scoped retained ledger control. It advances the ordered head and
-checkpoint, but is excluded from case/authority histories, accepted receipts and replay lookup. A repeated
-resolution reuses the existing fence. Controls do not reserve the UUID against another actor's acceptance.
-Verification reconstructs the complete fence projection from controls, including their recorded instants.
-Use actor-scoped `operation.status` for passive checks; it takes no write-head lock and never creates a
-control. Point reads and write guards validate a retained control node and its projection agreement;
-integrity faults require investigation and authoritative verification, not blind repeat settlement.
-The CLI names the permanent write `operation settle`; its human confirmation is separate from status reads.
+Operation IDs are UUIDv7 with a ten-minute first-execution lifetime. Replay is checked before expiry.
+`operation.get` reports accepted metadata under current disclosure rights, a pending deadline, or final
+absence for the current account. An expired absence is rechecked under the execution lock without an
+append, including during maintenance. See [delivery recovery](integrating.md#delivery-recovery).
 
 ## Trust model
 
@@ -334,9 +334,9 @@ All clients remain subject to the server limits, including HTTP 429 admission re
 responses include `Retry-After: 1`; this is a retry hint, not a larger authentication or admission budget.
 
 `CLAIMCORE_WEB_CORE_PERMITS` controls writes only (1–4, default 4).
-`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and passive status do not queue.
-The bounded queue leaves ingress slots for authentication and read/recovery work. Final settlement still
-uses the write budget and ledger head; it cannot jump erasure or maintenance.
+`CLAIMCORE_WEB_CORE_QUEUE` bounds queued writes (1–8, default 8). Reads and operation lookup do not queue.
+The bounded write queue leaves ingress slots for authentication and reads. Operation lookup shares read
+admission; final absence also confirms under the ledger head, without changing stored business state.
 
 The private runtime connection string must enable pooling and supply enough connections for all workload
 budgets and both readiness probes: 16 at the defaults. `POOL_CAPACITY_INSUFFICIENT` identifies this setup
@@ -379,7 +379,7 @@ identity through Recovery; a reload cannot reconstruct a discarded in-memory req
 
 Accepted writes serialize on one ledger head. More writers do not remove that limit. Verification streams
 entries while retaining folded case/actor/grant state, accepted-operation identities, immutable reference
-indexes and recovery controls. The authoritative fold checks accepted-operation UUID uniqueness.
+indexes. The authoritative fold checks accepted-operation UUID uniqueness.
 Streaming does not promise constant total-system memory.
 
 Verification checks chain hashes, commitments, revisions, retained/erased payload shape, authority history,

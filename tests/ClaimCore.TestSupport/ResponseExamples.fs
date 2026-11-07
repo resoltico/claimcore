@@ -13,7 +13,7 @@ let private suitable =
     | ReplyKind.Rejected
     | ReplyKind.Failed
     | ReplyKind.OutcomeUnknown
-    | ReplyKind.Unresolved -> false
+    | ReplyKind.Pending -> false
 
 /// A default is a declared, admitted, definite example; a missing positive fixture is a test defect.
 let defaultReply (endpoint: Endpoint<'Input, 'Output>) =

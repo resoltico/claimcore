@@ -2,6 +2,13 @@
 
 ## [Unreleased]
 
+- Recreate databases for ledger entry format 6; operation fences and retained nonacceptance controls are removed without migration.
+- Operation IDs must be UUIDv7; first execution expires after 10 minutes with 2 minutes of future clock allowance. Expiry alone does not prevent replay.
+- operation.get replaces operation.observe, operation.status and operation.resolve; supply the installation binding and handle ACCEPTED, PENDING with finalAt, and final NOT_ACCEPTED.
+- Custom stores remove nonacceptance and fence ports; final absence uses a head-locked write callback without an append, including during maintenance.
+- CLI recovery keeps list and check; call/session fill omitted execute IDs and print them to stderr. Dry runs can omit IDs; exact retries retain the dispatched ID.
+- The web checks Unconfirmed changes automatically and shows the final-answer deadline; permanent-settlement actions and confirmations are removed.
+
 - ClaimCore.Protocol is split into ClaimCore.Wire and ClaimCore.Presentation; update project references and generator commands.
 - Wire conformance uses curated decoding examples and rejection controls; generated request/reply snapshots and presentation golden comparisons are removed.
 - CLI conformance uses authored command inputs and typed frame checks instead of a generated frame snapshot.

@@ -33,7 +33,9 @@ let tests =
                     let! reply =
                         Service.execute
                             owner
-                            (Inputs.caseOperation (request number "TIMELINE-1" revision act))
+                            (Inputs.caseOperation (
+                                request fixture number "TIMELINE-1" revision act
+                            ))
                             token
 
                     accepted reply |> ignore
@@ -43,7 +45,7 @@ let tests =
                         owner
                         (OperationInput.Work
                             {
-                                OperationId = id 99103
+                                OperationId = id fixture 99103
                                 Target = CaseSelector.Reference "TIMELINE-1"
                                 ExpectedRevision = 0L
                                 Act =
@@ -67,7 +69,7 @@ let tests =
                             }
                         99105,
                         AuthoredReminderAct.CompleteAndPlanNext(
-                            id 99104,
+                            id fixture 99104,
                             1L,
                             {
                                 Action = "Next action"
@@ -76,7 +78,7 @@ let tests =
                         )
                         99106,
                         AuthoredReminderAct.Update(
-                            id 99105,
+                            id fixture 99105,
                             1L,
                             {
                                 Action = "Updated next action"
@@ -89,7 +91,7 @@ let tests =
                             owner
                             (OperationInput.Reminder
                                 {
-                                    OperationId = id number
+                                    OperationId = id fixture number
                                     Target = CaseSelector.Reference "TIMELINE-1"
                                     Act = act
                                 })
@@ -147,7 +149,7 @@ let tests =
                                             (firstPrevious
                                              |> Map.find first.Items.Head.Sequence
                                              |> fun entry -> OperationId.value entry.OperationId)
-                                            (id 99105)
+                                            (id fixture 99105)
                                             "Paging does not truncate next-reminder creation context"
 
                                         let! rest =
@@ -198,7 +200,8 @@ let tests =
                 | Ok(all, previous, facts, work, first, rest, differences) ->
                     Expect.equal
                         (all.Items |> List.map (fun entry -> OperationId.value entry.OperationId))
-                        ([ 99106; 99105; 99104; 99103; 99102; 99101; 99100 ] |> List.map id)
+                        ([ 99106; 99105; 99104; 99103; 99102; 99101; 99100 ]
+                         |> List.map (id fixture))
                         "Ordering follows shared ledger sequence across independent revisions"
 
                     Expect.equal facts.Items.Length 3 "Facts excludes work and reminders"
@@ -215,7 +218,7 @@ let tests =
                         "Only revisions with actual predecessors are returned"
 
                     let changes number =
-                        Map.find (CaseFixtures.operationId (id number)) differences
+                        Map.find (CaseFixtures.operationId (id fixture number)) differences
 
                     Expect.equal
                         (changes 99102)
@@ -243,7 +246,7 @@ let tests =
                     | [ TimelineChange.Reminder change ] ->
                         Expect.equal
                             (ReminderId.value change.ReminderId)
-                            (id 99105)
+                            (id fixture 99105)
                             "The change belongs to the new reminder"
 
                         Expect.equal
@@ -274,14 +277,14 @@ let tests =
 
                     Expect.equal
                         (OperationId.value origin.OperationId)
-                        (id 99105)
+                        (id fixture 99105)
                         "A reminder's predecessor can be its complete-and-plan-next creation effect"
 
                     match origin.Subject with
                     | EntryTarget.Reminder subject ->
                         Expect.equal
                             (subject.NextReminderId |> Option.map ReminderId.value)
-                            (Some(id 99105))
+                            (Some(id fixture 99105))
                             "The predecessor contains the next identity, independently of its primary subject"
                     | _ -> failtest "Expected a reminder predecessor"
             }))

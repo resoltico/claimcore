@@ -11,6 +11,7 @@ open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
+
 let private receipt authority current entry =
     LedgerEntries.validate installation entry
     |> Result.bind (
@@ -188,7 +189,7 @@ let private roles role readable full () =
 
         Expect.equal
             (Queries.selectHistory
-                (System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                (System.Guid.Parse "90000000-0000-7000-8000-000000000001")
                 owner
                 query
                 authority

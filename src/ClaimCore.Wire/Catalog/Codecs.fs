@@ -242,16 +242,20 @@ module CatalogCodecs =
         |> named "Presentation.CharacterWarningDefinition"
 
     let private limits =
-        (record (fun v0 v1 v2 ->
+        (record (fun v0 v1 v2 window futureAllowance ->
             {
                 PresentationLimits.DefaultPageSize = v0
                 MaximumPageSize = v1
                 RequestByteLimit = v2
+                OperationWindowMilliseconds = window
+                OperationFutureAllowanceMilliseconds = futureAllowance
             })
         : Fields<PresentationLimits, _>)
         |> field "defaultPageSize" _.DefaultPageSize (count)
         |> field "maximumPageSize" _.MaximumPageSize (count)
         |> field "requestByteLimit" _.RequestByteLimit (count)
+        |> field "operationWindowMilliseconds" _.OperationWindowMilliseconds count
+        |> field "operationFutureAllowanceMilliseconds" _.OperationFutureAllowanceMilliseconds count
         |> build
         |> named "Presentation.PresentationLimits"
 

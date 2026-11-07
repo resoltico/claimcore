@@ -136,7 +136,7 @@ let private authority () =
 
         Expect.equal
             request.OperationId
-            (Guid.Parse "20000000-0000-4000-8000-000000000002")
+            (Guid.Parse "019fc6e8-1b80-7000-8000-000000000002")
             "Independent operation"
 
         Expect.equal
@@ -152,7 +152,7 @@ let private authority () =
                     Scope =
                         RecordedGrantScope.Case(
                             (CaseFixtures.caseId (
-                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                Guid.Parse "019fc6e8-1813-7000-8000-000000000001"
                             )),
                             CaseFixtures.reference "Demo-0001"
                         )
@@ -180,7 +180,7 @@ let private formats () =
                 RecordVersions.Snapshot
                 RecordVersions.LedgerEntry
             ]
-            [ 4; 3; 4; 5 ]
+            [ 4; 3; 4; 6 ]
             "Each retained grammar has its adopted format number"
 
         for format in [ "3"; "2"; "1"; "0"; "7"; "99"; "5"; "1.0"; "1e0"; "\"1\"" ] do

@@ -41,6 +41,7 @@ let tests =
                                 actor
                                 (Inputs.caseOperation (
                                     request
+                                        database.Fixture
                                         88100
                                         "SUMMARY-REBUILD"
                                         0L
@@ -56,7 +57,7 @@ let tests =
                                 actor
                                 (OperationInput.Work
                                     {
-                                        OperationId = id 88101
+                                        OperationId = id database.Fixture 88101
                                         Target = target
                                         ExpectedRevision = 0L
                                         Act =

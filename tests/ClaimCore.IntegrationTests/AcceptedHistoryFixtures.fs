@@ -58,6 +58,7 @@ let internal seed (database: PostgresFixture.Database) claimant =
 
     let request =
         request
+            database.Fixture
             10
             "HISTORICAL-1"
             0L
@@ -196,6 +197,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
+                        database.Fixture
                         11
                         "HISTORICAL-1"
                         1L
@@ -210,6 +212,7 @@ let private grandfathering (database: PostgresFixture.Database) =
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
                     request
+                        database.Fixture
                         12
                         "HISTORICAL-1"
                         2L
@@ -237,7 +240,7 @@ let private grandfathering (database: PostgresFixture.Database) =
         return ()
     }
 
-let private appendTransitions (actor: ServiceContext) =
+let private appendTransitions fixture (actor: ServiceContext) =
     task {
         for revision in 1L .. 59L do
             let act =
@@ -250,7 +253,7 @@ let private appendTransitions (actor: ServiceContext) =
                 (Service.execute
                     actor
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request (100 + int revision) "HISTORICAL-1" revision act
+                        request fixture (100 + int revision) "HISTORICAL-1" revision act
                     ))
                     (token))
 
@@ -330,15 +333,15 @@ let private assertRemainingHistoryAccess
         Expect.equal summary.Entries.Length 50 "Retained payment-recorder rights permit SUMMARY"
 
         let! observed =
-            (ClaimCore.TestSupport.StoreFixtures.observe
+            (Service.operationGet
                 actor
                 ({
                     OperationId = (OperationId.value (original.OperationId))
                 })
                 (token))
 
-        match observed with
-        | Outcome.Succeeded actual ->
+        match observed.Outcome with
+        | Outcome.Succeeded(OperationLookupResult.Accepted(actual, true)) ->
             expectReceipt
                 actual
                 (withheldReceipt original)
@@ -357,7 +360,7 @@ let private revokedFullHistory
 
         Expect.equal
             original.OperationId
-            (CaseFixtures.operationId (ClaimCore.TestSupport.StoreFixtures.id 10))
+            (CaseFixtures.operationId (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 10))
             "Original OPEN acceptance"
 
         Expect.isSome first.NextCursor "Retain the genuine first FULL continuation"
@@ -365,7 +368,7 @@ let private revokedFullHistory
         let! removed =
             grant
                 actor
-                (ClaimCore.TestSupport.StoreFixtures.id 200)
+                (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 200)
                 database.Fixture.Owner
                 {
                     Role = Role.CaseHandler
@@ -398,7 +401,7 @@ let private retainedPages (database: PostgresFixture.Database) =
         let name = String.replicate 1024 "<"
         do! seed database name
 
-        do! appendTransitions actor
+        do! appendTransitions database.Fixture actor
 
         let query: HistoryRequest =
             {

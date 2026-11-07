@@ -94,6 +94,7 @@ let private admittedDatabase
     let fixture =
         {
             Store = LedgerStore(runtime, installationId, Transactions.timeouts) :> IStore
+            OperationIds = OperationIds.Scope()
             InstallationId = installationId
             Owner = owner
             Calendar = ClaimCore.Web.Composition.BusinessCalendar.resolve timeZone

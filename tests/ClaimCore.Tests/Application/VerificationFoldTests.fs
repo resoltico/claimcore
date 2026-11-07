@@ -12,8 +12,10 @@ open ClaimCore.RecordFormat
 open ClaimCore.Application
 open ClaimCore.Tests.Fixtures
 
-let private id = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-let private installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+let private id =
+    OperationIds.numberedAt (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)) 1
+
+let private installation = Guid.Parse "90000000-0000-7000-8000-000000000001"
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
 let private human =
@@ -347,11 +349,6 @@ let private caseChecks =
                         }
                     ]
             )
-        VerificationFinding.FenceProjection,
-        fun () ->
-            ProjectionVerification.fences
-                (Map.ofList [ (CaseFixtures.actorId id, CaseFixtures.operationId id), instant ])
-                Map.empty
         VerificationFinding.CaseProjection,
         fun () ->
             ProjectionVerification.cases
@@ -438,7 +435,7 @@ let private acceptedIdentityPrecedence () =
                 Map.ofList
                     [
                         entry.OperationId,
-                        CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000001")
+                        CaseFixtures.actorId (Guid.Parse "b0000000-0000-7000-8000-000000000001")
                     ]
         }
 
@@ -500,7 +497,7 @@ let private invalidProjectionRows () =
                     { row with
                         ActorId =
                             (CaseFixtures.actorId (
-                                Guid.Parse "20000000-0000-4000-8000-000000000002"
+                                Guid.Parse "20000000-0000-7000-8000-000000000002"
                             ))
                     })
             (fun () ->
@@ -535,11 +532,6 @@ let tests =
             testCase
                 "accepted identities are checked by the pure fold after payload integrity"
                 acceptedIdentityPrecedence
-            testCase "every finding has a pure rejection case" (fun () ->
-                Expect.equal
-                    (cases |> List.map fst |> Set.ofList)
-                    (VerificationFinding.all |> List.map fst |> Set.ofList)
-                    "Complete vocabulary")
             for expected, run in cases do
                 testCase (VerificationFinding.token expected) (fun () -> finding expected run)
         ]

@@ -63,7 +63,9 @@ let internal lifecycle fixture =
         let! a =
             Service.execute
                 owner
-                (Inputs.caseOperation (request 731 first 0L (AuthoredCaseAct.Open registration)))
+                (Inputs.caseOperation (
+                    request fixture 731 first 0L (AuthoredCaseAct.Open registration)
+                ))
                 token
 
         let a = accepted a |> caseReceipt
@@ -72,7 +74,7 @@ let internal lifecycle fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 732 uuidReference 0L (AuthoredCaseAct.Open registration)
+                    request fixture 732 uuidReference 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -87,7 +89,7 @@ let internal lifecycle fixture =
             let! removed =
                 grant
                     owner
-                    (id operation)
+                    (id fixture operation)
                     fixture.Owner
                     {
                         Role = role
@@ -139,7 +141,7 @@ let internal lifecycle fixture =
 
         let operation =
             Inputs.authorityRequest
-                (id 740)
+                (id fixture 740)
                 target
                 (AuthorityAct.Admit { Profile = profile; Grants = grants })
             |> OperationInput.Authority
@@ -197,7 +199,7 @@ let internal lifecycle fixture =
             receipt.Position
             "Receipt proof is the final effect"
 
-        let! stored = lookup fixture (id 740)
+        let! stored = lookup fixture (id fixture 740)
 
         let stored =
             required stored
@@ -273,7 +275,7 @@ let internal lifecycle fixture =
         let! replay =
             execute
                 owner
-                (id 740)
+                (id fixture 740)
                 target
                 (AuthorityAct.Admit
                     {
@@ -286,7 +288,7 @@ let internal lifecycle fixture =
             receipt
             "Reference and ID aliases replay the same normalized operation"
 
-        let! erased = execute owner (id 741) target AuthorityAct.EraseProfile
+        let! erased = execute owner (id fixture 741) target AuthorityAct.EraseProfile
         acceptedAuthority erased
         let! hidden = Service.execute owner operation token
 
@@ -295,10 +297,10 @@ let internal lifecycle fixture =
             (ExecuteResult.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
             "Erased profile never leaves an exact replay fingerprint"
 
-        let! resolved = Service.status owner { OperationId = id 740 } token
+        let! resolved = Service.operationGet owner { OperationId = id fixture 740 } token
 
         match resolved.Outcome with
-        | Outcome.Succeeded(OperationStatus.Accepted _) -> ()
+        | Outcome.Succeeded(OperationLookupResult.Accepted(_, true)) -> ()
         | other -> failtestf "Erasure cannot make accepted admission not accepted: %A" other
     }
 
@@ -310,7 +312,7 @@ let internal boundary fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 750 "ADMIT-DUPLICATE" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 750 "ADMIT-DUPLICATE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -332,7 +334,7 @@ let internal boundary fixture =
         let! refused =
             execute
                 owner
-                (id 751)
+                (id fixture 751)
                 target
                 (AuthorityAct.Admit
                     {
@@ -365,7 +367,7 @@ let internal boundary fixture =
             let! refused =
                 execute
                     owner
-                    (id operation)
+                    (id fixture operation)
                     target
                     (AuthorityAct.Admit { Profile = profile; Grants = grants })
 
@@ -380,7 +382,7 @@ let internal boundary fixture =
         let! unavailable =
             execute
                 owner
-                (id 754)
+                (id fixture 754)
                 target
                 (AuthorityAct.Admit
                     {
@@ -402,7 +404,7 @@ let internal boundary fixture =
         let! wrongScope =
             execute
                 owner
-                (id 755)
+                (id fixture 755)
                 target
                 (AuthorityAct.Admit
                     {
@@ -427,7 +429,7 @@ let internal boundary fixture =
         let! wrongKind =
             execute
                 owner
-                (id 756)
+                (id fixture 756)
                 service
                 (AuthorityAct.Admit
                     {
@@ -459,7 +461,12 @@ let internal maximum fixture =
                 Service.execute
                     owner
                     (Inputs.caseOperation (
-                        request (760 + index) reference 0L (AuthoredCaseAct.Open registration)
+                        request
+                            fixture
+                            (760 + index)
+                            reference
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     ))
                     token
 
@@ -477,7 +484,7 @@ let internal maximum fixture =
         let! reply =
             execute
                 owner
-                (id 810)
+                (id fixture 810)
                 target
                 (AuthorityAct.Admit
                     {
@@ -493,7 +500,7 @@ let internal maximum fixture =
             50
             "48 distinct grants commit with identity and profile within the physical budget"
 
-        let! stored = lookup fixture (id 810)
+        let! stored = lookup fixture (id fixture 810)
         let stored = required stored |> Option.get
         Expect.equal stored.Entries.Length 50 "Every bounded effect is retained"
 
@@ -531,7 +538,7 @@ let internal atomicWrites fixture =
             ]
 
         for after in [ 1..5 ] do
-            let operation = id (850 + after)
+            let operation = id fixture (850 + after)
 
             let command =
                 Authority.parse (
@@ -565,7 +572,7 @@ let internal atomicWrites fixture =
                                             {
                                                 Head = tx.Head
                                                 NewPayloadNonce = tx.NewPayloadNonce
-                                                Fenced = false
+
                                             }
                                             view
 

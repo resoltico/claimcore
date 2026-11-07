@@ -7,7 +7,6 @@ module QueryConsequence =
     // fsharplint:disable-next-line CyclomaticComplexity
     let ofQuery =
         function
-        | QueryEndpoint.Resolve -> Consequence.Irreversible
         | QueryEndpoint.CaseGet
         | QueryEndpoint.CaseAssignees
         | QueryEndpoint.CaseList
@@ -20,8 +19,7 @@ module QueryConsequence =
         | QueryEndpoint.ReminderList
         | QueryEndpoint.ReminderGet
         | QueryEndpoint.WorkOverview
-        | QueryEndpoint.Observe
-        | QueryEndpoint.Status
+        | QueryEndpoint.OperationGet
         | QueryEndpoint.AuthorityList
         | QueryEndpoint.AuthorityGrants
         | QueryEndpoint.AuthorityHistory

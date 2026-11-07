@@ -187,12 +187,6 @@ module internal TextDiagnosticReply =
                         + ": "
                         + message
                     ]
-                | Refusal.OperationResolved ->
-                    [
-                        label language (diagnosticTargetIdentity InputTarget.OperationId)
-                        + ": "
-                        + message
-                    ]
                 | _ -> [ message ]
 
         messages

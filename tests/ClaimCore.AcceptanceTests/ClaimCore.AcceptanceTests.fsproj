@@ -37,7 +37,7 @@
     <Compile Include="PublishedAssets.fs" />
     <Compile Include="RejectedDrafts.fs" />
     <Compile Include="CliDelivery.fs" />
-    <Compile Include="CliResolution.fs" />
+    <Compile Include="CliOperationLookupTests.fs" />
     <Compile Include="CliRecovery.fs" />
     <Compile Include="CliNarrativeOutput.fs" />
     <Compile Include="CliNativeOutput.fs" />

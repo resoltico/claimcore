@@ -9,7 +9,6 @@ open ClaimCore.RecordFormat
 
 [<RequireQualifiedAccess; NoComparison>]
 type internal EntryContent =
-    | NonAcceptance
     | Case of request: CaseCommand * snapshot: CaseSnapshot option
     | Authority of AuthorityEffectRecord
     | Work of WorkRequestRecord * CaseWorkSnapshot
@@ -102,7 +101,6 @@ module LedgerEntries =
         function
         | EntryTarget.Work subject -> RecordedTarget.Work subject
         | EntryTarget.Reminder subject -> RecordedTarget.Reminder subject
-        | EntryTarget.NonAcceptance operation -> RecordedTarget.NonAcceptance operation
         | EntryTarget.Authority(target, act) ->
             RecordedTarget.Authority { TargetActorId = target; Act = act }
         | EntryTarget.Case(id, revision, act, date) ->
@@ -256,7 +254,6 @@ module LedgerEntries =
             Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
         | EntryTarget.Reminder subject ->
             Authority.can principal actor Capability.ReadHistory (Scope.Case subject.CaseId)
-        | EntryTarget.NonAcceptance _ -> false
         | EntryTarget.Authority _ ->
             Authority.can principal actor Capability.ReadAuthority Scope.Installation
 
@@ -267,8 +264,6 @@ module LedgerEntries =
                 revision >= Revision.first
                 && ((revision = Revision.first) = (act = CaseActKind.Open))
                 && (entry.CreationReference.IsSome = (act = CaseActKind.Open))
-            | EntryTarget.NonAcceptance operation ->
-                operation = entry.OperationId && entry.CreationReference.IsNone
             | EntryTarget.Authority _ -> entry.CreationReference.IsNone
             | EntryTarget.Work subject ->
                 subject.Revision >= Revision.first && entry.CreationReference.IsNone
@@ -401,14 +396,6 @@ module LedgerEntries =
                     payload entry
                     |> Result.bind (fun data ->
                         match entry.Subject with
-                        | EntryTarget.NonAcceptance _ ->
-                            if
-                                Array.isEmpty data.Snapshot
-                                && (ControlRecord.decode data.Request |> Result.isOk)
-                            then
-                                Ok EntryContent.NonAcceptance
-                            else
-                                Error CoreFault.StoreIntegrityError
                         | EntryTarget.Case _ -> caseContent installationId entry data
                         | EntryTarget.Work subject -> workContent entry subject data
                         | EntryTarget.Reminder subject -> reminderContent entry subject data
@@ -501,8 +488,7 @@ module LedgerEntries =
         | EntryContent.Authority request ->
             Some(AuthorityRequests.canonical request |> AuthorityRecord.encode)
         | EntryContent.ErasedCase
-        | EntryContent.ErasedProfile
-        | EntryContent.NonAcceptance -> None
+        | EntryContent.ErasedProfile -> None
 
     /// Canonical request bytes exist only while every required effect payload remains available.
     let internal authorityIdentityBytes operation (requests: byte array list) =
@@ -573,8 +559,7 @@ module LedgerEntries =
         match validated.Entry.Subject with
         | EntryTarget.Authority _
         | EntryTarget.Work _
-        | EntryTarget.Reminder _
-        | EntryTarget.NonAcceptance _ -> Error CoreFault.StoreIntegrityError
+        | EntryTarget.Reminder _ -> Error CoreFault.StoreIntegrityError
         | EntryTarget.Case(id, revision, act, _) ->
             match current with
             | None -> Error CoreFault.StoreIntegrityError

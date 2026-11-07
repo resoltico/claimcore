@@ -26,11 +26,11 @@ module Refusals =
 
     let action =
         function
-        | Refusal.InvalidInput _ -> RecommendedAction.CorrectInput
+        | Refusal.InvalidInput _
+        | Refusal.OperationIdOutOfWindow _ -> RecommendedAction.CorrectInput
         | Refusal.Access(AccessRefusal.ResourceUnavailable | AccessRefusal.NotAuthorized _) ->
             RecommendedAction.AskForAccess
         | Refusal.Case value -> caseAction value
-        | Refusal.OperationResolved
         | Refusal.RegisterMaintenance
         | Refusal.InvalidCursor -> RecommendedAction.ReadCurrent
         | Refusal.IdempotencyConflict -> RecommendedAction.StopAndInvestigate

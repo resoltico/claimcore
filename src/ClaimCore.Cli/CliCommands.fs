@@ -110,9 +110,6 @@ module CliCommands =
                 "recovery check ATTEMPT_ID [--format text|json] [--language "
                 + languageChoices
                 + "]"
-                "recovery settle ATTEMPT_ID [--format text|json] [--language "
-                + languageChoices
-                + "]"
             ]
         | CliCommand.Configure ->
             [

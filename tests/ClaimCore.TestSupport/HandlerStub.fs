@@ -175,14 +175,6 @@ type ScriptedStore(observed: DateTimeOffset, actor: Actor option) =
                                 .Authority
                     )
                 | "FindOperation" -> box (Task.FromResult<StoredOperation option> None)
-                | "NonAcceptance" ->
-                    box (
-                        Task.FromResult
-                            {
-                                NonAcceptanceEvidence.Control = None
-                                ProjectedAt = None
-                            }
-                    )
                 | _ -> invalidOp ("Unexpected store read: " + name)
 
     member _.ContextQueries = contexts.ToArray() |> Array.toList

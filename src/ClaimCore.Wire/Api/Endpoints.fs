@@ -351,7 +351,7 @@ module Api =
             Id = id
             Method = HttpMethod.Post
             Effect = EndpointEffect.Read
-            Input = RequestCodecs.observeRequest
+            Input = RequestCodecs.operationGetRequest
             Output = output
             Classify = classify
             Correlation = fun input -> Some input.OperationId
@@ -363,35 +363,11 @@ module Api =
                     }
         }
 
-    let operationStatus =
-        { lookup
-              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status))
-              ResolutionCodecs.status
-              (fun reply -> OutcomePresentation.classifyStatus reply.Outcome) with
-            Input = RequestCodecs.statusRequest
-            Classify = fun reply -> OutcomePresentation.classifyStatus reply.Outcome
-            Correlation = fun input -> Some input.OperationId
-        }
-
-    let operationResolve =
-        { lookup
-              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve))
-              ResolutionCodecs.reply
-              (fun reply -> OutcomePresentation.classifyResolve reply.Outcome) with
-            Input = RequestCodecs.resolveRequest
-            Effect = EndpointEffect.OperationalWrite
-            Classify = fun reply -> OutcomePresentation.classifyResolve reply.Outcome
-            Correlation = fun input -> Some input.OperationId
-        }
-
-    let operationObserve =
-        { lookup
-              (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe))
-              ReplyCodecs.observation
-              (fun reply -> OutcomePresentation.classify reply.Outcome) with
-            Classify = fun reply -> OutcomePresentation.classify reply.Outcome
-            Correlation = fun input -> Some input.OperationId
-        }
+    let operationGet =
+        lookup
+            (EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet))
+            OperationLookupCodecs.reply
+            (fun reply -> OutcomePresentation.classifyOperationGet reply.Outcome)
 
     let authorityList =
         read
@@ -458,9 +434,7 @@ module Api =
             EndpointDefinition.create operationPreview
         | (ActorEndpoint.Operation OperationEndpoint.Execute) ->
             EndpointDefinition.create operationExecute
-        | (ActorEndpoint.Query QueryEndpoint.Resolve) -> EndpointDefinition.create operationResolve
-        | (ActorEndpoint.Query QueryEndpoint.Status) -> EndpointDefinition.create operationStatus
-        | (ActorEndpoint.Query QueryEndpoint.Observe) -> EndpointDefinition.create operationObserve
+        | (ActorEndpoint.Query QueryEndpoint.OperationGet) -> EndpointDefinition.create operationGet
         | (ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
             EndpointDefinition.create authorityList
         | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
@@ -499,8 +473,7 @@ module Api =
     let requiresInstallation (endpoint: Route) =
         match endpoint.Id with
         | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute)
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve)
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) -> true
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) -> true
         | _ -> false
 
     let executesLedger endpoint =
@@ -717,15 +690,7 @@ module ReplyCorrelation =
         let operation = guid "operationId" input
 
         let operationEndpoint =
-            List.contains
-                token
-                [
-                    "operation.execute"
-                    "operation.preview"
-                    "operation.observe"
-                    "operation.status"
-                    "operation.resolve"
-                ]
+            List.contains token [ "operation.execute"; "operation.preview"; "operation.get" ]
 
         let envelope =
             not operationEndpoint
@@ -733,8 +698,8 @@ module ReplyCorrelation =
 
         let receipt =
             match kind, token with
-            | Some("ACCEPTED" | "ALREADY_ACCEPTED"), _
-            | Some "SUCCEEDED", "operation.observe" -> data
+            | Some "ACCEPTED", "operation.get" -> data |> Option.bind (memberValue "receipt")
+            | Some("ACCEPTED" | "ALREADY_ACCEPTED"), _ -> data
             | _ -> None
 
         let receiptIdentity =

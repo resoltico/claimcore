@@ -23,7 +23,15 @@ let private deliveryFields exitCode (reply: JsonElement) =
     Expect.contains [ "NOT_SENT"; "DELIVERED"; "UNCERTAIN" ] delivery "Closed delivery state"
 
     if exitCode = 4 then
-        Expect.equal delivery "UNCERTAIN" "Uncertainty stops automation"
+        let pending =
+            match reply.GetProperty("result").TryGetProperty "outcome" with
+            | true, outcome -> outcome.GetProperty("kind").GetString() = "PENDING"
+            | _ -> false
+
+        Expect.equal
+            delivery
+            (if pending then "DELIVERED" else "UNCERTAIN")
+            "Pending reads and uncertain submissions remain distinct"
 
     if exitCode = 0 then
         Expect.equal delivery "DELIVERED" "Success was delivered"
@@ -31,7 +39,12 @@ let private deliveryFields exitCode (reply: JsonElement) =
 let parse code (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode code "Published CLI exit"
 
-    if code = 4 then
+    let admitted =
+        ClaimCore.Cli.Frames.decode result.StandardOutput
+        |> Result.defaultWith (fun _ ->
+            failtest "Published CLI output is an admitted closed reply frame")
+
+    if code = 4 && admitted.Delivery = ClaimCore.Cli.DeliveryState.Uncertain then
         let lines =
             UTF8Encoding(false, true).GetString(result.StandardError).TrimEnd('\n').Split('\n')
 
@@ -39,14 +52,14 @@ let parse code (result: ProcessRunner.Result) =
 
         Expect.isOk
             (ClaimCore.Cli.Frames.admit retry)
-            "The last stderr line is an exact retry frame"
-    else
-        Expect.equal result.StandardError.Length 0 "No private diagnostics"
+            "Uncertain delivery retains the exact retry frame"
+    elif result.StandardError.Length <> 0 then
+        let actual = UTF8Encoding(false, true).GetString(result.StandardError)
 
-    let admitted =
-        ClaimCore.Cli.Frames.decode result.StandardOutput
-        |> Result.defaultWith (fun _ ->
-            failtest "Published CLI output is an admitted closed reply frame")
+        let expected =
+            admitted.OperationId |> Option.map (fun value -> value.ToString("D") + "\n")
+
+        Expect.equal (Some actual) expected "An ID-less call prints only its dispatched UUID"
 
     Expect.equal (ClaimCore.Cli.Frames.exitCode admitted) code "Frame and process exits agree"
     use document = JsonDocument.Parse(ReadOnlyMemory result.StandardOutput)
@@ -159,7 +172,12 @@ let require expected reply =
     Expect.equal (outcomeKind reply) expected "Published outcome"
     data reply
 
-let id () = Guid.NewGuid().ToString("D")
+let id () = Guid.CreateVersion7().ToString("D")
+
+let lookupReceipt fixture operationId =
+    automation fixture "operation.get" {| operationId = operationId |} 0
+    |> require "ACCEPTED"
+    |> fun value -> value.GetProperty "receipt"
 
 let principal (fixture: PublishedFixture.Fixture) kind subject =
     {|

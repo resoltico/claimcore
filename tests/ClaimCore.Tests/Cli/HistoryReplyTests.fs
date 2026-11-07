@@ -15,16 +15,16 @@ let private codec = Api.caseHistory.Output
 let private bytes (text: string) = Encoding.UTF8.GetBytes text
 
 let private receipt =
-    """{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":{"actorId":"10000000-0000-4000-8000-000000000001","displayName":{"kind":"ERASED"},"principalKind":"HUMAN","availability":"AVAILABLE"},"subject":{"kind":"CASE","caseId":"10000000-0000-4000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}},"basis":{"observedAt":"2026-11-04T12:00:00.000000Z","businessDate":"2026-11-04","timeZone":"Etc/UTC"}}"""
+    """{"operationId":"10000000-0000-7000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":{"actorId":"10000000-0000-7000-8000-000000000001","displayName":{"kind":"ERASED"},"principalKind":"HUMAN","availability":"AVAILABLE"},"subject":{"kind":"CASE","caseId":"10000000-0000-7000-8000-000000000001","caseReference":"x","revision":1,"act":"OPEN","snapshot":{"kind":"WITHHELD"}},"basis":{"observedAt":"2026-11-04T12:00:00.000000Z","businessDate":"2026-11-04","timeZone":"Etc/UTC"}}"""
 
 let private summary =
-    """{"kind":"SUMMARY","change":{"operationId":"10000000-0000-4000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-4000-8000-000000000001"}}"""
+    """{"kind":"SUMMARY","change":{"operationId":"10000000-0000-7000-8000-000000000001","position":{"sequence":1,"entryHash":"aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"},"revision":1,"act":"OPEN","recordedAt":"2026-01-01T00:00:00.000000Z","recordedBy":"10000000-0000-7000-8000-000000000001"}}"""
 
 let private full receipt =
     "{\"kind\":\"FULL\",\"receipt\":" + receipt + ",\"difference\":null}"
 
 let private page entries =
-    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"caseId\":\"10000000-0000-4000-8000-000000000001\",\"caseReference\":\"x\",\"entries\":["
+    "{\"outcome\":{\"kind\":\"SUCCEEDED\",\"data\":{\"caseId\":\"10000000-0000-7000-8000-000000000001\",\"caseReference\":\"x\",\"entries\":["
     + String.concat "," entries
     + "],\"nextCursor\":null}}}"
 
@@ -85,11 +85,11 @@ let private refused () =
     let schema = validator ()
 
     let authority =
-        "{\"kind\":\"AUTHORITY\",\"targetActorId\":\"10000000-0000-4000-8000-000000000001\",\"act\":\"REGISTER\"}"
+        "{\"kind\":\"AUTHORITY\",\"targetActorId\":\"10000000-0000-7000-8000-000000000001\",\"act\":\"REGISTER\"}"
 
     let wrongScope =
         receipt.Replace(
-            "{\"kind\":\"CASE\",\"caseId\":\"10000000-0000-4000-8000-000000000001\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"kind\":\"WITHHELD\"}}",
+            "{\"kind\":\"CASE\",\"caseId\":\"10000000-0000-7000-8000-000000000001\",\"caseReference\":\"x\",\"revision\":1,\"act\":\"OPEN\",\"snapshot\":{\"kind\":\"WITHHELD\"}}",
             authority
         )
 

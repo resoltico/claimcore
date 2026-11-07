@@ -40,8 +40,8 @@ module internal ApiRoutes =
             Route.bind Api.caseSummary Service.caseSummary
         | ActorEndpoint.Query QueryEndpoint.CaseHistory ->
             Route.bind Api.caseHistory Service.history
-        | ActorEndpoint.Query QueryEndpoint.Observe ->
-            Route.bind Api.operationObserve Service.observe
+        | ActorEndpoint.Query QueryEndpoint.OperationGet ->
+            Route.bind Api.operationGet Service.operationGet
         | ActorEndpoint.Query QueryEndpoint.AuthorityList ->
             Route.bind Api.authorityList Service.actors
         | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
@@ -60,9 +60,6 @@ module internal ApiRoutes =
                 })
         | ActorEndpoint.Operation OperationEndpoint.Execute ->
             Route.bind Api.operationExecute Service.execute
-        | ActorEndpoint.Query QueryEndpoint.Status -> Route.bind Api.operationStatus Service.status
-        | ActorEndpoint.Query QueryEndpoint.Resolve ->
-            Route.bind Api.operationResolve Service.resolve
 
     let handshake (context: HttpContext) =
         match context.Request.Headers.TryGetValue "ClaimCore-Contract" with
@@ -104,9 +101,7 @@ module internal ApiRoutes =
         }
 
     let private workload endpoint =
-        if Api.identity endpoint = EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) then
-            RequestWorkload.Recovery
-        elif Api.effect endpoint = EndpointEffect.Read then
+        if Api.effect endpoint = EndpointEffect.Read then
             RequestWorkload.Read
         else
             RequestWorkload.Write

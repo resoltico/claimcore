@@ -77,7 +77,7 @@ let populated (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
+                    request database.Fixture 10 "synthetic-a" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (token))
 
@@ -113,16 +113,6 @@ type private RecordedSubjectColumns =
 
 let private subject =
     function
-    | RecordedTarget.NonAcceptance operation ->
-        {
-            Kind = "CONTROL"
-            Act = "NOT_ACCEPTED"
-            Id = OperationId.value operation
-            Revision = None
-            BusinessDate = None
-            Parent = None
-            Next = None
-        }
     | RecordedTarget.Case value ->
         {
             Kind = "CASE"

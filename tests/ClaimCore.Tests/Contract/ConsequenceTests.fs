@@ -52,9 +52,7 @@ let private queries =
         QueryEndpoint.ReminderList, Consequence.Routine
         QueryEndpoint.ReminderGet, Consequence.Routine
         QueryEndpoint.WorkOverview, Consequence.Routine
-        QueryEndpoint.Observe, Consequence.Routine
-        QueryEndpoint.Status, Consequence.Routine
-        QueryEndpoint.Resolve, Consequence.Irreversible
+        QueryEndpoint.OperationGet, Consequence.Routine
         QueryEndpoint.AuthorityList, Consequence.Routine
         QueryEndpoint.AuthorityGrants, Consequence.Routine
         QueryEndpoint.AuthorityHistory, Consequence.Routine
@@ -84,7 +82,7 @@ let tests =
                         (Consequence.ofAct act)
                         expected
                         "Classification follows the adopted consequence policy")
-            testCase "every query is pinned and operation settlement is irreversible" (fun () ->
+            testCase "every query has an explicit routine consequence" (fun () ->
                 let declared =
                     ActorEndpoint.all
                     |> List.choose (function

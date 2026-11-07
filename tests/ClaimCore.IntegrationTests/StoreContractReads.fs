@@ -113,7 +113,7 @@ let internal existingCaseId fixture reference =
             | _ -> failtest "Expected existing case identity"
     }
 
-let internal assignedReader (actor: ServiceContext) =
+let internal assignedReader fixture (actor: ServiceContext) =
     task {
         let principal =
             PrincipalKey.human "https://issuer.example/" "assigned-reader"
@@ -124,7 +124,7 @@ let internal assignedReader (actor: ServiceContext) =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 15)
+                        (id fixture 15)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -135,7 +135,7 @@ let internal assignedReader (actor: ServiceContext) =
         let! granted =
             grant
                 actor
-                (id 16)
+                (id fixture 16)
                 principal
                 {
                     Role = Role.CaseReader
@@ -148,14 +148,14 @@ let internal assignedReader (actor: ServiceContext) =
         return principal
     }
 
-let internal registerReader (owner: ServiceContext) target =
+let internal registerReader fixture (owner: ServiceContext) target =
     task {
         let! registered =
             (Service.execute
                 owner
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 2)
+                        (id fixture 2)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -166,7 +166,7 @@ let internal registerReader (owner: ServiceContext) target =
         let! added =
             grant
                 owner
-                (id 3)
+                (id fixture 3)
                 target
                 {
                     Role = Role.CaseReader

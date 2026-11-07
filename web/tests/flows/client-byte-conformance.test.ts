@@ -56,7 +56,7 @@ it("keeps principal wire admission separate from authoritative server identity p
 
 it("generated UUID admission consumes exactly one canonical nonempty UUID", () => {
   const uuid = "10000000-0000-4000-8000-00000000000a";
-  expect(isRequest("operation.observe", { operationId: uuid })).toBe(true);
+  expect(isRequest("operation.get", { operationId: uuid })).toBe(true);
   for (const value of [
     `${uuid}\n`,
     `${uuid}\r\n`,
@@ -65,6 +65,6 @@ it("generated UUID admission consumes exactly one canonical nonempty UUID", () =
     uuid.toUpperCase(),
     "00000000-0000-0000-0000-000000000000",
   ]) {
-    expect(isRequest("operation.observe", { operationId: value }), value).toBe(false);
+    expect(isRequest("operation.get", { operationId: value }), value).toBe(false);
   }
 });

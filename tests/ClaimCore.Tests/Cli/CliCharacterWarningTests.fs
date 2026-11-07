@@ -338,7 +338,7 @@ let private terminalDataBoundaries () =
     let actor: Actor =
         {
             ActorId =
-                ActorId.create (System.Guid.Parse "10000000-0000-4000-8000-000000000003")
+                ActorId.create (System.Guid.Parse "10000000-0000-7000-8000-000000000003")
                 |> Option.get
             Principal = principal
             Enabled = true

@@ -24,7 +24,12 @@ let private summaries () =
                     Service.execute
                         owner
                         (ClaimCore.TestSupport.Inputs.caseOperation (
-                            request number reference 0L (AuthoredCaseAct.Open Inputs.registration)
+                            request
+                                database.Fixture
+                                number
+                                reference
+                                0L
+                                (AuthoredCaseAct.Open Inputs.registration)
                         ))
                         token
                     |> Async.AwaitTask
@@ -35,7 +40,12 @@ let private summaries () =
                 Service.execute
                     owner
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request 102 "VISIBLE" 1L (AuthoredCaseAct.Decide Inputs.decision)
+                        request
+                            database.Fixture
+                            102
+                            "VISIBLE"
+                            1L
+                            (AuthoredCaseAct.Decide Inputs.decision)
                     ))
                     token
                 |> Async.AwaitTask
@@ -51,7 +61,7 @@ let private summaries () =
                     owner
                     (OperationInput.Authority(
                         authorityRequest
-                            (id 200)
+                            (id database.Fixture 200)
                             reader
                             (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                     ))
@@ -63,7 +73,7 @@ let private summaries () =
             let! granted =
                 grant
                     owner
-                    (id 201)
+                    (id database.Fixture 201)
                     reader
                     {
                         Role = Role.CaseReader

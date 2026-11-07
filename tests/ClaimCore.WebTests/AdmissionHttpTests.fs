@@ -108,23 +108,17 @@ let private pressure () =
             Expect.equal held.Reads 2 "Rejected work never reaches a storage callback"
 
             let statusBody =
-                JsonSerializer.SerializeToUtf8Bytes {| operationId = Guid.NewGuid() |}
+                JsonSerializer.SerializeToUtf8Bytes
+                    {|
+                        operationId = Guid.CreateVersion7(observed)
+                    |}
 
-            let! status, bytes =
-                host.Call("operation.status", statusBody, token).WaitAsync(TimeSpan.FromSeconds 3.)
+            let! status, _ = host.Call("operation.get", statusBody, token)
 
             Expect.equal
                 status
-                200
-                "Passive recovery has reserved capacity while ordinary reads are held"
-
-            use reply = JsonDocument.Parse bytes
-
-            Expect.equal
-                (reply.RootElement.GetProperty("outcome").GetProperty("kind").GetString())
-                "UNRESOLVED"
-                "Admission does not fabricate final nonacceptance"
-
+                429
+                "Lookup shares read admission and cannot bypass an exhausted principal"
         finally
             held.Release()
 
@@ -133,6 +127,21 @@ let private pressure () =
         Expect.isTrue
             (completed |> Array.forall (fst >> (=) 200))
             "Previously admitted reads complete normally"
+
+        let statusBody =
+            JsonSerializer.SerializeToUtf8Bytes
+                {|
+                    operationId = Guid.CreateVersion7(observed)
+                |}
+
+        let! status, bytes = host.Call("operation.get", statusBody, token)
+        Expect.equal status 200 "A released read slot admits lookup"
+        use reply = JsonDocument.Parse bytes
+
+        Expect.equal
+            (reply.RootElement.GetProperty("outcome").GetProperty("kind").GetString())
+            "PENDING"
+            "Read admission never fabricates final absence"
     }
 
 let private authenticationIsolation () =
@@ -171,7 +180,7 @@ let tests =
         "HTTP admission pressure"
         [
             testCaseAsync
-                "preserves passive recovery under one noisy principal's held reads"
+                "bounds lookup with ordinary reads and releases principal capacity"
                 (async { do! pressure () |> Async.AwaitTask })
             testCaseAsync
                 "isolates interactive authentication from cookie and bearer validation"

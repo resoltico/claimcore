@@ -24,9 +24,7 @@ type QueryEndpoint =
     | ReminderList
     | ReminderGet
     | WorkOverview
-    | Observe
-    | Status
-    | Resolve
+    | OperationGet
     | AuthorityList
     | AuthorityGrants
     | AuthorityHistory
@@ -61,9 +59,7 @@ module ActorEndpoint =
                 (ActorEndpoint.Query QueryEndpoint.ReminderList)
                 (ActorEndpoint.Query QueryEndpoint.ReminderGet)
                 (ActorEndpoint.Query QueryEndpoint.WorkOverview)
-                (ActorEndpoint.Query QueryEndpoint.Observe)
-                (ActorEndpoint.Query QueryEndpoint.Status)
-                (ActorEndpoint.Query QueryEndpoint.Resolve)
+                (ActorEndpoint.Query QueryEndpoint.OperationGet)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityList)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityGrants)
                 (ActorEndpoint.Query QueryEndpoint.AuthorityHistory)
@@ -86,9 +82,7 @@ module ActorEndpoint =
              | (ActorEndpoint.Query QueryEndpoint.ReminderList) -> "reminder.list"
              | (ActorEndpoint.Query QueryEndpoint.ReminderGet) -> "reminder.get"
              | (ActorEndpoint.Query QueryEndpoint.WorkOverview) -> "work.overview"
-             | (ActorEndpoint.Query QueryEndpoint.Observe) -> "operation.observe"
-             | (ActorEndpoint.Query QueryEndpoint.Status) -> "operation.status"
-             | (ActorEndpoint.Query QueryEndpoint.Resolve) -> "operation.resolve"
+             | (ActorEndpoint.Query QueryEndpoint.OperationGet) -> "operation.get"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityList) -> "authority.list"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityGrants) -> "authority.grants"
              | (ActorEndpoint.Query QueryEndpoint.AuthorityHistory) -> "authority.history"

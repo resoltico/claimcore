@@ -13,7 +13,7 @@ open ClaimCore.TestSupport
 let private authorityReview () =
     let reply: PreviewReply =
         {
-            OperationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
+            OperationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
             Outcome =
                 Outcome.Succeeded(
                     Previewed.Reviewed(
@@ -71,7 +71,7 @@ let private account =
     {
         ActorReviewItem.Actor =
             Inputs.actorReference (
-                CaseFixtures.actorId (Guid.Parse "10000000-0000-4000-8000-000000000001")
+                CaseFixtures.actorId (Guid.Parse "10000000-0000-7000-8000-000000000001")
             )
         Principal = PrincipalKey.human "https://fixture.example/" "person" |> Fixtures.accepted
         State = AccountState.Active
@@ -89,7 +89,7 @@ let private account =
                 {
                     Count = 1L
                     ResponsibleActor =
-                        CaseFixtures.actorId (Guid.Parse "10000000-0000-4000-8000-000000000001")
+                        CaseFixtures.actorId (Guid.Parse "10000000-0000-7000-8000-000000000001")
                 }
     }
 
@@ -271,7 +271,7 @@ let assigneePresentation =
         (fun () ->
             let actor =
                 ActorRef.create
-                    (CaseFixtures.actorId (Guid.Parse "12345678-1234-4234-8234-123456789abc"))
+                    (CaseFixtures.actorId (Guid.Parse "12345678-1234-7234-8234-123456789abc"))
                     PrincipalKind.Human
                     ActorAvailability.Available
                     (Some(

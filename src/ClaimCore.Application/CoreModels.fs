@@ -61,5 +61,4 @@ type internal AuthorityWriteContext =
     {
         Head: LedgerPosition
         NewPayloadNonce: unit -> byte array
-        Fenced: bool
     }

@@ -18,10 +18,10 @@ it("generated host checks enforce status, code, phase and closed shape together"
 });
 
 it("generated draft assembly and complete admission remain distinct", () => {
-  expect(buildRequest("operation.observe", { operationId: "" })).toEqual({ operationId: "" });
-  expect(isRequest("operation.observe", { operationId: "" })).toBe(false);
-  expect(requestIssue("operation.resolve", { operationId: "invalid" })).toEqual(["operationId"]);
-  expect(() => buildRequest("operation.observe", { operationId: 7 })).toThrow();
+  expect(buildRequest("operation.get", { operationId: "" })).toEqual({ operationId: "" });
+  expect(isRequest("operation.get", { operationId: "" })).toBe(false);
+  expect(requestIssue("operation.get", { operationId: "invalid" })).toEqual(["operationId"]);
+  expect(() => buildRequest("operation.get", { operationId: 7 })).toThrow();
   expect(isRequest("case.list", { limit: 51 })).toBe(false);
   expect(isRequest("case.list", { limit: 50 })).toBe(true);
 });

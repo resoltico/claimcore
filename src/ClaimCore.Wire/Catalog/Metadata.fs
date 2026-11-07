@@ -129,8 +129,7 @@ type CatalogOperation =
         | CatalogOperation.Act(ActKind.Authority _)
         | CatalogOperation.Query(QueryEndpoint.AuthorityList | QueryEndpoint.AuthorityGrants | QueryEndpoint.AuthorityHistory | QueryEndpoint.AuthorityRequests | QueryEndpoint.AuthorityRequestsDismiss) ->
             CatalogSubject.Authority
-        | CatalogOperation.Query(QueryEndpoint.Observe | QueryEndpoint.Status | QueryEndpoint.Resolve) ->
-            CatalogSubject.Operation
+        | CatalogOperation.Query QueryEndpoint.OperationGet -> CatalogSubject.Operation
         | CatalogOperation.Query QueryEndpoint.Context -> CatalogSubject.Context
 
 [<RequireQualifiedAccess>]
@@ -140,7 +139,6 @@ type InteractionEffect =
     | Read
     | Case of CaseEffect
     | Authority
-    | FinalNonAcceptance
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
 module InteractionEffect =
@@ -152,7 +150,6 @@ module InteractionEffect =
                 InteractionEffect.Work
                 InteractionEffect.Reminder
                 InteractionEffect.Authority
-                InteractionEffect.FinalNonAcceptance
              ]
              @ (Vocabulary.all CaseEffect.vocabulary |> List.map InteractionEffect.Case))
             (function
@@ -160,7 +157,6 @@ module InteractionEffect =
              | InteractionEffect.Work -> "CHANGE_WORK"
              | InteractionEffect.Reminder -> "CHANGE_REMINDER"
              | InteractionEffect.Authority -> "CHANGE_AUTHORITY"
-             | InteractionEffect.FinalNonAcceptance -> "FINAL_NON_ACCEPTANCE"
              | InteractionEffect.Case effect -> CaseEffect.token effect)
 
 [<CompilationRepresentation(CompilationRepresentationFlags.ModuleSuffix)>]
@@ -178,8 +174,6 @@ module CatalogOperation =
         | Some(ActKind.Reminder _), _ ->
             Some ActFamily.Business, [ CaseSection.Work ], InteractionEffect.Reminder
         | Some(ActKind.Authority _), _ -> None, [], InteractionEffect.Authority
-        | None, ActorEndpoint.Query QueryEndpoint.Resolve ->
-            None, [], InteractionEffect.FinalNonAcceptance
         | _ -> None, [], InteractionEffect.Read
 
     let consequence =
@@ -243,6 +237,8 @@ type PresentationLimits =
         DefaultPageSize: int
         MaximumPageSize: int
         RequestByteLimit: int
+        OperationWindowMilliseconds: int
+        OperationFutureAllowanceMilliseconds: int
     }
 
 type RolePresentationDefinition =

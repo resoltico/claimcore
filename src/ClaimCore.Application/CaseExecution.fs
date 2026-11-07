@@ -223,7 +223,7 @@ module internal CaseExecution =
         let identity = RequestRecord.identity id command
 
         authorizeIdentity services command identity view
-        |> Verdict.bind (fun () -> LedgerEnvelope.guard write.Fenced)
+        |> Verdict.bind (fun () -> LedgerEnvelope.lifetime view.ObservedAt command.OperationId)
         |> Verdict.bind (fun () ->
             if view.Maintenance.Active then
                 Verdict.Refuse Refusal.RegisterMaintenance
@@ -249,7 +249,21 @@ module internal CaseExecution =
                                     (operationId request)
                                     (target request)
 
-                            match complete services request view with
+                            let admitted =
+                                match
+                                    operationId request
+                                    |> Option.bind (
+                                        ExecutionFacts.lifetime
+                                            services
+                                            view.Actor
+                                            view.ExistingOperation
+                                            view.ObservedAt
+                                    )
+                                with
+                                | Some refusal -> Error refusal
+                                | None -> complete services request view
+
+                            match admitted with
                             | Error refusal ->
                                 return!
                                     ConflictReads.verdict
@@ -261,27 +275,15 @@ module internal CaseExecution =
                                         (expected request)
                                         (Verdict.Refuse refusal)
                             | Ok command ->
-                                let! fenced =
-                                    ExecutionFacts.fenced
-                                        services
-                                        tx
-                                        view.Actor
-                                        command.OperationId
-                                        view.ExistingOperation
-
                                 let verdict =
-                                    match fenced with
-                                    | Error fault -> Verdict.Fail fault
-                                    | Ok fenced ->
-                                        execute
-                                            services
-                                            command
-                                            {
-                                                Head = tx.Head
-                                                Fenced = fenced
-                                                Nonce = tx.NewPayloadNonce()
-                                            }
-                                            view
+                                    execute
+                                        services
+                                        command
+                                        {
+                                            Head = tx.Head
+                                            Nonce = tx.NewPayloadNonce()
+                                        }
+                                        view
 
                                 let! verdict =
                                     ConflictReads.verdict

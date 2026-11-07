@@ -89,7 +89,7 @@ let private qualify fixture =
                     fixture
                     (OperationInput.Reminder
                         {
-                            OperationId = id number
+                            OperationId = id fixture.Database.Fixture number
                             Target = CaseSelector.Reference reference
                             Act =
                                 AuthoredReminderAct.Create
@@ -107,7 +107,7 @@ let private qualify fixture =
                 fixture
                 (OperationInput.Work
                     {
-                        OperationId = id 6607
+                        OperationId = id fixture.Database.Fixture 6607
                         Target = CaseSelector.Reference "work-01"
                         ExpectedRevision = 0L
                         Act =
@@ -123,26 +123,9 @@ let private qualify fixture =
                 fixture
                 (OperationInput.Reminder
                     {
-                        OperationId = id 6608
+                        OperationId = id fixture.Database.Fixture 6608
                         Target = CaseSelector.Reference "mix-04"
-                        Act = AuthoredReminderAct.Complete(id 6604, 1L)
-                    })
-
-        do!
-            execute
-                fixture
-                (Inputs.caseOperation (
-                    StoreFixtures.request 6609 "mix-04" 3L (AuthoredCaseAct.Bare BareAct.Close)
-                ))
-
-        do!
-            execute
-                fixture
-                (OperationInput.Reminder
-                    {
-                        OperationId = id 6610
-                        Target = CaseSelector.Reference "Work-11"
-                        Act = AuthoredReminderAct.Cancel(id 6605, 1L)
+                        Act = AuthoredReminderAct.Complete(id fixture.Database.Fixture 6604, 1L)
                     })
 
         do!
@@ -150,6 +133,29 @@ let private qualify fixture =
                 fixture
                 (Inputs.caseOperation (
                     StoreFixtures.request
+                        fixture.Database.Fixture
+                        6609
+                        "mix-04"
+                        3L
+                        (AuthoredCaseAct.Bare BareAct.Close)
+                ))
+
+        do!
+            execute
+                fixture
+                (OperationInput.Reminder
+                    {
+                        OperationId = id fixture.Database.Fixture 6610
+                        Target = CaseSelector.Reference "Work-11"
+                        Act = AuthoredReminderAct.Cancel(id fixture.Database.Fixture 6605, 1L)
+                    })
+
+        do!
+            execute
+                fixture
+                (Inputs.caseOperation (
+                    StoreFixtures.request
+                        fixture.Database.Fixture
                         6611
                         "Work-11"
                         2L
@@ -158,17 +164,35 @@ let private qualify fixture =
 
         for view, expected in
             [
-                ReminderView.Pending, [ id 6601; id 6602; id 6603 ]
-                ReminderView.Mine, [ id 6601; id 6602; id 6603 ]
-                ReminderView.Overdue, [ id 6601 ]
-                ReminderView.Today, [ id 6602 ]
-                ReminderView.Upcoming, [ id 6603 ]
-                ReminderView.Completed, [ id 6604 ]
-                ReminderView.Cancelled, [ id 6605 ]
+                ReminderView.Pending,
+                [
+                    id fixture.Database.Fixture 6601
+                    id fixture.Database.Fixture 6602
+                    id fixture.Database.Fixture 6603
+                ]
+                ReminderView.Mine,
+                [
+                    id fixture.Database.Fixture 6601
+                    id fixture.Database.Fixture 6602
+                    id fixture.Database.Fixture 6603
+                ]
+                ReminderView.Overdue, [ id fixture.Database.Fixture 6601 ]
+                ReminderView.Today, [ id fixture.Database.Fixture 6602 ]
+                ReminderView.Upcoming, [ id fixture.Database.Fixture 6603 ]
+                ReminderView.Completed, [ id fixture.Database.Fixture 6604 ]
+                ReminderView.Cancelled, [ id fixture.Database.Fixture 6605 ]
             ] do
             do! walk fixture (request (Some view)) expected
 
-        do! walk fixture (request None) [ id 6601; id 6602; id 6603 ]
+        do!
+            walk
+                fixture
+                (request None)
+                [
+                    id fixture.Database.Fixture 6601
+                    id fixture.Database.Fixture 6602
+                    id fixture.Database.Fixture 6603
+                ]
 
         do!
             walk
@@ -176,7 +200,12 @@ let private qualify fixture =
                 { request None with
                     IncludeInactive = Some true
                 }
-                [ id 6601; id 6602; id 6606; id 6603 ]
+                [
+                    id fixture.Database.Fixture 6601
+                    id fixture.Database.Fixture 6602
+                    id fixture.Database.Fixture 6606
+                    id fixture.Database.Fixture 6603
+                ]
 
         do!
             walk
@@ -184,7 +213,11 @@ let private qualify fixture =
                 { request (Some ReminderView.Pending) with
                     IncludeInactive = Some true
                 }
-                [ id 6601; id 6602; id 6603 ]
+                [
+                    id fixture.Database.Fixture 6601
+                    id fixture.Database.Fixture 6602
+                    id fixture.Database.Fixture 6603
+                ]
 
         do!
             walk
@@ -224,7 +257,7 @@ let private qualify fixture =
                 { request (Some ReminderView.Upcoming) with
                     Text = Some "Future"
                 }
-                [ id 6603 ]
+                [ id fixture.Database.Fixture 6603 ]
 
         let! first = page fixture (request (Some ReminderView.Pending))
         Expect.isSome first.NextCursor "The view continuation test has a real cursor"

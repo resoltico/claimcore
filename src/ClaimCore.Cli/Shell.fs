@@ -102,7 +102,6 @@ type internal ShellSession
             Output = console.Output
             Errors = console.Errors
             Review = reviewConsole
-            WriteSettlementPrompt = reviewConsole.Write
         }
 
     let dispatch words (token: CancellationToken) =

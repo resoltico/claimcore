@@ -54,7 +54,7 @@ let decision = Inputs.decision
 
 let request revision act =
     {
-        OperationId = Guid.Parse("20000000-0000-4000-8000-000000000001")
+        OperationId = Guid.Parse("20000000-0000-7000-8000-000000000001")
         CaseReference = "UNIT-001"
         ExpectedRevision = revision
         Act = act
@@ -98,7 +98,7 @@ let viewFields (snapshot: CaseSnapshot) =
 
 let snapshot revision (fields: CaseFields) =
     {
-        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
         Reference = fields.CaseReference
         Revision = CaseFixtures.revision revision
         State = CaseState.Active(fields)

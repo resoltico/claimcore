@@ -189,9 +189,11 @@ const receiptMatches = (
   request: Record<string, unknown>,
   outcome: Record<string, unknown>,
 ): boolean =>
-  (!["ACCEPTED", "ALREADY_ACCEPTED"].includes(String(outcome["kind"])) &&
-    !(endpoint === "operation.observe" && outcome["kind"] === "SUCCEEDED")) ||
-  receiptCorrelates(request, outcome["data"]);
+  !["ACCEPTED", "ALREADY_ACCEPTED"].includes(String(outcome["kind"])) ||
+  receiptCorrelates(
+    request,
+    endpoint === "operation.get" ? object(outcome["data"])["receipt"] : outcome["data"],
+  );
 const reminderPageTargetMatches = (
   request: Record<string, unknown>,
   data: Record<string, unknown>,
@@ -430,13 +432,7 @@ export const replyCorrelates = (endpoint: EndpointId, input: unknown, reply: unk
   const request = object(input);
   const envelope = object(reply);
   const outcome = object(envelope["outcome"]);
-  const operation = [
-    "operation.preview",
-    "operation.execute",
-    "operation.observe",
-    "operation.status",
-    "operation.resolve",
-  ].includes(endpoint);
+  const operation = ["operation.preview", "operation.execute", "operation.get"].includes(endpoint);
   return (
     (!operation || sameIdentity(request["operationId"], envelope["operationId"])) &&
     receiptMatches(endpoint, request, outcome) &&

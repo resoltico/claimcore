@@ -24,7 +24,20 @@ module ResponseScalars =
     let sequence =
         RequestCodecs.sequence |> map (Sequence.create >> Option.get) Sequence.value
 
-    let operationId = uuid |> map (OperationId.create >> Option.get) OperationId.value
+    let operationId =
+        uuid
+        |> constrained
+            (Schema.String(
+                Some
+                    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-7[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$",
+                Some "uuid",
+                Some 36,
+                Some 36,
+                None
+            ))
+            (OperationId.create >> Option.isSome)
+        |> map (OperationId.create >> Option.get) OperationId.value
+
     let caseId = uuid |> map (CaseId.create >> Option.get) CaseId.value
     let reminderId = uuid |> map (ReminderId.create >> Option.get) ReminderId.value
     let actorId = uuid |> map (ActorId.create >> Option.get) ActorId.value

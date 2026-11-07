@@ -41,7 +41,7 @@ module internal WebMetrics =
         | ReplyKind.Reviewed
         | ReplyKind.Accepted
         | ReplyKind.AlreadyAccepted
-        | ReplyKind.Unresolved
+        | ReplyKind.Pending
         | ReplyKind.NotAccepted -> RequestMetricResult.Succeeded
 
     let private resultToken =

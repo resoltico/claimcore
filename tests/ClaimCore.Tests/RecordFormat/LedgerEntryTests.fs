@@ -21,11 +21,7 @@ let private text (element: JsonElement) (name: string) =
     |> Option.defaultWith (fun () -> failtest "Missing vector text")
 
 let private subject (vector: JsonElement) =
-    if text vector "subject" = "CONTROL" then
-        RecordedTarget.NonAcceptance(
-            CaseFixtures.operationId (Guid.Parse(text vector "operationId"))
-        )
-    elif text vector "subject" = "AUTHORITY" then
+    if text vector "subject" = "AUTHORITY" then
         RecordedTarget.Authority
             {
                 TargetActorId = CaseFixtures.actorId (Guid.Parse(text vector "subjectId"))
@@ -180,7 +176,7 @@ let private allMetadataFields () =
 
         let case = caseMetadata entry
 
-        let otherId = Guid.Parse "40000000-0000-4000-8000-000000000004"
+        let otherId = Guid.Parse "40000000-0000-7000-8000-000000000004"
 
         let changes =
             [
@@ -573,20 +569,3 @@ let tests =
                         Expect.equal authorityBytes[81] 2uy "Authority kind"
                         Expect.equal caseBytes[156..159] [| 0uy; 0uy; 0uy; 0uy |] "Real day zero"))
         ]
-
-[<Tests>]
-let controls =
-    testCase "nonacceptance controls have a closed independent byte grammar" (fun () ->
-        let expected = Encoding.UTF8.GetBytes "{\"format\":2,\"kind\":\"NOT_ACCEPTED\"}"
-        Expect.equal (ControlRecord.encode ()) expected "Independent exact bytes"
-        Expect.isOk (ControlRecord.decode expected) "Positive decode control"
-
-        for invalid in
-            [
-                "{\"format\":1,\"kind\":\"NOT_ACCEPTED\"}"
-                "{\"format\":2,\"kind\":\"NOT_ACCEPTED\",\"extra\":0}"
-                "{\"format\":2,\"format\":2,\"kind\":\"NOT_ACCEPTED\"}"
-            ] do
-            Expect.isError
-                (ControlRecord.decode (Encoding.UTF8.GetBytes invalid))
-                "Unsupported or ambiguous controls refuse")

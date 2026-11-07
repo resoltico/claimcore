@@ -145,7 +145,7 @@ it("shows current fields, server act labels, full expandable history and retryab
 it("uses an exact operation lookup result and clears absent lookup presentation", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.observe")));
+  fetch.mockImplementation(() => Promise.resolve(wireResponse("operation.get")));
   navigate("/recovery");
   render(<Dashboard />);
   await user.click(await screen.findByText("General operation lookup", { selector: "summary" }));

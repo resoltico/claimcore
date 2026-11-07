@@ -9,9 +9,6 @@ open ClaimCore.Application.Contracts
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
-let private id number =
-    Guid.Parse(sprintf "e9711d82-1061-4f03-a519-%012d" number)
-
 [<Tests>]
 let tests =
     testCaseAsync
@@ -20,6 +17,7 @@ let tests =
             let! database = PostgresFixture.create () |> Async.AwaitTask
 
             try
+                let id = StoreFixtures.id database.Fixture
                 let! admin = caseWorker database.Fixture |> Async.AwaitTask
                 let token = CancellationToken.None
 

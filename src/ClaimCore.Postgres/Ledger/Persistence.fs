@@ -21,16 +21,6 @@ module internal Persistence =
     let entry connection (entry: EntryDraft) token =
         let subject =
             match entry.Subject with
-            | EntryTarget.NonAcceptance operation ->
-                {
-                    Kind = "CONTROL"
-                    Id = OperationId.value operation
-                    Revision = None
-                    Act = "NOT_ACCEPTED"
-                    Date = None
-                    Parent = None
-                    Next = None
-                }
             | EntryTarget.Authority(target, kind) ->
                 {
                     Kind = "AUTHORITY"

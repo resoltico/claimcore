@@ -27,7 +27,7 @@ The human verbs use the same typed inputs. For example, after step three, this p
 same request frame as `04-close.json` without authentication or a network call:
 
 ```sh
-claimcore case close DEMO-0001 --expected-revision 3 --operation-id 10000000-0000-4000-8000-000000000004 --dry-run
+claimcore case close DEMO-0001 --expected-revision 3 --dry-run
 ```
 
 Use `help verbs` for the registry-derived grammar; omit `--dry-run` to execute, or send the
@@ -51,8 +51,10 @@ claimcore call < examples/09-erase.json
 
 Erasure retains the CaseId, case reference and revision 9. Every historical snapshot for that
 case is erased from the live database; ledger metadata remains. This does not delete WAL, backups or copies elsewhere.
-Fixed example identities deliberately support exact replay in one fresh installation.
-Do not change their request bytes when resending an uncertain operation.
+The CLI allocates a UUIDv7 at dispatch, prints it to stderr and journals its identity.
+For an exact retry, add that ID as `input.operationId` and preserve every other input value.
+Resending an ID-less file starts a separate operation. An operation ID can first execute for ten minutes;
+a previously accepted operation remains replayable after that window.
 
 A structured reply has exactly `endpoint`, `operationId`, `delivery` and `result`.
 The first two are nullable when no request was admitted. Delivery is `NOT_SENT`,
@@ -66,9 +68,9 @@ See the [glossary](../docs/glossary.md) for project terminology.
 
 ## Recovering an uncertain operation
 
-Keep its exact prepared frame and identity-only attempt record. `claimcore operation status OPERATION_ID`
-is a read: it returns this actor's accepted metadata, known final nonacceptance, or unresolved status.
-It cannot block a late operation. `claimcore recovery list` and `recovery check ATTEMPT_ID` use the current
-actor/installation scope; add `--format json` for machine output. Only explicit `operation settle OPERATION_ID`
-or `recovery settle ATTEMPT_ID` requests a permanent nonacceptance control. Interactive settlement confirms
-the exact ID and irreversible effect. Restart recovery never recreates the business payload.
+Keep its exact prepared frame and identity-only attempt record. `claimcore operation get OPERATION_ID`
+returns `ACCEPTED` with a visible receipt, `PENDING` with `finalAt`, or final `NOT_ACCEPTED` for your account.
+The final absence check uses the execution lock and appends nothing. `claimcore recovery list` and
+`recovery check ATTEMPT_ID` use the current account and installation; add `--format json` for machine
+output. Interactive recovery repeats pending checks until final. Restart recovery retains identity only
+and never recreates the business payload.

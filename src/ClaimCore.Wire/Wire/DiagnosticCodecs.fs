@@ -161,9 +161,6 @@ module DiagnosticCodecs =
         | Refusal.InvalidCursor ->
             fields
             |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.Cursor)
-        | Refusal.OperationResolved ->
-            fields
-            |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.OperationId)
         | _ -> fields
 
     let private familyVariants<'T when 'T: equality> (wrap: 'T -> Refusal) unwrap =
@@ -277,6 +274,18 @@ module DiagnosticCodecs =
 
     let private diagnosticVariants =
         [
+            variant
+                "OPERATION_ID_OUT_OF_WINDOW"
+                (fun (issuedAt, observedAt) -> Refusal.OperationIdOutOfWindow(issuedAt, observedAt))
+                (function
+                | Refusal.OperationIdOutOfWindow(issuedAt, observedAt) -> Some(issuedAt, observedAt)
+                | _ -> None)
+                (record (fun issuedAt observedAt -> issuedAt, observedAt)
+                 |> actionField RecommendedAction.CorrectInput
+                 |> ResponseScalars.fixedField "target" (InputTarget.token InputTarget.OperationId)
+                 |> ResponseScalars.fixedField "phase" "NOT_STARTED"
+                 |> field "issuedAt" fst instant
+                 |> field "observedAt" snd instant)
             variant
                 "INVALID_INPUT"
                 Refusal.InvalidInput

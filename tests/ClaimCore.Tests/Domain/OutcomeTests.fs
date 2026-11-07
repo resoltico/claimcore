@@ -33,7 +33,7 @@ let tests =
             testCase
                 "unknown execute delivery retains its separate wire tag and exit four"
                 (fun () ->
-                    let operationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
+                    let operationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
                     let value =
                         {
@@ -45,7 +45,7 @@ let tests =
 
                     Expect.equal
                         encoded
-                        """{"operationId":"10000000-0000-4000-8000-000000000001","outcome":{"kind":"OUTCOME_UNKNOWN","data":null}}"""
+                        """{"operationId":"10000000-0000-7000-8000-000000000001","outcome":{"kind":"OUTCOME_UNKNOWN","data":null}}"""
                         "Unknown delivery is never encoded as a known failure"
 
                     Expect.equal

@@ -6,6 +6,7 @@
     <Compile Include="FailureDiagnosticsTests.fs" />
     <Compile Include="TestRegistration.fs" />
     <Compile Include="ObservedTransactions.fs" />
+    <Compile Include="OperationLookupTests.fs" />
     <ProjectReference Include="../../src/ClaimCore.Wire/ClaimCore.Wire.fsproj" />
     <ProjectReference Include="../../src/ClaimCore.Presentation/ClaimCore.Presentation.fsproj" />
     <Compile Include="StoreContractReads.fs" />
@@ -44,7 +45,7 @@
     <Compile Include="RequesterContextTests.fs" />
     <Compile Include="LedgerGroupingTests.fs" />
     <Compile Include="CanonicalIdentityTests.fs" />
-    <Compile Include="ResolutionTests.fs" />
+    <Compile Include="OperationLookupDisclosureTests.fs" />
     <Compile Include="SessionDrain.fs" />
     <Compile Include="SessionCapRace.fs" />
     <Compile Include="SessionHosts.fs" />

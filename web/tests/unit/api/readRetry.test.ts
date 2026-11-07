@@ -1,6 +1,6 @@
 import { wireResponse } from "../../support/contract-corpus.fixtures";
 import { afterEach, expect, it, vi } from "vitest";
-import { service } from "../../../src/api/service";
+import { service, requestEndpoint } from "../../../src/api/service";
 import { subscribeReadRetries } from "../../../src/api/readRetryNotice";
 import { prepareRequest } from "../../../src/protocol/preparedRequest";
 import { response } from "../../support/service-ui.fixtures";
@@ -150,8 +150,13 @@ const installation = "90000000-0000-4000-8000-000000000001";
 it.each([
   { name: "ledger execution", send: () => service.execute(prepared, "csrf", installation) },
   {
-    name: "operational resolution",
-    send: () => service.resolve(prepared.input.operationId, "csrf", installation),
+    name: "access request dismissal",
+    send: () =>
+      requestEndpoint("authority.requests.dismiss", "csrf", {
+        kind: "HUMAN",
+        issuer: "https://issuer.example/",
+        subject: "waiting",
+      }),
   },
   { name: "logout", send: () => service.logout("csrf") },
 ])("never retries $name on 429", async ({ send }) => {

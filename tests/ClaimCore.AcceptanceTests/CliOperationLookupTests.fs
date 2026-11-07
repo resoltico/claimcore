@@ -1,4 +1,4 @@
-module internal ClaimCore.AcceptanceTests.CliResolution
+module ClaimCore.AcceptanceTests.CliOperationLookupTests
 
 open ClaimCore.Json
 
@@ -155,54 +155,89 @@ let private responseLoss (fixture: PublishedFixture.Fixture) =
         do! fixture.RestartWeb()
 
         let receipt =
-            sameRecordedReceipt fixture "restart-settlement-receipt" original (fun () ->
-                verb
-                    fixture
-                    fixture.Environment
-                    [
-                        "operation"
-                        "settle"
-                        submitted.OperationId
-                        "--confirm"
-                        submitted.OperationId
-                    ]
-                    0
-                |> require "ACCEPTED")
+            sameRecordedReceipt fixture "restart-lookup-receipt" original (fun () ->
+                lookupReceipt fixture submitted.OperationId)
 
         onlyAcceptance fixture submitted receipt
     }
 
-let qualify fixture =
+let private idlessCall (fixture: PublishedFixture.Fixture) =
+    let source =
+        JsonNode.Parse(File.ReadAllBytes(Path.Combine(fixture.Root, "examples/01-open.json")))
+        |> nonNull
+
+    let input = source["input"] |> nonNull
+    Expect.isNull input["operationId"] "The public example omits its operation identity"
+    (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create("CLI-IDLESS-" + id ())
+    let bytes = Encoding.UTF8.GetBytes(source.ToJsonString())
+    let result = invoke fixture fixture.Environment [ "call" ] bytes 0
+    let reply = parse 0 result
+    let receipt = require "ACCEPTED" reply
+    let operation = receipt.GetProperty("operationId").GetString() |> nonNull
+
+    Expect.equal
+        (Encoding.UTF8.GetString result.StandardError)
+        (operation + "\n")
+        "Dispatch publishes its final UUID on stderr"
+
+    Expect.isSome
+        (ClaimCore.Domain.OperationId.create (Guid.Parse operation))
+        "The generated ID is UUIDv7"
+
+    input["operationId"] <- JsonValue.Create operation
+    let retry = Encoding.UTF8.GetBytes(source.ToJsonString())
+
+    sameRecordedReceipt fixture "idless-exact-replay" receipt (fun () ->
+        run fixture fixture.Environment retry 0 |> require "ALREADY_ACCEPTED")
+    |> ignore
+
+let private qualify fixture =
     task {
         do! responseLoss fixture
-        let operationId = id ()
+        idlessCall fixture
         let before = head fixture
+        let operation = id ()
 
-        verb
-            fixture
-            fixture.Environment
-            [ "operation"; "settle"; operationId; "--confirm"; operationId ]
-            2
-        |> require "NOT_ACCEPTED"
-        |> ignore
+        let pending =
+            verb fixture fixture.Environment [ "operation"; "get"; operation ] 4
+            |> require "PENDING"
 
-        let after = head fixture
-        use earlier = JsonDocument.Parse before
-        use later = JsonDocument.Parse after
+        let stamp = Convert.ToInt64(operation.Replace("-", "").Substring(0, 12), 16)
+
+        let deadline =
+            DateTimeOffset.Parse(
+                pending.GetProperty("finalAt").GetString() |> nonNull,
+                Globalization.CultureInfo.InvariantCulture
+            )
 
         Expect.equal
-            (later.RootElement.GetProperty("position").GetProperty("sequence").GetInt64())
-            (earlier.RootElement.GetProperty("position").GetProperty("sequence").GetInt64()
-             + 1L)
-            "First final resolution appends one retained control"
+            deadline
+            (DateTimeOffset.FromUnixTimeMilliseconds(stamp).AddMinutes(10.))
+            "Published lifetime deadline"
 
-        verb
-            fixture
-            fixture.Environment
-            [ "operation"; "settle"; operationId; "--confirm"; operationId ]
-            2
-        |> require "NOT_ACCEPTED"
-        |> ignore
+        let expired =
+            Guid.CreateVersion7(DateTimeOffset.UtcNow.AddMinutes(-11.)).ToString("D")
 
-        Expect.equal (head fixture) after "Repeated final resolution appends no additional control"
+        for _ in 1..2 do
+            verb fixture fixture.Environment [ "operation"; "get"; expired ] 2
+            |> require "NOT_ACCEPTED"
+            |> ignore
+
+        Expect.equal (head fixture) before "Pending reads and final locked absence append nothing"
     }
+
+[<Tests>]
+let tests =
+    testCaseAsync
+        "published CLI recovers bounded operation attempts"
+        (async {
+            do!
+                task {
+                    use fixture = new PublishedFixture.Fixture()
+                    do! fixture.Start()
+                    setup fixture
+                    do! qualify fixture
+                    fixture.Complete()
+                }
+                |> Async.AwaitTask
+        })

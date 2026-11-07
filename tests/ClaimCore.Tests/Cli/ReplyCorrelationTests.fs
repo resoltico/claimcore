@@ -56,17 +56,11 @@ let private body invocation =
                     Outcome = Outcome.Succeeded(Previewed.AlreadyAccepted accepted)
                 }
         )
-    | "operation.observe" ->
-        Api.operationObserve.Output.Write
-            {
-                OperationReply.OperationId = operation
-                Outcome = Outcome.Succeeded accepted
-            }
     | _ ->
-        Api.operationResolve.Output.Write
+        Api.operationGet.Output.Write
             {
                 OperationReply.OperationId = operation
-                Outcome = Outcome.Succeeded Resolved.NotAccepted
+                Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(accepted, true))
             }
 
 let private exchange invocation value =
@@ -95,11 +89,11 @@ let private jsonValue (node: JsonNode) =
     |> Result.defaultWith (fun _ -> failtest "Authored JSON")
 
 let private reviewedIdentity () =
-    let operation = "10000000-0000-4000-8000-000000000001"
+    let operation = "10000000-0000-7000-8000-000000000001"
 
     let input =
         (JsonNode.Parse
-            """{"kind":"CASE","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"UNIT-001"},"expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-01-01","incidentNotificationDate":"2026-01-01","incidentCountry":"LV","claimantName":"x","insurerName":"x","claimedAmount":"0","claimedCurrency":"EUR"}}}"""
+            """{"kind":"CASE","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"REFERENCE","caseReference":"UNIT-001"},"expectedRevision":0,"act":{"kind":"OPEN","values":{"incidentDate":"2026-01-01","incidentNotificationDate":"2026-01-01","incidentCountry":"LV","claimantName":"x","insurerName":"x","claimedAmount":"0","claimedCurrency":"EUR"}}}"""
          |> nonNull)
 
     let reply = correlationReview "CASE"
@@ -154,7 +148,7 @@ let private reviewedIdentity () =
     (subject["after"] |> nonNull)["revision"] <- System.Text.Json.Nodes.JsonValue.Create 1
 
     (subject["after"] |> nonNull)["caseId"] <-
-        System.Text.Json.Nodes.JsonValue.Create "90000000-0000-4000-8000-000000000099"
+        System.Text.Json.Nodes.JsonValue.Create "90000000-0000-7000-8000-000000000099"
 
     assertMatches false "OPEN identity derives from the actual operation"
     let before = (subject["after"] |> nonNull).DeepClone()
@@ -179,7 +173,7 @@ let private reviewedAuthorityIdentity () =
 
     let input =
         (JsonNode.Parse
-            """{"kind":"AUTHORITY","operationId":"10000000-0000-4000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"person"},"act":{"kind":"ENABLE"}}"""
+            """{"kind":"AUTHORITY","operationId":"10000000-0000-7000-8000-000000000001","target":{"kind":"HUMAN","issuer":"https://issuer.example/","subject":"person"},"act":{"kind":"ENABLE"}}"""
          |> nonNull)
 
     reply["operationId"] <- (input["operationId"] |> nonNull).DeepClone()
@@ -271,7 +265,7 @@ let private createdReceipts () =
     let operation = CliReplyFixtures.id
 
     let foreign =
-        CaseFixtures.actorId (Guid.Parse "90000000-0000-4000-8000-000000000099")
+        CaseFixtures.actorId (Guid.Parse "90000000-0000-7000-8000-000000000099")
 
     let assertResponse invocation value expected =
         Expect.isOk
@@ -291,7 +285,7 @@ let private createdReceipts () =
                 DeliveryState.Uncertain
                 "Foreign receipt cannot settle the frozen operation"
 
-    for endpoint in [ "operation.execute"; "operation.preview"; "operation.observe" ] do
+    for endpoint in [ "operation.execute"; "operation.preview"; "operation.get" ] do
         let invocation = frame endpoint
         let matching = body invocation
         assertResponse invocation matching true
@@ -303,6 +297,12 @@ let private createdReceipts () =
             |> nonNull
 
         let data = ((root["outcome"] |> nonNull)["data"] |> nonNull)
+
+        let data =
+            if endpoint = "operation.get" then
+                data["receipt"] |> nonNull
+            else
+                data
 
         (data["subject"] |> nonNull)["caseId"] <-
             System.Text.Json.Nodes.JsonValue.Create(ActorId.format foreign)
@@ -392,8 +392,8 @@ let tests =
                         [
                             "operation.execute"
                             "operation.preview"
-                            "operation.observe"
-                            "operation.resolve"
+                            "operation.get"
+                            "operation.get"
                         ] do
                         let invocation = frame endpoint
                         let value = body invocation
@@ -401,7 +401,7 @@ let tests =
 
                         Expect.equal
                             matching.ExitCode
-                            (if endpoint = "operation.resolve" then 2 else 0)
+                            0
                             ("Matching transport control: " + endpoint)
 
                         let mismatched =
@@ -413,7 +413,7 @@ let tests =
                                         name,
                                         if name = "operationId" then
                                             JsonValue.String
-                                                "90000000-0000-4000-8000-000000000099"
+                                                "90000000-0000-7000-8000-000000000099"
                                         else
                                             value)
                                 )
@@ -451,7 +451,7 @@ let tests =
                     "The matching nested actor ID is admitted"
 
                 let wrong =
-                    CaseFixtures.actorId (Guid.Parse "90000000-0000-4000-8000-000000000099")
+                    CaseFixtures.actorId (Guid.Parse "90000000-0000-7000-8000-000000000099")
 
                 let mismatched =
                     Outcome.Succeeded
@@ -474,7 +474,7 @@ let tests =
                     ((exchange invocation mismatched).ExitCode <> 0)
                     "A reply about another actor is rejected")
             testCase "reference correlation folds ASCII only" (fun () ->
-                let operation = Guid.Parse "10000000-0000-4000-8000-000000000001"
+                let operation = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
                 let invoke reference =
                     Frames.create
@@ -498,7 +498,7 @@ let tests =
                                     {
                                         CaseId =
                                             CaseFixtures.caseId (
-                                                Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                                Guid.Parse "20000000-0000-7000-8000-000000000001"
                                             )
                                         Reference = CaseFixtures.reference retained
                                         Revision = CaseFixtures.revision 2L
@@ -539,7 +539,7 @@ let tests =
                     let wrong =
                         receipt
                             (CaseFixtures.operationId (
-                                Guid.Parse "90000000-0000-4000-8000-000000000099"
+                                Guid.Parse "90000000-0000-7000-8000-000000000099"
                             ))
                             "UNIT-001"
 

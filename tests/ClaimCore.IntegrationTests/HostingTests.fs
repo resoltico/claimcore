@@ -56,7 +56,12 @@ let private runtimeCursors (database: PostgresFixture.Database) =
                 (Service.execute
                     owner
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request n reference 0L (ClaimCore.Domain.AuthoredCaseAct.Open registration)
+                        request
+                            database.Fixture
+                            n
+                            reference
+                            0L
+                            (ClaimCore.Domain.AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -229,6 +234,7 @@ let tests =
                                     actor
                                     (ClaimCore.TestSupport.Inputs.caseOperation (
                                         request
+                                            database.Fixture
                                             30
                                             "synthetic-hosting"
                                             0L
@@ -347,6 +353,7 @@ let tests =
                                     actor
                                     (ClaimCore.TestSupport.Inputs.caseOperation (
                                         request
+                                            database.Fixture
                                             40
                                             "synthetic-drain"
                                             0L

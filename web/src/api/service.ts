@@ -159,7 +159,8 @@ export const requestEndpoint = <K extends EndpointId>(
   credential: string,
   input: RequestByEndpoint[K],
   signal?: AbortSignal,
-) => request(id, credential, input, signal);
+  installationId?: string,
+) => request(id, credential, input, signal, installationId);
 export const service = {
   session: (signal?: AbortSignal) => request("session", undefined, undefined, signal),
   logout: (credential: string) => request("session.logout", credential, {}),
@@ -189,8 +190,6 @@ export const service = {
       },
       signal,
     ),
-  observe: (operationId: string, credential: string, signal?: AbortSignal) =>
-    request("operation.observe", credential, { operationId }, signal),
   authorityList: (cursor: string | null, credential: string, signal?: AbortSignal) =>
     request(
       "authority.list",
@@ -210,14 +209,12 @@ export const service = {
       { actorId, ...(cursor === null ? {} : { cursor }), limit: 50 },
       signal,
     ),
-  status: (
+  operationGet: (
     operationId: string,
     credential: string,
     installationId: string | undefined,
     signal?: AbortSignal,
-  ) => request("operation.status", credential, { operationId }, signal, installationId),
-  resolve: (operationId: string, credential: string, installationId: string | undefined) =>
-    request("operation.resolve", credential, { operationId }, undefined, installationId),
+  ) => request("operation.get", credential, { operationId }, signal, installationId),
   preview: (
     prepared: PreparedRequest<"operation.execute">,
     credential: string,

@@ -41,7 +41,7 @@ let internal contextCodec () =
                     RequesterState.Active
                         {
                             InstallationId =
-                                System.Guid.Parse "90000000-0000-4000-8000-000000000001"
+                                System.Guid.Parse "90000000-0000-7000-8000-000000000001"
                             Runtime =
                                 {
                                     ProductVersion = "0.10.0"
@@ -58,7 +58,7 @@ let internal contextCodec () =
                                 }
                             ActorId =
                                 ActorId.create (
-                                    System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                    System.Guid.Parse "10000000-0000-7000-8000-000000000001"
                                 )
                                 |> Option.get
                             Issuer = "https://issuer.example/"
@@ -73,7 +73,7 @@ let internal contextCodec () =
                             Self =
                                 ClaimCore.TestSupport.Inputs.actorReference (
                                     CaseFixtures.actorId (
-                                        System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                        System.Guid.Parse "10000000-0000-7000-8000-000000000001"
                                     )
                                 )
                             HasScopedCases = false
@@ -141,10 +141,10 @@ let internal queryCodecs () =
     |> ignore
 
     admitted
-        Api.operationObserve.Output
+        Api.operationGet.Output
         {
             OperationReply.OperationId = id
-            Outcome = Outcome.Succeeded authority
+            Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(authority, true))
         }
 
     |> ignore
@@ -220,7 +220,7 @@ let internal disclosures () =
                         {
                             CaseId =
                                 CaseFixtures.caseId (
-                                    System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                    System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                                 )
                             Reference = CaseFixtures.reference "UNIT-001"
                             Revision = CaseFixtures.revision 1L
@@ -231,16 +231,17 @@ let internal disclosures () =
 
         let result =
             admitted
-                Api.operationObserve.Output
+                Api.operationGet.Output
                 {
                     OperationReply.OperationId = id
-                    Outcome = Outcome.Succeeded value
+                    Outcome = Outcome.Succeeded(OperationLookupResult.Accepted(value, true))
                 }
 
         Expect.equal
             (result
                 .GetProperty("outcome")
                 .GetProperty("data")
+                .GetProperty("receipt")
                 .GetProperty("subject")
                 .GetProperty("snapshot")
                 .GetProperty("kind")

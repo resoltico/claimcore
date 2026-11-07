@@ -30,19 +30,24 @@ it.each([
 });
 it("observes authority receipts as attributed metadata without assuming a case snapshot", async () => {
   const sample = corpusCases().find((row) => row.id === "owner-provisioning-own-observation");
-  if (sample === undefined || !isResponse("operation.observe", sample.value)) {
+  if (sample === undefined || !isResponse("operation.get", sample.value)) {
     throw new Error("Owner provisioning observation fixture absent.");
   }
   const source = sample.value.outcome;
-  if (source.kind !== "SUCCEEDED" || source.data.subject.kind !== "AUTHORITY") {
+  if (source.kind !== "ACCEPTED" || source.data.receipt.subject.kind !== "AUTHORITY") {
     throw new Error("Authority receipt fixture absent.");
   }
   vi.stubGlobal(
     "fetch",
-    vi.fn().mockResolvedValueOnce(response("operation.observe", "SUCCEEDED", source.data)),
+    vi.fn().mockResolvedValueOnce(response("operation.get", "ACCEPTED", source.data)),
   );
-  render(<OperationLookup definition={definition} initialOperationId={source.data.operationId} />);
-  const target = source.data.subject.targetActor;
+  render(
+    <OperationLookup
+      definition={definition}
+      initialOperationId={source.data.receipt.operationId}
+    />,
+  );
+  const target = source.data.receipt.subject.targetActor;
   if (target.kind === "DISCLOSED") {
     expect(await screen.findByText("Provision owner", { exact: false })).toBeVisible();
   } else {

@@ -15,9 +15,9 @@ let private parsed =
     | Error issue -> failtestf "Expected isolated owner operation: %A" issue
 
 let private target = CaseSelector.Reference "synthetic-a"
-let private parent = CaseFixtures.caseId (id 10)
+let private parent fixture = CaseFixtures.caseId (id fixture 10)
 
-let private identicalOther actor =
+let private identicalOther fixture actor =
     task {
         let registration =
             Inputs.registrationWith
@@ -27,7 +27,9 @@ let private identicalOther actor =
         let! opened =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 820 "synthetic-b" 0L (CaseAct.Open registration)))
+                (Inputs.caseOperation (
+                    request fixture 820 "synthetic-b" 0L (CaseAct.Open registration)
+                ))
                 token
 
         accepted opened |> ignore
@@ -35,14 +37,16 @@ let private identicalOther actor =
         let work =
             OperationInput.Work
                 {
-                    OperationId = id 821
+                    OperationId = id fixture 821
                     Target = CaseSelector.Reference "synthetic-b"
                     ExpectedRevision = 0L
                     Act =
                         WorkAct.UpdateWork
                             {
                                 Responsible =
-                                    WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                    WorkValue.Set(
+                                        ActorId.format (CaseFixtures.actorId (id fixture 1))
+                                    )
                                 Summary = WorkValue.Set "Restorable handling summary"
                             }
                 }
@@ -60,14 +64,14 @@ let private identicalOther actor =
                     }
                 823,
                 AuthoredReminderAct.Update(
-                    id 822,
+                    id fixture 822,
                     1L,
                     {
                         Action = "Current completed action"
                         Due = "2027-02-01"
                     }
                 )
-                824, AuthoredReminderAct.Complete(id 822, 2L)
+                824, AuthoredReminderAct.Complete(id fixture 822, 2L)
                 825,
                 AuthoredReminderAct.Create
                     {
@@ -80,10 +84,10 @@ let private identicalOther actor =
                         Action = "Cancelled action"
                         Due = "2027-04-01"
                     }
-                827, AuthoredReminderAct.Cancel(id 826, 1L)
+                827, AuthoredReminderAct.Cancel(id fixture 826, 1L)
                 828,
                 AuthoredReminderAct.CompleteAndPlanNext(
-                    id 825,
+                    id fixture 825,
                     1L,
                     {
                         Action = "Pending replacement"
@@ -96,7 +100,7 @@ let private identicalOther actor =
                     actor
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id fixture operation
                             Target = CaseSelector.Reference "synthetic-b"
                             Act = act
                         })
@@ -113,7 +117,7 @@ let private otherRows (database: PostgresFixture.Database) =
             DatabaseSession.rows
                 connection
                 "SELECT 'ledger',row_to_json(l)::text FROM claimcore.ledger l WHERE (subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1 UNION ALL SELECT 'case',row_to_json(c)::text FROM claimcore.cases c WHERE case_id=$1 UNION ALL SELECT 'work',row_to_json(w)::text FROM claimcore.case_work w WHERE case_id=$1 UNION ALL SELECT 'reminder',row_to_json(r)::text FROM claimcore.reminders r WHERE case_id=$1 ORDER BY 1,2"
-                [| box (id 820) |]
+                [| box (id database.Fixture 820) |]
                 token
     }
 
@@ -147,7 +151,8 @@ let private assertOther database expected =
             Expect.equal
                 (view.Work.Summary |> Option.map HandlingSummary.format,
                  view.Work.Responsible |> Option.map _.ActorId)
-                (Some "Restorable handling summary", Some(CaseFixtures.actorId (id 1)))
+                (Some "Restorable handling summary",
+                 Some(CaseFixtures.actorId (id database.Fixture 1)))
                 "Identical current context and inherited responsibility remain"
         | other -> failtestf "The unrelated readable case was affected: %A" other
 
@@ -156,7 +161,7 @@ let private assertOther database expected =
                 (core database.Fixture database.Fixture.Owner)
                 {
                     Target = CaseSelector.Reference "synthetic-b"
-                    ReminderId = id 828
+                    ReminderId = id database.Fixture 828
                 }
                 token
 
@@ -184,7 +189,7 @@ let private seeded database =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request 800 "synthetic-a" 1L (CaseAct.AmendRegistration patch)
+                    request database.Fixture 800 "synthetic-a" 1L (CaseAct.AmendRegistration patch)
                 ))
                 token
 
@@ -195,14 +200,18 @@ let private seeded database =
                 actor
                 (OperationInput.Work
                     {
-                        OperationId = id 801
+                        OperationId = id database.Fixture 801
                         Target = target
                         ExpectedRevision = 0L
                         Act =
                             WorkAct.UpdateWork
                                 {
                                     Responsible =
-                                        WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 1)))
+                                        WorkValue.Set(
+                                            ActorId.format (
+                                                CaseFixtures.actorId (id database.Fixture 1)
+                                            )
+                                        )
                                     Summary = WorkValue.Set "Restorable handling summary"
                                 }
                     })
@@ -220,14 +229,14 @@ let private seeded database =
                     }
                 803,
                 AuthoredReminderAct.Update(
-                    id 802,
+                    id database.Fixture 802,
                     1L,
                     {
                         Action = "Current completed action"
                         Due = "2027-02-01"
                     }
                 )
-                804, AuthoredReminderAct.Complete(id 802, 2L)
+                804, AuthoredReminderAct.Complete(id database.Fixture 802, 2L)
                 805,
                 AuthoredReminderAct.Create
                     {
@@ -240,10 +249,10 @@ let private seeded database =
                         Action = "Cancelled action"
                         Due = "2027-04-01"
                     }
-                807, AuthoredReminderAct.Cancel(id 806, 1L)
+                807, AuthoredReminderAct.Cancel(id database.Fixture 806, 1L)
                 808,
                 AuthoredReminderAct.CompleteAndPlanNext(
-                    id 805,
+                    id database.Fixture 805,
                     1L,
                     {
                         Action = "Pending replacement"
@@ -256,7 +265,7 @@ let private seeded database =
                     actor
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id database.Fixture operation
                             Target = target
                             Act = act
                         })
@@ -267,7 +276,7 @@ let private seeded database =
         let! permission =
             grant
                 actor
-                (id 809)
+                (id database.Fixture 809)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -276,7 +285,7 @@ let private seeded database =
                 true
 
         acceptedAuthority permission
-        do! identicalOther actor
+        do! identicalOther database.Fixture actor
         let! _ = verified database
         return actor
     }
@@ -287,12 +296,14 @@ let private mode (database: PostgresFixture.Database) change =
         return parsed result
     }
 
-let private erase actor =
+let private erase fixture actor =
     task {
         let! erased =
             Service.execute
                 actor
-                (Inputs.caseOperation (request 810 "synthetic-a" 2L (CaseAct.Bare BareAct.Erase)))
+                (Inputs.caseOperation (
+                    request fixture 810 "synthetic-a" 2L (CaseAct.Bare BareAct.Erase)
+                ))
                 token
 
         accepted erased |> ignore
@@ -306,7 +317,7 @@ let private assertErased (database: PostgresFixture.Database) =
             DatabaseSession.rows
                 connection
                 "SELECT count(*) FROM claimcore.ledger WHERE ((subject_kind='CASE' AND subject_id=$1) OR parent_case_id=$1) AND (payload IS NOT NULL OR payload_nonce IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.case_work WHERE case_id=$1 AND (snapshot IS NOT NULL OR responsible_actor IS NOT NULL OR handling_summary IS NOT NULL OR search_text IS NOT NULL OR summary_changed_at IS NOT NULL OR summary_recorded_by IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.reminders WHERE case_id=$1 AND (snapshot IS NOT NULL OR state IS NOT NULL OR action IS NOT NULL OR due IS NOT NULL OR search_text IS NOT NULL) UNION ALL SELECT count(*) FROM claimcore.cases WHERE case_id=$1 AND (snapshot IS NOT NULL OR search_text IS NOT NULL OR work_search_text IS NOT NULL OR responsible_actor IS NOT NULL OR follow_up IS NOT NULL)"
-                [| box (CaseId.value parent) |]
+                [| box (CaseId.value (parent database.Fixture)) |]
                 token
 
         Expect.equal
@@ -318,7 +329,7 @@ let private assertErased (database: PostgresFixture.Database) =
             DatabaseSession.rows
                 connection
                 "SELECT count(*) FROM claimcore.reminders WHERE case_id=$1"
-                [| box (CaseId.value parent) |]
+                [| box (CaseId.value (parent database.Fixture)) |]
                 token
 
         Expect.equal
@@ -372,7 +383,7 @@ let private oldHead database =
         let! entered = mode database MaintenanceChange.Enter
         do! dump database "/tmp/reminders-before-erasure.sql"
         let! _ = mode database (MaintenanceChange.Resume entered.State.Generation)
-        do! erase actor
+        do! erase database.Fixture actor
         do! assertOther database other
         let! acceptedErasure = verified database
 
@@ -431,12 +442,16 @@ let private mixedPayload database =
                 "CREATE TEMP TABLE restore_reminders AS SELECT * FROM claimcore.reminders WHERE case_id=$1"
             ] do
             let! _ =
-                DatabaseSession.execute connection statement [| box (CaseId.value parent) |] token
+                DatabaseSession.execute
+                    connection
+                    statement
+                    [| box (CaseId.value (parent database.Fixture)) |]
+                    token
 
             ()
 
         let! _ = mode database (MaintenanceChange.Resume entered.State.Generation)
-        do! erase actor
+        do! erase database.Fixture actor
         do! assertOther database other
         let! checkpoint = verified database
         let! _ = mode database MaintenanceChange.Enter
@@ -478,7 +493,13 @@ let private mixedPayload database =
 
         do! transaction.CommitAsync()
         do! finding VerificationFinding.ErasureIncomplete database
-        do! sql database "SELECT claimcore.erase_case_payload($1)" [| box (CaseId.value parent) |]
+
+        do!
+            sql
+                database
+                "SELECT claimcore.erase_case_payload($1)"
+                [| box (CaseId.value (parent database.Fixture)) |]
+
         let! rebuilt = ProjectionRebuild.rebuild database.OwnerSource checkpoint token
 
         Expect.isOk

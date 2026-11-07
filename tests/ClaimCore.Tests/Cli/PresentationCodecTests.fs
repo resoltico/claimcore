@@ -197,7 +197,7 @@ let producerBudgets =
                             Scope =
                                 GrantScope.Case(
                                     CaseFixtures.caseId (
-                                        Guid.Parse(sprintf "0f82efaf-3882-4f58-b639-%012d" number)
+                                        Guid.Parse(sprintf "0f82efaf-3882-7f58-b639-%012d" number)
                                     ),
                                     CaseFixtures.reference (
                                         number.ToString("D2")
@@ -278,7 +278,7 @@ let producerBudgets =
 
             let next =
                 reminder
-                    (Guid.Parse "0f82efaf-3882-4f58-b639-999999999999")
+                    (Guid.Parse "0f82efaf-3882-7f58-b639-999999999999")
                     1L
                     (String.replicate 200 "😀")
                     ReminderState.Pending

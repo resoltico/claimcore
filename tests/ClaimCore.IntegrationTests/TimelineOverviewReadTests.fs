@@ -18,15 +18,14 @@ let private required =
     | Ok value -> value
     | Error problem -> failtestf "Fixture refused: %A" problem
 
-let private id number =
-    Guid.Parse(sprintf "66000000-0000-4000-8000-%012d" number)
+let private id (ids: OperationIds.Scope) number = ids.Id number
 
 let private token = CancellationToken.None
 let private get (value: System.Threading.Tasks.Task<'value>) = value.GetAwaiter().GetResult()
 
-let private actor number name =
+let private actor ids number name =
     {
-        Actor.ActorId = CaseFixtures.actorId (id number)
+        Actor.ActorId = CaseFixtures.actorId (id ids number)
         Principal = PrincipalKey.human "https://timeline-reads.example/" name |> required
         Enabled = true
         Profile = ActorProfile.parse { DisplayName = name; Contact = None } |> required |> Some
@@ -51,21 +50,21 @@ let private execute core input =
     | ExecuteResult.Accepted receipt -> receipt
     | other -> failtestf "Expected accepted fixture: %A" other
 
-let private case number revision act =
+let private case ids number revision act =
     Inputs.caseOperation
         {
-            OperationId = id number
+            OperationId = id ids number
             CaseReference = "TIMELINE-OVERVIEW"
             ExpectedRevision = revision
             Act = act
         }
 
-let private authority number (person: Actor) act =
+let private authority ids number (person: Actor) act =
     let kind, issuer, subject = PrincipalKey.parts person.Principal
 
     OperationInput.Authority
         {
-            OperationId = id number
+            OperationId = id ids number
             Target =
                 {
                     Kind = kind
@@ -108,13 +107,23 @@ let private disclosed (entry: CaseTimelineEntry) =
     | other -> failtestf "Expected full disclosure: %A" other
 
 let private fixture () =
+    let ids = OperationIds.Scope()
+
     let owner, assigned, reader, steward =
-        actor 2 "Timeline owner",
-        actor 3 "Original assignee",
-        actor 4 "Summary reader",
-        actor 5 "Steward"
+        actor ids 2 "Timeline owner",
+        actor ids 3 "Original assignee",
+        actor ids 4 "Summary reader",
+        actor ids 5 "Steward"
 
     let database = PostgresFixture.createFor owner.Principal |> get
+
+    let database =
+        { database with
+            Fixture =
+                { database.Fixture with
+                    OperationIds = ids
+                }
+        }
 
     try
         let core = service database owner
@@ -122,7 +131,7 @@ let private fixture () =
         let provisioned =
             Service.provisionOwner
                 core
-                (id 2)
+                (id ids 2)
                 {
                     DisplayName = "Timeline owner"
                     Contact = None
@@ -143,6 +152,7 @@ let private fixture () =
             execute
                 core
                 (authority
+                    ids
                     number
                     person
                     (AuthorityAct.Register { DisplayName = name; Contact = None }))
@@ -158,6 +168,7 @@ let private fixture () =
             execute
                 core
                 (authority
+                    ids
                     number
                     person
                     (AuthorityAct.Grant
@@ -167,7 +178,8 @@ let private fixture () =
                         }))
             |> ignore
 
-        let receipt = execute core (case 10 0L (AuthoredCaseAct.Open Inputs.registration))
+        let receipt =
+            execute core (case ids 10 0L (AuthoredCaseAct.Open Inputs.registration))
 
         let parent =
             match receipt.Subject with
@@ -177,6 +189,7 @@ let private fixture () =
         execute
             core
             (authority
+                ids
                 1004
                 reader
                 (AuthorityAct.Grant
@@ -186,7 +199,7 @@ let private fixture () =
                     }))
         |> ignore
 
-        execute core (case 11 1L (AuthoredCaseAct.Decide Inputs.decision)) |> ignore
+        execute core (case ids 11 1L (AuthoredCaseAct.Decide Inputs.decision)) |> ignore
 
         for number, action, due in
             [
@@ -197,7 +210,7 @@ let private fixture () =
                 core
                 (OperationInput.Reminder
                     {
-                        OperationId = id number
+                        OperationId = id ids number
                         Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
                         Act = AuthoredReminderAct.Create { Action = action; Due = due }
                     })
@@ -207,7 +220,7 @@ let private fixture () =
             core
             (OperationInput.Work
                 {
-                    OperationId = id 14
+                    OperationId = id ids 14
                     Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
                     ExpectedRevision = 0L
                     Act =
@@ -234,17 +247,18 @@ let private ledgerCount (database: PostgresFixture.Database) =
         })
     |> get
 
-let private reminder number act =
+let private reminder ids number act =
     OperationInput.Reminder
         {
-            OperationId = id number
+            OperationId = id ids number
             Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
             Act = act
         }
 
-let private stalePreview core number identity expected =
+let private stalePreview ids core number identity expected =
     let input =
         reminder
+            ids
             number
             (AuthoredReminderAct.Update(
                 ReminderId.value identity,
@@ -290,6 +304,7 @@ let tests =
                 "zero reminder revisions refuse cleanly without append while revision one stays valid"
                 (fun () ->
                     let database, core, _, _, _, _ = fixture ()
+                    let ids = database.Fixture.OperationIds
 
                     use _owned =
                         { new IDisposable with
@@ -299,12 +314,13 @@ let tests =
                     let before = ledgerCount database
 
                     let target =
-                        CaseFixtures.operationId (id 12)
+                        CaseFixtures.operationId (id ids 12)
                         |> ReminderId.ofOperationId
                         |> ReminderId.value
 
                     let malformed =
                         reminder
+                            ids
                             401
                             (AuthoredReminderAct.Update(
                                 target,
@@ -352,6 +368,7 @@ let tests =
 
                     let valid =
                         reminder
+                            ids
                             402
                             (AuthoredReminderAct.Update(
                                 target,
@@ -371,18 +388,20 @@ let tests =
                 "accepted paired effects stay isolated in both stale previews and fixed-range continuations"
                 (fun () ->
                     let database, core, owner, _, _, _ = fixture ()
+                    let ids = database.Fixture.OperationIds
 
                     use _owned =
                         { new IDisposable with
                             member _.Dispose() = database.Fixture.Dispose()
                         }
 
-                    let original = ReminderId.ofOperationId (CaseFixtures.operationId (id 12))
+                    let original = ReminderId.ofOperationId (CaseFixtures.operationId (id ids 12))
 
                     let paired =
                         execute
                             core
                             (reminder
+                                ids
                                 40
                                 (AuthoredReminderAct.CompleteAndPlanNext(
                                     ReminderId.value original,
@@ -419,6 +438,7 @@ let tests =
                     execute
                         core
                         (reminder
+                            ids
                             41
                             (AuthoredReminderAct.Reopen(
                                 ReminderId.value original,
@@ -431,6 +451,7 @@ let tests =
                         execute
                             core
                             (reminder
+                                ids
                                 (100 + int revision)
                                 (AuthoredReminderAct.Update(
                                     ReminderId.value original,
@@ -446,6 +467,7 @@ let tests =
                         execute
                             core
                             (reminder
+                                ids
                                 (200 + int revision)
                                 (AuthoredReminderAct.Update(
                                     ReminderId.value next.ReminderId,
@@ -457,8 +479,8 @@ let tests =
                                 )))
                         |> ignore
 
-                    let originalActual, originalPage = stalePreview core 301 original 1L
-                    let nextActual, nextPage = stalePreview core 302 next.ReminderId 1L
+                    let originalActual, originalPage = stalePreview ids core 301 original 1L
+                    let nextActual, nextPage = stalePreview ids core 302 next.ReminderId 1L
 
                     Expect.equal
                         (Revision.value originalActual)
@@ -480,6 +502,7 @@ let tests =
                     execute
                         core
                         (reminder
+                            ids
                             303
                             (AuthoredReminderAct.Update(
                                 ReminderId.value original,
@@ -494,6 +517,7 @@ let tests =
                     execute
                         core
                         (reminder
+                            ids
                             304
                             (AuthoredReminderAct.Update(
                                 ReminderId.value next.ReminderId,
@@ -520,7 +544,7 @@ let tests =
 
                     Expect.equal
                         nextEntry.OperationId
-                        (CaseFixtures.operationId (id 201))
+                        (CaseFixtures.operationId (id ids 201))
                         "The next conflict retains its actual first update operation"
 
                     Expect.equal
@@ -537,7 +561,7 @@ let tests =
                         ))
                         "Next continuation uses its retained first update, not latest state"
 
-                    // Existing reminder commands require positive revisions; only this Core-issued history range includes birth revision one.
+                    // Existing reminder ids commands require positive revisions; only this Core-issued history range includes birth revision one.
                     let currentPage = page core None None 1
                     let scope = TimelineHistory.binding currentPage.CaseId owner.ActorId None
 
@@ -633,6 +657,7 @@ let tests =
                 "shared snapshot producer pages all five events and honors current names and history rights"
                 (fun () ->
                     let database, core, _, assigned, reader, _ = fixture ()
+                    let ids = database.Fixture.OperationIds
 
                     use _owned =
                         { new IDisposable with
@@ -702,6 +727,7 @@ let tests =
                     execute
                         core
                         (authority
+                            ids
                             20
                             assigned
                             (AuthorityAct.SetProfile
@@ -744,7 +770,7 @@ let tests =
                         (bytes.Contains("Current renamed assignee", StringComparison.Ordinal))
                         "Assignment context is not a summary-permission escape"
 
-                    execute core (authority 21 assigned AuthorityAct.EraseProfile) |> ignore
+                    execute core (authority ids 21 assigned AuthorityAct.EraseProfile) |> ignore
 
                     match (collect core None |> List.head |> disclosed).Overview.Event with
                     | TimelineEvent.ResponsibilityAssigned value ->
@@ -757,6 +783,7 @@ let tests =
                 "erased parent exposes no overview values and unavailable callers retain non-disclosure"
                 (fun () ->
                     let database, core, _, _, _, steward = fixture ()
+                    let ids = database.Fixture.OperationIds
 
                     use _owned =
                         { new IDisposable with
@@ -765,10 +792,12 @@ let tests =
 
                     let stewardCore = service database steward
 
-                    execute stewardCore (case 30 2L (AuthoredCaseAct.Void "Retained reason"))
+                    execute stewardCore (case ids 30 2L (AuthoredCaseAct.Void "Retained reason"))
                     |> ignore
 
-                    execute stewardCore (case 31 3L (AuthoredCaseAct.Bare BareAct.Erase)) |> ignore
+                    execute stewardCore (case ids 31 3L (AuthoredCaseAct.Bare BareAct.Erase))
+                    |> ignore
+
                     let erased = collect core None
 
                     Expect.isTrue
@@ -776,7 +805,7 @@ let tests =
                          |> List.forall (fun value -> value.Changes = TimelineChanges.Erased))
                         "No projection runs over erased effects"
 
-                    let unknown = actor 90 "Unknown caller"
+                    let unknown = actor ids 90 "Unknown caller"
 
                     match
                         (Service.timeline

@@ -21,7 +21,7 @@ let private bytes (value: string) = Encoding.UTF8.GetBytes value
 let private accepted =
     Result.defaultWith (fun problem -> failtest (sprintf "Unexpected codec refusal: %A" problem))
 
-let private id = Guid.Parse "10000000-0000-4000-8000-000000000001"
+let private id = Guid.Parse "10000000-0000-7000-8000-000000000001"
 
 let private roundTrip codec value =
     Expect.equal
@@ -43,7 +43,6 @@ let private registry () =
             match endpoint.Token with
             | "operation.execute" -> EndpointEffect.LedgerExecution
             | "session.logout"
-            | "operation.resolve"
             | "authority.requests.dismiss" -> EndpointEffect.OperationalWrite
             | _ -> EndpointEffect.Read
 

@@ -179,15 +179,16 @@ let private cancelled () =
             |> Async.AwaitTask
 
         let! observed =
-            (ClaimCore.TestSupport.StoreFixtures.observe
-                core
-                ({ OperationId = id 470 })
-                (cancellation.Token))
+            (Service.operationGet core ({ OperationId = id 470 }) (cancellation.Token))
             |> Async.AwaitTask
 
         Expect.equal context (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled context"
         Expect.equal current (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled case"
-        Expect.equal observed (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled observation"
+
+        Expect.equal
+            observed.Outcome
+            (Outcome.Failed CoreFault.StoreUnavailable)
+            "Cancelled observation"
     }
 
 [<Tests>]

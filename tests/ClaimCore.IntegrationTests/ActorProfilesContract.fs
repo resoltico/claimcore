@@ -52,7 +52,7 @@ let private self owner =
 let internal lifecycle fixture =
     task {
         let! owner = bootstrap fixture
-        let ownerId = CaseFixtures.actorId (id 1)
+        let ownerId = CaseFixtures.actorId (id fixture 1)
 
         let profile: ActorProfileInput =
             {
@@ -60,7 +60,9 @@ let internal lifecycle fixture =
                 Contact = Some "private-contact@example.test"
             }
 
-        let! changed = execute owner (id 301) fixture.Owner (AuthorityAct.SetProfile profile)
+        let! changed =
+            execute owner (id fixture 301) fixture.Owner (AuthorityAct.SetProfile profile)
+
         let changed = accepted changed
 
         Expect.equal
@@ -74,7 +76,7 @@ let internal lifecycle fixture =
         let! granted =
             execute
                 owner
-                (id 302)
+                (id fixture 302)
                 fixture.Owner
                 (AuthorityAct.Grant
                     {
@@ -83,10 +85,10 @@ let internal lifecycle fixture =
                     })
 
         accepted granted |> ignore
-        let! identityBefore = operation fixture (id 1)
-        let! grantBefore = operation fixture (id 302)
-        let! profileBefore = operation fixture (id 301)
-        let! erased = execute owner (id 303) fixture.Owner AuthorityAct.EraseProfile
+        let! identityBefore = operation fixture (id fixture 1)
+        let! grantBefore = operation fixture (id fixture 302)
+        let! profileBefore = operation fixture (id fixture 301)
+        let! erased = execute owner (id fixture 303) fixture.Owner AuthorityAct.EraseProfile
         let erased = accepted erased
 
         Expect.equal
@@ -97,9 +99,9 @@ let internal lifecycle fixture =
         let! after = self owner
         Expect.equal after.DisplayName DisplayName.Erased "No identity-provider subject fallback"
         Expect.equal after.ActorId ownerId "Identity is retained"
-        let! identityAfter = operation fixture (id 1)
-        let! grantAfter = operation fixture (id 302)
-        let! profileAfter = operation fixture (id 301)
+        let! identityAfter = operation fixture (id fixture 1)
+        let! grantAfter = operation fixture (id fixture 302)
+        let! profileAfter = operation fixture (id fixture 301)
 
         Expect.equal
             identityAfter.Position
@@ -128,22 +130,19 @@ let internal lifecycle fixture =
             (LedgerEntries.identityBytesOperation validated)
             "Erased registration profile prevents exact replay"
 
-        let! replay = Service.provisionOwner owner (id 1) Inputs.ownerProfile token
+        let! replay = Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile token
 
         Expect.equal
             replay
             (Ok(Verdict.Refuse(Refusal.Access AccessRefusal.ResourceUnavailable)))
             "Accepted existence must not become exact replay after erasure"
 
-        let! resolved = Service.resolve owner { OperationId = id 301 } token
+        let! resolved = Service.operationGet owner { OperationId = id fixture 301 } token
 
         match resolved.Outcome with
-        | Outcome.Succeeded(Resolved.Accepted receipt) ->
-            Expect.equal
-                receipt.Position
-                profileBefore.Position
-                "Settlement keeps accepted metadata"
-        | other -> failtestf "Erasure must never fence accepted metadata as NOT_ACCEPTED: %A" other
+        | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) ->
+            Expect.equal receipt.Position profileBefore.Position "Lookup keeps accepted metadata"
+        | other -> failtestf "Erasure keeps accepted metadata available: %A" other
 
         let replacement: ActorProfileInput =
             {
@@ -152,7 +151,7 @@ let internal lifecycle fixture =
             }
 
         let! renamed =
-            execute owner (id 304) fixture.Owner (AuthorityAct.SetProfile replacement)
+            execute owner (id fixture 304) fixture.Owner (AuthorityAct.SetProfile replacement)
 
         accepted renamed |> ignore
 
@@ -187,9 +186,9 @@ let internal lifecycle fixture =
             (DisplayName.Named(PartyName.parse replacement.DisplayName |> required))
             "A later re-profile survives an older erasure"
 
-        let! fresh = operation fixture (id 304)
+        let! fresh = operation fixture (id fixture 304)
         Expect.isSome fresh.Root.Payload "Later profile payload survives"
-        let! replay = Service.provisionOwner owner (id 1) Inputs.ownerProfile token
+        let! replay = Service.provisionOwner owner (id fixture 1) Inputs.ownerProfile token
 
         Expect.equal
             replay
@@ -223,9 +222,11 @@ let internal registrationIsolation fixture =
                 Contact = Some "distinct-private-contact"
             }
 
-        let! registered = execute owner (id 311) principal (AuthorityAct.Register profile)
+        let! registered =
+            execute owner (id fixture 311) principal (AuthorityAct.Register profile)
+
         let receipt = accepted registered
-        let! stored = operation fixture (id 311)
+        let! stored = operation fixture (id fixture 311)
         Expect.equal stored.Entries.Length 2 "Registration has identity plus profile effects"
         Expect.equal receipt.Position stored.Position "The receipt proves the final effect"
 
@@ -276,7 +277,8 @@ let internal registrationIsolation fixture =
             let item =
                 page.Items
                 |> List.find (fun item ->
-                    item.Actor.ActorId = ActorId.ofOperationId (CaseFixtures.operationId (id 311)))
+                    item.Actor.ActorId =
+                        ActorId.ofOperationId (CaseFixtures.operationId (id fixture 311)))
 
             Expect.equal
                 item.Actor.DisplayName
@@ -321,7 +323,7 @@ let internal atomicWrites fixture =
                                         command
                                         {
                                             Head = tx.Head
-                                            Fenced = false
+
                                             NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
@@ -340,7 +342,7 @@ let internal atomicWrites fixture =
                     CancellationToken = token
                 }
 
-        for operation, after in [ id 321, 1; id 322, 2 ] do
+        for operation, after in [ id fixture 321, 1; id fixture 322, 2 ] do
             let! failed = fail operation target (AuthorityAct.Register Inputs.actorProfile) after
 
             Expect.equal
@@ -358,15 +360,15 @@ let internal atomicWrites fixture =
 
             Expect.isNone ((actor |> required).Actor) "No profile-less registration remains"
 
-        let! original = operation fixture (id 1)
-        let! failed = fail (id 323) fixture.Owner AuthorityAct.EraseProfile 1
+        let! original = operation fixture (id fixture 1)
+        let! failed = fail (id fixture 323) fixture.Owner AuthorityAct.EraseProfile 1
 
         Expect.equal
             failed
             (Error StoreFailure.Internal: Result<Verdict<unit>, StoreFailure>)
             "Erasure projection participates in rollback"
 
-        let! restored = operation fixture (id 1)
+        let! restored = operation fixture (id fixture 1)
 
         Expect.equal
             restored.Entries

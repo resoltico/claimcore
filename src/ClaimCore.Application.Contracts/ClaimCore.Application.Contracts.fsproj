@@ -19,6 +19,6 @@
     <Compile Include="ViewCounts.fs" />
     <Compile Include="Replies.fs" />
     <Compile Include="Operations.fs" />
-    <Compile Include="Resolution.fs" />
+    <Compile Include="OperationLookup.fs" />
   </ItemGroup>
 </Project>

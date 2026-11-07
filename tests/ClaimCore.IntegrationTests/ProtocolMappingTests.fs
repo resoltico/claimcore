@@ -90,14 +90,17 @@ let private assertServerIdentity endpoint input reply =
 
         if kind = JsonValue.String "ACCEPTED" || kind = JsonValue.String "ALREADY_ACCEPTED" then
             receiptIdentity expected
-    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe) when
-        kind = JsonValue.String "SUCCEEDED"
-        ->
-        receiptIdentity (guid "operationId" input)
-    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve) when
+    | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) when
         kind = JsonValue.String "ACCEPTED"
         ->
-        receiptIdentity (guid "operationId" input)
+        let receipt =
+            JsonValue.tryMember "receipt" (memberValue "data" outcome)
+            |> Option.defaultWith (fun () -> failtest "Accepted lookup receipt")
+
+        Expect.equal
+            (JsonValue.tryMember "operationId" receipt)
+            (Some(Codec.uuid.Write(guid "operationId" input)))
+            "Lookup receipt identity"
     | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) when
         kind = JsonValue.String "SUCCEEDED"
         ->
@@ -159,7 +162,7 @@ let private cancellationPolicy () =
         let actor = core fixture owner
 
         let input =
-            ClaimCore.TestSupport.Inputs.caseOperation (openRequest 91 "MAPPING-001")
+            ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 91 "MAPPING-001")
 
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()

@@ -211,6 +211,11 @@ module internal InteractiveReview =
                 if consent then
                     let execute =
                         invocation Api.operationExecute input
+                        |> (fun frame ->
+                            if draft.SuppliedId.IsNone then
+                                Frames.provisional frame
+                            else
+                                frame)
                         |> Frames.bindInstallation installation
                         |> Result.defaultWith (fun _ ->
                             invalidOp "Reviewed scope must bind the request.")

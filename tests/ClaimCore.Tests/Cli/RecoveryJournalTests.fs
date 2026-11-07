@@ -9,10 +9,10 @@ open ClaimCore.Cli
 let private record (attempt: string) : RecoveryIdentity =
     {
         ServiceOrigin = "https://service.example"
-        InstallationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
-        ActorId = Guid.Parse "10000000-0000-4000-8000-000000000002"
+        InstallationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
+        ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
         AttemptId = Guid.Parse attempt
-        OperationId = Guid.Parse "10000000-0000-4000-8000-000000000003"
+        OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
         Subject = "CASE"
         Act = "OPEN"
     }
@@ -29,8 +29,8 @@ let tests =
 
                     try
                         let directory = Path.Combine(root.FullName, "journal")
-                        let first = record "10000000-0000-4000-8000-000000000004"
-                        let second = record "10000000-0000-4000-8000-000000000005"
+                        let first = record "10000000-0000-7000-8000-000000000004"
+                        let second = record "10000000-0000-7000-8000-000000000005"
 
                         Expect.isOk
                             (RecoveryJournal.save directory first)
@@ -132,7 +132,7 @@ let tests =
                         Expect.isError
                             (RecoveryJournal.save
                                 root.FullName
-                                (record "10000000-0000-4000-8000-000000000004"))
+                                (record "10000000-0000-7000-8000-000000000004"))
                             "Public application directories refuse"
 
                         Expect.isEmpty
@@ -193,7 +193,7 @@ let processTermination =
 
                 child.Kill true
                 Expect.isTrue (child.WaitForExit 5000) "The owned process was terminated"
-                let expected = record "10000000-0000-4000-8000-000000000004"
+                let expected = record "10000000-0000-7000-8000-000000000004"
 
                 Expect.equal
                     (RecoveryJournal.list directory expected.Scope)
@@ -220,7 +220,7 @@ let strictFamilies =
                 "restart recovery must match the retained operation family and action"
                 (fun () ->
                     let identity =
-                        { record "10000000-0000-4000-8000-000000000004" with
+                        { record "10000000-0000-7000-8000-000000000004" with
                             Subject = "REMINDER"
                             Act = "COMPLETE_AND_PLAN_NEXT"
                         }
@@ -243,7 +243,7 @@ let strictFamilies =
                                     {
                                         CaseId =
                                             ClaimCore.Domain.CaseId.create (
-                                                Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                                Guid.Parse "20000000-0000-7000-8000-000000000001"
                                             )
                                             |> Option.get
                                         Reference =
@@ -255,7 +255,7 @@ let strictFamilies =
                                                 .ReminderReceiptEffects.CompletedAndPlanned(
                                                     version
                                                         (Guid.Parse
-                                                            "30000000-0000-4000-8000-000000000001")
+                                                            "30000000-0000-7000-8000-000000000001")
                                                         4L,
                                                     version identity.OperationId 1L
                                                 )
@@ -282,7 +282,7 @@ let strictFamilies =
                     Expect.isFalse
                         (RecoveryJournal.matchesReceipt
                             { identity with
-                                OperationId = Guid.Parse "10000000-0000-4000-8000-000000000099"
+                                OperationId = Guid.Parse "10000000-0000-7000-8000-000000000099"
                             }
                             receipt)
                         "Foreign operation cannot clear this attempt")
@@ -293,7 +293,7 @@ let strictFamilies =
 
                     try
                         let directory = Path.Combine(root.FullName, "journal")
-                        let identity = record "10000000-0000-4000-8000-000000000004"
+                        let identity = record "10000000-0000-7000-8000-000000000004"
 
                         Expect.isOk
                             (RecoveryJournal.save directory identity)

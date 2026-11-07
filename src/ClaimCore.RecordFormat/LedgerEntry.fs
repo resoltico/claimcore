@@ -41,7 +41,6 @@ type ReminderEntryMetadata =
 
 [<RequireQualifiedAccess>]
 type RecordedTarget =
-    | NonAcceptance of OperationId
     | Case of CaseEntryMetadata
     | Authority of AuthorityEntryMetadata
     | Work of WorkEntryMetadata
@@ -172,15 +171,6 @@ module LedgerEntry =
 
     let private subjectBytes =
         function
-        | RecordedTarget.NonAcceptance operation ->
-            {
-                Kind = 3uy
-                Act = 64uy
-                Identifier = (OperationId.value operation).ToByteArray(bigEndian = true)
-                Revision = i64 0L
-                Date = i32 0
-                Related = Array.empty
-            }
         | RecordedTarget.Authority subject ->
             {
                 Kind = 2uy

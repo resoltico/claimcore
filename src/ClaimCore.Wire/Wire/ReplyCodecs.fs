@@ -56,36 +56,6 @@ module ReplyCodecs =
         |> build
         |> named name
 
-    let observation =
-        let outcome =
-            tagged
-                "ObservationResult"
-                [
-                    variant
-                        "SUCCEEDED"
-                        Outcome.Succeeded
-                        (function
-                        | Outcome.Succeeded value -> Some value
-                        | _ -> None)
-                        (data ReceiptCodecs.receipt)
-                    variant
-                        "REJECTED"
-                        Outcome.Rejected
-                        (function
-                        | Outcome.Rejected value -> Some value
-                        | _ -> None)
-                        (data DiagnosticCodecs.diagnostic)
-                    variant
-                        "FAILED"
-                        Outcome.Failed
-                        (function
-                        | Outcome.Failed value -> Some value
-                        | _ -> None)
-                        (data DiagnosticCodecs.fault)
-                ]
-
-        operationReply "ObservationReply" outcome
-
     let private capabilityAccess =
         (record (fun capability direct inherited effective ->
             {

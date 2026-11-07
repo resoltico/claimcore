@@ -163,7 +163,14 @@ let private scalarDomainValue (kind: Type) =
     if kind = typeof<CaseReference> then
         Some(reference |> Gen.map (CaseFixtures.reference >> box))
     elif kind = typeof<OperationId> then
-        Some(guid |> Gen.map (CaseFixtures.operationId >> box))
+        Some(
+            guid
+            |> Gen.map (
+                OperationIds.fromEntropy (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+                >> CaseFixtures.operationId
+                >> box
+            )
+        )
     elif kind = typeof<CaseId> then
         Some(guid |> Gen.map (CaseFixtures.caseId >> box))
     elif kind = typeof<ActorId> then

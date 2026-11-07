@@ -85,7 +85,7 @@ let tests =
         ]
 
 let private prepared arguments =
-    Grammar.prepare (fun () -> "10000000-0000-4000-8000-000000000001") arguments
+    Grammar.prepare (fun () -> "10000000-0000-7000-8000-000000000001") arguments
     |> Result.defaultWith (fun issues -> failtestf "Request preparation failed: %A" issues)
 
 let private verbPreparation () =
@@ -97,7 +97,25 @@ let private verbPreparation () =
     let frame =
         Frames.admit actual.Bytes |> Result.defaultWith (fun _ -> failtest "Frame")
 
-    Expect.equal (Frames.encodeInvocation frame) actual.Bytes "Dry run is exactly the call frame"
+    let raw =
+        StrictJson.read Limits.MaximumInvocationBytes actual.Bytes
+        |> Result.defaultWith (fun _ -> failtest "Dry-run JSON")
+
+    Expect.isNone
+        (JsonValue.tryMember "input" raw
+         |> Option.bind (JsonValue.tryMember "operationId"))
+        "An ID-less dry run allocates no executable identity"
+
+    match Frames.value Api.operationExecute frame with
+    | Some(OperationInput.Case request) ->
+        Expect.equal
+            request.Target
+            (CaseSelector.Reference "SYNTHETIC")
+            "Authored target is retained"
+
+        Expect.equal request.ExpectedRevision 1L "Authored revision is retained"
+        Expect.equal request.Act (AuthoredCaseAct.Bare BareAct.Close) "Authored act is retained"
+    | _ -> failtest "Expected a case execution frame"
 
     let preview =
         prepared (args @ [ "--preview"; "--format"; "json"; "--language"; "lv" ])
@@ -198,27 +216,27 @@ let private nonLedgerCoverageControls () =
         (fun () -> assertNonLedgerVerbCoverage Api.all (List.head mapped :: mapped))
         "Duplicating a mapping fails uniqueness even when sets agree"
 
-let private resolveVerb () =
-    let operationId = "10000000-0000-4000-8000-000000000003"
-    let invocation = prepared [ "operation"; "settle"; operationId ]
+let private lookupVerb () =
+    let operationId = "10000000-0000-7000-8000-000000000003"
+    let invocation = prepared [ "operation"; "get"; operationId ]
 
     let admitted =
         Frames.admit invocation.Bytes
-        |> Result.defaultWith (fun _ -> failtest "Resolve frame")
+        |> Result.defaultWith (fun _ -> failtest "Lookup frame")
 
     Expect.equal
         (Api.id (Frames.endpoint admitted))
-        Api.operationResolve.Token
-        "Registry-selected resolve"
+        Api.operationGet.Token
+        "Registry-selected lookup"
 
     Expect.equal
         (Api.effect (Frames.endpoint admitted))
-        EndpointEffect.OperationalWrite
-        "Resolve writes a fence only"
+        EndpointEffect.Read
+        "Lookup reads without appending"
 
     Expect.equal
         (Frames.input admitted)
-        (Api.operationResolve.Input.Write { OperationId = Guid.Parse operationId })
+        (Api.operationGet.Input.Write { OperationId = Guid.Parse operationId })
         "Caller supplies operation ID only"
 
 let private localizedReplyRendering () =
@@ -300,7 +318,7 @@ let renderingTests =
             testCase "every read and operational write has a registry-selected verb" nonLedgerVerbs
             testCase
                 "operation resolution keeps explicit identifiers and prior uncertainty"
-                resolveVerb
+                lookupVerb
             testCase
                 "non-ledger coverage rejects added endpoints and missing or repeated mappings"
                 nonLedgerCoverageControls
@@ -348,7 +366,7 @@ let private authorityPreviewFrame enabledBefore enabledAfter grantBefore grantAf
 
     let response =
         {
-            PreviewReply.OperationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
+            PreviewReply.OperationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
             Outcome =
                 (Previewed.Reviewed >> Outcome.Succeeded) (
                     OperationReview.Authority
@@ -549,126 +567,83 @@ let authorityTextTests =
 [<Tests>]
 let recoveryCommands =
     testList
-        "CLI passive recovery and explicit settlement"
+        "CLI unconfirmed changes"
         [
             testCase
-                "list check and settle have explicit format language and attempt identity"
+                "an invalid explicit execute ID cannot become an unconfirmed journal entry"
                 (fun () ->
-                    let attempt = Guid.Parse "10000000-0000-4000-8000-000000000003"
+                    let input =
+                        Frames.input
+                            (prepared [ "case"; "close"; "SYNTHETIC"; "--expected-revision"; "1" ])
+                                .Invocation
 
-                    for arguments, action, text, language in
-                        [
-                            [ "recovery"; "list" ], RecoveryAction.List, true, "en"
+                    let fields =
+                        match input with
+                        | JsonValue.Object fields -> fields
+                        | _ -> failtest "Object input"
+
+                    let frame fields =
+                        JsonValue.Object
                             [
-                                "recovery"
-                                "check"
-                                string attempt
-                                "--format"
-                                "json"
-                                "--language"
-                                "lv"
-                            ],
-                            RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt),
-                            false,
-                            "lv"
-                            [ "recovery"; "settle"; string attempt; "--language"; "ar" ],
-                            RecoveryAction.Attempt(RecoveryAttemptAction.Settle, attempt),
-                            true,
-                            "ar"
-                        ] do
-                        match CliInvocations.admit arguments with
-                        | Ok(CliInvocation.Recovery request) ->
-                            Expect.equal
-                                (request.Action, request.Text, request.Language)
-                                (action, text, language)
-                                "Independent command meaning"
-                        | _ -> failtest "Expected an admitted recovery command"
+                                "endpoint", JsonValue.String "operation.execute"
+                                "input", JsonValue.Object fields
+                            ]
+                        |> WireWriter.bytes
 
+                    let missing =
+                        fields
+                        |> List.filter (fst >> ((<>) "operationId"))
+                        |> frame
+                        |> Frames.admit
+
+                    Expect.isOk missing "The CLI fills omitted execute identity"
+
+                    let invalid =
+                        fields
+                        |> List.map (fun (key, value) ->
+                            key,
+                            if key = "operationId" then
+                                Codec.uuid.Write(
+                                    Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                )
+                            else
+                                value)
+                        |> frame
+                        |> Frames.admit
+
+                    Expect.isError invalid "UUIDv4 cannot be journaled or dispatched as a change")
+            testCase "list and check admit explicit scope-independent attempt identity" (fun () ->
+                let attempt = System.Guid.Parse "10000000-0000-7000-8000-000000000003"
+
+                for arguments, action in
+                    [
+                        [ "recovery"; "list" ], RecoveryAction.List
+                        [ "recovery"; "check"; string attempt ],
+                        RecoveryAction.Attempt(RecoveryAttemptAction.Check, attempt)
+                    ] do
+                    match CliInvocations.admit arguments with
+                    | Ok(CliInvocation.Recovery request) ->
+                        Expect.equal request.Action action "Command meaning"
+                    | _ -> failtest "Expected a recovery command"
+
+                for verb in [ "settle"; "resolve" ] do
                     Expect.isError
-                        (CliInvocations.admit [ "recovery"; "resolve"; string attempt ])
-                        "The superseded ambiguous command is not an alias"
+                        (CliInvocations.admit [ "recovery"; verb; string attempt ])
+                        "Removed verbs have no aliases"
 
-                    let status = prepared [ "operation"; "status"; string attempt ]
+                let lookup = prepared [ "operation"; "get"; string attempt ]
 
-                    Expect.equal
-                        (Frames.endpoint status.Invocation).Id
-                        Api.operationStatus.Id
-                        "Status selects a passive read"
+                Expect.equal
+                    (Frames.endpoint lookup.Invocation).Id
+                    Api.operationGet.Id
+                    "Current lookup endpoint"
 
-                    Expect.equal
-                        (Api.effect (Frames.endpoint status.Invocation))
-                        EndpointEffect.Read
-                        "The CLI cannot turn status into a write"
+                Expect.equal
+                    (Api.effect (Frames.endpoint lookup.Invocation))
+                    EndpointEffect.Read
+                    "Lookup appends nothing"
 
-                    Expect.isTrue
-                        (Api.requiresInstallation (Frames.endpoint status.Invocation))
-                        "Passive recovery remains installation bound"
-
-                    let settle = prepared [ "operation"; "settle"; string attempt ]
-
-                    Expect.equal
-                        (Frames.endpoint settle.Invocation).Id
-                        Api.operationResolve.Id
-                        "Settlement explicitly selects the ordered control write")
-            testCase
-                "human settlement shows the exact operation and never defaults to yes"
-                (fun () ->
-                    let operation = Guid.Parse "10000000-0000-4000-8000-000000000004"
-
-                    let context =
-                        match ClaimCore.TestSupport.ResponseExamples.defaultReply Api.context with
-                        | Outcome.Succeeded {
-                                                Requester = RequesterState.Active value
-                                            } -> value
-                        | _ -> failtest "Settlement needs an authenticated context fixture"
-
-                    for language in [ "en"; "lv"; "ar" ] do
-                        for answer, expected in
-                            [
-                                None, false
-                                Some "", false
-                                Some "yes", false
-                                Some "jā", false
-                                Some "نعم", false
-                                Some(operation.ToString("D") + " "), false
-                                Some(operation.ToString("D")), true
-                            ] do
-                            let captured = StringBuilder()
-
-                            let console: InteractiveConsole =
-                                {
-                                    IsInteractive = true
-                                    ReadLine = fun () -> answer
-                                    Write =
-                                        fun bytes ->
-                                            captured.Append(Encoding.UTF8.GetString bytes)
-                                            |> ignore
-                                }
-
-                            Expect.equal
-                                (CliConfirmation.settlement console language context operation)
-                                expected
-                                "Only the exact operation ID confirms irreversible settlement"
-
-                            Expect.stringContains
-                                (captured.ToString())
-                                (operation.ToString("D"))
-                                "The exact operation is identified before confirmation"
-
-                        let console: InteractiveConsole =
-                            {
-                                IsInteractive = false
-                                ReadLine =
-                                    fun () ->
-                                        failtest
-                                            "A redirected human confirmation cannot consume input"
-                                Write =
-                                    fun _ ->
-                                        failtest
-                                            "A redirected human confirmation cannot pretend to prompt"
-                            }
-
-                        Expect.isFalse
-                            (CliConfirmation.settlement console language context operation)
-                            "No interactive confirmation is invented")
+                Expect.isTrue
+                    (Api.requiresInstallation (Frames.endpoint lookup.Invocation))
+                    "Lookup remains installation bound")
         ]

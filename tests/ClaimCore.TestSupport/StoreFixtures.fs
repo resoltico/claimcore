@@ -17,6 +17,7 @@ open ClaimCore.Application
 type internal Fixture =
     {
         Store: IStore
+        OperationIds: OperationIds.Scope
         InstallationId: Guid
         Owner: PrincipalKey
         Calendar: IBusinessCalendar
@@ -30,18 +31,6 @@ let internal core fixture principal =
         fixture.Store
         fixture.Calendar
         principal
-
-let internal resolve services input token =
-    task {
-        let! reply = Service.resolve services input token
-        return reply.Outcome
-    }
-
-let internal observe services input token =
-    task {
-        let! reply = Service.observe services input token
-        return reply.Outcome
-    }
 
 let internal inspectCase fixture principal operation reference token =
     fixture.Store.Read(
@@ -126,21 +115,20 @@ let internal inspectAuthority fixture principal token =
         }
     )
 
-let internal id n =
-    Guid.Parse(sprintf "80000000-0000-4000-8000-%012d" n)
+let internal id (fixture: Fixture) n = fixture.OperationIds.Id n
 
 
-let internal request n reference revision act : UnvalidatedCaseRequest =
+let internal request fixture n reference revision act : UnvalidatedCaseRequest =
     {
-        OperationId = id n
+        OperationId = id fixture n
         CaseReference = reference
         ExpectedRevision = revision
         Act = act
     }
 
-let internal actRequest n reference revision act : UnvalidatedCaseRequest =
+let internal actRequest fixture n reference revision act : UnvalidatedCaseRequest =
     {
-        OperationId = id n
+        OperationId = id fixture n
         CaseReference = reference
         ExpectedRevision = revision
         Act = act
@@ -216,7 +204,7 @@ let internal bootstrap fixture =
         let! result =
             AuthorityExecution.provisionStore
                 (core fixture fixture.Owner)
-                (id 1)
+                (id fixture 1)
                 Inputs.ownerProfile
                 CancellationToken.None
 
@@ -242,7 +230,8 @@ let internal caseWorker fixture =
     task {
         let! owner = bootstrap fixture
 
-        for operationId, role in [ id 2, Role.CaseHandler; id 900000, Role.PaymentRecorder ] do
+        for operationId, role in
+            [ id fixture 2, Role.CaseHandler; id fixture 900000, Role.PaymentRecorder ] do
             let! outcome =
                 grant
                     owner

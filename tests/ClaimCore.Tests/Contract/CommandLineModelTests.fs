@@ -47,11 +47,11 @@ let tests =
                     {
                         OwnerAcceptance.OperationId =
                             (CaseFixtures.operationId (
-                                Guid.Parse "10000000-0000-4000-8000-000000000001"
+                                Guid.Parse "10000000-0000-7000-8000-000000000001"
                             ))
                         TargetActorId =
                             (CaseFixtures.actorId (
-                                Guid.Parse "10000000-0000-4000-8000-000000000002"
+                                Guid.Parse "10000000-0000-7000-8000-000000000002"
                             ))
                         Position = position
                     }

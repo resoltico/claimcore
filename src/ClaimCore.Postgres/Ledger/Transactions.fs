@@ -126,7 +126,7 @@ module internal Transactions =
                 return Error(failure commitStarted error)
         }
 
-    /// Application permits commit only for Proceed, including operational fences.
+    /// Application permits commit only for Proceed, including confirmation without an append.
     let write source settings token action = transact source settings token action
 
     let read source token action =

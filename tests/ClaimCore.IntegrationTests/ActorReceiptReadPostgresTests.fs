@@ -12,19 +12,16 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private id number =
-    Guid.Parse(sprintf "e9adb05d-d7b0-430e-b2eb-%012d" number)
-
 let private principal subject =
     PrincipalKey.human "https://pg-receipt-names.example/" subject
     |> Result.defaultWith (string >> failtest)
 
-let private authority number target act =
+let private authority fixture number target act =
     let kind, issuer, subject = PrincipalKey.parts target
 
     OperationInput.Authority
         {
-            OperationId = id number
+            OperationId = id fixture number
             Target =
                 {
                     Kind = kind
@@ -44,8 +41,8 @@ let private execute service input =
             | other -> failtestf "%A" other
     }
 
-let private named number target name =
-    authority number target (AuthorityAct.Register { DisplayName = name; Contact = None })
+let private named fixture number target name =
+    authority fixture number target (AuthorityAct.Register { DisplayName = name; Contact = None })
 
 let private target (receipt: OperationReceipt) =
     match receipt.Subject with
@@ -55,13 +52,14 @@ let private target (receipt: OperationReceipt) =
 let private known receipt =
     target receipt |> AuthorityTargetDisclosure.actorId
 
-let private status service operation =
+let private status fixture service operation =
     task {
-        let! reply = Service.status service { OperationId = id operation } token
+        let! reply =
+            Service.operationGet service { OperationId = id fixture operation } token
 
         return
             match reply.Outcome with
-            | Outcome.Succeeded(OperationStatus.Accepted receipt) -> receipt
+            | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) -> receipt
             | other -> failtestf "%A" other
     }
 
@@ -74,6 +72,7 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (authority
+                    fixture
                     1
                     fixture.Owner
                     (AuthorityAct.Grant
@@ -86,6 +85,7 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (authority
+                    fixture
                     2
                     fixture.Owner
                     (AuthorityAct.Grant
@@ -95,14 +95,15 @@ let private scenario (database: PostgresFixture.Database) =
                         }))
 
         let alice, bob, guardian = principal "alice", principal "bob", principal "guardian"
-        let! aliceReceipt = execute owner (named 3 alice "Alice")
-        let! bobReceipt = execute owner (named 4 bob "Bob")
-        let! _ = execute owner (named 5 guardian "Guardian")
+        let! aliceReceipt = execute owner (named fixture 3 alice "Alice")
+        let! bobReceipt = execute owner (named fixture 4 bob "Bob")
+        let! _ = execute owner (named fixture 5 guardian "Guardian")
 
         let! _ =
             execute
                 owner
                 (authority
+                    fixture
                     6
                     guardian
                     (AuthorityAct.Grant
@@ -118,7 +119,7 @@ let private scenario (database: PostgresFixture.Database) =
                 owner
                 (Inputs.caseOperation
                     {
-                        OperationId = id 7
+                        OperationId = id fixture 7
                         CaseReference = "PG-NAMED-WORK"
                         ExpectedRevision = 0L
                         Act = CaseAct.Open Inputs.registration
@@ -129,6 +130,7 @@ let private scenario (database: PostgresFixture.Database) =
                 execute
                     owner
                     (authority
+                        fixture
                         number
                         person
                         (AuthorityAct.Grant
@@ -142,7 +144,7 @@ let private scenario (database: PostgresFixture.Database) =
         let change number revision responsible =
             OperationInput.Work
                 {
-                    OperationId = id number
+                    OperationId = id fixture number
                     Target = CaseSelector.Reference "PG-NAMED-WORK"
                     ExpectedRevision = revision
                     Act =
@@ -176,6 +178,7 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 owner
                 (authority
+                    fixture
                     19
                     alice
                     (AuthorityAct.SetProfile
@@ -184,14 +187,15 @@ let private scenario (database: PostgresFixture.Database) =
                             Contact = None
                         }))
 
-        let! historical = Service.observe owner { OperationId = id 10 } token
+        let! historical = Service.operationGet owner { OperationId = id fixture 10 } token
 
         match historical.Outcome with
-        | Outcome.Succeeded {
-                                Subject = ReceiptSubject.Work {
-                                                                  Snapshot = WorkDisclosure.Disclosed view
-                                                              }
-                            } ->
+        | Outcome.Succeeded(OperationLookupResult.Accepted({
+                                                               Subject = ReceiptSubject.Work {
+                                                                                                 Snapshot = WorkDisclosure.Disclosed view
+                                                                                             }
+                                                           },
+                                                           _)) ->
             Expect.equal
                 (view.Responsible |> Option.map _.DisplayName)
                 (Some(DisplayName.Named(Inputs.name "Current Alice")))
@@ -199,12 +203,13 @@ let private scenario (database: PostgresFixture.Database) =
         | other -> failtestf "%A" other
 
         let reader = principal "reader"
-        let! _ = execute owner (named 20 reader "Reader")
+        let! _ = execute owner (named fixture 20 reader "Reader")
 
         let! _ =
             execute
                 owner
                 (authority
+                    fixture
                     21
                     reader
                     (AuthorityAct.Grant
@@ -213,18 +218,23 @@ let private scenario (database: PostgresFixture.Database) =
                             Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
                         }))
 
-        let! limited = Service.observe (core fixture reader) { OperationId = id 10 } token
+        let! limited =
+            Service.operationGet (core fixture reader) { OperationId = id fixture 10 } token
 
         match limited.Outcome with
-        | Outcome.Succeeded {
-                                Subject = ReceiptSubject.Work { Snapshot = WorkDisclosure.Withheld }
-                            } -> ()
+        | Outcome.Succeeded(OperationLookupResult.Accepted({
+                                                               Subject = ReceiptSubject.Work {
+                                                                                                 Snapshot = WorkDisclosure.Withheld
+                                                                                             }
+                                                           },
+                                                           _)) -> ()
         | other -> failtestf "Old work must remain withheld without full history rights: %A" other
 
         let! saved =
             execute
                 owner
                 (authority
+                    fixture
                     12
                     bob
                     (AuthorityAct.SetProfile
@@ -245,6 +255,7 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 guardianCore
                 (authority
+                    fixture
                     13
                     fixture.Owner
                     (AuthorityAct.Revoke
@@ -257,6 +268,7 @@ let private scenario (database: PostgresFixture.Database) =
             execute
                 guardianCore
                 (authority
+                    fixture
                     14
                     bob
                     (AuthorityAct.SetProfile
@@ -265,7 +277,7 @@ let private scenario (database: PostgresFixture.Database) =
                             Contact = None
                         }))
 
-        let! hidden = status owner 12
+        let! hidden = status fixture owner 12
 
         Expect.equal
             (target hidden)
@@ -279,12 +291,13 @@ let private scenario (database: PostgresFixture.Database) =
 
         Expect.isFalse
             (json.Contains "Saved Bob" || json.Contains "Current private Bob")
-            "Neither historical nor current target names escape the authority gate"
+            "Neither historical nor current target names escape the authority fixture gate"
 
         let! _ =
             execute
                 guardianCore
                 (authority
+                    fixture
                     15
                     fixture.Owner
                     (AuthorityAct.Grant
@@ -293,7 +306,7 @@ let private scenario (database: PostgresFixture.Database) =
                             Scope = GrantTarget.Installation
                         }))
 
-        let! visible = status owner 12
+        let! visible = status fixture owner 12
 
         match target visible with
         | AuthorityTargetDisclosure.Disclosed actor ->
@@ -303,8 +316,8 @@ let private scenario (database: PostgresFixture.Database) =
                 "Regrant resolves the current account name"
         | other -> failtestf "%A" other
 
-        let! _ = execute guardianCore (authority 16 bob AuthorityAct.EraseProfile)
-        let! erased = status owner 12
+        let! _ = execute guardianCore (authority fixture 16 bob AuthorityAct.EraseProfile)
+        let! erased = status fixture owner 12
 
         match target erased with
         | AuthorityTargetDisclosure.Disclosed actor ->
@@ -314,7 +327,7 @@ let private scenario (database: PostgresFixture.Database) =
                 "Real erasure remains different from withheld details"
         | other -> failtestf "%A" other
 
-        let! disabled = execute guardianCore (authority 17 bob AuthorityAct.Disable)
+        let! disabled = execute guardianCore (authority fixture 17 bob AuthorityAct.Disable)
 
         match target disabled with
         | AuthorityTargetDisclosure.Disclosed actor ->
@@ -329,18 +342,21 @@ let private scenario (database: PostgresFixture.Database) =
                 owner
                 (Inputs.caseOperation
                     {
-                        OperationId = id 18
+                        OperationId = id fixture 18
                         CaseReference = "PG-NAMED-WORK"
                         ExpectedRevision = 1L
                         Act = CaseAct.Bare BareAct.Erase
                     })
 
-        let! observed = Service.observe owner { OperationId = id 10 } token
+        let! observed = Service.operationGet owner { OperationId = id fixture 10 } token
 
         match observed.Outcome with
-        | Outcome.Succeeded {
-                                Subject = ReceiptSubject.Work { Snapshot = WorkDisclosure.Erased }
-                            } -> ()
+        | Outcome.Succeeded(OperationLookupResult.Accepted({
+                                                               Subject = ReceiptSubject.Work {
+                                                                                                 Snapshot = WorkDisclosure.Erased
+                                                                                             }
+                                                           },
+                                                           _)) -> ()
         | other -> failtestf "Case erasure must dominate full history: %A" other
 
         let! _ = verified database

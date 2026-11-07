@@ -65,11 +65,7 @@ module internal MessageCatalogs =
     let private retry = CliIdentity.programName + " call"
 
     let private status =
-        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.Status)
-        + " OPERATION_ID"
-
-    let private settlement =
-        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.Resolve)
+        CommandGrammar.commandText (CatalogOperation.Query QueryEndpoint.OperationGet)
         + " OPERATION_ID"
 
     let private overview language =
@@ -114,15 +110,12 @@ module internal MessageCatalogs =
     let private helpBody language =
         function
         | HelpTopic.Call ->
-            renderCli
-                language
-                (CliMessage.HelpCall(invocation, request, response, retry, status, settlement))
+            renderCli language (CliMessage.HelpCall(invocation, request, response, retry, status))
         | HelpTopic.Session ->
             renderCli language (CliMessage.HelpSession(invocation, request, response))
         | HelpTopic.Configuration ->
             renderCli language (CliMessage.HelpConfiguration(secret, trust))
-        | HelpTopic.Delivery ->
-            renderCli language (CliMessage.HelpDelivery(retry, status, settlement))
+        | HelpTopic.Delivery -> renderCli language (CliMessage.HelpDelivery(retry, status))
         | HelpTopic.Describe -> renderCli language CliMessage.HelpDescribe
         | HelpTopic.Examples -> renderCli language CliMessage.HelpExamples
         | HelpTopic.Help -> renderCli language CliMessage.HelpHelp

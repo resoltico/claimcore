@@ -8,13 +8,15 @@ open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 open ClaimCore.TestSupport
 
-let private installation = Guid.Parse "90000000-0000-4000-8000-000000000099"
+let private installation = Guid.Parse "90000000-0000-7000-8000-000000000099"
 
 let private actor =
-    CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000099")
+    CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000099")
 
 let private operation =
-    CaseFixtures.operationId (Guid.Parse "b0000000-0000-4000-8000-000000000099")
+    CaseFixtures.operationId (
+        OperationIds.numberedAt (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)) 99
+    )
 
 let private instant = DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero)
 
@@ -66,7 +68,7 @@ let private metadataControls () =
         rejected entries
 
     let different =
-        CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000098")
+        CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000098")
 
     Expect.isNone
         (LedgerEffects.create (Some AuthorityKind.Register) 3 1)
@@ -79,7 +81,7 @@ let private metadataControls () =
             }
             { child with ActorId = different }
             { child with
-                OperationId = CaseFixtures.operationId (Guid.NewGuid())
+                OperationId = CaseFixtures.operationId (OperationIds.fresh ())
             }
             { child with
                 RecordedAt = instant.AddSeconds 1
@@ -238,7 +240,7 @@ let private foldCompletion () =
                 PayloadNonce = entries[0].PayloadNonce
             }
             { entries[1] with
-                OperationId = CaseFixtures.operationId (Guid.NewGuid())
+                OperationId = CaseFixtures.operationId (OperationIds.fresh ())
             }
         ] do
         match append None root forged with

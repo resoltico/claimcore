@@ -8,10 +8,10 @@ let publish directory =
     let identity: RecoveryIdentity =
         {
             ServiceOrigin = "https://service.example"
-            InstallationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
-            ActorId = Guid.Parse "10000000-0000-4000-8000-000000000002"
-            AttemptId = Guid.Parse "10000000-0000-4000-8000-000000000004"
-            OperationId = Guid.Parse "10000000-0000-4000-8000-000000000003"
+            InstallationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
+            ActorId = Guid.Parse "10000000-0000-7000-8000-000000000002"
+            AttemptId = Guid.Parse "10000000-0000-7000-8000-000000000004"
+            OperationId = Guid.Parse "10000000-0000-7000-8000-000000000003"
             Subject = "CASE"
             Act = "OPEN"
         }

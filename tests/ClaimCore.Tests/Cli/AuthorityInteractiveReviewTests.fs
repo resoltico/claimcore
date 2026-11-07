@@ -12,7 +12,7 @@ open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.TestSupport
 
-let private operation = Guid.Parse "6f91c638-a33f-493d-9a32-000000000001"
+let private operation = Guid.Parse "6f91c638-a33f-793d-9a32-000000000001"
 
 let private baseWords verb =
     [

@@ -145,6 +145,8 @@ export const renderNotice = (preferences: Preferences, notice: Notice): string =
       return translate(preferences, "notice.invalidHttp", {
         status: exactInteger(String(notice.status), preferences.displayLocale),
       });
+    case "pending":
+      return translate(preferences, "ui.unconfirmedUntil", { finalAt: notice.finalAt });
     case "accepted":
       return translate(preferences, "notice.accepted", { operationId: notice.operationId });
   }

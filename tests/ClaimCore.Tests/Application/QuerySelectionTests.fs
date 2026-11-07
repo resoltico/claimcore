@@ -11,6 +11,7 @@ open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
+
 let private authorityAndCursor () =
     let page: PageRequest =
         {

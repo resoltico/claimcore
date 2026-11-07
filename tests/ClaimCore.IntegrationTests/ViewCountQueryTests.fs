@@ -87,7 +87,7 @@ let private qualify fixture =
                     fixture
                     (OperationInput.Reminder
                         {
-                            OperationId = id operation
+                            OperationId = id fixture.Database.Fixture operation
                             Target = CaseSelector.Reference reference
                             Act =
                                 AuthoredReminderAct.Create
@@ -105,7 +105,7 @@ let private qualify fixture =
                 fixture
                 (OperationInput.Work
                     {
-                        OperationId = id 5504
+                        OperationId = id fixture.Database.Fixture 5504
                         Target = CaseSelector.Reference "work-01"
                         ExpectedRevision = 0L
                         Act =
@@ -166,7 +166,7 @@ let private qualify fixture =
                 fixture
                 (OperationInput.Work
                     {
-                        OperationId = id 5520
+                        OperationId = id fixture.Database.Fixture 5520
                         Target = CaseSelector.Reference "mix-04"
                         ExpectedRevision = 0L
                         Act =
@@ -189,16 +189,21 @@ let private qualify fixture =
                 fixture
                 (OperationInput.Reminder
                     {
-                        OperationId = id 5505
+                        OperationId = id fixture.Database.Fixture 5505
                         Target = CaseSelector.Reference "mix-04"
-                        Act = AuthoredReminderAct.Complete(id 5502, 1L)
+                        Act = AuthoredReminderAct.Complete(id fixture.Database.Fixture 5502, 1L)
                     })
 
         do!
             execute
                 fixture
                 (Inputs.caseOperation (
-                    request 5506 "mix-04" 3L (AuthoredCaseAct.Bare BareAct.Close)
+                    request
+                        fixture.Database.Fixture
+                        5506
+                        "mix-04"
+                        3L
+                        (AuthoredCaseAct.Bare BareAct.Close)
                 ))
 
         do!
@@ -206,16 +211,21 @@ let private qualify fixture =
                 fixture
                 (OperationInput.Reminder
                     {
-                        OperationId = id 5507
+                        OperationId = id fixture.Database.Fixture 5507
                         Target = CaseSelector.Reference "Work-11"
-                        Act = AuthoredReminderAct.Cancel(id 5503, 1L)
+                        Act = AuthoredReminderAct.Cancel(id fixture.Database.Fixture 5503, 1L)
                     })
 
         do!
             execute
                 fixture
                 (Inputs.caseOperation (
-                    request 5508 "Work-11" 2L (AuthoredCaseAct.Void "Incorrect duplicate case")
+                    request
+                        fixture.Database.Fixture
+                        5508
+                        "Work-11"
+                        2L
+                        (AuthoredCaseAct.Void "Incorrect duplicate case")
                 ))
 
         do!
@@ -239,7 +249,10 @@ let private qualify fixture =
             execute
                 fixture
                 (OperationInput.Authority(
-                    authorityRequest (id 5509) scoped (AuthorityAct.Register Inputs.actorProfile)
+                    authorityRequest
+                        (id fixture.Database.Fixture 5509)
+                        scoped
+                        (AuthorityAct.Register Inputs.actorProfile)
                 ))
 
         let! paid =
@@ -262,7 +275,10 @@ let private qualify fixture =
             execute
                 fixture
                 (OperationInput.Authority(
-                    authorityRequest (id 5510) scoped (AuthorityAct.Grant grant)
+                    authorityRequest
+                        (id fixture.Database.Fixture 5510)
+                        scoped
+                        (AuthorityAct.Grant grant)
                 ))
 
         let scopedFixture =
@@ -307,7 +323,10 @@ let private qualify fixture =
             execute
                 fixture
                 (OperationInput.Authority(
-                    authorityRequest (id 5511) scoped (AuthorityAct.Revoke grant)
+                    authorityRequest
+                        (id fixture.Database.Fixture 5511)
+                        scoped
+                        (AuthorityAct.Revoke grant)
                 ))
 
         let service = scopedFixture.Service

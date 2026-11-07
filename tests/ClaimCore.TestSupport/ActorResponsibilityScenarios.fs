@@ -64,7 +64,7 @@ let run (fixture: Fixture) (corrupt: ActorId -> CaseId -> Task<unit>) =
 
         let operation () =
             serial.Value <- serial.Value + 1
-            id serial.Value
+            id fixture serial.Value
 
         let register name kind =
             task {

@@ -204,10 +204,10 @@ it("observation cannot resolve pending authority content", async () => {
       reason: "unreachable",
     },
   });
-  mockEndpoint("operation.observe").mockResolvedValue({
+  mockEndpoint("operation.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("operation.observe"),
+    value: wireReply("operation.get"),
   });
   const view = await preparedHook();
   await act(async () => {
@@ -215,7 +215,11 @@ it("observation cannot resolve pending authority content", async () => {
   });
   const prepared = view.result.current.prepared!;
   await act(async () => {
-    await service.observe(prepared.input.operationId, "first");
+    await service.operationGet(
+      prepared.input.operationId,
+      "first",
+      recoveryOptions.recoveryScope.installationId,
+    );
   });
   expect(view.result.current.priorUncertain).toBe(true);
   expect(view.result.current.prepared).toBe(prepared);

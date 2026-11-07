@@ -72,6 +72,9 @@ module Catalog =
                     DefaultPageSize = Paging.DefaultPageSize
                     MaximumPageSize = Paging.MaximumPageSize
                     RequestByteLimit = Limits.MaximumRequestBytes
+                    OperationWindowMilliseconds = int OperationLifetime.WindowMilliseconds
+                    OperationFutureAllowanceMilliseconds =
+                        int OperationLifetime.FutureAllowanceMilliseconds
                 }
             Roles =
                 Role.all

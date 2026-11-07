@@ -175,20 +175,18 @@ module internal TextOperationReply =
 
     let executeLines language reply = executeLinesFor language None reply
 
-    let resolveLines language (reply: Outcome<Resolved>) =
+    let getLines language (reply: Outcome<OperationLookupResult>) =
         readLines
             language
             (function
-            | Resolved.Accepted receipt -> receiptLines language false receipt
-            | Resolved.NotAccepted -> [ label language "notice.notAccepted" ])
-            reply
-
-    let statusLines language (reply: Outcome<OperationStatus>) =
-        readLines
-            language
-            (function
-            | OperationStatus.Accepted receipt -> receiptLines language false receipt
-            | OperationStatus.NotAccepted -> [ label language "notice.notAccepted" ]
-            | OperationStatus.Unresolved ->
-                [ MessageCatalogs.renderCli language CliMessage.StatusUnresolved ])
+            | OperationLookupResult.Accepted(receipt, _) -> receiptLines language false receipt
+            | OperationLookupResult.NotAccepted -> [ label language "notice.notAccepted" ]
+            | OperationLookupResult.Pending finalAt ->
+                [
+                    MessageCatalogs.renderCli
+                        language
+                        (CliMessage.OperationPending(
+                            finalAt.ToString("O", CultureInfo.InvariantCulture)
+                        ))
+                ])
             reply

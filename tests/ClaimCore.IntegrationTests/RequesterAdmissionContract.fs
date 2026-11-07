@@ -31,7 +31,7 @@ let private code (pending: Task<Outcome<'value>>) =
             | other -> failtestf "Expected a refusal, got %A" other
     }
 
-let private reads core =
+let private reads fixture core =
     [
         "case selector", (fun () -> code (Service.get core { Target = malformed } token))
         "case limit",
@@ -106,7 +106,7 @@ let private reads core =
                 Service.grants
                     core
                     {
-                        ActorId = id 80001
+                        ActorId = id fixture 80001
                         Limit = 0
                         AfterCursor = None
                     }
@@ -168,7 +168,7 @@ let private reads core =
                     core
                     {
                         Target = malformed
-                        ReminderId = id 80002
+                        ReminderId = id fixture 80002
                     }
                     token
             ))
@@ -221,27 +221,15 @@ let private reads core =
                     }
                     token
             ))
-        "observe id",
+        "operation lookup id",
         (fun () ->
             task {
-                let! reply = Service.observe core { OperationId = Guid.Empty } token in
-                return! code (Task.FromResult reply.Outcome)
-            })
-        "status id",
-        (fun () ->
-            task {
-                let! reply = Service.status core { OperationId = Guid.Empty } token in
-                return! code (Task.FromResult reply.Outcome)
-            })
-        "resolve id",
-        (fun () ->
-            task {
-                let! reply = Service.resolve core { OperationId = Guid.Empty } token in
+                let! reply = Service.operationGet core { OperationId = Guid.Empty } token
                 return! code (Task.FromResult reply.Outcome)
             })
     ]
 
-let internal malformedWrites =
+let internal malformedWrites fixture =
     [
         OperationInput.Authority(
             authorityRequest
@@ -251,13 +239,13 @@ let internal malformedWrites =
         )
         OperationInput.Authority(
             authorityRequest
-                (id 80100)
+                (id fixture 80100)
                 (principal "new-person")
                 (AuthorityAct.Register { DisplayName = ""; Contact = None })
         )
         OperationInput.Work
             {
-                OperationId = id 80101
+                OperationId = id fixture 80101
                 Target = missing
                 ExpectedRevision = 0L
                 Act =
@@ -269,13 +257,13 @@ let internal malformedWrites =
             }
         OperationInput.Reminder
             {
-                OperationId = id 80102
+                OperationId = id fixture 80102
                 Target = missing
                 Act = AuthoredReminderAct.Create { Action = ""; Due = "invalid" }
             }
         OperationInput.Reminder
             {
-                OperationId = id 80103
+                OperationId = id fixture 80103
                 Target = missing
                 Act = AuthoredReminderAct.Complete(Guid.Empty, -1L)
             }
@@ -294,7 +282,7 @@ let private mutationCode core input =
 let internal lifecycle fixture =
     task {
         let! owner = caseWorker fixture
-        let authored = List.item 1 malformedWrites
+        let authored = List.item 1 (malformedWrites fixture)
         let wire = Codec.encode Api.operationExecute.Input authored
 
         Expect.equal
@@ -311,7 +299,7 @@ let internal lifecycle fixture =
                     owner
                     (OperationInput.Authority(
                         authorityRequest
-                            (id (80010 + index))
+                            (id fixture (80010 + index))
                             target
                             (AuthorityAct.Register Inputs.actorProfile)
                     ))
@@ -322,7 +310,9 @@ let internal lifecycle fixture =
         let! turnedOff =
             Service.execute
                 owner
-                (OperationInput.Authority(authorityRequest (id 80012) disabled AuthorityAct.Disable))
+                (OperationInput.Authority(
+                    authorityRequest (id fixture 80012) disabled AuthorityAct.Disable
+                ))
                 token
 
         acceptedAuthority turnedOff
@@ -330,7 +320,7 @@ let internal lifecycle fixture =
         for caller in [ principal "unknown-input-caller"; disabled ] do
             let current = core fixture caller
 
-            for label, query in reads current do
+            for label, query in reads fixture current do
                 let! actual = query ()
 
                 Expect.equal
@@ -338,7 +328,7 @@ let internal lifecycle fixture =
                     "RESOURCE_UNAVAILABLE"
                     (label + " must hide business validation from unavailable callers")
 
-            for input in malformedWrites do
+            for input in malformedWrites fixture do
                 let! actual = mutationCode current input
 
                 Expect.equal
@@ -354,8 +344,8 @@ let internal lifecycle fixture =
                     "RESOURCE_UNAVAILABLE"
                     "Unavailable preview caller receives no business input detail"
 
-            for operation in [ id 80200; Guid.Empty ] do
-                let! reply = Service.status current { OperationId = operation } token
+            for operation in [ id fixture 80200; Guid.Empty ] do
+                let! reply = Service.operationGet current { OperationId = operation } token
                 let! actual = code (Task.FromResult reply.Outcome)
 
                 Expect.equal
@@ -363,14 +353,14 @@ let internal lifecycle fixture =
                     "RESOURCE_UNAVAILABLE"
                     "Both absent valid and empty IDs retain requester privacy"
 
-        for label, query in reads owner do
+        for label, query in reads fixture owner do
             let! actual = query ()
 
             Expect.isTrue
                 (actual <> "RESOURCE_UNAVAILABLE")
                 (label + " retains authorized input diagnostics")
 
-        for input in malformedWrites do
+        for input in malformedWrites fixture do
             let! actual = mutationCode owner input
 
             Expect.equal
@@ -383,7 +373,7 @@ let internal lifecycle fixture =
             Expect.equal actual "INVALID_INPUT" "Enabled preview retains the same input diagnostics"
 
         let roleless = core fixture roleless
-        let! empty = Service.status roleless { OperationId = Guid.Empty } token
+        let! empty = Service.operationGet roleless { OperationId = Guid.Empty } token
         let! actual = code (Task.FromResult empty.Outcome)
 
         Expect.equal
@@ -391,19 +381,12 @@ let internal lifecycle fixture =
             "INVALID_INPUT"
             "A valid enabled roleless caller retains own recovery validation"
 
-        let! unresolved = Service.status roleless { OperationId = id 80201 } token
+        let! pending = Service.operationGet roleless { OperationId = id fixture 80201 } token
 
-        Expect.equal
-            unresolved.Outcome
-            (Outcome.Succeeded OperationStatus.Unresolved)
-            "Roleless own recovery is not a new capability restriction"
+        match pending.Outcome with
+        | Outcome.Succeeded(OperationLookupResult.Pending _) -> ()
+        | other -> failtestf "Roleless fresh absence must remain pending: %A" other
 
-        let! resolved = Service.resolve roleless { OperationId = id 80201 } token
-
-        Expect.equal
-            resolved.Outcome
-            (Outcome.Succeeded Resolved.NotAccepted)
-            "Roleless caller retains its own recovery fence"
     }
 
 let internal targetPrivacy fixture =
@@ -415,7 +398,10 @@ let internal targetPrivacy fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    authorityRequest (id 80300) reader (AuthorityAct.Register Inputs.actorProfile)
+                    authorityRequest
+                        (id fixture 80300)
+                        reader
+                        (AuthorityAct.Register Inputs.actorProfile)
                 ))
                 token
 
@@ -425,7 +411,12 @@ let internal targetPrivacy fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 80301 "ADMISSION-READABLE" 0L (AuthoredCaseAct.Open registration)
+                    request
+                        fixture
+                        80301
+                        "ADMISSION-READABLE"
+                        0L
+                        (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -435,7 +426,7 @@ let internal targetPrivacy fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 80302 "ADMISSION-PRIVATE" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 80302 "ADMISSION-PRIVATE" 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -444,7 +435,7 @@ let internal targetPrivacy fixture =
         let! granted =
             grant
                 owner
-                (id 80303)
+                (id fixture 80303)
                 reader
                 {
                     Role = Role.CaseReader
@@ -465,7 +456,7 @@ let internal targetPrivacy fixture =
                 mutationCode
                     core
                     (Inputs.caseOperation (
-                        request number target 1L (AuthoredCaseAct.Bare BareAct.Close)
+                        request fixture number target 1L (AuthoredCaseAct.Bare BareAct.Close)
                     ))
 
             Expect.equal

@@ -45,6 +45,7 @@ let tests =
                             actor
                             (Inputs.caseOperation (
                                 request
+                                    database.Fixture
                                     (1000000 + index)
                                     (sprintf "TIMING-%05d" index)
                                     0L

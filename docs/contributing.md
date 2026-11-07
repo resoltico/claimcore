@@ -40,7 +40,7 @@ Self-contained, trimmed and single-file publication need separate qualification.
 | Presentation | Renderer-neutral values, descriptors, localization and shared human-output contracts |
 | Wire | Endpoint declarations, codecs, catalog bindings, OpenAPI and build identity; references Presentation |
 | RecordFormat | Durable grammars, literal names, permanent byte limits and cursor encoding |
-| Application | ServiceContext-based orchestration, named port inputs, replay, fencing and verification |
+| Application | ServiceContext-based orchestration, named port inputs, replay, operation lifetimes and verification |
 | Postgres | Transaction primitives, projections and installation administration |
 | HostSecurity | Private files, HTTPS origins and TLS purposes |
 | Web | Authentication, request gates, runtime leases and route serving |
@@ -128,7 +128,7 @@ request and response types, so dispatch can invoke the route without recovering 
 ### Read and write transactions
 
 [IReadTx](../src/ClaimCore.Application/LedgerStorePort.fs) supplies primitives over one consistent snapshot.
-`IWriteTx` adds the head, fresh payload-nonce provider, append, projection and fence primitives. The PostgreSQL adapter constructs
+`IWriteTx` adds the head, fresh payload-nonce provider, append and projection primitives. The PostgreSQL adapter constructs
 it after acquiring the ledger head lock.
 Accepted authority operations may contain up to 50 contiguous effects. Each effect has an independently
 generated payload nonce; all effects and projections commit together. Operation lookup validates the
@@ -162,9 +162,8 @@ The PostgreSQL adapter creates a write transaction capability after taking the h
 repeatable-read snapshot; writes read decision state under the lock and commit only on Proceed. Receipt
 construction uses that same state, without a later read changing disclosure. Runtime leases remain held
 through actual provider cleanup.
-`IReadTx.NonAcceptance` supplies the retained control node, typed previous hash and fence instant from
-one snapshot. Application validates node identity/hash and projection agreement before status or write guards
-use it. Passive recovery uses `IStore.Read`; a derived fence alone cannot establish a permanent promise.
+`operation.get` starts with `IStore.Read`. An expired absence is rechecked through `IStore.Write` under
+the head lock with no append. Accepted receipts remain disclosure-scoped; final absence is account-scoped.
 
 Permanent decoding does not reapply current admission. [baseline.sql](../db/baseline.sql) is the
 checksum-bound schema source; its SHA-256 installation identity derives from the exact embedded bytes.

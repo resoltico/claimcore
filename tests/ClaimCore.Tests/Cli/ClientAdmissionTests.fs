@@ -77,7 +77,7 @@ let private authoritativeIdentityAdmission () =
     Expect.equal count 22 "All independent principal cases reach authoritative typed binding"
 
 let private exactUuid () =
-    let valid = "10000000-0000-4000-8000-00000000000a"
+    let valid = "10000000-0000-7000-8000-00000000000a"
 
     for value, expected in
         [
@@ -95,8 +95,8 @@ let private exactUuid () =
             "Unbounded UUID format consumes exactly one canonical nonempty UUID"
 
 let private reminderRevisionAdmission () =
-    let operationId = Guid.Parse "10000000-0000-4000-8000-000000000001"
-    let reminderId = "30000000-0000-4000-8000-000000000001"
+    let operationId = Guid.Parse "10000000-0000-7000-8000-000000000001"
+    let reminderId = "30000000-0000-7000-8000-000000000001"
 
     let raw revision =
         sprintf
@@ -125,7 +125,7 @@ let private reminderRevisionAdmission () =
 
     let access: RemoteServiceCall.Access =
         {
-            InstallationId = Some(Guid.Parse "90000000-0000-4000-8000-000000000001")
+            InstallationId = Some(Guid.Parse "90000000-0000-7000-8000-000000000001")
             Service = Uri "https://localhost/"
             Authorization = AuthenticationHeaderValue("Bearer", "synthetic-validation-test")
         }

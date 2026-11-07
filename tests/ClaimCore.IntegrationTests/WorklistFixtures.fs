@@ -175,7 +175,17 @@ let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
         let apply act =
             task {
                 sequence.Value <- sequence.Value + 1
-                do! execute fixture (request sequence.Value expected.Reference revision act)
+
+                do!
+                    execute
+                        fixture
+                        (request
+                            fixture.Database.Fixture
+                            sequence.Value
+                            expected.Reference
+                            revision
+                            act)
+
                 revision <- revision + 1L
             }
 
@@ -218,7 +228,7 @@ let prepare () =
             let! stewardship =
                 grant
                     service
-                    (id 902000)
+                    (id database.Fixture 902000)
                     database.Fixture.Owner
                     {
                         Role = Role.DataSteward
@@ -239,8 +249,16 @@ let prepare () =
             for expected in cases do
                 do! seedCase fixture sequence expected
             // An older case changes last: RECENT cannot mean creation or reference order.
-            do! execute fixture (request 2001 "mix-04" 1L (AuthoredCaseAct.Bare BareAct.Close))
-            do! execute fixture (request 2002 "mix-04" 2L (AuthoredCaseAct.Bare BareAct.Reopen))
+            do!
+                execute
+                    fixture
+                    (request database.Fixture 2001 "mix-04" 1L (AuthoredCaseAct.Bare BareAct.Close))
+
+            do!
+                execute
+                    fixture
+                    (request database.Fixture 2002 "mix-04" 2L (AuthoredCaseAct.Bare BareAct.Reopen))
+
             return fixture
         with error ->
             FixtureDisposal.afterFailure error [ database.Fixture.Dispose ]

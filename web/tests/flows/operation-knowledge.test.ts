@@ -1,3 +1,4 @@
+import { recoveryScope } from "../support/recovery.fixtures";
 import { current } from "../support/operation-form.fixtures";
 import { mockEndpoint } from "../support/endpoint-mocks";
 import { act } from "@testing-library/react";
@@ -110,10 +111,10 @@ it("operation observation cannot change a pending editor", async () => {
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
   });
-  mockEndpoint("operation.observe").mockResolvedValue({
+  mockEndpoint("operation.get").mockResolvedValue({
     kind: "outcome",
     status: 200,
-    value: wireReply("operation.observe"),
+    value: wireReply("operation.get"),
   });
   const view = hook();
   await act(async () => {
@@ -127,7 +128,7 @@ it("operation observation cannot change a pending editor", async () => {
   });
   const { prepared } = view.result.current;
   await act(async () => {
-    await service.observe(prepared!.input.operationId, "token");
+    await service.operationGet(prepared!.input.operationId, "token", recoveryScope.installationId);
   });
   expect(view.result.current.priorUncertain).toBe(true);
   expect(view.result.current.prepared).toBe(prepared);

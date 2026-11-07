@@ -64,21 +64,6 @@ let tests =
                             (family, sections, effect)
                             "Independent effect and section witnesses"
 
-                    let settlement =
-                        OperationCatalog.entries
-                        |> List.find (fun entry ->
-                            entry.Kind = CatalogOperation.Query QueryEndpoint.Resolve)
-
-                    Expect.equal
-                        settlement.Effect
-                        InteractionEffect.FinalNonAcceptance
-                        "Settlement has its own irreversible meaning"
-
-                    Expect.equal
-                        settlement.ConsequenceId
-                        (Some "endpoint.operation.resolve.consequence")
-                        "Both clients receive the same consequence identity"
-
                     let erase =
                         OperationCatalog.entries
                         |> List.find (fun entry ->

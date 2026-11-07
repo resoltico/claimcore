@@ -20,7 +20,7 @@ open ClaimCore.IntegrationTests.PaginationScenarios
 let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        do! cases actor
+        do! cases fixture actor
 
         let! first =
             (Service.list
@@ -59,7 +59,7 @@ let private caseLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        do! cases admin
+        do! cases fixture admin
 
         let! first =
             (Service.list
@@ -84,7 +84,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
         let! extra =
             grant
                 admin
-                (id 22)
+                (id fixture 22)
                 owner
                 {
                     Role = Role.CaseReader
@@ -109,7 +109,7 @@ let private sharedPosition (_: PostgresFixture.Database) (fixture: Fixture) =
 let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        do! createHistory actor
+        do! createHistory fixture actor
 
         let query: HistoryRequest =
             {
@@ -155,13 +155,13 @@ let private historyBinding (_: PostgresFixture.Database) (fixture: Fixture) =
             1
             "Detail may change after independent authorization"
 
-        do! differentHistoryResource actor query first.NextCursor
+        do! differentHistoryResource fixture actor query first.NextCursor
     }
 
 let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
-        do! cases actor
+        do! cases fixture actor
 
         let! first =
             (Service.list
@@ -213,7 +213,7 @@ let private malformedAndRestart (_: PostgresFixture.Database) (fixture: Fixture)
 let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        do! cases admin
+        do! cases fixture admin
         let proxy = AfterCaseWriteStore(fixture.Store, fun () -> Task.FromResult(()))
 
         let actor =
@@ -271,7 +271,7 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
             (Service.grants
                 actor
                 ({
-                    ActorId = id 1
+                    ActorId = id fixture 1
                     AfterCursor = None
                     Limit = 1
                 })
@@ -284,13 +284,13 @@ let private singleSnapshot (_: PostgresFixture.Database) (fixture: Fixture) =
 let private pageAdvice (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! admin = caseWorker fixture
-        do! cases admin
+        do! cases fixture admin
         let! principal, actor = reader fixture admin
 
         let! scoped =
             grant
                 admin
-                (id 22)
+                (id fixture 22)
                 principal
                 {
                     Role = Role.CaseRegistrar
@@ -336,12 +336,12 @@ let private fullHistoryLimit (_: PostgresFixture.Database) (fixture: Fixture) =
         let! opened =
             (Service.execute
                 actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest 10 "LONG-HISTORY"))
+                (ClaimCore.TestSupport.Inputs.caseOperation (openRequest fixture 10 "LONG-HISTORY"))
                 (CancellationToken.None))
 
         accepted opened |> ignore
 
-        do! appendHistory actor
+        do! appendHistory fixture actor
 
         let query: HistoryRequest =
             {

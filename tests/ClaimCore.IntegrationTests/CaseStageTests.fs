@@ -27,7 +27,7 @@ let tests =
                 let! stewardship =
                     grant
                         actor
-                        (id 78006)
+                        (id fixture 78006)
                         fixture.Owner
                         {
                             Role = Role.DataSteward
@@ -40,7 +40,7 @@ let tests =
                 let write n revision act =
                     Service.execute
                         actor
-                        (Inputs.caseOperation (request n "STAGES-1" revision act))
+                        (Inputs.caseOperation (request fixture n "STAGES-1" revision act))
                         token
 
                 let! result = write 78000 0L (AuthoredCaseAct.Open registration)
@@ -120,7 +120,7 @@ let tests =
                         actor
                         (OperationInput.Work
                             {
-                                OperationId = id 78004
+                                OperationId = id fixture 78004
                                 Target = CaseSelector.Id receipt.CaseId
                                 ExpectedRevision = 0L
                                 Act =

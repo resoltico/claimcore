@@ -19,7 +19,7 @@ it("coalesces observation and discards an older receipt after changing the opera
   const first = deferredResponse();
   const fetch = vi.mocked(globalThis.fetch);
   fetch.mockReturnValueOnce(first.promise);
-  fetch.mockResolvedValueOnce(response("operation.observe", "REJECTED", unavailable));
+  fetch.mockResolvedValueOnce(response("operation.get", "REJECTED", unavailable));
   const { result } = renderHook(() => useOperationObservation(operationId), {
     wrapper: TestProviders,
   });
@@ -41,7 +41,7 @@ it("coalesces observation and discards an older receipt after changing the opera
     diagnostic: { code: "RESOURCE_UNAVAILABLE", action: "ASK_FOR_ACCESS" },
   });
   await act(async () => {
-    first.resolve(response("operation.observe", "SUCCEEDED", receipt));
+    first.resolve(response("operation.get", "SUCCEEDED", receipt));
     await old;
   });
   expect(result.current.receipt).toBeNull();
@@ -65,7 +65,7 @@ it("drains observation on unmount without delivering a late receipt", async () =
   unmount();
   expect(fetch.mock.calls[0]?.[1]?.signal?.aborted).toBe(false);
   await act(async () => {
-    pending.resolve(response("operation.observe", "SUCCEEDED", receipt));
+    pending.resolve(response("operation.get", "SUCCEEDED", receipt));
     await pending.promise;
     await task;
   });

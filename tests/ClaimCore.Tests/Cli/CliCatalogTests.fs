@@ -30,7 +30,7 @@ let private commandExamples () =
 
         let actual =
             Grammar.prepare
-                (fun () -> "11111111-2222-4333-8444-555555555555")
+                (fun () -> "11111111-2222-7333-8444-555555555555")
                 (arguments @ [ "--dry-run" ])
             |> Fixtures.accepted
 
@@ -38,7 +38,7 @@ let private commandExamples () =
 
 
 let private byteLimits () =
-    let operationId = "11111111-2222-4333-8444-555555555555"
+    let operationId = "11111111-2222-7333-8444-555555555555"
 
     let prepare reason =
         let args =
@@ -58,7 +58,7 @@ let private byteLimits () =
         Grammar.prepare (fun () -> operationId) args
 
     let emptyInput =
-        """{"kind":"CASE","operationId":"11111111-2222-4333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1,"act":{"kind":"VOID","reason":""}}"""
+        """{"kind":"CASE","operationId":"11111111-2222-7333-8444-555555555555","target":{"kind":"REFERENCE","caseReference":"REF"},"expectedRevision":1,"act":{"kind":"VOID","reason":""}}"""
 
     let remaining =
         Limits.MaximumRequestBytes - System.Text.Encoding.UTF8.GetByteCount emptyInput
@@ -82,7 +82,7 @@ let private byteLimits () =
         | Error issues -> failtestf "Wrong size refusal: %A" issues
         | Ok _ -> failtest "Dry-run must not emit a frame the frame reader rejects"
 
-let private operationId = "10000000-0000-4000-8000-000000000001"
+let private operationId = "10000000-0000-7000-8000-000000000001"
 
 let private registration =
     ClaimCore.TestSupport.Inputs.registrationWith
@@ -152,15 +152,15 @@ let tests =
                 Expect.isError
                     (prepare ([ "case"; "open.extra"; "SYNTHETIC"; "--dry-run" ] @ registration))
                     "Only declared verbs are admitted")
-            testCase "operational writes report their actual unsupported preview command" (fun () ->
+            testCase "lookup reports its unsupported preview command" (fun () ->
                 let arguments =
-                    [ "operation"; "settle"; "11111111-2222-4333-8444-555555555555"; "--preview" ]
+                    [ "operation"; "get"; "11111111-2222-7333-8444-555555555555"; "--preview" ]
 
                 match Grammar.prepare (fun () -> "unused") arguments with
                 | Error errors ->
                     Expect.equal
                         errors
-                        [ UsageError.NotApplicable("--preview", "operation settle") ]
-                        "Resolve is an operational write, so read-command wording is accurate"
-                | Ok _ -> failtest "Resolve cannot be previewed")
+                        [ UsageError.NotApplicable("--preview", "operation get") ]
+                        "Lookup remains a read without a preview mode"
+                | Ok _ -> failtest "Lookup cannot be previewed")
         ]

@@ -22,12 +22,12 @@ let private successful =
 let private principal subject =
     PrincipalKey.human "https://issuer.example/" subject |> required
 
-let private register owner operation principal =
+let private register fixture owner operation principal =
     Service.execute
         owner
         (OperationInput.Authority(
             Inputs.authorityRequest
-                (id operation)
+                (id fixture operation)
                 principal
                 (AuthorityAct.Register Inputs.actorProfile)
         ))
@@ -49,10 +49,10 @@ let private directory owner principal =
         return (successful page).Items |> List.find (fun item -> item.Principal = principal)
     }
 
-let private grantRole owner operation principal role scope active =
+let private grantRole fixture owner operation principal role scope active =
     task {
         let! result =
-            grant owner (id operation) principal { Role = role; Scope = scope } active
+            grant owner (id fixture operation) principal { Role = role; Scope = scope } active
 
         acceptedAuthority result
     }
@@ -65,7 +65,7 @@ let internal summaries fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 1001 "PEOPLE-A" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 1001 "PEOPLE-A" 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -75,13 +75,13 @@ let internal summaries fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 1002 "PEOPLE-B" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 1002 "PEOPLE-B" 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
         let b = accepted b |> caseReceipt
         let person = principal "directory-person"
-        let! created = register owner 1010 person
+        let! created = register fixture owner 1010 person
 
         let personId =
             (accepted created).Subject
@@ -104,10 +104,10 @@ let internal summaries fixture =
             ActorAvailability.Available
             "Assignment eligibility is a distinct actor-reference concern"
 
-        do! grantRole owner 1011 person Role.CaseReader GrantTarget.Installation true
-        do! grantRole owner 1012 person Role.CaseReader (GrantTarget.CaseId a.CaseId) true
-        do! grantRole owner 1013 person Role.CaseReader (GrantTarget.CaseId b.CaseId) true
-        do! grantRole owner 1014 person Role.Auditor (GrantTarget.CaseId b.CaseId) true
+        do! grantRole fixture owner 1011 person Role.CaseReader GrantTarget.Installation true
+        do! grantRole fixture owner 1012 person Role.CaseReader (GrantTarget.CaseId a.CaseId) true
+        do! grantRole fixture owner 1013 person Role.CaseReader (GrantTarget.CaseId b.CaseId) true
+        do! grantRole fixture owner 1014 person Role.Auditor (GrantTarget.CaseId b.CaseId) true
         let! assigned = directory owner person
 
         Expect.equal
@@ -158,7 +158,7 @@ let internal summaries fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    Inputs.authorityRequest (id 1015) person AuthorityAct.Disable
+                    Inputs.authorityRequest (id fixture 1015) person AuthorityAct.Disable
                 ))
                 token
 
@@ -179,7 +179,7 @@ let internal summaries fixture =
             Service.preview
                 owner
                 (OperationInput.Authority(
-                    Inputs.authorityRequest (id 1016) person AuthorityAct.Enable
+                    Inputs.authorityRequest (id fixture 1016) person AuthorityAct.Enable
                 ))
                 token
 
@@ -198,7 +198,7 @@ let internal summaries fixture =
                 "Authority review sees all target roles, not only its selected scope"
         | other -> failtestf "Disabled target remains reviewable: %A" other
 
-        do! grantRole owner 1017 person Role.CaseReader (GrantTarget.CaseId a.CaseId) false
+        do! grantRole fixture owner 1017 person Role.CaseReader (GrantTarget.CaseId a.CaseId) false
         let! changed = directory owner person
 
         Expect.equal
@@ -215,7 +215,7 @@ let internal corruptAssignment fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 1030 "PEOPLE-CORRUPT" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 1030 "PEOPLE-CORRUPT" 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -224,7 +224,7 @@ let internal corruptAssignment fixture =
         let service =
             PrincipalKey.service "https://issuer.example/" "directory-service" |> required
 
-        let! registered = register owner 1031 service
+        let! registered = register fixture owner 1031 service
 
         let actorId =
             (accepted registered).Subject
@@ -361,7 +361,16 @@ let internal corruptAssignment fixture =
             person
             "Grant review retains the same actor state and bounded summary"
 
-        do! grantRole owner 1032 service Role.DataSteward (GrantTarget.CaseId case.CaseId) false
+        do!
+            grantRole
+                fixture
+                owner
+                1032
+                service
+                Role.DataSteward
+                (GrantTarget.CaseId case.CaseId)
+                false
+
         let! repaired = directory owner service
 
         Expect.equal
@@ -378,7 +387,7 @@ let internal maximumRoles fixture =
     task {
         let! owner = bootstrap fixture
         let target = principal "seven-directory-roles"
-        let! registered = register owner 1050 target
+        let! registered = register fixture owner 1050 target
         acceptedAuthority registered
 
         let roles =
@@ -393,7 +402,7 @@ let internal maximumRoles fixture =
             ]
 
         for index, role in List.indexed roles do
-            do! grantRole owner (1051 + index) target role GrantTarget.Installation true
+            do! grantRole fixture owner (1051 + index) target role GrantTarget.Installation true
 
         let! person = directory owner target
         let! own = Service.context (core fixture target) () token

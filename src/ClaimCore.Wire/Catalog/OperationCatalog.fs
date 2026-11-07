@@ -40,13 +40,12 @@ module OperationCatalog =
     let consequenceId (operation: CatalogOperation) =
         match operation.SelectedAct, operation.Endpoint with
         | Some _, _ -> Some(message operation "consequence")
-        | None, ActorEndpoint.Query QueryEndpoint.Resolve -> Some(message operation "consequence")
         | _ -> None
 
     let doneId (operation: CatalogOperation) =
         match operation.SelectedAct, operation.Endpoint with
         | Some _, _ -> Some(message operation "done")
-        | None, ActorEndpoint.Query(QueryEndpoint.Resolve | QueryEndpoint.AuthorityRequestsDismiss) ->
+        | None, ActorEndpoint.Query QueryEndpoint.AuthorityRequestsDismiss ->
             Some(message operation "done")
         | _ -> None
 

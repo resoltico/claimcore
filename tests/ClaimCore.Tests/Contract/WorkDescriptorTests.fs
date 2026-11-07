@@ -203,7 +203,7 @@ let tests =
                 let snapshot =
                     {
                         CaseId =
-                            CaseFixtures.caseId (Guid.Parse "80000000-0000-4000-8000-000000000001")
+                            CaseFixtures.caseId (Guid.Parse "80000000-0000-7000-8000-000000000001")
                         Reference = reference
                         Revision = CaseFixtures.revision 1L
                         State = CaseState.Active facts
@@ -243,7 +243,7 @@ let tests =
                             {
                                 CaseId =
                                     CaseFixtures.caseId (
-                                        Guid.Parse "80000000-0000-4000-8000-000000000002"
+                                        Guid.Parse "80000000-0000-7000-8000-000000000002"
                                     )
                                 Reference = Inputs.reference "ERASED-1"
                                 Revision = CaseFixtures.revision 2L
@@ -274,7 +274,7 @@ let tests =
                     "Actual human output cannot disclose stale work")
             testCase "reminder descriptor preserves actor and due date as typed values" (fun () ->
                 let actorId =
-                    CaseFixtures.actorId (Guid.Parse "80000000-0000-4000-8000-000000000003")
+                    CaseFixtures.actorId (Guid.Parse "80000000-0000-7000-8000-000000000003")
 
                 let actor = Inputs.namedActorReference actorId "Aija"
                 let due = Inputs.date "2026-11-05"
@@ -283,10 +283,10 @@ let tests =
                     Reminder.ofAccepted
                         (ReminderId.ofOperationId (
                             CaseFixtures.operationId (
-                                Guid.Parse "80000000-0000-4000-8000-000000000004"
+                                Guid.Parse "80000000-0000-7000-8000-000000000004"
                             )
                         ))
-                        (CaseFixtures.caseId (Guid.Parse "80000000-0000-4000-8000-000000000005"))
+                        (CaseFixtures.caseId (Guid.Parse "80000000-0000-7000-8000-000000000005"))
                         (CaseFixtures.revision 1L)
                         (ReminderAction.parse "Telephone claimant"
                          |> Result.defaultWith (fun error -> failtestf "%A" error))

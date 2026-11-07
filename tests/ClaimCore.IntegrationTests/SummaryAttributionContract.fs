@@ -28,7 +28,7 @@ let internal lifecycle fixture =
                 owner
                 (OperationInput.Authority(
                     Inputs.authorityRequest
-                        (id 88000)
+                        (id fixture 88000)
                         other
                         (AuthorityAct.Register
                             {
@@ -45,7 +45,7 @@ let internal lifecycle fixture =
             let! granted =
                 grant
                     owner
-                    (id number)
+                    (id fixture number)
                     principal
                     {
                         Role = role
@@ -61,7 +61,7 @@ let internal lifecycle fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 88003 "SUMMARY-AUTHOR" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 88003 "SUMMARY-AUTHOR" 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 
@@ -73,7 +73,7 @@ let internal lifecycle fixture =
                 actor
                 (OperationInput.Work
                     {
-                        OperationId = id number
+                        OperationId = id fixture number
                         Target = target
                         ExpectedRevision = revision
                         Act =
@@ -182,7 +182,7 @@ let internal lifecycle fixture =
             Service.execute
                 owner
                 (OperationInput.Authority(
-                    Inputs.authorityRequest (id 88010) other AuthorityAct.EraseProfile
+                    Inputs.authorityRequest (id fixture 88010) other AuthorityAct.EraseProfile
                 ))
                 token
 
@@ -198,7 +198,7 @@ let internal lifecycle fixture =
             Service.execute
                 owner
                 (Inputs.caseOperation (
-                    request 88011 "SUMMARY-AUTHOR" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+                    request fixture 88011 "SUMMARY-AUTHOR" 1L (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 token
 

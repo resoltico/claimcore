@@ -299,6 +299,14 @@ let private reminderReview operation (review: ReminderReview) =
         }
 
 let coherentPreview (reply: PresentedPreviewReply) =
+    let reply =
+        { reply with
+            OperationId =
+                ClaimCore.TestSupport.OperationIds.fromEntropy
+                    (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+                    reply.OperationId
+        }
+
     let outcome =
         match reply.Outcome with
         | Outcome.Succeeded(PresentedPreviewed.Reviewed review) ->

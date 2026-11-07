@@ -190,7 +190,6 @@ module internal TimelineDifferences =
     let actorIds =
         function
         | EntryContent.Work(_, snapshot) -> snapshot.Work.Responsible |> Option.toList
-        | EntryContent.NonAcceptance
         | EntryContent.Case _
         | EntryContent.Authority _
         | EntryContent.Reminder _
@@ -202,7 +201,6 @@ module internal TimelineDifferences =
         | EntryContent.Case(request, Some snapshot) -> caseFacts request snapshot previous
         | EntryContent.Work(request, snapshot) -> work references request snapshot previous
         | EntryContent.Reminder(request, effects) -> reminder request effects previous
-        | EntryContent.NonAcceptance
         | EntryContent.Authority _
         | EntryContent.Case(_, None)
         | EntryContent.ErasedCase

@@ -882,32 +882,14 @@ module RequestCodecs =
         }
         |> finishRead "CaseTimelineRequest" QueryEndpoint.CaseTimeline
 
-    let observeRequest =
+    let operationGetRequest =
         (read (fun operation ->
             {
                 OperationLookup.OperationId = operation
             })
         : ReadFields<OperationLookup, _>)
         |> operationOperand _.OperationId
-        |> finishRead RequestSchemas.ObserveRequest QueryEndpoint.Observe
-
-    let resolveRequest =
-        (read (fun operation ->
-            {
-                OperationLookup.OperationId = operation
-            })
-        : ReadFields<OperationLookup, _>)
-        |> operationOperand _.OperationId
-        |> finishRead RequestSchemas.ResolveRequest QueryEndpoint.Resolve
-
-    let statusRequest =
-        (read (fun operation ->
-            {
-                OperationLookup.OperationId = operation
-            })
-        : ReadFields<OperationLookup, _>)
-        |> operationOperand _.OperationId
-        |> finishRead RequestSchemas.StatusRequest QueryEndpoint.Status
+        |> finishRead RequestSchemas.OperationGetRequest QueryEndpoint.OperationGet
 
     let grantsRequest =
         (read (fun actor cursor limit ->

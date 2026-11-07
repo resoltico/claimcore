@@ -19,7 +19,6 @@ type internal LedgerWriteContext =
     {
         Head: LedgerPosition
         Nonce: byte array
-        Fenced: bool
     }
 
 /// Common ledger sequencing and receipt construction, independent of a use case.
@@ -29,11 +28,13 @@ module internal LedgerEnvelope =
         |> Option.map _.ActorId
         |> Option.defaultWith (fun () -> invalidArg (nameof view) "Authorized actor is missing.")
 
-    let guard fenced =
-        if fenced then
-            Verdict.Refuse Refusal.OperationResolved
-        else
+    let lifetime observedAt operation =
+        if OperationLifetime.admits observedAt operation then
             Verdict.Proceed()
+        else
+            Verdict.Refuse(
+                Refusal.OperationIdOutOfWindow(OperationId.issuedAt operation, observedAt)
+            )
 
     let accept
         (services: ServiceContext)

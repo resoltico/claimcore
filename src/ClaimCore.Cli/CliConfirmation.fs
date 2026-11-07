@@ -60,9 +60,7 @@ module internal CliConfirmation =
             AuthorityAct.kind request.Act = AuthorityKind.EraseProfile
             ->
             Some(request.OperationId.ToString("D"))
-        | _ ->
-            Frames.value Api.operationResolve invocation
-            |> Option.map (fun input -> input.OperationId.ToString("D"))
+        | _ -> None
 
     let validate isInteractive (prepared: PreparedVerb) =
         irreversibleTarget prepared.Invocation
@@ -72,43 +70,3 @@ module internal CliConfirmation =
                 Some(UsageError.InvalidChoice("--confirm", value, [ target ]))
             | None when not isInteractive -> Some(UsageError.MissingOption "--confirm")
             | _ -> None)
-
-    let settlement
-        (console: InteractiveConsole)
-        language
-        (context: ActorContext)
-        (operationId: Guid)
-        =
-        if not console.IsInteractive then
-            false
-        else
-            let operation = CatalogOperation.Query QueryEndpoint.Resolve
-
-            MessageCatalogs.renderCli
-                language
-                (CliMessage.SettlementScope(
-                    ActorId.format context.ActorId,
-                    context.InstallationId.ToString("D")
-                ))
-            + "\n"
-            + MessageCatalogs.render
-                language
-                (InteractionInput.messageKey
-                    (InteractionInput.Target InputTarget.OperationId)
-                    "label")
-                Map.empty
-            + ": "
-            + operationId.ToString("D")
-            + "\n"
-            + MessageCatalogs.render language (OperationCatalog.meaningId operation) Map.empty
-            + "\n"
-            + MessageCatalogs.render
-                language
-                (OperationCatalog.consequenceId operation |> Option.get)
-                Map.empty
-            + "\n"
-
-            |> Encoding.UTF8.GetBytes
-            |> console.Write
-
-            exactTarget console language (operationId.ToString("D"))

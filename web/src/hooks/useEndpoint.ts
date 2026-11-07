@@ -10,7 +10,8 @@ import { canonicalInput, typedResult } from "./endpointCache";
 import { useEndpointCache } from "./EndpointProvider";
 import { useCredential, useSessionContext } from "../session/SessionContext";
 const readMessage = (result: ApiResult<EndpointOutcome> | null) =>
-  result === null || (result.kind === "outcome" && result.value.outcome.kind === "SUCCEEDED")
+  result === null ||
+  (result.kind === "outcome" && ["SUCCEEDED", "ACCEPTED"].includes(result.value.outcome.kind))
     ? null
     : resultNotice(result);
 export const useEndpoint = <K extends EndpointId>(
@@ -18,6 +19,7 @@ export const useEndpoint = <K extends EndpointId>(
   input: RequestByEndpoint[K],
   enabled = true,
   scope = "",
+  installationId?: string,
 ) => {
   const cache = useEndpointCache();
   if (cache === null) {
@@ -36,8 +38,8 @@ export const useEndpoint = <K extends EndpointId>(
   const snapshot = useCallback(() => cache.snapshot(key), [cache, key]);
   const state = useSyncExternalStore(subscribe, snapshot, snapshot);
   const request = useCallback(
-    (signal: AbortSignal) => requestEndpoint(endpoint, credential, input, signal),
-    [endpoint, credential, input],
+    (signal: AbortSignal) => requestEndpoint(endpoint, credential, input, signal, installationId),
+    [endpoint, credential, input, installationId],
   );
   useEffect(() => {
     if (active && state.loading) {

@@ -30,7 +30,7 @@ let internal resultExits () =
                 "NOT_ACCEPTED", 2
                 "FAILED", 3
                 "OUTCOME_UNKNOWN", 4
-                "UNRESOLVED", 4
+                "PENDING", 4
             ]
 
     let mutable seen = Set.empty
@@ -272,7 +272,7 @@ let internal dispatchGuards () =
         RemoteServiceCall.send
             client
             {
-                InstallationId = Some(System.Guid.Parse "90000000-0000-4000-8000-000000000001")
+                InstallationId = Some(System.Guid.Parse "90000000-0000-7000-8000-000000000001")
                 Service = (Uri "https://localhost/")
                 Authorization =
                     (System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", "synthetic-token"))

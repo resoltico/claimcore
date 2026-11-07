@@ -118,6 +118,8 @@ module private FrameInvocation =
         (cancelled: CancellationToken)
         =
         task {
+            let frame = Frames.refreshProvisional frame
+
             let current () =
                 not cancelled.IsCancellationRequested && access.IsCurrent token
 
@@ -134,7 +136,7 @@ module private FrameInvocation =
                     Act =
                         JsonValue.tryMember "act" input
                         |> Option.bind (text "kind")
-                        |> Option.defaultValue "RESOLVE"
+                        |> Option.defaultValue "OPERATION"
                 }
 
             let directory =
@@ -257,16 +259,19 @@ type RemoteFrameProcessor
         delivery.Prepare frame
 
         task {
+            let mutable dispatched = frame
+
             let! reply =
                 invoke
                     frame
                     (fun prepared ->
+                        dispatched <- prepared
                         delivery.Prepare prepared
                         delivery.BeforeDispatch prepared)
                     consent
                     stopped
 
-            return CliReply.forAttempt frame reply.Frame.Delivery reply
+            return CliReply.forAttempt dispatched reply.Frame.Delivery reply
         }
 
     let interpret frame stopped =
@@ -343,18 +348,6 @@ type RemoteFrameProcessor
     member internal _.Exchange(frame, stopped) =
         delivery.BeginFrame()
         exchange frame None stopped
-
-    /// Consent observes the authenticated actor/installation captured for this exact attempt.
-    member internal _.ExchangeSettlement(frame, consent, stopped) =
-        delivery.BeginFrame()
-
-        if (Frames.endpoint frame).Id <> Api.operationResolve.Id then
-            Task.FromResult(
-                CliReply.local ClientFailure.InvalidFrame
-                |> CliReply.forAttempt frame DeliveryState.NotSent
-            )
-        else
-            exchange frame (Some consent) stopped
 
     member internal _.Deliver(renderReply, reply) = delivery.WriteWith(renderReply, reply)
     member internal _.Failure(error) = delivery.Failure error

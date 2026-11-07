@@ -14,7 +14,7 @@ Timeline CSV emits one row per disclosed changed field, or a metadata-only row w
 CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values.
 Interactive text commands check authored syntax before any read. For existing-case changes, omitting `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision. New-case OPEN previews without an existing-case lookup. Ordinary authority verbs preview after reading the authenticated context. A supplied operation ID is retained; otherwise one ID is allocated after valid syntax. Confirmation executes the exact reviewed request; declining prints Not recorded and exits 0. The service rechecks current permissions and state. Omitted correction groups mean KEEP; the review shows changed values and one Unchanged summary.
 
-For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; irreversible writes require exact target confirmation. Type the case reference for case ERASE, or the operation ID for ERASE_PROFILE and SETTLE. Redirected commands require `--confirm TARGET`; a mismatching target is a usage error. This local option is never sent in the wire request. Recovery settlement follows the same operation-ID rule.
+For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; irreversible writes require exact target confirmation. Type the case reference for case ERASE, or the operation ID for ERASE_PROFILE. Redirected commands require `--confirm TARGET`; a mismatching target is a usage error. This local option is never sent in the wire request.
 
 Human data text visibly escapes terminal controls, line/paragraph separators and directional formatting as `\u{XXXX}` (uppercase hexadecimal). Literal backslashes are doubled, so displayed escapes are distinct from exact stored values. Arabic text and joining characters remain readable. This applies to redirected text too; JSON/NDJSON retain exact decoded values and CSV keeps its export rules.
 Narrative LF paragraph breaks are trusted layout around independently escaped data segments. Optional incident description and handling summary each admit 600 Unicode scalar values, preserving authored whitespace and spelling. Reminder action text is a separate 200-scalar single-line value. Empty or whitespace-only supplied text is invalid; omission keeps an existing value and `--clear-incident-description` or `--clear-handling-summary` explicitly clears it.
@@ -44,7 +44,6 @@ Help, version, describe and schema commands work offline. Call and session dispa
 - `claimcore shell`
 - `claimcore recovery list [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de]`
 - `claimcore recovery check ATTEMPT_ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de]`
-- `claimcore recovery settle ATTEMPT_ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de]`
 - `claimcore configure --show`
 - `claimcore configure --language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de`
 - `claimcore configure --service-url URL --issuer URL --client-id ID --auth-mode interactive|automation [--service-trust-root-file PATH] [--oidc-trust-root-file PATH] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de]`
@@ -59,8 +58,8 @@ Both executables use the shared Protocol exit-code table. `claimcore-database he
 | --- | --- | --- | --- |
 | 0 | Requested work completed. | yes | yes |
 | 2 | Input, usage or action was refused. | yes | yes |
-| 3 | A known failure; earlier uncertain attempts remain unresolved. | yes | yes |
-| 4 | Commit may have happened; retain the exact operation for recovery. | yes | yes |
+| 3 | A known failure; check any earlier unconfirmed change separately. | yes | yes |
+| 4 | An operation lookup is pending, or commit may have happened; retain an uncertain mutation's exact frame for recovery. | yes | yes |
 | 5 | Ledger verification found divergence. | — | yes |
 | 64 | CLI command usage was refused before dispatch. | yes | — |
 | 70 | Unexpected CLI defect. | yes | — |
@@ -737,42 +736,14 @@ claimcore case summary [--lifecycle active|voided|erased]... [--status opened|cl
 | `--view` | Case view — Choose a standard case view. Other filters further restrict its results. | needs-attention, mine, overdue, due-today, no-next-action, unassigned, undecided, decided-unpaid, closed, voided, all |  |
 | `--responsible-actor` | Responsible account filter — Restrict cases to the selected responsible account within your readable scope. Other filters further restrict its results. |  |  |
 
-## operation observe
+## operation get
 
-Observe an operation
+Check an unconfirmed change
 
-Read an accepted operation receipt when it is visible to the actor.
-
-```sh
-claimcore operation observe OPERATION-ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-| `OPERATION-ID` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-
-## operation status
-
-Check operation status
-
-Read this actor’s known outcome without blocking the operation or changing the register.
+Read the accepted receipt when visible, or wait until the operation lifetime ends for a final answer that this account’s change was not accepted.
 
 ```sh
-claimcore operation status OPERATION-ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
-```
-
-| Input | Meaning | Choices | Default |
-| --- | --- | --- | --- |
-| `OPERATION-ID` | Operation ID — An ID for this operation. Reuse it only when retrying the same request. |  |  |
-
-## operation settle
-
-Settle operation permanently
-
-Return this account’s accepted receipt, or permanently block its operation ID if it has not been accepted for this account. This cannot be undone. Checking status is a separate read.
-
-```sh
-claimcore operation settle OPERATION-ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--confirm TARGET]
+claimcore operation get OPERATION-ID [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run]
 ```
 
 | Input | Meaning | Choices | Default |

@@ -19,9 +19,9 @@ module CliDocumentation =
         function
         | ExitCode.Success -> "Requested work completed."
         | ExitCode.Rejected -> "Input, usage or action was refused."
-        | ExitCode.Failed -> "A known failure; earlier uncertain attempts remain unresolved."
+        | ExitCode.Failed -> "A known failure; check any earlier unconfirmed change separately."
         | ExitCode.OutcomeUnknown ->
-            "Commit may have happened; retain the exact operation for recovery."
+            "An operation lookup is pending, or commit may have happened; retain an uncertain mutation's exact frame for recovery."
         | ExitCode.Diverged -> "Ledger verification found divergence."
         | ExitCode.Usage -> "CLI command usage was refused before dispatch."
         | ExitCode.InternalError -> "Unexpected CLI defect."
@@ -130,7 +130,7 @@ module CliDocumentation =
             "CSV is a spreadsheet-safe export: cells beginning with `=`, `+`, `-`, `@`, TAB or CR, including formula triggers after leading spaces/TABs, are prefixed with an apostrophe before quoting. This alters affected cells; use `--format json` for exact values."
             "Interactive text commands check authored syntax before any read. For existing-case changes, omitting `--expected-revision`, `--expected-work-revision` or `--expected-reminder-revision` reads the current entity and previews with its own revision. New-case OPEN previews without an existing-case lookup. Ordinary authority verbs preview after reading the authenticated context. A supplied operation ID is retained; otherwise one ID is allocated after valid syntax. Confirmation executes the exact reviewed request; declining prints Not recorded and exits 0. The service rechecks current permissions and state. Omitted correction groups mean KEEP; the review shows changed values and one Unchanged summary."
             ""
-            "For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; irreversible writes require exact target confirmation. Type the case reference for case ERASE, or the operation ID for ERASE_PROFILE and SETTLE. Redirected commands require `--confirm TARGET`; a mismatching target is a usage error. This local option is never sent in the wire request. Recovery settlement follows the same operation-ID rule."
+            "For existing-case changes, `--dry-run`, redirected input/output and `--format json` require an explicit revision. `--dry-run` stays offline and `--preview` remains preview-only; irreversible writes require exact target confirmation. Type the case reference for case ERASE, or the operation ID for ERASE_PROFILE. Redirected commands require `--confirm TARGET`; a mismatching target is a usage error. This local option is never sent in the wire request."
             ""
             "Human data text visibly escapes terminal controls, line/paragraph separators and directional formatting as `\\u{XXXX}` (uppercase hexadecimal). Literal backslashes are doubled, so displayed escapes are distinct from exact stored values. Arabic text and joining characters remain readable. This applies to redirected text too; JSON/NDJSON retain exact decoded values and CSV keeps its export rules."
             "Narrative LF paragraph breaks are trusted layout around independently escaped data segments. Optional incident description and handling summary each admit 600 Unicode scalar values, preserving authored whitespace and spelling. Reminder action text is a separate 200-scalar single-line value. Empty or whitespace-only supplied text is invalid; omission keeps an existing value and `--clear-incident-description` or `--clear-handling-summary` explicitly clears it."

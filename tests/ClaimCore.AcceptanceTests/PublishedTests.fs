@@ -45,9 +45,10 @@ let private verbArguments verb (bytes: byte array) =
         "case"
         verb
         input.GetProperty("target").GetProperty("caseReference").GetString() |> nonNull
-        "--operation-id"
-        input.GetProperty("operationId").GetString() |> nonNull
     ]
+    @ (match input.TryGetProperty "operationId" with
+       | true, value -> [ "--operation-id"; value.GetString() |> nonNull ]
+       | _ -> [])
     @ revision
     @ details
 
@@ -95,7 +96,13 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
             "Example revision"
 
         sameRecordedReceipt fixture "walkthrough-replay" receipt (fun () ->
-            verb fixture fixture.Environment arguments 0 |> require "ALREADY_ACCEPTED")
+            verb
+                fixture
+                fixture.Environment
+                (arguments
+                 @ [ "--operation-id"; receipt.GetProperty("operationId").GetString() |> nonNull ])
+                0
+            |> require "ALREADY_ACCEPTED")
         |> ignore
 
         position <- receipt.GetProperty("position")
@@ -435,8 +442,7 @@ let private supplementary fixture =
     let receipt = automation fixture "operation.execute" input 0 |> require "ACCEPTED"
 
     sameRecordedReceipt fixture "supplementary-observation" receipt (fun () ->
-        automation fixture "operation.observe" {| operationId = input.operationId |} 0
-        |> require "SUCCEEDED")
+        lookupReceipt fixture input.operationId)
     |> ignore
 
     let replay =
@@ -463,7 +469,6 @@ let private qualify () =
         CliDiscovery.qualify fixture
         setup fixture
         CliCaseWork.qualify fixture
-        do! CliResolution.qualify fixture
         CliRecovery.qualify fixture
         CliNativeOutput.qualify fixture
         CliDelivery.qualify fixture

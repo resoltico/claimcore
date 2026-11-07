@@ -46,7 +46,7 @@ test("associates malformed operation lookup guidance and prevents empty case loo
   await expect(operation).toHaveAccessibleDescription(translated ?? "");
   await operation.fill(randomUUID());
   await expect(operation).not.toHaveAttribute("aria-invalid");
-  const observe = endpoints.find((endpoint) => endpoint.id === "operation.observe");
+  const observe = endpoints.find((endpoint) => endpoint.id === "operation.get");
   expect(observe).toBeDefined();
   expect(requests).toEqual([`POST ${observe?.path}`]);
   await expectAccessible(page);

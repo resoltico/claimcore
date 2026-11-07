@@ -81,15 +81,7 @@ module ReadCatalog =
                 Inputs = [ ReadInput.CaseOperand; ReadInput.Detail; ReadInput.Page ]
             }
             {
-                Endpoint = QueryEndpoint.Observe
-                Inputs = [ ReadInput.OperationOperand ]
-            }
-            {
-                Endpoint = QueryEndpoint.Status
-                Inputs = [ ReadInput.OperationOperand ]
-            }
-            {
-                Endpoint = QueryEndpoint.Resolve
+                Endpoint = QueryEndpoint.OperationGet
                 Inputs = [ ReadInput.OperationOperand ]
             }
             {

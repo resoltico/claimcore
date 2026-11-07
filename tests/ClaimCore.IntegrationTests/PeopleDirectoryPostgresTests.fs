@@ -21,7 +21,7 @@ let private nameProjection (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.actors SET display_name_search='wrong normalized projection' WHERE actor_id=$1"
-                [| box (ClaimCore.TestSupport.StoreFixtures.id 1100) |]
+                [| box (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 1100) |]
 
         do!
             finding
@@ -43,7 +43,7 @@ let private nameProjection (database: PostgresFixture.Database) =
             DatabaseSession.rows
                 connection
                 "SELECT display_name,display_name_search FROM claimcore.actors WHERE actor_id=$1"
-                [| box (ClaimCore.TestSupport.StoreFixtures.id 1100) |]
+                [| box (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 1100) |]
                 token
 
         Expect.equal
@@ -78,7 +78,7 @@ let private contactProjection (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.actors SET contact_search='stale contact' WHERE actor_id=$1"
-                [| box (ClaimCore.TestSupport.StoreFixtures.id 1140) |]
+                [| box (ClaimCore.TestSupport.StoreFixtures.id database.Fixture 1140) |]
 
         do!
             finding

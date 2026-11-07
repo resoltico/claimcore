@@ -66,8 +66,6 @@ let qualify fixture output =
             (registration.GetProperty(field).GetString() = expected)
             "Exact native Unicode readback"
 
-    let receipt =
-        automation fixture "operation.observe" {| operationId = operationId |} 0
-        |> require "SUCCEEDED"
+    let receipt = lookupReceipt fixture operationId
 
     verifyReceipt reference operationId current receipt

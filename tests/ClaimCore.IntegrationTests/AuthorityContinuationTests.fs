@@ -21,7 +21,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
     task {
         let! actor = caseWorker fixture
 
-        do! registerActors actor
+        do! registerActors fixture actor
 
         let! first =
             (Service.actors
@@ -38,7 +38,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.equal
             (first.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
-            [ id 1 ]
+            [ id fixture 1 ]
             "Stable actor-ID order"
 
         let! second =
@@ -56,7 +56,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
 
         Expect.equal
             (second.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
-            [ id 10; id 11 ]
+            [ id fixture 10; id fixture 11 ]
             "Changed page size"
 
         let! third =
@@ -74,7 +74,7 @@ let private authorityLimits (_: PostgresFixture.Database) (fixture: Fixture) =
         | Outcome.Succeeded page ->
             Expect.equal
                 (page.Items |> List.map (fun actor -> ActorId.value actor.Actor.ActorId))
-                [ id 12 ]
+                [ id fixture 12 ]
                 "No omission"
 
             Expect.isNone page.NextCursor "End of review"

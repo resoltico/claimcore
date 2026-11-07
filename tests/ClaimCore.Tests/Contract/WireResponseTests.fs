@@ -33,7 +33,7 @@ let private expectedExit =
     | "NOT_ACCEPTED" -> 2
     | "FAILED" -> 3
     | "OUTCOME_UNKNOWN"
-    | "UNRESOLVED" -> 4
+    | "PENDING" -> 4
     | _ -> failtest "The authored reply requires a declared outcome kind."
 
 let private examples () =
@@ -156,7 +156,7 @@ let private malformed () =
         "Calendar dates exist"
 
     Expect.isError
-        (Codec.decode 1024 Codec.uuid (bytes "\"10000000-0000-4000-8000-000000000001\\n\""))
+        (Codec.decode 1024 Codec.uuid (bytes "\"10000000-0000-7000-8000-000000000001\\n\""))
         "UUID cannot hide a trailing newline"
 
 let private frames () =

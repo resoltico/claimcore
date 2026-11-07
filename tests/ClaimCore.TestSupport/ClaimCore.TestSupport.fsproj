@@ -20,6 +20,7 @@
     <Compile Include="PostgresBaseline.fs" />
     <Compile Include="PostgresReadiness.fs" />
     <Compile Include="SessionResults.fs" />
+    <Compile Include="OperationIds.fs" />
     <Compile Include="Inputs.fs" />
     <Compile Include="PositiveExamples.fs" />
     <Compile Include="ResponseExamples.fs" />

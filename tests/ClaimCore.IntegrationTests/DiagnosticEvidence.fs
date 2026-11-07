@@ -34,27 +34,27 @@ let internal scalarEvidence () =
         let! actor = caseWorker fixture
         let results = ResizeArray<_>()
 
-        for index, request in scalarRequests () |> List.indexed do
+        for index, request in scalarRequests fixture () |> List.indexed do
             // Distinct witnesses reserve distinct operation identities, including known business refusals.
             let pending =
                 if request.OperationId = Guid.Empty then
                     request
                 else
                     { request with
-                        OperationId = id (100 + index)
+                        OperationId = id fixture (100 + index)
                     }
 
             let! outcome = execute actor pending
             results.Add(refused outcome)
 
         // Malformed existing-case acts now require the authoritative readable snapshot and capability.
-        let! scalarCase = execute actor (openRequest 480 "REACH-1")
+        let! scalarCase = execute actor (openRequest fixture 480 "REACH-1")
         accepted scalarCase |> ignore
 
         let! scalarSteward =
             grant
                 actor
-                (id 481)
+                (id fixture 481)
                 owner
                 {
                     Role = Role.DataSteward
@@ -64,20 +64,20 @@ let internal scalarEvidence () =
 
         acceptedAuthority scalarSteward
 
-        for index, request in List.indexed (progressRequests ()) do
+        for index, request in List.indexed (progressRequests fixture ()) do
             let! outcome =
                 execute
                     actor
                     { request with
-                        OperationId = id (482 + index)
+                        OperationId = id fixture (482 + index)
                     }
 
             results.Add(refused outcome)
 
-        let! workOpening = execute actor (openRequest 490 "REACH-WORK")
+        let! workOpening = execute actor (openRequest fixture 490 "REACH-WORK")
         accepted workOpening |> ignore
 
-        for request in workScalarRequests () do
+        for request in workScalarRequests fixture () do
             let! outcome = Service.execute actor request ct
             results.Add(refused outcome)
 
@@ -86,7 +86,7 @@ let internal scalarEvidence () =
         let work operation responsible summary =
             OperationInput.Work
                 {
-                    OperationId = id operation
+                    OperationId = id fixture operation
                     Target = target
                     ExpectedRevision = 0L
                     Act =
@@ -100,7 +100,7 @@ let internal scalarEvidence () =
         let reminder operation act =
             OperationInput.Reminder
                 {
-                    OperationId = id operation
+                    OperationId = id fixture operation
                     Target = target
                     Act = act
                 }
@@ -110,7 +110,7 @@ let internal scalarEvidence () =
                 work 509 WorkValue.Keep WorkValue.Clear
                 work
                     510
-                    (WorkValue.Set(ActorId.format (CaseFixtures.actorId (id 999))))
+                    (WorkValue.Set(ActorId.format (CaseFixtures.actorId (id fixture 999))))
                     WorkValue.Keep
             ] do
             let! outcome = Service.execute actor request ct
@@ -129,24 +129,30 @@ let internal scalarEvidence () =
 
         for request in
             [
-                reminder 521 (AuthoredReminderAct.Reopen(id 520, 1L, "2027-01-01"))
-                reminder 522 (AuthoredReminderAct.Update(id 520, 1L, plan))
+                reminder 521 (AuthoredReminderAct.Reopen(id fixture 520, 1L, "2027-01-01"))
+                reminder 522 (AuthoredReminderAct.Update(id fixture 520, 1L, plan))
             ] do
             let! outcome = Service.execute actor request ct
             results.Add(refused outcome)
 
         let! completed =
-            Service.execute actor (reminder 523 (AuthoredReminderAct.Complete(id 520, 1L))) ct
+            Service.execute
+                actor
+                (reminder 523 (AuthoredReminderAct.Complete(id fixture 520, 1L)))
+                ct
 
         accepted completed |> ignore
 
         let! repeated =
-            Service.execute actor (reminder 524 (AuthoredReminderAct.Complete(id 520, 2L))) ct
+            Service.execute
+                actor
+                (reminder 524 (AuthoredReminderAct.Complete(id fixture 520, 2L)))
+                ct
 
         results.Add(refused repeated)
 
         let! closed =
-            execute actor (request 525 "REACH-WORK" 1L (AuthoredCaseAct.Bare BareAct.Close))
+            execute actor (request fixture 525 "REACH-WORK" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
         accepted closed |> ignore
 
@@ -158,7 +164,7 @@ let internal scalarEvidence () =
         let! stewardship =
             grant
                 actor
-                (id 527)
+                (id fixture 527)
                 owner
                 {
                     Role = Role.DataSteward
@@ -171,7 +177,12 @@ let internal scalarEvidence () =
         let! voided =
             execute
                 actor
-                (request 528 "REACH-WORK" 2L (AuthoredCaseAct.Void "Synthetic diagnostic state"))
+                (request
+                    fixture
+                    528
+                    "REACH-WORK"
+                    2L
+                    (AuthoredCaseAct.Void "Synthetic diagnostic state"))
 
         accepted voided |> ignore
 
@@ -244,7 +255,7 @@ let internal stateEvidence (setup, final) =
         let! granted =
             grant
                 actor
-                (id 3)
+                (id fixture 3)
                 owner
                 {
                     Role = Role.DataSteward
@@ -253,17 +264,17 @@ let internal stateEvidence (setup, final) =
                 true
 
         acceptedAuthority granted
-        let! opening = execute actor (openRequest 10 "REACH-1")
+        let! opening = execute actor (openRequest fixture 10 "REACH-1")
         accepted opening |> ignore
 
         for index, act in List.indexed setup do
             let! outcome =
-                execute actor (actRequest (11 + index) "REACH-1" (int64 (index + 1)) act)
+                execute actor (actRequest fixture (11 + index) "REACH-1" (int64 (index + 1)) act)
 
             accepted outcome |> ignore
 
         let! outcome =
-            execute actor (actRequest 50 "REACH-1" (int64 (setup.Length + 1)) final)
+            execute actor (actRequest fixture 50 "REACH-1" (int64 (setup.Length + 1)) final)
 
         return refused outcome
     }
@@ -309,7 +320,7 @@ let internal queryEvidence actor =
             @ List.ofSeq evidence
     }
 
-let internal authorityEvidence actor =
+let internal authorityEvidence fixture actor =
     task {
         let service =
             PrincipalKey.service "https://issuer.example/" "synthetic"
@@ -318,7 +329,7 @@ let internal authorityEvidence actor =
         let send n target act =
             (Service.execute
                 (actor: ServiceContext)
-                (OperationInput.Authority(authorityRequest (id n) target act))
+                (OperationInput.Authority(authorityRequest (id fixture n) target act))
                 (ct))
 
         let! registered =
@@ -335,7 +346,7 @@ let internal authorityEvidence actor =
         let! human =
             grant
                 actor
-                (id 34)
+                (id fixture 34)
                 service
                 {
                     Role = Role.DataSteward
@@ -346,11 +357,11 @@ let internal authorityEvidence actor =
         let! scope =
             grant
                 actor
-                (id 39)
+                (id fixture 39)
                 owner
                 {
                     Role = Role.Owner
-                    Scope = GrantTarget.CaseId(CaseFixtures.caseId (id 10))
+                    Scope = GrantTarget.CaseId(CaseFixtures.caseId (id fixture 10))
                 }
                 true
 
@@ -364,15 +375,15 @@ let internal authorityEvidence actor =
             ]
     }
 
-let internal identityEvidence actor =
+let internal identityEvidence fixture actor =
     task {
-        let pending = openRequest 10 "REACH-1"
+        let pending = openRequest fixture 10 "REACH-1"
         let! opening = execute actor pending
         accepted opening |> ignore
         let! conflict = execute actor { pending with ExpectedRevision = 1L }
 
         let! revision =
-            execute actor (request 11 "REACH-1" 0L (AuthoredCaseAct.Bare BareAct.Close))
+            execute actor (request fixture 11 "REACH-1" 0L (AuthoredCaseAct.Bare BareAct.Close))
 
         let reader =
             PrincipalKey.human "https://issuer.example/" "reader"
@@ -383,7 +394,7 @@ let internal identityEvidence actor =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 35)
+                        (id fixture 35)
                         reader
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -394,7 +405,7 @@ let internal identityEvidence actor =
         let! granted =
             grant
                 actor
-                (id 36)
+                (id fixture 36)
                 reader
                 {
                     Role = Role.CaseReader
@@ -406,7 +417,7 @@ let internal identityEvidence actor =
         return [ refused conflict; refused revision ], reader
     }
 
-let internal principalEvidence (actor: ServiceContext) =
+let internal principalEvidence fixture (actor: ServiceContext) =
     task {
         let evidence = ResizeArray<_>()
 
@@ -420,7 +431,7 @@ let internal principalEvidence (actor: ServiceContext) =
                 ] do
             let request: ClaimCore.Domain.AuthorityRequest =
                 {
-                    OperationId = id (60 + index)
+                    OperationId = id fixture (60 + index)
                     Target =
                         {
                             Kind = PrincipalKind.Human
@@ -449,7 +460,7 @@ let private invalidTextSamples =
         "x\u200by"
     ]
 
-let private profileAndDirectoryEvidence actor =
+let private profileAndDirectoryEvidence fixture actor =
     task {
         let results = ResizeArray<_>()
 
@@ -476,7 +487,7 @@ let private profileAndDirectoryEvidence actor =
                         actor
                         (OperationInput.Authority(
                             authorityRequest
-                                (id (600 + index * 2 + (if contact then 1 else 0)))
+                                (id fixture (600 + index * 2 + (if contact then 1 else 0)))
                                 target
                                 (AuthorityAct.Register profile)
                         ))
@@ -510,7 +521,7 @@ let private profileAndDirectoryEvidence actor =
                     actor
                     (OperationInput.Authority(
                         authorityRequest
-                            (id (650 + index))
+                            (id fixture (650 + index))
                             target
                             (AuthorityAct.Admit
                                 {
@@ -535,25 +546,26 @@ let internal boundaryEvidence () =
             }
 
         let! actor = caseWorker fixture
-        let! identity, reader = identityEvidence actor
+        let! identity, reader = identityEvidence fixture actor
 
         let! denied =
             execute
                 (core fixture reader)
-                (request 37 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+                (request fixture 37 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
         let! queries = queryEvidence actor
-        let! authority = authorityEvidence actor
-        let! principals = principalEvidence actor
-        let! profiles = profileAndDirectoryEvidence actor
+        let! authority = authorityEvidence fixture actor
+        let! principals = principalEvidence fixture actor
+        let! profiles = profileAndDirectoryEvidence fixture actor
 
-        let! resolved =
-            (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 42 }) (ct))
+        let expired = Guid.CreateVersion7(DateTimeOffset.UtcNow.AddMinutes(-11.))
 
-        Expect.equal resolved (Outcome.Succeeded Resolved.NotAccepted) "Resolve installs a fence"
+        let pending =
+            { request fixture 42 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close) with
+                OperationId = expired
+            }
 
-        let! fenced =
-            execute actor (request 42 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+        let! outOfWindow = execute actor pending
 
         let! maintenance =
             RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter ct
@@ -561,11 +573,11 @@ let internal boundaryEvidence () =
         Expect.isOk maintenance "The owner explicitly pauses actual register writes"
 
         let! paused =
-            execute actor (request 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
+            execute actor (request fixture 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))
 
         return
             identity
-            @ [ refused denied; refused fenced; refused paused ]
+            @ [ refused denied; refused outOfWindow; refused paused ]
             @ queries
             @ authority
             @ principals

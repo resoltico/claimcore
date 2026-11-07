@@ -29,7 +29,7 @@ let private fieldSamples =
 /// Fill only omitted business inputs. Grammar still owns branch selection and required syntax.
 let complete arguments =
     let rec prepare remaining arguments =
-        match Grammar.prepare (fun () -> "11111111-2222-4333-8444-555555555555") arguments with
+        match Grammar.prepare (fun () -> "11111111-2222-7333-8444-555555555555") arguments with
         | Ok _ -> arguments
         | Error issues ->
             let additions =
@@ -52,8 +52,8 @@ let private inputSamples =
     Map.ofList
         [
             "caseReference", "SYNTHETIC"
-            "operationId", "10000000-0000-4000-8000-000000000001"
-            "actorId", "10000000-0000-4000-8000-000000000001"
+            "operationId", "10000000-0000-7000-8000-000000000001"
+            "actorId", "10000000-0000-7000-8000-000000000001"
             "limit", "5"
             "cursor", "synthetic"
             "detail", "FULL"
@@ -62,12 +62,12 @@ let private inputSamples =
             "progress", "UNDECIDED"
             "text", "synthetic"
             "order", "REFERENCE"
-            "responsibleActor", "00000000-0000-4000-8000-000000000042"
+            "responsibleActor", "00000000-0000-7000-8000-000000000042"
             "handlingSummary", "Current handling context"
             "incidentDescription", "Incident details"
             "reminderAction", "Contact insurer"
             "reminderDueDate", "2026-11-10"
-            "reminderId", "10000000-0000-4000-8000-000000000007"
+            "reminderId", "10000000-0000-7000-8000-000000000007"
             "expectedWorkRevision", "0"
             "expectedReminderRevision", "1"
             "profile.displayName", "Authored"

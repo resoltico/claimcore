@@ -250,13 +250,7 @@ module CatalogAnnotations =
                 constant (target InputTarget.ProfileDisplayName)
             yield ("ActorProfileInput", "contact"), constant (target InputTarget.ProfileContact)
             yield (RequestSchemas.Scope, WireMembers.Kind), scope
-            for owner in
-                [
-                    RequestSchemas.ObserveRequest
-                    RequestSchemas.ResolveRequest
-                    RequestSchemas.StatusRequest
-                ] do
-                yield (owner, WireMembers.OperationId), operationIdentity
+            yield (RequestSchemas.OperationGetRequest, WireMembers.OperationId), operationIdentity
             for owner in [ RequestSchemas.GrantsRequest; RequestSchemas.AuthorityHistoryRequest ] do
                 yield (owner, WireMembers.ActorId), constant (annotation InteractionInput.ActorId)
             yield (RequestSchemas.HistoryRequest, WireMembers.Detail), detail

@@ -9,7 +9,7 @@ open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.Application.Contracts
 
-let private identity () = "11111111-2222-4333-8444-555555555555"
+let private identity () = "11111111-2222-7333-8444-555555555555"
 
 let private baseArguments =
     [
@@ -71,7 +71,6 @@ let tests =
                     for words, target in
                         [
                             [ "case"; "erase"; "CASE-X"; "--expected-revision"; "7" ], "CASE-X"
-                            [ "operation"; "settle"; identity () ], identity ()
                             [
                                 "authority"
                                 "erase-profile"

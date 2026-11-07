@@ -77,8 +77,7 @@ type CliMessage =
         maximumRequestBytes: string *
         maximumResponseBytes: string *
         retryCommand: string *
-        statusCommand: string *
-        settlementCommand: string
+        statusCommand: string
     | [<MessageKey("cli.help.session")>] HelpSession of
         maximumInvocationBytes: string *
         maximumRequestBytes: string *
@@ -92,8 +91,7 @@ type CliMessage =
         maximumTrustRootBytes: string
     | [<MessageKey("cli.help.delivery")>] HelpDelivery of
         retryCommand: string *
-        statusCommand: string *
-        settlementCommand: string
+        statusCommand: string
     | [<MessageKey("label.action")>] ActionLabel
     | [<MessageKey("label.availableActs")>] AvailableActsLabel
     | [<MessageKey("label.enabled")>] EnabledLabel
@@ -102,16 +100,13 @@ type CliMessage =
 
     | [<MessageKey("cli.text.editorCleanupUnavailable")>] EditorCleanupUnavailable
     | [<MessageKey("cli.text.recoveryCleanupUnavailable")>] RecoveryCleanupUnavailable
-    | [<MessageKey("cli.text.settlementScope")>] SettlementScope of
-        actorId: string *
-        installationId: string
     | [<MessageKey("cli.text.recoveryEmpty")>] RecoveryEmpty
     | [<MessageKey("cli.text.recoveryAttempt")>] RecoveryAttempt of
         attemptId: string *
         subject: string *
         act: string *
         operationId: string
-    | [<MessageKey("cli.text.statusUnresolved")>] StatusUnresolved
+    | [<MessageKey("cli.text.operationPending")>] OperationPending of finalAt: string
     | [<MessageKey("cli.text.state")>] StateLabel
     | [<MessageKey("cli.text.workBusinessDate")>] WorkBusinessDateLabel
     | [<MessageKey("cli.text.workTimeZone")>] WorkTimeZoneLabel

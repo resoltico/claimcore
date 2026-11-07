@@ -14,8 +14,8 @@ let private values amount claimant =
         [ BusinessField.ClaimedAmount, amount; BusinessField.ClaimantName, claimant ]
         registration
 
-let private opening number reference amount claimant =
-    request number reference 0L (AuthoredCaseAct.Open(values amount claimant))
+let private opening fixture number reference amount claimant =
+    request fixture number reference 0L (AuthoredCaseAct.Open(values amount claimant))
 
 let private retainedRequest database (receipt: OperationReceipt) =
     task {
@@ -34,10 +34,16 @@ let private retainedRequest database (receipt: OperationReceipt) =
 let private casePairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let amount = opening 9300 "Canonical-amount" "10.50" "Claimant"
-        let reference = opening 9301 "Canonical-Reference" "10.50" "Claimant"
-        let differentAmount = opening 9302 "Canonical-different-amount" "10.50" "Claimant"
-        let differentName = opening 9303 "Canonical-different-name" "10.50" "Claimant"
+        let amount = opening database.Fixture 9300 "Canonical-amount" "10.50" "Claimant"
+
+        let reference =
+            opening database.Fixture 9301 "Canonical-Reference" "10.50" "Claimant"
+
+        let differentAmount =
+            opening database.Fixture 9302 "Canonical-different-amount" "10.50" "Claimant"
+
+        let differentName =
+            opening database.Fixture 9303 "Canonical-different-name" "10.50" "Claimant"
 
         let cases =
             [
@@ -94,7 +100,7 @@ let private casePairs (database: PostgresFixture.Database) =
 let private authorityPairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let input = opening 9310 "Canonical-Reference" "10.50" "Claimant"
+        let input = opening database.Fixture 9310 "Canonical-Reference" "10.50" "Claimant"
         let! opened = Service.execute actor (Inputs.caseOperation input) token
         let parent = accepted opened |> caseReceipt
 
@@ -106,7 +112,10 @@ let private authorityPairs (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest (id 901) target (AuthorityAct.Register Inputs.actorProfile)
+                    authorityRequest
+                        (id database.Fixture 901)
+                        target
+                        (AuthorityAct.Register Inputs.actorProfile)
                 ))
                 token
 
@@ -123,7 +132,11 @@ let private authorityPairs (database: PostgresFixture.Database) =
                 9320, AuthorityAct.Grant, AuthorityKind.Grant
                 9321, AuthorityAct.Revoke, AuthorityKind.Revoke
             ] do
-            let left = authorityRequest (id number) target (act (grant "Canonical-Reference"))
+            let left =
+                authorityRequest
+                    (id database.Fixture number)
+                    target
+                    (act (grant "Canonical-Reference"))
 
             let right =
                 { left with
@@ -166,7 +179,7 @@ let private authorityPairs (database: PostgresFixture.Database) =
 let private disclosureAndErasure (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        let left = opening 9340 "Canonical-private" "10.50" "Claimant"
+        let left = opening database.Fixture 9340 "Canonical-private" "10.50" "Claimant"
 
         let right =
             { left with
@@ -192,7 +205,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
                 actor
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 920)
+                        (id database.Fixture 920)
                         outsider
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -220,7 +233,7 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
         let! stewardship =
             grant
                 actor
-                (id 921)
+                (id database.Fixture 921)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -234,7 +247,12 @@ let private disclosureAndErasure (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 922 left.CaseReference 1L (AuthoredCaseAct.Bare BareAct.Erase)
+                    request
+                        database.Fixture
+                        922
+                        left.CaseReference
+                        1L
+                        (AuthoredCaseAct.Bare BareAct.Erase)
                 ))
                 (token))
 

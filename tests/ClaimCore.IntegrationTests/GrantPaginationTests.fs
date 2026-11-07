@@ -21,7 +21,7 @@ let private page =
     | Outcome.Succeeded p -> p
     | _ -> failtest "Expected grant page"
 
-let private seedCases (admin: ServiceContext) target =
+let private seedCases fixture (admin: ServiceContext) target =
     task {
         for n in 1..52 do
             let reference = "GRANT-" + string n
@@ -30,7 +30,7 @@ let private seedCases (admin: ServiceContext) target =
                 (Service.execute
                     admin
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request (300 + n) reference 0L (AuthoredCaseAct.Open registration)
+                        request fixture (300 + n) reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -40,7 +40,7 @@ let private seedCases (admin: ServiceContext) target =
             let! added =
                 grant
                     admin
-                    (id (400 + n))
+                    (id fixture (400 + n))
                     target
                     {
                         Role = Role.CaseReader
@@ -58,7 +58,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
         let! steward =
             grant
                 admin
-                (id 604)
+                (id database.Fixture 604)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -70,7 +70,7 @@ let private eraseCase (database: PostgresFixture.Database) (admin: ServiceContex
 
         let erase =
             {
-                OperationId = id 605
+                OperationId = id database.Fixture 605
                 CaseReference = "GRANT-1"
                 ExpectedRevision = 1L
                 Act = ((AuthoredCaseAct.Bare BareAct.Erase))
@@ -95,7 +95,7 @@ let private prepare (database: PostgresFixture.Database) =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 200)
+                        (id database.Fixture 200)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -103,13 +103,13 @@ let private prepare (database: PostgresFixture.Database) =
 
         acceptedAuthority registered
 
-        do! seedCases admin target
+        do! seedCases database.Fixture admin target
 
         for n, role in [ 600, Role.CaseReader; 601, Role.CaseHandler; 602, Role.PaymentRecorder ] do
             let! added =
                 grant
                     admin
-                    (id n)
+                    (id database.Fixture n)
                     target
                     {
                         Role = role
@@ -139,7 +139,9 @@ let private prepare (database: PostgresFixture.Database) =
         let! disabled =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 603) target (AuthorityAct.Disable)))
+                (OperationInput.Authority(
+                    authorityRequest (id database.Fixture 603) target (AuthorityAct.Disable)
+                ))
                 (token))
 
         acceptedAuthority disabled
@@ -158,7 +160,12 @@ let private indexCompatible (database: PostgresFixture.Database) targetId =
             DatabaseSession.rows
                 connection
                 ("EXPLAIN " + TransactionPages.grantPageSql)
-                [| box (ActorId.value targetId); box "CASE_READER"; box (id 1); box 51 |]
+                [|
+                    box (ActorId.value targetId)
+                    box "CASE_READER"
+                    box (id database.Fixture 1)
+                    box 51
+                |]
                 token
 
         let plan = rows |> List.map (DatabaseSession.value<string> 0) |> String.concat "\n"
@@ -172,7 +179,7 @@ let private indexCompatible (database: PostgresFixture.Database) targetId =
         do! transaction.RollbackAsync()
     }
 
-let private changedTarget (admin: ServiceContext) targetId cursor =
+let private changedTarget fixture (admin: ServiceContext) targetId cursor =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
@@ -181,7 +188,7 @@ let private changedTarget (admin: ServiceContext) targetId cursor =
         let! removed =
             grant
                 admin
-                (id 610)
+                (id fixture 610)
                 target
                 {
                     Role = Role.PaymentRecorder
@@ -221,7 +228,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 620)
+                        (id database.Fixture 620)
                         target
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -232,7 +239,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let! authorized =
             grant
                 admin
-                (id 621)
+                (id database.Fixture 621)
                 target
                 {
                     Role = Role.Auditor
@@ -256,7 +263,7 @@ let private callerRevocation (database: PostgresFixture.Database) =
         let! revoked =
             grant
                 admin
-                (id 622)
+                (id database.Fixture 622)
                 target
                 {
                     Role = Role.Auditor
@@ -274,13 +281,13 @@ let private callerRevocation (database: PostgresFixture.Database) =
             "Current caller authority precedes token acceptance"
     }
 
-let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) cursor =
+let private cursorIsolation fixture (admin: ServiceContext) (query: GrantsRequest) cursor =
     task {
         let! crossTarget =
             (Service.grants
                 admin
                 ({ query with
-                    ActorId = id 1
+                    ActorId = id fixture 1
                     AfterCursor = cursor
                 })
                 (token))
@@ -300,7 +307,8 @@ let private cursorIsolation (admin: ServiceContext) (query: GrantsRequest) curso
 
         Expect.equal crossEndpoint (Outcome.Rejected Refusal.InvalidCursor) "Endpoint is bound"
 
-        let! missing = (Service.grants admin ({ query with ActorId = id 999 }) (token))
+        let! missing =
+            (Service.grants admin ({ query with ActorId = id fixture 999 }) (token))
 
         Expect.equal
             missing
@@ -361,14 +369,17 @@ let private traversal (database: PostgresFixture.Database) =
             {
                 Role = Role.CaseReader
                 Scope =
-                    GrantScope.Case(CaseFixtures.caseId (id 301), CaseFixtures.reference "GRANT-1")
+                    GrantScope.Case(
+                        CaseFixtures.caseId (id database.Fixture 301),
+                        CaseFixtures.reference "GRANT-1"
+                    )
             }
             "Erased scope reference remains reviewable"
 
         Expect.isNone last.NextCursor "End follows last included grant"
 
-        do! cursorIsolation admin query first.NextCursor
-        do! changedTarget admin (ActorId.value (targetId)) first.NextCursor
+        do! cursorIsolation database.Fixture admin query first.NextCursor
+        do! changedTarget database.Fixture admin (ActorId.value (targetId)) first.NextCursor
         let! _ = verified database
         return ()
     }
@@ -407,7 +418,7 @@ let private boundaries (database: PostgresFixture.Database) =
         Expect.equal (Set.ofList all).Count 55 "No duplicate across nullable position boundaries"
     }
 
-let private changeTarget (admin: ServiceContext) =
+let private changeTarget fixture (admin: ServiceContext) =
     task {
         let target =
             PrincipalKey.service "https://issuer.example/" "grant-target"
@@ -416,7 +427,9 @@ let private changeTarget (admin: ServiceContext) =
         let! enabled =
             (Service.execute
                 admin
-                (OperationInput.Authority(authorityRequest (id 630) target (AuthorityAct.Enable)))
+                (OperationInput.Authority(
+                    authorityRequest (id fixture 630) target (AuthorityAct.Enable)
+                ))
                 (token))
 
         acceptedAuthority enabled
@@ -424,7 +437,7 @@ let private changeTarget (admin: ServiceContext) =
         let! removed =
             grant
                 admin
-                (id 631)
+                (id fixture 631)
                 target
                 {
                     Role = Role.CaseHandler
@@ -472,7 +485,7 @@ let private concurrentSnapshot (database: PostgresFixture.Database) =
         try
             do! entered.Task.WaitAsync(TimeSpan.FromSeconds 3.0)
 
-            do! changeTarget admin
+            do! changeTarget database.Fixture admin
         finally
             release.Set()
 

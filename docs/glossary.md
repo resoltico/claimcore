@@ -10,7 +10,7 @@ precedence over regional defaults.
 
 Korean, Japanese, Spanish, German and both Chinese catalogs have draft translation status.
 All nine catalog sets have AI-assisted semantic review against owning English and consumer behavior,
-including recovery, settlement, payment choices, ordering, counts and operator faults. No human
+including recovery, payment choices, ordering, counts and operator faults. No human
 native-speaker sign-off is recorded for Latvian, Arabic or the draft translations. Automated completeness
 and placeholder checks establish structural consistency, not linguistic approval. Record a reviewer's
 language, reviewed source and catalog/context scope when reporting linguistic approval.
@@ -75,14 +75,13 @@ record. Both appear as complete groups in the public business record.
 
 ## Ledger position
 
-A sequence number and entry hash identify a committed ledger position, including recovery controls.
+A sequence number and entry hash identify a committed ledger position.
 The hash has 32 bytes and is shown as hexadecimal at boundaries. Genesis is sequence zero with the zero hash.
 
 ## Entry target
 
-A ledger entry names case facts, case work, reminder effects, an authority target or an actor-scoped final-nonacceptance control.
-Public acceptance receipts expose typed business targets as `subject`; recovery controls have no business
-acceptance receipt and do not appear in case or authority history.
+A ledger entry names case facts, case work, reminder effects or an authority target.
+Public acceptance receipts expose typed business targets as `subject`.
 
 ## Case identity and reference
 
@@ -94,19 +93,18 @@ make UUID-shaped references unambiguous. See [Integration](integrating.md) for t
 
 An identity-only client record scoped to service origin, installation, actor and local attempt. It must
 commit before mutation handoff. It contains no business request or credentials; restart recovery reads
-actor-scoped status or deliberately settles the operation instead of reconstructing a submission. See [Recovery](integrating.md#delivery-recovery).
+`operation.get` instead of reconstructing a submission. See [Recovery](integrating.md#delivery-recovery).
 
 ## Final nonacceptance
 
-A committed actor/operation control promises that this pair cannot later be accepted in the supported
-state. Repeated resolution appends no second control; another actor's same raw operation UUID is not
-consumed. Controls advance the head/checkpoint and reconstruct fence projections.
+After a UUIDv7's ten-minute window, a lookup confirms absence for the requester under the execution lock.
+`NOT_ACCEPTED` is final for that account and appends nothing. `PENDING` publishes the deadline; accepted
+receipts include `byRequester` so a disclosed foreign acceptance is distinguished from the caller's own.
 
-## Passive operation status
+## Operation lookup
 
-An enabled valid registered actor's read of its own accepted metadata, previously committed final
-nonacceptance, or unresolved outcome. It appends no control and does not block acceptance. Authorship
-permits recovery metadata even without current case roles; content disclosure remains independently authorized.
+An enabled registered account can recover its own accepted metadata even without current case roles.
+Current rights govern content disclosure. Foreign acceptance is only disclosed under current read rights.
 
 ## Case work and responsibility
 

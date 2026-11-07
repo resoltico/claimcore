@@ -17,13 +17,24 @@ let tests =
                 PrincipalKey.human "https://issuer.example/" "other"
                 |> Result.defaultWith (string >> failtest)
 
+            let requestIds _ reference revision act : UnvalidatedCaseRequest =
+                {
+                    OperationId = OperationIds.fresh ()
+                    CaseReference = reference
+                    ExpectedRevision = revision
+                    Act = act
+                }
+
             let inputs =
                 [
                     Inputs.caseOperation (
-                        request 470 "BOUNDARY" 0L (AuthoredCaseAct.Open registration)
+                        requestIds 470 "BOUNDARY" 0L (AuthoredCaseAct.Open registration)
                     )
                     OperationInput.Authority(
-                        authorityRequest (id 471) target (AuthorityAct.Register Inputs.actorProfile)
+                        authorityRequest
+                            (OperationIds.fresh ())
+                            target
+                            (AuthorityAct.Register Inputs.actorProfile)
                     )
                 ]
 
@@ -84,7 +95,7 @@ let tests =
                         (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
 
                     let! observed =
-                        ClaimCore.TestSupport.StoreFixtures.observe
+                        Service.operationGet
                             core
                             {
                                 OperationId = OperationInput.operationId input
@@ -92,8 +103,9 @@ let tests =
                             CancellationToken.None
                         |> Async.AwaitTask
 
-                    match reply.Outcome, observed with
-                    | ExecuteResult.Accepted receipt, Outcome.Succeeded stored ->
+                    match reply.Outcome, observed.Outcome with
+                    | ExecuteResult.Accepted receipt,
+                      Outcome.Succeeded(OperationLookupResult.Accepted(stored, true)) ->
                         expectReceipt
                             stored
                             receipt

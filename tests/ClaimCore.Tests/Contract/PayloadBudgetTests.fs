@@ -14,7 +14,7 @@ open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.RecordFormat
 
-let private id = Guid.Parse "d0000000-0000-4000-8000-000000000001"
+let private id = Guid.Parse "d0000000-0000-7000-8000-000000000001"
 let private reference = String('"', 80)
 let private instant = DateTimeOffset(9999, 12, 31, 23, 59, 59, TimeSpan.Zero)
 let private maximum = 9007199254740991L
@@ -38,7 +38,7 @@ let private fields length : CaseFields =
 
 let private snapshot length : CaseSnapshot =
     {
-        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-4000-8000-000000000001")
+        CaseId = CaseFixtures.caseId (System.Guid.Parse "20000000-0000-7000-8000-000000000001")
         Reference = CaseFixtures.reference reference
         Revision = CaseFixtures.revision maximum
         State = CaseState.Voided(fields length)
@@ -69,7 +69,7 @@ let private receipt disclosure : OperationReceipt =
                 {
                     CaseId =
                         CaseFixtures.caseId (
-                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                         )
                     Reference = CaseFixtures.reference reference
                     Revision = CaseFixtures.revision maximum
@@ -230,7 +230,11 @@ let private timelineBudget () =
     let person number character =
         {
             ActorId =
-                CaseFixtures.actorId (Guid.Parse(sprintf "d0000000-0000-4000-8000-%012d" number))
+                CaseFixtures.actorId (
+                    ClaimCore.TestSupport.OperationIds.numberedAt
+                        (DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero))
+                        number
+                )
             DisplayName =
                 DisplayName.Named(
                     PartyName.parse (String(character, PartyName.MaximumBytes)) |> required
@@ -340,7 +344,7 @@ let private reminderOverviewBudget () =
 
     let next =
         ReminderId.ofOperationId (
-            CaseFixtures.operationId (Guid.Parse "f0000000-0000-4000-8000-000000000001")
+            CaseFixtures.operationId (Guid.Parse "d0000000-0000-7000-8000-000000000001")
         )
 
     let due = CaseFixtures.date "2026-11-05"

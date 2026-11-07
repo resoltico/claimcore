@@ -1,3 +1,4 @@
+import { useRequesterContext } from "./useRequesterContext";
 import { useState } from "react";
 import { useEndpoint } from "./useEndpoint";
 export const useOperationObservation = (initialOperationId = "") => {
@@ -5,10 +6,13 @@ export const useOperationObservation = (initialOperationId = "") => {
   const [submitted, setSubmitted] = useState<string | null>(
     initialOperationId === "" ? null : initialOperationId,
   );
+  const installationId = useRequesterContext()?.installationId;
   const query = useEndpoint(
-    "operation.observe",
+    "operation.get",
     { operationId: submitted ?? "" },
-    submitted !== null,
+    submitted !== null && installationId !== undefined,
+    installationId ?? "",
+    installationId,
   );
   const changeOperationId = (value: string): void => {
     setOperationId(value);
@@ -28,8 +32,8 @@ export const useOperationObservation = (initialOperationId = "") => {
     operationId,
     setOperationId: changeOperationId,
     receipt:
-      submitted !== null && query.value?.outcome.kind === "SUCCEEDED"
-        ? query.value.outcome.data
+      submitted !== null && query.value?.outcome.kind === "ACCEPTED"
+        ? query.value.outcome.data.receipt
         : null,
     message: submitted === null ? null : query.message,
     loading: submitted !== null && query.loading,

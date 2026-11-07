@@ -9,9 +9,6 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Postgres
 open ClaimCore.TestSupport
 
-let private id n =
-    Guid.Parse(sprintf "d0000000-0000-4000-8000-%012d" n)
-
 [<Tests>]
 let tests =
     testCaseAsync
@@ -29,6 +26,7 @@ let tests =
             let! database = PostgresFixture.createFor owner |> Async.AwaitTask
 
             try
+                let id = StoreFixtures.id database.Fixture
                 let! admin = StoreFixtures.caseWorker database.Fixture |> Async.AwaitTask
 
                 for index, (target, role) in

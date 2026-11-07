@@ -12,12 +12,12 @@ let private required =
     | Error issue -> failtestf "%A" issue
 
 let private operation =
-    Guid.Parse "96000000-0000-4000-8000-000000000001"
+    Guid.Parse "96000000-0000-7000-8000-000000000001"
     |> OperationId.create
     |> Option.get
 
 let private parent =
-    Guid.Parse "96000000-0000-4000-8000-000000000002" |> CaseId.create |> Option.get
+    Guid.Parse "96000000-0000-7000-8000-000000000002" |> CaseId.create |> Option.get
 
 let private utf8 (value: string) = Encoding.UTF8.GetBytes value
 
@@ -61,7 +61,7 @@ let tests =
                     let request = workRequest "first\nsecond"
 
                     exact
-                        """{"caseId":"96000000-0000-4000-8000-000000000002","expectedRevision":0,"format":1,"kind":"UPDATE_WORK","operationId":"96000000-0000-4000-8000-000000000001","values":{"handlingSummary":{"kind":"SET","value":"first\nsecond"},"responsibleActor":{"kind":"KEEP"}}}"""
+                        """{"caseId":"96000000-0000-7000-8000-000000000002","expectedRevision":0,"format":1,"kind":"UPDATE_WORK","operationId":"96000000-0000-7000-8000-000000000001","values":{"handlingSummary":{"kind":"SET","value":"first\nsecond"},"responsibleActor":{"kind":"KEEP"}}}"""
                         (WorkRecord.encodeRequest request)
 
                     let root =
@@ -72,7 +72,7 @@ let tests =
                         }
 
                     exact
-                        """{"caseId":"96000000-0000-4000-8000-000000000002","format":1,"revision":0,"work":{"handlingSummary":null,"responsibleActor":null}}"""
+                        """{"caseId":"96000000-0000-7000-8000-000000000002","format":1,"revision":0,"work":{"handlingSummary":null,"responsibleActor":null}}"""
                         (WorkRecord.encodeSnapshot root)
 
                     Expect.equal
@@ -86,14 +86,14 @@ let tests =
                         "Zero root roundtrip")
             testCase "revision-zero work cannot contain authored state" (fun () ->
                 let invalid =
-                    """{"caseId":"96000000-0000-4000-8000-000000000002","format":1,"revision":0,"work":{"handlingSummary":"Already authored","responsibleActor":null}}"""
+                    """{"caseId":"96000000-0000-7000-8000-000000000002","format":1,"revision":0,"work":{"handlingSummary":"Already authored","responsibleActor":null}}"""
 
                 Expect.isError
                     (WorkRecord.decodeSnapshot (utf8 invalid))
                     "OPEN creates exactly an empty zero root"
 
                 let valid =
-                    """{"caseId":"96000000-0000-4000-8000-000000000002","format":1,"revision":1,"work":{"handlingSummary":"Already authored","responsibleActor":null}}"""
+                    """{"caseId":"96000000-0000-7000-8000-000000000002","format":1,"revision":1,"work":{"handlingSummary":"Already authored","responsibleActor":null}}"""
 
                 Expect.isOk
                     (WorkRecord.decodeSnapshot (utf8 valid))
@@ -104,7 +104,7 @@ let tests =
                     let request = reminderRequest "Review evidence"
 
                     exact
-                        """{"act":{"kind":"CREATE","plan":{"action":"Review evidence","due":"2026-11-10"}},"caseId":"96000000-0000-4000-8000-000000000002","format":1,"operationId":"96000000-0000-4000-8000-000000000001"}"""
+                        """{"act":{"kind":"CREATE","plan":{"action":"Review evidence","due":"2026-11-10"}},"caseId":"96000000-0000-7000-8000-000000000002","format":1,"operationId":"96000000-0000-7000-8000-000000000001"}"""
                         (ReminderRecord.encodeRequest request)
 
                     Expect.equal
@@ -113,7 +113,7 @@ let tests =
                         "Creation roundtrip"
 
                     let wrong =
-                        """{"act":{"kind":"CREATE","plan":{"action":"Review evidence","due":"2026-11-10"}},"caseId":"96000000-0000-4000-8000-000000000002","format":2,"operationId":"96000000-0000-4000-8000-000000000001"}"""
+                        """{"act":{"kind":"CREATE","plan":{"action":"Review evidence","due":"2026-11-10"}},"caseId":"96000000-0000-7000-8000-000000000002","format":2,"operationId":"96000000-0000-7000-8000-000000000001"}"""
 
                     Expect.isError
                         (ReminderRecord.decodeRequest (utf8 wrong))
@@ -238,7 +238,7 @@ let tests =
                                 text
 
                         let nextId =
-                            Guid.Parse "96000000-0000-4000-8000-000000000003"
+                            Guid.Parse "96000000-0000-7000-8000-000000000003"
                             |> ReminderId.create
                             |> Option.get
 
@@ -257,7 +257,7 @@ let tests =
                         let request =
                             {
                                 ReminderRequestRecord.OperationId =
-                                    Guid.Parse "96000000-0000-4000-8000-000000000003"
+                                    Guid.Parse "96000000-0000-7000-8000-000000000003"
                                     |> OperationId.create
                                     |> Option.get
                                 Command =

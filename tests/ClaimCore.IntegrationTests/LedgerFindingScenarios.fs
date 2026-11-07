@@ -40,7 +40,7 @@ let internal operationEffectGroup (database: PostgresFixture.Database) =
                 (CaseFixtures.sequence 2L)
                 (authoritySubject (fun subject ->
                     { subject with
-                        TargetActorId = CaseFixtures.actorId (id 997)
+                        TargetActorId = CaseFixtures.actorId (id database.Fixture 997)
                     }))
 
         do! finding VerificationFinding.OperationEffectGroup database
@@ -87,7 +87,12 @@ let internal revision (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                    request
+                        database.Fixture
+                        11
+                        "synthetic-a"
+                        1L
+                        (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 token
 
@@ -151,7 +156,12 @@ let internal stateSequence (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                    request
+                        database.Fixture
+                        11
+                        "synthetic-a"
+                        1L
+                        (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (token))
 
@@ -183,7 +193,7 @@ let internal erasure (database: PostgresFixture.Database) =
         let! granted =
             grant
                 actor
-                (id 3)
+                (id database.Fixture 3)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -197,7 +207,12 @@ let internal erasure (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Bare BareAct.Erase))
+                    actRequest
+                        database.Fixture
+                        11
+                        "synthetic-a"
+                        1L
+                        ((AuthoredCaseAct.Bare BareAct.Erase))
                 ))
                 (token))
 
@@ -236,7 +251,7 @@ let internal authority (database: PostgresFixture.Database) =
         let! added =
             grant
                 actor
-                (id 20)
+                (id database.Fixture 20)
                 database.Fixture.Owner
                 {
                     Role = Role.CaseReader
@@ -247,10 +262,10 @@ let internal authority (database: PostgresFixture.Database) =
         let sequence = (accepted added).Position.Sequence
 
         let altered =
-            authorityRequest (id 20) database.Fixture.Owner (AuthorityAct.Disable)
+            authorityRequest (id database.Fixture 20) database.Fixture.Owner (AuthorityAct.Disable)
             |> Authority.parse
             |> Result.defaultWith (fun _ -> failtest "Synthetic authority input must admit")
-            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id 1))
+            |> AuthorityRequests.toRecords Map.empty (CaseFixtures.actorId (id database.Fixture 1))
             |> Result.map List.exactlyOne
             |> Result.defaultWith (fun _ ->
                 failtest "Synthetic permanent authority input must resolve")
@@ -277,7 +292,7 @@ let internal executor (database: PostgresFixture.Database) =
                 { value with
                     Metadata =
                         { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id 99))
+                            ActorId = (CaseFixtures.actorId (id database.Fixture 99))
                         }
                 })
 
@@ -292,12 +307,12 @@ let internal human (database: PostgresFixture.Database) =
             PrincipalKey.service "https://issuer.example/" "service"
             |> Result.defaultWith (string >> failtest)
 
-        do! register actor 3 service
+        do! register database.Fixture actor 3 service
 
         let! added =
             grant
                 actor
-                (id 4)
+                (id database.Fixture 4)
                 database.Fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -311,7 +326,12 @@ let internal human (database: PostgresFixture.Database) =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    actRequest 11 "synthetic-a" 1L ((AuthoredCaseAct.Void "Entered in error"))
+                    actRequest
+                        database.Fixture
+                        11
+                        "synthetic-a"
+                        1L
+                        ((AuthoredCaseAct.Void "Entered in error"))
                 ))
                 (token))
 
@@ -320,7 +340,7 @@ let internal human (database: PostgresFixture.Database) =
                 { value with
                     Metadata =
                         { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id 3))
+                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
                         }
                 })
 
@@ -331,12 +351,14 @@ let internal owner (database: PostgresFixture.Database) =
     task {
         let! actor = populated database
         let reader = target "reader"
-        do! register actor 3 reader
+        do! register database.Fixture actor 3 reader
 
         let! changed =
             (Service.execute
                 actor
-                (OperationInput.Authority(authorityRequest (id 4) reader (AuthorityAct.Enable)))
+                (OperationInput.Authority(
+                    authorityRequest (id database.Fixture 4) reader (AuthorityAct.Enable)
+                ))
                 (token))
 
         do!
@@ -344,7 +366,7 @@ let internal owner (database: PostgresFixture.Database) =
                 { value with
                     Metadata =
                         { value.Metadata with
-                            ActorId = (CaseFixtures.actorId (id 3))
+                            ActorId = (CaseFixtures.actorId (id database.Fixture 3))
                         }
                 })
 
@@ -422,7 +444,12 @@ let private payableIndexFinding expected statement database =
             Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "synthetic-a" 1L (AuthoredCaseAct.Decide Inputs.decision)
+                    request
+                        database.Fixture
+                        11
+                        "synthetic-a"
+                        1L
+                        (AuthoredCaseAct.Decide Inputs.decision)
                 ))
                 token
 
@@ -430,21 +457,6 @@ let private payableIndexFinding expected statement database =
         let! _ = verified database
         do! sql database statement [||]
         do! finding expected database
-    }
-
-let private fenceProjection (database: PostgresFixture.Database) =
-    task {
-        let! actor = populated database
-        let! resolved = Service.resolve actor { OperationId = id 997 } token
-
-        Expect.equal
-            resolved.Outcome
-            (Outcome.Succeeded Resolved.NotAccepted)
-            "Positive final-nonacceptance control"
-
-        let! _ = verified database
-        do! sql database "DELETE FROM claimcore.operation_fences" [||]
-        do! finding VerificationFinding.FenceProjection database
     }
 
 let internal profileProjection (database: PostgresFixture.Database) =
@@ -455,7 +467,7 @@ let internal profileProjection (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.actors SET display_name='Wrong projection' WHERE actor_id=$1"
-                [| box (id 1) |]
+                [| box (id database.Fixture 1) |]
 
         do! finding VerificationFinding.AuthorityProfileProjection database
     }
@@ -518,7 +530,7 @@ let internal findingCases =
         payableIndexFinding
             VerificationFinding.CasePayableCurrencyProjection
             "UPDATE claimcore.cases SET payable_currency='USD'"
-        VerificationFinding.FenceProjection, fenceProjection
+
         VerificationFinding.AuthorityProjection, authorityProjection
         VerificationFinding.Head, head
         VerificationFinding.ExpectedPosition, expected

@@ -135,7 +135,7 @@ consumers do not infer a family by trying prefixes. Authored principal fields ar
 principal outputs. Stored identity-token decoding belongs to storage adapters; corruption is an integrity
 fault, never a request-correction refusal.
 
-HTTP replies carry `outcome`; preview, execution, observe, status and resolve echo `operationId`. Receipts contain shared
+HTTP replies carry `outcome`; preview, execution and operation.get echo `operationId`. Receipts contain shared
 acceptance metadata and a typed `subject` for their operation family. HTTP does not use the CLI frame wrapper.
 A host response has `{ "hostFailure": { "code": ..., "phase": ... } }`; its status and phase are defined by
 [host failure policy](../src/ClaimCore.Wire/Wire/HostFailures.fs).
@@ -149,7 +149,7 @@ owns its supported exit-code subset. Database `USAGE_ERROR.issue` is a structure
 syntax in `usage`; scripts must read the issue kind and its declared fields. HELP and VERSION use kind tags.
 The [exit-code reference](cli.md#exit-codes) lists the numeric codes supported by each executable.
 Execute `OUTCOME_UNKNOWN` is a distinct outcome with exit 4; preserve its exact retry frame and use passive
-status or deliberate settlement as described in [delivery recovery](#delivery-recovery).
+operation lookup as described in [delivery recovery](#delivery-recovery).
 
 ## CLI use
 
@@ -167,8 +167,7 @@ claimcore authority list
 Case and authority mutation verbs generate an ID unless `--operation-id` is supplied. When stdin and
 stdout are terminals, a text-format existing-case mutation without `--preview` or `--dry-run` can omit
 the expected revision. The CLI fetches the case, previews that revision with the prepared operation ID,
-shows the localized review and asks for confirmation with a default of No. Confirmation executes the
-same ID and revision. Declining does not execute. A concurrent change still causes the normal revision
+shows the localized review and asks for confirmation with a default of No. Confirmation retains the revision and authored values; an expired provisional ID is refreshed before dispatch. Declining does not execute. A concurrent change still causes the normal revision
 refusal; the CLI does not rebase the request. Omitted correction groups default to KEEP in this path and
 the review shows their actions.
 
@@ -529,74 +528,39 @@ the wire grammar. The review formats money and dates for display while preservin
 
 ## Delivery recovery
 
-Keep the exact prepared frame and its original ID until a submitted change is settled. Resend it unchanged
-with `claimcore call`. `ACCEPTED` or `ALREADY_ACCEPTED` in the reply to the resent frame confirms acceptance.
-A refusal, fault or `NOT_STARTED` response cannot disprove a prior uncertain commit. `OUTCOME_UNKNOWN`
-means commit confirmation was lost after commit could have started.
+An operation ID is a UUIDv7. First execution is allowed for ten minutes after its issue timestamp,
+with two minutes of future clock allowance. The database instant is read under the ledger-head lock.
+Replay lookup precedes this window check; expiry alone does not prevent an existing acceptance replay.
+`OPERATION_ID_OUT_OF_WINDOW` carries `issuedAt`, `observedAt` and `phase: NOT_STARTED`.
 
-`operation.observe` is a read-only audit lookup under current resource rights, including authority receipt
-lookup for auditors. Its absence proves nothing about an uncertain submission, and metadata alone cannot
-prove that submitted content matched it.
+Keep the exact dispatched frame and ID while its outcome is unconfirmed. Resending unchanged content
+uses the same ID, including after expiry. `ACCEPTED` or `ALREADY_ACCEPTED` confirms the recorded change.
+Other refusals or transport failures do not disprove a prior uncertain commit.
 
-`operation.status` is a separate actor-scoped passive read. Every enabled valid registered actor, including
-one with no remaining business or authority roles, can recover its own accepted metadata, known final
-`NOT_ACCEPTED`, or `UNRESOLVED`. Current rights still govern case-content disclosure. A foreign actor's same
-raw operation UUID is not disclosed as this actor's acceptance. Status appends nothing, creates no fence,
-and takes no ledger-head write lock. An unresolved status never establishes nonacceptance or business eligibility.
+Use `operation.get` with `operationId` and the authenticated installation binding:
 
-`operation.resolve` is the deliberate ordered settlement write: it returns the author's accepted receipt
-with current disclosure or records permanent actor/ID nonacceptance. The CLI names this command
-`operation settle OPERATION_ID`. Final settlement blocks
-delayed acceptance by that actor; foreign acceptance is neither revealed nor changed. After a lost reply,
-inspect status before deciding whether to settle again. After final nonacceptance, load current state and
-prepare a new operation with a new ID. Human interactive settlement identifies the exact operation and
-requires explicit confirmation; status checking, navigation and login never settle automatically.
+- `ACCEPTED` contains `receipt` and `byRequester`. Foreign receipts require current disclosure rights.
+- `PENDING` contains `finalAt`, the issue timestamp plus ten minutes. It means there is no confirmed own acceptance yet.
+- `NOT_ACCEPTED` is final for the current account. After expiry, the service takes the execution lock and checks again before answering; it appends nothing.
 
-Status, execution and final settlement validate the retained control node's identity, payload and hash,
-and agreement with the fence projection's recorded instant, using bounded indexed lookup in the action
-snapshot. Missing, fabricated, mismatched or contradictory projections fail integrity; they are not repaired
-by status or settlement. This check does not replace whole-history verification.
+An enabled registered account can recover its own receipt metadata without current business roles.
+Current rights and erasure still govern content disclosure. Hidden foreign acceptance is never reported
+as the requester's acceptance. Final absence relies on the [database clock contract](operating.md#access-review-and-sessions).
 
-For ordinary verbs, call and session, uncertain exit 4 leaves the exact prepared call frame on the last stderr line; retain it privately. In the shell it appears before the next prompt.
-Session processing stops on exit 4 or 130, or an oversized frame. Output loss after dispatch preserves
-uncertainty. A complete OS write and flush do not prove downstream persistence.
+The web checks **Unconfirmed changes** automatically. Its identity-only journal records origin,
+installation, account and attempt before dispatch; it stores neither business content nor credentials.
+A reload can check identity but cannot reconstruct the submitted request. An undispatched automatic ID
+older than nine minutes is refreshed before dispatch; an existing dispatched attempt always retains its ID.
 
-The generated [exit-code reference](cli.md#exit-codes) covers both executables, including usage and cancellation.
+`claimcore operation get OPERATION_ID` checks one ID. `recovery list` lists scoped attempts, and
+`recovery check ATTEMPT_ID` checks one saved attempt. Interactive checks repeat until final. Automation
+prints `PENDING` with `finalAt` and exit 4, with delivery `DELIVERED`; this read emits no mutation retry frame.
+An uncertain mutation has exit 4 with delivery `UNCERTAIN` and retains its exact retry frame on stderr.
+Use `--format json` for machine output. A final answer clears the selected record when local storage succeeds.
 
-ACTIVE and NO_ROLES requesters in an authenticated `context` response include `installationId`.
-Execute, passive status and final resolve requests carry its canonical UUID in
-the required `ClaimCore-Installation` header; a mismatch returns `INSTALLATION_MISMATCH / NOT_STARTED`
-before an acceptance or fence. All operation replies echo their operation ID; clients also check receipt
-and target identities after decoding. A schema-valid mismatched reply remains uncertain.
-
-Both clients commit an identity-only journal before mutation dispatch and recheck credential, actor, target and
-installation context after storage completion. Failed initial storage is `NOT_SENT`; it blocks sending.
-Records contain format, service origin, installation, actor, local attempt, operation, subject and act.
-They contain no references, business values, credentials, secret paths or retry bodies. Separate attempts
-can share an operation ID; clearing one never clears another attempt.
-
-The browser uses IndexedDB transaction completion. A requester-context refresh with the same identity
-keeps an in-flight recovery check valid. Actor, installation, credential or session-epoch transitions
-invalidate its callbacks, including switchbacks; obsolete completions cannot unlock a newer check.
-Busy state lasts through journal removal, and a failed removal permits explicit retry.
-
-Send again uses the in-memory frozen request; after reload or tab closure, recovery can only check the
-known status or deliberately settle, without reconstructing a request. Storage denial, quota, clearing, eviction,
-device loss and universal crash/power-loss durability are outside the retained-storage guarantee. There
-is no automatic storage-permission prompt or reconstructed resubmission.
-
-The native client publishes private per-attempt files under `$XDG_STATE_HOME/claimcore`, defaulting to
-`~/.local/state/claimcore`, with 0700 directories and 0600 files. `claimcore recovery list` lists only the
-current authenticated service/installation/actor scope. `claimcore recovery check ATTEMPT_ID` reads status;
-`claimcore recovery settle ATTEMPT_ID` explicitly requests permanent settlement. Text is the default;
-`--format json` preserves machine output, and `--language LANGUAGE` selects text; see the
-[supported choices](cli.md#discovery-configuration-and-frame-commands). Interactive mode requires
-terminal confirmation for settlement; automation must explicitly choose `settle`. Only complete
-correlated accepted/final results can clear the selected owned record. Unresolved/error/stale replies and storage failures retain identity; a cleanup failure does not
-hide the known server result. `claimcore schema recovery` describes the identity-only listing. Prepared
-retry frames retain their
-installation binding. Clients refuse a prepared request whose installation binding differs from
-authenticated context.
+`call` and `session` fill an omitted execute ID at dispatch and print that UUID to stderr. For an exact
+retry of an ID-less source, add the printed ID without changing its authored values. A dry run without
+`--operation-id` prints no ID. Explicit IDs are retained for exact retries.
 
 ## Disclosure and cursors
 

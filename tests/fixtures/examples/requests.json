@@ -64,7 +64,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "OPEN",
@@ -91,7 +91,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "CORRECT",
@@ -120,7 +120,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "DECIDE",
@@ -143,7 +143,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "WITHDRAW_DECISION"
@@ -161,7 +161,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "RECORD_PAYMENT",
@@ -182,7 +182,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "CLEAR_PAYMENT"
@@ -200,7 +200,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "REOPEN"
@@ -218,7 +218,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "VOID",
@@ -237,7 +237,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "REINSTATE",
@@ -256,7 +256,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "ERASE"
@@ -274,7 +274,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "OPEN",
@@ -296,11 +296,11 @@
     },
     {
       "id": "operation.observe-request-0",
-      "endpoint": "operation.observe",
+      "endpoint": "operation.get",
       "direction": "request",
       "valid": true,
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001"
+        "operationId": "10000000-0000-7000-8000-000000000001"
       }
     },
     {
@@ -310,7 +310,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
           "issuer": "x",
@@ -331,7 +331,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
           "issuer": "x",
@@ -357,7 +357,7 @@
       "direction": "request",
       "valid": true,
       "value": {
-        "actorId": "10000000-0000-4000-8000-000000000001",
+        "actorId": "10000000-0000-7000-8000-000000000001",
         "limit": 1
       }
     },
@@ -368,7 +368,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "CORRECT",
@@ -418,7 +418,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "expectedRevision": 0,
         "act": {
           "kind": "CORRECT",
@@ -453,16 +453,16 @@
     },
     {
       "id": "operation.resolve-valid",
-      "endpoint": "operation.resolve",
+      "endpoint": "operation.get",
       "direction": "request",
       "valid": true,
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001"
+        "operationId": "10000000-0000-7000-8000-000000000001"
       }
     },
     {
       "id": "operation.resolve-nil",
-      "endpoint": "operation.resolve",
+      "endpoint": "operation.get",
       "direction": "request",
       "valid": false,
       "value": {
@@ -471,11 +471,11 @@
     },
     {
       "id": "operation.resolve-extra",
-      "endpoint": "operation.resolve",
+      "endpoint": "operation.get",
       "direction": "request",
       "valid": false,
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "extra": true
       }
     },
@@ -486,7 +486,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
           "issuer": "x",
@@ -508,7 +508,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
           "issuer": "x",
@@ -577,10 +577,10 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000002",
+        "operationId": "10000000-0000-7000-8000-000000000002",
         "target": {
           "kind": "ID",
-          "caseId": "10000000-0000-4000-8000-000000000001"
+          "caseId": "10000000-0000-7000-8000-000000000001"
         },
         "expectedRevision": 1,
         "act": {
@@ -594,7 +594,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000004",
+        "operationId": "10000000-0000-7000-8000-000000000004",
         "target": {
           "kind": "HUMAN",
           "issuer": "https://issuer.example/",
@@ -607,7 +607,7 @@
             "kind": "CASE",
             "target": {
               "kind": "ID",
-              "caseId": "10000000-0000-4000-8000-000000000001"
+              "caseId": "10000000-0000-7000-8000-000000000001"
             }
           }
         }
@@ -620,18 +620,18 @@
       "value": {
         "target": {
           "kind": "ID",
-          "caseId": "10000000-0000-4000-8000-000000000001",
+          "caseId": "10000000-0000-7000-8000-000000000001",
           "caseReference": "OTHER"
         }
       }
     },
     {
       "id": "passive-operation-status",
-      "endpoint": "operation.status",
+      "endpoint": "operation.get",
       "direction": "request",
       "valid": true,
       "value": {
-        "operationId": "10000000-0000-4000-8000-000000000001"
+        "operationId": "10000000-0000-7000-8000-000000000001"
       }
     },
     {
@@ -641,7 +641,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -662,7 +662,7 @@
       "valid": false,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -685,7 +685,7 @@
       "valid": false,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -706,7 +706,7 @@
       "valid": false,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -727,7 +727,7 @@
       "valid": false,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -754,7 +754,7 @@
       "valid": true,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -773,7 +773,7 @@
       "valid": true,
       "value": {
         "kind": "WORK",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -796,7 +796,7 @@
       "valid": false,
       "value": {
         "kind": "WORK",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -817,7 +817,7 @@
       "valid": false,
       "value": {
         "kind": "WORK",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -840,7 +840,7 @@
       "valid": true,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -875,7 +875,7 @@
       "valid": false,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000041",
+        "operationId": "10000000-0000-7000-8000-000000000041",
         "target": {
           "kind": "REFERENCE",
           "caseReference": "TARGETED"
@@ -910,7 +910,7 @@
       "value": {
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "limit": 1
       }
@@ -934,10 +934,10 @@
       "valid": true,
       "value": {
         "kind": "WORK",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "expectedRevision": 0,
         "act": {
@@ -955,14 +955,14 @@
       "valid": true,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "UPDATE",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 3,
           "action": "Review response",
           "dueDate": "2026-11-11"
@@ -976,14 +976,14 @@
       "valid": true,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 3
         }
       }
@@ -995,14 +995,14 @@
       "valid": true,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "CANCEL",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 3
         }
       }
@@ -1014,14 +1014,14 @@
       "valid": true,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "REOPEN",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 3,
           "dueDate": "2026-11-12"
         }
@@ -1034,14 +1034,14 @@
       "valid": true,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE_AND_PLAN_NEXT",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 3,
           "action": "Review response",
           "dueDate": "2026-11-11"
@@ -1055,14 +1055,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE",
-          "reminderId": "30000000-0000-4000-8000-000000000001"
+          "reminderId": "30000000-0000-7000-8000-000000000001"
         }
       }
     },
@@ -1073,10 +1073,10 @@
       "valid": false,
       "value": {
         "kind": "CASE",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "expectedRevision": 1,
         "act": {
@@ -1107,7 +1107,7 @@
       "value": {
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "state": "PENDING",
         "due": "OVERDUE",
@@ -1125,7 +1125,7 @@
       "value": {
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "state": "COMPLETED",
         "due": "TODAY",
@@ -1150,7 +1150,7 @@
       "value": {
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "detail": "SUMMARY",
         "limit": 10
@@ -1164,9 +1164,9 @@
       "value": {
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
-        "reminderId": "30000000-0000-4000-8000-000000000001"
+        "reminderId": "30000000-0000-7000-8000-000000000001"
       }
     },
     {
@@ -1276,7 +1276,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
           "issuer": "x",
@@ -1298,7 +1298,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "HUMAN",
           "issuer": "x",
@@ -1346,7 +1346,7 @@
       "valid": true,
       "value": {
         "kind": "AUTHORITY",
-        "operationId": "11111111-2222-4333-8444-555555555555",
+        "operationId": "11111111-2222-7333-8444-555555555555",
         "target": {
           "kind": "HUMAN",
           "issuer": "https://id.example/",
@@ -1371,7 +1371,7 @@
                 "kind": "CASE",
                 "target": {
                   "kind": "REFERENCE",
-                  "caseReference": "00000000-0000-4000-8000-000000000001"
+                  "caseReference": "00000000-0000-7000-8000-000000000001"
                 }
               }
             }
@@ -1408,14 +1408,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "UPDATE",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0,
           "action": "Review response",
           "dueDate": "2026-11-11"
@@ -1430,14 +1430,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0
         }
       },
@@ -1450,14 +1450,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "CANCEL",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0
         }
       },
@@ -1470,14 +1470,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "REOPEN",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0,
           "dueDate": "2026-11-12"
         }
@@ -1491,14 +1491,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE_AND_PLAN_NEXT",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0,
           "action": "Review response",
           "dueDate": "2026-11-11"
@@ -1513,14 +1513,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "UPDATE",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0,
           "action": "Review response",
           "dueDate": "2026-11-11"
@@ -1535,14 +1535,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0
         }
       },
@@ -1555,14 +1555,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "CANCEL",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0
         }
       },
@@ -1575,14 +1575,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "REOPEN",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0,
           "dueDate": "2026-11-12"
         }
@@ -1596,14 +1596,14 @@
       "valid": false,
       "value": {
         "kind": "REMINDER",
-        "operationId": "10000000-0000-4000-8000-000000000001",
+        "operationId": "10000000-0000-7000-8000-000000000001",
         "target": {
           "kind": "ID",
-          "caseId": "20000000-0000-4000-8000-000000000001"
+          "caseId": "20000000-0000-7000-8000-000000000001"
         },
         "act": {
           "kind": "COMPLETE_AND_PLAN_NEXT",
-          "reminderId": "30000000-0000-4000-8000-000000000001",
+          "reminderId": "30000000-0000-7000-8000-000000000001",
           "expectedRevision": 0,
           "action": "Review response",
           "dueDate": "2026-11-11"

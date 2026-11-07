@@ -659,7 +659,9 @@
   "limits": {
     "defaultPageSize": 50,
     "maximumPageSize": 50,
-    "requestByteLimit": 65536
+    "requestByteLimit": 65536,
+    "operationWindowMilliseconds": 600000,
+    "operationFutureAllowanceMilliseconds": 120000
   },
   "entries": [
     {
@@ -8001,101 +8003,17 @@
       ]
     },
     {
-      "endpoint": "operation.observe",
+      "endpoint": "operation.get",
       "subject": "OPERATION",
-      "kind": "operation.observe",
-      "labelId": "endpoint.operation.observe.label",
-      "meaningId": "endpoint.operation.observe.meaning",
+      "kind": "operation.get",
+      "labelId": "endpoint.operation.get.label",
+      "meaningId": "endpoint.operation.get.meaning",
       "consequenceId": null,
       "doneId": null,
       "family": null,
       "affectedSections": [],
       "effect": "READ",
       "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "operationId",
-          "field": null,
-          "path": [
-            "operationId"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.operationId.label",
-          "hintId": "field.operationId.hint",
-          "ruleId": "field.operationId.rule",
-          "order": 0,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "operationId"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": []
-    },
-    {
-      "endpoint": "operation.status",
-      "subject": "OPERATION",
-      "kind": "operation.status",
-      "labelId": "endpoint.operation.status.label",
-      "meaningId": "endpoint.operation.status.meaning",
-      "consequenceId": null,
-      "doneId": null,
-      "family": null,
-      "affectedSections": [],
-      "effect": "READ",
-      "consequence": "ROUTINE",
-      "inputs": [
-        {
-          "identity": "operationId",
-          "field": null,
-          "path": [
-            "operationId"
-          ],
-          "kind": {
-            "kind": "TEXT"
-          },
-          "adviceGroup": null,
-          "branches": [],
-          "labelId": "field.operationId.label",
-          "hintId": "field.operationId.hint",
-          "ruleId": "field.operationId.rule",
-          "order": 0,
-          "prefill": null,
-          "required": true,
-          "wireRequired": true,
-          "allowsNull": false,
-          "default": null,
-          "diagnosticTargets": [
-            "operationId"
-          ],
-          "source": "AUTHORED"
-        }
-      ],
-      "collections": [],
-      "constants": []
-    },
-    {
-      "endpoint": "operation.resolve",
-      "subject": "OPERATION",
-      "kind": "operation.resolve",
-      "labelId": "endpoint.operation.resolve.label",
-      "meaningId": "endpoint.operation.resolve.meaning",
-      "consequenceId": "endpoint.operation.resolve.consequence",
-      "doneId": "endpoint.operation.resolve.done",
-      "family": null,
-      "affectedSections": [],
-      "effect": "FINAL_NON_ACCEPTANCE",
-      "consequence": "IRREVERSIBLE",
       "inputs": [
         {
           "identity": "operationId",

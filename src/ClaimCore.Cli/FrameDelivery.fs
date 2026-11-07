@@ -36,7 +36,7 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
                             (CliMessage.UnresolvedDelivery(
                                 CliIdentity.programName + " call",
                                 CommandGrammar.commandText (
-                                    CatalogOperation.Query QueryEndpoint.Status
+                                    CatalogOperation.Query QueryEndpoint.OperationGet
                                 )
                                 + " "
                                 + (Frames.operationId frame
@@ -57,11 +57,14 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
         output.WriteByte(byte '\n')
         output.Flush()
 
-        if reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown then
+        let uncertainChange =
+            reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown
+            && Frames.isLedgerExecution reply.Frame
+
+        if uncertainChange then
             retryFrame ()
 
-        lock gate (fun () ->
-            potentiallyChanged <- reply.ExitCode = ExitCode.value ExitCode.OutcomeUnknown)
+        lock gate (fun () -> potentiallyChanged <- uncertainChange)
 
     new(output, errors, language) =
         new FrameDelivery(output, errors, language, (fun reply -> reply.Bytes))
@@ -88,7 +91,16 @@ type FrameDelivery(output: Stream, errors: Stream, language: string, render: Cli
 
     member _.BeforeDispatch frame =
         advance (fun () ->
-            potentiallyChanged <- Frames.endpoint frame |> Api.requiresInstallation
+            potentiallyChanged <-
+                Api.effect (Frames.endpoint frame) = EndpointEffect.LedgerExecution
+
+            if Frames.reportsIdentity frame && not dispatched then
+                Frames.operationId frame
+                |> Option.iter (fun operation ->
+                    let bytes = System.Text.Encoding.UTF8.GetBytes(operation.ToString("D") + "\n")
+                    errors.Write bytes
+                    errors.Flush())
+
             dispatched <- true
             pending <- Some frame)
 

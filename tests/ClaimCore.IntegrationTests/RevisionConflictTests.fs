@@ -34,8 +34,11 @@ let private update amount =
     |> Inputs.registrationUpdate
     |> AuthoredCaseAct.AmendRegistration
 
-let private caseWrite owner number expected act =
-    Service.execute owner (Inputs.caseOperation (request number "CONFLICT-1" expected act)) token
+let private caseWrite fixture owner number expected act =
+    Service.execute
+        owner
+        (Inputs.caseOperation (request fixture number "CONFLICT-1" expected act))
+        token
 
 [<Tests>]
 let tests =
@@ -44,12 +47,13 @@ let tests =
         (run (fun _ fixture ->
             task {
                 let! owner = caseWorker fixture
-                let! opened = caseWrite owner 77000 0L (AuthoredCaseAct.Open registration)
+                let! opened = caseWrite fixture owner 77000 0L (AuthoredCaseAct.Open registration)
                 accepted opened |> ignore
 
                 for revision in 1..60 do
                     let! changed =
                         caseWrite
+                            fixture
                             owner
                             (77000 + revision)
                             (int64 revision)
@@ -57,7 +61,7 @@ let tests =
 
                     accepted changed |> ignore
 
-                let! stale = caseWrite owner 77100 1L (update "5000")
+                let! stale = caseWrite fixture owner 77100 1L (update "5000")
                 let observed = conflict stale.Outcome
 
                 Expect.equal
@@ -101,7 +105,7 @@ let tests =
                     Limits.MaximumResponseBytes
                     "The actual enriched refusal keeps the reply limit"
 
-                let! later = caseWrite owner 77101 61L (update "6000")
+                let! later = caseWrite fixture owner 77101 61L (update "6000")
                 accepted later |> ignore
 
                 let! rest =
@@ -133,7 +137,7 @@ let tests =
                         owner
                         (OperationInput.Authority(
                             authorityRequest
-                                (id 77102)
+                                (id fixture 77102)
                                 registrar
                                 (AuthorityAct.Register Inputs.actorProfile)
                         ))
@@ -144,7 +148,7 @@ let tests =
                 let! granted =
                     grant
                         owner
-                        (id 77103)
+                        (id fixture 77103)
                         registrar
                         {
                             Role = Role.CaseRegistrar
@@ -154,7 +158,7 @@ let tests =
 
                 acceptedAuthority granted
                 let reader = { owner with Principal = registrar }
-                let! hidden = caseWrite reader 77104 61L (update "7000")
+                let! hidden = caseWrite fixture reader 77104 61L (update "7000")
                 let hidden = page (conflict hidden.Outcome)
 
                 Expect.equal
@@ -176,7 +180,7 @@ let tests =
                             owner
                             (OperationInput.Work
                                 {
-                                    OperationId = id number
+                                    OperationId = id fixture number
                                     Target = target
                                     ExpectedRevision = expected
                                     Act =
@@ -195,7 +199,7 @@ let tests =
                         owner
                         (OperationInput.Work
                             {
-                                OperationId = id 77202
+                                OperationId = id fixture 77202
                                 Target = target
                                 ExpectedRevision = 0L
                                 Act =
@@ -227,7 +231,7 @@ let tests =
                         owner
                         (OperationInput.Reminder
                             {
-                                OperationId = id 77300
+                                OperationId = id fixture 77300
                                 Target = target
                                 Act =
                                     AuthoredReminderAct.Create
@@ -245,11 +249,11 @@ let tests =
                         owner
                         (OperationInput.Reminder
                             {
-                                OperationId = id 77301
+                                OperationId = id fixture 77301
                                 Target = target
                                 Act =
                                     AuthoredReminderAct.Update(
-                                        id 77300,
+                                        id fixture 77300,
                                         1L,
                                         {
                                             Action = "Revised action"
@@ -266,9 +270,9 @@ let tests =
                         owner
                         (OperationInput.Reminder
                             {
-                                OperationId = id 77302
+                                OperationId = id fixture 77302
                                 Target = target
-                                Act = AuthoredReminderAct.Complete(id 77300, 1L)
+                                Act = AuthoredReminderAct.Complete(id fixture 77300, 1L)
                             })
                         token
 
@@ -285,7 +289,7 @@ let tests =
                                             } ->
                     Expect.equal
                         (ReminderId.value difference.ReminderId)
-                        (id 77300)
+                        (id fixture 77300)
                         "The difference belongs to the requested reminder"
                 | other -> failtestf "Unexpected reminder conflict changes: %A" other
             }))

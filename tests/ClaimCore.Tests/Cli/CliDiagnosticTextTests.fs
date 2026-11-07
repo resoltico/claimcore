@@ -260,7 +260,7 @@ let nextAndConflicts =
                                     CaseTimelineEntry.OperationId =
                                         CaseFixtures.operationId (
                                             System.Guid.Parse(
-                                                sprintf "5b359a73-77f5-4a54-9015-%012d" number
+                                                sprintf "5b359a73-77f5-7a54-9015-%012d" number
                                             )
                                         )
                                     Position =

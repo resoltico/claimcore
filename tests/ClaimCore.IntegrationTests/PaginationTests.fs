@@ -34,7 +34,7 @@ let private setup (database: PostgresFixture.Database) =
                 (Service.execute
                     admin
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request n reference 0L (AuthoredCaseAct.Open registration)
+                        request database.Fixture n reference 0L (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 
@@ -49,7 +49,7 @@ let private setup (database: PostgresFixture.Database) =
                 admin
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 3)
+                        (id database.Fixture 3)
                         principal
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -60,7 +60,7 @@ let private setup (database: PostgresFixture.Database) =
         let! granted =
             grant
                 admin
-                (id 4)
+                (id database.Fixture 4)
                 principal
                 {
                     Role = Role.CaseReader
@@ -85,7 +85,7 @@ let private revocation (database: PostgresFixture.Database) =
         let! revoked =
             grant
                 admin
-                (id 5)
+                (id database.Fixture 5)
                 principal
                 {
                     Role = Role.CaseReader
@@ -208,7 +208,7 @@ type internal PausedPageStore
                                     member _.CaseStageFacts id = tx.CaseStageFacts id
                                     member _.PreviousEntries entries = tx.PreviousEntries entries
                                     member _.FindOperation id = tx.FindOperation id
-                                    member _.NonAcceptance key = tx.NonAcceptance key
+
 
                                     member _.CasePage
                                         ({
@@ -332,7 +332,7 @@ let private snapshot (database: PostgresFixture.Database) =
         let! promoted =
             grant
                 admin
-                (id 30)
+                (id database.Fixture 30)
                 principal
                 {
                     Role = Role.CaseRegistrar
@@ -377,7 +377,7 @@ let private snapshot (database: PostgresFixture.Database) =
             let! revoked =
                 grant
                     admin
-                    (id 5)
+                    (id database.Fixture 5)
                     principal
                     {
                         Role = Role.CaseRegistrar
@@ -391,7 +391,12 @@ let private snapshot (database: PostgresFixture.Database) =
                 (Service.execute
                     admin
                     (ClaimCore.TestSupport.Inputs.caseOperation (
-                        request 13 "CASE-AFTER" 0L (AuthoredCaseAct.Open registration)
+                        request
+                            database.Fixture
+                            13
+                            "CASE-AFTER"
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     ))
                     (token))
 

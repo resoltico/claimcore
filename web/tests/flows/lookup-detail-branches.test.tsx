@@ -147,7 +147,7 @@ it("shows a typed unavailable history refusal after revalidating readable curren
 it("reports absent and malformed operation observations without leaving stale receipts", async () => {
   const user = userEvent.setup();
   const fetch = vi.mocked(globalThis.fetch);
-  fetch.mockResolvedValueOnce(response("operation.observe", "REJECTED", unavailable));
+  fetch.mockResolvedValueOnce(response("operation.get", "REJECTED", unavailable));
   render(<OperationLookup definition={definition} />);
   expect(
     screen.getByRole("button", {
@@ -167,7 +167,7 @@ it("reports absent and malformed operation observations without leaving stale re
 it("reports a found observation without a receipt as a protocol failure", async () => {
   const user = userEvent.setup();
   vi.mocked(globalThis.fetch).mockResolvedValueOnce(
-    response("operation.observe", "SUCCEEDED", {
+    response("operation.get", "SUCCEEDED", {
       kind: "FOUND",
     }),
   );

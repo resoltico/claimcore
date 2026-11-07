@@ -123,7 +123,7 @@ let private textFormats () =
             "Persisted text refuses noncharacters, NUL and invalid Unicode"
 
 let private envelope () =
-    let id = Guid.Parse "a0000000-0000-4000-8000-000000000001"
+    let id = Guid.Parse "a0000000-0000-7000-8000-000000000001"
 
     let principal =
         PrincipalKey.human "https://issuer.example/" "owner" |> Fixtures.accepted
@@ -250,8 +250,8 @@ let private independentNames () =
 
     let authority: AuthorityEffectRecord =
         {
-            OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
-            TargetActorId = CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000001")
+            OperationId = Guid.Parse "a0000000-0000-7000-8000-000000000001"
+            TargetActorId = CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000001")
             Effect =
                 AuthorityEffect.Register
                     {
@@ -327,9 +327,9 @@ let private kindRoundTrips () =
 
         let record: AuthorityEffectRecord =
             {
-                OperationId = Guid.Parse "a0000000-0000-4000-8000-000000000001"
+                OperationId = Guid.Parse "a0000000-0000-7000-8000-000000000001"
                 TargetActorId =
-                    CaseFixtures.actorId (Guid.Parse "a0000000-0000-4000-8000-000000000001")
+                    CaseFixtures.actorId (Guid.Parse "a0000000-0000-7000-8000-000000000001")
                 Effect = act
             }
 

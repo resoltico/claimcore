@@ -55,6 +55,7 @@
     <Compile Include="Domain/RepresentationTests.fs" />
     <Compile Include="Domain/OutcomeTests.fs" />
     <Compile Include="Domain/InputIdentityTests.fs" />
+    <Compile Include="Domain/OperationLifetimeTests.fs" />
     <Compile Include="Domain/InputAccumulationTests.fs" />
     <Compile Include="Contract/InputIssueBudgetTests.fs" />
     <Compile Include="Domain/ActSlotProperties.fs" />

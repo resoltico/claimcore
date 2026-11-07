@@ -4,6 +4,7 @@ open ClaimCore.Wire
 open ClaimCore.Presentation
 
 open Expecto
+open ClaimCore.TestSupport
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Cli
@@ -18,20 +19,29 @@ let tests =
     testList
         "one-shot operation delivery"
         [
-            testCase "resolve has definitive exit codes" (fun () ->
-                let request = frame "operation.resolve"
+            testCase "lookup has final and pending exit codes" (fun () ->
+                let request = frame "operation.get"
 
                 for outcome, expected in
                     [
-                        (Resolved.Accepted >> Outcome.Succeeded) CliReplyFixtures.receipt, 0
-                        (Outcome.Succeeded Resolved.NotAccepted), 2
+                        Outcome.Succeeded(
+                            OperationLookupResult.Accepted(CliReplyFixtures.receipt, true)
+                        ),
+                        0
+                        (Outcome.Succeeded OperationLookupResult.NotAccepted), 2
+                        (Outcome.Succeeded(
+                            OperationLookupResult.Pending(
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                            )
+                        )),
+                        4
                         Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable), 2
                         Outcome.Failed CoreFault.StoreUnavailable, 3
                     ] do
                     Expect.equal
                         (admittedReply
                             request
-                            (Api.operationResolve.Output.Write
+                            (Api.operationGet.Output.Write
                                 {
                                     OperationReply.OperationId =
                                         Frames.operationId request |> Option.get
@@ -39,12 +49,14 @@ let tests =
                                 }))
                             .ExitCode
                         expected
-                        "Resolution outcome controls exit")
-            testCase "resolution text retains acceptance and passive unresolved status" (fun () ->
+                        "Lookup outcome controls exit")
+            testCase "lookup text retains acceptance and pending deadline" (fun () ->
                 let accepted =
-                    TextOperationReply.resolveLines
+                    TextOperationReply.getLines
                         "en"
-                        (Outcome.Succeeded(Resolved.Accepted CliReplyFixtures.receipt))
+                        (Outcome.Succeeded(
+                            OperationLookupResult.Accepted(CliReplyFixtures.receipt, true)
+                        ))
                     |> String.concat "\n"
 
                 Expect.stringContains
@@ -57,18 +69,61 @@ let tests =
                     "Acceptance is never presented as nonacceptance"
 
                 Expect.equal
-                    (TextOperationReply.resolveLines "en" (Outcome.Succeeded Resolved.NotAccepted))
-                    [
-                        "This operation ID was not accepted and is permanently blocked for this account."
-                    ]
+                    (TextOperationReply.getLines
+                        "en"
+                        (Outcome.Succeeded OperationLookupResult.NotAccepted))
+                    [ "This change was not recorded for your account." ]
                     "Only actual final nonacceptance gets this completion"
 
                 Expect.equal
-                    (TextOperationReply.statusLines
+                    (TextOperationReply.getLines
                         "en"
-                        (Outcome.Succeeded OperationStatus.Unresolved))
-                    [ "The operation is still unresolved. This read has not blocked it." ]
-                    "Passive checking is not settlement")
+                        (Outcome.Succeeded(
+                            OperationLookupResult.Pending(
+                                System.DateTimeOffset.Parse "2026-11-07T10:10:00Z"
+                            )
+                        )))
+                    [ "Waiting for a final answer until 2026-11-07T10:10:00.0000000+00:00." ]
+                    "Pending exposes its deadline")
+            testCase
+                "a delivered pending lookup never emits a mutation retry or leaves interruption uncertain"
+                (fun () ->
+                    let request = frame "operation.get"
+                    let operation = Frames.operationId request |> Option.get
+                    let finalAt = OperationLifetime.finalAt (CaseFixtures.operationId operation)
+
+                    let response =
+                        admittedReply
+                            request
+                            (Api.operationGet.Output.Write
+                                {
+                                    OperationReply.OperationId = operation
+                                    Outcome =
+                                        Outcome.Succeeded(OperationLookupResult.Pending finalAt)
+                                })
+
+                    use output = new System.IO.MemoryStream()
+                    use errors = new System.IO.MemoryStream()
+                    let delivery = FrameDelivery(output, errors, "en")
+                    delivery.BeforeDispatch request
+                    delivery.Write response
+
+                    Expect.equal
+                        response.ExitCode
+                        4
+                        "Pending remains an explicit unresolved outcome"
+
+                    Expect.equal
+                        response.Frame.Delivery
+                        DeliveryState.Delivered
+                        "The lookup itself was delivered"
+
+                    Expect.equal errors.Length 0L "There is no mutation retry frame for a read"
+
+                    Expect.equal
+                        (delivery.Interrupt())
+                        (ExitCode.value ExitCode.Cancelled)
+                        "A read cannot leave a possible write behind")
             testCase "reply shape failures are ordinary results" (fun () ->
                 let invocation = frame "operation.execute"
 

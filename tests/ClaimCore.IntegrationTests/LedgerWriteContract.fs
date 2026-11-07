@@ -37,7 +37,7 @@ let internal genesis fixture =
                                                 |> Result.defaultWith (string >> failtest)
                                             )
                                         ))
-                                        ((CaseFixtures.operationId (id 1)))
+                                        ((CaseFixtures.operationId (id fixture 1)))
                                         fixture.Owner
                                         []
 
@@ -55,11 +55,11 @@ let internal genesis fixture =
                                 return!
                                     AuthorityExecution.provision
                                         (core fixture fixture.Owner)
-                                        ((CaseFixtures.operationId (id 1)))
+                                        ((CaseFixtures.operationId (id fixture 1)))
                                         Inputs.ownerProfile
                                         {
                                             Head = tx.Head
-                                            Fenced = false
+
                                             NewPayloadNonce = tx.NewPayloadNonce
                                         }
                                         view
@@ -86,7 +86,7 @@ let internal genesis fixture =
             inspectOperation
                 fixture
                 (fixture.Owner)
-                ((CaseFixtures.operationId (id 1)))
+                ((CaseFixtures.operationId (id fixture 1)))
                 (CancellationToken.None)
 
         match entry with
@@ -98,7 +98,9 @@ let internal genesis fixture =
 let internal replayAndRefusal fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+
+        let original =
+            request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! result =
             (Service.execute
@@ -125,7 +127,7 @@ let internal replayAndRefusal fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
+                    request fixture 11 "CONTRACT-001" 0L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (CancellationToken.None))
 
@@ -153,7 +155,9 @@ let internal replayAndRefusal fixture =
 let internal lockedView fixture =
     task {
         let! actor = caseWorker fixture
-        let original = request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+
+        let original =
+            request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
 
         let! opened =
             (Service.execute
@@ -176,14 +180,6 @@ let internal lockedView fixture =
                                         tx
                                         (Some(CaseFixtures.operationId original.OperationId))
                                         (CaseSelector.Reference original.CaseReference)
-
-                                let! fenced =
-                                    ExecutionFacts.fenced
-                                        (core fixture fixture.Owner)
-                                        tx
-                                        view.Actor
-                                        (CaseFixtures.operationId original.OperationId)
-                                        view.ExistingOperation
 
                                 calls <- calls + 1
 
@@ -214,12 +210,6 @@ let internal lockedView fixture =
                                         (CaseFixtures.command original)
                                         {
                                             Head = tx.Head
-                                            Fenced =
-                                                fenced
-                                                |> Result.defaultWith (fun fault ->
-                                                    failtestf
-                                                        "Unexpected fence integrity failure: %A"
-                                                        fault)
                                             Nonce = tx.NewPayloadNonce()
                                         }
                                         view
@@ -245,7 +235,7 @@ let internal caseUpdate fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
+                    request fixture 10 "CONTRACT-001" 0L (AuthoredCaseAct.Open registration)
                 ))
                 (CancellationToken.None))
 
@@ -255,7 +245,7 @@ let internal caseUpdate fixture =
             (Service.execute
                 actor
                 (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
+                    request fixture 11 "CONTRACT-001" 1L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
                 (CancellationToken.None))
 
@@ -295,7 +285,7 @@ let internal caseUpdate fixture =
             inspectOperation
                 fixture
                 (fixture.Owner)
-                ((CaseFixtures.operationId (id 11)))
+                ((CaseFixtures.operationId (id fixture 11)))
                 (CancellationToken.None)
 
         match operation with

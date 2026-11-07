@@ -24,18 +24,18 @@ let private corruptRead (read: unit -> Task<unit>) =
             "An unknown permanent token must raise RecordCorruptException on read"
     }
 
-let private readEntry (tx: IReadTx) =
+let private readEntry fixture (tx: IReadTx) =
     task {
-        let! _ = tx.FindOperation(CaseFixtures.operationId (id 10))
+        let! _ = tx.FindOperation(CaseFixtures.operationId (id fixture 10))
         return ()
     }
 
-let private readGrants (tx: IReadTx) =
+let private readGrants fixture (tx: IReadTx) =
     task {
         let! _ =
             tx.GrantPage
                 {
-                    ActorId = CaseFixtures.actorId (id 1)
+                    ActorId = CaseFixtures.actorId (id fixture 1)
                     AfterGrant = None
                     Limit = 50
                 }
@@ -43,7 +43,7 @@ let private readGrants (tx: IReadTx) =
         return ()
     }
 
-let private readActors (tx: IReadTx) =
+let private readActors (_: Fixture) (tx: IReadTx) =
     task {
         let! _ =
             tx.ActorPage
@@ -69,12 +69,17 @@ let private rawEntry database =
         StoredEntries.operation
             connection
             database.Fixture.InstallationId
-            (CaseFixtures.operationId (id 10))
+            (CaseFixtures.operationId (id database.Fixture 10))
             token)
 
 let private rawGrants database =
     rawRead database (fun connection ->
-        TransactionPages.grants connection (CaseFixtures.actorId (id 1)) None 50 token)
+        TransactionPages.grants
+            connection
+            (CaseFixtures.actorId (id database.Fixture 1))
+            None
+            50
+            token)
 
 let private rawActors database =
     rawRead database (fun connection -> TransactionPages.actors connection None None None 50 token)
@@ -89,7 +94,7 @@ let private rejectsUnknown mutate read raw =
             let! boundary =
                 database.Fixture.Store.Read
                     {
-                        Work = read
+                        Work = read database.Fixture
                         CancellationToken = token
                     }
 
@@ -127,8 +132,8 @@ let tests =
                     (fun database ->
                         sql
                             database
-                            "INSERT INTO claimcore.grants(actor_id,role) VALUES ('80000000-0000-4000-8000-000000000001','SYNTHETIC_UNKNOWN')"
-                            [||])
+                            "INSERT INTO claimcore.grants(actor_id,role) VALUES ($1,'SYNTHETIC_UNKNOWN')"
+                            [| box (id database.Fixture 1) |])
                     readGrants
                     rawGrants)
             testCaseAsync
@@ -137,8 +142,8 @@ let tests =
                     (fun database ->
                         sql
                             database
-                            "UPDATE claimcore.actors SET principal_kind='SYNTHETIC_UNKNOWN' WHERE actor_id='80000000-0000-4000-8000-000000000001'"
-                            [||])
+                            "UPDATE claimcore.actors SET principal_kind='SYNTHETIC_UNKNOWN' WHERE actor_id=$1"
+                            [| box (id database.Fixture 1) |])
                     readActors
                     rawActors)
         ]

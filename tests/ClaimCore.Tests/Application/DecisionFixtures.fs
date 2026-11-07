@@ -13,6 +13,17 @@ open ClaimCore.RecordFormat
 open ClaimCore.TestSupport.StoreFixtures
 
 let instant = DateTimeOffset(2026, 9, 7, 12, 0, 0, TimeSpan.Zero)
+let id number = OperationIds.numberedAt instant number
+
+let request number reference revision act : UnvalidatedCaseRequest =
+    {
+        OperationId = id number
+        CaseReference = reference
+        ExpectedRevision = revision
+        Act = act
+    }
+
+let actRequest = request
 let installation = id 500
 
 let owner =
@@ -86,7 +97,6 @@ type LockedFacts<'Facts> =
     {
         Head: LedgerPosition
         PayloadNonce: byte array
-        IsFenced: bool
         Read: 'Facts
     }
 
@@ -94,7 +104,6 @@ let locked authority current existing : LockedFacts<CaseFacts> =
     {
         Head = head
         PayloadNonce = nonce
-        IsFenced = false
         Read =
             {
                 Assignee = None
@@ -115,7 +124,6 @@ let decide request view =
         (ClaimCore.TestSupport.CaseFixtures.command request)
         {
             Head = view.Head
-            Fenced = view.IsFenced
             Nonce = view.PayloadNonce
         }
         view.Read
@@ -128,7 +136,6 @@ let executeAuthority installation principal request (view: LockedFacts<Authority
         request
         {
             Head = view.Head
-            Fenced = view.IsFenced
             NewPayloadNonce =
                 (fun () ->
                     counter <- counter + 1uy
@@ -156,7 +163,6 @@ let provisionAuthority
         Inputs.ownerProfile
         {
             Head = view.Head
-            Fenced = view.IsFenced
             NewPayloadNonce =
                 (fun () ->
                     counter <- counter + 1uy
@@ -196,7 +202,6 @@ let authorityView
     {
         Head = head
         PayloadNonce = nonce
-        IsFenced = false
         Read =
             {
                 Maintenance = RegisterMaintenance.initial

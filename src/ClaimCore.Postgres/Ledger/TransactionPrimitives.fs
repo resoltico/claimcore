@@ -332,34 +332,6 @@ type private ReadTx
         member _.FindOperation id =
             StoredEntries.operation connection installation id token
 
-        member _.NonAcceptance(key: FenceKey) =
-            task {
-                let! control = StoredEntries.nonAcceptance connection installation key token
-                let fenceInstant = DatabaseSession.instantExpression "fenced_at"
-
-                let! rows =
-                    DatabaseSession.rows
-                        connection
-                        ($"SELECT {fenceInstant} FROM claimcore.operation_fences WHERE actor_id=$1 AND operation_id=$2")
-                        [|
-                            box (ActorId.value key.ActorId)
-                            box (OperationId.value key.OperationId)
-                        |]
-                        token
-
-                let projectedAt =
-                    match rows with
-                    | [] -> None
-                    | [ row ] -> Some(DatabaseSession.recordedInstant 0 row)
-                    | _ -> raise (RecordCorruptException "Duplicate fence projection.")
-
-                return
-                    {
-                        NonAcceptanceEvidence.Control = control
-                        ProjectedAt = projectedAt
-                    }
-            }
-
         member _.CasePage query =
             TransactionPages.cases connection installation query token
 
@@ -518,27 +490,6 @@ type private WriteTx(connection, installation, head, observedAt, token) =
         member _.ProjectAuthority projection =
             FailureDiagnostics.phase FailurePhase.Projection
             Persistence.authority connection projection token
-
-        member _.Fence
-            ({
-                 FenceKey.ActorId = actor
-                 OperationId = operation
-             })
-            =
-            task {
-                let! _ =
-                    DatabaseSession.execute
-                        connection
-                        "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) VALUES ($1,$2,$3) ON CONFLICT (actor_id,operation_id) DO NOTHING"
-                        [|
-                            box (ActorId.value actor)
-                            box (OperationId.value operation)
-                            box observedAt
-                        |]
-                        token
-
-                return ()
-            }
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
     interface IStore with

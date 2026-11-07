@@ -54,8 +54,7 @@ module internal CaseFold =
         match entry.Subject with
         | EntryTarget.Work _
         | EntryTarget.Reminder _
-        | EntryTarget.Authority _
-        | EntryTarget.NonAcceptance _ ->
+        | EntryTarget.Authority _ ->
             Error(divergence (Some entry.Sequence) VerificationFinding.PayloadFormat)
         | EntryTarget.Case(id, revision, act, _) ->
             result {

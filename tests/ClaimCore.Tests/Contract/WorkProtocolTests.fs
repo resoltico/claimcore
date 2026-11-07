@@ -17,9 +17,9 @@ let private accepted =
 let private json value =
     StrictJson.read 32768 (Encoding.UTF8.GetBytes(value: string)) |> accepted
 
-let private operation = "10000000-0000-4000-8000-000000000002"
-let private parent = "10000000-0000-4000-8000-000000000001"
-let private child = "10000000-0000-4000-8000-000000000003"
+let private operation = "10000000-0000-7000-8000-000000000002"
+let private parent = "10000000-0000-7000-8000-000000000001"
+let private child = "10000000-0000-7000-8000-000000000003"
 
 let private input family act =
     json (

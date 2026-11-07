@@ -65,7 +65,12 @@ let private caseFlow (database: PostgresFixture.Database) storage =
 
         let operation =
             ClaimCore.TestSupport.Inputs.caseOperation (
-                request 601 "METRIC-ACCEPTANCE" 0L (AuthoredCaseAct.Open registration)
+                request
+                    database.Fixture
+                    601
+                    "METRIC-ACCEPTANCE"
+                    0L
+                    (AuthoredCaseAct.Open registration)
             )
 
         do! call host Api.operationPreview operation antiforgery ReplyKind.Reviewed

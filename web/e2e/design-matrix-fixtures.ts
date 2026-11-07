@@ -190,7 +190,7 @@ const routes = (data: {
     id: "operation-result",
     path: `/recovery/${encodeURIComponent(data.operationId)}`,
     ready: "#operation-lookup-title",
-    endpoint: "operation.observe",
+    endpoint: "operation.get",
   },
   {
     id: "authority-history",

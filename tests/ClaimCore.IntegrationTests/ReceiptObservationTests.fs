@@ -34,7 +34,12 @@ let tests =
 
                 let input =
                     Inputs.caseOperation (
-                        request 100 "OBS-RECEIPT" 0L (AuthoredCaseAct.Open registration)
+                        request
+                            database.Fixture
+                            100
+                            "OBS-RECEIPT"
+                            0L
+                            (AuthoredCaseAct.Open registration)
                     )
 
                 let! reply = Service.execute service input token |> Async.AwaitTask
@@ -92,22 +97,10 @@ let tests =
                         OperationId = OperationInput.operationId input
                     }
 
-                let! reply = Service.observe service lookup token |> Async.AwaitTask
+                let! reply = Service.operationGet service lookup token |> Async.AwaitTask
 
                 match reply.Outcome with
-                | Outcome.Succeeded receipt -> check receipt
-                | other -> failtestf "%A" other
-
-                let! reply = Service.status service lookup token |> Async.AwaitTask
-
-                match reply.Outcome with
-                | Outcome.Succeeded(OperationStatus.Accepted receipt) -> check receipt
-                | other -> failtestf "%A" other
-
-                let! reply = Service.resolve service lookup token |> Async.AwaitTask
-
-                match reply.Outcome with
-                | Outcome.Succeeded(Resolved.Accepted receipt) -> check receipt
+                | Outcome.Succeeded(OperationLookupResult.Accepted(receipt, true)) -> check receipt
                 | other -> failtestf "%A" other
             finally
                 database.Fixture.Dispose()

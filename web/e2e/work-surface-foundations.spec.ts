@@ -26,16 +26,16 @@ const recoverAcceptedClose = async (page: Page, operationId: string) => {
     expect(saved).toHaveLength(1);
     expect(saved[0]).toMatchObject({ operationId, subject: "CASE", act: "CLOSE" });
     const resolved = page.waitForResponse((response) =>
-      response.url().endsWith("/api/operation.status"),
+      response.url().endsWith("/api/operation.get"),
     );
     await check.click();
     const response = await resolved;
     const reply: unknown = await response.json();
-    if (!isResponse("operation.status", reply) || reply.outcome.kind !== "ACCEPTED") {
+    if (!isResponse("operation.get", reply) || reply.outcome.kind !== "ACCEPTED") {
       throw new Error("E2E_UNLOAD_FINAL_ACCEPTANCE_UNAVAILABLE");
     }
     expect(response.status()).toBe(200);
-    expect(reply.outcome.data.operationId).toBe(operationId);
+    expect(reply.outcome.data.receipt.operationId).toBe(operationId);
     await expect.poll(() => recoveryRecords(page)).toEqual([]);
   }
   await expect(accepted).toBeVisible();

@@ -32,7 +32,12 @@ type private PermanentValueSample =
 
 let private sample =
     gen {
-        let! id = Gen.guid
+        let! id =
+            Gen.guid
+            |> Gen.map (
+                OperationIds.fromEntropy (DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+            )
+
         let! reference = Gen.string (Range.constant 1 80) Gen.alphaNum
         let! revision = Gen.int64 (Range.constant 1L 9007199254740991L)
         let! day = Gen.int32 (Range.constant 0 (DateOnly.MaxValue.DayNumber - 40))
@@ -83,7 +88,7 @@ let private sample =
 
         let id =
             if id = Guid.Empty then
-                Guid.Parse "20000000-0000-4000-8000-000000000001"
+                Guid.Parse "20000000-0000-7000-8000-000000000001"
             else
                 id
 
@@ -127,7 +132,7 @@ let private scopes reference =
     [
         RecordedGrantScope.Installation, "INSTALLATION"
         RecordedGrantScope.Case(
-            (CaseFixtures.caseId (Guid.Parse "d0000000-0000-4000-8000-000000000001")),
+            (CaseFixtures.caseId (Guid.Parse "d0000000-0000-7000-8000-000000000001")),
             CaseFixtures.reference reference
         ),
         "CASE"
@@ -281,7 +286,7 @@ let private snapshotProperty =
                                 {
                                     CaseId =
                                         CaseFixtures.caseId (
-                                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                                         )
                                     Reference = reference
                                     Revision = (CaseFixtures.revision revision)

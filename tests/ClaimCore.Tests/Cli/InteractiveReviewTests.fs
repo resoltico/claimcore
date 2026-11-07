@@ -32,7 +32,7 @@ type private Harness =
         ReadCount: unit -> int
     }
 
-let private identity = Guid.Parse "90000000-0000-4000-8000-000000000001"
+let private identity = Guid.Parse "90000000-0000-7000-8000-000000000001"
 
 let private current =
     { CliReplyFixtures.snapshot with
@@ -568,7 +568,7 @@ let tests =
                 Expect.equal h.Calls.Count 0 "No remote call was made")
             testCase "an explicit operation id is retained across the reviewed attempt" (fun () ->
                 let h = harness "en" (Some "y") Scenario.Accepted
-                let supplied = Guid.Parse "80000000-0000-4000-8000-000000000099"
+                let supplied = Guid.Parse "80000000-0000-7000-8000-000000000099"
                 run [ "case"; "close"; "x"; "--operation-id"; string supplied ] h |> ignore
                 Expect.equal (h.Generated()) 0 "An explicit id is not silently replaced"
 

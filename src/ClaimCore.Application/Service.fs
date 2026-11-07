@@ -271,31 +271,9 @@ module Service =
     let timeline = TimelineQueries.read
     let history = Queries.history
 
-    let observe services (input: OperationLookup) ct =
+    let operationGet services (input: OperationLookup) ct =
         task {
-            let! outcome = Queries.observe services input.OperationId ct
-
-            return
-                {
-                    OperationReply.OperationId = input.OperationId
-                    Outcome = outcome
-                }
-        }
-
-    let status services (input: OperationLookup) ct =
-        task {
-            let! outcome = RecoveryStatus.run services input ct
-
-            return
-                {
-                    OperationReply.OperationId = input.OperationId
-                    Outcome = outcome
-                }
-        }
-
-    let resolve services (input: OperationLookup) ct =
-        task {
-            let! outcome = Resolution.run services input ct
+            let! outcome = OperationQueries.get services input ct
 
             return
                 {

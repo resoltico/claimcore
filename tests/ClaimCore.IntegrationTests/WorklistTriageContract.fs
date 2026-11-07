@@ -11,12 +11,14 @@ open ClaimCore.TestSupport.StoreFixtures
 let private token = CancellationToken.None
 let private maximum = "999999999999999999.9999"
 
-let private execute owner number reference revision act =
+let private execute fixture owner number reference revision act =
     task {
         let! reply =
             Service.execute
                 owner
-                (ClaimCore.TestSupport.Inputs.caseOperation (request number reference revision act))
+                (ClaimCore.TestSupport.Inputs.caseOperation (
+                    request fixture number reference revision act
+                ))
                 token
 
         match reply.Outcome with
@@ -32,7 +34,7 @@ type private CaseSeed =
         Currency: string
     }
 
-let private openCase owner number (seed: CaseSeed) =
+let private openCase fixture owner number (seed: CaseSeed) =
     let values =
         Inputs.registrationWith
             [
@@ -42,7 +44,7 @@ let private openCase owner number (seed: CaseSeed) =
             ]
             Inputs.registration
 
-    execute owner number seed.Reference 0L (AuthoredCaseAct.Open values)
+    execute fixture owner number seed.Reference 0L (AuthoredCaseAct.Open values)
 
 let private setup fixture =
     task {
@@ -51,7 +53,7 @@ let private setup fixture =
         let! steward =
             grant
                 owner
-                (id 10)
+                (id fixture 10)
                 fixture.Owner
                 {
                     Role = Role.DataSteward
@@ -63,6 +65,7 @@ let private setup fixture =
 
         do!
             openCase
+                fixture
                 owner
                 20
                 {
@@ -74,6 +77,7 @@ let private setup fixture =
 
         do!
             openCase
+                fixture
                 owner
                 21
                 {
@@ -85,6 +89,7 @@ let private setup fixture =
 
         do!
             openCase
+                fixture
                 owner
                 22
                 {
@@ -96,6 +101,7 @@ let private setup fixture =
 
         do!
             openCase
+                fixture
                 owner
                 23
                 {
@@ -112,7 +118,7 @@ let private setup fixture =
                     owner
                     (OperationInput.Work
                         {
-                            OperationId = id number
+                            OperationId = id fixture number
                             Target = CaseSelector.Reference reference
                             ExpectedRevision = 0L
                             Act =
@@ -120,7 +126,7 @@ let private setup fixture =
                                     {
                                         Responsible =
                                             WorkValue.Set(
-                                                ActorId.format (CaseFixtures.actorId (id 1))
+                                                ActorId.format (CaseFixtures.actorId (id fixture 1))
                                             )
                                         Summary = WorkValue.Keep
                                     }
@@ -132,17 +138,17 @@ let private setup fixture =
         let decision =
             Inputs.decisionWith [ BusinessField.PayableAmount, maximum ] Inputs.decision
 
-        do! execute owner 24 "TRIAGE-A" 1L (AuthoredCaseAct.Decide decision)
-        do! execute owner 25 "TRIAGE-A" 2L (AuthoredCaseAct.Bare BareAct.Close)
-        do! execute owner 26 "TRIAGE-B" 1L (AuthoredCaseAct.Decide decision)
-        do! execute owner 27 "TRIAGE-B" 2L (AuthoredCaseAct.Void "Synthetic triage review")
-        do! execute owner 28 "TRIAGE-D" 1L (AuthoredCaseAct.Bare BareAct.Erase)
+        do! execute fixture owner 24 "TRIAGE-A" 1L (AuthoredCaseAct.Decide decision)
+        do! execute fixture owner 25 "TRIAGE-A" 2L (AuthoredCaseAct.Bare BareAct.Close)
+        do! execute fixture owner 26 "TRIAGE-B" 1L (AuthoredCaseAct.Decide decision)
+        do! execute fixture owner 27 "TRIAGE-B" 2L (AuthoredCaseAct.Void "Synthetic triage review")
+        do! execute fixture owner 28 "TRIAGE-D" 1L (AuthoredCaseAct.Bare BareAct.Erase)
 
         for number, reference in [ 30, "TRIAGE-B"; 31, "TRIAGE-C" ] do
             let! granted =
                 grant
                     owner
-                    (id number)
+                    (id fixture number)
                     fixture.Owner
                     {
                         Role = Role.CaseReader
@@ -317,7 +323,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
                 owner
                 (OperationInput.Authority(
                     authorityRequest
-                        (id 100)
+                        (id fixture 100)
                         service
                         (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
                 ))
@@ -337,7 +343,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
             let! granted =
                 grant
                     owner
-                    (id number)
+                    (id fixture number)
                     service
                     {
                         Role = Role.CaseReader
@@ -366,7 +372,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         Expect.equal first.Counts.Total 2L "The two opened cases are visible"
         // An inconsistent projection is injected through the real store port, without changing
         // any SQL constraint or authorization rule. The visibility safeguards must exclude it.
-        let caseId = CaseFixtures.caseId (id 21)
+        let caseId = CaseFixtures.caseId (id fixture 21)
 
         let! altered =
             fixture.Store.Write
@@ -424,7 +430,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         let! installationRevoked =
             grant
                 owner
-                (id 105)
+                (id fixture 105)
                 service
                 {
                     Role = Role.CaseReader
@@ -443,7 +449,7 @@ let internal assignmentExcludesForbiddenRoles fixture =
         let! revoked =
             grant
                 owner
-                (id 104)
+                (id fixture 104)
                 service
                 {
                     Role = Role.CaseReader

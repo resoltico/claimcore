@@ -45,7 +45,10 @@ let private writeSnapshot (database: PostgresFixture.Database) =
         use! observer = database.OwnerSource.OpenConnectionAsync()
 
         let pending =
-            Service.execute caller RequesterAdmissionContract.malformedWrites.Head token
+            Service.execute
+                caller
+                (RequesterAdmissionContract.malformedWrites database.Fixture).Head
+                token
 
         let mutable blocked = false
 

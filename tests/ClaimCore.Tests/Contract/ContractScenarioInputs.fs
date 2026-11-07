@@ -22,7 +22,7 @@ open ClaimCore.Tests.Fixtures
 
 
 let internal bytes (value: string) = Encoding.UTF8.GetBytes value
-let internal id = Guid.Parse "20000000-0000-4000-8000-000000000001"
+let internal id = Guid.Parse "20000000-0000-7000-8000-000000000001"
 let internal digest = String.replicate 64 "a"
 
 let internal position: ClaimCore.Domain.LedgerPosition =
@@ -40,7 +40,7 @@ let internal receipt: ClaimCore.Application.Contracts.OperationReceipt =
                 {
                     CaseId =
                         CaseFixtures.caseId (
-                            System.Guid.Parse "20000000-0000-4000-8000-000000000001"
+                            System.Guid.Parse "20000000-0000-7000-8000-000000000001"
                         )
                     Reference = CaseFixtures.reference "UNIT-001"
                     Revision = CaseFixtures.revision 1L

@@ -71,10 +71,7 @@ let private verb (output: System.IO.Stream) (errors: System.IO.Stream) arguments
             Output = output
             Errors = errors
             Review = console
-            WriteSettlementPrompt =
-                fun bytes ->
-                    errors.Write(bytes: byte array)
-                    errors.Flush()
+
         }
 
     withRemote

@@ -34,7 +34,7 @@ let canonical input =
 let act value =
     command
         {
-            OperationId = System.Guid.Parse "10000000-0000-4000-8000-000000000001"
+            OperationId = System.Guid.Parse "10000000-0000-7000-8000-000000000001"
             CaseReference = "FIXTURE"
             ExpectedRevision = 0L
             Act = value

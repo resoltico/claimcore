@@ -155,10 +155,9 @@ let private interruptedRetries fixture source operationId =
     retryFrame
 
 let private exactResolution fixture source operationId =
-    let observed =
-        automation fixture "operation.observe" {| operationId = operationId |} 0
+    let observed = lookupReceipt fixture operationId
 
-    require "SUCCEEDED" observed |> ignore
+    observed.GetProperty "position" |> ignore
     // Observation establishes identity, never equality with pending content.
     let replay = run fixture fixture.Environment source 0
     require "ALREADY_ACCEPTED" replay |> ignore

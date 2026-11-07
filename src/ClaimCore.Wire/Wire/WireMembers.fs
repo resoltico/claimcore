@@ -123,13 +123,7 @@ module RequestSchemas =
     let HistoryRequest = "HistoryRequest"
 
     [<Literal>]
-    let ObserveRequest = "ObserveRequest"
-
-    [<Literal>]
-    let ResolveRequest = "ResolveRequest"
-
-    [<Literal>]
-    let StatusRequest = "StatusRequest"
+    let OperationGetRequest = "OperationGetRequest"
 
     [<Literal>]
     let GrantsRequest = "GrantsRequest"

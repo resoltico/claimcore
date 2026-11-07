@@ -77,8 +77,7 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
         2L
         "Current revision is authoritative"
 
-let private withheld expected reply =
-    let receipt = require expected reply
+let private withheldReceipt (receipt: JsonElement) =
     let snapshot = receipt.GetProperty("subject").GetProperty("snapshot")
 
     Expect.equal
@@ -90,6 +89,9 @@ let private withheld expected reply =
         (snapshot.EnumerateObject() |> Seq.map _.Name |> Seq.toList)
         [ "kind" ]
         "Withheld contains only its discriminator and no business payload"
+
+let private withheld expected reply =
+    require expected reply |> withheldReceipt
 
 let private summaryHistory fixture reference =
     let history =
@@ -168,8 +170,7 @@ let private qualify fixture =
     automation fixture "operation.preview" input 0 |> withheld "ALREADY_ACCEPTED"
     let operationId = accepted.GetProperty("operationId").GetString() |> nonNull
 
-    automation fixture "operation.observe" {| operationId = operationId |} 0
-    |> withheld "SUCCEEDED"
+    lookupReceipt fixture operationId |> withheldReceipt
 
     summaryHistory fixture reference
 

@@ -80,7 +80,7 @@ let private terminate (database: PostgresFixture.Database) backendId =
             "Only the fixture's proxied backend is terminated"
     }
 
-let private lostResolution drop (database: PostgresFixture.Database) =
+let private lostLookup drop (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
 
@@ -103,44 +103,37 @@ let private lostResolution drop (database: PostgresFixture.Database) =
         use source = NpgsqlDataSource.Create(settings.ConnectionString)
         let throughProxy = proxyCore database source
 
-        let! unknown =
-            (ClaimCore.TestSupport.StoreFixtures.resolve
-                throughProxy
-                ({ OperationId = id 140 })
-                (token))
+        let operation = OperationIds.at (DateTimeOffset.UtcNow.AddMinutes(-11.))
+        let! unknown = Service.operationGet throughProxy { OperationId = operation } token
 
         Expect.equal
-            unknown
+            unknown.Outcome
             (Outcome.Failed CoreFault.StoreUnavailable)
-            "Lost operational commit is a retriable store fault"
+            "Lost lookup transaction is a retriable storage failure"
 
-        let! repeated =
-            (ClaimCore.TestSupport.StoreFixtures.resolve actor ({ OperationId = id 140 }) (token))
+        let! repeated = Service.operationGet actor { OperationId = operation } token
 
-        Expect.equal
-            repeated
-            (Outcome.Succeeded Resolved.NotAccepted)
-            "Resolve repeats safely whether the first fence landed or aborted"
+        match repeated.Outcome with
+        | Outcome.Succeeded OperationLookupResult.NotAccepted -> ()
+        | other -> failtestf "Repeating expired lookup confirms absence: %A" other
 
-        let! delayed =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (
-                    request 140 "LOST-RESOLUTION" 0L (AuthoredCaseAct.Open registration)
-                ))
-                (token))
+        let input =
+            { request database.Fixture 140 "LOST-LOOKUP" 0L (AuthoredCaseAct.Open registration) with
+                OperationId = operation
+            }
 
-        Expect.equal
-            delayed.Outcome
-            (ExecuteResult.Rejected Refusal.OperationResolved)
-            "Repeated resolution is final"
+        let! delayed = Service.execute actor (Inputs.caseOperation input) token
+
+        match delayed.Outcome with
+        | ExecuteResult.Rejected(Refusal.OperationIdOutOfWindow _) -> ()
+        | other -> failtestf "An expired ID cannot execute after confirmation: %A" other
 
         let! head = Verification.verify database.OwnerSource None token
 
         Expect.equal
             (VerificationSupport.position head).Sequence
-            (CaseFixtures.sequence 5L)
-            "Two owner effects and two grants precede one retained control; repeat adds nothing"
+            (CaseFixtures.sequence 4L)
+            "Two owner effects and two grants precede confirmation, which appends nothing"
     }
 
 let private lostAuthority drop landed (database: PostgresFixture.Database) =
@@ -171,7 +164,7 @@ let private lostAuthority drop landed (database: PostgresFixture.Database) =
 
         let request =
             authorityRequest
-                (id 145)
+                (id database.Fixture 145)
                 target
                 (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
 
@@ -281,6 +274,7 @@ let tests =
 
                             let operation =
                                 request
+                                    database.Fixture
                                     20
                                     "synthetic-commit"
                                     0L
@@ -305,7 +299,7 @@ let tests =
                     CommitProxy.Drop.AfterCommit
                     CommitProxy.Drop.AfterCommitFatal
                 ] do
-                testCaseAsync ($"resolution repeats after {drop}") (run (lostResolution drop))
+                testCaseAsync ($"resolution repeats after {drop}") (run (lostLookup drop))
             for drop in
                 [
                     CommitProxy.Drop.BeforeCommit

@@ -2,7 +2,6 @@
   "endpoint": "operation.execute",
   "input": {
     "kind": "CASE",
-    "operationId": "10000000-0000-4000-8000-000000000008",
     "expectedRevision": 7,
     "act": {
       "kind": "REINSTATE",

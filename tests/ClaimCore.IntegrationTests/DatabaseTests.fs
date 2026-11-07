@@ -61,7 +61,7 @@ let tests =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
                                 BuildIdentity.current.Version
-                                (id 1)
+                                (id database.Fixture 1)
                                 database.Fixture.Owner
                                 ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
@@ -75,7 +75,7 @@ let tests =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
                                 BuildIdentity.current.Version
-                                (id 1)
+                                (id database.Fixture 1)
                                 database.Fixture.Owner
                                 ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
@@ -94,7 +94,7 @@ let tests =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
                                 BuildIdentity.current.Version
-                                (id 2)
+                                (id database.Fixture 2)
                                 other
                                 ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
@@ -110,7 +110,7 @@ let tests =
                             LedgerAdministration.provisionOwner
                                 database.OwnerSource
                                 BuildIdentity.current.Version
-                                (id 1)
+                                (id database.Fixture 1)
                                 other
                                 ClaimCore.TestSupport.Inputs.ownerProfile
                                 token
@@ -230,7 +230,7 @@ let tests =
                                     "/tmp/before-erasure.sql"
                                 |]
 
-                        let! receipt = erased actor
+                        let! receipt = erased database.Fixture actor
 
                         let expected =
                             {
@@ -326,7 +326,7 @@ let tests =
                             refused
                                 (fun () ->
                                     administration.ProvisionOwner(
-                                        id 1,
+                                        id database.Fixture 1,
                                         database.Fixture.Owner,
                                         ClaimCore.TestSupport.Inputs.ownerProfile,
                                         token
@@ -352,7 +352,7 @@ let tests =
                 (run (fun database ->
                     task {
                         let! actor = erasureFixture database
-                        let! receipt = erased actor
+                        let! receipt = erased database.Fixture actor
 
                         let expected =
                             {

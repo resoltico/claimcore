@@ -53,7 +53,7 @@ let private corrupt (path: string list) (value: LedgerRow) =
 let private qualify path (database: PostgresFixture.Database) =
     task {
         let! actor = bootstrap database.Fixture
-        let operationId = id 2
+        let operationId = id database.Fixture 2
 
         let! executed =
             grant
@@ -70,17 +70,13 @@ let private qualify path (database: PostgresFixture.Database) =
 
         let observedOperation =
             if path = [ "act"; "principal"; "kind" ] then
-                id 1
+                id database.Fixture 1
             else
                 operationId
 
-        let! before =
-            ClaimCore.TestSupport.StoreFixtures.observe
-                actor
-                { OperationId = observedOperation }
-                token
+        let! before = Service.operationGet actor { OperationId = observedOperation } token
 
-        match before with
+        match before.Outcome with
         | Outcome.Succeeded _ -> ()
         | _ -> failtest "The exact receipt is readable before its stored enum is damaged"
 
@@ -93,14 +89,10 @@ let private qualify path (database: PostgresFixture.Database) =
 
         do! rewrite database sequence (corrupt path)
 
-        let! after =
-            ClaimCore.TestSupport.StoreFixtures.observe
-                actor
-                { OperationId = observedOperation }
-                token
+        let! after = Service.operationGet actor { OperationId = observedOperation } token
 
         Expect.equal
-            after
+            after.Outcome
             (Outcome.Failed CoreFault.StoreIntegrityError)
             "Stored corruption is never a user-input refusal"
     }

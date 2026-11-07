@@ -7,7 +7,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.TestSupport
 
-let private identity = Guid.Parse "90000000-0000-4000-8000-000000000001"
+let private identity = Guid.Parse "90000000-0000-7000-8000-000000000001"
 
 let private fields: CaseFields =
     {
@@ -127,7 +127,7 @@ let tests =
                             { value with
                                 CaseId =
                                     CaseFixtures.caseId (
-                                        Guid.Parse "90000000-0000-4000-8000-000000000099"
+                                        Guid.Parse "90000000-0000-7000-8000-000000000099"
                                     )
                             }
                     | _ -> failtest "Case fixture"

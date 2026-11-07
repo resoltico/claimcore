@@ -106,8 +106,7 @@ module internal TimelineStorage =
         | EntryTarget.Work work -> "WORK", CaseId.value work.CaseId, Revision.value work.Revision
         | EntryTarget.Reminder reminder ->
             "REMINDER", ReminderId.value reminder.ReminderId, Revision.value reminder.Revision
-        | EntryTarget.Authority _
-        | EntryTarget.NonAcceptance _ -> invalidArg (nameof entry) "Use case timeline entries."
+        | EntryTarget.Authority _ -> invalidArg (nameof entry) "Use case timeline entries."
 
     /// One bounded query loads each visible entry's immediate entity predecessor, including a reminder born in complete-and-plan-next.
     let previous connection installation (entries: StoredEntry list) token =

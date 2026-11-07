@@ -35,7 +35,7 @@ let private lifecycle (database: PostgresFixture.Database) =
                 database
                 "CC003"
                 "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1 AND subject_kind='AUTHORITY' AND act='SET_PROFILE'"
-                [| box (id 304) |]
+                [| box (id database.Fixture 304) |]
 
         let! _ = verified database
 
@@ -43,7 +43,7 @@ let private lifecycle (database: PostgresFixture.Database) =
             guardedSql
                 database
                 "UPDATE claimcore.ledger SET payload=NULL,payload_nonce=NULL WHERE operation_id=$1 AND subject_kind='AUTHORITY' AND act='SET_PROFILE'"
-                [| box (id 304) |]
+                [| box (id database.Fixture 304) |]
 
         do! finding VerificationFinding.PayloadWithoutErasure database
     }
@@ -51,7 +51,13 @@ let private lifecycle (database: PostgresFixture.Database) =
 let private noErase (database: PostgresFixture.Database) =
     task {
         let! _ = bootstrap database.Fixture
-        do! refused database "CC002" "SELECT claimcore.erase_profile_payload($1)" [| box (id 1) |]
+
+        do!
+            refused
+                database
+                "CC002"
+                "SELECT claimcore.erase_profile_payload($1)"
+                [| box (id database.Fixture 1) |]
 
         do!
             refused
@@ -73,7 +79,7 @@ let private projection (database: PostgresFixture.Database) =
             sql
                 database
                 "UPDATE claimcore.actors SET display_name='Wrong projection' WHERE actor_id=$1"
-                [| box (id 1) |]
+                [| box (id database.Fixture 1) |]
 
         do! finding VerificationFinding.AuthorityProfileProjection database
         do! enterMaintenance database

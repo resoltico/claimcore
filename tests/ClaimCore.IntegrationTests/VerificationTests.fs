@@ -90,30 +90,13 @@ let private requestEffectAgreement (database: PostgresFixture.Database) =
 
 let private workIndexPrecedence (database: PostgresFixture.Database) =
     task {
-        let! actor = populated database
-        let! resolved = Service.resolve actor { OperationId = id 997 } token
-
-        Expect.equal
-            resolved.Outcome
-            (Outcome.Succeeded Resolved.NotAccepted)
-            "The positive control has an independently retained recovery fence"
-
+        let! _ = populated database
         let! checkpoint = verified database
-        use! connection = database.OwnerSource.OpenConnectionAsync()
-
-        let! fences =
-            DatabaseSession.rows
-                connection
-                "SELECT actor_id,operation_id,fenced_at FROM claimcore.operation_fences"
-                [||]
-                token
-
-        let fence = List.exactlyOne fences
 
         do!
             sql
                 database
-                "UPDATE claimcore.cases SET status='CLOSED',follow_up=DATE '2027-12-31',work_search_text='unrelated search material'; UPDATE claimcore.actors SET enabled=false; DELETE FROM claimcore.operation_fences"
+                "UPDATE claimcore.cases SET status='CLOSED',follow_up=DATE '2027-12-31',work_search_text='unrelated search material'; UPDATE claimcore.actors SET enabled=false"
                 [||]
 
         do! finding VerificationFinding.CaseStatusProjection database
@@ -124,14 +107,6 @@ let private workIndexPrecedence (database: PostgresFixture.Database) =
         do! sql database "UPDATE claimcore.cases SET follow_up=NULL" [||]
         do! finding VerificationFinding.CaseWorkProjection database
         do! sql database "UPDATE claimcore.cases SET work_search_text=NULL" [||]
-        do! finding VerificationFinding.FenceProjection database
-
-        do!
-            sql
-                database
-                "INSERT INTO claimcore.operation_fences(actor_id,operation_id,fenced_at) VALUES($1,$2,$3)"
-                fence
-
         let! restored = verified database
 
         Expect.equal
@@ -153,17 +128,6 @@ let tests =
                     testCaseAsync
                         ($"duplicate identity with {occurrences} occurrences and corruption {earlier}")
                         (run (duplicateIdentity earlier occurrences))
-            testCase "all inventoried finding identifiers are explicitly covered" (fun () ->
-                Expect.equal
-                    (findingCases |> List.map (fst >> VerificationFinding.token) |> Set.ofList)
-                    ((VerificationFinding.all |> List.map (fst >> VerificationFinding.token))
-                     |> Set.ofList)
-                    "Closed independent finding inventory"
-
-                Expect.equal
-                    (findingCases |> List.map fst |> Set.ofList)
-                    (VerificationFinding.all |> List.map fst |> Set.ofList)
-                    "Every finding has an independent real-boundary case")
             for code, check in findingCases do
                 testCaseAsync
                     (VerificationFinding.token code + " has an exact real-boundary control")

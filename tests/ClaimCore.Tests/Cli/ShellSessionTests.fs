@@ -93,7 +93,7 @@ let private uncertainContinues () =
         let clock = Clock()
 
         let mutation =
-            "case close REF --expected-revision 1 --operation-id 10000000-0000-4000-8000-000000000001 --format json"
+            "case close REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
 
         use terminal =
             new Terminal(
@@ -136,7 +136,7 @@ let private uncertainContinues () =
 
         Expect.stringContains
             (text terminal.Errors)
-            "operation status 10000000-0000-4000-8000-000000000001"
+            "operation get 10000000-0000-7000-8000-000000000001"
             "Passive status guidance retains the exact operation ID"
     }
 
@@ -248,7 +248,7 @@ let private failedStatusRetainsUncertainty () =
             new Terminal(
                 [
                     ShellLine.Text
-                        "case close REF --expected-revision 1 --operation-id 10000000-0000-4000-8000-000000000001 --format json"
+                        "case close REF --expected-revision 1 --operation-id 10000000-0000-7000-8000-000000000001 --format json"
                 ]
             )
 
@@ -364,74 +364,4 @@ let reviewOutput =
                         "A fragmented question is decoded only when complete"
 
                     Expect.equal (question ()) "" "The question is consumed once")
-            testCase
-                "authenticated settlement scope precedes exact target consent in the shell adapter"
-                (fun () ->
-                    let context =
-                        match ResponseExamples.defaultReply Api.context with
-                        | ClaimCore.Application.Contracts.Outcome.Succeeded {
-                                                                                Requester = ClaimCore.Application.Contracts.RequesterState.Active value
-                                                                            } -> value
-                        | _ -> failtest "Settlement requires an active context"
-
-                    let operation = Guid.Parse "10000000-0000-4000-8000-000000000004"
-
-                    for answer, accepted in
-                        [ "", false; "yes", false; operation.ToString("D"), true ] do
-                        use persistent = new MemoryStream()
-                        let write, question = ShellReviewOutput.create persistent
-                        let mutable reads = 0
-
-                        let console: InteractiveConsole =
-                            {
-                                IsInteractive = true
-                                Write = write
-                                ReadLine =
-                                    fun () ->
-                                        reads <- reads + 1
-                                        let beforeConsent = text persistent
-
-                                        Expect.stringContains
-                                            beforeConsent
-                                            ("Account "
-                                             + ActorId.format context.ActorId
-                                             + " in installation "
-                                             + context.InstallationId.ToString("D")
-                                             + ".")
-                                            "Authenticated scope is visible before any answer"
-
-                                        Expect.stringContains
-                                            beforeConsent
-                                            ("Operation ID: " + operation.ToString("D"))
-                                            "Exact operation identity remains visible"
-
-                                        Expect.stringContains
-                                            beforeConsent
-                                            "permanently block its operation ID"
-                                            "The irreversible effect is visible"
-
-                                        Expect.equal
-                                            (question ())
-                                            ("Type " + operation.ToString("D") + " to confirm: ")
-                                            "Only the question enters line editing"
-
-                                        Some answer
-                            }
-
-                        Expect.equal
-                            (CliConfirmation.settlement console "en" context operation)
-                            accepted
-                            "Blank and yes cannot confirm; only the exact ID does"
-
-                        Expect.equal reads 1 "There is one input reader"
-
-                        Expect.equal
-                            (question ())
-                            ""
-                            "Scope and question never accumulate for redraw"
-
-                        Expect.equal
-                            ((text persistent).Split("Account ").Length - 1)
-                            1
-                            "Scope is emitted once")
         ]

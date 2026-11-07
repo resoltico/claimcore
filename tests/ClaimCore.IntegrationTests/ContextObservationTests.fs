@@ -60,7 +60,7 @@ let tests =
                             admin
                             (OperationInput.Authority(
                                 authorityRequest
-                                    (id number)
+                                    (id database.Fixture number)
                                     target
                                     (AuthorityAct.Register Inputs.actorProfile)
                             ))
@@ -73,7 +73,7 @@ let tests =
                     let! reply =
                         grant
                             admin
-                            (id number)
+                            (id database.Fixture number)
                             target
                             {
                                 Role = Role.CaseReader
@@ -88,7 +88,7 @@ let tests =
                     Service.execute
                         admin
                         (OperationInput.Authority(
-                            authorityRequest (id 105) disabled AuthorityAct.Disable
+                            authorityRequest (id database.Fixture 105) disabled AuthorityAct.Disable
                         ))
                         token
                     |> Async.AwaitTask
@@ -248,7 +248,7 @@ let authorityPageBasis =
                             service
                             (OperationInput.Authority(
                                 authorityRequest
-                                    (id 120)
+                                    (id database.Fixture 120)
                                     fixture.Owner
                                     (AuthorityAct.SetProfile
                                         {

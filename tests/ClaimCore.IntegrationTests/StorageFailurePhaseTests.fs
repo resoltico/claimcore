@@ -91,7 +91,7 @@ let private controls (database: PostgresFixture.Database) =
             Service.execute
                 actor
                 (Inputs.caseOperation (
-                    request number sensitive 0L (AuthoredCaseAct.Open registration)
+                    request database.Fixture number sensitive 0L (AuthoredCaseAct.Open registration)
                 ))
                 token
 

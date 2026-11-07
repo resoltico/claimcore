@@ -60,13 +60,6 @@ module internal TextReply =
             readPresenter Api.caseSummary TextContextReply.summary
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Context) ->
             readPresenter Api.context TextContextReply.context
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Observe) ->
-            presenter Api.operationObserve (fun language _ reply ->
-                TextDiagnosticReply.readLines
-                    language
-                    (TextOperationReply.receiptLines language false)
-                    reply.Outcome)
-            |> snd
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityList) ->
             readPresenter Api.authorityList TextAuthorityReply.actorPage
         | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.AuthorityGrants) ->
@@ -84,13 +77,9 @@ module internal TextReply =
             presenter Api.operationExecute (fun language request reply ->
                 TextOperationReply.executeLinesFor language request reply)
             |> snd
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Status) ->
-            presenter Api.operationStatus (fun language _ reply ->
-                TextOperationReply.statusLines language reply.Outcome)
-            |> snd
-        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.Resolve) ->
-            presenter Api.operationResolve (fun language _ reply ->
-                TextOperationReply.resolveLines language reply.Outcome)
+        | EndpointId.Actor(ActorEndpoint.Query QueryEndpoint.OperationGet) ->
+            presenter Api.operationGet (fun language _ reply ->
+                TextOperationReply.getLines language reply.Outcome)
             |> snd
         | EndpointId.Host HostEndpoint.Session ->
             readPresenter Api.session (fun language session ->
