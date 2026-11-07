@@ -171,6 +171,55 @@ let private scenario (database: PostgresFixture.Database) =
 
         let! _ = execute owner next
 
+        let! _ =
+            execute
+                owner
+                (authority
+                    19
+                    alice
+                    (AuthorityAct.SetProfile
+                        {
+                            DisplayName = "Current Alice"
+                            Contact = None
+                        }))
+
+        let! historical = Service.observe owner { OperationId = id 10 } token
+
+        match historical.Outcome with
+        | Outcome.Succeeded {
+                                Subject = ReceiptSubject.Work {
+                                                                  Snapshot = WorkDisclosure.Disclosed view
+                                                              }
+                            } ->
+            Expect.equal
+                (view.Responsible |> Option.map _.DisplayName)
+                (Some(DisplayName.Named(Inputs.name "Current Alice")))
+                "Historical work resolves the current saved name"
+        | other -> failtestf "%A" other
+
+        let reader = principal "reader"
+        let! _ = execute owner (named 20 reader "Reader")
+
+        let! _ =
+            execute
+                owner
+                (authority
+                    21
+                    reader
+                    (AuthorityAct.Grant
+                        {
+                            Role = Role.CaseReader
+                            Scope = GrantTarget.CaseReference "PG-NAMED-WORK"
+                        }))
+
+        let! limited = Service.observe (core fixture reader) { OperationId = id 10 } token
+
+        match limited.Outcome with
+        | Outcome.Succeeded {
+                                Subject = ReceiptSubject.Work { Snapshot = WorkDisclosure.Withheld }
+                            } -> ()
+        | other -> failtestf "Old work must remain withheld without full history rights: %A" other
+
         let! saved =
             execute
                 owner
