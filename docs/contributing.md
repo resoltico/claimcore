@@ -147,8 +147,8 @@ stops new leases and waits for current holders to finish provider cleanup before
 ## Transactions and durable formats
 
 [RecordFormat](../src/ClaimCore.RecordFormat/) owns durable grammar and
-[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Durable format changes require a fresh installation. Decoders accept only the current format tag. Independent permanent-limit vectors in
-[record-format-vectors.json](../tests/fixtures/record-format-vectors.json) protect retained-record decoding.
+[Versions.fs](../src/ClaimCore.RecordFormat/Versions.fs) owns format numbers. Durable format changes require a fresh installation. Decoders accept only the current format tag.
+[Ten reviewed byte examples](../tests/fixtures/durable-vectors.json) cover the current durable encodings.
 [DurableNames.fs](../src/ClaimCore.RecordFormat/DurableNames.fs) owns exhaustive literal spellings;
 [RecordLimits.fs](../src/ClaimCore.RecordFormat/RecordLimits.fs) owns the 65,536-byte request-record ceiling.
 Wire spelling and transport limits do not govern retained records. Oversized encoding is an internal fault.
@@ -230,10 +230,9 @@ translations do not establish shared ownership.
 Catalogs share one Template grammar. Structural checks cover language parity, producer arguments and every
 template before publication. Handwritten
 [template vectors](../tests/fixtures/message-template-vectors.json), wire examples, correction/transition
-matrices and CLI frames provide independent expectations. Hand-authored durable cases in
-[sources.json](../tests/fixtures/oracle/sources.json) define inputs and acceptance expectations; the
-[Python oracle](../tests/fixtures/oracle/generate_vectors.py) derives their bytes and hashes without calling
-the implementation. Keep those source cases independent of production codecs and validators.
+matrices provide independent expectations. [Durable vectors](../tests/fixtures/durable-vectors.json)
+record ten fixed byte examples with derivation notes; there is no oracle generator or update mode.
+Keep expected rule outcomes independent of production codecs and validators.
 
 ## Core presentation and copy
 

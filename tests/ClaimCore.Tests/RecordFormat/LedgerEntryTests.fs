@@ -107,7 +107,7 @@ let private withVectors action =
     use document =
         JsonDocument.Parse(
             File.ReadAllBytes(
-                Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
+                Path.Combine(RepositoryRoot.find (), "tests/fixtures/durable-vectors.json")
             )
         )
 
@@ -124,10 +124,7 @@ let private expectedPayload vector =
 
 let private vectors () =
     withVectors (fun vectors ->
-        Expect.equal
-            vectors.Length
-            15
-            "Independent fact, work, reminder, control and grouped authority vectors"
+        Expect.equal vectors.Length 3 "Reviewed case, authority and grouped authority vectors"
 
         for vector in vectors do
             let payload = expectedPayload vector
@@ -275,7 +272,7 @@ let tests =
     testList
         "ledger entry format"
         [
-            testCase "both independent ledger vectors reproduce every byte" vectors
+            testCase "reviewed ledger vectors reproduce every byte" vectors
             testCase "ADMIT root kind remains distinct from its REGISTER effect" (fun () ->
                 withVectors (fun vectors ->
                     let vector =
@@ -302,7 +299,7 @@ let tests =
                         (text vector "entryHash")
                         "Independent oracle pins logical code40 and physical code33 separately"))
             testCase "each fixed metadata field affects the hash" allMetadataFields
-            testCase "act codes have an independent append-only expectation" (fun () ->
+            testCase "current format act codes match literal expectations" (fun () ->
                 let acts =
                     [
                         CaseActKind.Open

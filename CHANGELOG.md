@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Ten fixed durable-format examples replace the oracle corpus; byte properties and the hand-authored transition matrix remain.
 - Application store contracts run against PostgreSQL; the in-memory store double is removed.
 - Contributor tests discover vocabulary from product declarations; inventory.json and CLAIMCORE_UPDATE_GOLDENS are removed.
 - Contributor verification drops performance qualification and comparison tooling; the optional CLAIMCORE_TIMING probe prints read timings without thresholds.

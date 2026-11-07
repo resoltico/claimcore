@@ -1,10 +1,6 @@
 module ClaimCore.IntegrationTests.CanonicalIdentityTests
 
-open System
-open System.IO
-open System.Text.Json
 open Expecto
-open ClaimCore.Protocol
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
@@ -13,56 +9,13 @@ open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.IntegrationTests.VerificationSupport
 
-let private vectors () =
-    JsonDocument.Parse(
-        File.ReadAllBytes(
-            Path.Combine(RepositoryRoot.find (), "tests/fixtures/record-format-vectors.json")
-        )
-    )
+let private values amount claimant =
+    Inputs.registrationWith
+        [ BusinessField.ClaimedAmount, amount; BusinessField.ClaimantName, claimant ]
+        registration
 
-let private encoded (vector: JsonElement) (side: string) =
-    vector.GetProperty(side).GetProperty("canonicalHex").GetString()
-    |> nonNull
-    |> Convert.FromHexString
-
-let private caseInput vector side =
-    RequestRecord.decode Limits.MaximumRequestBytes (encoded vector side)
-    |> Result.defaultWith (fun _ -> failtest "The independent request vector must decode")
-    |> _.Authored
-
-let private authorityInput vector side =
-    let record =
-        AuthorityRecord.decode Limits.MaximumRequestBytes (encoded vector side)
-        |> Result.defaultWith (fun _ -> failtest "The independent authority vector must decode")
-
-    // A grant effect deliberately has no principal identity. The independently authored scenario supplies its target.
-    let target =
-        PrincipalKey.human "https://issuer.example/" "canonical-target"
-        |> Result.defaultWith (string >> failtest)
-
-    let grant (value: RecordedGrant) =
-        {
-            AuthoredGrant.Role = value.Role
-            Scope =
-                match value.Scope with
-                | RecordedGrantScope.Installation -> GrantTarget.Installation
-                | RecordedGrantScope.Case(_, reference) ->
-                    GrantTarget.CaseReference(CaseReference.format reference)
-        }
-
-    let act =
-        match record.Effect with
-        | AuthorityEffect.Grant value -> AuthorityAct.Grant(grant value)
-        | AuthorityEffect.Revoke value -> AuthorityAct.Revoke(grant value)
-        | _ -> failtest "Reference-bearing grant effect required"
-
-    Authority.parse
-        {
-            OperationId = record.OperationId
-            Target = PrincipalKey.toInput target
-            Act = act
-        }
-    |> Result.defaultWith (fun _ -> failtest "Independent reference input must admit")
+let private opening number reference amount claimant =
+    request number reference 0L (AuthoredCaseAct.Open(values amount claimant))
 
 let private retainedRequest database (receipt: OperationReceipt) =
     task {
@@ -81,149 +34,148 @@ let private retainedRequest database (receipt: OperationReceipt) =
 let private casePairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        use document = vectors ()
+        let amount = opening 9300 "Canonical-amount" "10.50" "Claimant"
+        let reference = opening 9301 "Canonical-Reference" "10.50" "Claimant"
+        let differentAmount = opening 9302 "Canonical-different-amount" "10.50" "Claimant"
+        let differentName = opening 9303 "Canonical-different-name" "10.50" "Claimant"
 
         let cases =
-            document.RootElement.GetProperty("canonicalIdentity").EnumerateArray()
-            |> Seq.filter (fun value -> value.GetProperty("subject").GetString() = "CASE")
-            |> Seq.choose (fun vector ->
-                let left = caseInput vector "left"
+            [
+                true,
+                amount,
+                { amount with
+                    Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
+                }
+                true,
+                reference,
+                { reference with
+                    CaseReference = "canonical-reference"
+                }
+                false,
+                differentAmount,
+                { differentAmount with
+                    Act = AuthoredCaseAct.Open(values "11" "Claimant")
+                }
+                false,
+                differentName,
+                { differentName with
+                    Act = AuthoredCaseAct.Open(values "10.50" "Another claimant")
+                }
+            ]
 
-                match left.Act with
-                | AuthoredCaseAct.Open _ -> Some(vector, left, caseInput vector "right")
-                | _ -> None)
-            |> Seq.toList
-
-        Expect.equal cases.Length 4 "Equivalent amounts/references and distinct amounts/names"
-
-        for vector, left, right in cases do
-            let! first =
-                (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation left) (token))
-
+        for same, left, right in cases do
+            let! first = Service.execute actor (Inputs.caseOperation left) token
             let receipt = accepted first
             let! before = verified database
+            let! replay = Service.execute actor (Inputs.caseOperation right) token
 
-            let! replay =
-                (Service.execute actor (ClaimCore.TestSupport.Inputs.caseOperation right) (token))
-
-            if vector.GetProperty("same").GetBoolean() then
-                expectReceipt
-                    (replayReceipt replay)
-                    receipt
-                    "Replay follows independent canonical identity"
+            if same then
+                expectReceipt (replayReceipt replay) receipt "Equivalent amounts/references replay"
             else
                 Expect.equal
                     replay.Outcome
                     (ExecuteResult.Rejected Refusal.IdempotencyConflict)
-                    "Different identity conflicts"
+                    "Different amounts/names conflict"
 
             let! after = verified database
-            Expect.equal after before "Neither replay nor conflict appends a ledger entry"
+            Expect.equal after before "Replay and conflicts append nothing"
             let! authored = retainedRequest database receipt
 
+            let restored =
+                RequestRecord.decode LedgerPayload.MaximumBytes authored
+                |> Result.defaultWith (fun error -> failtestf "%A" error)
+
             Expect.equal
-                authored
-                (encoded vector "left")
-                "Retained requests keep authored values, including 10.50"
+                restored.Authored
+                left
+                "Retained inputs preserve the authored spelling, including 10.50"
     }
 
 let private authorityPairs (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        use document = vectors ()
+        let input = opening 9310 "Canonical-Reference" "10.50" "Claimant"
+        let! opened = Service.execute actor (Inputs.caseOperation input) token
+        let parent = accepted opened |> caseReceipt
 
-        let values =
-            document.RootElement.GetProperty("canonicalIdentity").EnumerateArray()
-            |> Seq.toList
-
-        let opening =
-            values
-            |> List.find (fun value -> value.GetProperty("name").GetString() = "equal reference")
-
-        let! opened =
-            (Service.execute
-                actor
-                (ClaimCore.TestSupport.Inputs.caseOperation (caseInput opening "left"))
-                (token))
-
-        accepted opened |> ignore
-
-        let cases =
-            values
-            |> List.filter (fun value -> value.GetProperty("subject").GetString() = "AUTHORITY")
-
-        Expect.equal cases.Length 2 "Both reference-bearing authority acts"
-        let target = (authorityInput cases.Head "left").Target
+        let target =
+            PrincipalKey.human "https://issuer.example/" "canonical-target"
+            |> Result.defaultWith (string >> failtest)
 
         let! registered =
-            (Service.execute
+            Service.execute
                 actor
                 (OperationInput.Authority(
-                    authorityRequest
-                        (id 901)
-                        target
-                        (AuthorityAct.Register ClaimCore.TestSupport.Inputs.actorProfile)
+                    authorityRequest (id 901) target (AuthorityAct.Register Inputs.actorProfile)
                 ))
-                (token))
+                token
 
         acceptedAuthority registered
 
-        for vector in cases do
-            let left =
-                authorityInput vector "left"
-                |> AuthorityRequests.toInput
-                |> Result.defaultWith (string >> failtest)
+        let grant reference =
+            {
+                Role = Role.CaseHandler
+                Scope = GrantTarget.CaseReference reference
+            }
+
+        for number, act, effect in
+            [
+                9320, AuthorityAct.Grant, AuthorityKind.Grant
+                9321, AuthorityAct.Revoke, AuthorityKind.Revoke
+            ] do
+            let left = authorityRequest (id number) target (act (grant "Canonical-Reference"))
 
             let right =
-                authorityInput vector "right"
-                |> AuthorityRequests.toInput
-                |> Result.defaultWith (string >> failtest)
+                { left with
+                    Act = act (grant "canonical-reference")
+                }
 
-            let! first = (Service.execute actor (OperationInput.Authority left) (token))
-
+            let! first = Service.execute actor (OperationInput.Authority left) token
             let receipt = accepted first
             let! before = verified database
-
-            let! replay = (Service.execute actor (OperationInput.Authority right) (token))
+            let! replay = Service.execute actor (OperationInput.Authority right) token
 
             expectReceipt
                 (replayReceipt replay)
                 receipt
-                "Grant and revoke compare folded references"
+                "Reference-bearing grant/revoke inputs compare folded case references"
 
             let! after = verified database
             Expect.equal after before "Authority replay appends nothing"
             let! authored = retainedRequest database receipt
 
+            let restored =
+                AuthorityRecord.decode LedgerPayload.MaximumBytes authored
+                |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+            let expected =
+                {
+                    Role = Role.CaseHandler
+                    Scope = RecordedGrantScope.Case(parent.CaseId, parent.Reference)
+                }
+
             Expect.equal
-                authored
-                (encoded vector "left")
-                "Authority history retains resolved creation identity and original principal spelling"
+                restored.Effect
+                (if effect = AuthorityKind.Grant then
+                     AuthorityEffect.Grant expected
+                 else
+                     AuthorityEffect.Revoke expected)
+                "History retains resolved identity and the original creation reference"
     }
 
 let private disclosureAndErasure (database: PostgresFixture.Database) =
     task {
         let! actor = caseWorker database.Fixture
-        use document = vectors ()
+        let left = opening 9340 "Canonical-private" "10.50" "Claimant"
 
-        let values =
-            document.RootElement.GetProperty("canonicalIdentity").EnumerateArray()
-            |> Seq.toList
-
-        let equal =
-            values
-            |> List.find (fun value -> value.GetProperty("name").GetString() = "equal amount")
-
-        let different =
-            values
-            |> List.find (fun value -> value.GetProperty("name").GetString() = "different amount")
-
-        let left, right = caseInput equal "left", caseInput equal "right"
+        let right =
+            { left with
+                Act = AuthoredCaseAct.Open(values "10.5" "Claimant")
+            }
 
         let unequal =
-            { caseInput different "right" with
-                OperationId = left.OperationId
-                CaseReference = left.CaseReference
+            { left with
+                Act = AuthoredCaseAct.Open(values "11" "Claimant")
             }
 
         let! first =
@@ -307,7 +259,7 @@ let tests =
         "canonical operation identity"
         [
             testCaseAsync
-                "case replay and conflicts follow the independent oracle while retaining authored payloads"
+                "equivalent amounts and references replay while different content conflicts"
                 (run casePairs)
             testCaseAsync
                 "authority grant and revoke replay with respelled case references"

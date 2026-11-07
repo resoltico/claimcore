@@ -659,3 +659,28 @@ let installationBinding =
                         | _ -> failtest "Unknown independent cursor fixture"
 
                     Expect.equal result (Error Refusal.InvalidCursor) "Installation-bound grammar"))
+
+[<Tests>]
+let durableCursor =
+    testCase "reviewed durable cursor has exact bytes and reference meaning" (fun () ->
+        use document =
+            JsonDocument.Parse(
+                File.ReadAllBytes(
+                    Path.Combine(RepositoryRoot.find (), "tests/fixtures/durable-vectors.json")
+                )
+            )
+
+        let vector = document.RootElement.GetProperty "cursor"
+        let installation = Guid.Parse "90000000-0000-4000-8000-000000000001"
+        let position = CaseListPosition.Reference "DEMO-0050"
+        let expected = text "token" vector
+
+        Expect.equal
+            (Cursors.encodeCases installation filter position)
+            expected
+            "Reviewed canonical cursor bytes"
+
+        Expect.equal
+            (Cursors.decodeCases installation filter expected)
+            (Ok position)
+            "Reviewed reference position")

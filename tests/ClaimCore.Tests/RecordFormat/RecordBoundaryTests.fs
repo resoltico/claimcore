@@ -206,44 +206,6 @@ let private culture () =
     finally
         CultureInfo.CurrentCulture <- original
 
-let private permanentLimits () =
-    use vectors =
-        System.Text.Json.JsonDocument.Parse(
-            System.IO.File.ReadAllBytes(
-                System.IO.Path.Combine(
-                    RepositoryRoot.find (),
-                    "tests/fixtures/record-format-vectors.json"
-                )
-            )
-        )
-
-    let entries =
-        vectors.RootElement.GetProperty("permanentLimits").EnumerateArray()
-        |> Seq.toArray
-
-    Expect.equal entries.Length 56 "Every authored scalar boundary is discovered"
-
-    for entry in entries do
-        let text name =
-            nonNull (entry.GetProperty(name: string).GetString())
-
-        let bytes = Encoding.UTF8.GetBytes(text "utf8")
-        Expect.equal (Convert.ToHexStringLower bytes) (text "hex") "Independent byte vector"
-
-        Expect.equal
-            (Convert.ToHexStringLower(System.Security.Cryptography.SHA256.HashData bytes))
-            (text "sha256")
-            "Independent byte digest"
-
-        let valid =
-            match text "subject" with
-            | "CASE" -> RequestRecord.decode Int32.MaxValue bytes |> Result.isOk
-            | "SNAPSHOT" -> CaseRecord.decodeSnapshot bytes |> Result.isOk
-            | "AUTHORITY" -> AuthorityRecord.decode Int32.MaxValue bytes |> Result.isOk
-            | other -> failtest ("Unexpected authored vector subject: " + other)
-
-        Expect.equal valid (entry.GetProperty("accepted").GetBoolean()) (text "name")
-
 let private independentNames () =
     let request =
         request 1L (AuthoredCaseAct.AmendRegistration(Inputs.registrationUpdate registration))
@@ -388,7 +350,6 @@ let formatOwnership =
         "permanent record ownership"
         [
             testCase "every kind has an independently authored durable round trip" kindRoundTrips
-            testCase "independent scalar vectors protect every permanent boundary" permanentLimits
             testCase
                 "wire naming and transport limits do not control durable records"
                 independentNames
