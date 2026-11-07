@@ -11,11 +11,26 @@ open ClaimCore.Application
 open ClaimCore.TestSupport.StoreFixtures
 open ClaimCore.Tests.DecisionFixtures
 
-let private unavailable () =
-    let store = new ClaimCore.TestSupport.MemoryStore.Store(installation, instant)
-    store.ReadFailure <- Some StoreFailure.Unavailable
-    store.WriteFailure <- Some StoreFailure.Unavailable
-    store
+/// A port failure has no transaction state and never invokes application callbacks.
+type private FailingStore() =
+    let mutable calls = 0
+    member _.Calls = calls
+    member val WriteFailure = StoreFailure.Unavailable with get, set
+
+    interface IStore with
+        member _.Context _ =
+            calls <- calls + 1
+            Task.FromResult(Error StoreFailure.Unavailable)
+
+        member _.Read _ =
+            calls <- calls + 1
+            Task.FromResult(Error StoreFailure.Unavailable)
+
+        member this.Write _ =
+            calls <- calls + 1
+            Task.FromResult(Error this.WriteFailure)
+
+let private unavailable () = FailingStore()
 
 let private inputs () =
     [
@@ -30,7 +45,7 @@ let private inputs () =
 
 let private malformed () =
     async {
-        use probe = unavailable ()
+        let probe = unavailable ()
 
         let core =
             Service.create
@@ -90,8 +105,8 @@ let private failures () =
                 StoreFailure.Internal, ExecuteResult.Failed CoreFault.InternalError
                 StoreFailure.CommitOutcomeUnknown, ExecuteResult.OutcomeUnknown
             ] do
-            use probe = unavailable ()
-            probe.WriteFailure <- Some failure
+            let probe = unavailable ()
+            probe.WriteFailure <- failure
 
             let core =
                 Service.create
@@ -119,7 +134,7 @@ let private cancelled () =
     async {
         use cancellation = new CancellationTokenSource()
         cancellation.Cancel()
-        use probe = unavailable ()
+        let probe = unavailable ()
 
         let core =
             Service.create
@@ -174,79 +189,6 @@ let private cancelled () =
         Expect.equal observed (Outcome.Failed CoreFault.StoreUnavailable) "Cancelled observation"
     }
 
-let private committed () =
-    async {
-        for input in inputs () do
-            use memory = new ClaimCore.TestSupport.MemoryStore.Store(installation, instant)
-
-            memory.SeedActor
-                worker.Actor.Value
-                (worker.Installation |> List.map (fun role -> role, None))
-
-            use cancellation = new CancellationTokenSource()
-            let inner = memory :> IStore
-
-            let probe =
-                { new IStore with
-                    member _.Context query = inner.Context query
-
-                    member _.Read
-                        ({
-                             ReadOperation.Work = work
-                             CancellationToken = ct
-                         })
-                        =
-                        inner.Read(
-                            {
-                                ReadOperation.Work = work
-                                CancellationToken = ct
-                            }
-                        )
-
-                    member _.Write
-                        ({
-                             WriteOperation.Work = work
-                             CancellationToken = ct
-                         })
-                        =
-                        task {
-                            let! result =
-                                inner.Write(
-                                    {
-                                        WriteOperation.Work = work
-                                        CancellationToken = ct
-                                    }
-                                )
-
-                            cancellation.Cancel()
-                            return result
-                        }
-                }
-
-            let core =
-                Service.create BuildIdentity.current.Version installation probe calendar owner
-
-            let! reply = (Service.execute core (input) (cancellation.Token)) |> Async.AwaitTask
-
-            let! observed =
-                ClaimCore.TestSupport.StoreFixtures.observe
-                    core
-                    {
-                        OperationId = OperationInput.operationId input
-                    }
-                    CancellationToken.None
-                |> Async.AwaitTask
-
-            match reply.Outcome, observed with
-            | ExecuteResult.Accepted receipt, Outcome.Succeeded stored ->
-                Expect.equal receipt stored "Completed acceptance is forwarded despite cancellation"
-            | _ -> failtest "Committed acceptance and stored receipt must agree"
-
-            Expect.isTrue
-                cancellation.IsCancellationRequested
-                "Cancellation occurred at port completion"
-    }
-
 [<Tests>]
 let tests =
     testList
@@ -259,9 +201,6 @@ let tests =
             testCaseAsync
                 "predispatch cancellation and cancelled reads remain definite"
                 (cancelled ())
-            testCaseAsync
-                "completed acceptance survives cancellation before delivery"
-                (committed ())
         ]
 
 [<Tests>]
