@@ -82,7 +82,7 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
   const user = userEvent.setup();
   const close = open();
   selectFact("claimedAmount");
-  let amount = screen.getByLabelText("Amount claimed", {
+  let amount = screen.getByLabelText("Claimed amount", {
     exact: true,
   });
   await user.clear(amount);
@@ -94,10 +94,12 @@ it("recognizes deselection as exact intent revert while preserving distinct amou
       name: "Keep editing",
     }),
   );
-  amount = screen.getByLabelText("Amount claimed", { exact: true });
+  amount = screen.getByLabelText("Claimed amount", { exact: true });
   await user.clear(amount);
   await user.type(amount, "12.34");
-  await user.click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
+  await user.click(
+    screen.getByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u }),
+  );
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   expect(close).toHaveBeenCalledOnce();
 });
@@ -149,7 +151,7 @@ it("protects exact authored edits after retaining the review", async () => {
     }),
   );
   selectFact("claimedAmount");
-  const amount = screen.getByLabelText("Amount claimed", {
+  const amount = screen.getByLabelText("Claimed amount", {
     exact: true,
   });
   await user.clear(amount);

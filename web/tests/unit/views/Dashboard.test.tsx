@@ -126,7 +126,7 @@ it("preserves explicit unavailable deep links and discloses no alternative resou
   });
   render(<Dashboard />);
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The requested resource is unavailable.",
+    "This item does not exist, or you do not have access to it.",
   );
   expect(window.location.pathname + window.location.search).toBe("/cases?view=recent");
   expect(globalThis.fetch).not.toHaveBeenCalled();

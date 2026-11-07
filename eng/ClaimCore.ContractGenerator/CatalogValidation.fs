@@ -43,6 +43,8 @@ module CatalogValidation =
             if Template.arguments templates[key] <> expected then
                 invalidOp ("Message producer arguments differ: " + key)
 
+        matches "label.operationWindow" (set [ "minutes" ])
+
         for KeyValue(key, arguments) in CliMessages.contracts do
             matches key arguments
 
@@ -152,7 +154,12 @@ module CatalogValidation =
 
                 if
                     not (key.EndsWith(".rule", System.StringComparison.Ordinal))
-                    && not (Set.isEmpty (Template.arguments templates[key]))
+                    && not (ScalarGuidance.all |> List.exists (fun guidance -> guidance.Key = key))
+                    && Template.arguments templates[key]
+                       <> (if key = "endpoint.operation.get.meaning" then
+                               set [ "window" ]
+                           else
+                               Set.empty)
                 then
                     invalidOp ("Catalog metadata must not require arguments: " + key)
 

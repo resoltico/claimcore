@@ -249,7 +249,9 @@ let tests =
 
                         Expect.stringContains
                             text
-                            (ReplyTextFormat.label language (vocabulary + "." + token + ".label"))
+                            (ReplyTextFormat.label
+                                language
+                                (PresentationKeys.code vocabulary token))
                             "Actual per-entity labels render in all supported languages")
             testCase "retired history and activity verbs and API endpoints refuse" (fun () ->
                 for verb in [ "history"; "activity" ] do

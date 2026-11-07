@@ -19,3 +19,9 @@ it("keeps human widget hints separate from precise catalog rules and formats dec
   expect(p.fieldRule("claimedAmount")).toContain("4 after it");
   expect(hint("caseReference")).not.toContain("ASCII");
 });
+
+it("keeps input-specific bounds when rules share one wording key", () => {
+  const p = createPresenter(defaults);
+  expect(p.fieldRule("claimantName")).toBe("Up to 200 characters.");
+  expect(p.fieldRule("text")).toBe("Up to 100 characters.");
+});

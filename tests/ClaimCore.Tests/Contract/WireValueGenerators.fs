@@ -296,13 +296,126 @@ let private listedFacts (facts: CaseSummaryFacts) =
     |> sequence
     |> Gen.map (Map.ofList >> fun fields -> { CaseSummaryFacts.Fields = fields })
 
+// Presentation carries structure that reflection cannot generate independently (notably table width).
+let private presentedValue =
+    gen {
+        let! text = scalarText
+        let! count = Gen.int64 (Range.constant 0L JsonValue.MaximumInteger)
+        let! calendar = date
+        let! observed = instant
+        let! financial = amount
+        let! headline = Gen.item CaseHeadline.all
+
+        let! value =
+            Gen.item
+                [
+                    PresentedValue.Money
+                        {
+                            Value = CaseFixtures.money financial "EUR"
+                            DisplayScale = 4
+                        }
+                    PresentedValue.MoneyTotal
+                        {
+                            Currency =
+                                Currency.parse "EUR" |> Result.defaultWith (string >> invalidOp)
+                            Value =
+                                DecimalTotal.parse financial
+                                |> Result.defaultWith (string >> invalidOp)
+                            DisplayScale = 4
+                        }
+                    PresentedValue.Date(CaseFixtures.date calendar)
+                    PresentedValue.Instant observed
+                    PresentedValue.Party(CaseFixtures.name "Name")
+                    PresentedValue.Actor
+                        {
+                            ActorId =
+                                CaseFixtures.actorId (
+                                    System.Guid.Parse("10000000-0000-7000-8000-000000000001")
+                                )
+                            DisplayName = DisplayName.Named(CaseFixtures.name "Name")
+                            PrincipalKind = PrincipalKind.Human
+                            Availability = ActorAvailability.Available
+                        }
+                    PresentedValue.State headline
+                    PresentedValue.Reference(CaseFixtures.reference "GENERIC-1")
+                    PresentedValue.Text text
+                    PresentedValue.Narrative text
+                    PresentedValue.Identifier text
+                    PresentedValue.Message "label.details"
+                    PresentedValue.Code("correction", "REAFFIRM")
+                    PresentedValue.Codes("act", [ "OPEN"; "REMINDER_CREATE" ])
+                    PresentedValue.Count count
+                    PresentedValue.Absent "label.notRecorded"
+                ]
+
+        return value
+    }
+
+let private presentedSection =
+    gen {
+        let! values = Gen.list (Range.constant 0 3) presentedValue
+
+        return
+            {
+                Section.TitleId = "label.details"
+                Entries =
+                    values
+                    |> List.mapi (fun index value ->
+                        {
+                            Entry.Key = "entry" + string index
+                            LabelId = "label.details"
+                            Prominence = Prominence.Primary
+                            Value = value
+                        })
+            }
+    }
+
+let private presentedView =
+    Gen.choice
+        [
+            Gen.list (Range.constant 0 3) presentedSection
+            |> Gen.map ClaimCore.Presentation.View.Record
+            gen {
+                let! width = Gen.int32 (Range.constant 0 3)
+
+                let! rows =
+                    Gen.list (Range.constant 0 3) (Gen.list (Range.singleton width) presentedValue)
+
+                let columns =
+                    [
+                        for index in 1..width ->
+                            {
+                                Column.Key = "column" + string index
+                                LabelId = "label.details"
+                                Prominence = Prominence.Primary
+                                IsMoney = false
+                            }
+                    ]
+
+                return ClaimCore.Presentation.View.Table(columns, rows)
+            }
+        ]
+
+let private presentationGenerator kind =
+    if kind = typeof<ClaimCore.Presentation.View> then
+        Some(presentedView |> Gen.map box)
+    elif kind = typeof<Section> then
+        Some(presentedSection |> Gen.map box)
+    elif kind = typeof<PresentedValue> then
+        Some(presentedValue |> Gen.map box)
+    else
+        None
+
 let rec internal fresh response source context (kind: Type) (value: obj | null) =
-    match positionValue response context kind with
+    match presentationGenerator kind with
     | Some generator -> generator
     | None ->
-        match domainValue kind with
+        match positionValue response context kind with
         | Some generator -> generator
-        | None -> freshRepresentation response source context kind value
+        | None ->
+            match domainValue kind with
+            | Some generator -> generator
+            | None -> freshRepresentation response source context kind value
 
 and private freshRepresentation response source context (kind: Type) (value: obj | null) =
     if kind = typeof<string> then
@@ -502,37 +615,7 @@ and private freshRecord response source context kind value =
         |> Gen.map (fun values -> FSharpValue.MakeRecord(kind, List.toArray values))
 
 and private freshUnion response source context kind value =
-    if kind = typeof<PresentedValue> then
-        match unbox<PresentedValue> value with
-        | PresentedValue.Code(vocabulary, _) ->
-            presentationToken vocabulary
-            |> Gen.map (fun token -> box (PresentedValue.Code(vocabulary, token)))
-        | PresentedValue.Codes(vocabulary, _) ->
-            Gen.list (Range.constant 0 11) (presentationToken vocabulary)
-            |> Gen.map (fun tokens -> box (PresentedValue.Codes(vocabulary, tokens)))
-        | _ -> freshUnionFields response source context kind value
-    else
-        freshUnionFields response source context kind value
-
-and private presentationToken vocabulary =
-    if vocabulary = "country" then
-        uppercase 2
-    elif vocabulary = "currency" then
-        uppercase 3
-    else
-        [
-            Vocabulary.name Lifecycle.vocabulary, Vocabulary.tokens Lifecycle.vocabulary
-            Vocabulary.name CaseStatus.vocabulary, Vocabulary.tokens CaseStatus.vocabulary
-            Vocabulary.name Role.vocabulary, Vocabulary.tokens Role.vocabulary
-            Vocabulary.name ScopeKind.vocabulary, Vocabulary.tokens ScopeKind.vocabulary
-            Vocabulary.name Capability.vocabulary, Vocabulary.tokens Capability.vocabulary
-            Vocabulary.name ReminderState.vocabulary, Vocabulary.tokens ReminderState.vocabulary
-            Vocabulary.name PresentedBoolean.vocabulary,
-            Vocabulary.tokens PresentedBoolean.vocabulary
-        ]
-        |> Map.ofList
-        |> Map.find vocabulary
-        |> Gen.item
+    freshUnionFields response source context kind value
 
 and private freshUnionFields response source context kind value =
     let case, fields = FSharpValue.GetUnionFields(value, kind)

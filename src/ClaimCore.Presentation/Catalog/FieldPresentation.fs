@@ -12,7 +12,12 @@ module FieldPresentation =
         Vocabulary.messageKey BusinessField.vocabulary field "hint"
 
     let ruleId field =
-        Vocabulary.messageKey BusinessField.vocabulary field "rule"
+        match (BusinessField.describe field).Kind with
+        | FieldValueKind.CalendarDate -> "scalar.calendarDate.guidance"
+        | FieldValueKind.PartyName -> "scalar.text.guidance"
+        | FieldValueKind.HandlingSummary
+        | FieldValueKind.IncidentDescription -> "scalar.narrative.guidance"
+        | _ -> Vocabulary.messageKey BusinessField.vocabulary field "rule"
 
     let descriptor field =
         match (BusinessField.describe field).Kind with

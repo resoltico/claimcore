@@ -1,107 +1,414 @@
 {
-  "cli.beforeDispatchFailure": "Negaidīta kļūme pirms nosūtīšanas.",
-  "cli.callbackAccepted": "Autentifikācijas atbilde saņemta. Atgriezieties terminālī.",
-  "cli.callbackRefused": "Autentifikācijas atbilde tika atteikta.",
-  "cli.configurationIssue": "{setting}: {issue}.",
-  "cli.delivery.unresolved": "Change unconfirmed. Retry the exact request with {retryCommand}, or check it with {statusCommand}. The check becomes final when the operation lifetime ends.",
-  "cli.failure.AUTHENTICATION_FAILED": "Autentifikācija neizdevās.",
-  "cli.failure.CANCELLED": "Pieprasījums tika atcelts.",
-  "cli.failure.CONFIGURATION_INVALID": "CLI konfigurācija nav derīga.",
-  "cli.failure.CONTRACT_MISMATCH": "Klienta un pakalpojuma līgumi nesakrīt.",
-  "cli.failure.INSTALLATION_MISMATCH": "Nav nosūtīts: šis pieprasījums pieder citai instalācijai. Atrisiniet to sākotnējā instalācijā; šai instalācijai sagatavojiet jaunu pieprasījumu.",
-  "cli.failure.INTERNAL": "Radās iekšēja klienta kļūda.",
-  "cli.failure.INVALID_FRAME": "Ievades ziņojums nav derīgs.",
-  "cli.failure.INVALID_RESPONSE": "Pakalpojuma atbilde nav derīga.",
-  "cli.failure.RECOVERY_UNAVAILABLE": "Nav nosūtīts: atkopšanas krātuve nav pieejama. Pārbaudiet privāto XDG_STATE_HOME/claimcore direktoriju (noklusēti ~/.local/state/claimcore), brīvo vietu un atļaujas un mēģiniet vēlreiz.",
-  "cli.failure.SERVICE_UNAVAILABLE": "Pakalpojums nav pieejams.",
-  "cli.family.authority": "Personas un piekļuve",
-  "cli.family.call": "Nosūtīt vienu strukturētu pieprasījumu.",
-  "cli.family.case": "Lietu fakti un lēmumi",
-  "cli.family.configure": "Saglabājiet publiskos savienojuma iestatījumus vai skatiet to avotus.",
-  "cli.family.context": "Jūsu konts un instalācija",
-  "cli.family.describe": "Aprakstīt kataloga ierakstus.",
-  "cli.family.help": "Lasīt palīdzības tēmas.",
-  "cli.family.operation": "Check unconfirmed changes",
-  "cli.family.recovery": "Atkopt lokālos mēģinājumus.",
-  "cli.family.reminder": "Nākamās darbības un atgādinājumi",
-  "cli.family.schema": "Lasīt protokola shēmas.",
-  "cli.family.session": "Apstrādāt strukturētus pieprasījumus vienā sesijā.",
-  "cli.family.shell": "Izpildiet interaktīvas komandas pēc vienas pierakstīšanās.",
-  "cli.family.version": "Parādīt produkta versiju.",
-  "cli.family.work": "Atbildība un apstrādes piezīmes",
-  "cli.help.CLI_PROTOCOL_GUIDANCE": "call: viens UTF-8 JSON dokuments; atļautas vairākas rindas; aizveriet stdin (EOF).\nsession: NDJSON, viens pilns ziņojums katrā rindā; pierakstīšanās tiek atkārtoti izmantota tikai procesā, bez saglabātiem akreditācijas datiem.\nIzsaukuma baitu skaits ≤ {maximumInvocationBytes}; pieprasījuma ievades baitu skaits ≤ {maximumRequestBytes}; atbildes baitu skaits ≤ {maximumResponseBytes}\nSaglabājiet sākotnējos pieprasījuma baitus, operationId un expectedRevision. Nezināms iznākums nav atteikums. Atkārtojiet tikai precīzu pieprasījumu.",
-  "cli.help.call": "Send one JSON frame. Limits: {maximumInvocationBytes} bytes per frame, {maximumRequestBytes} per request, {maximumResponseBytes} per response. Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.commands": "Komandām izmantojiet {command}.",
-  "cli.help.configuration": "Publiskais profils ir $XDG_CONFIG_HOME/claimcore/profile.json vai ~/.config/claimcore/profile.json, ja XDG_CONFIG_HOME nav iestatīts. configure raksta atomāri ar faila režīmu 0600 un direktorija režīmu 0700. Tiek pieņemti tikai serviceUrl, issuer, clientId, authMode, serviceTrustRootFile, oidcTrustRootFile un language. Katrā lasīšanas reizē tiek piemērota esošā privāto failu pieņemšana; kļūdaini, nezināmi un noslēpumiem līdzīgi locekļi tiek atteikti. Vides mainīgie aizstāj katru publisko vērtību atsevišķi. CLAIMCORE_OIDC_CLIENT_SECRET_FILE paliek tikai vidē; noslēpumu saturs un marķieri nekad netiek saglabāti. configure --show izvada faktiskās vērtības un to avotu environment/profile/missing, nelasot noslēpuma saturu. Noslēpuma faila iestatījumam tiek izvadīta tikai esamība un avots.\nPakalpojums: kanoniska absolūta HTTPS sakne ar ceļu tieši /. Bez lietotāja informācijas, vaicājuma vai fragmenta; ievade netiek normalizēta. Izdevējs: precīzs kanonisks HTTPS izdevējs; nodrošinātāja ceļi ir atļauti. Sintakses pieņemšana nepierāda TLS, atklāšanas vai autentifikācijas panākumus.\nCLAIMCORE_SERVICE_URL pieņemts: https://localhost/\nCLAIMCORE_SERVICE_URL atteikts: https://localhost (trūkst skaidri norādīta /)\nCLAIMCORE_SERVICE_URL atteikts: https://localhost/path (nav pakalpojuma sakne)\nCLAIMCORE_OIDC_ISSUER pieņemta sintakse: https://identity.example/realms/claimcore\nKlienta ID: nav tukšs, bez apkārtējām atstarpēm; maksimālais UTF-16 koda vienību skaits: 256\nRežīms: tieši interactive (pārlūka PKCE) vai automation (vajadzīgs noslēpuma FILE ceļš). Nekad nelieciet noslēpuma saturu argumentos, vides vērtībās vai diagnostikā.\nNoslēpuma fails: absolūts pieņemts ceļš; lasāms parasts fails ar netukšu UTF-8 saturu. Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes. Maksimālais baitu skaits: {maximumSecretBytes}\nNeobligātie uzticamības sakņu FILE ceļi: derīgas PEM CA saknes. Izlaidiet sistēmas uzticamībai. Aizstāšana tikai HTTPS lokālās cilpas vai .localhost galapunktiem; resursdatora un sertifikāta pārbaudes paliek aktīvas. Maksimālais baitu skaits: {maximumTrustRootBytes}\nPrivāta ievade: absolūts derīgs UTF-8 ceļš bez NUL; lasāms parasts fails, bez citu lietotāju piekļuves vai grupas rakstīšanas/izpildes. Grupas lasīšana ir atļauta: 0600 pietiek, var pieņemt arī 0640 un 0440. Tas nav universāls chmod labojums; Windows privāto failu izpilde nav kvalificēta. Par rokturu/saišu, īpašumtiesību un ACL robežām skatiet docs/operating.md#private-configuration.\nMISSING, INVALID un PRIVATE_INPUT_REFUSED ir atšķirīgi zināmi fakti. Šis konfigurācijas mēģinājums ir NOT_SENT; tas neatrisina agrāku mutācijas nenoteiktību starp procesiem.\nCLAIMCORE_SERVICE_URL\nCLAIMCORE_OIDC_ISSUER\nCLAIMCORE_OIDC_CLIENT_ID\nCLAIMCORE_CLI_AUTH_MODE\nCLAIMCORE_OIDC_CLIENT_SECRET_FILE\nCLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE\nCLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE\nValoda tiek izvēlēta pēc --language, tad CLAIMCORE_LANGUAGE, profila language, LC_ALL/LC_MESSAGES/LANG un visbeidzot angļu valodas. Tiek pieņemtas tikai atbalstītās saskarnes valodas. configure --show parāda faktisko valodu un tās avotu.",
-  "cli.help.configure": "Publiskais profils ir $XDG_CONFIG_HOME/claimcore/profile.json vai ~/.config/claimcore/profile.json, ja XDG_CONFIG_HOME nav iestatīts. configure raksta atomāri ar faila režīmu 0600 un direktorija režīmu 0700. Tiek pieņemti tikai serviceUrl, issuer, clientId, authMode, serviceTrustRootFile, oidcTrustRootFile un language. Katrā lasīšanas reizē tiek piemērota esošā privāto failu pieņemšana; kļūdaini, nezināmi un noslēpumiem līdzīgi locekļi tiek atteikti. Vides mainīgie aizstāj katru publisko vērtību atsevišķi. CLAIMCORE_OIDC_CLIENT_SECRET_FILE paliek tikai vidē; noslēpumu saturs un marķieri nekad netiek saglabāti. configure --show izvada faktiskās vērtības un to avotu environment/profile/missing, nelasot noslēpuma saturu. Noslēpuma faila iestatījumam tiek izvadīta tikai esamība un avots.\nValoda tiek izvēlēta pēc --language, tad CLAIMCORE_LANGUAGE, profila language, LC_ALL/LC_MESSAGES/LANG un visbeidzot angļu valodas. Tiek pieņemtas tikai atbalstītās saskarnes valodas. configure --show parāda faktisko valodu un tās avotu.",
-  "cli.help.delivery": "Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.describe": "Apraksti rāda nosaukumus, nozīmes un pieļaujamos ievades laukus. Tie apraksta statiskas iespējas, nevis pašreizējo atbilstību.",
-  "cli.help.examples": "Sagatavojiet pieprasījumus bezsaistē, pārbaudiet shēmas un nosūtiet pieņemamu ietvaru.",
-  "cli.help.globalOptions": "Globālās opcijas",
-  "cli.help.help": "Izpētiet komandu grupas vai atlasiet palīdzības tēmu.",
-  "cli.help.layout": "ClaimCore strukturēts HTTPS klients. Palīdzība un izziņa darbojas bezsaistē; pieprasījumiem vajadzīga autentifikācija.\n{body}",
-  "cli.help.liveTraversal": "Saraksta/eksporta pārlūkošana ir aktuāla: katra lapa izmanto pašreizējās tiesības un savu momentuzņēmumu. Vienlaicīgas kārtošanas/filtru izmaiņas var pārvietot, dublēt vai izlaist rindas. --all neveido vienotu eksporta momentuzņēmumu.",
-  "cli.help.recovery": "Use recovery list to show identity-only attempts for the current account and installation. recovery check ATTEMPT_ID checks the result. Interactive checks repeat until final; automation prints PENDING with finalAt. Use --format json for machine output. Restart recovery never recreates or resubmits a change.",
-  "cli.help.schema": "Apskatiet pieprasījumu un atbilžu shēmas. Shēmas izvade ir JSON.",
-  "cli.help.session": "call: viens UTF-8 JSON dokuments; atļautas vairākas rindas; aizveriet stdin (EOF).\nsession: NDJSON, viens pilns ziņojums katrā rindā; pierakstīšanās tiek atkārtoti izmantota tikai procesā, bez saglabātiem akreditācijas datiem.\nIzsaukuma baitu skaits ≤ {maximumInvocationBytes}; pieprasījuma ievades baitu skaits ≤ {maximumRequestBytes}; atbildes baitu skaits ≤ {maximumResponseBytes}\nSaglabājiet sākotnējos pieprasījuma baitus, operationId un expectedRevision. Nezināms iznākums nav atteikums. Atkārtojiet tikai precīzu pieprasījumu.",
-  "cli.help.shell": "Tikai interaktīvam terminālim; automation režīms tiek atteikts. Izmantojiet esošās darbību komandas, help un describe; iziešanai izmantojiet exit vai EOF. Pēdiņas un atpakaļsvītras grupē tekstu; čaulas metarakstzīmes paliek burtiskas. Bulttaustiņu vēsture un piekļuves un atsvaidzināšanas marķieri glabājas tikai atmiņā. Marķieri tiek atmesti pēc 15 minūtēm bez komandas un izejot. Ja atsvaidzināšana neizdodas, pierakstīšanās pārlūkā sākas no jauna. Ctrl-C atceļ komandu; atkārtots Ctrl-C tukšā uzvednē iziet. Katra komanda izvada savu izejas kodu; kods 4 saglabā precīzu atkārtošanas kadru un iznākuma noskaidrošanas komandu. Vēstures fails netiek rakstīts.",
-  "cli.help.version": "Parādīt klienta versiju.",
-  "cli.review.confirm": "Reģistrēt šīs izmaiņas? [j/N] ",
-  "cli.shell.exitCode": "Izejas kods: {code}",
-  "cli.shell.invalidLine": "Neaizvērta pēdiņa vai atpakaļsvītra rindas beigās. Komanda netika izpildīta.",
-  "cli.text.accessSources": "Tiešās lomas: {direct}; no instalācijas mantotās lomas: {inherited}; spēkā: {effective}",
-  "cli.text.authorityHistoryEmpty": "Šai atlasei nav atbilstošu pilnvaru izmaiņu.",
-  "cli.text.code": "Kods",
-  "cli.text.cursorReached": "Apturēts pie kursora {cursor}.",
-  "cli.text.editorCleanupUnavailable": "Privātā redaktora teksta dzēšana neizdevās. Pieprasījums netika sagatavots. Pirms atkārtošanas pārbaudiet lokālos pagaidu failus.",
-  "cli.text.grants": "Lomas",
-  "cli.text.next": "Nākamais",
-  "cli.text.notRecorded": "Nav reģistrēts.",
-  "cli.text.observed": "Novērots {observed} · darba datums {businessDate} ({timeZone})",
-  "cli.text.recoveryAttempt": "Mēģinājums {attemptId}: {subject} {act}; darbība {operationId}.",
-  "cli.text.recoveryCleanupUnavailable": "Rezultāts ir zināms, bet šo lokālo mēģinājumu neizdevās notīrīt. Tā identitāte ir saglabāta; varat vēlreiz pārbaudīt statusu.",
-  "cli.text.recoveryEmpty": "No unconfirmed changes for this account and installation.",
-  "cli.text.state": "Stāvoklis",
-  "cli.text.uncertain": "Iznākums nav noskaidrots. Saglabājiet stderr izvadīto precīzo atkārtošanas kadru; identiska pieprasījuma atkārtošana ir droša.",
-  "cli.text.workBusinessDate": "Darba datums",
-  "cli.text.workTimeZone": "Darba laika josla",
-  "cli.usage.configureOptions": "Configure pieņem --show atsevišķi vai dokumentētos publiskos iestatījumus. Noslēpumu opcijas tiek atteiktas.",
-  "cli.usage.describeOptions": "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei.",
-  "cli.usage.describeSelector": "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības.",
-  "cli.usage.duplicateOption": "Opcija norādīta vairākas reizes: {flag}.",
-  "cli.usage.extraOperand": "Negaidīts arguments: {operand}.",
-  "cli.usage.helpOptions": "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams.",
-  "cli.usage.helpTopic": "Nezināma palīdzības tēma.",
-  "cli.usage.invalidChoice": "Nederīga vērtība {value} opcijai {flag}; jābūt {allowed}.",
-  "cli.usage.invalidInteger": "Nederīga vesela skaitļa vērtība {value} opcijai {flag}.",
-  "cli.usage.invalidValue": "Nederīga vērtība {value} opcijai {flag}.",
-  "cli.usage.invocation": "Nederīgs {command} izsaukums. Šī komanda nepieņem opcijas vai operandus.",
-  "cli.usage.missingOperand": "Trūkst argumenta: {operand}.",
-  "cli.usage.missingOption": "Trūkst opcijas: {flag}.",
-  "cli.usage.missingValue": "Trūkst vērtības opcijai {flag}.",
-  "cli.usage.notApplicable": "{flag} nav piemērojams kopā ar {because}.",
-  "cli.usage.requestTooLarge": "Sagatavotais pieprasījums nedrīkst pārsniegt {maximumBytes} UTF-8 baitus.",
-  "cli.usage.schemaOptions": "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām.",
-  "cli.usage.schemaSelector": "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response.",
-  "cli.usage.suggestion": "Vai bija domāts {suggestion}?",
-  "cli.usage.synopsis": "Lietojums: {synopsis}",
-  "cli.usage.unknownCommand": "Nezināma komanda \"{command}\".",
-  "cli.usage.unknownOption": "Nezināma opcija: {flag}.",
-  "cli.usage.unknownOptionFor": "Nezināma opcija \"{flag}\" komandai \"{command}\".",
-  "cli.usage.versionOptions": "Version pieņem tikai --json.",
-  "cli.review.typeTarget": "Lai apstiprinātu, ievadiet {target}: ",
-  "cli.text.pageCount": "Rezultātu skaits: {count}.",
-  "cli.text.pageMore": "Ir vēl rezultāti — lietojiet --cursor {cursor}.",
-  "cli.text.pageMoreAll": "Ir vēl rezultāti — lietojiet --cursor {cursor} vai --all.",
-  "cli.next.correctInput": "Izlabojiet norādītos laukus un mēģiniet vēlreiz.",
-  "cli.next.readCurrent": "Pirms atkārtotas darbības izlasiet un pārskatiet pašreizējo ierakstu.",
-  "cli.next.retrySafe": "Atkārtojiet tieši to pašu pieprasījumu.",
-  "cli.next.investigate": "Apturiet darbību un lūdziet administratoram pārbaudīt problēmu.",
-  "cli.next.chooseReference": "Izvēlieties citu atsauci.",
-  "cli.next.askAccess": "Lūdziet īpašniekam pārbaudīt jūsu piekļuvi.",
-  "cli.next.askRoles": "Lūdziet īpašniekam piešķirt lomu: {roles}.",
-  "cli.next.reviewLatest": "Izlasiet jaunāko ierakstu un pārskatiet izmaiņas pirms atkārtotas darbības.",
-  "cli.next.reviewCommand": "Izpildiet {command} un pārskatiet izmaiņas.",
-  "cli.next.conflictMore": "Vairāk izmaiņu — izpildiet {command}.",
-  "cli.text.operationPending": "Waiting for a final answer until {finalAt}."
+  "cli.beforeDispatchFailure": {
+    "text": "Negaidīta kļūme pirms nosūtīšanas.",
+    "source": "dfb0a6878428"
+  },
+  "cli.callbackAccepted": {
+    "text": "Autentifikācijas atbilde saņemta. Atgriezieties terminālī.",
+    "source": "5ab530fe0240"
+  },
+  "cli.callbackRefused": {
+    "text": "Autentifikācijas atbilde tika atteikta.",
+    "source": "b52b0a24f7df"
+  },
+  "cli.configurationIssue": {
+    "text": "{setting}: {issue}.",
+    "source": "400400a0cc9b"
+  },
+  "cli.delivery.unresolved": {
+    "text": "Izmaiņa nav apstiprināta. Atkārtojiet tieši to pašu pieprasījumu ar {retryCommand} vai pārbaudiet ar {statusCommand}. Atbilde kļūst galīga, kad beidzas izmaiņai atvēlētais laiks.",
+    "source": "0c2a0dcdff67"
+  },
+  "cli.failure.AUTHENTICATION_FAILED": {
+    "text": "Autentifikācija neizdevās.",
+    "source": "0ddedf905779"
+  },
+  "cli.failure.CANCELLED": {
+    "text": "Pieprasījums tika atcelts.",
+    "source": "cef7146670a6"
+  },
+  "cli.failure.CONFIGURATION_INVALID": {
+    "text": "CLI konfigurācija nav derīga.",
+    "source": "cbc456852dbe"
+  },
+  "cli.failure.CONTRACT_MISMATCH": {
+    "text": "Klienta un pakalpojuma līgumi nesakrīt.",
+    "source": "2973576b3d8a"
+  },
+  "cli.failure.INSTALLATION_MISMATCH": {
+    "text": "Nav nosūtīts: šis pieprasījums pieder citai instalācijai. Atrisiniet to sākotnējā instalācijā; šai instalācijai sagatavojiet jaunu pieprasījumu.",
+    "source": "6b7f1bcd4abc"
+  },
+  "cli.failure.INTERNAL": {
+    "text": "Radās iekšēja klienta kļūda.",
+    "source": "8933e31a1425"
+  },
+  "cli.failure.INVALID_FRAME": {
+    "text": "Ievades ziņojums nav derīgs.",
+    "source": "3b27d46b26e6"
+  },
+  "cli.failure.INVALID_RESPONSE": {
+    "text": "Pakalpojuma atbilde nav derīga.",
+    "source": "459d594c59b3"
+  },
+  "cli.failure.RECOVERY_UNAVAILABLE": {
+    "text": "Nav nosūtīts: nevar saglabāt vietējo neapstiprināto izmaiņu ierakstu. Pārbaudiet brīvo vietu un piekļuves tiesības mapei ~/.local/state/claimcore un mēģiniet vēlreiz.",
+    "source": "a01d12bb0ca1"
+  },
+  "cli.failure.SERVICE_UNAVAILABLE": {
+    "text": "Pakalpojums nav pieejams.",
+    "source": "6468ac9f9bca"
+  },
+  "cli.family.authority": {
+    "text": "Personas un piekļuve",
+    "source": "1e133caaec46"
+  },
+  "cli.family.call": {
+    "text": "Nosūtīt vienu strukturētu pieprasījumu.",
+    "source": "928e1c599453"
+  },
+  "cli.family.case": {
+    "text": "Lietu fakti un lēmumi",
+    "source": "80b97b9bb858"
+  },
+  "cli.family.configure": {
+    "text": "Saglabājiet publiskos savienojuma iestatījumus vai skatiet to avotus.",
+    "source": "67ea2596497a"
+  },
+  "cli.family.context": {
+    "text": "Jūsu konts un instalācija",
+    "source": "14cc2a6da0af"
+  },
+  "cli.family.describe": {
+    "text": "Aprakstīt kataloga ierakstus.",
+    "source": "e6e26fb0ebf2"
+  },
+  "cli.family.help": {
+    "text": "Lasīt palīdzības tēmas.",
+    "source": "519291bec34c"
+  },
+  "cli.family.operation": {
+    "text": "Pārbaudīt, vai izmaiņas tika reģistrētas",
+    "source": "bcc19b5882f4"
+  },
+  "cli.family.recovery": {
+    "text": "Neapstiprinātās izmaiņas šajā datorā",
+    "source": "9c665f4a25ff"
+  },
+  "cli.family.reminder": {
+    "text": "Nākamās darbības un atgādinājumi",
+    "source": "a57f1425ef1b"
+  },
+  "cli.family.schema": {
+    "text": "Lasīt protokola shēmas.",
+    "source": "048234b2c1a5"
+  },
+  "cli.family.session": {
+    "text": "Apstrādāt strukturētus pieprasījumus vienā sesijā.",
+    "source": "539c70f5ca7f"
+  },
+  "cli.family.shell": {
+    "text": "Izpildiet interaktīvas komandas pēc vienas pierakstīšanās.",
+    "source": "943c7dc4df93"
+  },
+  "cli.family.version": {
+    "text": "Parādīt produkta versiju.",
+    "source": "1ff071b74e83"
+  },
+  "cli.family.work": {
+    "text": "Atbildība un apstrādes piezīmes",
+    "source": "0d198ac25683"
+  },
+  "cli.help.call": {
+    "text": "`call` nolasa vienu JSON pieprasījumu no standarta ievades; `session` nolasa vienu pieprasījumu katrā rindā.\nJa izmaiņas pieprasījumam nav operācijas ID, CLI to izveido un izdrukā.\nPrecīzu formātu un ierobežojumus skatiet docs/integrating.md#cli-use.",
+    "source": "f4e598c4197a"
+  },
+  "cli.help.commands": {
+    "text": "Komandām izmantojiet {command}.",
+    "source": "473e6ff5dd42"
+  },
+  "cli.help.configuration": {
+    "text": "Iestatījumi tiek saglabāti ~/.config/claimcore/profile.json. Vides mainīgie tos aizstāj.\nNoslēpumi netiek saglabāti; norādiet tos failā.\n`claimcore configure --show` rāda faktiskās vērtības un to avotus.\nSkatiet docs/integrating.md#cli-use.",
+    "source": "e26ea3ad2660"
+  },
+  "cli.help.configure": {
+    "text": "Saglabāt publiskos savienojuma un valodas iestatījumus profilā.\nAr `claimcore configure --show` pārbaudiet faktiskās vērtības un to avotus.\nNorādiet noslēpumus failos; profilā tie netiek saglabāti.\nSkatiet docs/integrating.md#cli-use.",
+    "source": "2e791425e501"
+  },
+  "cli.help.delivery": {
+    "text": "Ja piegāde nav apstiprināta, izejas kods 4 izdrukā precīzu atkārtojamo pieprasījumu.\nAtkārtota nosūtīšana nevar to reģistrēt divreiz.\nAr `claimcore recovery list` un `claimcore recovery check` pārbaudiet rezultātu; atbilde kļūst galīga {window} laikā.",
+    "source": "d798be5ae516"
+  },
+  "cli.help.describe": {
+    "text": "Apraksti rāda nosaukumus, nozīmes un pieļaujamos ievades laukus. Tie apraksta statiskas iespējas, nevis pašreizējo atbilstību.",
+    "source": "2fe161ec76da"
+  },
+  "cli.help.examples": {
+    "text": "Sagatavojiet pieprasījumus bezsaistē, pārbaudiet shēmas un nosūtiet pieņemamu ietvaru.",
+    "source": "e3260de1bc58"
+  },
+  "cli.help.globalOptions": {
+    "text": "Globālās opcijas",
+    "source": "52ab73d5c107"
+  },
+  "cli.help.help": {
+    "text": "Izpētiet komandu grupas vai atlasiet palīdzības tēmu.",
+    "source": "2ccc9deab54d"
+  },
+  "cli.help.layout": {
+    "text": "ClaimCore strukturēts HTTPS klients. Palīdzība un izziņa darbojas bezsaistē; pieprasījumiem vajadzīga autentifikācija.\n{body}",
+    "source": "7e13b1539170"
+  },
+  "cli.help.liveTraversal": {
+    "text": "Katra saraksta lapa izmanto piekļuvi un lietu informāciju nolasīšanas brīdī.\nVienlaicīgas izmaiņas var pārvietot, atkārtot vai izlaist rindas.\n--all nolasa visas lapas, taču nefiksē nemainīgu rezultātu.",
+    "source": "062e67791557"
+  },
+  "cli.help.recovery": {
+    "text": "Ar `recovery list` skatiet neapstiprinātās izmaiņas.\nAr `recovery check ATTEMPT_ID` pārbaudiet vienu izmaiņu; interaktīvā pārbaude gaida galīgu atbildi.\nMašīnlasāmai izvadei izmantojiet --format json.\nPēc restartēšanas pārbaude iepriekšējās izmaiņas nenosūta atkārtoti.",
+    "source": "bd12b72bd432"
+  },
+  "cli.help.schema": {
+    "text": "Apskatiet pieprasījumu un atbilžu shēmas. Shēmas izvade ir JSON.",
+    "source": "e211543795a2"
+  },
+  "cli.help.shell": {
+    "text": "Palaidiet komandas interaktīvi; izejiet ar `exit` vai EOF.\nPieteikšanās pilnvaras un komandu vēsture paliek atmiņā līdz iziešanai.\nCtrl-C atceļ pašreizējo komandu.\nPēdiņu un atkopšanas noteikumus skatiet docs/integrating.md#cli-use.",
+    "source": "019061e9599f"
+  },
+  "cli.help.version": {
+    "text": "Parādīt klienta versiju.",
+    "source": "03909c9f41c8"
+  },
+  "cli.review.confirm": {
+    "text": "Reģistrēt šīs izmaiņas? [j/N] ",
+    "source": "b05636c3fa99"
+  },
+  "cli.shell.exitCode": {
+    "text": "Izejas kods: {code}",
+    "source": "eadf357d1f29"
+  },
+  "cli.shell.invalidLine": {
+    "text": "Neaizvērta pēdiņa vai atpakaļsvītra rindas beigās. Komanda netika izpildīta.",
+    "source": "bf3c9a053463"
+  },
+  "cli.text.accessSources": {
+    "text": "Tiešās lomas: {direct}; no instalācijas mantotās lomas: {inherited}; spēkā: {effective}",
+    "source": "db07af8055e6"
+  },
+  "cli.text.authorityHistoryEmpty": {
+    "text": "Šai atlasei nav atbilstošu pilnvaru izmaiņu.",
+    "source": "4e76d78127bf"
+  },
+  "cli.text.code": {
+    "text": "Kods",
+    "source": "340f463033e0"
+  },
+  "cli.text.cursorReached": {
+    "text": "Apturēts pie kursora {cursor}.",
+    "source": "db9f554fac80"
+  },
+  "cli.text.editorCleanupUnavailable": {
+    "text": "Privātā redaktora teksta dzēšana neizdevās. Pieprasījums netika sagatavots. Pirms atkārtošanas pārbaudiet lokālos pagaidu failus.",
+    "source": "c1410b481e98"
+  },
+  "cli.text.grants": {
+    "text": "Lomas",
+    "source": "b3e1c95a4be3"
+  },
+  "cli.text.next": {
+    "text": "Nākamais",
+    "source": "1ff57a29d7c9"
+  },
+  "cli.text.notRecorded": {
+    "text": "Nav reģistrēts.",
+    "source": "57a5c6d1c207"
+  },
+  "cli.text.observed": {
+    "text": "Novērots {observed} · darba datums {businessDate} ({timeZone})",
+    "source": "fe17412aedcf"
+  },
+  "cli.text.recoveryAttempt": {
+    "text": "Mēģinājums {attemptId}: {subject} {act}; darbība {operationId}.",
+    "source": "a77f720ac98e"
+  },
+  "cli.text.recoveryCleanupUnavailable": {
+    "text": "Rezultāts ir zināms, bet šo lokālo mēģinājumu neizdevās notīrīt. Tā identitāte ir saglabāta; varat vēlreiz pārbaudīt statusu.",
+    "source": "1dc1592f82ad"
+  },
+  "cli.text.recoveryEmpty": {
+    "text": "Šim kontam un uzstādījumam nav neapstiprinātu izmaiņu.",
+    "source": "ab182357bd00"
+  },
+  "cli.text.state": {
+    "text": "Stāvoklis",
+    "source": "a3b50c476732"
+  },
+  "cli.text.uncertain": {
+    "text": "Iznākums nav noskaidrots. Saglabājiet stderr izvadīto precīzo atkārtošanas kadru; identiska pieprasījuma atkārtošana ir droša.",
+    "source": "841daa7d0f2d"
+  },
+  "cli.text.workBusinessDate": {
+    "text": "Darba datums",
+    "source": "46dd9ef417da"
+  },
+  "cli.text.workTimeZone": {
+    "text": "Darba laika josla",
+    "source": "72823cae55c8"
+  },
+  "cli.usage.configureOptions": {
+    "text": "Configure pieņem --show atsevišķi vai dokumentētos publiskos iestatījumus. Noslēpumu opcijas tiek atteiktas.",
+    "source": "7535de0429b0"
+  },
+  "cli.usage.describeOptions": {
+    "text": "Nederīgas describe opcijas. Izmantojiet --format text|json; --language ir pieejama tikai teksta izvadei.",
+    "source": "76f6277e89c2"
+  },
+  "cli.usage.describeSelector": {
+    "text": "Nezināma aprakstāmā darbība. Nenorādiet atlasi, lai redzētu visas darbības.",
+    "source": "d6eec2e7f602"
+  },
+  "cli.usage.duplicateOption": {
+    "text": "Opcija norādīta vairākas reizes: {flag}.",
+    "source": "90db2cf2a04e"
+  },
+  "cli.usage.extraOperand": {
+    "text": "Negaidīts arguments: {operand}.",
+    "source": "f345f28f8de2"
+  },
+  "cli.usage.helpOptions": {
+    "text": "Palīdzībai norādiet vienu tēmu un vienu atbalstītu valodu; --format nav pieejams.",
+    "source": "9c397336a244"
+  },
+  "cli.usage.helpTopic": {
+    "text": "Nezināma palīdzības tēma.",
+    "source": "8040ce20254b"
+  },
+  "cli.usage.invalidChoice": {
+    "text": "Nederīga vērtība {value} opcijai {flag}; jābūt {allowed}.",
+    "source": "c28a48b46590"
+  },
+  "cli.usage.invalidInteger": {
+    "text": "Nederīga vesela skaitļa vērtība {value} opcijai {flag}.",
+    "source": "01b4154f1e2b"
+  },
+  "cli.usage.invalidValue": {
+    "text": "Nederīga vērtība {value} opcijai {flag}.",
+    "source": "8cd141d16cdd"
+  },
+  "cli.usage.invocation": {
+    "text": "Nederīgs {command} izsaukums. Šī komanda nepieņem opcijas vai operandus.",
+    "source": "bab498e8152a"
+  },
+  "cli.usage.missingOperand": {
+    "text": "Trūkst argumenta: {operand}.",
+    "source": "c5a6b674be9d"
+  },
+  "cli.usage.missingOption": {
+    "text": "Trūkst opcijas: {flag}.",
+    "source": "a615f937ef5e"
+  },
+  "cli.usage.missingValue": {
+    "text": "Trūkst vērtības opcijai {flag}.",
+    "source": "0a7d23d89969"
+  },
+  "cli.usage.notApplicable": {
+    "text": "{flag} nav piemērojams kopā ar {because}.",
+    "source": "cbbcde131737"
+  },
+  "cli.usage.requestTooLarge": {
+    "text": "Sagatavotais pieprasījums nedrīkst pārsniegt {maximumBytes} UTF-8 baitus.",
+    "source": "4be839718a10"
+  },
+  "cli.usage.schemaOptions": {
+    "text": "Schema pieņem nosaukumu vai galapunktu un virzienu bez opcijām.",
+    "source": "a2b8d2d6f85e"
+  },
+  "cli.usage.schemaSelector": {
+    "text": "Nezināma shēmas atlase. Norādiet shēmas nosaukumu vai galapunktu un request vai response.",
+    "source": "21ee1a2ce6b3"
+  },
+  "cli.usage.suggestion": {
+    "text": "Vai bija domāts {suggestion}?",
+    "source": "7cb1f249afab"
+  },
+  "cli.usage.synopsis": {
+    "text": "Lietojums: {synopsis}",
+    "source": "6066483c0647"
+  },
+  "cli.usage.unknownCommand": {
+    "text": "Nezināma komanda \"{command}\".",
+    "source": "c9553d41670a"
+  },
+  "cli.usage.unknownOption": {
+    "text": "Nezināma opcija: {flag}.",
+    "source": "54225ccd6234"
+  },
+  "cli.usage.unknownOptionFor": {
+    "text": "Nezināma opcija \"{flag}\" komandai \"{command}\".",
+    "source": "a17c1133a2f4"
+  },
+  "cli.usage.versionOptions": {
+    "text": "Version pieņem tikai --json.",
+    "source": "bbbcd3dc2798"
+  },
+  "cli.review.typeTarget": {
+    "text": "Lai apstiprinātu, ievadiet {target}: ",
+    "source": "654ddc36082a"
+  },
+  "cli.text.pageCount": {
+    "text": "Rezultātu skaits: {count}.",
+    "source": "2cbae46b9df3"
+  },
+  "cli.text.pageMore": {
+    "text": "Ir vēl rezultāti — lietojiet --cursor {cursor}.",
+    "source": "ea9dfdf8ab7a"
+  },
+  "cli.text.pageMoreAll": {
+    "text": "Ir vēl rezultāti — lietojiet --cursor {cursor} vai --all.",
+    "source": "a339111148f7"
+  },
+  "cli.next.correctInput": {
+    "text": "Izlabojiet norādītos laukus un mēģiniet vēlreiz.",
+    "source": "2c034083a7d5"
+  },
+  "cli.next.readCurrent": {
+    "text": "Pirms atkārtotas darbības izlasiet un pārskatiet pašreizējo ierakstu.",
+    "source": "6d91ac78825c"
+  },
+  "cli.next.retrySafe": {
+    "text": "Atkārtojiet tieši to pašu pieprasījumu.",
+    "source": "6971123a315b"
+  },
+  "cli.next.investigate": {
+    "text": "Apturiet darbību un lūdziet administratoram pārbaudīt problēmu.",
+    "source": "5b8f17a04e98"
+  },
+  "cli.next.chooseReference": {
+    "text": "Izvēlieties citu atsauci.",
+    "source": "aa70b7e71443"
+  },
+  "cli.next.askAccess": {
+    "text": "Lūdziet īpašniekam pārbaudīt jūsu piekļuvi.",
+    "source": "a18257b39d89"
+  },
+  "cli.next.askRoles": {
+    "text": "Lūdziet īpašniekam piešķirt lomu: {roles}.",
+    "source": "1519ea1bb543"
+  },
+  "cli.next.reviewLatest": {
+    "text": "Izlasiet jaunāko ierakstu un pārskatiet izmaiņas pirms atkārtotas darbības.",
+    "source": "d232a68f0042"
+  },
+  "cli.next.reviewCommand": {
+    "text": "Izpildiet {command} un pārskatiet izmaiņas.",
+    "source": "cf870c2bb8f5"
+  },
+  "cli.next.conflictMore": {
+    "text": "Vairāk izmaiņu — izpildiet {command}.",
+    "source": "bc8d51b8ce45"
+  },
+  "cli.text.operationPending": {
+    "text": "Gaida galīgo atbildi līdz {finalAt}.",
+    "source": "e6e58811f6cc"
+  }
 }

@@ -338,7 +338,7 @@ it("keeps creation authoring locked during preparation, submission and an unknow
     await submitting.promise;
   });
   await waitFor(() => {
-    expect(screen.getByRole("dialog")).toHaveTextContent("unknown");
+    expect(screen.getByRole("dialog")).toHaveTextContent("could not confirm");
   });
   await freshContext(context, false);
   expect(screen.queryByRole("textbox", { name: "Claimant name" })).toBeNull();

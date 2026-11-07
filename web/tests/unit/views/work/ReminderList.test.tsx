@@ -47,7 +47,7 @@ afterEach(() => {
 
 for (const [language, labels, pending] of [
   ["en", ["Overdue", "Today", "Upcoming"], "Pending"],
-  ["lv", ["Nokavēts", "Šodien", "Gaidāms"], "Gaidošs"],
+  ["lv", ["Termiņš nokavēts", "Šodien", "Gaidāms"], "Gaidošs"],
   ["ar", ["متأخر", "اليوم", "قادم"], "معلق"],
 ] as const) {
   for (const scoped of [false, true]) {

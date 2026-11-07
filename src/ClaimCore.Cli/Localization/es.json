@@ -1,107 +1,414 @@
 {
-  "cli.beforeDispatchFailure": "Error inesperado antes del envío.",
-  "cli.callbackAccepted": "Respuesta de autenticación recibida. Vuelve al terminal.",
-  "cli.callbackRefused": "Respuesta de autenticación rechazada.",
-  "cli.configurationIssue": "{setting}: {issue}.",
-  "cli.delivery.unresolved": "Change unconfirmed. Retry the exact request with {retryCommand}, or check it with {statusCommand}. The check becomes final when the operation lifetime ends.",
-  "cli.failure.AUTHENTICATION_FAILED": "La autenticación ha fallado.",
-  "cli.failure.CANCELLED": "La solicitud se ha cancelado.",
-  "cli.failure.CONFIGURATION_INVALID": "La configuración de la CLI no es válida.",
-  "cli.failure.CONTRACT_MISMATCH": "Los contratos del cliente y del servicio no coinciden.",
-  "cli.failure.INSTALLATION_MISMATCH": "No enviada: esta solicitud pertenece a otra instalación. Resuélvela en su instalación original; prepara una solicitud nueva para esta instalación.",
-  "cli.failure.INTERNAL": "Se ha producido un error interno del cliente.",
-  "cli.failure.INVALID_FRAME": "El marco de entrada no es válido.",
-  "cli.failure.INVALID_RESPONSE": "La respuesta del servicio no es válida.",
-  "cli.failure.RECOVERY_UNAVAILABLE": "No enviada: el almacenamiento de recuperación no está disponible. Comprueba el directorio privado XDG_STATE_HOME/claimcore (por defecto ~/.local/state/claimcore), el espacio disponible y los permisos; después vuelve a intentarlo.",
-  "cli.failure.SERVICE_UNAVAILABLE": "El servicio no está disponible.",
-  "cli.family.authority": "Personas y acceso",
-  "cli.family.call": "Enviar una solicitud estructurada.",
-  "cli.family.case": "Datos del expediente y decisiones",
-  "cli.family.configure": "Guardar los ajustes públicos de conexión o mostrar sus fuentes.",
-  "cli.family.context": "Tu cuenta y tu instalación",
-  "cli.family.describe": "Describir las entradas del catálogo.",
-  "cli.family.help": "Consultar los temas de ayuda.",
-  "cli.family.operation": "Check unconfirmed changes",
-  "cli.family.recovery": "Recuperar los intentos locales.",
-  "cli.family.reminder": "Próximas acciones y seguimiento",
-  "cli.family.schema": "Consultar los esquemas del protocolo.",
-  "cli.family.session": "Procesar solicitudes estructuradas en una sesión.",
-  "cli.family.shell": "Ejecutar comandos interactivos con un solo inicio de sesión.",
-  "cli.family.version": "Mostrar la versión del producto.",
-  "cli.family.work": "Responsabilidad y notas de tramitación",
-  "cli.help.CLI_PROTOCOL_GUIDANCE": "call: un documento JSON UTF-8; se permiten varias líneas; cerrar stdin (EOF).\nsession: NDJSON, un marco completo por línea física; reutilización del inicio de sesión solo dentro del proceso, sin credenciales guardadas.\nBytes de invocación ≤ {maximumInvocationBytes}; bytes de entrada de la solicitud ≤ {maximumRequestBytes}; bytes de respuesta ≤ {maximumResponseBytes}\nConserva los bytes originales de la solicitud, operationId y expectedRevision. Un resultado desconocido no es un rechazo. Repite únicamente la solicitud exacta.",
-  "cli.help.call": "Send one JSON frame. Limits: {maximumInvocationBytes} bytes per frame, {maximumRequestBytes} per request, {maximumResponseBytes} per response. Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.commands": "Ejecuta {command} para consultar los comandos.",
-  "cli.help.configuration": "El perfil público es $XDG_CONFIG_HOME/claimcore/profile.json, o ~/.config/claimcore/profile.json si XDG_CONFIG_HOME no está definido. configure escribe de forma atómica con permisos de archivo 0600 y de directorio 0700. Solo se aceptan serviceUrl, issuer, clientId, authMode, serviceTrustRootFile, oidcTrustRootFile y language. Las reglas de admisión de archivos privados se aplican en cada lectura; se rechazan los miembros mal formados, desconocidos o que parezcan contener secretos. Las variables de entorno sustituyen cada valor público por separado. CLAIMCORE_OIDC_CLIENT_SECRET_FILE sigue siendo exclusivo del entorno; nunca se guardan secretos ni tokens. configure --show muestra los valores efectivos y su fuente (entorno/perfil/ausente) sin leer el contenido secreto. El ajuste del archivo secreto solo informa de su presencia y fuente.\nServicio: raíz HTTPS absoluta y canónica con la ruta exacta /. Sin información de usuario, consulta ni fragmento; la entrada no se normaliza. Emisor: emisor HTTPS canónico y exacto del proveedor; se permiten rutas del proveedor. La aceptación sintáctica no garantiza el éxito de TLS, el descubrimiento ni la autenticación.\nCLAIMCORE_SERVICE_URL aceptado: https://localhost/\nCLAIMCORE_SERVICE_URL rechazado: https://localhost (falta / explícito)\nCLAIMCORE_SERVICE_URL rechazado: https://localhost/path (no es una raíz de servicio)\nSintaxis aceptada de CLAIMCORE_OIDC_ISSUER: https://identity.example/realms/claimcore\nID de cliente: no vacío, sin espacios en blanco alrededor; máximo de unidades de código UTF-16: 256\nModo: literal interactive (PKCE en navegador) o automation (requiere una ruta FILE de archivo secreto). Nunca pongas el contenido secreto en argv, valores de entorno ni diagnósticos.\nArchivo secreto: ruta absoluta admitida; archivo regular legible con contenido UTF-8 no vacío. Los espacios en blanco alrededor se eliminan antes de enviar el secreto. Máximo de bytes: {maximumSecretBytes}\nRutas FILE opcionales de raíces de confianza: raíces de CA PEM válidas. Omítelas para usar la confianza del sistema. Solo se permiten sustituciones para puntos HTTPS de bucle local o .localhost; las comprobaciones del nombre de host y del certificado siguen activas. Máximo de bytes: {maximumTrustRootBytes}\nEntradas privadas: ruta absoluta UTF-8 válida sin NUL; archivo regular legible, sin acceso de otros usuarios ni escritura/ejecución del grupo. Se permite la lectura del grupo: 0600 es suficiente, 0640 y 0440 pueden admitirse. No es una reparación universal con chmod; la ejecución de archivos privados en Windows no está cualificada. Consulta docs/operating.md#private-configuration para los límites de identificadores/enlaces simbólicos, propiedad y ACL.\nMISSING, INVALID y PRIVATE_INPUT_REFUSED son hechos conocidos distintos. Este intento de configuración es NOT_SENT; no resuelve incertidumbres anteriores sobre cambios entre procesos.\nCLAIMCORE_SERVICE_URL\nCLAIMCORE_OIDC_ISSUER\nCLAIMCORE_OIDC_CLIENT_ID\nCLAIMCORE_CLI_AUTH_MODE\nCLAIMCORE_OIDC_CLIENT_SECRET_FILE\nCLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE\nCLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE\nLa selección de idioma usa --language, después CLAIMCORE_LANGUAGE, el idioma del perfil, LC_ALL/LC_MESSAGES/LANG y, por último, inglés. Solo se aceptan idiomas de interfaz compatibles. configure --show informa del idioma efectivo y su fuente.",
-  "cli.help.configure": "El perfil público es $XDG_CONFIG_HOME/claimcore/profile.json, o ~/.config/claimcore/profile.json si XDG_CONFIG_HOME no está definido. configure escribe de forma atómica con permisos de archivo 0600 y de directorio 0700. Solo se aceptan serviceUrl, issuer, clientId, authMode, serviceTrustRootFile, oidcTrustRootFile y language. Las reglas de admisión de archivos privados se aplican en cada lectura; se rechazan los miembros mal formados, desconocidos o que parezcan contener secretos. Las variables de entorno sustituyen cada valor público por separado. CLAIMCORE_OIDC_CLIENT_SECRET_FILE sigue siendo exclusivo del entorno; nunca se guardan secretos ni tokens. configure --show muestra los valores efectivos y su fuente (entorno/perfil/ausente) sin leer el contenido secreto. El ajuste del archivo secreto solo informa de su presencia y fuente.\nLa selección de idioma usa --language, después CLAIMCORE_LANGUAGE, el idioma del perfil, LC_ALL/LC_MESSAGES/LANG y, por último, inglés. Solo se aceptan idiomas de interfaz compatibles. configure --show informa del idioma efectivo y su fuente.",
-  "cli.help.delivery": "Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.describe": "Las descripciones muestran etiquetas, significados y entradas admitidas. Describen capacidades estáticas; no indican si una acción está disponible en el estado actual.",
-  "cli.help.examples": "Prepara las solicitudes sin conexión, revisa los esquemas y después envía un marco admitido.",
-  "cli.help.globalOptions": "Opciones globales",
-  "cli.help.help": "Explora las familias de comandos o elige un tema de ayuda.",
-  "cli.help.layout": "Cliente HTTPS estructurado de ClaimCore. La ayuda y la exploración funcionan sin conexión; call y session requieren autenticación.\n{body}",
-  "cli.help.liveTraversal": "La lectura de listas y exportaciones es dinámica: cada página usa la autorización actual y su propia instantánea. Los cambios simultáneos de orden o filtros pueden mover, duplicar u omitir filas. --all no crea una exportación de instantánea.",
-  "cli.help.recovery": "Use recovery list to show identity-only attempts for the current account and installation. recovery check ATTEMPT_ID checks the result. Interactive checks repeat until final; automation prints PENDING with finalAt. Use --format json for machine output. Restart recovery never recreates or resubmits a change.",
-  "cli.help.schema": "Consulta los esquemas de solicitud y respuesta. La salida del esquema es JSON.",
-  "cli.help.session": "call: un documento JSON UTF-8; se permiten varias líneas; cerrar stdin (EOF).\nsession: NDJSON, un marco completo por línea física; reutilización del inicio de sesión solo dentro del proceso, sin credenciales guardadas.\nBytes de invocación ≤ {maximumInvocationBytes}; bytes de entrada de la solicitud ≤ {maximumRequestBytes}; bytes de respuesta ≤ {maximumResponseBytes}\nConserva los bytes originales de la solicitud, operationId y expectedRevision. Un resultado desconocido no es un rechazo. Repite únicamente la solicitud exacta.",
-  "cli.help.shell": "Solo terminal interactivo; se rechaza el modo de automatización. Ejecuta los comandos existentes, help y describe; usa exit o EOF para salir. Las comillas y barras inversas agrupan texto; los metacaracteres de la shell se mantienen literales. El historial con flechas y los tokens de acceso y renovación solo existen en memoria. Los tokens se descartan tras 15 minutos sin comandos y al salir. Un fallo de renovación inicia de nuevo el acceso mediante navegador. Ctrl-C cancela el comando; un segundo Ctrl-C en un indicador vacío cierra la shell. Cada comando muestra su código de salida; exit 4 conserva el marco exacto de reintento y el comando resolve. No se escribe ningún archivo de historial.",
-  "cli.help.version": "Mostrar la versión del cliente.",
-  "cli.review.confirm": "¿Registrar estos cambios? [s/N] ",
-  "cli.shell.exitCode": "Código de salida: {code}",
-  "cli.shell.invalidLine": "Comilla sin cerrar o barra inversa al final. El comando no se ha ejecutado.",
-  "cli.text.accessSources": "Roles directos: {direct}; roles derivados de la instalación: {inherited}; efectivos: {effective}",
-  "cli.text.authorityHistoryEmpty": "No hay cambios de acceso que coincidan con esta selección.",
-  "cli.text.code": "Código",
-  "cli.text.cursorReached": "Detenido en el cursor {cursor}.",
-  "cli.text.editorCleanupUnavailable": "No se ha podido eliminar el texto privado del editor. No se ha preparado ninguna solicitud. Revisa tus archivos temporales locales antes de volver a intentarlo.",
-  "cli.text.grants": "Asignaciones",
-  "cli.text.next": "Siguiente",
-  "cli.text.notRecorded": "No registrado.",
-  "cli.text.observed": "Observado {observed} · fecha operativa {businessDate} ({timeZone})",
-  "cli.text.recoveryAttempt": "Intento {attemptId}: {subject} {act}; operación {operationId}.",
-  "cli.text.recoveryCleanupUnavailable": "Se conoce el resultado, pero no se ha podido eliminar este intento local. Se ha conservado su identidad; puedes volver a comprobar el estado.",
-  "cli.text.recoveryEmpty": "No unconfirmed changes for this account and installation.",
-  "cli.text.state": "Estado",
-  "cli.text.uncertain": "Resultado sin resolver. Conserva el marco exacto de reintento mostrado en stderr; es seguro repetir la solicitud idéntica.",
-  "cli.text.workBusinessDate": "Fecha operativa de la tramitación",
-  "cli.text.workTimeZone": "Zona horaria operativa de la tramitación",
-  "cli.usage.configureOptions": "Configure acepta --show solo o los ajustes públicos documentados. Se rechazan las opciones de secretos.",
-  "cli.usage.describeOptions": "Opciones de describe no válidas. Usa --format text|json; --language solo está disponible para salida de texto.",
-  "cli.usage.describeSelector": "Operación desconocida para describir. Omite el selector para listar las operaciones.",
-  "cli.usage.duplicateOption": "Opción proporcionada más de una vez: {flag}.",
-  "cli.usage.extraOperand": "Operando inesperado: {operand}.",
-  "cli.usage.helpOptions": "Help acepta un tema y un idioma compatible; --format no está disponible.",
-  "cli.usage.helpTopic": "Tema de ayuda desconocido.",
-  "cli.usage.invalidChoice": "Valor {value} no válido para {flag}; se esperaba {allowed}.",
-  "cli.usage.invalidInteger": "Valor entero {value} no válido para {flag}.",
-  "cli.usage.invalidValue": "Valor {value} no válido para {flag}.",
-  "cli.usage.invocation": "Invocación no válida de {command}. Este comando no acepta opciones ni operandos.",
-  "cli.usage.missingOperand": "Falta el operando: {operand}.",
-  "cli.usage.missingOption": "Falta la opción: {flag}.",
-  "cli.usage.missingValue": "Falta el valor de {flag}.",
-  "cli.usage.notApplicable": "{flag} no se aplica con {because}.",
-  "cli.usage.requestTooLarge": "La solicitud preparada no debe superar los {maximumBytes} bytes UTF-8.",
-  "cli.usage.schemaOptions": "Schema acepta un nombre o un punto de conexión y una dirección, sin opciones.",
-  "cli.usage.schemaSelector": "Selección de esquema desconocida. Usa un nombre de esquema o un punto de conexión seguido de request o response.",
-  "cli.usage.suggestion": "¿Querías decir {suggestion}?",
-  "cli.usage.synopsis": "Uso: {synopsis}",
-  "cli.usage.unknownCommand": "Comando desconocido «{command}».",
-  "cli.usage.unknownOption": "Opción desconocida: {flag}.",
-  "cli.usage.unknownOptionFor": "Opción desconocida «{flag}» para «{command}».",
-  "cli.usage.versionOptions": "Version solo acepta --json.",
-  "cli.review.typeTarget": "Escribe {target} para confirmar: ",
-  "cli.text.pageCount": "Resultados: {count}.",
-  "cli.text.pageMore": "Hay más resultados: usa --cursor {cursor}.",
-  "cli.text.pageMoreAll": "Hay más resultados: usa --cursor {cursor} o --all.",
-  "cli.next.correctInput": "Corrige las entradas indicadas y vuelve a intentarlo.",
-  "cli.next.readCurrent": "Consulta y revisa el registro actual antes de volver a intentarlo.",
-  "cli.next.retrySafe": "Repite exactamente la misma solicitud.",
-  "cli.next.investigate": "Detente y pide a un administrador que investigue la causa.",
-  "cli.next.chooseReference": "Elige otra referencia.",
-  "cli.next.askAccess": "Pide a un propietario que compruebe tu acceso.",
-  "cli.next.askRoles": "Pide a un propietario el rol {roles}.",
-  "cli.next.reviewLatest": "Consulta la última versión del registro y revisa los cambios antes de volver a intentarlo.",
-  "cli.next.reviewCommand": "Ejecuta {command} y revisa los cambios.",
-  "cli.next.conflictMore": "Más cambios: ejecuta {command}.",
-  "cli.text.operationPending": "Waiting for a final answer until {finalAt}."
+  "cli.beforeDispatchFailure": {
+    "text": "Error inesperado antes del envío.",
+    "source": "dfb0a6878428"
+  },
+  "cli.callbackAccepted": {
+    "text": "Respuesta de autenticación recibida. Vuelve al terminal.",
+    "source": "5ab530fe0240"
+  },
+  "cli.callbackRefused": {
+    "text": "Respuesta de autenticación rechazada.",
+    "source": "b52b0a24f7df"
+  },
+  "cli.configurationIssue": {
+    "text": "{setting}: {issue}.",
+    "source": "400400a0cc9b"
+  },
+  "cli.delivery.unresolved": {
+    "text": "Cambio sin confirmar. Repite la solicitud exacta con {retryCommand} o compruébala con {statusCommand}. La respuesta será definitiva al terminar el plazo del cambio.",
+    "source": "0c2a0dcdff67"
+  },
+  "cli.failure.AUTHENTICATION_FAILED": {
+    "text": "La autenticación ha fallado.",
+    "source": "0ddedf905779"
+  },
+  "cli.failure.CANCELLED": {
+    "text": "La solicitud se ha cancelado.",
+    "source": "cef7146670a6"
+  },
+  "cli.failure.CONFIGURATION_INVALID": {
+    "text": "La configuración de la CLI no es válida.",
+    "source": "cbc456852dbe"
+  },
+  "cli.failure.CONTRACT_MISMATCH": {
+    "text": "Los contratos del cliente y del servicio no coinciden.",
+    "source": "2973576b3d8a"
+  },
+  "cli.failure.INSTALLATION_MISMATCH": {
+    "text": "No enviada: esta solicitud pertenece a otra instalación. Resuélvela en su instalación original; prepara una solicitud nueva para esta instalación.",
+    "source": "6b7f1bcd4abc"
+  },
+  "cli.failure.INTERNAL": {
+    "text": "Se ha producido un error interno del cliente.",
+    "source": "8933e31a1425"
+  },
+  "cli.failure.INVALID_FRAME": {
+    "text": "El marco de entrada no es válido.",
+    "source": "3b27d46b26e6"
+  },
+  "cli.failure.INVALID_RESPONSE": {
+    "text": "La respuesta del servicio no es válida.",
+    "source": "459d594c59b3"
+  },
+  "cli.failure.RECOVERY_UNAVAILABLE": {
+    "text": "No enviado: no se puede guardar el registro local de cambios sin confirmar. Comprueba el espacio libre y los permisos de ~/.local/state/claimcore e inténtalo de nuevo.",
+    "source": "a01d12bb0ca1"
+  },
+  "cli.failure.SERVICE_UNAVAILABLE": {
+    "text": "El servicio no está disponible.",
+    "source": "6468ac9f9bca"
+  },
+  "cli.family.authority": {
+    "text": "Personas y acceso",
+    "source": "1e133caaec46"
+  },
+  "cli.family.call": {
+    "text": "Enviar una solicitud estructurada.",
+    "source": "928e1c599453"
+  },
+  "cli.family.case": {
+    "text": "Datos del expediente y decisiones",
+    "source": "80b97b9bb858"
+  },
+  "cli.family.configure": {
+    "text": "Guardar los ajustes públicos de conexión o mostrar sus fuentes.",
+    "source": "67ea2596497a"
+  },
+  "cli.family.context": {
+    "text": "Tu cuenta y tu instalación",
+    "source": "14cc2a6da0af"
+  },
+  "cli.family.describe": {
+    "text": "Describir las entradas del catálogo.",
+    "source": "e6e26fb0ebf2"
+  },
+  "cli.family.help": {
+    "text": "Consultar los temas de ayuda.",
+    "source": "519291bec34c"
+  },
+  "cli.family.operation": {
+    "text": "Comprobar si los cambios se registraron",
+    "source": "bcc19b5882f4"
+  },
+  "cli.family.recovery": {
+    "text": "Cambios sin confirmar en este ordenador",
+    "source": "9c665f4a25ff"
+  },
+  "cli.family.reminder": {
+    "text": "Próximas acciones y seguimiento",
+    "source": "a57f1425ef1b"
+  },
+  "cli.family.schema": {
+    "text": "Consultar los esquemas del protocolo.",
+    "source": "048234b2c1a5"
+  },
+  "cli.family.session": {
+    "text": "Procesar solicitudes estructuradas en una sesión.",
+    "source": "539c70f5ca7f"
+  },
+  "cli.family.shell": {
+    "text": "Ejecutar comandos interactivos con un solo inicio de sesión.",
+    "source": "943c7dc4df93"
+  },
+  "cli.family.version": {
+    "text": "Mostrar la versión del producto.",
+    "source": "1ff071b74e83"
+  },
+  "cli.family.work": {
+    "text": "Responsabilidad y notas de tramitación",
+    "source": "0d198ac25683"
+  },
+  "cli.help.call": {
+    "text": "`call` lee una solicitud JSON desde stdin; `session` lee una solicitud por línea.\nSi una solicitud de cambio no tiene ID de operación, la CLI lo crea y lo imprime.\nConsulta el formato y los límites en docs/integrating.md#cli-use.",
+    "source": "f4e598c4197a"
+  },
+  "cli.help.commands": {
+    "text": "Ejecuta {command} para consultar los comandos.",
+    "source": "473e6ff5dd42"
+  },
+  "cli.help.configuration": {
+    "text": "Los ajustes se guardan en ~/.config/claimcore/profile.json. Las variables de entorno tienen prioridad.\nLos secretos nunca se guardan; proporciónalos mediante un archivo.\n`claimcore configure --show` muestra los valores efectivos y sus fuentes.\nConsulta docs/integrating.md#cli-use.",
+    "source": "e26ea3ad2660"
+  },
+  "cli.help.configure": {
+    "text": "Guarda en el perfil los ajustes públicos de conexión e idioma.\nUsa `claimcore configure --show` para consultar valores efectivos y fuentes.\nProporciona secretos mediante archivos; nunca se guardan en el perfil.\nConsulta docs/integrating.md#cli-use.",
+    "source": "2e791425e501"
+  },
+  "cli.help.delivery": {
+    "text": "Si la entrega no se confirma, el código de salida 4 imprime la solicitud exacta para reenviarla.\nReenviarla no puede registrarla dos veces.\nUsa `claimcore recovery list` y `claimcore recovery check`; la respuesta será definitiva en {window}.",
+    "source": "d798be5ae516"
+  },
+  "cli.help.describe": {
+    "text": "Las descripciones muestran etiquetas, significados y entradas admitidas. Describen capacidades estáticas; no indican si una acción está disponible en el estado actual.",
+    "source": "2fe161ec76da"
+  },
+  "cli.help.examples": {
+    "text": "Prepara las solicitudes sin conexión, revisa los esquemas y después envía un marco admitido.",
+    "source": "e3260de1bc58"
+  },
+  "cli.help.globalOptions": {
+    "text": "Opciones globales",
+    "source": "52ab73d5c107"
+  },
+  "cli.help.help": {
+    "text": "Explora las familias de comandos o elige un tema de ayuda.",
+    "source": "2ccc9deab54d"
+  },
+  "cli.help.layout": {
+    "text": "Cliente HTTPS estructurado de ClaimCore. La ayuda y la exploración funcionan sin conexión; call y session requieren autenticación.\n{body}",
+    "source": "7e13b1539170"
+  },
+  "cli.help.liveTraversal": {
+    "text": "Cada página usa el acceso y los datos disponibles al leerla.\nLos cambios simultáneos pueden mover, repetir u omitir filas.\n--all lee todas las páginas sin congelar los resultados.",
+    "source": "062e67791557"
+  },
+  "cli.help.recovery": {
+    "text": "Consulta los cambios sin confirmar con `recovery list`.\nComprueba uno con `recovery check ATTEMPT_ID`; la comprobación interactiva espera una respuesta definitiva.\nUsa --format json para salida procesable.\nTras reiniciar, la recuperación comprueba cambios anteriores sin reenviarlos.",
+    "source": "bd12b72bd432"
+  },
+  "cli.help.schema": {
+    "text": "Consulta los esquemas de solicitud y respuesta. La salida del esquema es JSON.",
+    "source": "e211543795a2"
+  },
+  "cli.help.shell": {
+    "text": "Ejecuta comandos de forma interactiva; usa `exit` o EOF para salir.\nLos tokens de acceso y el historial permanecen en memoria hasta salir.\nCtrl-C cancela el comando actual.\nConsulta las reglas de comillas y recuperación en docs/integrating.md#cli-use.",
+    "source": "019061e9599f"
+  },
+  "cli.help.version": {
+    "text": "Mostrar la versión del cliente.",
+    "source": "03909c9f41c8"
+  },
+  "cli.review.confirm": {
+    "text": "¿Registrar estos cambios? [s/N] ",
+    "source": "b05636c3fa99"
+  },
+  "cli.shell.exitCode": {
+    "text": "Código de salida: {code}",
+    "source": "eadf357d1f29"
+  },
+  "cli.shell.invalidLine": {
+    "text": "Comilla sin cerrar o barra inversa al final. El comando no se ha ejecutado.",
+    "source": "bf3c9a053463"
+  },
+  "cli.text.accessSources": {
+    "text": "Roles directos: {direct}; roles derivados de la instalación: {inherited}; efectivos: {effective}",
+    "source": "db07af8055e6"
+  },
+  "cli.text.authorityHistoryEmpty": {
+    "text": "No hay cambios de acceso que coincidan con esta selección.",
+    "source": "4e76d78127bf"
+  },
+  "cli.text.code": {
+    "text": "Código",
+    "source": "340f463033e0"
+  },
+  "cli.text.cursorReached": {
+    "text": "Detenido en el cursor {cursor}.",
+    "source": "db9f554fac80"
+  },
+  "cli.text.editorCleanupUnavailable": {
+    "text": "No se ha podido eliminar el texto privado del editor. No se ha preparado ninguna solicitud. Revisa tus archivos temporales locales antes de volver a intentarlo.",
+    "source": "c1410b481e98"
+  },
+  "cli.text.grants": {
+    "text": "Asignaciones",
+    "source": "b3e1c95a4be3"
+  },
+  "cli.text.next": {
+    "text": "Siguiente",
+    "source": "1ff57a29d7c9"
+  },
+  "cli.text.notRecorded": {
+    "text": "No registrado.",
+    "source": "57a5c6d1c207"
+  },
+  "cli.text.observed": {
+    "text": "Observado {observed} · fecha operativa {businessDate} ({timeZone})",
+    "source": "fe17412aedcf"
+  },
+  "cli.text.recoveryAttempt": {
+    "text": "Intento {attemptId}: {subject} {act}; operación {operationId}.",
+    "source": "a77f720ac98e"
+  },
+  "cli.text.recoveryCleanupUnavailable": {
+    "text": "Se conoce el resultado, pero no se ha podido eliminar este intento local. Se ha conservado su identidad; puedes volver a comprobar el estado.",
+    "source": "1dc1592f82ad"
+  },
+  "cli.text.recoveryEmpty": {
+    "text": "No hay cambios sin confirmar para esta cuenta e instalación.",
+    "source": "ab182357bd00"
+  },
+  "cli.text.state": {
+    "text": "Estado",
+    "source": "a3b50c476732"
+  },
+  "cli.text.uncertain": {
+    "text": "Resultado sin resolver. Conserva el marco exacto de reintento mostrado en stderr; es seguro repetir la solicitud idéntica.",
+    "source": "841daa7d0f2d"
+  },
+  "cli.text.workBusinessDate": {
+    "text": "Fecha operativa de la tramitación",
+    "source": "46dd9ef417da"
+  },
+  "cli.text.workTimeZone": {
+    "text": "Zona horaria operativa de la tramitación",
+    "source": "72823cae55c8"
+  },
+  "cli.usage.configureOptions": {
+    "text": "Configure acepta --show solo o los ajustes públicos documentados. Se rechazan las opciones de secretos.",
+    "source": "7535de0429b0"
+  },
+  "cli.usage.describeOptions": {
+    "text": "Opciones de describe no válidas. Usa --format text|json; --language solo está disponible para salida de texto.",
+    "source": "76f6277e89c2"
+  },
+  "cli.usage.describeSelector": {
+    "text": "Operación desconocida para describir. Omite el selector para listar las operaciones.",
+    "source": "d6eec2e7f602"
+  },
+  "cli.usage.duplicateOption": {
+    "text": "Opción proporcionada más de una vez: {flag}.",
+    "source": "90db2cf2a04e"
+  },
+  "cli.usage.extraOperand": {
+    "text": "Operando inesperado: {operand}.",
+    "source": "f345f28f8de2"
+  },
+  "cli.usage.helpOptions": {
+    "text": "Help acepta un tema y un idioma compatible; --format no está disponible.",
+    "source": "9c397336a244"
+  },
+  "cli.usage.helpTopic": {
+    "text": "Tema de ayuda desconocido.",
+    "source": "8040ce20254b"
+  },
+  "cli.usage.invalidChoice": {
+    "text": "Valor {value} no válido para {flag}; se esperaba {allowed}.",
+    "source": "c28a48b46590"
+  },
+  "cli.usage.invalidInteger": {
+    "text": "Valor entero {value} no válido para {flag}.",
+    "source": "01b4154f1e2b"
+  },
+  "cli.usage.invalidValue": {
+    "text": "Valor {value} no válido para {flag}.",
+    "source": "8cd141d16cdd"
+  },
+  "cli.usage.invocation": {
+    "text": "Invocación no válida de {command}. Este comando no acepta opciones ni operandos.",
+    "source": "bab498e8152a"
+  },
+  "cli.usage.missingOperand": {
+    "text": "Falta el operando: {operand}.",
+    "source": "c5a6b674be9d"
+  },
+  "cli.usage.missingOption": {
+    "text": "Falta la opción: {flag}.",
+    "source": "a615f937ef5e"
+  },
+  "cli.usage.missingValue": {
+    "text": "Falta el valor de {flag}.",
+    "source": "0a7d23d89969"
+  },
+  "cli.usage.notApplicable": {
+    "text": "{flag} no se aplica con {because}.",
+    "source": "cbbcde131737"
+  },
+  "cli.usage.requestTooLarge": {
+    "text": "La solicitud preparada no debe superar los {maximumBytes} bytes UTF-8.",
+    "source": "4be839718a10"
+  },
+  "cli.usage.schemaOptions": {
+    "text": "Schema acepta un nombre o un punto de conexión y una dirección, sin opciones.",
+    "source": "a2b8d2d6f85e"
+  },
+  "cli.usage.schemaSelector": {
+    "text": "Selección de esquema desconocida. Usa un nombre de esquema o un punto de conexión seguido de request o response.",
+    "source": "21ee1a2ce6b3"
+  },
+  "cli.usage.suggestion": {
+    "text": "¿Querías decir {suggestion}?",
+    "source": "7cb1f249afab"
+  },
+  "cli.usage.synopsis": {
+    "text": "Uso: {synopsis}",
+    "source": "6066483c0647"
+  },
+  "cli.usage.unknownCommand": {
+    "text": "Comando desconocido «{command}».",
+    "source": "c9553d41670a"
+  },
+  "cli.usage.unknownOption": {
+    "text": "Opción desconocida: {flag}.",
+    "source": "54225ccd6234"
+  },
+  "cli.usage.unknownOptionFor": {
+    "text": "Opción desconocida «{flag}» para «{command}».",
+    "source": "a17c1133a2f4"
+  },
+  "cli.usage.versionOptions": {
+    "text": "Version solo acepta --json.",
+    "source": "bbbcd3dc2798"
+  },
+  "cli.review.typeTarget": {
+    "text": "Escribe {target} para confirmar: ",
+    "source": "654ddc36082a"
+  },
+  "cli.text.pageCount": {
+    "text": "Resultados: {count}.",
+    "source": "2cbae46b9df3"
+  },
+  "cli.text.pageMore": {
+    "text": "Hay más resultados: usa --cursor {cursor}.",
+    "source": "ea9dfdf8ab7a"
+  },
+  "cli.text.pageMoreAll": {
+    "text": "Hay más resultados: usa --cursor {cursor} o --all.",
+    "source": "a339111148f7"
+  },
+  "cli.next.correctInput": {
+    "text": "Corrige las entradas indicadas y vuelve a intentarlo.",
+    "source": "2c034083a7d5"
+  },
+  "cli.next.readCurrent": {
+    "text": "Consulta y revisa el registro actual antes de volver a intentarlo.",
+    "source": "6d91ac78825c"
+  },
+  "cli.next.retrySafe": {
+    "text": "Repite exactamente la misma solicitud.",
+    "source": "6971123a315b"
+  },
+  "cli.next.investigate": {
+    "text": "Detente y pide a un administrador que investigue la causa.",
+    "source": "5b8f17a04e98"
+  },
+  "cli.next.chooseReference": {
+    "text": "Elige otra referencia.",
+    "source": "aa70b7e71443"
+  },
+  "cli.next.askAccess": {
+    "text": "Pide a un propietario que compruebe tu acceso.",
+    "source": "a18257b39d89"
+  },
+  "cli.next.askRoles": {
+    "text": "Pide a un propietario el rol {roles}.",
+    "source": "1519ea1bb543"
+  },
+  "cli.next.reviewLatest": {
+    "text": "Consulta la última versión del registro y revisa los cambios antes de volver a intentarlo.",
+    "source": "d232a68f0042"
+  },
+  "cli.next.reviewCommand": {
+    "text": "Ejecuta {command} y revisa los cambios.",
+    "source": "cf870c2bb8f5"
+  },
+  "cli.next.conflictMore": {
+    "text": "Más cambios: ejecuta {command}.",
+    "source": "bc8d51b8ce45"
+  },
+  "cli.text.operationPending": {
+    "text": "Esperando una respuesta definitiva hasta {finalAt}.",
+    "source": "e6e58811f6cc"
+  }
 }

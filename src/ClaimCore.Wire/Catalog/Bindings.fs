@@ -412,7 +412,7 @@ module Bindings =
                         | _ -> None
                     Branches = input.Branches
                     LabelId = InteractionInput.messageKey annotation.Name "label"
-                    HintId = Some(InteractionInput.messageKey annotation.Name "hint")
+                    HintId = InteractionInput.hintId annotation.Name
                     RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
                     Order = 0
                     Prefill = annotation.Prefill
@@ -487,7 +487,7 @@ module Bindings =
                                 Path = row.Path
                                 Branches = row.Branches
                                 LabelId = InteractionInput.messageKey annotation.Name "label"
-                                HintId = Some(InteractionInput.messageKey annotation.Name "hint")
+                                HintId = InteractionInput.hintId annotation.Name
                                 RuleId = Some(InteractionInput.messageKey annotation.Name "rule")
                                 Order = collections.Length
                                 Required = row.Required

@@ -68,6 +68,10 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }
@@ -139,6 +143,10 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }
@@ -210,6 +218,10 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }
@@ -281,6 +293,10 @@
               "businessDate": "2026-11-04",
               "timeZone": "Etc/UTC"
             }
+          },
+          "view": {
+            "kind": "RECORD",
+            "sections": []
           }
         }
       }

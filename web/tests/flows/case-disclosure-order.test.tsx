@@ -167,7 +167,7 @@ it("keeps authorized history pagination and discards a late page on session repl
   const view = render(detail());
   await user.click(
     await screen.findByRole("button", {
-      name: "Load 50 more",
+      name: "Load more",
     }),
   );
   expect(document.querySelectorAll(".case-timeline-panel .table-view tbody > tr")).toHaveLength(1);
@@ -202,7 +202,7 @@ it("appends an authorized next history page without dropping current advice", as
   render(detail());
   await user.click(
     await screen.findByRole("button", {
-      name: "Load 50 more",
+      name: "Load more",
     }),
   );
   await waitFor(() => {
@@ -213,7 +213,7 @@ it("appends an authorized next history page without dropping current advice", as
   expect(screen.getAllByText(fields.registration.claimantName)[0]).toBeVisible();
   expect(
     screen.queryByRole("button", {
-      name: "Load 50 more",
+      name: "Load more",
     }),
   ).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(3);

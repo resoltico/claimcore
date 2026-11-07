@@ -137,7 +137,7 @@ it("shows current fields, server act labels, full expandable history and retryab
   expect(act).toHaveBeenCalledWith(expect.objectContaining(current), "CLOSE");
   const entry = (await screen.findAllByText("Timeline recorder"))[0]!.closest("tr")!;
   expect(entry).toHaveTextContent("Timeline recorder");
-  await user.click(getButton("Load 50 more"));
+  await user.click(getButton("Load more"));
   await user.click(getButton("Back to cases"));
   expect(back).toHaveBeenCalledOnce();
 });
@@ -170,7 +170,9 @@ it("reports a failed list as a request-local error without manufacturing rows", 
     ),
   );
   render(<CaseList onSelect={vi.fn()} />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Request admission is busy.");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "ClaimCore is busy. Try again in a moment.",
+  );
   expect(screen.queryByRole("listitem")).toBeNull();
 });
 it("keeps public metadata and other panes available when a case read is refused", async () => {
@@ -192,7 +194,7 @@ it("keeps public metadata and other panes available when a case read is refused"
     ),
   );
   const first = render(<Dashboard />);
-  expect(await screen.findByRole("alert")).toHaveTextContent("Authentication was refused.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("You are signed out. Sign in again.");
   expect(document.querySelector('.workspace-sidebar a[href="/people"]')).not.toHaveAttribute(
     "aria-disabled",
     "true",

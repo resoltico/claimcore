@@ -113,7 +113,7 @@ it.each(["AMEND_REGISTRATION", "CORRECT"] as const)(
       }),
     ).toBeDisabled();
     submitting.reject(new Error("Synthetic delivery loss"));
-    expect(await screen.findByRole("alert")).toHaveTextContent("unknown");
+    expect(await screen.findByRole("alert")).toHaveTextContent("could not confirm");
     expect(screen.queryByRole("textbox")).toBeNull();
   },
 );

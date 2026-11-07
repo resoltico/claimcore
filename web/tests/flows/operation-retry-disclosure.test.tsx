@@ -181,7 +181,7 @@ it.each(["access", "session"] as const)(
         name: "Recorded change",
       }),
     ).toBeVisible();
-    expect(screen.getByText("Details are not disclosed.")).toBeVisible();
+    expect(screen.getByText("You do not have access to these details.")).toBeVisible();
     expect(document.body).not.toHaveTextContent(currentCanary);
     expect(document.body).not.toHaveTextContent(reviewCanary);
     expect(screen.queryByRole("alert")).toBeNull();

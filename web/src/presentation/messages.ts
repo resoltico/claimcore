@@ -1,5 +1,7 @@
 import { messageShapes as coreShapes } from "@contracts/messages";
 import { messageShapes as chromeShapes } from "../generated/chrome-messages";
+import { exactInteger } from "./format";
+import { productMetadata } from "../protocol/productMetadata";
 import { catalogFor } from "./languageCatalog";
 import { presentationPseudolanguage } from "@contracts/client";
 import { languageDirection } from "./preferences";
@@ -67,7 +69,24 @@ export const renderCatalogKey = (
   preferences: Preferences,
   key: string,
   values: Readonly<Record<string, string | number>> = {},
-): string => renderKey(preferences, catalogMessageKey(key) ?? "notice.unknownDiagnostic", values);
+): string => {
+  const argumentsForKey =
+    key === "endpoint.operation.get.meaning" && Object.keys(values).length === 0
+      ? {
+          window: renderKey(preferences, "label.operationWindow", {
+            minutes: exactInteger(
+              String(productMetadata.catalog.limits.operationWindowMilliseconds / 60000),
+              preferences.displayLocale,
+            ),
+          }),
+        }
+      : values;
+  return renderKey(
+    preferences,
+    catalogMessageKey(key) ?? "notice.unknownDiagnostic",
+    argumentsForKey,
+  );
+};
 
 /** Retain catalog word order while rendering selected arguments as isolated DOM values. */
 export const renderIsolatedValues = <T>(

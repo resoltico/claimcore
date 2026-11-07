@@ -71,7 +71,7 @@ it("renders core empty changes without inventing a comparison", () => {
       }}
     />,
   );
-  expect(view.container).toHaveTextContent("No disclosed fields changed.");
+  expect(view.container).toHaveTextContent("No details changed.");
 });
 it("renders reminder differences and work summary independently of fact differences", () => {
   const view = render(

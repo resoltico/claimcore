@@ -91,7 +91,7 @@ it("exposes a failed snapshot as recoverable metadata rather than zero counts", 
     </WorkspaceViewsProvider>,
   );
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The local service could not be reached.",
+    "ClaimCore could not be reached. Check your connection.",
   );
   expect(screen.getByRole("status")).toHaveTextContent("unverified");
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));

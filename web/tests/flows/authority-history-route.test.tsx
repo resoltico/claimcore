@@ -103,7 +103,7 @@ it("sends the direct actor URL filter on every page without a people lookup", as
     .mockResolvedValueOnce(page([{ ...entry(first, 30), act: { kind: "ENABLE" } }]));
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
-  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more history" }));
+  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
   expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
     2,
@@ -150,7 +150,7 @@ it("cancels an obsolete actor observation and ignores a late page from an uncoop
     .mockResolvedValueOnce(page([entry(second, 29)]));
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
-  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more history" }));
+  await userEvent.setup().click(await screen.findByRole("button", { name: "Load more activity" }));
   await act(() =>
     Promise.resolve().then(() => {
       navigate(`/authority-history?actorId=${second}`);
@@ -190,12 +190,12 @@ it.each([
     vi.stubGlobal("fetch", fetch);
     showHistory();
     const user = userEvent.setup();
-    await user.click(await screen.findByRole("button", { name: "Load more history" }));
+    await user.click(await screen.findByRole("button", { name: "Load more activity" }));
     await screen.findByRole("alert");
     expect(screen.queryByText("Current target one")).toBeNull();
     expect(screen.queryByText("Current history recorder")).toBeNull();
-    expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "Reload history" }));
+    expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
+    await user.click(screen.getByRole("button", { name: "Reload activity" }));
     await screen.findByText("Current target two");
     expect(requestAt(fetch, 2)).toEqual({ limit: 50, actorId: first });
   },
@@ -210,10 +210,10 @@ it("retains only the same history page on transient delivery failure and retries
   vi.stubGlobal("fetch", fetch);
   const view = showHistory();
   const user = userEvent.setup();
-  await user.click(await screen.findByRole("button", { name: "Load more history" }));
+  await user.click(await screen.findByRole("button", { name: "Load more activity" }));
   await screen.findByRole("alert");
   expect(screen.getByText("Current target one")).toBeVisible();
-  await user.click(screen.getByRole("button", { name: "Load more history" }));
+  await user.click(screen.getByRole("button", { name: "Load more activity" }));
   await screen.findByText("Enable account");
   expect(view.container.querySelectorAll(".authority-history .table-view tbody > tr")).toHaveLength(
     2,

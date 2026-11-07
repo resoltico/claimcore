@@ -37,7 +37,7 @@ it.each([
   {
     language: "en",
     displayLocale: "en-GB",
-    label: "Provision owner",
+    label: "Set up the first owner",
 
     day: "2 Jan 2026",
     time: "00:30",
@@ -45,7 +45,7 @@ it.each([
   {
     language: "lv",
     displayLocale: "lv-LV",
-    label: "Iestatīt sākotnējo īpašnieku",
+    label: "Izveidot pirmo īpašnieku",
 
     day: "2026. gada 2. janv.",
     time: "00:30",
@@ -53,7 +53,7 @@ it.each([
   {
     language: "ar",
     displayLocale: "ar-EG",
-    label: "تعيين المالك الأول",
+    label: "إعداد المالك الأول",
 
     day: "٠٢\u200f/٠١\u200f/٢٠٢٦",
     time: "١٢:٣٠ ص",
@@ -99,7 +99,7 @@ it("keeps the selected actor filter when appending an older authority history pa
     .mockResolvedValueOnce(historyResponse([older]));
   vi.stubGlobal("fetch", fetch);
   const view = render(<AuthorityHistory actorId={context.self.actorId} />);
-  const more = await screen.findByRole("button", { name: "Load more history" });
+  const more = await screen.findByRole("button", { name: "Load more activity" });
   await userEvent.setup().click(more);
   await screen.findByText("Disable account", { exact: true });
   expect(view.container.querySelectorAll(".table-view tbody > tr")).toHaveLength(2);
@@ -109,5 +109,5 @@ it("keeps the selected actor filter when appending an older authority history pa
       body: JSON.stringify({ limit: 50, actorId: context.self.actorId, cursor: "older-page" }),
     }),
   );
-  expect(screen.queryByRole("button", { name: "Load more history" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "Load more activity" })).toBeNull();
 });

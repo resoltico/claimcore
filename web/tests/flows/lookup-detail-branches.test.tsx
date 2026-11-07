@@ -30,7 +30,9 @@ it("does not request history or acts for a missing case", async () => {
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
+  expect(
+    await screen.findByText("This item does not exist, or you do not have access to it."),
+  ).toBeVisible();
   expect(
     screen.queryByRole("heading", {
       name: "Activity",
@@ -141,7 +143,9 @@ it("shows a typed unavailable history refusal after revalidating readable curren
       name: "Activity",
     }),
   ).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This item does not exist, or you do not have access to it.",
+  );
   expect(fetch.mock.calls[2]?.[0]).toBe("/api/case.get");
 });
 it("reports absent and malformed operation observations without leaving stale receipts", async () => {
@@ -160,8 +164,12 @@ it("reports absent and malformed operation observations without leaving stale re
       name: "Look up recorded result",
     }),
   );
-  expect(await screen.findByText("The requested resource is unavailable.")).toBeVisible();
-  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(
+    await screen.findByText("This item does not exist, or you do not have access to it."),
+  ).toBeVisible();
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This item does not exist, or you do not have access to it.",
+  );
   expect(screen.queryByText(/Accepted operation/u)).toBeNull();
 });
 it("reports a found observation without a receipt as a protocol failure", async () => {
@@ -208,7 +216,7 @@ it("focuses and describes invalid operation identity then clears the stale error
   expect(input).toHaveAttribute("aria-invalid", "true");
   expect(input).toHaveAttribute("aria-describedby");
   expect(document.getElementById(input.getAttribute("aria-describedby")!)).toHaveTextContent(
-    "The input does not satisfy the endpoint contract.",
+    "The request is not in the expected format.",
   );
   await user.type(input, "a");
   expect(input).not.toHaveAttribute("aria-invalid", "true");

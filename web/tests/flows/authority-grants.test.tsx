@@ -161,7 +161,7 @@ it("keeps only the same actor's page on a transient error and follows server con
   await screen.findByRole("alert");
   expect(screen.getByText(`GRANT-${first}`)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
-  await screen.findByText("All grants returned for this review are shown.");
+  await screen.findByText("All roles are shown.");
   expect(request.mock.calls.map((call) => call[1].cursor ?? null)).toEqual([null, "next", "next"]);
 });
 
@@ -176,7 +176,7 @@ it("loads and clears the selected grant page without request-per-row reads", asy
   const actors = await screen.findAllByRole("link", { name: / ·/u });
   expect(request).not.toHaveBeenCalled();
   fireEvent.click(actors[0]!);
-  await screen.findByText("Only part of this actor’s grants is shown.");
+  await screen.findByText("Only some roles are shown.");
   expect(document.querySelectorAll('[role="dialog"] .table-view tbody > tr')).toHaveLength(1);
   expect(request).toHaveBeenCalledTimes(1);
   fireEvent.click(screen.getByRole("button", { name: "More grants" }));
@@ -433,7 +433,7 @@ it("focuses the actors heading when a page-two origin is absent from refreshed p
       <Dashboard />
     </>,
   );
-  fireEvent.click(await screen.findByRole("button", { name: "More actors" }));
+  fireEvent.click(await screen.findByRole("button", { name: "More people" }));
   await screen.findByText(`listed-${second}`);
   fireEvent.click(screen.getAllByRole("link", { name: / ·/u })[1]!);
   await screen.findByText(`GRANT-${second}`);

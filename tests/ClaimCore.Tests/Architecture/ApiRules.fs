@@ -169,14 +169,37 @@ let rule architecture name (subjects: IObjectProvider<IType>) =
 
         protocol () |> ignore
 
-        clauses.NotDependOnAny(
-            Types()
-                .That()
-                .ResideInAssembly(Assembly.Load "ClaimCore.Wire")
-                .Or()
-                .HaveFullNameMatching(pattern)
-            |> targets "durable spelling boundary"
-        )
+        clauses
+            .NotDependOnAny(
+                Types().That().ResideInAssembly(Assembly.Load "ClaimCore.Wire")
+                |> targets "wire spelling boundary"
+            )
+            .AndShould()
+            .FollowCustomCondition(
+                System.Func<IType, bool>(fun candidate ->
+                    candidate.Dependencies
+                    |> Seq.forall (fun dependency ->
+                        match dependency with
+                        | :? ArchUnitNET.Domain.Dependencies.IMemberMemberDependency as call when
+                            System.Text.RegularExpressions.Regex.IsMatch(
+                                call.TargetMember.DeclaringType.FullName,
+                                pattern
+                            )
+                            ->
+                            [
+                                "ClaimCore.Domain.LifecycleModule::after("
+                                "ClaimCore.Domain.ReminderStateModule::after("
+                                "ClaimCore.Domain.ReminderStateModule::isResultOf("
+                            ]
+                            |> List.exists (fun prefix ->
+                                call.TargetMember.FullName.Contains(
+                                    prefix,
+                                    System.StringComparison.Ordinal
+                                ))
+                        | _ -> true)),
+                "use shared transitions without importing vocabulary spellings",
+                "Durable formats may use shared transition predicates; vocabulary spellings remain record-owned"
+            )
         :> IArchRule
     | ArchitectureRule.ServiceModelWithoutProtocol ->
         clauses.NotDependOnAny(protocol ()) :> IArchRule

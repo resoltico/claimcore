@@ -1,107 +1,414 @@
 {
-  "cli.beforeDispatchFailure": "发送前发生意外错误。",
-  "cli.callbackAccepted": "已收到身份验证响应。请返回终端。",
-  "cli.callbackRefused": "身份验证响应被拒绝。",
-  "cli.configurationIssue": "{setting}：{issue}。",
-  "cli.delivery.unresolved": "Change unconfirmed. Retry the exact request with {retryCommand}, or check it with {statusCommand}. The check becomes final when the operation lifetime ends.",
-  "cli.failure.AUTHENTICATION_FAILED": "身份验证失败。",
-  "cli.failure.CANCELLED": "请求已取消。",
-  "cli.failure.CONFIGURATION_INVALID": "CLI 配置无效。",
-  "cli.failure.CONTRACT_MISMATCH": "客户端与服务端契约不匹配。",
-  "cli.failure.INSTALLATION_MISMATCH": "未发送：此请求属于另一个安装实例。请在原安装实例中确定其结果；为当前安装实例准备新请求。",
-  "cli.failure.INTERNAL": "客户端发生内部错误。",
-  "cli.failure.INVALID_FRAME": "输入帧无效。",
-  "cli.failure.INVALID_RESPONSE": "服务响应无效。",
-  "cli.failure.RECOVERY_UNAVAILABLE": "未发送：恢复存储不可用。请检查私有目录 XDG_STATE_HOME/claimcore（默认为 ~/.local/state/claimcore）、可用空间和权限，然后重试。",
-  "cli.failure.SERVICE_UNAVAILABLE": "服务不可用。",
-  "cli.family.authority": "人员与访问权限",
-  "cli.family.call": "发送一个结构化请求。",
-  "cli.family.case": "档案资料与决定",
-  "cli.family.configure": "保存公开的连接设置或显示其来源。",
-  "cli.family.context": "您的账户与安装实例",
-  "cli.family.describe": "描述目录条目。",
-  "cli.family.help": "查阅帮助主题。",
-  "cli.family.operation": "Check unconfirmed changes",
-  "cli.family.recovery": "恢复本地尝试。",
-  "cli.family.reminder": "后续事项与跟进",
-  "cli.family.schema": "查阅协议结构定义。",
-  "cli.family.session": "在同一会话中处理结构化请求。",
-  "cli.family.shell": "登录一次后运行交互式命令。",
-  "cli.family.version": "显示产品版本。",
-  "cli.family.work": "责任分配与处理备注",
-  "cli.help.CLI_PROTOCOL_GUIDANCE": "call：一个 UTF-8 JSON 文档，可跨多行；完成后关闭标准输入（EOF）。\nsession：NDJSON，每个物理行一个完整帧；仅在当前进程中复用登录，不保存凭据。\n调用字节数 ≤ {maximumInvocationBytes}；请求输入字节数 ≤ {maximumRequestBytes}；响应字节数 ≤ {maximumResponseBytes}\n请保留原始请求字节、operationId 和 expectedRevision。结果未知不表示被拒绝。只能原样重试请求。",
-  "cli.help.call": "Send one JSON frame. Limits: {maximumInvocationBytes} bytes per frame, {maximumRequestBytes} per request, {maximumResponseBytes} per response. Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.commands": "运行 {command} 查看命令。",
-  "cli.help.configuration": "公开配置文件为 $XDG_CONFIG_HOME/claimcore/profile.json；未设置 XDG_CONFIG_HOME 时为 ~/.config/claimcore/profile.json。configure 以原子方式写入，文件权限为 0600，目录权限为 0700。只接受 serviceUrl、issuer、clientId、authMode、serviceTrustRootFile、oidcTrustRootFile 和 language。每次读取都会执行现有的私有文件准入检查；格式错误、未知或疑似包含机密的成员均会被拒绝。环境变量分别覆盖各公开设置。CLAIMCORE_OIDC_CLIENT_SECRET_FILE 只能通过环境变量指定；绝不保存机密内容和令牌。configure --show 显示生效值及其环境变量、配置文件或缺失来源，不读取机密内容。机密文件设置只显示是否存在及来源。\n服务：规范的绝对 HTTPS 根地址，路径必须恰为 /。不得包含用户信息、查询参数或片段；不会对输入进行规范化。签发方：提供方准确、规范的 HTTPS 签发方地址，允许提供方路径。通过语法检查不代表 TLS、发现或身份验证成功。\nCLAIMCORE_SERVICE_URL 接受：https://localhost/\nCLAIMCORE_SERVICE_URL 拒绝：https://localhost（缺少显式 /）\nCLAIMCORE_SERVICE_URL 拒绝：https://localhost/path（不是服务根地址）\nCLAIMCORE_OIDC_ISSUER 接受的语法：https://identity.example/realms/claimcore\n客户端 ID：非空白，无开头或结尾空白；最多 256 个 UTF-16 代码单元\n模式：字面值 interactive（浏览器 PKCE）或 automation（需要机密 FILE 路径）。绝不可将机密内容放入 argv、环境变量值或诊断信息。\n机密文件：通过准入检查的绝对路径；可读的普通文件，包含非空白 UTF-8 内容。发送机密前会去掉首尾空白。最大字节数：{maximumSecretBytes}\n可选的信任根 FILE 路径：有效的 PEM CA 根证书。省略则使用系统信任。只允许为 HTTPS 回环或 .localhost 端点覆盖；主机名和证书检查仍有效。最大字节数：{maximumTrustRootBytes}\n私有输入：有效的绝对 UTF-8 路径，不含 NUL；可读的普通文件，不允许其他用户访问，也不允许组写入或执行。允许组读取：0600 足够，0640 和 0440 也可能通过检查。这不是通用的 chmod 修复方法；Windows 私有文件运行环境尚未经验证。句柄、符号链接、所有权和 ACL 限制见 docs/operating.md#private-configuration。\nMISSING、INVALID 和 PRIVATE_INPUT_REFUSED 表示不同的已知情况。此次配置尝试为 NOT_SENT；它不能消除先前跨进程写入的不确定性。\nCLAIMCORE_SERVICE_URL\nCLAIMCORE_OIDC_ISSUER\nCLAIMCORE_OIDC_CLIENT_ID\nCLAIMCORE_CLI_AUTH_MODE\nCLAIMCORE_OIDC_CLIENT_SECRET_FILE\nCLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE\nCLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE\n语言按以下优先级选择：--language、CLAIMCORE_LANGUAGE、配置文件的 language、LC_ALL/LC_MESSAGES/LANG，最后为英语。只接受支持的界面语言。configure --show 显示生效语言及其来源。",
-  "cli.help.configure": "公开配置文件为 $XDG_CONFIG_HOME/claimcore/profile.json；未设置 XDG_CONFIG_HOME 时为 ~/.config/claimcore/profile.json。configure 以原子方式写入，文件权限为 0600，目录权限为 0700。只接受 serviceUrl、issuer、clientId、authMode、serviceTrustRootFile、oidcTrustRootFile 和 language。每次读取都会执行现有的私有文件准入检查；格式错误、未知或疑似包含机密的成员均会被拒绝。环境变量分别覆盖各公开设置。CLAIMCORE_OIDC_CLIENT_SECRET_FILE 只能通过环境变量指定；绝不保存机密内容和令牌。configure --show 显示生效值及其环境变量、配置文件或缺失来源，不读取机密内容。机密文件设置只显示是否存在及来源。\n语言按以下优先级选择：--language、CLAIMCORE_LANGUAGE、配置文件的 language、LC_ALL/LC_MESSAGES/LANG，最后为英语。只接受支持的界面语言。configure --show 显示生效语言及其来源。",
-  "cli.help.delivery": "Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.describe": "描述包含标签、含义和允许的输入。它们描述静态能力，绝不表示当前适用资格。",
-  "cli.help.examples": "离线准备请求，检查结构定义，然后发送通过准入检查的帧。",
-  "cli.help.globalOptions": "全局选项",
-  "cli.help.help": "浏览命令组或选择帮助主题。",
-  "cli.help.layout": "ClaimCore 结构化 HTTPS 客户端。帮助和命令发现支持离线使用；call 和 session 需要身份验证。\n{body}",
-  "cli.help.liveTraversal": "列表或导出遍历是实时的：每页都使用当前授权及其自身的数据快照。并发的排序或筛选更改可能移动、重复或遗漏行。--all 不会创建快照导出。",
-  "cli.help.recovery": "Use recovery list to show identity-only attempts for the current account and installation. recovery check ATTEMPT_ID checks the result. Interactive checks repeat until final; automation prints PENDING with finalAt. Use --format json for machine output. Restart recovery never recreates or resubmits a change.",
-  "cli.help.schema": "检查请求与响应的结构定义。结构定义以 JSON 输出。",
-  "cli.help.session": "call：一个 UTF-8 JSON 文档，可跨多行；完成后关闭标准输入（EOF）。\nsession：NDJSON，每个物理行一个完整帧；仅在当前进程中复用登录，不保存凭据。\n调用字节数 ≤ {maximumInvocationBytes}；请求输入字节数 ≤ {maximumRequestBytes}；响应字节数 ≤ {maximumResponseBytes}\n请保留原始请求字节、operationId 和 expectedRevision。结果未知不表示被拒绝。只能原样重试请求。",
-  "cli.help.shell": "仅限交互式终端；拒绝自动化模式。运行现有子命令、help 和 describe；使用 exit 或 EOF 退出。引号和反斜杠用于组合文本；shell 元字符保持字面含义。方向键历史记录及访问令牌、刷新令牌仅存于内存。15 分钟无命令或退出时会丢弃令牌。刷新失败时会重新启动浏览器登录。Ctrl-C 取消命令；在空提示符处再次按 Ctrl-C 会退出。每个命令均打印退出码；退出码 4 会保留原样重试帧和结果处理命令。不写入历史文件。",
-  "cli.help.version": "显示客户端版本。",
-  "cli.review.confirm": "记录这些更改吗？[是/否，默认否] ",
-  "cli.shell.exitCode": "退出码：{code}",
-  "cli.shell.invalidLine": "引号未闭合或末尾有反斜杠。命令未运行。",
-  "cli.text.accessSources": "直接角色：{direct}；来自安装实例的角色：{inherited}；生效角色：{effective}",
-  "cli.text.authorityHistoryEmpty": "没有符合此选择条件的权限更改。",
-  "cli.text.code": "代码",
-  "cli.text.cursorReached": "已在游标 {cursor} 处停止。",
-  "cli.text.editorCleanupUnavailable": "清理私有编辑器文本失败。未准备任何请求。重试前请检查本地临时文件。",
-  "cli.text.grants": "角色授权",
-  "cli.text.next": "下一步",
-  "cli.text.notRecorded": "未记录。",
-  "cli.text.observed": "观察时间 {observed} · 业务日期 {businessDate}（{timeZone}）",
-  "cli.text.recoveryAttempt": "尝试 {attemptId}：{subject} {act}；操作 {operationId}。",
-  "cli.text.recoveryCleanupUnavailable": "结果已知，但无法清除此本地尝试。其标识信息已保留；您可以再次查询状态。",
-  "cli.text.recoveryEmpty": "No unconfirmed changes for this account and installation.",
-  "cli.text.state": "状态",
-  "cli.text.uncertain": "结果尚未确定。请保留标准错误输出中的原样重试帧；原样重试同一请求是安全的。",
-  "cli.text.workBusinessDate": "工作业务日期",
-  "cli.text.workTimeZone": "工作业务时区",
-  "cli.usage.configureOptions": "configure 只接受单独使用 --show，或文档列出的公开设置。机密选项会被拒绝。",
-  "cli.usage.describeOptions": "describe 选项无效。请使用 --format text|json；--language 仅适用于文本输出。",
-  "cli.usage.describeSelector": "要描述的操作未知。省略选择项可列出操作。",
-  "cli.usage.duplicateOption": "重复提供选项：{flag}。",
-  "cli.usage.extraOperand": "意外的位置参数：{operand}。",
-  "cli.usage.helpOptions": "help 接受一个主题和一种支持的语言；不支持 --format。",
-  "cli.usage.helpTopic": "未知的帮助主题。",
-  "cli.usage.invalidChoice": "{flag} 的值 {value} 无效；应为 {allowed}。",
-  "cli.usage.invalidInteger": "{flag} 的整数值 {value} 无效。",
-  "cli.usage.invalidValue": "{flag} 的值 {value} 无效。",
-  "cli.usage.invocation": "{command} 调用无效。此命令不接受任何选项或位置参数。",
-  "cli.usage.missingOperand": "缺少位置参数：{operand}。",
-  "cli.usage.missingOption": "缺少选项：{flag}。",
-  "cli.usage.missingValue": "{flag} 缺少值。",
-  "cli.usage.notApplicable": "{flag} 不适用于 {because}。",
-  "cli.usage.requestTooLarge": "准备好的请求不得超过 {maximumBytes} 个 UTF-8 字节。",
-  "cli.usage.schemaOptions": "schema 接受名称，或端点和方向，不接受选项。",
-  "cli.usage.schemaSelector": "未知的结构定义选择。请使用结构定义名称，或端点后跟 request 或 response。",
-  "cli.usage.suggestion": "您是否想输入 {suggestion}？",
-  "cli.usage.synopsis": "用法：{synopsis}",
-  "cli.usage.unknownCommand": "未知命令“{command}”。",
-  "cli.usage.unknownOption": "未知选项：{flag}。",
-  "cli.usage.unknownOptionFor": "“{command}”的未知选项“{flag}”。",
-  "cli.usage.versionOptions": "version 只接受 --json。",
-  "cli.review.typeTarget": "输入 {target} 以确认： ",
-  "cli.text.pageCount": "结果数：{count}。",
-  "cli.text.pageMore": "还有更多结果；请使用 --cursor {cursor}。",
-  "cli.text.pageMoreAll": "还有更多结果；请使用 --cursor {cursor} 或 --all。",
-  "cli.next.correctInput": "更正所列输入问题后重试。",
-  "cli.next.readCurrent": "重试前请查阅并审阅当前记录。",
-  "cli.next.retrySafe": "请原样重试同一请求。",
-  "cli.next.investigate": "请停止操作，并联系管理员调查。",
-  "cli.next.chooseReference": "请选择另一个编号。",
-  "cli.next.askAccess": "请联系所有者检查您的访问权限。",
-  "cli.next.askRoles": "请联系所有者授予 {roles} 角色。",
-  "cli.next.reviewLatest": "请先查阅最新记录并审阅更改，再重试。",
-  "cli.next.reviewCommand": "请运行 {command} 并审阅更改。",
-  "cli.next.conflictMore": "还有更多更改；请运行 {command}。",
-  "cli.text.operationPending": "Waiting for a final answer until {finalAt}."
+  "cli.beforeDispatchFailure": {
+    "text": "发送前发生意外错误。",
+    "source": "dfb0a6878428"
+  },
+  "cli.callbackAccepted": {
+    "text": "已收到身份验证响应。请返回终端。",
+    "source": "5ab530fe0240"
+  },
+  "cli.callbackRefused": {
+    "text": "身份验证响应被拒绝。",
+    "source": "b52b0a24f7df"
+  },
+  "cli.configurationIssue": {
+    "text": "{setting}：{issue}。",
+    "source": "400400a0cc9b"
+  },
+  "cli.delivery.unresolved": {
+    "text": "更改尚未确认。请使用 {retryCommand} 重发完全相同的请求，或使用 {statusCommand} 检查。更改的允许时间结束后，回答将确定。",
+    "source": "0c2a0dcdff67"
+  },
+  "cli.failure.AUTHENTICATION_FAILED": {
+    "text": "身份验证失败。",
+    "source": "0ddedf905779"
+  },
+  "cli.failure.CANCELLED": {
+    "text": "请求已取消。",
+    "source": "cef7146670a6"
+  },
+  "cli.failure.CONFIGURATION_INVALID": {
+    "text": "CLI 配置无效。",
+    "source": "cbc456852dbe"
+  },
+  "cli.failure.CONTRACT_MISMATCH": {
+    "text": "客户端与服务端契约不匹配。",
+    "source": "2973576b3d8a"
+  },
+  "cli.failure.INSTALLATION_MISMATCH": {
+    "text": "未发送：此请求属于另一个安装实例。请在原安装实例中确定其结果；为当前安装实例准备新请求。",
+    "source": "6b7f1bcd4abc"
+  },
+  "cli.failure.INTERNAL": {
+    "text": "客户端发生内部错误。",
+    "source": "8933e31a1425"
+  },
+  "cli.failure.INVALID_FRAME": {
+    "text": "输入帧无效。",
+    "source": "3b27d46b26e6"
+  },
+  "cli.failure.INVALID_RESPONSE": {
+    "text": "服务响应无效。",
+    "source": "459d594c59b3"
+  },
+  "cli.failure.RECOVERY_UNAVAILABLE": {
+    "text": "未发送：无法保存本地未确认更改记录。请检查 ~/.local/state/claimcore 的可用空间和权限后重试。",
+    "source": "a01d12bb0ca1"
+  },
+  "cli.failure.SERVICE_UNAVAILABLE": {
+    "text": "服务不可用。",
+    "source": "6468ac9f9bca"
+  },
+  "cli.family.authority": {
+    "text": "人员与访问权限",
+    "source": "1e133caaec46"
+  },
+  "cli.family.call": {
+    "text": "发送一个结构化请求。",
+    "source": "928e1c599453"
+  },
+  "cli.family.case": {
+    "text": "案件资料与决定",
+    "source": "80b97b9bb858"
+  },
+  "cli.family.configure": {
+    "text": "保存公开的连接设置或显示其来源。",
+    "source": "67ea2596497a"
+  },
+  "cli.family.context": {
+    "text": "您的账户与安装实例",
+    "source": "14cc2a6da0af"
+  },
+  "cli.family.describe": {
+    "text": "描述目录条目。",
+    "source": "e6e26fb0ebf2"
+  },
+  "cli.family.help": {
+    "text": "查阅帮助主题。",
+    "source": "519291bec34c"
+  },
+  "cli.family.operation": {
+    "text": "检查更改是否已记录",
+    "source": "bcc19b5882f4"
+  },
+  "cli.family.recovery": {
+    "text": "此计算机上未确认的更改",
+    "source": "9c665f4a25ff"
+  },
+  "cli.family.reminder": {
+    "text": "后续事项与跟进",
+    "source": "a57f1425ef1b"
+  },
+  "cli.family.schema": {
+    "text": "查阅协议结构定义。",
+    "source": "048234b2c1a5"
+  },
+  "cli.family.session": {
+    "text": "在同一会话中处理结构化请求。",
+    "source": "539c70f5ca7f"
+  },
+  "cli.family.shell": {
+    "text": "登录一次后运行交互式命令。",
+    "source": "943c7dc4df93"
+  },
+  "cli.family.version": {
+    "text": "显示产品版本。",
+    "source": "1ff071b74e83"
+  },
+  "cli.family.work": {
+    "text": "责任分配与处理备注",
+    "source": "0d198ac25683"
+  },
+  "cli.help.call": {
+    "text": "`call` 从标准输入读取一个 JSON 请求；`session` 每行读取一个请求。\n如果更改请求没有操作 ID，CLI 会创建并输出 ID。\n准确格式和限制见 docs/integrating.md#cli-use。",
+    "source": "f4e598c4197a"
+  },
+  "cli.help.commands": {
+    "text": "运行 {command} 查看命令。",
+    "source": "473e6ff5dd42"
+  },
+  "cli.help.configuration": {
+    "text": "设置保存在 ~/.config/claimcore/profile.json；环境变量优先。\n机密不会保存，请通过文件提供。\n运行 `claimcore configure --show` 查看生效值及其来源。\n参见 docs/integrating.md#cli-use。",
+    "source": "e26ea3ad2660"
+  },
+  "cli.help.configure": {
+    "text": "将公开连接和语言设置保存到个人资料。\n运行 `claimcore configure --show` 查看生效值及其来源。\n通过文件提供机密；不会将其保存在个人资料中。\n参见 docs/integrating.md#cli-use。",
+    "source": "2e791425e501"
+  },
+  "cli.help.delivery": {
+    "text": "传送未确认时，退出码 4 会输出可重新发送的准确请求。\n重新发送不会重复记录。\n使用 `claimcore recovery list` 和 `claimcore recovery check` 检查；回答将在 {window} 内确定。",
+    "source": "d798be5ae516"
+  },
+  "cli.help.describe": {
+    "text": "描述包含标签、含义和允许的输入。它们描述静态能力，绝不表示当前适用资格。",
+    "source": "2fe161ec76da"
+  },
+  "cli.help.examples": {
+    "text": "离线准备请求，检查结构定义，然后发送通过准入检查的帧。",
+    "source": "e3260de1bc58"
+  },
+  "cli.help.globalOptions": {
+    "text": "全局选项",
+    "source": "52ab73d5c107"
+  },
+  "cli.help.help": {
+    "text": "浏览命令组或选择帮助主题。",
+    "source": "2ccc9deab54d"
+  },
+  "cli.help.layout": {
+    "text": "ClaimCore 结构化 HTTPS 客户端。帮助和命令发现支持离线使用；call 和 session 需要身份验证。\n{body}",
+    "source": "7e13b1539170"
+  },
+  "cli.help.liveTraversal": {
+    "text": "每页使用读取时的访问权限和案件信息。\n并发更改可能导致行移动、重复或遗漏。\n--all 读取所有页面，但不会冻结结果。",
+    "source": "062e67791557"
+  },
+  "cli.help.recovery": {
+    "text": "使用 `recovery list` 列出未确认的更改。\n使用 `recovery check ATTEMPT_ID` 检查一项；交互检查会等待最终回答。\n使用 --format json 获取机器可读输出。\n重启后恢复检查之前的更改，不会重新发送。",
+    "source": "bd12b72bd432"
+  },
+  "cli.help.schema": {
+    "text": "检查请求与响应的结构定义。结构定义以 JSON 输出。",
+    "source": "e211543795a2"
+  },
+  "cli.help.shell": {
+    "text": "交互运行命令；使用 `exit` 或 EOF 退出。\n登录令牌和命令历史仅保留在内存中，直到退出。\nCtrl-C 取消当前命令。\n引用和恢复规则见 docs/integrating.md#cli-use。",
+    "source": "019061e9599f"
+  },
+  "cli.help.version": {
+    "text": "显示客户端版本。",
+    "source": "03909c9f41c8"
+  },
+  "cli.review.confirm": {
+    "text": "记录这些更改吗？[是/否，默认否] ",
+    "source": "b05636c3fa99"
+  },
+  "cli.shell.exitCode": {
+    "text": "退出码：{code}",
+    "source": "eadf357d1f29"
+  },
+  "cli.shell.invalidLine": {
+    "text": "引号未闭合或末尾有反斜杠。命令未运行。",
+    "source": "bf3c9a053463"
+  },
+  "cli.text.accessSources": {
+    "text": "直接角色：{direct}；来自安装实例的角色：{inherited}；生效角色：{effective}",
+    "source": "db07af8055e6"
+  },
+  "cli.text.authorityHistoryEmpty": {
+    "text": "没有符合此选择条件的权限更改。",
+    "source": "4e76d78127bf"
+  },
+  "cli.text.code": {
+    "text": "代码",
+    "source": "340f463033e0"
+  },
+  "cli.text.cursorReached": {
+    "text": "已在游标 {cursor} 处停止。",
+    "source": "db9f554fac80"
+  },
+  "cli.text.editorCleanupUnavailable": {
+    "text": "清理私有编辑器文本失败。未准备任何请求。重试前请检查本地临时文件。",
+    "source": "c1410b481e98"
+  },
+  "cli.text.grants": {
+    "text": "角色授权",
+    "source": "b3e1c95a4be3"
+  },
+  "cli.text.next": {
+    "text": "下一步",
+    "source": "1ff57a29d7c9"
+  },
+  "cli.text.notRecorded": {
+    "text": "未记录。",
+    "source": "57a5c6d1c207"
+  },
+  "cli.text.observed": {
+    "text": "观察时间 {observed} · 业务日期 {businessDate}（{timeZone}）",
+    "source": "fe17412aedcf"
+  },
+  "cli.text.recoveryAttempt": {
+    "text": "尝试 {attemptId}：{subject} {act}；操作 {operationId}。",
+    "source": "a77f720ac98e"
+  },
+  "cli.text.recoveryCleanupUnavailable": {
+    "text": "结果已知，但无法清除此本地尝试。其标识信息已保留；您可以再次查询状态。",
+    "source": "1dc1592f82ad"
+  },
+  "cli.text.recoveryEmpty": {
+    "text": "此账户和安装实例没有未确认的更改。",
+    "source": "ab182357bd00"
+  },
+  "cli.text.state": {
+    "text": "状态",
+    "source": "a3b50c476732"
+  },
+  "cli.text.uncertain": {
+    "text": "结果尚未确定。请保留标准错误输出中的原样重试帧；原样重试同一请求是安全的。",
+    "source": "841daa7d0f2d"
+  },
+  "cli.text.workBusinessDate": {
+    "text": "工作业务日期",
+    "source": "46dd9ef417da"
+  },
+  "cli.text.workTimeZone": {
+    "text": "工作业务时区",
+    "source": "72823cae55c8"
+  },
+  "cli.usage.configureOptions": {
+    "text": "configure 只接受单独使用 --show，或文档列出的公开设置。机密选项会被拒绝。",
+    "source": "7535de0429b0"
+  },
+  "cli.usage.describeOptions": {
+    "text": "describe 选项无效。请使用 --format text|json；--language 仅适用于文本输出。",
+    "source": "76f6277e89c2"
+  },
+  "cli.usage.describeSelector": {
+    "text": "要描述的操作未知。省略选择项可列出操作。",
+    "source": "d6eec2e7f602"
+  },
+  "cli.usage.duplicateOption": {
+    "text": "重复提供选项：{flag}。",
+    "source": "90db2cf2a04e"
+  },
+  "cli.usage.extraOperand": {
+    "text": "意外的位置参数：{operand}。",
+    "source": "f345f28f8de2"
+  },
+  "cli.usage.helpOptions": {
+    "text": "help 接受一个主题和一种支持的语言；不支持 --format。",
+    "source": "9c397336a244"
+  },
+  "cli.usage.helpTopic": {
+    "text": "未知的帮助主题。",
+    "source": "8040ce20254b"
+  },
+  "cli.usage.invalidChoice": {
+    "text": "{flag} 的值 {value} 无效；应为 {allowed}。",
+    "source": "c28a48b46590"
+  },
+  "cli.usage.invalidInteger": {
+    "text": "{flag} 的整数值 {value} 无效。",
+    "source": "01b4154f1e2b"
+  },
+  "cli.usage.invalidValue": {
+    "text": "{flag} 的值 {value} 无效。",
+    "source": "8cd141d16cdd"
+  },
+  "cli.usage.invocation": {
+    "text": "{command} 调用无效。此命令不接受任何选项或位置参数。",
+    "source": "bab498e8152a"
+  },
+  "cli.usage.missingOperand": {
+    "text": "缺少位置参数：{operand}。",
+    "source": "c5a6b674be9d"
+  },
+  "cli.usage.missingOption": {
+    "text": "缺少选项：{flag}。",
+    "source": "a615f937ef5e"
+  },
+  "cli.usage.missingValue": {
+    "text": "{flag} 缺少值。",
+    "source": "0a7d23d89969"
+  },
+  "cli.usage.notApplicable": {
+    "text": "{flag} 不适用于 {because}。",
+    "source": "cbbcde131737"
+  },
+  "cli.usage.requestTooLarge": {
+    "text": "准备好的请求不得超过 {maximumBytes} 个 UTF-8 字节。",
+    "source": "4be839718a10"
+  },
+  "cli.usage.schemaOptions": {
+    "text": "schema 接受名称，或端点和方向，不接受选项。",
+    "source": "a2b8d2d6f85e"
+  },
+  "cli.usage.schemaSelector": {
+    "text": "未知的结构定义选择。请使用结构定义名称，或端点后跟 request 或 response。",
+    "source": "21ee1a2ce6b3"
+  },
+  "cli.usage.suggestion": {
+    "text": "您是否想输入 {suggestion}？",
+    "source": "7cb1f249afab"
+  },
+  "cli.usage.synopsis": {
+    "text": "用法：{synopsis}",
+    "source": "6066483c0647"
+  },
+  "cli.usage.unknownCommand": {
+    "text": "未知命令“{command}”。",
+    "source": "c9553d41670a"
+  },
+  "cli.usage.unknownOption": {
+    "text": "未知选项：{flag}。",
+    "source": "54225ccd6234"
+  },
+  "cli.usage.unknownOptionFor": {
+    "text": "“{command}”的未知选项“{flag}”。",
+    "source": "a17c1133a2f4"
+  },
+  "cli.usage.versionOptions": {
+    "text": "version 只接受 --json。",
+    "source": "bbbcd3dc2798"
+  },
+  "cli.review.typeTarget": {
+    "text": "输入 {target} 以确认： ",
+    "source": "654ddc36082a"
+  },
+  "cli.text.pageCount": {
+    "text": "结果数：{count}。",
+    "source": "2cbae46b9df3"
+  },
+  "cli.text.pageMore": {
+    "text": "还有更多结果；请使用 --cursor {cursor}。",
+    "source": "ea9dfdf8ab7a"
+  },
+  "cli.text.pageMoreAll": {
+    "text": "还有更多结果；请使用 --cursor {cursor} 或 --all。",
+    "source": "a339111148f7"
+  },
+  "cli.next.correctInput": {
+    "text": "更正所列输入问题后重试。",
+    "source": "2c034083a7d5"
+  },
+  "cli.next.readCurrent": {
+    "text": "重试前请查阅并审阅当前记录。",
+    "source": "6d91ac78825c"
+  },
+  "cli.next.retrySafe": {
+    "text": "请原样重试同一请求。",
+    "source": "6971123a315b"
+  },
+  "cli.next.investigate": {
+    "text": "请停止操作，并联系管理员调查。",
+    "source": "5b8f17a04e98"
+  },
+  "cli.next.chooseReference": {
+    "text": "请选择另一个编号。",
+    "source": "aa70b7e71443"
+  },
+  "cli.next.askAccess": {
+    "text": "请联系所有者检查您的访问权限。",
+    "source": "a18257b39d89"
+  },
+  "cli.next.askRoles": {
+    "text": "请联系所有者授予 {roles} 角色。",
+    "source": "1519ea1bb543"
+  },
+  "cli.next.reviewLatest": {
+    "text": "请先查阅最新记录并审阅更改，再重试。",
+    "source": "d232a68f0042"
+  },
+  "cli.next.reviewCommand": {
+    "text": "请运行 {command} 并审阅更改。",
+    "source": "cf870c2bb8f5"
+  },
+  "cli.next.conflictMore": {
+    "text": "还有更多更改；请运行 {command}。",
+    "source": "bc8d51b8ce45"
+  },
+  "cli.text.operationPending": {
+    "text": "等待最终回答，截止时间为 {finalAt}。",
+    "source": "e6e58811f6cc"
+  }
 }

@@ -8,54 +8,63 @@ module LocalizationPolicy =
         [
             {|
                 value = "en"
+                required = true
                 label = "English"
                 direction = "ltr"
                 displayLocale = "en-GB"
             |}
             {|
                 value = "lv"
+                required = true
                 label = "Latviešu"
                 direction = "ltr"
                 displayLocale = "lv-LV"
             |}
             {|
                 value = "ar"
+                required = true
                 label = "العربية"
                 direction = "rtl"
                 displayLocale = "ar-AE"
             |}
             {|
                 value = "ko"
+                required = false
                 label = "한국어"
                 direction = "ltr"
                 displayLocale = "ko-KR"
             |}
             {|
                 value = "zh-Hans"
+                required = false
                 label = "简体中文"
                 direction = "ltr"
                 displayLocale = "zh-CN"
             |}
             {|
                 value = "zh-Hant"
+                required = false
                 label = "繁體中文"
                 direction = "ltr"
                 displayLocale = "zh-TW"
             |}
             {|
                 value = "ja"
+                required = false
                 label = "日本語"
                 direction = "ltr"
                 displayLocale = "ja-JP"
             |}
             {|
                 value = "es"
+                required = false
                 label = "Español"
                 direction = "ltr"
                 displayLocale = "es-ES"
             |}
             {|
                 value = "de"
+                required = false
                 label = "Deutsch"
                 direction = "ltr"
                 displayLocale = "de-DE"

@@ -24,11 +24,11 @@ const renderState = async (state: SessionState) => {
 
 it("renders loading and refreshable session failures", async () => {
   const loading = await renderState({ kind: "loading", epoch: 0 });
-  expect(await screen.findByText("Loading local session…")).toBeVisible();
+  expect(await screen.findByText("Loading session…")).toBeVisible();
   loading.unmount();
   await renderState({ kind: "failure", message: localNotice("unreachable"), epoch: 1 });
   expect(await screen.findByRole("alert")).toHaveTextContent(
-    "The local service could not be reached.",
+    "ClaimCore could not be reached. Check your connection.",
   );
   await userEvent.setup().click(screen.getByRole("button", { name: "Try again" }));
 });
@@ -46,7 +46,9 @@ it("renders OIDC sign-in and authenticated dashboard paths", async () => {
     message: localNotice("invalidSession"),
     epoch: 3,
   });
-  expect(await screen.findByRole("alert")).toHaveTextContent("Invalid session response.");
+  expect(await screen.findByRole("alert")).toHaveTextContent(
+    "Your session could not be read. Sign in again.",
+  );
   expect(await screen.findByRole("link", { name: "Sign in" })).toHaveAttribute(
     "href",
     "/auth/login",

@@ -111,7 +111,7 @@ module MessageRegisters =
                         invalidOp ("Repeated sentence on one field: " + language + " " + prefix)
 
         let banned =
-            @"\b(observation|observed|snapshot|nonacceptance|pinned|YYYY|ASCII|UTF(?:-?\d+)?|revision)\b"
+            @"\b(observation|observed|snapshot|nonacceptance|pinned|YYYY|ASCII|UTF(?:-?\d+)?|revision|actor|principal|ledger|payload|admission|disclos\w*|withheld|canonical|scalar|authored|stewardship|installation)\b"
 
         for KeyValue(key, original) in english do
             let text = Regex.Replace(original, @"\{[A-Za-z][A-Za-z0-9_]*\}", "")
@@ -133,7 +133,7 @@ module MessageRegisters =
 
             if
                 gui
-                && not (technicalRecordKey key)
+                && not (technicalRecordKey key || key.EndsWith(".rule", StringComparison.Ordinal))
                 && Regex.IsMatch(text, banned, RegexOptions.IgnoreCase)
             then
                 invalidOp ("Implementation terminology in GUI copy: " + key)

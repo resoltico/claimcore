@@ -83,7 +83,9 @@ it("automatically checks unconfirmed identity during write maintenance", async (
     </RequesterContext>,
   );
   expect(
-    await screen.findByText("Waiting for a final answer until 2026-11-07T10:10:00.000000Z."),
+    await screen.findByText(
+      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
+    ),
   ).toBeVisible();
   await waitFor(() => {
     expect(lookup).toHaveBeenCalledTimes(1);

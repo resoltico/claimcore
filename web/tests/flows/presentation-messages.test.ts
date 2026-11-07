@@ -124,7 +124,7 @@ it("retains local, accepted and uncertain notices as language-neutral data", () 
   }
   const notice = localNotice("outcomeUnknown");
   const original = JSON.stringify(notice);
-  expect(renderNotice(defaults, notice)).toContain("unknown");
+  expect(renderNotice(defaults, notice)).toContain("could not confirm");
   expect(renderNotice({ ...defaults, language: "lv" }, notice)).not.toBe(
     renderNotice(defaults, notice),
   );

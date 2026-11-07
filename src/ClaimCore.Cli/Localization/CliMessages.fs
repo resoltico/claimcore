@@ -72,26 +72,9 @@ type CliMessage =
     | [<MessageKey("cli.configurationIssue")>] ConfigurationIssue of setting: string * issue: string
     | [<MessageKey("label.characterWarning")>] CharacterWarning of characters: string
     | [<MessageKey("cli.help.layout")>] HelpLayout of body: string
-    | [<MessageKey("cli.help.call")>] HelpCall of
-        maximumInvocationBytes: string *
-        maximumRequestBytes: string *
-        maximumResponseBytes: string *
-        retryCommand: string *
-        statusCommand: string
-    | [<MessageKey("cli.help.session")>] HelpSession of
-        maximumInvocationBytes: string *
-        maximumRequestBytes: string *
-        maximumResponseBytes: string
-    | [<MessageKey("cli.help.CLI_PROTOCOL_GUIDANCE")>] HelpProtocol of
-        maximumInvocationBytes: string *
-        maximumRequestBytes: string *
-        maximumResponseBytes: string
-    | [<MessageKey("cli.help.configuration")>] HelpConfiguration of
-        maximumSecretBytes: string *
-        maximumTrustRootBytes: string
-    | [<MessageKey("cli.help.delivery")>] HelpDelivery of
-        retryCommand: string *
-        statusCommand: string
+    | [<MessageKey("cli.help.call")>] HelpCall
+    | [<MessageKey("cli.help.configuration")>] HelpConfiguration
+    | [<MessageKey("cli.help.delivery")>] HelpDelivery of window: string
     | [<MessageKey("label.action")>] ActionLabel
     | [<MessageKey("label.availableActs")>] AvailableActsLabel
     | [<MessageKey("label.enabled")>] EnabledLabel

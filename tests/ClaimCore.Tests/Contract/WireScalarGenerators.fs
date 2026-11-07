@@ -157,6 +157,7 @@ let internal responseString field =
 let private presentationIdentifier field (context: string) =
     match field with
     | "LabelId"
+    | "TitleId"
     | "messageId"
     | "reasonId" -> true
     | "Key" ->

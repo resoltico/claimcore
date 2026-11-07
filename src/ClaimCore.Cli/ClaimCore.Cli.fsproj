@@ -56,11 +56,11 @@
     <Compile Include="TextDescriptorValue.fs" />
     <Compile Include="TextObservation.fs" />
     <Compile Include="TextTable.fs" />
-    <Compile Include="DiagnosticText.fs" />
     <Compile Include="CsvCell.fs" />
+    <Compile Include="TimelineCsv.fs" />
+    <Compile Include="DiagnosticText.fs" />
     <Compile Include="CaseCsv.fs" />
     <Compile Include="AuthorityHistoryCsv.fs" />
-    <Compile Include="TimelineCsv.fs" />
     <Compile Include="ViewText.fs" />
     <Compile Include="OperationText.fs" />
     <Compile Include="ReplyText.fs" />
@@ -80,8 +80,7 @@
     <Compile Include="Program.fs" />
   </ItemGroup>
   <ItemGroup>
-    <EmbeddedResource Include="Localization/*.json" LogicalName="ClaimCore.Localization.%(Filename).cli%(Extension)" />
-    <EmbeddedResource Include="../ClaimCore.Presentation/Messages/Localization/*.json" Exclude="../ClaimCore.Presentation/Messages/Localization/glossary.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Localization/Runtime/*.json" LogicalName="ClaimCore.Localization.%(Filename)%(Extension)" />
     <ProjectReference Include="../ClaimCore.HostSecurity/ClaimCore.HostSecurity.fsproj" />
     <PackageReference Include="Wcwidth" />
     <PackageReference Include="Duende.IdentityModel" />

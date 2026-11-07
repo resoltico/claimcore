@@ -1,231 +1,914 @@
 {
-  "ui.about": "Acerca de",
-  "ui.accent": "Color de acento",
-  "ui.accentBlue": "Azul",
-  "ui.accentGreen": "Verde",
-  "ui.accentSet": "Color de acento establecido en {value}.",
-  "ui.accepted": "aceptada",
-  "ui.acceptedOperation": "Cambio registrado",
-  "ui.account": "Cuenta",
-  "ui.actDescription": "{label}: {meaning}",
-  "ui.actor": "Actor",
-  "ui.actorRequestRetained": "Se conserva tu solicitud actual. Continúala o descártala antes de iniciar otra acción.",
-  "ui.addGrant": "Añadir un rol",
-  "ui.after": "Después: {value}",
-  "ui.anyFilter": "Cualquiera",
-  "ui.appearance": "Apariencia",
-  "ui.authorityAction": "Acción de acceso",
-  "ui.backToCases": "Volver a los expedientes",
-  "ui.before": "Antes: {value}",
-  "ui.calendar": "Abrir el calendario",
-  "ui.canonicalCopyHint": "Copiar este valor.",
-  "ui.caseDetail": "Detalle del expediente",
-  "ui.cases": "Expedientes",
-  "ui.changeActDescription": "¿Descartar este borrador y elegir otra acción?",
-  "ui.changeActTitle": "¿Descartar estos cambios del borrador?",
-  "ui.changeFact": "Cambiar {field}",
-  "ui.checkOutcome": "Comprobar el estado",
-  "ui.checkUnresolvedOperation": "Check now",
-  "ui.chooseRole": "Elegir un rol",
-  "ui.clearFilters": "Quitar los filtros",
-  "ui.clearValue": "Eliminar el valor registrado",
-  "ui.close": "Cerrar",
-  "ui.continueAuthorityRequest": "Continuar la solicitud actual",
-  "ui.contract": "Identidad del contrato",
-  "ui.copied": "Copia completada: {label}.",
-  "ui.copy": "Copiar {label}",
-  "ui.copyFallback": "Alternativa para copiar {label}",
-  "ui.correctionHint": "Elige una acción para cada grupo. Los datos conservados usan el estado actual del expediente al registrarse.",
-  "ui.countryName": "{code}: {name}",
-  "ui.countryUnassigned": "No hay un nombre de país disponible para {code}. Comprueba el código deseado.",
-  "ui.currentMode": "Actualmente {value}",
-  "ui.defaultAccent": "Predeterminado",
-  "ui.detectedLanguage": "Detectado por el navegador",
-  "ui.discardAndChange": "Descartar y cambiar de acción",
-  "ui.discardAndLeave": "Descartar y salir",
-  "ui.discardUnknownDescription": "Puede que la operación ya se haya aceptado. Al descartar se pierde esta solicitud exacta y no se cancela la operación. Continúa solo si aceptas perder la posibilidad de reintentar desde esta página.",
-  "ui.displayLocale": "Formato de fechas y números",
-  "ui.displayLocaleSet": "Formato de fechas y números establecido en {value}.",
-  "ui.emptyInput": "Entrada vacía",
-  "ui.exactCaseReference": "{label} (exacta)",
-  "ui.exactOperationId": "ID exacto de operación",
-  "ui.exactReference": "{label} (exacta): {reference}",
-  "ui.exactUtc": "Instante UTC exacto",
-  "ui.explainFields": "Explicar los campos",
-  "ui.filters": "Filtros",
-  "ui.findCase": "Abrir por referencia exacta",
-  "ui.formatPreview": "Vista previa: {date} · {amount}",
-  "ui.generalOperationLookup": "Consulta general de operaciones",
-  "ui.grantNumber": "Rol {number}",
-  "ui.grantsEnd": "Se muestran todas las asignaciones devueltas para esta revisión.",
-  "ui.grantsPartial": "Solo se muestra parte de las asignaciones de este actor.",
-  "ui.historyNoChanges": "No se ha modificado ningún campo divulgado.",
-  "ui.includeInactiveWork": "Incluir la tramitación inactiva",
-  "ui.incompleteResponse": "El servicio ha devuelto una respuesta incompleta o no válida.",
-  "ui.keepEditing": "Seguir editando",
-  "ui.language": "Idioma de la interfaz",
-  "ui.languageAppearance": "Idioma y apariencia",
-  "ui.languageLoadFailed": "No se ha podido cargar el idioma. Tu idioma de trabajo no cambia.",
-  "ui.languageRegion": "Idioma y región",
-  "ui.languageSet": "Idioma establecido en {value}.",
-  "ui.leaveDraftDescription": "¿Descartar este borrador y salir del editor?",
-  "ui.leaveUnchanged": "Dejar sin cambios",
-  "ui.loading": "Cargando…",
-  "ui.loadingCases": "Cargando expedientes…",
-  "ui.loadingCurrentCase": "Cargando el expediente actual…",
-  "ui.loadingHistory": "Cargando el historial del expediente…",
-  "ui.loadingLanguage": "Cargando el idioma…",
-  "ui.loadingSession": "Cargando la sesión local…",
-  "ui.loginInstructions": "Inicia sesión con el proveedor de identidad de tu organización.",
-  "ui.lookingUp": "Consultando…",
-  "ui.mine": "Tu responsabilidad",
-  "ui.modeSet": "Modo de color establecido en {value}.",
-  "ui.moreActors": "Más actores",
-  "ui.moreCaseActions": "Más acciones",
-  "ui.moreCases": "Cargar más expedientes",
-  "ui.moreGrants": "Más asignaciones",
-  "ui.moreHistory": "Cargar más historial",
-  "ui.moreReminders": "Más recordatorios",
-  "ui.newReminder": "Añadir un recordatorio",
-  "ui.nextActions": "Próximas acciones",
-  "ui.nextAccounts": "Más cuentas",
-  "ui.nextMonth": "Mes siguiente",
-  "ui.no": "No",
-  "ui.noAccessibleActors": "No se han devuelto actores accesibles.",
-  "ui.noAccessibleCases": "No se han devuelto expedientes accesibles.",
-  "ui.noAccessibleHistory": "No se han devuelto entradas de historial accesibles.",
-  "ui.noCasesForView": "No hay expedientes que coincidan con esta vista.",
-  "ui.noEligibleAccounts": "No hay cuentas aptas en esta página.",
-  "ui.noPendingReminders": "Este expediente activo y abierto necesita una próxima acción. Añade un recordatorio cuando tengas un plan.",
-  "ui.noReminders": "No hay recordatorios que coincidan con esta vista.",
-  "ui.noViews": "No hay vistas del espacio de trabajo disponibles para este actor.",
-  "ui.notRecorded": "Sin registrar",
-  "ui.observeOperation": "Consultar el resultado registrado",
-  "ui.openExactCase": "Abrir {reference}",
-  "ui.operationAccepted": "La operación {operationId} está aceptada.",
-  "ui.operationLookup": "Consulta de operaciones",
-  "ui.operationUnresolved": "Waiting for a final answer.",
-  "ui.overdueReminders": "Recordatorios vencidos",
-  "ui.pageEnd": "Se muestran todos los resultados.",
-  "ui.pageNotFound": "Página no encontrada",
-  "ui.pageNotFoundDescription": "La dirección no identifica ninguna página de ClaimCore.",
-  "ui.pagePartial": "Hay más resultados disponibles.",
-  "ui.pairedFacts": "{first} y {second}",
-  "ui.pendingReminders": "Recordatorios pendientes",
-  "ui.people.person": "Persona",
-  "ui.people.roles": "Roles",
-  "ui.planAfterOpen": "El expediente se ha abierto. Planificar un recordatorio es un paso siguiente independiente.",
-  "ui.preferencesNotSaved": "Las preferencias funcionan durante esta sesión, pero no se han podido guardar en este navegador.",
-  "ui.preparingRecovery": "Guardando la identidad de recuperación…",
-  "ui.previewing": "Revisando…",
-  "ui.previousAccounts": "Cuentas anteriores",
-  "ui.previousMonth": "Mes anterior",
-  "ui.primary": "Principal",
-  "ui.pseudo": "Inglés ampliado (prueba de diseño)",
-  "ui.queueDescription": "Busca y continúa la tramitación de los expedientes que requieren atención.",
-  "ui.recordOptionalFact": "Registrar {field} (opcional)",
-  "ui.recovery": "Unconfirmed changes",
-  "ui.recoveryCleanupUnavailable": "Se conoce el resultado, pero no se ha podido eliminar este intento local. Se ha conservado su identidad; puedes volver a comprobar el estado.",
-  "ui.recoveryDescription": "These changes have no confirmed outcome yet. We check them automatically until the answer is final.",
-  "ui.recoveryEmpty": "No unconfirmed changes.",
-  "ui.recoveryListingUnavailable": "No se pueden leer ni actualizar las identidades de recuperación. Se conservan los registros existentes. Restablece el acceso al almacenamiento o resuelve los registros anteriores con el cliente correspondiente antes de volver a intentarlo.",
-  "ui.recoveryUnavailable": "No enviada: el almacenamiento de recuperación no está disponible. Activa el almacenamiento del sitio o libera espacio y vuelve a intentarlo. Tu solicitud no se ha enviado.",
-  "ui.reference": "{label}: {reference}",
-  "ui.refreshAccounts": "Actualizar las cuentas aptas",
-  "ui.refreshWork": "Actualizar la tramitación",
-  "ui.reloadActors": "Volver a cargar los actores",
-  "ui.reloadCases": "Volver a cargar los expedientes",
-  "ui.reloadContract": "Recargar la página",
-  "ui.reloadCurrentCase": "Volver a cargar el expediente actual",
-  "ui.reloadGrants": "Volver a cargar las asignaciones",
-  "ui.reloadHistory": "Volver a cargar el historial",
-  "ui.reloadInterface": "Volver a cargar la interfaz",
-  "ui.reminderAction": "Acción planificada",
-  "ui.reminderDetails": "Detalles del recordatorio",
-  "ui.reminderDue": "Fecha planificada",
-  "ui.reminderQueueHint": "Los filtros de vencimiento seleccionan recordatorios individuales; los filtros de vencimiento de expedientes usan la fecha pendiente más próxima de cada expediente.",
-  "ui.reminderState": "Estado del recordatorio",
-  "ui.reminders": "Recordatorios",
-  "ui.removeGrant": "Eliminar el rol",
-  "ui.retryExact": "Enviar de nuevo",
-  "ui.retryExactDescription": "Send again repeats the exact request still held by this page. Checks become final when the operation lifetime ends. After reloading, this page keeps only the identity and checks it automatically under Unconfirmed changes.",
-  "ui.retryLanguage": "Volver a cargar el idioma",
-  "ui.retryView": "Reintentar la carga",
-  "ui.returnToCase": "Volver al expediente",
-  "ui.returnToEdit": "Volver a editar",
-  "ui.reviewDescription": "Revisa los valores propuestos y confirma esta operación exacta.",
-  "ui.review.basis": "Basado en la versión {revision}, comprobado {when}.",
-  "ui.rightToLeft": "De derecha a izquierda",
-  "ui.roleNotAvailableAtScope": "No hay ninguna capacidad aplicable en este ámbito",
-  "ui.roleNotAvailableForService": "No disponible para identidades de servicio",
-  "ui.savedRecoveryAttempt": "Intento guardado",
-  "ui.scalarCount": "{count} de {maximum} valores escalares Unicode",
-  "ui.search": "Buscar",
-  "ui.selectedAccount": "Cuenta seleccionada",
-  "ui.settings": "Ajustes",
-  "ui.settingsIntroduction": "Estas preferencias se aplican a este navegador. Nunca cambian los valores registrados.",
-  "ui.shell.administration": "Administración",
-  "ui.shell.authorityHistory": "Historial de acceso",
-  "ui.shell.businessDate": "Fecha operativa",
-  "ui.shell.businessDateChanged": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",
-  "ui.shell.checkNow": "Comprobar ahora",
-  "ui.shell.people": "Personas y acceso",
-  "ui.shell.searchCases": "Buscar expedientes",
-  "ui.shell.unresolved": "Puede que no se hayan registrado {count} cambios",
-  "ui.shell.unresolvedOne": "Puede que no se haya registrado 1 cambio",
-  "ui.signIn": "Iniciar sesión",
-  "ui.signInTitle": "Iniciar sesión en el registro de expedientes",
-  "ui.signOut": "Cerrar sesión",
-  "ui.submitting": "Registrando…",
-  "ui.summaryCounts": "Expedientes coincidentes: {count}",
-  "ui.summaryDetails": "Mostrar los totales del resumen",
-  "ui.theme": "Tema",
-  "ui.themeAccessibility": "Ambos colores de acento admiten los modos claro y oscuro. Los ajustes de contraste de tu dispositivo se respetan automáticamente.",
-  "ui.themeDark": "Oscuro",
-  "ui.themeLight": "Claro",
-  "ui.themeSystem": "Igual que el dispositivo",
-  "ui.tryAgain": "Volver a intentarlo",
-  "ui.unchangedUntilSubmit": "La revisión es orientativa. No se registra nada hasta que se acepta la operación.",
-  "ui.version": "Versión",
-  "ui.viewLoadFailed": "No se ha podido cargar esta vista. Reintenta la carga o recarga cuando puedas abandonar tu trabajo actual.",
-  "ui.viewLoading": "Cargando la vista…",
-  "ui.workDateBasis": "Fecha operativa {date} ({zone}).",
-  "ui.workQueue": "Cola de trabajo",
-  "ui.worklistSearch": "Filtrar esta vista",
-  "ui.yes": "Sí",
-  "ui.timeline.title": "Actividad",
-  "ui.timeline.filter": "Filtrar la actividad",
-  "ui.timeline.all": "Todo",
-  "ui.timeline.facts": "Datos",
-  "ui.timeline.work": "Tramitación",
-  "ui.timeline.details": "Mostrar los detalles",
-  "ui.timeline.nextReminder": "Próximo recordatorio",
-  "ui.timeline.empty": "No hay actividad que mostrar.",
-  "ui.timeline.more": "Cargar 50 más",
-  "ui.timeline.before": "Valor anterior:",
-  "ui.timeline.after": "Valor nuevo:",
-  "ui.timeline.withheld": "Estos cambios no están disponibles para esta cuenta.",
-  "ui.accessState.title": "Aún no tienes acceso",
-  "ui.accessState.disabled": "Esta cuenta está desactivada",
-  "ui.accessState.requested": "Hemos avisado a los propietarios. Un propietario puede dar acceso a esta cuenta.",
-  "ui.accessState.provider": "Proveedor",
-  "ui.accessState.copy": "Datos para tu administrador",
-  "ui.accessState.check": "Comprobar el acceso",
-  "ui.stage.recorded": "Registrado",
-  "ui.stage.noDate": "Fecha no disponible",
-  "ui.stage.reinstated": "Expediente restablecido. Revisa los datos actuales y las próximas acciones.",
-  "ui.conflict.title": "Este expediente ha cambiado",
-  "ui.conflict.kept": "Se conserva tu borrador. Revisa los cambios antes de prepararlo con respecto a la última versión.",
-  "ui.conflict.loading": "Cargando la última versión…",
-  "ui.conflict.reviewLatest": "Revisar con la última versión",
-  "ui.choiceNotAvailable": "No disponible con los datos actuales.",
-  "ui.returnToWorkspace": "Volver al espacio de trabajo",
-  "ui.enterDetails": "Introducir los datos",
-  "ui.review.checked": "Comprobado {when}.",
-  "ui.requests.empty": "No hay solicitudes de acceso pendientes.",
-  "ui.requests.more": "Cargar más solicitudes de acceso",
-  "ui.requests.refresh": "Actualizar las solicitudes de acceso",
-  "ui.manualFilters": "Filtros manuales",
-  "ui.manualFiltersHint": "Usa los filtros manuales para incluir la tramitación inactiva.",
-  "ui.unconfirmedUntil": "Waiting for a final answer until {finalAt}."
+  "ui.about": {
+    "text": "Acerca de",
+    "source": "4efca0d10c5f"
+  },
+  "ui.accent": {
+    "text": "Color de acento",
+    "source": "12376f4cbd6c"
+  },
+  "ui.accentBlue": {
+    "text": "Azul",
+    "source": "ec7d56a01607"
+  },
+  "ui.accentGreen": {
+    "text": "Verde",
+    "source": "d486dfbd5fb5"
+  },
+  "ui.accentSet": {
+    "text": "Color de acento establecido en {value}.",
+    "source": "f4c95f4f6a4b"
+  },
+  "ui.accepted": {
+    "text": "aceptada",
+    "source": "070c160a6299"
+  },
+  "ui.acceptedOperation": {
+    "text": "Cambio registrado",
+    "source": "595214b94033"
+  },
+  "ui.account": {
+    "text": "Cuenta",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actDescription": {
+    "text": "{label}: {meaning}",
+    "source": "7216b2a9dae5"
+  },
+  "ui.actor": {
+    "text": "Cuenta",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actorRequestRetained": {
+    "text": "Se conserva tu solicitud actual. Continúala o descártala antes de iniciar otra acción.",
+    "source": "700957242358"
+  },
+  "ui.addGrant": {
+    "text": "Añadir un rol",
+    "source": "e53a93625e74"
+  },
+  "ui.after": {
+    "text": "Después: {value}",
+    "source": "7b7c2d72857a"
+  },
+  "ui.anyFilter": {
+    "text": "Cualquiera",
+    "source": "2b505597daa7"
+  },
+  "ui.appearance": {
+    "text": "Apariencia",
+    "source": "3907fa7f8072"
+  },
+  "ui.authorityAction": {
+    "text": "Cambio de acceso",
+    "source": "295239c1b29a"
+  },
+  "ui.backToCases": {
+    "text": "Volver a los expedientes",
+    "source": "99d9b7b14d23"
+  },
+  "ui.before": {
+    "text": "Antes: {value}",
+    "source": "f1db066ec43d"
+  },
+  "ui.calendar": {
+    "text": "Abrir el calendario",
+    "source": "a1ad37d0c5e8"
+  },
+  "ui.canonicalCopyHint": {
+    "text": "Copiar este valor.",
+    "source": "8a31fb4c608d"
+  },
+  "ui.caseDetail": {
+    "text": "Detalle del expediente",
+    "source": "e6aad002458d"
+  },
+  "ui.cases": {
+    "text": "Expedientes",
+    "source": "2249bd503ec4"
+  },
+  "ui.changeActDescription": {
+    "text": "¿Descartar este borrador y elegir otra acción?",
+    "source": "0db8e85a3b26"
+  },
+  "ui.changeActTitle": {
+    "text": "¿Descartar estos cambios del borrador?",
+    "source": "7dbba5ad2b76"
+  },
+  "ui.changeFact": {
+    "text": "Cambiar {field}",
+    "source": "b8abd919ebef"
+  },
+  "ui.checkOutcome": {
+    "text": "Comprobar el estado",
+    "source": "69cd3590300a"
+  },
+  "ui.checkUnresolvedOperation": {
+    "text": "Comprobar ahora",
+    "source": "2937cffb37ab"
+  },
+  "ui.chooseRole": {
+    "text": "Elegir un rol",
+    "source": "a49c49b04c4d"
+  },
+  "ui.clearFilters": {
+    "text": "Quitar los filtros",
+    "source": "7179ea0035fc"
+  },
+  "ui.clearValue": {
+    "text": "Eliminar el valor registrado",
+    "source": "726a6f95d697"
+  },
+  "ui.close": {
+    "text": "Cerrar",
+    "source": "7d9eb7acb13e"
+  },
+  "ui.continueAuthorityRequest": {
+    "text": "Continuar la solicitud actual",
+    "source": "ec9e7079a21a"
+  },
+  "ui.contract": {
+    "text": "Identidad del contrato",
+    "source": "002a152b2dfc"
+  },
+  "ui.copied": {
+    "text": "Copia completada: {label}.",
+    "source": "80a056eab235"
+  },
+  "ui.copy": {
+    "text": "Copiar {label}",
+    "source": "63ba394601c5"
+  },
+  "ui.copyFallback": {
+    "text": "Alternativa para copiar {label}",
+    "source": "540c6468b0a7"
+  },
+  "ui.correctionHint": {
+    "text": "Elige qué hacer con cada grupo de datos.",
+    "source": "fe14963d4faf"
+  },
+  "ui.countryName": {
+    "text": "{code}: {name}",
+    "source": "e92cdbf79c10"
+  },
+  "ui.countryUnassigned": {
+    "text": "{code} no es un código de país conocido. Compruébalo.",
+    "source": "c16222b929b3"
+  },
+  "ui.currentMode": {
+    "text": "Actualmente {value}",
+    "source": "dbdd7aa26011"
+  },
+  "ui.defaultAccent": {
+    "text": "Predeterminado",
+    "source": "21b111cbfe6e"
+  },
+  "ui.detectedLanguage": {
+    "text": "Detectado por el navegador",
+    "source": "1bec1fb0289f"
+  },
+  "ui.discardAndChange": {
+    "text": "Descartar y cambiar de acción",
+    "source": "ffdb3f134a5e"
+  },
+  "ui.discardAndLeave": {
+    "text": "Descartar y salir",
+    "source": "07e5b9156de3"
+  },
+  "ui.discardUnknownDescription": {
+    "text": "Este cambio podría estar registrado. Si lo descartas, esta página ya no podrá reenviarlo.",
+    "source": "28b3f2ec4ecf"
+  },
+  "ui.displayLocale": {
+    "text": "Formato de fechas y números",
+    "source": "c3e8e25f37a9"
+  },
+  "ui.displayLocaleSet": {
+    "text": "Formato de fechas y números establecido en {value}.",
+    "source": "ad65deea3ecb"
+  },
+  "ui.emptyInput": {
+    "text": "Entrada vacía",
+    "source": "63ed0b2ee921"
+  },
+  "ui.exactCaseReference": {
+    "text": "{label} (exacta)",
+    "source": "cf3a934bfd96"
+  },
+  "ui.exactOperationId": {
+    "text": "ID exacto de operación",
+    "source": "dbdca09f6e48"
+  },
+  "ui.exactReference": {
+    "text": "{label} (exacta): {reference}",
+    "source": "e26d7a9b269c"
+  },
+  "ui.exactUtc": {
+    "text": "Instante UTC exacto",
+    "source": "460d31945df9"
+  },
+  "ui.explainFields": {
+    "text": "Explicar los campos",
+    "source": "3593737e2657"
+  },
+  "ui.filters": {
+    "text": "Filtros",
+    "source": "546ebb8eb993"
+  },
+  "ui.findCase": {
+    "text": "Abrir por referencia exacta",
+    "source": "0ff7411177ad"
+  },
+  "ui.formatPreview": {
+    "text": "Vista previa: {date} · {amount}",
+    "source": "e598c70b2351"
+  },
+  "ui.generalOperationLookup": {
+    "text": "Consulta general de operaciones",
+    "source": "a87469ec1ea3"
+  },
+  "ui.grantNumber": {
+    "text": "Rol {number}",
+    "source": "00fa69a81cab"
+  },
+  "ui.grantsEnd": {
+    "text": "Se muestran todos los roles.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.grantsPartial": {
+    "text": "Solo se muestran algunos roles.",
+    "source": "391d53d153f3"
+  },
+  "ui.historyNoChanges": {
+    "text": "No cambiaron los datos.",
+    "source": "0b70fc56218c"
+  },
+  "ui.includeInactiveWork": {
+    "text": "Incluir la tramitación inactiva",
+    "source": "8ca6c3a219c2"
+  },
+  "ui.incompleteResponse": {
+    "text": "ClaimCore envió una respuesta incompleta.",
+    "source": "3fad4a1c8c5d"
+  },
+  "ui.keepEditing": {
+    "text": "Seguir editando",
+    "source": "e76fd2add010"
+  },
+  "ui.language": {
+    "text": "Idioma de la interfaz",
+    "source": "8027f432a7fb"
+  },
+  "ui.languageAppearance": {
+    "text": "Idioma y apariencia",
+    "source": "03ccd687bd8a"
+  },
+  "ui.languageLoadFailed": {
+    "text": "No se ha podido cargar el idioma. Tu idioma de trabajo no cambia.",
+    "source": "7a416cc61349"
+  },
+  "ui.languageRegion": {
+    "text": "Idioma y región",
+    "source": "003e875495c3"
+  },
+  "ui.languageSet": {
+    "text": "Idioma establecido en {value}.",
+    "source": "0861f62cf939"
+  },
+  "ui.leaveDraftDescription": {
+    "text": "¿Descartar este borrador y salir del editor?",
+    "source": "a7e0213e137c"
+  },
+  "ui.leaveUnchanged": {
+    "text": "Dejar sin cambios",
+    "source": "819f6b9f3880"
+  },
+  "ui.loading": {
+    "text": "Cargando…",
+    "source": "ba3bbbe10d8b"
+  },
+  "ui.loadingCases": {
+    "text": "Cargando expedientes…",
+    "source": "ac19ccc4e348"
+  },
+  "ui.loadingCurrentCase": {
+    "text": "Cargando el expediente actual…",
+    "source": "961f74c56236"
+  },
+  "ui.loadingHistory": {
+    "text": "Cargando actividad…",
+    "source": "a389c395010e"
+  },
+  "ui.loadingLanguage": {
+    "text": "Cargando el idioma…",
+    "source": "42609e39e159"
+  },
+  "ui.loadingSession": {
+    "text": "Cargando sesión…",
+    "source": "3d3c04cbc07b"
+  },
+  "ui.loginInstructions": {
+    "text": "Inicia sesión con la cuenta de tu organización.",
+    "source": "2d954a0e8a31"
+  },
+  "ui.lookingUp": {
+    "text": "Consultando…",
+    "source": "a84f1079ee0e"
+  },
+  "ui.mine": {
+    "text": "Míos",
+    "source": "f57afb7d275a"
+  },
+  "ui.modeSet": {
+    "text": "Modo de color establecido en {value}.",
+    "source": "b525fa9e5b37"
+  },
+  "ui.moreActors": {
+    "text": "Más personas",
+    "source": "95baf92809bb"
+  },
+  "ui.moreCaseActions": {
+    "text": "Más acciones",
+    "source": "f8d46c2570e7"
+  },
+  "ui.moreCases": {
+    "text": "Cargar más expedientes",
+    "source": "cd681597c17e"
+  },
+  "ui.moreGrants": {
+    "text": "Más asignaciones",
+    "source": "27f0be44c2db"
+  },
+  "ui.moreHistory": {
+    "text": "Cargar más actividad",
+    "source": "e3f0587b4839"
+  },
+  "ui.moreReminders": {
+    "text": "Más recordatorios",
+    "source": "b36b0a1b10e1"
+  },
+  "ui.newReminder": {
+    "text": "Añadir un recordatorio",
+    "source": "cd566803bf39"
+  },
+  "ui.nextActions": {
+    "text": "Próximas acciones",
+    "source": "f6eb77625278"
+  },
+  "ui.nextAccounts": {
+    "text": "Más cuentas",
+    "source": "743e1725ebd5"
+  },
+  "ui.nextMonth": {
+    "text": "Mes siguiente",
+    "source": "74e53211fef4"
+  },
+  "ui.no": {
+    "text": "No",
+    "source": "1ea442a134b2"
+  },
+  "ui.noAccessibleActors": {
+    "text": "No hay personas que mostrar.",
+    "source": "6a83dad36c14"
+  },
+  "ui.noAccessibleCases": {
+    "text": "No hay expedientes que mostrar.",
+    "source": "4b74e082b9b3"
+  },
+  "ui.noAccessibleHistory": {
+    "text": "No hay actividad que mostrar.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.noCasesForView": {
+    "text": "No hay expedientes que coincidan con esta vista.",
+    "source": "8b8a577e5f3b"
+  },
+  "ui.noEligibleAccounts": {
+    "text": "No hay cuentas aptas en esta página.",
+    "source": "f9c5ece19d4b"
+  },
+  "ui.noPendingReminders": {
+    "text": "Este expediente activo y abierto necesita una próxima acción. Añade un recordatorio cuando tengas un plan.",
+    "source": "c7a49fc6cf67"
+  },
+  "ui.noReminders": {
+    "text": "No hay recordatorios que coincidan con esta vista.",
+    "source": "3200239466d8"
+  },
+  "ui.noViews": {
+    "text": "No hay vistas de trabajo disponibles.",
+    "source": "3e86bd3913b7"
+  },
+  "ui.notRecorded": {
+    "text": "Sin registrar",
+    "source": "b37c7879f6c3"
+  },
+  "ui.observeOperation": {
+    "text": "Consultar el resultado registrado",
+    "source": "6afd2a4b367f"
+  },
+  "ui.openExactCase": {
+    "text": "Abrir {reference}",
+    "source": "544235b8ff17"
+  },
+  "ui.operationAccepted": {
+    "text": "La operación {operationId} está aceptada.",
+    "source": "f2ada3346a34"
+  },
+  "ui.operationLookup": {
+    "text": "Consulta de operaciones",
+    "source": "2bc69d814487"
+  },
+  "ui.operationUnresolved": {
+    "text": "Aún sin confirmar.",
+    "source": "3ce10de819f7"
+  },
+  "ui.overdueReminders": {
+    "text": "Recordatorios vencidos",
+    "source": "051cc2b13b7f"
+  },
+  "ui.pageEnd": {
+    "text": "Se muestran todos los resultados.",
+    "source": "959b6e22691e"
+  },
+  "ui.pageNotFound": {
+    "text": "Página no encontrada",
+    "source": "a469ab4ca4e5"
+  },
+  "ui.pageNotFoundDescription": {
+    "text": "La dirección no identifica ninguna página de ClaimCore.",
+    "source": "d35b48f97478"
+  },
+  "ui.pagePartial": {
+    "text": "Hay más resultados disponibles.",
+    "source": "ff02dd781a42"
+  },
+  "ui.pairedFacts": {
+    "text": "{first} y {second}",
+    "source": "a8c60ace0cf1"
+  },
+  "ui.pendingReminders": {
+    "text": "Recordatorios pendientes",
+    "source": "352897daa5d5"
+  },
+  "ui.people.person": {
+    "text": "Persona",
+    "source": "6007db63e18e"
+  },
+  "ui.people.roles": {
+    "text": "Roles",
+    "source": "c25337055464"
+  },
+  "ui.planAfterOpen": {
+    "text": "El expediente se ha abierto. Planificar un recordatorio es un paso siguiente independiente.",
+    "source": "fa8a15963b74"
+  },
+  "ui.preferencesNotSaved": {
+    "text": "Las preferencias funcionan durante esta sesión, pero no se han podido guardar en este navegador.",
+    "source": "861ebb38b269"
+  },
+  "ui.preparingRecovery": {
+    "text": "Guardando…",
+    "source": "23e39291d613"
+  },
+  "ui.previewing": {
+    "text": "Revisando…",
+    "source": "fcc53388888f"
+  },
+  "ui.previousAccounts": {
+    "text": "Cuentas anteriores",
+    "source": "c74522075fca"
+  },
+  "ui.previousMonth": {
+    "text": "Mes anterior",
+    "source": "6a2769502a5d"
+  },
+  "ui.primary": {
+    "text": "Principal",
+    "source": "efe10c80ec8a"
+  },
+  "ui.pseudo": {
+    "text": "Inglés ampliado (prueba de diseño)",
+    "source": "6f81f6466cb2"
+  },
+  "ui.queueDescription": {
+    "text": "Busca y continúa la tramitación de los expedientes que requieren atención.",
+    "source": "758595a14f42"
+  },
+  "ui.recordOptionalFact": {
+    "text": "Registrar {field} (opcional)",
+    "source": "da9e7bdfead7"
+  },
+  "ui.recovery": {
+    "text": "Cambios sin confirmar",
+    "source": "5907dc3e66b9"
+  },
+  "ui.recoveryCleanupUnavailable": {
+    "text": "Se conoce el resultado, pero no se ha podido eliminar este intento local. Se ha conservado su identidad; puedes volver a comprobar el estado.",
+    "source": "1dc1592f82ad"
+  },
+  "ui.recoveryDescription": {
+    "text": "No pudimos confirmar si estos cambios se registraron. ClaimCore los comprueba por ti. Cada respuesta será definitiva en {window}.",
+    "source": "eff410b18411"
+  },
+  "ui.recoveryEmpty": {
+    "text": "No hay cambios sin confirmar.",
+    "source": "c2d34418a5dd"
+  },
+  "ui.recoveryListingUnavailable": {
+    "text": "No se pueden leer ni actualizar las identidades de recuperación. Se conservan los registros existentes. Restablece el acceso al almacenamiento o resuelve los registros anteriores con el cliente correspondiente antes de volver a intentarlo.",
+    "source": "e2277d9e955f"
+  },
+  "ui.recoveryUnavailable": {
+    "text": "No enviada: el almacenamiento de recuperación no está disponible. Activa el almacenamiento del sitio o libera espacio y vuelve a intentarlo. Tu solicitud no se ha enviado.",
+    "source": "d65945e86bb7"
+  },
+  "ui.reference": {
+    "text": "{label}: {reference}",
+    "source": "73fe9c967c0c"
+  },
+  "ui.refreshAccounts": {
+    "text": "Actualizar las cuentas aptas",
+    "source": "792e2d92a7aa"
+  },
+  "ui.refreshWork": {
+    "text": "Actualizar la tramitación",
+    "source": "d8c38c942d9d"
+  },
+  "ui.reloadActors": {
+    "text": "Recargar personas",
+    "source": "8a0c53553115"
+  },
+  "ui.reloadCases": {
+    "text": "Volver a cargar los expedientes",
+    "source": "1e208585b01e"
+  },
+  "ui.reloadContract": {
+    "text": "Recargar la página",
+    "source": "437d0d63bfbd"
+  },
+  "ui.reloadCurrentCase": {
+    "text": "Volver a cargar el expediente actual",
+    "source": "dfad4aa77ca3"
+  },
+  "ui.reloadGrants": {
+    "text": "Volver a cargar las asignaciones",
+    "source": "6e21644bbc15"
+  },
+  "ui.reloadHistory": {
+    "text": "Recargar actividad",
+    "source": "10d39b0ca399"
+  },
+  "ui.reloadInterface": {
+    "text": "Volver a cargar la interfaz",
+    "source": "bdc3a5a1699e"
+  },
+  "ui.reminderAction": {
+    "text": "Acción planificada",
+    "source": "5818bdba66cb"
+  },
+  "ui.reminderDetails": {
+    "text": "Detalles del recordatorio",
+    "source": "1cd27d608c31"
+  },
+  "ui.reminderDue": {
+    "text": "Fecha planificada",
+    "source": "37b3b31a9fbe"
+  },
+  "ui.reminderQueueHint": {
+    "text": "Aquí los filtros de vencimiento se aplican a cada recordatorio. Las listas de expedientes usan el recordatorio más próximo de cada expediente.",
+    "source": "f1ad60c57bf8"
+  },
+  "ui.reminderState": {
+    "text": "Estado del recordatorio",
+    "source": "9320b222ccb0"
+  },
+  "ui.reminders": {
+    "text": "Recordatorios",
+    "source": "7971dd752669"
+  },
+  "ui.removeGrant": {
+    "text": "Eliminar el rol",
+    "source": "9a1fb81f279f"
+  },
+  "ui.retryExact": {
+    "text": "Enviar de nuevo",
+    "source": "feead925e260"
+  },
+  "ui.retryExactDescription": {
+    "text": "Reenviar envía exactamente el mismo cambio; no puede registrarse dos veces. Si sales de esta página, abre Cambios sin confirmar para ver la respuesta.",
+    "source": "534e3823f248"
+  },
+  "ui.retryLanguage": {
+    "text": "Volver a cargar el idioma",
+    "source": "0c776ceb4592"
+  },
+  "ui.retryView": {
+    "text": "Reintentar la carga",
+    "source": "a0f859bc4db2"
+  },
+  "ui.returnToCase": {
+    "text": "Volver al expediente",
+    "source": "7a55d0a50325"
+  },
+  "ui.returnToEdit": {
+    "text": "Volver a editar",
+    "source": "afc22f861264"
+  },
+  "ui.reviewDescription": {
+    "text": "Revisa los cambios y confírmalos.",
+    "source": "5c2b1066dca1"
+  },
+  "ui.review.basis": {
+    "text": "Basado en la versión {revision}, comprobado {when}.",
+    "source": "864dfe115c55"
+  },
+  "ui.rightToLeft": {
+    "text": "De derecha a izquierda",
+    "source": "4667424121a6"
+  },
+  "ui.roleNotAvailableAtScope": {
+    "text": "No disponible para los expedientes seleccionados",
+    "source": "008dd6597126"
+  },
+  "ui.roleNotAvailableForService": {
+    "text": "No disponible para cuentas de servicio",
+    "source": "23a43af3092c"
+  },
+  "ui.savedRecoveryAttempt": {
+    "text": "Intento guardado",
+    "source": "d152ac80fa8b"
+  },
+  "ui.scalarCount": {
+    "text": "Caracteres: {count}/{maximum}",
+    "source": "907b0d890dff"
+  },
+  "ui.search": {
+    "text": "Buscar",
+    "source": "49c266baaaa7"
+  },
+  "ui.selectedAccount": {
+    "text": "Cuenta seleccionada",
+    "source": "8b63d9475c25"
+  },
+  "ui.settings": {
+    "text": "Ajustes",
+    "source": "74a883a037bc"
+  },
+  "ui.settingsIntroduction": {
+    "text": "Estas preferencias se aplican a este navegador. Nunca cambian los valores registrados.",
+    "source": "2364c3aaf5d9"
+  },
+  "ui.shell.administration": {
+    "text": "Administración",
+    "source": "4b42c6690ebe"
+  },
+  "ui.shell.authorityHistory": {
+    "text": "Historial de acceso",
+    "source": "2023c056fe61"
+  },
+  "ui.shell.businessDate": {
+    "text": "Fecha operativa",
+    "source": "e727f917d3c3"
+  },
+  "ui.shell.businessDateChanged": {
+    "text": "La fecha operativa es ahora {date}. Actualiza para renovar las fechas de vencimiento.",
+    "source": "efb3f0ec78c4"
+  },
+  "ui.shell.checkNow": {
+    "text": "Comprobar ahora",
+    "source": "2937cffb37ab"
+  },
+  "ui.shell.people": {
+    "text": "Personas y acceso",
+    "source": "8df747cef67a"
+  },
+  "ui.shell.searchCases": {
+    "text": "Buscar expedientes",
+    "source": "22c2a4061665"
+  },
+  "ui.shell.unresolved": {
+    "text": "Cambios sin confirmar: {count}",
+    "source": "dbbc216f94f3"
+  },
+  "ui.signIn": {
+    "text": "Iniciar sesión",
+    "source": "bfd402b2f6f3"
+  },
+  "ui.signInTitle": {
+    "text": "Iniciar sesión en el registro de expedientes",
+    "source": "df2702f36960"
+  },
+  "ui.signOut": {
+    "text": "Cerrar sesión",
+    "source": "48f0d3d397d4"
+  },
+  "ui.submitting": {
+    "text": "Registrando…",
+    "source": "7ea93caac0f5"
+  },
+  "ui.summaryCounts": {
+    "text": "Expedientes coincidentes: {count}",
+    "source": "2b9110dcd544"
+  },
+  "ui.summaryDetails": {
+    "text": "Mostrar los totales del resumen",
+    "source": "aa9b920c97a9"
+  },
+  "ui.theme": {
+    "text": "Tema",
+    "source": "efb52e7172b7"
+  },
+  "ui.themeAccessibility": {
+    "text": "Ambos colores de acento admiten los modos claro y oscuro. Los ajustes de contraste de tu dispositivo se respetan automáticamente.",
+    "source": "efad81ae5929"
+  },
+  "ui.themeDark": {
+    "text": "Oscuro",
+    "source": "60acc53f13a5"
+  },
+  "ui.themeLight": {
+    "text": "Claro",
+    "source": "dbcd5e7bb7a0"
+  },
+  "ui.themeSystem": {
+    "text": "Igual que el dispositivo",
+    "source": "5e4aca65d4a4"
+  },
+  "ui.tryAgain": {
+    "text": "Volver a intentarlo",
+    "source": "d8b8392e2c54"
+  },
+  "ui.unchangedUntilSubmit": {
+    "text": "No se registra nada hasta que confirmes.",
+    "source": "23eba3cab92a"
+  },
+  "ui.version": {
+    "text": "Versión",
+    "source": "dd167905de0d"
+  },
+  "ui.viewLoadFailed": {
+    "text": "No se ha podido cargar esta vista. Reintenta la carga o recarga cuando puedas abandonar tu trabajo actual.",
+    "source": "8d021b7893a2"
+  },
+  "ui.viewLoading": {
+    "text": "Cargando la vista…",
+    "source": "a91ca23dc6a9"
+  },
+  "ui.workDateBasis": {
+    "text": "Fecha operativa {date} ({zone}).",
+    "source": "10dbbbcb3088"
+  },
+  "ui.workQueue": {
+    "text": "Cola de trabajo",
+    "source": "696e7291ea90"
+  },
+  "ui.worklistSearch": {
+    "text": "Filtrar esta vista",
+    "source": "c2eec812666c"
+  },
+  "ui.yes": {
+    "text": "Sí",
+    "source": "85a39ab345d6"
+  },
+  "ui.timeline.title": {
+    "text": "Actividad",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.filter": {
+    "text": "Filtrar la actividad",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.all": {
+    "text": "Todo",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.facts": {
+    "text": "Datos",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.work": {
+    "text": "Tramitación",
+    "source": "104ab9213e28"
+  },
+  "ui.timeline.details": {
+    "text": "Mostrar los detalles",
+    "source": "1af77ee273cb"
+  },
+  "ui.timeline.nextReminder": {
+    "text": "Próximo recordatorio",
+    "source": "153fddb917f5"
+  },
+  "ui.timeline.empty": {
+    "text": "No hay actividad que mostrar.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.more": {
+    "text": "Cargar más",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.before": {
+    "text": "Valor anterior:",
+    "source": "fca574a5a363"
+  },
+  "ui.timeline.after": {
+    "text": "Valor nuevo:",
+    "source": "dca4696d7a91"
+  },
+  "ui.timeline.withheld": {
+    "text": "No tienes acceso a estos cambios.",
+    "source": "d6194fd34931"
+  },
+  "ui.accessState.title": {
+    "text": "Aún no tienes acceso",
+    "source": "329f122dcf0f"
+  },
+  "ui.accessState.disabled": {
+    "text": "Esta cuenta está desactivada",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.requested": {
+    "text": "Hemos avisado a los propietarios. Un propietario puede dar acceso a esta cuenta.",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.provider": {
+    "text": "Proveedor",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.copy": {
+    "text": "Datos para tu administrador",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.check": {
+    "text": "Comprobar el acceso",
+    "source": "abb9a172a69b"
+  },
+  "ui.stage.recorded": {
+    "text": "Registrado",
+    "source": "c7175fa7a0db"
+  },
+  "ui.stage.noDate": {
+    "text": "Fecha no disponible",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.reinstated": {
+    "text": "Expediente restablecido. Revisa los datos actuales y las próximas acciones.",
+    "source": "a7a3e603b99e"
+  },
+  "ui.conflict.title": {
+    "text": "Este expediente ha cambiado",
+    "source": "ae4ec9da2e36"
+  },
+  "ui.conflict.kept": {
+    "text": "Se conserva tu borrador. Revisa los cambios antes de prepararlo con respecto a la última versión.",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "Cargando la última versión…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "Revisar con la última versión",
+    "source": "f0124537d549"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "No disponible con los datos actuales.",
+    "source": "d43925e74ff6"
+  },
+  "ui.returnToWorkspace": {
+    "text": "Volver al espacio de trabajo",
+    "source": "02e565ef63bc"
+  },
+  "ui.enterDetails": {
+    "text": "Introducir los datos",
+    "source": "ebaf73345eea"
+  },
+  "ui.review.checked": {
+    "text": "Comprobado {when}.",
+    "source": "e249af3ff82a"
+  },
+  "ui.requests.empty": {
+    "text": "No hay solicitudes de acceso pendientes.",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "Cargar más solicitudes de acceso",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "Actualizar las solicitudes de acceso",
+    "source": "0777c623824e"
+  },
+  "ui.manualFilters": {
+    "text": "Filtros manuales",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "Usa los filtros manuales para incluir la tramitación inactiva.",
+    "source": "dc4f2d354574"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "Aún sin confirmar. La respuesta será definitiva antes de {finalAt}.",
+    "source": "fc1019052c76"
+  }
 }

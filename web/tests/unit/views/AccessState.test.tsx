@@ -88,7 +88,7 @@ it.each(inactive)(
     await screen.findByRole("heading", { level: 1 });
     await userEvent.setup().click(screen.getByRole("button", { name: "Check access" }));
     expect(await screen.findByRole("alert")).toHaveTextContent(
-      "The local service could not be reached.",
+      "ClaimCore could not be reached. Check your connection.",
     );
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       requester.kind === "DISABLED" ? "This account is disabled" : "You don’t have access yet",

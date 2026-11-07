@@ -34,8 +34,8 @@ module Terms =
             Name = Vocabulary.name vocabulary
             Labels =
                 Vocabulary.entries vocabulary
-                |> List.map (fun (value, token) ->
-                    token, Vocabulary.messageKey vocabulary value "label")
+                |> List.map (fun (_, token) ->
+                    token, PresentationKeys.code (Vocabulary.name vocabulary) token)
         }
 
     let private fieldTerms =

@@ -296,7 +296,7 @@ let hostReplyPresentation =
                                 Api.logout
                                 (Outcome.Succeeded(
                                     Presented.create
-                                        (Descriptor.dismissedAccessRequest >> Descriptor.recordView)
+                                        (Descriptor.logout >> Descriptor.recordView)
                                         ()
                                 ))
                         ))

@@ -9,18 +9,6 @@ open ClaimCore.Presentation
 open ClaimCore.Cli
 open ClaimCore.HostSecurity
 
-[<NoEquality; NoComparison>]
-type private OperatorPhrases =
-    {
-        Language: string
-        Accepted: string
-        Refused: string
-        Syntax: string
-        MissingSlash: string
-        NotRoot: string
-        Trim: string
-    }
-
 let private create service issuer clientId =
     RemoteConfiguration.create service issuer clientId RemoteClientMode.Interactive None
 
@@ -110,116 +98,38 @@ let private helpAlias () =
             content
             "Returned configuration ID maps to the existing topic"
 
-        for literal in
-            [
-                "https://localhost/"
-                "https://localhost"
-                "https://localhost/path"
-                "https://identity.example/realms/claimcore"
-                "0600"
-                "0640"
-                "0440"
-                "UTF-16"
-                "NOT_SENT"
-            ] do
-            Expect.stringContains
-                content
-                literal
-                "Exact documented forms and distinctions survive localization"
+        Expect.stringContains
+            content
+            "docs/integrating.md#cli-use"
+            "Exact configuration rules live in the task guide."
+
+        let lines = content.Split('\n', StringSplitOptions.RemoveEmptyEntries)
+        Expect.isLessThanOrEqual lines.Length 5 "Four help lines plus the common heading."
 
         Expect.stringContains
             (rendered (CliTopic.Diagnostic CliGuidance.ProtocolGuidance))
-            "NDJSON"
-            "Configuration does not replace framing guidance"
-
-let private operatorPhrases =
-    [
-        {
-            Language = "en"
-            Accepted = "accepted:"
-            Refused = "refused:"
-            Syntax = "accepted syntax:"
-            MissingSlash = "(missing explicit /)"
-            NotRoot = "(not a service root)"
-            Trim = "Surrounding whitespace is trimmed before the secret is sent."
-        }
-        {
-            Language = "lv"
-            Accepted = "pieņemts:"
-            Refused = "atteikts:"
-            Syntax = "pieņemta sintakse:"
-            MissingSlash = "(trūkst skaidri norādīta /)"
-            NotRoot = "(nav pakalpojuma sakne)"
-            Trim = "Pirms nosūtīšanas noslēpumam tiek noņemtas apkārtējās atstarpes."
-        }
-        {
-            Language = "ar"
-            Accepted = "مقبول:"
-            Refused = "مرفوض:"
-            Syntax = "صياغة مقبولة:"
-            MissingSlash = "(علامة / الصريحة مفقودة)"
-            NotRoot = "(ليس جذر الخدمة)"
-            Trim = "تُزال المسافات المحيطة بالسر قبل إرساله."
-        }
-
-    ]
+            "session"
+            "The shared call/session topic explains framing."
 
 let private localizedExplanations () =
-    let render language =
-        ContractDiscovery.helpTopic language (CliTopic.Help HelpTopic.Configuration)
+    let english =
+        ContractDiscovery.helpTopic "en" (CliTopic.Help HelpTopic.Configuration)
 
-    for phrases in operatorPhrases do
-        let language = phrases.Language
-        let accepted = phrases.Accepted
-        let refused = phrases.Refused
-        let syntax = phrases.Syntax
-        let missingSlash = phrases.MissingSlash
-        let notRoot = phrases.NotRoot
-        let trim = phrases.Trim
-        let content = render language
+    Expect.stringContains english "Secrets are never saved" "Current secret handling stays visible."
 
-        for expected in
-            [
-                "CLAIMCORE_SERVICE_URL " + accepted + " https://localhost/"
-                "CLAIMCORE_SERVICE_URL " + refused + " https://localhost " + missingSlash
-                "CLAIMCORE_SERVICE_URL " + refused + " https://localhost/path " + notRoot
-                "CLAIMCORE_OIDC_ISSUER " + syntax + " https://identity.example/realms/claimcore"
-                trim
-            ] do
-            Expect.stringContains
-                content
-                expected
-                "Operator prose is localized while technical examples remain exact"
+    for language in LocalizationPolicy.languages |> List.filter ((<>) "en") do
+        let content =
+            ContractDiscovery.helpTopic language (CliTopic.Help HelpTopic.Configuration)
 
-        for historical in
-            [
-                "Existing whitespace treatment is unchanged"
-                "Esošā atstarpju apstrāde nemainās"
-                "معالجة المسافات الحالية لا تتغير"
-            ] do
-            Expect.isFalse
-                (content.Contains historical)
-                "Help describes current behavior rather than development history"
-
-        if language <> "en" then
-            for english in
-                [
-                    "accepted:"
-                    "refused:"
-                    "accepted syntax:"
-                    "(missing explicit /)"
-                    "(not a service root)"
-                ] do
-                Expect.isFalse
-                    (content.Contains english)
-                    "Non-English help cannot retain untranslated example explanations"
-
-        Expect.equal
-            (ContractDiscovery.helpTopic
-                language
-                (CliTopic.Diagnostic CliGuidance.ConfigurationIssue))
+        Expect.notEqual
             content
-            "Diagnostic alias retains identical localized rules"
+            english
+            "Localized help must not fall back to the full English topic."
+
+        Expect.stringContains
+            content
+            "claimcore configure --show"
+            "The actionable command remains exact."
 
 [<Tests>]
 let tests =

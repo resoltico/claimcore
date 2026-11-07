@@ -180,7 +180,7 @@ it("seeds the bounded conflict range, pages its issued cursor, and explicitly re
   expect(document.querySelectorAll(".revision-conflict .timeline-entry")).toHaveLength(50);
   expect(drafts).toHaveLength(1);
   expect(pages).toHaveLength(0);
-  await user.click(screen.getByRole("button", { name: "Load 50 more" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
     expect(document.querySelectorAll(".revision-conflict .timeline-entry")).toHaveLength(52);
   });
@@ -229,7 +229,7 @@ it("keeps a withheld conflict opaque and refreshes before allowing an explicit n
   await screen.findByRole("button", { name: "Review against latest" });
   expect(field).toHaveValue("My retained draft");
   expect(document.querySelector(".revision-conflict")).toHaveTextContent(
-    "These changes are not available to this account.",
+    "You do not have access to these changes.",
   );
   expect(document.querySelector(".revision-conflict .timeline-entry")).toBeNull();
   expect(fetch).toHaveBeenCalledTimes(2);
@@ -315,7 +315,7 @@ it("hides previously disclosed changes when a continuation refusal is followed b
   const field = await author(user);
   await screen.findByRole("button", { name: "Review against latest" });
   expect(document.body).toHaveTextContent("Core change 53");
-  await user.click(screen.getByRole("button", { name: "Load 50 more" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
     expect(document.querySelector(".case-detail")).toHaveTextContent("After access change");
   });
@@ -367,7 +367,7 @@ it("discards a late conflict page when explicit re-preparation replaces its owne
   editor();
   await author(user);
   await screen.findByRole("button", { name: "Review against latest" });
-  await user.click(screen.getByRole("button", { name: "Load 50 more" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   const pageCall = fetch.mock.calls.find(
     ([path]) => typeof path === "string" && path.endsWith("case.timeline"),
   );

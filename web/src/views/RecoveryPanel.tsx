@@ -9,7 +9,13 @@ export const RecoveryPanel = ({ initialOperationId }: { initialOperationId?: str
   return (
     <section className="recovery-panel" aria-labelledby="recovery-title">
       <h1 id="recovery-title">{p.text("ui.recovery")}</h1>
-      <p className="page-description">{p.text("ui.recoveryDescription")}</p>
+      <p className="page-description">
+        {p.text("ui.recoveryDescription", {
+          window: p.text("label.operationWindow", {
+            minutes: p.integer(productMetadata.catalog.limits.operationWindowMilliseconds / 60000),
+          }),
+        })}
+      </p>
       <UnresolvedNotice showEmpty />
       <details className="recovery-lookup" open={operation !== undefined}>
         <summary>{p.text("ui.generalOperationLookup")}</summary>

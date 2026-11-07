@@ -728,10 +728,10 @@ for (const language of ["en", "ar"] as const) {
     await clean();
     const filters = timeline.locator(".timeline-filters button");
     await filters.nth(2).click();
-    await expect(timeline).toContainText(ui(language, "workAct.UPDATE_WORK.label"));
+    await expect(timeline).toContainText(ui(language, "act.UPDATE_WORK.label"));
     expect(reads).toBe(2);
     await page.setViewportSize({ width: language === "en" ? 390 : 1440, height: 900 });
-    await expect(timeline).toContainText(ui(language, "workAct.UPDATE_WORK.label"));
+    await expect(timeline).toContainText(ui(language, "act.UPDATE_WORK.label"));
     await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => reads).toBe(3);
 
@@ -739,7 +739,7 @@ for (const language of ["en", "ar"] as const) {
       width: language === "ar" ? 390 : 1440,
       height: language === "ar" ? 844 : 1000,
     });
-    await expect(timeline).toContainText(ui(language, "workAct.UPDATE_WORK.label"));
+    await expect(timeline).toContainText(ui(language, "act.UPDATE_WORK.label"));
     await expect(filters.nth(2)).toHaveAttribute("aria-pressed", "true");
     await expect.poll(() => reads).toBe(4);
     await expectAccessible(page);

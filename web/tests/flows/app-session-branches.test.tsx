@@ -13,7 +13,7 @@ const actions = () => ({ logout: vi.fn(), refresh: vi.fn() });
 it("renders the loading shell before local session discovery completes", () => {
   useSession.mockReturnValue({ state: { kind: "loading", epoch: 0 }, ...actions() });
   render(<App />);
-  expect(screen.getByText("Loading local session…")).toBeVisible();
+  expect(screen.getByText("Loading session…")).toBeVisible();
 });
 
 it("renders a recoverable session failure and invokes its refresh action", async () => {
@@ -24,7 +24,9 @@ it("renders a recoverable session failure and invokes its refresh action", async
     ...state,
   });
   render(<App />);
-  expect(screen.getByRole("alert")).toHaveTextContent("The local service could not be reached.");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "ClaimCore could not be reached. Check your connection.",
+  );
   await user.click(screen.getByRole("button", { name: "Try again" }));
   expect(state.refresh).toHaveBeenCalledOnce();
 });

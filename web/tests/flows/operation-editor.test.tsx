@@ -67,7 +67,7 @@ it.each(["lost", "unknown", "malformed"] as const)(
     render(editor({ onMutationLockChange: locked }));
     const user = await reviewAndConfirm();
     expect(await screen.findByRole("button", { name: "Send again" })).toBeVisible();
-    expect(screen.getByRole("alert")).toHaveTextContent("unknown");
+    expect(screen.getByRole("alert")).toHaveTextContent("could not confirm");
     expect(locked).toHaveBeenCalledWith(true);
     const before = vi.mocked(fetch).mock.calls[1]?.[1]?.body;
     await user.click(screen.getByRole("button", { name: "Send again" }));

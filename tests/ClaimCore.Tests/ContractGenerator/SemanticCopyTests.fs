@@ -37,17 +37,17 @@ let tests =
             testCase "English explains final lookup and automatic unconfirmed checks" (fun () ->
                 Expect.stringContains
                     (text "en" "endpoint.operation.get.meaning")
-                    "accepted receipt"
+                    "whether a change was recorded"
                     "Acceptance is observable"
 
                 Expect.stringContains
                     (text "en" "endpoint.operation.get.meaning")
-                    "lifetime ends"
+                    "{window}"
                     "Absence is bounded by expiry"
 
                 Expect.stringContains
-                    (text "en" "ui.retryExactDescription")
-                    "automatically"
+                    (text "en" "ui.recoveryDescription")
+                    "checks them for you"
                     "Restart recovery checks identity only")
 
             testCase
@@ -63,10 +63,10 @@ let tests =
                             "Reference breaks ties"
                         ] do
                         Expect.stringContains rule witness "Matches the declared SQL ordering")
-            testCase "combined view counts name their shared snapshot and date basis" (fun () ->
+            testCase "combined view counts describe both sets and the business day" (fun () ->
                 let meaning = text "en" "endpoint.work.views.meaning"
-                Expect.stringContains meaning "same snapshot" "Both count sets share one snapshot"
-                Expect.stringContains meaning "date basis" "The date belongs to that snapshot")
+                Expect.stringContains meaning "cases and reminders" "Both count sets are described"
+                Expect.stringContains meaning "today" "Counts refer to the observed business day")
             testCase
                 "recorded opening milestones and Korean reference dates are not current active states or working-day rules"
                 (fun () ->
@@ -100,14 +100,14 @@ let tests =
                         [
                             "lv",
                             "Saglabātās operācijas saturā ir neatbilstība",
-                            "Saglabājiet šo instalāciju",
-                            "Apturiet darbu un palaidiet verify",
+                            "atbilstošo programmas versiju",
+                            "administratoram veikt pārbaudi",
                             "Mēģiniet vēlreiz"
                             "ar",
                             "محتوى العملية المخزّن غير متسق",
-                            "حافظ على هذا التثبيت",
-                            "توقف وشغّل verify",
-                            "أعد المحاولة"
+                            "إصدار البرنامج المطابق",
+                            "المسؤول إجراء التحقق",
+                            "حاول مجددًا"
                         ] do
                         for key, witness in
                             [

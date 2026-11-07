@@ -41,8 +41,8 @@ let private producerMutations () =
         [
             "cli.usage.invalidInteger", "value"
             "cli.delivery.unresolved", "statusCommand"
-            "cli.help.call", "maximumRequestBytes"
-            "cli.help.configuration", "maximumTrustRootBytes"
+            "cli.help.delivery", "window"
+            "label.operationWindow", "minutes"
             "cli.help.layout", "body"
         ]
 
@@ -65,7 +65,7 @@ let private producerMutations () =
         [
             "act.OPEN.label"
             "act.OPEN.meaning"
-            "act.OPEN.consequence"
+            "act.VOID.consequence"
             "field.principal.kind.label"
             "group.registration.hint"
         ] do

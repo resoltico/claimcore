@@ -36,7 +36,7 @@ it("uses core widget hints and keeps precise formatting rules behind explicit he
       />
     </>,
   );
-  const input = screen.getByRole("textbox", { name: "Amount claimed" });
+  const input = screen.getByRole("textbox", { name: "Claimed amount" });
   expect(input).toHaveValue("1,25");
   expect(input).toHaveAccessibleDescription("How much the claimant is asking for.");
   expect(input).not.toHaveAccessibleDescription(/ASCII|YYYY|redundant|decimal point/u);
@@ -45,7 +45,7 @@ it("uses core widget hints and keeps precise formatting rules behind explicit he
   )[0]!;
   expect(segment).toHaveAccessibleDescription(/When the incident happened/u);
   expect(segment).not.toHaveAccessibleDescription(/ASCII|YYYY/u);
-  const help = screen.getByLabelText("Explain fields: Amount claimed", { exact: true });
+  const help = screen.getByLabelText("Explain fields: Claimed amount", { exact: true });
   await userEvent.click(help);
   expect(help.closest("details")).toHaveAttribute("open");
   expect(help.closest("details")).toHaveTextContent(

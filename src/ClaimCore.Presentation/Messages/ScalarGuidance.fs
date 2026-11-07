@@ -142,10 +142,13 @@ module ScalarGuidance =
             message key [ "maximumGrants", GuidanceArgument.Count AuthorityAdmission.MaximumGrants ]
         | _ -> message key []
 
-    let all =
+    let byInput =
         (CaseFields.declarations
-         |> List.map (fun field -> forField field.Field |> Option.get))
-        @ (InteractionInput.technical |> List.map forInput)
+         |> List.map (fun field -> InteractionInput.Target(InputTarget.Field field.Field)))
+        @ InteractionInput.technical
         @ (Vocabulary.all RecordGroup.vocabulary
-           |> List.map (InputTarget.Group >> InteractionInput.Target >> forInput))
-        |> List.distinctBy _.Key
+           |> List.map (InputTarget.Group >> InteractionInput.Target))
+        |> List.map (fun input -> InteractionInput.key input, forInput input)
+        |> List.distinctBy fst
+
+    let all = byInput |> List.map snd |> List.distinctBy _.Key

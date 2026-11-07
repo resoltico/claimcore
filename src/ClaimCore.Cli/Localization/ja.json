@@ -1,107 +1,414 @@
 {
-  "cli.beforeDispatchFailure": "送信前に予期しないエラーが発生しました。",
-  "cli.callbackAccepted": "認証応答を受信しました。ターミナルに戻ってください。",
-  "cli.callbackRefused": "認証応答が拒否されました。",
-  "cli.configurationIssue": "{setting}：{issue}。",
-  "cli.delivery.unresolved": "Change unconfirmed. Retry the exact request with {retryCommand}, or check it with {statusCommand}. The check becomes final when the operation lifetime ends.",
-  "cli.failure.AUTHENTICATION_FAILED": "認証に失敗しました。",
-  "cli.failure.CANCELLED": "リクエストがキャンセルされました。",
-  "cli.failure.CONFIGURATION_INVALID": "CLIの設定が不正です。",
-  "cli.failure.CONTRACT_MISMATCH": "クライアントとサービスの契約が一致しません。",
-  "cli.failure.INSTALLATION_MISMATCH": "未送信：このリクエストは別の設置環境に属します。元の設置環境で結果を確定し、この設置環境には新しいリクエストを準備してください。",
-  "cli.failure.INTERNAL": "クライアント内部のエラーが発生しました。",
-  "cli.failure.INVALID_FRAME": "入力フレームが不正です。",
-  "cli.failure.INVALID_RESPONSE": "サービスの応答が不正です。",
-  "cli.failure.RECOVERY_UNAVAILABLE": "未送信：復旧用ストレージを利用できません。非公開のXDG_STATE_HOME/claimcoreディレクトリ（既定は~/.local/state/claimcore）、空き容量、権限を確認して再試行してください。",
-  "cli.failure.SERVICE_UNAVAILABLE": "サービスを利用できません。",
-  "cli.family.authority": "利用者とアクセス権限",
-  "cli.family.call": "構造化されたリクエストを1つ送信します。",
-  "cli.family.case": "案件情報と決定",
-  "cli.family.configure": "公開接続設定を保存するか、設定の取得元を表示します。",
-  "cli.family.context": "自分のアカウントと設置環境",
-  "cli.family.describe": "カタログの項目を説明します。",
-  "cli.family.help": "ヘルプを表示します。",
-  "cli.family.operation": "Check unconfirmed changes",
-  "cli.family.recovery": "ローカルの試行を復旧します。",
-  "cli.family.reminder": "次の作業とフォローアップ",
-  "cli.family.schema": "プロトコルのスキーマを表示します。",
-  "cli.family.session": "1つのセッションで構造化されたリクエストを処理します。",
-  "cli.family.shell": "1回のサインインで対話型コマンドを実行します。",
-  "cli.family.version": "製品のバージョンを表示します。",
-  "cli.family.work": "担当の割り当てと対応メモ",
-  "cli.help.CLI_PROTOCOL_GUIDANCE": "call：UTF-8のJSON文書を1つ入力します。複数行を使用でき、stdinを閉じます（EOF）。\nsession：NDJSON形式で、物理的な1行に完全なフレームを1つ入力します。サインインはプロセス内でのみ再利用し、認証情報は保存しません。\n呼び出しバイト数 ≤ {maximumInvocationBytes}、リクエスト入力バイト数 ≤ {maximumRequestBytes}、応答バイト数 ≤ {maximumResponseBytes}\n元のリクエストのバイト列、operationId、expectedRevisionを保管してください。結果不明は拒否を意味しません。まったく同じリクエストだけを再試行してください。",
-  "cli.help.call": "Send one JSON frame. Limits: {maximumInvocationBytes} bytes per frame, {maximumRequestBytes} per request, {maximumResponseBytes} per response. Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.commands": "コマンドを表示するには{command}を実行してください。",
-  "cli.help.configuration": "公開プロフィールは$XDG_CONFIG_HOME/claimcore/profile.json、XDG_CONFIG_HOMEが未設定の場合は~/.config/claimcore/profile.jsonです。configureはファイルモード0600、ディレクトリモード0700で原子的に保存します。serviceUrl、issuer、clientId、authMode、serviceTrustRootFile、oidcTrustRootFile、languageのみ受け付けます。読み取りのたびに既存の非公開ファイル検証を適用し、不正な形式、不明な項目、秘密情報らしい項目を拒否します。環境変数は公開設定の値を個別に上書きします。CLAIMCORE_OIDC_CLIENT_SECRET_FILEは環境変数専用で、秘密情報とトークンは保存しません。configure --showは秘密情報を読まずに有効な値と環境変数・プロフィール・未設定の取得元を表示します。秘密ファイルの設定は存在と取得元のみを表示します。\nサービス：パスが正確に/である正規の絶対HTTPSルートです。ユーザー情報、クエリ、フラグメントは使用できず、入力は正規化しません。発行者：プロバイダーの正確な正規HTTPS発行者です。プロバイダーのパスは使用できます。構文上の受理はTLS・検出・認証の成功を保証しません。\nCLAIMCORE_SERVICE_URLの有効例：https://localhost/\nCLAIMCORE_SERVICE_URLの拒否例：https://localhost（明示的な/がない）\nCLAIMCORE_SERVICE_URLの拒否例：https://localhost/path（サービスのルートではない）\nCLAIMCORE_OIDC_ISSUERの有効な構文：https://identity.example/realms/claimcore\nクライアントID：空白のみは不可、前後の空白も不可です。最大256 UTF-16コード単位\nモード：リテラルのinteractive（ブラウザーPKCE）またはautomation（秘密情報のFILEパスが必要）です。秘密情報の内容をargv、環境変数の値、診断に含めないでください。\n秘密ファイル：検証を通過した絶対パスで、読み取り可能な通常ファイルに空白のみではないUTF-8の内容が必要です。秘密情報を送信する前に前後の空白を除去します。最大バイト数：{maximumSecretBytes}\n任意の信頼ルートFILEパス：有効なPEM CAルートです。省略するとシステムの信頼を使用します。上書きはHTTPSループバックまたは.localhostエンドポイントに限り、ホスト名と証明書の検証は維持します。最大バイト数：{maximumTrustRootBytes}\n非公開入力：NULを含まない有効なUTF-8の絶対パスで、読み取り可能な通常ファイルです。他ユーザーのアクセスおよびグループの書き込み・実行は不可です。グループの読み取りは許可します。0600で十分で、0640と0440も受理される場合があります。万能なchmod修復ではありません。Windowsの非公開ファイルの実行時動作は未検証です。ハンドル・シンボリックリンク、所有権、ACLの制限はdocs/operating.md#private-configurationを参照してください。\nMISSING、INVALID、PRIVATE_INPUT_REFUSEDは互いに異なる既知の事実です。今回の設定試行はNOT_SENTであり、以前のプロセスにまたがる変更の不確実性は解消しません。\nCLAIMCORE_SERVICE_URL\nCLAIMCORE_OIDC_ISSUER\nCLAIMCORE_OIDC_CLIENT_ID\nCLAIMCORE_CLI_AUTH_MODE\nCLAIMCORE_OIDC_CLIENT_SECRET_FILE\nCLAIMCORE_CLI_OIDC_TRUST_ROOT_FILE\nCLAIMCORE_CLI_SERVICE_TRUST_ROOT_FILE\n言語は--language、CLAIMCORE_LANGUAGE、プロフィールのlanguage、LC_ALL/LC_MESSAGES/LANG、英語の順で選択します。対応している表示言語のみ使用できます。configure --showは有効な言語とその取得元を表示します。",
-  "cli.help.configure": "公開プロフィールは$XDG_CONFIG_HOME/claimcore/profile.json、XDG_CONFIG_HOMEが未設定の場合は~/.config/claimcore/profile.jsonです。configureはファイルモード0600、ディレクトリモード0700で原子的に保存します。serviceUrl、issuer、clientId、authMode、serviceTrustRootFile、oidcTrustRootFile、languageのみ受け付けます。読み取りのたびに既存の非公開ファイル検証を適用し、不正な形式、不明な項目、秘密情報らしい項目を拒否します。環境変数は公開設定の値を個別に上書きします。CLAIMCORE_OIDC_CLIENT_SECRET_FILEは環境変数専用で、秘密情報とトークンは保存しません。configure --showは秘密情報を読まずに有効な値と環境変数・プロフィール・未設定の取得元を表示します。秘密ファイルの設定は存在と取得元のみを表示します。\n言語は--language、CLAIMCORE_LANGUAGE、プロフィールのlanguage、LC_ALL/LC_MESSAGES/LANG、英語の順で選択します。対応している表示言語のみ使用できます。configure --showは有効な言語とその取得元を表示します。",
-  "cli.help.delivery": "Keep the operation ID if delivery is unconfirmed. Repeat the same request with {retryCommand}, or check with {statusCommand}. The check becomes final after the operation lifetime.",
-  "cli.help.describe": "説明にはラベル、意味、受け付けられる入力が表示されます。静的な機能を説明するもので、現在の実行資格を示すものではありません。",
-  "cli.help.examples": "オフラインでリクエストを準備し、スキーマを確認してから、受け付けられるフレームを送信してください。",
-  "cli.help.globalOptions": "共通オプション",
-  "cli.help.help": "コマンドのグループを調べるか、ヘルプの項目を選択してください。",
-  "cli.help.layout": "ClaimCoreの構造化HTTPSクライアントです。ヘルプと機能の確認はオフラインで利用でき、callとsessionには認証が必要です。\n{body}",
-  "cli.help.liveTraversal": "一覧・エクスポートの巡回はライブです。各ページは現在の権限と独自のスナップショットを使用します。同時に並び順やフィルターが変更されると、行の移動、重複、欠落が起こる場合があります。--allは固定時点のエクスポートを作成しません。",
-  "cli.help.recovery": "Use recovery list to show identity-only attempts for the current account and installation. recovery check ATTEMPT_ID checks the result. Interactive checks repeat until final; automation prints PENDING with finalAt. Use --format json for machine output. Restart recovery never recreates or resubmits a change.",
-  "cli.help.schema": "リクエストと応答のスキーマを確認します。スキーマはJSONで出力されます。",
-  "cli.help.session": "call：UTF-8のJSON文書を1つ入力します。複数行を使用でき、stdinを閉じます（EOF）。\nsession：NDJSON形式で、物理的な1行に完全なフレームを1つ入力します。サインインはプロセス内でのみ再利用し、認証情報は保存しません。\n呼び出しバイト数 ≤ {maximumInvocationBytes}、リクエスト入力バイト数 ≤ {maximumRequestBytes}、応答バイト数 ≤ {maximumResponseBytes}\n元のリクエストのバイト列、operationId、expectedRevisionを保管してください。結果不明は拒否を意味しません。まったく同じリクエストだけを再試行してください。",
-  "cli.help.shell": "対話型ターミナル専用で、automationモードは拒否されます。既存のコマンド、help、describeを実行し、exitまたはEOFで終了します。引用符とバックスラッシュは文字列をまとめ、シェルのメタ文字はそのまま扱います。矢印キーの履歴とアクセス・更新トークンはメモリ内だけに存在します。コマンドがないまま15分経過した場合と終了時にトークンを破棄します。更新に失敗するとブラウザーのサインインを再開します。Ctrl-Cでコマンドをキャンセルし、空のプロンプトでもう一度押すと終了します。各コマンドは終了コードを表示し、exit 4では正確な再試行フレームと確定用コマンドを保持します。履歴ファイルは作成しません。",
-  "cli.help.version": "クライアントのバージョンを表示します。",
-  "cli.review.confirm": "この変更を記録しますか？ [はい/いいえ（既定）] ",
-  "cli.shell.exitCode": "終了コード：{code}",
-  "cli.shell.invalidLine": "引用符が閉じていないか、末尾にバックスラッシュがあります。コマンドは実行されませんでした。",
-  "cli.text.accessSources": "直接の役割：{direct}、設置環境からの役割：{inherited}、有効な役割：{effective}",
-  "cli.text.authorityHistoryEmpty": "選択条件に一致する権限の変更はありません。",
-  "cli.text.code": "コード",
-  "cli.text.cursorReached": "カーソル{cursor}で停止しました。",
-  "cli.text.editorCleanupUnavailable": "非公開のエディターテキストを削除できませんでした。リクエストは準備されていません。再試行前にローカルの一時ファイルを確認してください。",
-  "cli.text.grants": "権限の割り当て",
-  "cli.text.next": "次へ",
-  "cli.text.notRecorded": "記録されていません。",
-  "cli.text.observed": "取得日時 {observed}・業務日 {businessDate}（{timeZone}）",
-  "cli.text.recoveryAttempt": "試行{attemptId}：{subject} {act}、操作{operationId}。",
-  "cli.text.recoveryCleanupUnavailable": "結果は判明していますが、このローカルの試行を削除できませんでした。識別情報は保持されており、再度状態を確認できます。",
-  "cli.text.recoveryEmpty": "No unconfirmed changes for this account and installation.",
-  "cli.text.state": "状態",
-  "cli.text.uncertain": "結果は未確定です。stderrに表示された正確な再試行フレームを保管してください。同一のリクエストの再試行は安全です。",
-  "cli.text.workBusinessDate": "業務日",
-  "cli.text.workTimeZone": "業務のタイムゾーン",
-  "cli.usage.configureOptions": "configureには--showを単独で指定するか、文書化された公開設定を指定します。秘密情報のオプションは拒否されます。",
-  "cli.usage.describeOptions": "describeのオプションが不正です。--format text|jsonを使用してください。--languageはテキスト出力でのみ使用できます。",
-  "cli.usage.describeSelector": "説明する操作が不明です。選択子を省略すると操作一覧を表示します。",
-  "cli.usage.duplicateOption": "オプションが複数回指定されています：{flag}。",
-  "cli.usage.extraOperand": "予期しないオペランドです：{operand}。",
-  "cli.usage.helpOptions": "helpには1つの項目と1つの対応言語を指定します。--formatは使用できません。",
-  "cli.usage.helpTopic": "不明なヘルプ項目です。",
-  "cli.usage.invalidChoice": "{flag}の値{value}は無効です。指定可能な値：{allowed}。",
-  "cli.usage.invalidInteger": "{flag}の整数値{value}は無効です。",
-  "cli.usage.invalidValue": "{flag}の値{value}は無効です。",
-  "cli.usage.invocation": "{command}の呼び出しが不正です。このコマンドはオプションもオペランドも受け付けません。",
-  "cli.usage.missingOperand": "オペランドがありません：{operand}。",
-  "cli.usage.missingOption": "オプションがありません：{flag}。",
-  "cli.usage.missingValue": "{flag}の値がありません。",
-  "cli.usage.notApplicable": "{because}とともに{flag}は使用できません。",
-  "cli.usage.requestTooLarge": "準備したリクエストはUTF-8で{maximumBytes}バイト以内にしてください。",
-  "cli.usage.schemaOptions": "schemaには、オプションなしで名前、またはエンドポイントと方向を指定します。",
-  "cli.usage.schemaSelector": "不明なスキーマ選択です。スキーマ名、またはエンドポイントに続けてrequestかresponseを指定してください。",
-  "cli.usage.suggestion": "{suggestion}のことですか？",
-  "cli.usage.synopsis": "使用法：{synopsis}",
-  "cli.usage.unknownCommand": "不明なコマンドです：\"{command}\"。",
-  "cli.usage.unknownOption": "不明なオプションです：{flag}。",
-  "cli.usage.unknownOptionFor": "\"{command}\"の不明なオプションです：\"{flag}\"。",
-  "cli.usage.versionOptions": "versionには--jsonのみ指定できます。",
-  "cli.review.typeTarget": "確認するには{target}を入力してください： ",
-  "cli.text.pageCount": "結果：{count}件。",
-  "cli.text.pageMore": "続きがあります。--cursor {cursor}を使用してください。",
-  "cli.text.pageMoreAll": "続きがあります。--cursor {cursor}または--allを使用してください。",
-  "cli.next.correctInput": "指摘された入力を修正して再試行してください。",
-  "cli.next.readCurrent": "現在の記録を取得・確認してから再試行してください。",
-  "cli.next.retrySafe": "まったく同じリクエストを再試行してください。",
-  "cli.next.investigate": "操作を中止し、管理者に調査を依頼してください。",
-  "cli.next.chooseReference": "別の案件番号を選択してください。",
-  "cli.next.askAccess": "所有者にアクセス権限の確認を依頼してください。",
-  "cli.next.askRoles": "所有者に{roles}の役割を依頼してください。",
-  "cli.next.reviewLatest": "最新の記録を取得し、変更内容を確認してから再試行してください。",
-  "cli.next.reviewCommand": "{command}を実行し、変更内容を確認してください。",
-  "cli.next.conflictMore": "ほかにも変更があります。{command}を実行してください。",
-  "cli.text.operationPending": "Waiting for a final answer until {finalAt}."
+  "cli.beforeDispatchFailure": {
+    "text": "送信前に予期しないエラーが発生しました。",
+    "source": "dfb0a6878428"
+  },
+  "cli.callbackAccepted": {
+    "text": "認証応答を受信しました。ターミナルに戻ってください。",
+    "source": "5ab530fe0240"
+  },
+  "cli.callbackRefused": {
+    "text": "認証応答が拒否されました。",
+    "source": "b52b0a24f7df"
+  },
+  "cli.configurationIssue": {
+    "text": "{setting}：{issue}。",
+    "source": "400400a0cc9b"
+  },
+  "cli.delivery.unresolved": {
+    "text": "変更が未確認です。{retryCommand}で同じ要求を再送信するか、{statusCommand}で確認してください。変更の有効期間が終了すると回答が確定します。",
+    "source": "0c2a0dcdff67"
+  },
+  "cli.failure.AUTHENTICATION_FAILED": {
+    "text": "認証に失敗しました。",
+    "source": "0ddedf905779"
+  },
+  "cli.failure.CANCELLED": {
+    "text": "リクエストがキャンセルされました。",
+    "source": "cef7146670a6"
+  },
+  "cli.failure.CONFIGURATION_INVALID": {
+    "text": "CLIの設定が不正です。",
+    "source": "cbc456852dbe"
+  },
+  "cli.failure.CONTRACT_MISMATCH": {
+    "text": "クライアントとサービスの契約が一致しません。",
+    "source": "2973576b3d8a"
+  },
+  "cli.failure.INSTALLATION_MISMATCH": {
+    "text": "未送信：このリクエストは別の設置環境に属します。元の設置環境で結果を確定し、この設置環境には新しいリクエストを準備してください。",
+    "source": "6b7f1bcd4abc"
+  },
+  "cli.failure.INTERNAL": {
+    "text": "クライアント内部のエラーが発生しました。",
+    "source": "8933e31a1425"
+  },
+  "cli.failure.INVALID_FRAME": {
+    "text": "入力フレームが不正です。",
+    "source": "3b27d46b26e6"
+  },
+  "cli.failure.INVALID_RESPONSE": {
+    "text": "サービスの応答が不正です。",
+    "source": "459d594c59b3"
+  },
+  "cli.failure.RECOVERY_UNAVAILABLE": {
+    "text": "未送信です。未確認の変更をローカルに保存できません。~/.local/state/claimcoreの空き容量と権限を確認して再試行してください。",
+    "source": "a01d12bb0ca1"
+  },
+  "cli.failure.SERVICE_UNAVAILABLE": {
+    "text": "サービスを利用できません。",
+    "source": "6468ac9f9bca"
+  },
+  "cli.family.authority": {
+    "text": "利用者とアクセス権限",
+    "source": "1e133caaec46"
+  },
+  "cli.family.call": {
+    "text": "構造化されたリクエストを1つ送信します。",
+    "source": "928e1c599453"
+  },
+  "cli.family.case": {
+    "text": "案件情報と決定",
+    "source": "80b97b9bb858"
+  },
+  "cli.family.configure": {
+    "text": "公開接続設定を保存するか、設定の取得元を表示します。",
+    "source": "67ea2596497a"
+  },
+  "cli.family.context": {
+    "text": "自分のアカウントと設置環境",
+    "source": "14cc2a6da0af"
+  },
+  "cli.family.describe": {
+    "text": "カタログの項目を説明します。",
+    "source": "e6e26fb0ebf2"
+  },
+  "cli.family.help": {
+    "text": "ヘルプを表示します。",
+    "source": "519291bec34c"
+  },
+  "cli.family.operation": {
+    "text": "変更が記録されたか確認",
+    "source": "bcc19b5882f4"
+  },
+  "cli.family.recovery": {
+    "text": "このコンピューターの未確認の変更",
+    "source": "9c665f4a25ff"
+  },
+  "cli.family.reminder": {
+    "text": "次の作業とフォローアップ",
+    "source": "a57f1425ef1b"
+  },
+  "cli.family.schema": {
+    "text": "プロトコルのスキーマを表示します。",
+    "source": "048234b2c1a5"
+  },
+  "cli.family.session": {
+    "text": "1つのセッションで構造化されたリクエストを処理します。",
+    "source": "539c70f5ca7f"
+  },
+  "cli.family.shell": {
+    "text": "1回のサインインで対話型コマンドを実行します。",
+    "source": "943c7dc4df93"
+  },
+  "cli.family.version": {
+    "text": "製品のバージョンを表示します。",
+    "source": "1ff071b74e83"
+  },
+  "cli.family.work": {
+    "text": "担当の割り当てと対応メモ",
+    "source": "0d198ac25683"
+  },
+  "cli.help.call": {
+    "text": "`call`は標準入力から1つのJSON要求を読み、`session`は1行につき1つの要求を読みます。\n変更要求に操作IDがない場合、CLIが作成して出力します。\n正確な形式と制限はdocs/integrating.md#cli-useを参照してください。",
+    "source": "f4e598c4197a"
+  },
+  "cli.help.commands": {
+    "text": "コマンドを表示するには{command}を実行してください。",
+    "source": "473e6ff5dd42"
+  },
+  "cli.help.configuration": {
+    "text": "設定は~/.config/claimcore/profile.jsonに保存され、環境変数が優先されます。\n秘密情報は保存されません。ファイルで指定してください。\n`claimcore configure --show`で有効な値と取得元を確認できます。\ndocs/integrating.md#cli-useを参照してください。",
+    "source": "e26ea3ad2660"
+  },
+  "cli.help.configure": {
+    "text": "公開接続設定と言語設定をプロフィールに保存します。\n`claimcore configure --show`で有効な値と取得元を確認できます。\n秘密情報はファイルで指定し、プロフィールには保存しません。\ndocs/integrating.md#cli-useを参照してください。",
+    "source": "2e791425e501"
+  },
+  "cli.help.delivery": {
+    "text": "送信結果が未確認の場合、終了コード4で再送信用の正確な要求を出力します。\n再送信しても二重に記録されることはありません。\n`claimcore recovery list`と`claimcore recovery check`で確認してください。回答は{window}以内に確定します。",
+    "source": "d798be5ae516"
+  },
+  "cli.help.describe": {
+    "text": "説明にはラベル、意味、受け付けられる入力が表示されます。静的な機能を説明するもので、現在の実行資格を示すものではありません。",
+    "source": "2fe161ec76da"
+  },
+  "cli.help.examples": {
+    "text": "オフラインでリクエストを準備し、スキーマを確認してから、受け付けられるフレームを送信してください。",
+    "source": "e3260de1bc58"
+  },
+  "cli.help.globalOptions": {
+    "text": "共通オプション",
+    "source": "52ab73d5c107"
+  },
+  "cli.help.help": {
+    "text": "コマンドのグループを調べるか、ヘルプの項目を選択してください。",
+    "source": "2ccc9deab54d"
+  },
+  "cli.help.layout": {
+    "text": "ClaimCoreの構造化HTTPSクライアントです。ヘルプと機能の確認はオフラインで利用でき、callとsessionには認証が必要です。\n{body}",
+    "source": "7e13b1539170"
+  },
+  "cli.help.liveTraversal": {
+    "text": "各ページは読み取り時点のアクセス権と案件情報を使用します。\n同時変更により行が移動、重複、または欠落することがあります。\n--allは全ページを読みますが、結果を固定しません。",
+    "source": "062e67791557"
+  },
+  "cli.help.recovery": {
+    "text": "`recovery list`で未確認の変更を一覧表示します。\n`recovery check ATTEMPT_ID`で確認します。対話モードでは回答の確定を待ちます。\n機械向け出力には--format jsonを使用してください。\n再起動後の確認は以前の変更を再送信しません。",
+    "source": "bd12b72bd432"
+  },
+  "cli.help.schema": {
+    "text": "リクエストと応答のスキーマを確認します。スキーマはJSONで出力されます。",
+    "source": "e211543795a2"
+  },
+  "cli.help.shell": {
+    "text": "対話的にコマンドを実行し、`exit`またはEOFで終了します。\nサインイントークンとコマンド履歴は終了までメモリ内だけに保持されます。\nCtrl-Cで現在のコマンドを取り消します。\n引用符と再確認の規則はdocs/integrating.md#cli-useを参照してください。",
+    "source": "019061e9599f"
+  },
+  "cli.help.version": {
+    "text": "クライアントのバージョンを表示します。",
+    "source": "03909c9f41c8"
+  },
+  "cli.review.confirm": {
+    "text": "この変更を記録しますか？ [はい/いいえ（既定）] ",
+    "source": "b05636c3fa99"
+  },
+  "cli.shell.exitCode": {
+    "text": "終了コード：{code}",
+    "source": "eadf357d1f29"
+  },
+  "cli.shell.invalidLine": {
+    "text": "引用符が閉じていないか、末尾にバックスラッシュがあります。コマンドは実行されませんでした。",
+    "source": "bf3c9a053463"
+  },
+  "cli.text.accessSources": {
+    "text": "直接の役割：{direct}、設置環境からの役割：{inherited}、有効な役割：{effective}",
+    "source": "db07af8055e6"
+  },
+  "cli.text.authorityHistoryEmpty": {
+    "text": "選択条件に一致する権限の変更はありません。",
+    "source": "4e76d78127bf"
+  },
+  "cli.text.code": {
+    "text": "コード",
+    "source": "340f463033e0"
+  },
+  "cli.text.cursorReached": {
+    "text": "カーソル{cursor}で停止しました。",
+    "source": "db9f554fac80"
+  },
+  "cli.text.editorCleanupUnavailable": {
+    "text": "非公開のエディターテキストを削除できませんでした。リクエストは準備されていません。再試行前にローカルの一時ファイルを確認してください。",
+    "source": "c1410b481e98"
+  },
+  "cli.text.grants": {
+    "text": "権限の割り当て",
+    "source": "b3e1c95a4be3"
+  },
+  "cli.text.next": {
+    "text": "次へ",
+    "source": "1ff57a29d7c9"
+  },
+  "cli.text.notRecorded": {
+    "text": "記録されていません。",
+    "source": "57a5c6d1c207"
+  },
+  "cli.text.observed": {
+    "text": "取得日時 {observed}・業務日 {businessDate}（{timeZone}）",
+    "source": "fe17412aedcf"
+  },
+  "cli.text.recoveryAttempt": {
+    "text": "試行{attemptId}：{subject} {act}、操作{operationId}。",
+    "source": "a77f720ac98e"
+  },
+  "cli.text.recoveryCleanupUnavailable": {
+    "text": "結果は判明していますが、このローカルの試行を削除できませんでした。識別情報は保持されており、再度状態を確認できます。",
+    "source": "1dc1592f82ad"
+  },
+  "cli.text.recoveryEmpty": {
+    "text": "このアカウントとインストール環境に未確認の変更はありません。",
+    "source": "ab182357bd00"
+  },
+  "cli.text.state": {
+    "text": "状態",
+    "source": "a3b50c476732"
+  },
+  "cli.text.uncertain": {
+    "text": "結果は未確定です。stderrに表示された正確な再試行フレームを保管してください。同一のリクエストの再試行は安全です。",
+    "source": "841daa7d0f2d"
+  },
+  "cli.text.workBusinessDate": {
+    "text": "業務日",
+    "source": "46dd9ef417da"
+  },
+  "cli.text.workTimeZone": {
+    "text": "業務のタイムゾーン",
+    "source": "72823cae55c8"
+  },
+  "cli.usage.configureOptions": {
+    "text": "configureには--showを単独で指定するか、文書化された公開設定を指定します。秘密情報のオプションは拒否されます。",
+    "source": "7535de0429b0"
+  },
+  "cli.usage.describeOptions": {
+    "text": "describeのオプションが不正です。--format text|jsonを使用してください。--languageはテキスト出力でのみ使用できます。",
+    "source": "76f6277e89c2"
+  },
+  "cli.usage.describeSelector": {
+    "text": "説明する操作が不明です。選択子を省略すると操作一覧を表示します。",
+    "source": "d6eec2e7f602"
+  },
+  "cli.usage.duplicateOption": {
+    "text": "オプションが複数回指定されています：{flag}。",
+    "source": "90db2cf2a04e"
+  },
+  "cli.usage.extraOperand": {
+    "text": "予期しないオペランドです：{operand}。",
+    "source": "f345f28f8de2"
+  },
+  "cli.usage.helpOptions": {
+    "text": "helpには1つの項目と1つの対応言語を指定します。--formatは使用できません。",
+    "source": "9c397336a244"
+  },
+  "cli.usage.helpTopic": {
+    "text": "不明なヘルプ項目です。",
+    "source": "8040ce20254b"
+  },
+  "cli.usage.invalidChoice": {
+    "text": "{flag}の値{value}は無効です。指定可能な値：{allowed}。",
+    "source": "c28a48b46590"
+  },
+  "cli.usage.invalidInteger": {
+    "text": "{flag}の整数値{value}は無効です。",
+    "source": "01b4154f1e2b"
+  },
+  "cli.usage.invalidValue": {
+    "text": "{flag}の値{value}は無効です。",
+    "source": "8cd141d16cdd"
+  },
+  "cli.usage.invocation": {
+    "text": "{command}の呼び出しが不正です。このコマンドはオプションもオペランドも受け付けません。",
+    "source": "bab498e8152a"
+  },
+  "cli.usage.missingOperand": {
+    "text": "オペランドがありません：{operand}。",
+    "source": "c5a6b674be9d"
+  },
+  "cli.usage.missingOption": {
+    "text": "オプションがありません：{flag}。",
+    "source": "a615f937ef5e"
+  },
+  "cli.usage.missingValue": {
+    "text": "{flag}の値がありません。",
+    "source": "0a7d23d89969"
+  },
+  "cli.usage.notApplicable": {
+    "text": "{because}とともに{flag}は使用できません。",
+    "source": "cbbcde131737"
+  },
+  "cli.usage.requestTooLarge": {
+    "text": "準備したリクエストはUTF-8で{maximumBytes}バイト以内にしてください。",
+    "source": "4be839718a10"
+  },
+  "cli.usage.schemaOptions": {
+    "text": "schemaには、オプションなしで名前、またはエンドポイントと方向を指定します。",
+    "source": "a2b8d2d6f85e"
+  },
+  "cli.usage.schemaSelector": {
+    "text": "不明なスキーマ選択です。スキーマ名、またはエンドポイントに続けてrequestかresponseを指定してください。",
+    "source": "21ee1a2ce6b3"
+  },
+  "cli.usage.suggestion": {
+    "text": "{suggestion}のことですか？",
+    "source": "7cb1f249afab"
+  },
+  "cli.usage.synopsis": {
+    "text": "使用法：{synopsis}",
+    "source": "6066483c0647"
+  },
+  "cli.usage.unknownCommand": {
+    "text": "不明なコマンドです：\"{command}\"。",
+    "source": "c9553d41670a"
+  },
+  "cli.usage.unknownOption": {
+    "text": "不明なオプションです：{flag}。",
+    "source": "54225ccd6234"
+  },
+  "cli.usage.unknownOptionFor": {
+    "text": "\"{command}\"の不明なオプションです：\"{flag}\"。",
+    "source": "a17c1133a2f4"
+  },
+  "cli.usage.versionOptions": {
+    "text": "versionには--jsonのみ指定できます。",
+    "source": "bbbcd3dc2798"
+  },
+  "cli.review.typeTarget": {
+    "text": "確認するには{target}を入力してください： ",
+    "source": "654ddc36082a"
+  },
+  "cli.text.pageCount": {
+    "text": "結果：{count}件。",
+    "source": "2cbae46b9df3"
+  },
+  "cli.text.pageMore": {
+    "text": "続きがあります。--cursor {cursor}を使用してください。",
+    "source": "ea9dfdf8ab7a"
+  },
+  "cli.text.pageMoreAll": {
+    "text": "続きがあります。--cursor {cursor}または--allを使用してください。",
+    "source": "a339111148f7"
+  },
+  "cli.next.correctInput": {
+    "text": "指摘された入力を修正して再試行してください。",
+    "source": "2c034083a7d5"
+  },
+  "cli.next.readCurrent": {
+    "text": "現在の記録を取得・確認してから再試行してください。",
+    "source": "6d91ac78825c"
+  },
+  "cli.next.retrySafe": {
+    "text": "まったく同じリクエストを再試行してください。",
+    "source": "6971123a315b"
+  },
+  "cli.next.investigate": {
+    "text": "操作を中止し、管理者に調査を依頼してください。",
+    "source": "5b8f17a04e98"
+  },
+  "cli.next.chooseReference": {
+    "text": "別の案件番号を選択してください。",
+    "source": "aa70b7e71443"
+  },
+  "cli.next.askAccess": {
+    "text": "所有者にアクセス権限の確認を依頼してください。",
+    "source": "a18257b39d89"
+  },
+  "cli.next.askRoles": {
+    "text": "所有者に{roles}の役割を依頼してください。",
+    "source": "1519ea1bb543"
+  },
+  "cli.next.reviewLatest": {
+    "text": "最新の記録を取得し、変更内容を確認してから再試行してください。",
+    "source": "d232a68f0042"
+  },
+  "cli.next.reviewCommand": {
+    "text": "{command}を実行し、変更内容を確認してください。",
+    "source": "cf870c2bb8f5"
+  },
+  "cli.next.conflictMore": {
+    "text": "ほかにも変更があります。{command}を実行してください。",
+    "source": "bc8d51b8ce45"
+  },
+  "cli.text.operationPending": {
+    "text": "{finalAt}まで回答の確定を待ちます。",
+    "source": "e6e58811f6cc"
+  }
 }

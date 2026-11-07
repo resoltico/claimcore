@@ -32,9 +32,12 @@ Its [project boundaries](docs/contributing.md#project-boundaries) and
 | Build or change the source | [Contributing](docs/contributing.md) |
 | Understand project terms | [Glossary](docs/glossary.md) |
 
-The CLI and browser offer English, Latvian and Arabic plus draft Korean, Japanese, Spanish, German,
-Simplified Chinese and Traditional Chinese. Regional formats are independent; Arabic supports right-to-left
-layout. See the [glossary](docs/glossary.md) for language-review status.
+The CLI and browser offer English, Latvian, Arabic, Korean, Japanese, Spanish, German, Simplified Chinese
+and Traditional Chinese. Regional formats are independent; Arabic supports right-to-left layout.
+English is the source. Latvian and Arabic are AI-revised, human review pending; the other translations
+are drafts with English fallback when a translation is missing or stale. All eight translations have the
+review status “AI-assisted revision 2026-11; human review pending”. Korean 청구 건 (case) and 후속 조치
+(reminder) need native review. See the [glossary](docs/glossary.md).
 The [synthetic examples](examples/README.md) demonstrate equivalent human commands and JSON calls.
 Operators manage identity, access and data custody; start with the operating guide before using real data.
 

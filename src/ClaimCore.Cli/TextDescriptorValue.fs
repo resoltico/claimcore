@@ -10,7 +10,7 @@ open ClaimCore.Presentation
 /// Text escaping and locale formatting are interface responsibilities; every value kind is explicit.
 module internal TextDescriptorValue =
     let private code language vocabulary token =
-        let key = vocabulary + "." + token + ".label"
+        let key = PresentationKeys.code vocabulary token
 
         if vocabulary = "country" then
             ReplyTextFormat.country language token

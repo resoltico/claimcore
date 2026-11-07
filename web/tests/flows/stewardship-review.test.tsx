@@ -115,7 +115,7 @@ it.each([
     expect(dialog.querySelector(".review-before")).toHaveTextContent(stateLabels[before]);
     expect(dialog.querySelector(".review-after")).toHaveTextContent(stateLabels[after]);
     if (act === "ERASE") {
-      expect(dialog).toHaveTextContent("Copies held elsewhere remain.");
+      expect(dialog).toHaveTextContent("Copies held elsewhere are not affected.");
     }
     if (act === "ERASE") {
       expect(reviewConfirm()).toBeDisabled();

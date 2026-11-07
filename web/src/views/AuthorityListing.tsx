@@ -130,7 +130,11 @@ export const AuthorityListing = (props: ListingProps) => {
         <div className="text-field">
           <div className="field-label-row">
             <label htmlFor="people-search">{p.fieldLabel("directorySearch")}</label>
-            <FieldHelp label={p.fieldLabel("directorySearch")} ruleId={directorySearch.ruleId} />
+            <FieldHelp
+              name="directorySearch"
+              label={p.fieldLabel("directorySearch")}
+              ruleId={directorySearch.ruleId}
+            />
           </div>
           <input
             id="people-search"
@@ -148,7 +152,11 @@ export const AuthorityListing = (props: ListingProps) => {
           id="people-role-filter"
           label={renderCatalogKey(p, roleFilter.labelId)}
           help={
-            <FieldHelp label={renderCatalogKey(p, roleFilter.labelId)} ruleId={roleFilter.ruleId} />
+            <FieldHelp
+              name="roleFilter"
+              label={renderCatalogKey(p, roleFilter.labelId)}
+              ruleId={roleFilter.ruleId}
+            />
           }
           {...(roleFilter.hintId === null
             ? {}

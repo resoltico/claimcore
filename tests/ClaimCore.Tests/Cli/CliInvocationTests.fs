@@ -432,9 +432,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                     "Grant role"
                     "Revoke role"
                 ],
-                "Human",
+                "Person",
                 "Case reader",
-                "Installation"
+                "All cases"
             | "lv" ->
                 [
                     "Reģistrēt kontu"
@@ -443,19 +443,23 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                     "Piešķirt lomu"
                     "Atsaukt lomu"
                 ],
-                "Cilvēks",
+                "Persona",
                 "Lietu lasītājs",
-                "Instalācija"
+                "Visas lietas"
             | "ar" ->
                 [ "تسجيل حساب"; "تمكين الحساب"; "تعطيل الحساب"; "منح دور"; "سحب دور" ],
                 "شخص",
                 "قارئ الملفات",
-                "التثبيت"
-            | "ko" -> [ "계정 등록"; "계정 활성화"; "계정 비활성화"; "역할 부여"; "역할 회수" ], "사람", "건 조회자", "설치 환경"
+                "جميع الملفات"
+            | "ko" ->
+                [ "계정 등록"; "계정 활성화"; "계정 비활성화"; "역할 부여"; "역할 회수" ], "사람", "청구 건 조회자", "모든 청구 건"
             | "ja" ->
-                [ "アカウントを登録"; "アカウントを有効化"; "アカウントを無効化"; "役割を付与"; "役割を取り消す" ], "人", "案件閲覧者", "設置環境"
-            | "zh-Hans" -> [ "注册账户"; "启用账户"; "停用账户"; "授予角色"; "撤销角色" ], "自然人", "档案查阅员", "安装实例"
-            | "zh-Hant" -> [ "註冊帳戶"; "啟用帳戶"; "停用帳戶"; "授予角色"; "撤銷角色" ], "自然人", "檔案查閱員", "安裝實例"
+                [ "アカウントを登録"; "アカウントを有効化"; "アカウントを無効化"; "役割を付与"; "役割を取り消す" ],
+                "個人",
+                "案件閲覧者",
+                "すべての案件"
+            | "zh-Hans" -> [ "注册账户"; "启用账户"; "停用账户"; "授予角色"; "撤销角色" ], "人员", "案件查阅员", "所有案件"
+            | "zh-Hant" -> [ "註冊帳戶"; "啟用帳戶"; "停用帳戶"; "授予角色"; "撤銷角色" ], "人員", "案件查閱員", "所有案件"
             | "es" ->
                 [
                     "Registrar una cuenta"
@@ -466,7 +470,7 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                 ],
                 "Persona",
                 "Lector de expedientes",
-                "Instalación"
+                "Todos los expedientes"
             | "de" ->
                 [
                     "Konto registrieren"
@@ -475,9 +479,9 @@ let private authorityPreviewText verb enabledBefore enabledAfter grantBefore gra
                     "Rolle zuweisen"
                     "Rolle entziehen"
                 ],
-                "Mensch",
-                "Fallleser",
-                "Installation"
+                "Person",
+                "Lesezugriff",
+                "Alle Fälle"
             | _ -> failtest "Every supported language needs independently authored labels"
 
         let act =

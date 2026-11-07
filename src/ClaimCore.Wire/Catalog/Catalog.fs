@@ -30,7 +30,7 @@ module Catalog =
                     {
                         Name = InteractionInput.key input
                         LabelId = InteractionInput.messageKey input "label"
-                        HintId = Some(InteractionInput.messageKey input "hint")
+                        HintId = InteractionInput.hintId input
                         RuleId = Some(InteractionInput.messageKey input "rule")
                         Scalar =
                             if input = InteractionInput.Target InputTarget.ProfileDisplayName then

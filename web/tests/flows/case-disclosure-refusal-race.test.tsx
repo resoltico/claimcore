@@ -96,7 +96,9 @@ it("invalidates the pending current read synchronously on a second history refus
     expect(get).toHaveBeenCalledTimes(3);
   });
   expect(screen.queryByText(fields.registration.claimantName)).toBeNull();
-  expect(screen.getByRole("alert")).toHaveTextContent("The requested resource is unavailable.");
+  expect(screen.getByRole("alert")).toHaveTextContent(
+    "This item does not exist, or you do not have access to it.",
+  );
   await act(async () => {
     latest.release(current);
     await latest.promise;

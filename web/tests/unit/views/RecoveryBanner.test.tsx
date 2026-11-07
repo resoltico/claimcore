@@ -15,17 +15,17 @@ it("keeps the scoped unresolved journal count visible until the last attempt is 
       <RecoveryBanner />
     </RecoveryProvider>,
   );
-  expect(await screen.findByText("1 change may not have been recorded")).toBeVisible();
+  expect(await screen.findByText("Unconfirmed changes: 1")).toBeVisible();
   expect(screen.getByRole("link", { name: "Check now" })).toHaveAttribute("href", "/recovery");
   expect(screen.queryByRole("button")).toBeNull();
   await act(async () => {
     await testJournal.put(second);
   });
-  expect(await screen.findByText("2 changes may not have been recorded")).toBeVisible();
+  expect(await screen.findByText("Unconfirmed changes: 2")).toBeVisible();
   await act(async () => {
     await testJournal.remove(first);
   });
-  expect(await screen.findByText("1 change may not have been recorded")).toBeVisible();
+  expect(await screen.findByText("Unconfirmed changes: 1")).toBeVisible();
   await act(async () => {
     await testJournal.remove(second);
   });

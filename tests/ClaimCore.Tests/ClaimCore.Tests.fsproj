@@ -114,6 +114,7 @@
     <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
     <Compile Include="Contract/MessageTemplateTests.fs" />
+    <Compile Include="ContractGenerator/TranslationPipelineTests.fs" />
     <Compile Include="ContractGenerator/LocalizationCatalogTests.fs" />
     <Compile Include="ContractGenerator/SemanticCopyTests.fs" />
     <Compile Include="ContractGenerator/MessageRegisterTests.fs" />

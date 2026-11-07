@@ -7,13 +7,11 @@ open ClaimCore.Application.Contracts
 /// CSV exports the supplied typed differences as canonical, unlocalized scalars.
 module internal TimelineCsv =
     let private difference key format (change: ValueChange<'value>) =
-        [
-            key
-            change.Before |> Option.map format |> Option.defaultValue ""
-            change.After |> Option.map format |> Option.defaultValue ""
-        ]
+        key,
+        (change.Before |> Option.map format |> Option.defaultValue ""),
+        (change.After |> Option.map format |> Option.defaultValue "")
 
-    let private changes =
+    let scalarDifferences =
         function
         | TimelineChange.CaseField change ->
             [
@@ -138,16 +136,14 @@ module internal TimelineCsv =
 
         let differences =
             match entry.Changes with
-            | TimelineChanges.Disclosed disclosure -> disclosure.Items |> List.collect changes
+            | TimelineChanges.Disclosed disclosure ->
+                disclosure.Items |> List.collect scalarDifferences
             | _ -> []
 
-        let differences =
-            if differences.IsEmpty then
-                [ [ ""; ""; "" ] ]
-            else
-                differences
+        let differences = if differences.IsEmpty then [ "", "", "" ] else differences
 
-        differences |> List.map (fun values -> csv (metadata @ values))
+        differences
+        |> List.map (fun (key, before, after) -> csv (metadata @ [ key; before; after ]))
 
     let csvRows (page: CaseTimelinePage) =
         page.Items |> List.collect (rows page.Reference) |> Array.concat

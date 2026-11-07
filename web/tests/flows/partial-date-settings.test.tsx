@@ -160,15 +160,15 @@ it("an unrelated name edit preserves partial dates while deselection clears only
   selectFact("incidentNotificationDate");
   selectFact("claimantName");
   changeField("Incident date", "");
-  changeField("Notified date", "");
+  changeField("Notification date", "");
   await enter(user, "day", "12");
-  const notified = screen.getByRole("group", { name: "Notified date" });
+  const notified = screen.getByRole("group", { name: "Notification date" });
   await user.click(notified.querySelector<HTMLElement>('[data-type="month"]')!);
   await user.keyboard("10");
   await user.type(screen.getByRole("textbox", { name: "Claimant name" }), " edited");
   await user.click(screen.getByRole("checkbox", { name: "Change Incident date" }));
   await settings(user);
-  const retained = screen.getByRole("group", { name: "Notified date" });
+  const retained = screen.getByRole("group", { name: "Notification date" });
   expect(retained.querySelector('[data-type="month"]')).toHaveAttribute("aria-valuenow", "10");
   await user.click(screen.getByRole("checkbox", { name: "Change Incident date" }));
   expect(segment("day")).toHaveAttribute("aria-valuenow", "1");

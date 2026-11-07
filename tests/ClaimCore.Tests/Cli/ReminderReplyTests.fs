@@ -65,7 +65,7 @@ let tests =
                     "1 Nov 2026"
                     "lv",
                     "Neaktīvs darbs",
-                    [ "Nokavēts"; "Šodien"; "Gaidāms" ],
+                    [ "Termiņš nokavēts"; "Šodien"; "Gaidāms" ],
                     [ "3 nov. 2026"; "1 nov. 2026"; "31 okt. 2026" ],
                     "1 nov. 2026"
                     "ar",

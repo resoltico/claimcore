@@ -1,231 +1,914 @@
 {
-  "ui.about": "Über ClaimCore",
-  "ui.accent": "Akzentfarbe",
-  "ui.accentBlue": "Blau",
-  "ui.accentGreen": "Grün",
-  "ui.accentSet": "Akzentfarbe auf {value} gesetzt.",
-  "ui.accepted": "angenommen",
-  "ui.acceptedOperation": "Erfasste Änderung",
-  "ui.account": "Konto",
-  "ui.actDescription": "{label}: {meaning}",
-  "ui.actor": "Akteur",
-  "ui.actorRequestRetained": "Ihre aktuelle Anfrage bleibt erhalten. Setzen Sie sie fort oder verwerfen Sie sie, bevor Sie eine andere Aktion beginnen.",
-  "ui.addGrant": "Rolle hinzufügen",
-  "ui.after": "Nachher: {value}",
-  "ui.anyFilter": "Beliebig",
-  "ui.appearance": "Darstellung",
-  "ui.authorityAction": "Zugriffsaktion",
-  "ui.backToCases": "Zurück zu den Fällen",
-  "ui.before": "Vorher: {value}",
-  "ui.calendar": "Kalender öffnen",
-  "ui.canonicalCopyHint": "Diesen Wert kopieren.",
-  "ui.caseDetail": "Falldetails",
-  "ui.cases": "Fälle",
-  "ui.changeActDescription": "Diesen Entwurf verwerfen und eine andere Aktion wählen?",
-  "ui.changeActTitle": "Diese entworfenen Änderungen verwerfen?",
-  "ui.changeFact": "{field} ändern",
-  "ui.checkOutcome": "Status prüfen",
-  "ui.checkUnresolvedOperation": "Check now",
-  "ui.chooseRole": "Rolle wählen",
-  "ui.clearFilters": "Filter zurücksetzen",
-  "ui.clearValue": "Erfassten Wert entfernen",
-  "ui.close": "Schließen",
-  "ui.continueAuthorityRequest": "Aktuelle Anfrage fortsetzen",
-  "ui.contract": "Vertragskennung",
-  "ui.copied": "{label} kopiert.",
-  "ui.copy": "{label} kopieren",
-  "ui.copyFallback": "Alternative zum Kopieren von {label}",
-  "ui.correctionHint": "Wählen Sie für jede Gruppe eine Aktion. Beibehaltene Angaben verwenden beim Erfassen den aktuellen Fallstand.",
-  "ui.countryName": "{code}: {name}",
-  "ui.countryUnassigned": "Für {code} ist kein Ländername verfügbar. Prüfen Sie den beabsichtigten Code.",
-  "ui.currentMode": "Derzeit {value}",
-  "ui.defaultAccent": "Standard",
-  "ui.detectedLanguage": "Vom Browser erkannt",
-  "ui.discardAndChange": "Verwerfen und Aktion ändern",
-  "ui.discardAndLeave": "Verwerfen und verlassen",
-  "ui.discardUnknownDescription": "Der Vorgang wurde möglicherweise bereits angenommen. Beim Verwerfen geht diese genaue Anfrage verloren; der Vorgang wird nicht abgebrochen. Fahren Sie nur fort, wenn Sie akzeptieren, dass Sie ihn von dieser Seite aus nicht erneut versuchen können.",
-  "ui.displayLocale": "Datums- und Zahlenformat",
-  "ui.displayLocaleSet": "Datums- und Zahlenformat auf {value} gesetzt.",
-  "ui.emptyInput": "Leere Eingabe",
-  "ui.exactCaseReference": "{label} (genau)",
-  "ui.exactOperationId": "Genaue Vorgangs-ID",
-  "ui.exactReference": "{label} (genau): {reference}",
-  "ui.exactUtc": "Genauer UTC-Zeitpunkt",
-  "ui.explainFields": "Felder erklären",
-  "ui.filters": "Filter",
-  "ui.findCase": "Über genaues Aktenzeichen öffnen",
-  "ui.formatPreview": "Vorschau: {date} · {amount}",
-  "ui.generalOperationLookup": "Allgemeine Vorgangssuche",
-  "ui.grantNumber": "Rolle {number}",
-  "ui.grantsEnd": "Alle für diese Prüfung zurückgegebenen Zuweisungen werden angezeigt.",
-  "ui.grantsPartial": "Nur ein Teil der Zuweisungen dieses Akteurs wird angezeigt.",
-  "ui.historyNoChanges": "Keine offengelegten Felder wurden geändert.",
-  "ui.includeInactiveWork": "Inaktive Fallbearbeitung einschließen",
-  "ui.incompleteResponse": "Der Dienst hat eine unvollständige oder ungültige Antwort zurückgegeben.",
-  "ui.keepEditing": "Weiter bearbeiten",
-  "ui.language": "Oberflächensprache",
-  "ui.languageAppearance": "Sprache und Darstellung",
-  "ui.languageLoadFailed": "Die Sprache konnte nicht geladen werden. Ihre Arbeitssprache bleibt unverändert.",
-  "ui.languageRegion": "Sprache und Region",
-  "ui.languageSet": "Sprache auf {value} gesetzt.",
-  "ui.leaveDraftDescription": "Diesen Entwurf verwerfen und den Editor verlassen?",
-  "ui.leaveUnchanged": "Unverändert lassen",
-  "ui.loading": "Wird geladen…",
-  "ui.loadingCases": "Fälle werden geladen…",
-  "ui.loadingCurrentCase": "Aktueller Fall wird geladen…",
-  "ui.loadingHistory": "Fallverlauf wird geladen…",
-  "ui.loadingLanguage": "Sprache wird geladen…",
-  "ui.loadingSession": "Lokale Sitzung wird geladen…",
-  "ui.loginInstructions": "Melden Sie sich über den Identitätsanbieter Ihrer Organisation an.",
-  "ui.lookingUp": "Wird gesucht…",
-  "ui.mine": "Ihre Zuständigkeit",
-  "ui.modeSet": "Farbmodus auf {value} gesetzt.",
-  "ui.moreActors": "Weitere Akteure",
-  "ui.moreCaseActions": "Weitere Aktionen",
-  "ui.moreCases": "Weitere Fälle laden",
-  "ui.moreGrants": "Weitere Zuweisungen",
-  "ui.moreHistory": "Weiteren Verlauf laden",
-  "ui.moreReminders": "Weitere Erinnerungen",
-  "ui.newReminder": "Erinnerung hinzufügen",
-  "ui.nextActions": "Nächste Aufgaben",
-  "ui.nextAccounts": "Weitere Konten",
-  "ui.nextMonth": "Nächster Monat",
-  "ui.no": "Nein",
-  "ui.noAccessibleActors": "Keine zugänglichen Akteure zurückgegeben.",
-  "ui.noAccessibleCases": "Keine zugänglichen Fälle zurückgegeben.",
-  "ui.noAccessibleHistory": "Keine zugänglichen Verlaufseinträge zurückgegeben.",
-  "ui.noCasesForView": "Keine Fälle passen zu dieser Ansicht.",
-  "ui.noEligibleAccounts": "Keine zuweisbaren Konten auf dieser Seite.",
-  "ui.noPendingReminders": "Dieser aktive offene Fall benötigt eine nächste Aufgabe. Fügen Sie eine Erinnerung hinzu, sobald Sie einen Plan haben.",
-  "ui.noReminders": "Keine Erinnerungen passen zu dieser Ansicht.",
-  "ui.noViews": "Für diesen Akteur sind keine Arbeitsbereichsansichten verfügbar.",
-  "ui.notRecorded": "Nicht erfasst",
-  "ui.observeOperation": "Erfasstes Ergebnis nachschlagen",
-  "ui.openExactCase": "{reference} öffnen",
-  "ui.operationAccepted": "Vorgang {operationId} ist angenommen.",
-  "ui.operationLookup": "Vorgangssuche",
-  "ui.operationUnresolved": "Waiting for a final answer.",
-  "ui.overdueReminders": "Überfällige Erinnerungen",
-  "ui.pageEnd": "Alle Ergebnisse angezeigt.",
-  "ui.pageNotFound": "Seite nicht gefunden",
-  "ui.pageNotFoundDescription": "Die Adresse bezeichnet keine ClaimCore-Seite.",
-  "ui.pagePartial": "Weitere Ergebnisse sind verfügbar.",
-  "ui.pairedFacts": "{first} und {second}",
-  "ui.pendingReminders": "Ausstehende Erinnerungen",
-  "ui.people.person": "Person",
-  "ui.people.roles": "Rollen",
-  "ui.planAfterOpen": "Der Fall wurde eröffnet. Das Planen einer Erinnerung ist ein separater nächster Schritt.",
-  "ui.preferencesNotSaved": "Die Einstellungen gelten für diese Sitzung, konnten aber nicht in diesem Browser gespeichert werden.",
-  "ui.preparingRecovery": "Wiederherstellungskennung wird gespeichert…",
-  "ui.previewing": "Wird geprüft…",
-  "ui.previousAccounts": "Vorherige Konten",
-  "ui.previousMonth": "Vorheriger Monat",
-  "ui.primary": "Primär",
-  "ui.pseudo": "Erweitertes Englisch (Layouttest)",
-  "ui.queueDescription": "Finden Sie Fälle mit Handlungsbedarf und setzen Sie ihre Bearbeitung fort.",
-  "ui.recordOptionalFact": "{field} erfassen (optional)",
-  "ui.recovery": "Unconfirmed changes",
-  "ui.recoveryCleanupUnavailable": "Das Ergebnis ist bekannt, aber dieser lokale Versuch konnte nicht entfernt werden. Seine Kennung wurde aufbewahrt; Sie können den Status erneut prüfen.",
-  "ui.recoveryDescription": "These changes have no confirmed outcome yet. We check them automatically until the answer is final.",
-  "ui.recoveryEmpty": "No unconfirmed changes.",
-  "ui.recoveryListingUnavailable": "Wiederherstellungskennungen können nicht gelesen oder aktualisiert werden. Bestehende Einträge bleiben erhalten. Stellen Sie den Speicherzugriff wieder her oder klären Sie ältere Einträge mit dem passenden Client, bevor Sie es erneut versuchen.",
-  "ui.recoveryUnavailable": "Nicht gesendet: Der Wiederherstellungsspeicher ist nicht verfügbar. Aktivieren Sie den Websitespeicher oder geben Sie Speicherplatz frei und versuchen Sie es erneut. Ihre Anfrage wurde nicht gesendet.",
-  "ui.reference": "{label}: {reference}",
-  "ui.refreshAccounts": "Zuweisbare Konten aktualisieren",
-  "ui.refreshWork": "Bearbeitung aktualisieren",
-  "ui.reloadActors": "Akteure neu laden",
-  "ui.reloadCases": "Fälle neu laden",
-  "ui.reloadContract": "Seite neu laden",
-  "ui.reloadCurrentCase": "Aktuellen Fall neu laden",
-  "ui.reloadGrants": "Zuweisungen neu laden",
-  "ui.reloadHistory": "Verlauf neu laden",
-  "ui.reloadInterface": "Oberfläche neu laden",
-  "ui.reminderAction": "Geplante Aufgabe",
-  "ui.reminderDetails": "Erinnerungsdetails",
-  "ui.reminderDue": "Geplantes Datum",
-  "ui.reminderQueueHint": "Fälligkeitsfilter wählen einzelne Erinnerungen aus; Fallfälligkeitsfilter verwenden das früheste ausstehende Datum jedes Falls.",
-  "ui.reminderState": "Erinnerungsstatus",
-  "ui.reminders": "Erinnerungen",
-  "ui.removeGrant": "Rolle entfernen",
-  "ui.retryExact": "Erneut senden",
-  "ui.retryExactDescription": "Send again repeats the exact request still held by this page. Checks become final when the operation lifetime ends. After reloading, this page keeps only the identity and checks it automatically under Unconfirmed changes.",
-  "ui.retryLanguage": "Sprache erneut laden",
-  "ui.retryView": "Laden wiederholen",
-  "ui.returnToCase": "Zurück zum Fall",
-  "ui.returnToEdit": "Zurück zur Bearbeitung",
-  "ui.reviewDescription": "Prüfen Sie die vorgeschlagenen Werte und bestätigen Sie genau diesen Vorgang.",
-  "ui.review.basis": "Basiert auf Version {revision}, geprüft {when}.",
-  "ui.rightToLeft": "Rechts nach links",
-  "ui.roleNotAvailableAtScope": "In diesem Geltungsbereich ist keine Berechtigung anwendbar",
-  "ui.roleNotAvailableForService": "Für Dienstidentitäten nicht verfügbar",
-  "ui.savedRecoveryAttempt": "Gespeicherter Versuch",
-  "ui.scalarCount": "{count} von {maximum} Unicode-Skalarwerten",
-  "ui.search": "Suchen",
-  "ui.selectedAccount": "Ausgewähltes Konto",
-  "ui.settings": "Einstellungen",
-  "ui.settingsIntroduction": "Diese Einstellungen gelten für diesen Browser. Sie ändern niemals erfasste Werte.",
-  "ui.shell.administration": "Verwaltung",
-  "ui.shell.authorityHistory": "Verlauf der Zugriffsrechte",
-  "ui.shell.businessDate": "Geschäftsdatum",
-  "ui.shell.businessDateChanged": "Das Geschäftsdatum ist jetzt {date}. Aktualisieren Sie, um Fälligkeiten anzupassen.",
-  "ui.shell.checkNow": "Jetzt prüfen",
-  "ui.shell.people": "Personen und Zugriff",
-  "ui.shell.searchCases": "Fälle suchen",
-  "ui.shell.unresolved": "{count} Änderungen wurden möglicherweise nicht erfasst",
-  "ui.shell.unresolvedOne": "1 Änderung wurde möglicherweise nicht erfasst",
-  "ui.signIn": "Anmelden",
-  "ui.signInTitle": "Am Fallregister anmelden",
-  "ui.signOut": "Abmelden",
-  "ui.submitting": "Wird erfasst…",
-  "ui.summaryCounts": "Passende Fälle: {count}",
-  "ui.summaryDetails": "Gesamtsummen der Übersicht anzeigen",
-  "ui.theme": "Design",
-  "ui.themeAccessibility": "Beide Akzentfarben unterstützen helle und dunkle Modi. Die Kontrasteinstellungen Ihres Geräts werden automatisch berücksichtigt.",
-  "ui.themeDark": "Dunkel",
-  "ui.themeLight": "Hell",
-  "ui.themeSystem": "Wie Gerät",
-  "ui.tryAgain": "Erneut versuchen",
-  "ui.unchangedUntilSubmit": "Die Prüfung dient als Orientierung. Nichts wird erfasst, bevor der Vorgang angenommen wird.",
-  "ui.version": "Version",
-  "ui.viewLoadFailed": "Diese Ansicht konnte nicht geladen werden. Versuchen Sie das Laden erneut oder laden Sie neu, wenn Sie Ihre aktuelle Arbeit verlassen können.",
-  "ui.viewLoading": "Ansicht wird geladen…",
-  "ui.workDateBasis": "Geschäftsdatum {date} ({zone}).",
-  "ui.workQueue": "Arbeitsübersicht",
-  "ui.worklistSearch": "Diese Ansicht filtern",
-  "ui.yes": "Ja",
-  "ui.timeline.title": "Aktivität",
-  "ui.timeline.filter": "Aktivität filtern",
-  "ui.timeline.all": "Alles",
-  "ui.timeline.facts": "Daten",
-  "ui.timeline.work": "Bearbeitung",
-  "ui.timeline.details": "Einzelheiten anzeigen",
-  "ui.timeline.nextReminder": "Nächste Erinnerung",
-  "ui.timeline.empty": "Keine Aktivität anzuzeigen.",
-  "ui.timeline.more": "50 weitere laden",
-  "ui.timeline.before": "Früherer Wert:",
-  "ui.timeline.after": "Neuer Wert:",
-  "ui.timeline.withheld": "Diese Änderungen sind für dieses Konto nicht verfügbar.",
-  "ui.accessState.title": "Sie haben noch keinen Zugriff",
-  "ui.accessState.disabled": "Dieses Konto ist deaktiviert",
-  "ui.accessState.requested": "Wir haben die Eigentümer informiert. Ein Eigentümer kann diesem Konto Zugriff gewähren.",
-  "ui.accessState.provider": "Anbieter",
-  "ui.accessState.copy": "Angaben für Ihren Administrator",
-  "ui.accessState.check": "Zugriff prüfen",
-  "ui.stage.recorded": "Erfasst",
-  "ui.stage.noDate": "Datum nicht verfügbar",
-  "ui.stage.reinstated": "Fall wiederhergestellt. Prüfen Sie die aktuellen Daten und nächsten Aufgaben.",
-  "ui.conflict.title": "Dieser Fall hat sich geändert",
-  "ui.conflict.kept": "Ihr Entwurf bleibt erhalten. Prüfen Sie die Änderungen, bevor Sie ihn auf Grundlage der neuesten Version vorbereiten.",
-  "ui.conflict.loading": "Neueste Version wird geladen…",
-  "ui.conflict.reviewLatest": "Mit neuestem Stand prüfen",
-  "ui.choiceNotAvailable": "Mit den aktuellen Daten nicht verfügbar.",
-  "ui.returnToWorkspace": "Zurück zum Arbeitsbereich",
-  "ui.enterDetails": "Angaben eingeben",
-  "ui.review.checked": "Geprüft {when}.",
-  "ui.requests.empty": "Keine ausstehenden Zugriffsanfragen.",
-  "ui.requests.more": "Weitere Zugriffsanfragen laden",
-  "ui.requests.refresh": "Zugriffsanfragen aktualisieren",
-  "ui.manualFilters": "Manuelle Filter",
-  "ui.manualFiltersHint": "Verwenden Sie manuelle Filter, um inaktive Bearbeitung einzuschließen.",
-  "ui.unconfirmedUntil": "Waiting for a final answer until {finalAt}."
+  "ui.about": {
+    "text": "Über ClaimCore",
+    "source": "4efca0d10c5f"
+  },
+  "ui.accent": {
+    "text": "Akzentfarbe",
+    "source": "12376f4cbd6c"
+  },
+  "ui.accentBlue": {
+    "text": "Blau",
+    "source": "ec7d56a01607"
+  },
+  "ui.accentGreen": {
+    "text": "Grün",
+    "source": "d486dfbd5fb5"
+  },
+  "ui.accentSet": {
+    "text": "Akzentfarbe auf {value} gesetzt.",
+    "source": "f4c95f4f6a4b"
+  },
+  "ui.accepted": {
+    "text": "angenommen",
+    "source": "070c160a6299"
+  },
+  "ui.acceptedOperation": {
+    "text": "Erfasste Änderung",
+    "source": "595214b94033"
+  },
+  "ui.account": {
+    "text": "Konto",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actDescription": {
+    "text": "{label}: {meaning}",
+    "source": "7216b2a9dae5"
+  },
+  "ui.actor": {
+    "text": "Konto",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actorRequestRetained": {
+    "text": "Ihre aktuelle Anfrage bleibt erhalten. Setzen Sie sie fort oder verwerfen Sie sie, bevor Sie eine andere Aktion beginnen.",
+    "source": "700957242358"
+  },
+  "ui.addGrant": {
+    "text": "Rolle hinzufügen",
+    "source": "e53a93625e74"
+  },
+  "ui.after": {
+    "text": "Nachher: {value}",
+    "source": "7b7c2d72857a"
+  },
+  "ui.anyFilter": {
+    "text": "Beliebig",
+    "source": "2b505597daa7"
+  },
+  "ui.appearance": {
+    "text": "Darstellung",
+    "source": "3907fa7f8072"
+  },
+  "ui.authorityAction": {
+    "text": "Zugriffsänderung",
+    "source": "295239c1b29a"
+  },
+  "ui.backToCases": {
+    "text": "Zurück zu den Fällen",
+    "source": "99d9b7b14d23"
+  },
+  "ui.before": {
+    "text": "Vorher: {value}",
+    "source": "f1db066ec43d"
+  },
+  "ui.calendar": {
+    "text": "Kalender öffnen",
+    "source": "a1ad37d0c5e8"
+  },
+  "ui.canonicalCopyHint": {
+    "text": "Diesen Wert kopieren.",
+    "source": "8a31fb4c608d"
+  },
+  "ui.caseDetail": {
+    "text": "Falldetails",
+    "source": "e6aad002458d"
+  },
+  "ui.cases": {
+    "text": "Fälle",
+    "source": "2249bd503ec4"
+  },
+  "ui.changeActDescription": {
+    "text": "Diesen Entwurf verwerfen und eine andere Aktion wählen?",
+    "source": "0db8e85a3b26"
+  },
+  "ui.changeActTitle": {
+    "text": "Diese entworfenen Änderungen verwerfen?",
+    "source": "7dbba5ad2b76"
+  },
+  "ui.changeFact": {
+    "text": "{field} ändern",
+    "source": "b8abd919ebef"
+  },
+  "ui.checkOutcome": {
+    "text": "Status prüfen",
+    "source": "69cd3590300a"
+  },
+  "ui.checkUnresolvedOperation": {
+    "text": "Jetzt prüfen",
+    "source": "2937cffb37ab"
+  },
+  "ui.chooseRole": {
+    "text": "Rolle wählen",
+    "source": "a49c49b04c4d"
+  },
+  "ui.clearFilters": {
+    "text": "Filter zurücksetzen",
+    "source": "7179ea0035fc"
+  },
+  "ui.clearValue": {
+    "text": "Erfassten Wert entfernen",
+    "source": "726a6f95d697"
+  },
+  "ui.close": {
+    "text": "Schließen",
+    "source": "7d9eb7acb13e"
+  },
+  "ui.continueAuthorityRequest": {
+    "text": "Aktuelle Anfrage fortsetzen",
+    "source": "ec9e7079a21a"
+  },
+  "ui.contract": {
+    "text": "Vertragskennung",
+    "source": "002a152b2dfc"
+  },
+  "ui.copied": {
+    "text": "{label} kopiert.",
+    "source": "80a056eab235"
+  },
+  "ui.copy": {
+    "text": "{label} kopieren",
+    "source": "63ba394601c5"
+  },
+  "ui.copyFallback": {
+    "text": "Alternative zum Kopieren von {label}",
+    "source": "540c6468b0a7"
+  },
+  "ui.correctionHint": {
+    "text": "Wählen Sie, was mit jeder Gruppe von Angaben geschehen soll.",
+    "source": "fe14963d4faf"
+  },
+  "ui.countryName": {
+    "text": "{code}: {name}",
+    "source": "e92cdbf79c10"
+  },
+  "ui.countryUnassigned": {
+    "text": "{code} ist kein bekannter Ländercode. Prüfen Sie ihn.",
+    "source": "c16222b929b3"
+  },
+  "ui.currentMode": {
+    "text": "Derzeit {value}",
+    "source": "dbdd7aa26011"
+  },
+  "ui.defaultAccent": {
+    "text": "Standard",
+    "source": "21b111cbfe6e"
+  },
+  "ui.detectedLanguage": {
+    "text": "Vom Browser erkannt",
+    "source": "1bec1fb0289f"
+  },
+  "ui.discardAndChange": {
+    "text": "Verwerfen und Aktion ändern",
+    "source": "ffdb3f134a5e"
+  },
+  "ui.discardAndLeave": {
+    "text": "Verwerfen und verlassen",
+    "source": "07e5b9156de3"
+  },
+  "ui.discardUnknownDescription": {
+    "text": "Diese Änderung könnte bereits erfasst sein. Wenn Sie sie verwerfen, kann diese Seite sie nicht erneut senden.",
+    "source": "28b3f2ec4ecf"
+  },
+  "ui.displayLocale": {
+    "text": "Datums- und Zahlenformat",
+    "source": "c3e8e25f37a9"
+  },
+  "ui.displayLocaleSet": {
+    "text": "Datums- und Zahlenformat auf {value} gesetzt.",
+    "source": "ad65deea3ecb"
+  },
+  "ui.emptyInput": {
+    "text": "Leere Eingabe",
+    "source": "63ed0b2ee921"
+  },
+  "ui.exactCaseReference": {
+    "text": "{label} (genau)",
+    "source": "cf3a934bfd96"
+  },
+  "ui.exactOperationId": {
+    "text": "Genaue Vorgangs-ID",
+    "source": "dbdca09f6e48"
+  },
+  "ui.exactReference": {
+    "text": "{label} (genau): {reference}",
+    "source": "e26d7a9b269c"
+  },
+  "ui.exactUtc": {
+    "text": "Genauer UTC-Zeitpunkt",
+    "source": "460d31945df9"
+  },
+  "ui.explainFields": {
+    "text": "Felder erklären",
+    "source": "3593737e2657"
+  },
+  "ui.filters": {
+    "text": "Filter",
+    "source": "546ebb8eb993"
+  },
+  "ui.findCase": {
+    "text": "Über genaues Aktenzeichen öffnen",
+    "source": "0ff7411177ad"
+  },
+  "ui.formatPreview": {
+    "text": "Vorschau: {date} · {amount}",
+    "source": "e598c70b2351"
+  },
+  "ui.generalOperationLookup": {
+    "text": "Allgemeine Vorgangssuche",
+    "source": "a87469ec1ea3"
+  },
+  "ui.grantNumber": {
+    "text": "Rolle {number}",
+    "source": "00fa69a81cab"
+  },
+  "ui.grantsEnd": {
+    "text": "Alle Rollen werden angezeigt.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.grantsPartial": {
+    "text": "Nur einige Rollen werden angezeigt.",
+    "source": "391d53d153f3"
+  },
+  "ui.historyNoChanges": {
+    "text": "Keine Angaben wurden geändert.",
+    "source": "0b70fc56218c"
+  },
+  "ui.includeInactiveWork": {
+    "text": "Inaktive Fallbearbeitung einschließen",
+    "source": "8ca6c3a219c2"
+  },
+  "ui.incompleteResponse": {
+    "text": "ClaimCore hat eine unvollständige Antwort gesendet.",
+    "source": "3fad4a1c8c5d"
+  },
+  "ui.keepEditing": {
+    "text": "Weiter bearbeiten",
+    "source": "e76fd2add010"
+  },
+  "ui.language": {
+    "text": "Oberflächensprache",
+    "source": "8027f432a7fb"
+  },
+  "ui.languageAppearance": {
+    "text": "Sprache und Darstellung",
+    "source": "03ccd687bd8a"
+  },
+  "ui.languageLoadFailed": {
+    "text": "Die Sprache konnte nicht geladen werden. Ihre Arbeitssprache bleibt unverändert.",
+    "source": "7a416cc61349"
+  },
+  "ui.languageRegion": {
+    "text": "Sprache und Region",
+    "source": "003e875495c3"
+  },
+  "ui.languageSet": {
+    "text": "Sprache auf {value} gesetzt.",
+    "source": "0861f62cf939"
+  },
+  "ui.leaveDraftDescription": {
+    "text": "Diesen Entwurf verwerfen und den Editor verlassen?",
+    "source": "a7e0213e137c"
+  },
+  "ui.leaveUnchanged": {
+    "text": "Unverändert lassen",
+    "source": "819f6b9f3880"
+  },
+  "ui.loading": {
+    "text": "Wird geladen…",
+    "source": "ba3bbbe10d8b"
+  },
+  "ui.loadingCases": {
+    "text": "Fälle werden geladen…",
+    "source": "ac19ccc4e348"
+  },
+  "ui.loadingCurrentCase": {
+    "text": "Aktueller Fall wird geladen…",
+    "source": "961f74c56236"
+  },
+  "ui.loadingHistory": {
+    "text": "Aktivität wird geladen…",
+    "source": "a389c395010e"
+  },
+  "ui.loadingLanguage": {
+    "text": "Sprache wird geladen…",
+    "source": "42609e39e159"
+  },
+  "ui.loadingSession": {
+    "text": "Sitzung wird geladen…",
+    "source": "3d3c04cbc07b"
+  },
+  "ui.loginInstructions": {
+    "text": "Melden Sie sich mit dem Konto Ihrer Organisation an.",
+    "source": "2d954a0e8a31"
+  },
+  "ui.lookingUp": {
+    "text": "Wird gesucht…",
+    "source": "a84f1079ee0e"
+  },
+  "ui.mine": {
+    "text": "Meine",
+    "source": "f57afb7d275a"
+  },
+  "ui.modeSet": {
+    "text": "Farbmodus auf {value} gesetzt.",
+    "source": "b525fa9e5b37"
+  },
+  "ui.moreActors": {
+    "text": "Weitere Personen",
+    "source": "95baf92809bb"
+  },
+  "ui.moreCaseActions": {
+    "text": "Weitere Aktionen",
+    "source": "f8d46c2570e7"
+  },
+  "ui.moreCases": {
+    "text": "Weitere Fälle laden",
+    "source": "cd681597c17e"
+  },
+  "ui.moreGrants": {
+    "text": "Weitere Zuweisungen",
+    "source": "27f0be44c2db"
+  },
+  "ui.moreHistory": {
+    "text": "Weitere Aktivität laden",
+    "source": "e3f0587b4839"
+  },
+  "ui.moreReminders": {
+    "text": "Weitere Wiedervorlagen",
+    "source": "b36b0a1b10e1"
+  },
+  "ui.newReminder": {
+    "text": "Wiedervorlage hinzufügen",
+    "source": "cd566803bf39"
+  },
+  "ui.nextActions": {
+    "text": "Nächster Schrittn",
+    "source": "f6eb77625278"
+  },
+  "ui.nextAccounts": {
+    "text": "Weitere Konten",
+    "source": "743e1725ebd5"
+  },
+  "ui.nextMonth": {
+    "text": "Nächster Monat",
+    "source": "74e53211fef4"
+  },
+  "ui.no": {
+    "text": "Nein",
+    "source": "1ea442a134b2"
+  },
+  "ui.noAccessibleActors": {
+    "text": "Keine Personen anzuzeigen.",
+    "source": "6a83dad36c14"
+  },
+  "ui.noAccessibleCases": {
+    "text": "Keine Fälle anzuzeigen.",
+    "source": "4b74e082b9b3"
+  },
+  "ui.noAccessibleHistory": {
+    "text": "Keine Aktivität anzuzeigen.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.noCasesForView": {
+    "text": "Keine Fälle passen zu dieser Ansicht.",
+    "source": "8b8a577e5f3b"
+  },
+  "ui.noEligibleAccounts": {
+    "text": "Keine zuweisbaren Konten auf dieser Seite.",
+    "source": "f9c5ece19d4b"
+  },
+  "ui.noPendingReminders": {
+    "text": "Dieser aktive offene Fall benötigt einen nächsten Schritt. Fügen Sie eine Wiedervorlage hinzu, sobald Sie einen Plan haben.",
+    "source": "c7a49fc6cf67"
+  },
+  "ui.noReminders": {
+    "text": "Keine Wiedervorlagen passen zu dieser Ansicht.",
+    "source": "3200239466d8"
+  },
+  "ui.noViews": {
+    "text": "Keine Arbeitsansichten verfügbar.",
+    "source": "3e86bd3913b7"
+  },
+  "ui.notRecorded": {
+    "text": "Nicht erfasst",
+    "source": "b37c7879f6c3"
+  },
+  "ui.observeOperation": {
+    "text": "Erfasstes Ergebnis nachschlagen",
+    "source": "6afd2a4b367f"
+  },
+  "ui.openExactCase": {
+    "text": "{reference} öffnen",
+    "source": "544235b8ff17"
+  },
+  "ui.operationAccepted": {
+    "text": "Vorgang {operationId} ist angenommen.",
+    "source": "f2ada3346a34"
+  },
+  "ui.operationLookup": {
+    "text": "Vorgangssuche",
+    "source": "2bc69d814487"
+  },
+  "ui.operationUnresolved": {
+    "text": "Noch nicht bestätigt.",
+    "source": "3ce10de819f7"
+  },
+  "ui.overdueReminders": {
+    "text": "Überfällige Wiedervorlagen",
+    "source": "051cc2b13b7f"
+  },
+  "ui.pageEnd": {
+    "text": "Alle Ergebnisse angezeigt.",
+    "source": "959b6e22691e"
+  },
+  "ui.pageNotFound": {
+    "text": "Seite nicht gefunden",
+    "source": "a469ab4ca4e5"
+  },
+  "ui.pageNotFoundDescription": {
+    "text": "Die Adresse bezeichnet keine ClaimCore-Seite.",
+    "source": "d35b48f97478"
+  },
+  "ui.pagePartial": {
+    "text": "Weitere Ergebnisse sind verfügbar.",
+    "source": "ff02dd781a42"
+  },
+  "ui.pairedFacts": {
+    "text": "{first} und {second}",
+    "source": "a8c60ace0cf1"
+  },
+  "ui.pendingReminders": {
+    "text": "Ausstehende Wiedervorlagen",
+    "source": "352897daa5d5"
+  },
+  "ui.people.person": {
+    "text": "Person",
+    "source": "6007db63e18e"
+  },
+  "ui.people.roles": {
+    "text": "Rollen",
+    "source": "c25337055464"
+  },
+  "ui.planAfterOpen": {
+    "text": "Der Fall wurde eröffnet. Das Planen einer Wiedervorlage ist ein separater nächster Schritt.",
+    "source": "fa8a15963b74"
+  },
+  "ui.preferencesNotSaved": {
+    "text": "Die Einstellungen gelten für diese Sitzung, konnten aber nicht in diesem Browser gespeichert werden.",
+    "source": "861ebb38b269"
+  },
+  "ui.preparingRecovery": {
+    "text": "Wird gespeichert…",
+    "source": "23e39291d613"
+  },
+  "ui.previewing": {
+    "text": "Wird geprüft…",
+    "source": "fcc53388888f"
+  },
+  "ui.previousAccounts": {
+    "text": "Vorherige Konten",
+    "source": "c74522075fca"
+  },
+  "ui.previousMonth": {
+    "text": "Vorheriger Monat",
+    "source": "6a2769502a5d"
+  },
+  "ui.primary": {
+    "text": "Primär",
+    "source": "efe10c80ec8a"
+  },
+  "ui.pseudo": {
+    "text": "Erweitertes Englisch (Layouttest)",
+    "source": "6f81f6466cb2"
+  },
+  "ui.queueDescription": {
+    "text": "Finden Sie Fälle mit Handlungsbedarf und setzen Sie ihre Bearbeitung fort.",
+    "source": "758595a14f42"
+  },
+  "ui.recordOptionalFact": {
+    "text": "{field} erfassen (optional)",
+    "source": "da9e7bdfead7"
+  },
+  "ui.recovery": {
+    "text": "Unbestätigte Änderungen",
+    "source": "5907dc3e66b9"
+  },
+  "ui.recoveryCleanupUnavailable": {
+    "text": "Das Ergebnis ist bekannt, aber dieser lokale Versuch konnte nicht entfernt werden. Seine Kennung wurde aufbewahrt; Sie können den Status erneut prüfen.",
+    "source": "1dc1592f82ad"
+  },
+  "ui.recoveryDescription": {
+    "text": "Es ließ sich nicht bestätigen, ob diese Änderungen erfasst wurden. ClaimCore prüft sie für Sie. Jede Antwort wird innerhalb von {window} endgültig.",
+    "source": "eff410b18411"
+  },
+  "ui.recoveryEmpty": {
+    "text": "Keine unbestätigten Änderungen.",
+    "source": "c2d34418a5dd"
+  },
+  "ui.recoveryListingUnavailable": {
+    "text": "Wiederherstellungskennungen können nicht gelesen oder aktualisiert werden. Bestehende Einträge bleiben erhalten. Stellen Sie den Speicherzugriff wieder her oder klären Sie ältere Einträge mit dem passenden Client, bevor Sie es erneut versuchen.",
+    "source": "e2277d9e955f"
+  },
+  "ui.recoveryUnavailable": {
+    "text": "Nicht gesendet: Der Wiederherstellungsspeicher ist nicht verfügbar. Aktivieren Sie den Websitespeicher oder geben Sie Speicherplatz frei und versuchen Sie es erneut. Ihre Anfrage wurde nicht gesendet.",
+    "source": "d65945e86bb7"
+  },
+  "ui.reference": {
+    "text": "{label}: {reference}",
+    "source": "73fe9c967c0c"
+  },
+  "ui.refreshAccounts": {
+    "text": "Zuweisbare Konten aktualisieren",
+    "source": "792e2d92a7aa"
+  },
+  "ui.refreshWork": {
+    "text": "Bearbeitung aktualisieren",
+    "source": "d8c38c942d9d"
+  },
+  "ui.reloadActors": {
+    "text": "Personen neu laden",
+    "source": "8a0c53553115"
+  },
+  "ui.reloadCases": {
+    "text": "Fälle neu laden",
+    "source": "1e208585b01e"
+  },
+  "ui.reloadContract": {
+    "text": "Seite neu laden",
+    "source": "437d0d63bfbd"
+  },
+  "ui.reloadCurrentCase": {
+    "text": "Aktuellen Fall neu laden",
+    "source": "dfad4aa77ca3"
+  },
+  "ui.reloadGrants": {
+    "text": "Zuweisungen neu laden",
+    "source": "6e21644bbc15"
+  },
+  "ui.reloadHistory": {
+    "text": "Aktivität neu laden",
+    "source": "10d39b0ca399"
+  },
+  "ui.reloadInterface": {
+    "text": "Oberfläche neu laden",
+    "source": "bdc3a5a1699e"
+  },
+  "ui.reminderAction": {
+    "text": "Geplante Aufgabe",
+    "source": "5818bdba66cb"
+  },
+  "ui.reminderDetails": {
+    "text": "Wiedervorlagesdetails",
+    "source": "1cd27d608c31"
+  },
+  "ui.reminderDue": {
+    "text": "Geplantes Datum",
+    "source": "37b3b31a9fbe"
+  },
+  "ui.reminderQueueHint": {
+    "text": "Fälligkeitsfilter gelten hier für jede Wiedervorlage. Falllisten verwenden die früheste Wiedervorlage jedes Falls.",
+    "source": "f1ad60c57bf8"
+  },
+  "ui.reminderState": {
+    "text": "Wiedervorlagesstatus",
+    "source": "9320b222ccb0"
+  },
+  "ui.reminders": {
+    "text": "Wiedervorlagen",
+    "source": "7971dd752669"
+  },
+  "ui.removeGrant": {
+    "text": "Rolle entfernen",
+    "source": "9a1fb81f279f"
+  },
+  "ui.retryExact": {
+    "text": "Erneut senden",
+    "source": "feead925e260"
+  },
+  "ui.retryExactDescription": {
+    "text": "Erneutes Senden übermittelt genau dieselbe Änderung; sie kann nicht doppelt erfasst werden. Öffnen Sie nach dem Verlassen dieser Seite Unbestätigte Änderungen, um die Antwort zu sehen.",
+    "source": "534e3823f248"
+  },
+  "ui.retryLanguage": {
+    "text": "Sprache erneut laden",
+    "source": "0c776ceb4592"
+  },
+  "ui.retryView": {
+    "text": "Laden wiederholen",
+    "source": "a0f859bc4db2"
+  },
+  "ui.returnToCase": {
+    "text": "Zurück zum Fall",
+    "source": "7a55d0a50325"
+  },
+  "ui.returnToEdit": {
+    "text": "Zurück zur Bearbeitung",
+    "source": "afc22f861264"
+  },
+  "ui.reviewDescription": {
+    "text": "Prüfen Sie die Änderungen und bestätigen Sie sie dann.",
+    "source": "5c2b1066dca1"
+  },
+  "ui.review.basis": {
+    "text": "Basiert auf Version {revision}, geprüft {when}.",
+    "source": "864dfe115c55"
+  },
+  "ui.rightToLeft": {
+    "text": "Rechts nach links",
+    "source": "4667424121a6"
+  },
+  "ui.roleNotAvailableAtScope": {
+    "text": "Für die ausgewählten Fälle nicht verfügbar",
+    "source": "008dd6597126"
+  },
+  "ui.roleNotAvailableForService": {
+    "text": "Für Dienstkonten nicht verfügbar",
+    "source": "23a43af3092c"
+  },
+  "ui.savedRecoveryAttempt": {
+    "text": "Gespeicherter Versuch",
+    "source": "d152ac80fa8b"
+  },
+  "ui.scalarCount": {
+    "text": "Zeichen: {count}/{maximum}",
+    "source": "907b0d890dff"
+  },
+  "ui.search": {
+    "text": "Suchen",
+    "source": "49c266baaaa7"
+  },
+  "ui.selectedAccount": {
+    "text": "Ausgewähltes Konto",
+    "source": "8b63d9475c25"
+  },
+  "ui.settings": {
+    "text": "Einstellungen",
+    "source": "74a883a037bc"
+  },
+  "ui.settingsIntroduction": {
+    "text": "Diese Einstellungen gelten für diesen Browser. Sie ändern niemals erfasste Werte.",
+    "source": "2364c3aaf5d9"
+  },
+  "ui.shell.administration": {
+    "text": "Verwaltung",
+    "source": "4b42c6690ebe"
+  },
+  "ui.shell.authorityHistory": {
+    "text": "Verlauf der Zugriffsrechte",
+    "source": "2023c056fe61"
+  },
+  "ui.shell.businessDate": {
+    "text": "Geschäftsdatum",
+    "source": "e727f917d3c3"
+  },
+  "ui.shell.businessDateChanged": {
+    "text": "Das Geschäftsdatum ist jetzt {date}. Aktualisieren Sie, um Fälligkeiten anzupassen.",
+    "source": "efb3f0ec78c4"
+  },
+  "ui.shell.checkNow": {
+    "text": "Jetzt prüfen",
+    "source": "2937cffb37ab"
+  },
+  "ui.shell.people": {
+    "text": "Personen und Zugriff",
+    "source": "8df747cef67a"
+  },
+  "ui.shell.searchCases": {
+    "text": "Fälle suchen",
+    "source": "22c2a4061665"
+  },
+  "ui.shell.unresolved": {
+    "text": "Unbestätigte Änderungen: {count}",
+    "source": "dbbc216f94f3"
+  },
+  "ui.signIn": {
+    "text": "Anmelden",
+    "source": "bfd402b2f6f3"
+  },
+  "ui.signInTitle": {
+    "text": "Am Fallregister anmelden",
+    "source": "df2702f36960"
+  },
+  "ui.signOut": {
+    "text": "Abmelden",
+    "source": "48f0d3d397d4"
+  },
+  "ui.submitting": {
+    "text": "Wird erfasst…",
+    "source": "7ea93caac0f5"
+  },
+  "ui.summaryCounts": {
+    "text": "Passende Fälle: {count}",
+    "source": "2b9110dcd544"
+  },
+  "ui.summaryDetails": {
+    "text": "Gesamtsummen der Übersicht anzeigen",
+    "source": "aa9b920c97a9"
+  },
+  "ui.theme": {
+    "text": "Design",
+    "source": "efb52e7172b7"
+  },
+  "ui.themeAccessibility": {
+    "text": "Beide Akzentfarben unterstützen helle und dunkle Modi. Die Kontrasteinstellungen Ihres Geräts werden automatisch berücksichtigt.",
+    "source": "efad81ae5929"
+  },
+  "ui.themeDark": {
+    "text": "Dunkel",
+    "source": "60acc53f13a5"
+  },
+  "ui.themeLight": {
+    "text": "Hell",
+    "source": "dbcd5e7bb7a0"
+  },
+  "ui.themeSystem": {
+    "text": "Wie Gerät",
+    "source": "5e4aca65d4a4"
+  },
+  "ui.tryAgain": {
+    "text": "Erneut versuchen",
+    "source": "d8b8392e2c54"
+  },
+  "ui.unchangedUntilSubmit": {
+    "text": "Es wird nichts erfasst, bevor Sie bestätigen.",
+    "source": "23eba3cab92a"
+  },
+  "ui.version": {
+    "text": "Version",
+    "source": "dd167905de0d"
+  },
+  "ui.viewLoadFailed": {
+    "text": "Diese Ansicht konnte nicht geladen werden. Versuchen Sie das Laden erneut oder laden Sie neu, wenn Sie Ihre aktuelle Arbeit verlassen können.",
+    "source": "8d021b7893a2"
+  },
+  "ui.viewLoading": {
+    "text": "Ansicht wird geladen…",
+    "source": "a91ca23dc6a9"
+  },
+  "ui.workDateBasis": {
+    "text": "Geschäftsdatum {date} ({zone}).",
+    "source": "10dbbbcb3088"
+  },
+  "ui.workQueue": {
+    "text": "Arbeitsübersicht",
+    "source": "696e7291ea90"
+  },
+  "ui.worklistSearch": {
+    "text": "Diese Ansicht filtern",
+    "source": "c2eec812666c"
+  },
+  "ui.yes": {
+    "text": "Ja",
+    "source": "85a39ab345d6"
+  },
+  "ui.timeline.title": {
+    "text": "Aktivität",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.filter": {
+    "text": "Aktivität filtern",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.all": {
+    "text": "Alles",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.facts": {
+    "text": "Daten",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.work": {
+    "text": "Bearbeitung",
+    "source": "104ab9213e28"
+  },
+  "ui.timeline.details": {
+    "text": "Einzelheiten anzeigen",
+    "source": "1af77ee273cb"
+  },
+  "ui.timeline.nextReminder": {
+    "text": "Nächste Wiedervorlage",
+    "source": "153fddb917f5"
+  },
+  "ui.timeline.empty": {
+    "text": "Keine Aktivität anzuzeigen.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.more": {
+    "text": "Mehr laden",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.before": {
+    "text": "Früherer Wert:",
+    "source": "fca574a5a363"
+  },
+  "ui.timeline.after": {
+    "text": "Neuer Wert:",
+    "source": "dca4696d7a91"
+  },
+  "ui.timeline.withheld": {
+    "text": "Sie haben keinen Zugriff auf diese Änderungen.",
+    "source": "d6194fd34931"
+  },
+  "ui.accessState.title": {
+    "text": "Sie haben noch keinen Zugriff",
+    "source": "329f122dcf0f"
+  },
+  "ui.accessState.disabled": {
+    "text": "Dieses Konto ist deaktiviert",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.requested": {
+    "text": "Wir haben die Inhaber informiert. Ein Inhaber kann diesem Konto Zugriff gewähren.",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.provider": {
+    "text": "Anbieter",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.copy": {
+    "text": "Angaben für Ihren Administrator",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.check": {
+    "text": "Zugriff prüfen",
+    "source": "abb9a172a69b"
+  },
+  "ui.stage.recorded": {
+    "text": "Erfasst",
+    "source": "c7175fa7a0db"
+  },
+  "ui.stage.noDate": {
+    "text": "Datum nicht verfügbar",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.reinstated": {
+    "text": "Fall wiederhergestellt. Prüfen Sie die aktuellen Daten und nächsten Schritte.",
+    "source": "a7a3e603b99e"
+  },
+  "ui.conflict.title": {
+    "text": "Dieser Fall hat sich geändert",
+    "source": "ae4ec9da2e36"
+  },
+  "ui.conflict.kept": {
+    "text": "Ihr Entwurf bleibt erhalten. Prüfen Sie die Änderungen, bevor Sie ihn auf Grundlage der neuesten Version vorbereiten.",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "Neueste Version wird geladen…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "Mit neuestem Stand prüfen",
+    "source": "f0124537d549"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "Mit den aktuellen Daten nicht verfügbar.",
+    "source": "d43925e74ff6"
+  },
+  "ui.returnToWorkspace": {
+    "text": "Zurück zum Arbeitsbereich",
+    "source": "02e565ef63bc"
+  },
+  "ui.enterDetails": {
+    "text": "Angaben eingeben",
+    "source": "ebaf73345eea"
+  },
+  "ui.review.checked": {
+    "text": "Geprüft {when}.",
+    "source": "e249af3ff82a"
+  },
+  "ui.requests.empty": {
+    "text": "Keine ausstehenden Zugriffsanfragen.",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "Weitere Zugriffsanfragen laden",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "Zugriffsanfragen aktualisieren",
+    "source": "0777c623824e"
+  },
+  "ui.manualFilters": {
+    "text": "Manuelle Filter",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "Verwenden Sie manuelle Filter, um inaktive Bearbeitung einzuschließen.",
+    "source": "dc4f2d354574"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "Noch nicht bestätigt. Die Antwort ist bis {finalAt} endgültig.",
+    "source": "fc1019052c76"
+  }
 }

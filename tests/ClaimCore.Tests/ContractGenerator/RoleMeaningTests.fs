@@ -147,12 +147,12 @@ let tests =
 
                 Expect.stringContains
                     (meaning "CASE_REGISTRAR")
-                    "requires an installation-wide"
+                    "this role for all cases"
                     "Registrar limitation"
 
                 Expect.stringContains
                     (meaning "CASE_HANDLER")
-                    "requires installation-wide"
+                    "this role for all cases"
                     "Handler limitation"
 
                 Expect.isTrue
@@ -161,7 +161,7 @@ let tests =
 
                 Expect.stringContains
                     (meaning "CASE_HANDLER")
-                    "Only people can manage"
+                    "Only people manage"
                     "Work is limited to people"
 
                 let authority principal role scope =
@@ -223,12 +223,12 @@ let tests =
 
                 Expect.stringContains
                     (meaning "AUDITOR")
-                    "only with an installation-wide"
+                    "With this role for all cases"
                     "Authority review scope limitation"
 
                 Expect.stringContains
                     (meaning "CASE_REGISTRAR")
-                    "Records or corrects claim details"
+                    "Records and corrects claim details"
                     "Registrar editing purpose"
 
                 Expect.equal
@@ -238,15 +238,15 @@ let tests =
 
                 Expect.stringContains
                     (meaning "OWNER")
-                    "does not grant access to case facts"
+                    "Does not give access to cases"
                     "Owner limitation"
 
                 Expect.isTrue (Authority.humanOnlyRole Role.DataSteward) "Steward is human only"
-                Expect.stringContains (meaning "DATA_STEWARD") "for people" "Steward limitation"
+                Expect.stringContains (meaning "DATA_STEWARD") "For people" "Steward limitation"
 
                 Expect.isFalse
                     (Authority.policy Role.Auditor |> List.contains Capability.ManageAuthority)
                     "Auditor cannot manage access"
 
-                Expect.stringContains (meaning "AUDITOR") "cannot change" "Read-only audit meaning")
+                Expect.stringContains (meaning "AUDITOR") "Cannot change" "Read-only audit meaning")
         ]

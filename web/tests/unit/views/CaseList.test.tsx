@@ -91,9 +91,9 @@ it.each([
   );
   navigate(`/cases?view=${view}`, true);
   render(<CaseList onSelect={vi.fn()} />);
-  await screen.findByText("No matching items.");
+  await screen.findByText("Nothing to show in this view.");
   expect(screen.getByRole("tab", { name: `${label} 0` })).toHaveAttribute("aria-selected", "true");
-  expect(screen.queryByText("No accessible cases returned.")).toBeNull();
+  expect(screen.queryByText("No cases to show.")).toBeNull();
   expect(screen.queryByRole("button", { name: "Clear filters" })).toBeNull();
 });
 it("keeps case creation in the shell and masks rows while a fresh page loads", async () => {

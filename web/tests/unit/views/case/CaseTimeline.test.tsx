@@ -76,7 +76,7 @@ it("follows only the issued cursor, clears refused continuations and retries wit
   vi.stubGlobal("fetch", fetch);
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} onDisclosureRefused={refused} />);
-  await user.click(await screen.findByRole("button", { name: "Load 50 more" }));
+  await user.click(await screen.findByRole("button", { name: "Load more" }));
   await screen.findByRole("alert");
   expect(JSON.parse(requestText(fetch.mock.calls[1]?.[1]?.body))).toEqual({
     target,
@@ -137,7 +137,7 @@ it("uses the supplied event table and appends pages in core order", async () => 
   expect(view.container).not.toHaveTextContent("Core before");
   expect(view.container).not.toHaveTextContent("Core after");
   expect(fetch).toHaveBeenCalledTimes(1);
-  await user.click(screen.getByRole("button", { name: "Load 50 more" }));
+  await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
     expect(
       view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr"),

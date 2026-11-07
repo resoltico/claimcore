@@ -66,12 +66,14 @@ it("selects and removes a complete money pair as one authoring event", async () 
   const spy = preview();
   editor();
   await name();
-  const pair = screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u });
+  const pair = screen.getByRole("checkbox", {
+    name: /^Change Claimed amount and Claimed currency/u,
+  });
   await userEvent.setup().click(pair);
-  changeField("Amount claimed", "50.25");
-  expect(screen.getByRole("combobox", { name: "Currency of claimed amount" })).toBeVisible();
+  changeField("Claimed amount", "50.25");
+  expect(screen.getByRole("combobox", { name: "Claimed currency" })).toBeVisible();
   await userEvent.setup().click(pair);
-  expect(screen.queryByRole("textbox", { name: "Amount claimed" })).toBeNull();
+  expect(screen.queryByRole("textbox", { name: "Claimed amount" })).toBeNull();
   const frame = await prepared(spy);
   expect(frame.input.act).toEqual({
     kind: "AMEND_REGISTRATION",
@@ -108,11 +110,13 @@ it.each([
     const path = actPath({ kind: "ID", caseId: current.caseId }, "AMEND_REGISTRATION");
     navigate(path);
     render(<Dashboard />);
-    await screen.findByRole("checkbox", { name: /^Change Amount claimed and Currency/u });
+    await screen.findByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u });
     await userEvent
       .setup()
-      .click(screen.getByRole("checkbox", { name: /^Change Amount claimed and Currency/u }));
-    changeField("Amount claimed", raw);
+      .click(
+        screen.getByRole("checkbox", { name: /^Change Claimed amount and Claimed currency/u }),
+      );
+    changeField("Claimed amount", raw);
     const switchFormat = async (locale: string) => {
       const user = userEvent.setup();
       await user.click(screen.getByRole("button", { name: "Settings" }));
@@ -129,7 +133,7 @@ it.each([
       expect(window.location.pathname).toBe(path);
     };
     await switchFormat(display);
-    expect(screen.getByRole("textbox", { name: "Amount claimed" })).toHaveValue(raw);
+    expect(screen.getByRole("textbox", { name: "Claimed amount" })).toHaveValue(raw);
     const frame = await prepared(spy);
     expect(frame.input.act).toEqual({
       kind: "AMEND_REGISTRATION",

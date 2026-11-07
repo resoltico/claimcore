@@ -1,231 +1,914 @@
 {
-  "ui.about": "關於",
-  "ui.accent": "強調色",
-  "ui.accentBlue": "藍色",
-  "ui.accentGreen": "綠色",
-  "ui.accentSet": "強調色已設為 {value}。",
-  "ui.accepted": "已接受",
-  "ui.acceptedOperation": "已記錄的更改",
-  "ui.account": "帳戶",
-  "ui.actDescription": "{label}：{meaning}",
-  "ui.actor": "帳戶",
-  "ui.actorRequestRetained": "已保留您當前的請求。開始其他操作前，請繼續或丟棄此請求。",
-  "ui.addGrant": "添加角色",
-  "ui.after": "更改後：{value}",
-  "ui.anyFilter": "不限",
-  "ui.appearance": "外觀",
-  "ui.authorityAction": "權限操作",
-  "ui.backToCases": "返回檔案列表",
-  "ui.before": "更改前：{value}",
-  "ui.calendar": "打開日曆",
-  "ui.canonicalCopyHint": "複製此值。",
-  "ui.caseDetail": "檔案詳情",
-  "ui.cases": "理賠檔案",
-  "ui.changeActDescription": "丟棄此草稿並選擇其他操作嗎？",
-  "ui.changeActTitle": "丟棄這些草稿更改嗎？",
-  "ui.changeFact": "更改{field}",
-  "ui.checkOutcome": "檢查狀態",
-  "ui.checkUnresolvedOperation": "Check now",
-  "ui.chooseRole": "選擇角色",
-  "ui.clearFilters": "清除篩選條件",
-  "ui.clearValue": "清除已記錄的值",
-  "ui.close": "關閉",
-  "ui.continueAuthorityRequest": "繼續當前請求",
-  "ui.contract": "契約識別",
-  "ui.copied": "已複製{label}。",
-  "ui.copy": "複製{label}",
-  "ui.copyFallback": "{label}的備用複製方式",
-  "ui.correctionHint": "為每組選擇操作。保留的資料以實際記錄時的當前檔案為準。",
-  "ui.countryName": "{code}：{name}",
-  "ui.countryUnassigned": "沒有 {code} 對應的國家名稱。請確認所需代碼。",
-  "ui.currentMode": "當前為{value}",
-  "ui.defaultAccent": "預設",
-  "ui.detectedLanguage": "根據瀏覽器檢測",
-  "ui.discardAndChange": "丟棄並更換操作",
-  "ui.discardAndLeave": "丟棄並離開",
-  "ui.discardUnknownDescription": "此操作可能已被接受。丟棄會使您失去此原始請求，但不會取消操作。只有接受無法再從此頁重試的後果時才繼續。",
-  "ui.displayLocale": "日期與數字格式",
-  "ui.displayLocaleSet": "日期與數字格式已設為 {value}。",
-  "ui.emptyInput": "空輸入",
-  "ui.exactCaseReference": "{label}（精確值）",
-  "ui.exactOperationId": "完整操作 ID",
-  "ui.exactReference": "{label}（精確值）：{reference}",
-  "ui.exactUtc": "精確 UTC 時刻",
-  "ui.explainFields": "字段說明",
-  "ui.filters": "篩選條件",
-  "ui.findCase": "按完整編號打開",
-  "ui.formatPreview": "預覽：{date} · {amount}",
-  "ui.generalOperationLookup": "通用操作查詢",
-  "ui.grantNumber": "角色 {number}",
-  "ui.grantsEnd": "已顯示本次審閱返回的全部授權。",
-  "ui.grantsPartial": "僅顯示此帳戶的部分授權。",
-  "ui.historyNoChanges": "可披露的字段均未更改。",
-  "ui.includeInactiveWork": "包括非活動檔案工作",
-  "ui.incompleteResponse": "服務返回的響應不完整或無效。",
-  "ui.keepEditing": "繼續編輯",
-  "ui.language": "介面語言",
-  "ui.languageAppearance": "語言與外觀",
-  "ui.languageLoadFailed": "無法載入該語言。當前工作語言保持不變。",
-  "ui.languageRegion": "語言與地區",
-  "ui.languageSet": "語言已設為 {value}。",
-  "ui.leaveDraftDescription": "丟棄此草稿並離開編輯器嗎？",
-  "ui.leaveUnchanged": "保持不變",
-  "ui.loading": "正在載入…",
-  "ui.loadingCases": "正在載入檔案…",
-  "ui.loadingCurrentCase": "正在載入當前檔案…",
-  "ui.loadingHistory": "正在載入檔案歷史記錄…",
-  "ui.loadingLanguage": "正在載入語言…",
-  "ui.loadingSession": "正在載入本地會話…",
-  "ui.loginInstructions": "通過您所屬組織的身分提供方登入。",
-  "ui.lookingUp": "正在查詢…",
-  "ui.mine": "您負責的",
-  "ui.modeSet": "顏色模式已設為 {value}。",
-  "ui.moreActors": "更多帳戶",
-  "ui.moreCaseActions": "更多操作",
-  "ui.moreCases": "載入更多檔案",
-  "ui.moreGrants": "更多授權",
-  "ui.moreHistory": "載入更多歷史記錄",
-  "ui.moreReminders": "更多提醒",
-  "ui.newReminder": "添加提醒",
-  "ui.nextActions": "後續事項",
-  "ui.nextAccounts": "更多帳戶",
-  "ui.nextMonth": "下個月",
-  "ui.no": "否",
-  "ui.noAccessibleActors": "未返回可存取的帳戶。",
-  "ui.noAccessibleCases": "未返回可存取的檔案。",
-  "ui.noAccessibleHistory": "未返回可存取的歷史記錄。",
-  "ui.noCasesForView": "沒有符合此視圖的檔案。",
-  "ui.noEligibleAccounts": "本頁沒有符合條件的帳戶。",
-  "ui.noPendingReminders": "此活動且未結案的檔案需要下一事項。有了計劃後，請添加提醒。",
-  "ui.noReminders": "沒有符合此視圖的提醒。",
-  "ui.noViews": "此帳戶沒有可用的工作區視圖。",
-  "ui.notRecorded": "未記錄",
-  "ui.observeOperation": "查詢已記錄的結果",
-  "ui.openExactCase": "打開 {reference}",
-  "ui.operationAccepted": "操作 {operationId} 已被接受。",
-  "ui.operationLookup": "操作查詢",
-  "ui.operationUnresolved": "Waiting for a final answer.",
-  "ui.overdueReminders": "逾期提醒",
-  "ui.pageEnd": "已顯示全部結果。",
-  "ui.pageNotFound": "找不到頁面",
-  "ui.pageNotFoundDescription": "此地址未指向 ClaimCore 頁面。",
-  "ui.pagePartial": "還有更多結果。",
-  "ui.pairedFacts": "{first}與{second}",
-  "ui.pendingReminders": "待辦提醒",
-  "ui.people.person": "人員",
-  "ui.people.roles": "角色",
-  "ui.planAfterOpen": "檔案已新建。安排提醒是單獨的下一步。",
-  "ui.preferencesNotSaved": "偏好設定在本次會話中生效，但無法保存在此瀏覽器中。",
-  "ui.preparingRecovery": "正在保存恢復識別資訊…",
-  "ui.previewing": "正在審閱…",
-  "ui.previousAccounts": "上一批帳戶",
-  "ui.previousMonth": "上個月",
-  "ui.primary": "主要",
-  "ui.pseudo": "擴展英語（佈局測試）",
-  "ui.queueDescription": "查找並繼續處理需要關注的檔案工作。",
-  "ui.recordOptionalFact": "記錄{field}（可選）",
-  "ui.recovery": "Unconfirmed changes",
-  "ui.recoveryCleanupUnavailable": "結果已知，但無法清除此本地嘗試。其識別資訊已保留；您可以再次查詢狀態。",
-  "ui.recoveryDescription": "These changes have no confirmed outcome yet. We check them automatically until the answer is final.",
-  "ui.recoveryEmpty": "No unconfirmed changes.",
-  "ui.recoveryListingUnavailable": "無法讀取或更新恢復識別資訊。現有記錄已保留。請先恢復儲存存取，或使用匹配的用戶端處理舊記錄，再重試。",
-  "ui.recoveryUnavailable": "未傳送：恢復儲存不可用。請啟用網站儲存或釋放空間，然後重試。您的請求尚未傳送。",
-  "ui.reference": "{label}：{reference}",
-  "ui.refreshAccounts": "刷新符合條件的帳戶",
-  "ui.refreshWork": "刷新工作",
-  "ui.reloadActors": "重新載入帳戶",
-  "ui.reloadCases": "重新載入檔案",
-  "ui.reloadContract": "重新載入頁面",
-  "ui.reloadCurrentCase": "重新載入當前檔案",
-  "ui.reloadGrants": "重新載入授權",
-  "ui.reloadHistory": "重新載入歷史記錄",
-  "ui.reloadInterface": "重新載入介面",
-  "ui.reminderAction": "計劃事項",
-  "ui.reminderDetails": "提醒詳情",
-  "ui.reminderDue": "計劃日期",
-  "ui.reminderQueueHint": "到期篩選針對單條提醒；檔案到期篩選使用每個檔案最早的待辦日期。",
-  "ui.reminderState": "提醒狀態",
-  "ui.reminders": "提醒",
-  "ui.removeGrant": "移除角色",
-  "ui.retryExact": "再次傳送",
-  "ui.retryExactDescription": "Send again repeats the exact request still held by this page. Checks become final when the operation lifetime ends. After reloading, this page keeps only the identity and checks it automatically under Unconfirmed changes.",
-  "ui.retryLanguage": "重試載入語言",
-  "ui.retryView": "重試載入",
-  "ui.returnToCase": "返回檔案",
-  "ui.returnToEdit": "返回編輯",
-  "ui.reviewDescription": "請審閱擬定值，並確認此操作的全部內容。",
-  "ui.review.basis": "基於版本 {revision}，檢查時間為 {when}。",
-  "ui.rightToLeft": "從右到左",
-  "ui.roleNotAvailableAtScope": "此範圍內沒有適用權限",
-  "ui.roleNotAvailableForService": "不適用於服務身分主體",
-  "ui.savedRecoveryAttempt": "已保存的嘗試",
-  "ui.scalarCount": "{count}／{maximum} 個 Unicode 純量值",
-  "ui.search": "搜尋",
-  "ui.selectedAccount": "所選帳戶",
-  "ui.settings": "設定",
-  "ui.settingsIntroduction": "這些偏好設定僅適用於此瀏覽器，絕不會更改已記錄的值。",
-  "ui.shell.administration": "管理",
-  "ui.shell.authorityHistory": "權限歷史記錄",
-  "ui.shell.businessDate": "業務日期",
-  "ui.shell.businessDateChanged": "業務日期現為 {date}。請刷新以更新到期日期。",
-  "ui.shell.checkNow": "立即檢查",
-  "ui.shell.people": "人員與存取權限",
-  "ui.shell.searchCases": "搜尋檔案",
-  "ui.shell.unresolved": "有 {count} 項更改可能尚未記錄",
-  "ui.shell.unresolvedOne": "有 1 項更改可能尚未記錄",
-  "ui.signIn": "登入",
-  "ui.signInTitle": "登入理賠登記簿",
-  "ui.signOut": "退出登入",
-  "ui.submitting": "正在記錄…",
-  "ui.summaryCounts": "匹配的檔案數：{count}",
-  "ui.summaryDetails": "顯示匯總資料",
-  "ui.theme": "主題",
-  "ui.themeAccessibility": "兩種強調色均支援淺色和深色模式，並自動遵循設備的對比度設定。",
-  "ui.themeDark": "深色",
-  "ui.themeLight": "淺色",
-  "ui.themeSystem": "跟隨設備",
-  "ui.tryAgain": "重試",
-  "ui.unchangedUntilSubmit": "審閱僅供參考。操作被接受前，不會記錄任何內容。",
-  "ui.version": "版本",
-  "ui.viewLoadFailed": "無法載入此視圖。請重試，或在準備好離開當前工作時重新載入。",
-  "ui.viewLoading": "正在載入視圖…",
-  "ui.workDateBasis": "業務日期 {date}（{zone}）。",
-  "ui.workQueue": "工作隊列",
-  "ui.worklistSearch": "篩選此視圖",
-  "ui.yes": "是",
-  "ui.timeline.title": "活動",
-  "ui.timeline.filter": "篩選活動",
-  "ui.timeline.all": "全部",
-  "ui.timeline.facts": "資料",
-  "ui.timeline.work": "工作",
-  "ui.timeline.details": "顯示詳情",
-  "ui.timeline.nextReminder": "下一提醒",
-  "ui.timeline.empty": "沒有可顯示的活動。",
-  "ui.timeline.more": "再載入 50 條",
-  "ui.timeline.before": "先前的值：",
-  "ui.timeline.after": "新的值：",
-  "ui.timeline.withheld": "此帳戶無法查看這些更改。",
-  "ui.accessState.title": "您尚無存取權限",
-  "ui.accessState.disabled": "此帳戶已停用",
-  "ui.accessState.requested": "我們已通知所有者。所有者可為此帳戶授予存取權限。",
-  "ui.accessState.provider": "提供方",
-  "ui.accessState.copy": "供管理員參考的資料",
-  "ui.accessState.check": "檢查存取權限",
-  "ui.stage.recorded": "已記錄",
-  "ui.stage.noDate": "日期不可用",
-  "ui.stage.reinstated": "檔案已恢復。請審閱當前資料和後續事項。",
-  "ui.conflict.title": "此檔案已更改",
-  "ui.conflict.kept": "已保留您的草稿。請先審閱更改，再基於最新版本準備請求。",
-  "ui.conflict.loading": "正在載入最新版本…",
-  "ui.conflict.reviewLatest": "對照最新版本審閱",
-  "ui.choiceNotAvailable": "根據當前資料，此選項不可用。",
-  "ui.returnToWorkspace": "返回工作區",
-  "ui.enterDetails": "輸入詳細資料",
-  "ui.review.checked": "檢查時間為 {when}。",
-  "ui.requests.empty": "沒有待處理的存取申請。",
-  "ui.requests.more": "載入更多存取申請",
-  "ui.requests.refresh": "刷新存取申請",
-  "ui.manualFilters": "手動篩選",
-  "ui.manualFiltersHint": "使用手動篩選以包括非活動工作。",
-  "ui.unconfirmedUntil": "Waiting for a final answer until {finalAt}."
+  "ui.about": {
+    "text": "關於",
+    "source": "4efca0d10c5f"
+  },
+  "ui.accent": {
+    "text": "強調色",
+    "source": "12376f4cbd6c"
+  },
+  "ui.accentBlue": {
+    "text": "藍色",
+    "source": "ec7d56a01607"
+  },
+  "ui.accentGreen": {
+    "text": "綠色",
+    "source": "d486dfbd5fb5"
+  },
+  "ui.accentSet": {
+    "text": "強調色已設為 {value}。",
+    "source": "f4c95f4f6a4b"
+  },
+  "ui.accepted": {
+    "text": "已接受",
+    "source": "070c160a6299"
+  },
+  "ui.acceptedOperation": {
+    "text": "已記錄的更改",
+    "source": "595214b94033"
+  },
+  "ui.account": {
+    "text": "帳戶",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actDescription": {
+    "text": "{label}：{meaning}",
+    "source": "7216b2a9dae5"
+  },
+  "ui.actor": {
+    "text": "帳戶",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actorRequestRetained": {
+    "text": "已保留您當前的請求。開始其他操作前，請繼續或丟棄此請求。",
+    "source": "700957242358"
+  },
+  "ui.addGrant": {
+    "text": "添加角色",
+    "source": "e53a93625e74"
+  },
+  "ui.after": {
+    "text": "更改後：{value}",
+    "source": "7b7c2d72857a"
+  },
+  "ui.anyFilter": {
+    "text": "不限",
+    "source": "2b505597daa7"
+  },
+  "ui.appearance": {
+    "text": "外觀",
+    "source": "3907fa7f8072"
+  },
+  "ui.authorityAction": {
+    "text": "存取權限更改",
+    "source": "295239c1b29a"
+  },
+  "ui.backToCases": {
+    "text": "返回案件列表",
+    "source": "99d9b7b14d23"
+  },
+  "ui.before": {
+    "text": "更改前：{value}",
+    "source": "f1db066ec43d"
+  },
+  "ui.calendar": {
+    "text": "打開日曆",
+    "source": "a1ad37d0c5e8"
+  },
+  "ui.canonicalCopyHint": {
+    "text": "複製此值。",
+    "source": "8a31fb4c608d"
+  },
+  "ui.caseDetail": {
+    "text": "案件詳情",
+    "source": "e6aad002458d"
+  },
+  "ui.cases": {
+    "text": "理賠案件",
+    "source": "2249bd503ec4"
+  },
+  "ui.changeActDescription": {
+    "text": "丟棄此草稿並選擇其他操作嗎？",
+    "source": "0db8e85a3b26"
+  },
+  "ui.changeActTitle": {
+    "text": "丟棄這些草稿更改嗎？",
+    "source": "7dbba5ad2b76"
+  },
+  "ui.changeFact": {
+    "text": "更改{field}",
+    "source": "b8abd919ebef"
+  },
+  "ui.checkOutcome": {
+    "text": "檢查狀態",
+    "source": "69cd3590300a"
+  },
+  "ui.checkUnresolvedOperation": {
+    "text": "立即檢查",
+    "source": "2937cffb37ab"
+  },
+  "ui.chooseRole": {
+    "text": "選擇角色",
+    "source": "a49c49b04c4d"
+  },
+  "ui.clearFilters": {
+    "text": "清除篩選條件",
+    "source": "7179ea0035fc"
+  },
+  "ui.clearValue": {
+    "text": "清除已記錄的值",
+    "source": "726a6f95d697"
+  },
+  "ui.close": {
+    "text": "關閉",
+    "source": "7d9eb7acb13e"
+  },
+  "ui.continueAuthorityRequest": {
+    "text": "繼續當前請求",
+    "source": "ec9e7079a21a"
+  },
+  "ui.contract": {
+    "text": "契約識別",
+    "source": "002a152b2dfc"
+  },
+  "ui.copied": {
+    "text": "已複製{label}。",
+    "source": "80a056eab235"
+  },
+  "ui.copy": {
+    "text": "複製{label}",
+    "source": "63ba394601c5"
+  },
+  "ui.copyFallback": {
+    "text": "{label}的備用複製方式",
+    "source": "540c6468b0a7"
+  },
+  "ui.correctionHint": {
+    "text": "選擇對每組資訊執行的操作。",
+    "source": "fe14963d4faf"
+  },
+  "ui.countryName": {
+    "text": "{code}：{name}",
+    "source": "e92cdbf79c10"
+  },
+  "ui.countryUnassigned": {
+    "text": "{code} 不是已知的國家或地區代碼。請檢查。",
+    "source": "c16222b929b3"
+  },
+  "ui.currentMode": {
+    "text": "當前為{value}",
+    "source": "dbdd7aa26011"
+  },
+  "ui.defaultAccent": {
+    "text": "預設",
+    "source": "21b111cbfe6e"
+  },
+  "ui.detectedLanguage": {
+    "text": "根據瀏覽器檢測",
+    "source": "1bec1fb0289f"
+  },
+  "ui.discardAndChange": {
+    "text": "丟棄並更換操作",
+    "source": "ffdb3f134a5e"
+  },
+  "ui.discardAndLeave": {
+    "text": "丟棄並離開",
+    "source": "07e5b9156de3"
+  },
+  "ui.discardUnknownDescription": {
+    "text": "此更改可能已記錄。丟棄後，此頁面將無法重新發送。",
+    "source": "28b3f2ec4ecf"
+  },
+  "ui.displayLocale": {
+    "text": "日期與數字格式",
+    "source": "c3e8e25f37a9"
+  },
+  "ui.displayLocaleSet": {
+    "text": "日期與數字格式已設為 {value}。",
+    "source": "ad65deea3ecb"
+  },
+  "ui.emptyInput": {
+    "text": "空輸入",
+    "source": "63ed0b2ee921"
+  },
+  "ui.exactCaseReference": {
+    "text": "{label}（精確值）",
+    "source": "cf3a934bfd96"
+  },
+  "ui.exactOperationId": {
+    "text": "完整操作 ID",
+    "source": "dbdca09f6e48"
+  },
+  "ui.exactReference": {
+    "text": "{label}（精確值）：{reference}",
+    "source": "e26d7a9b269c"
+  },
+  "ui.exactUtc": {
+    "text": "精確 UTC 時刻",
+    "source": "460d31945df9"
+  },
+  "ui.explainFields": {
+    "text": "欄位說明",
+    "source": "3593737e2657"
+  },
+  "ui.filters": {
+    "text": "篩選條件",
+    "source": "546ebb8eb993"
+  },
+  "ui.findCase": {
+    "text": "按完整編號打開",
+    "source": "0ff7411177ad"
+  },
+  "ui.formatPreview": {
+    "text": "預覽：{date} · {amount}",
+    "source": "e598c70b2351"
+  },
+  "ui.generalOperationLookup": {
+    "text": "通用操作查詢",
+    "source": "a87469ec1ea3"
+  },
+  "ui.grantNumber": {
+    "text": "角色 {number}",
+    "source": "00fa69a81cab"
+  },
+  "ui.grantsEnd": {
+    "text": "已顯示所有角色。",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.grantsPartial": {
+    "text": "僅顯示部分角色。",
+    "source": "391d53d153f3"
+  },
+  "ui.historyNoChanges": {
+    "text": "沒有資訊更改。",
+    "source": "0b70fc56218c"
+  },
+  "ui.includeInactiveWork": {
+    "text": "包括非活動案件工作",
+    "source": "8ca6c3a219c2"
+  },
+  "ui.incompleteResponse": {
+    "text": "ClaimCore 發送了不完整的響應。",
+    "source": "3fad4a1c8c5d"
+  },
+  "ui.keepEditing": {
+    "text": "繼續編輯",
+    "source": "e76fd2add010"
+  },
+  "ui.language": {
+    "text": "介面語言",
+    "source": "8027f432a7fb"
+  },
+  "ui.languageAppearance": {
+    "text": "語言與外觀",
+    "source": "03ccd687bd8a"
+  },
+  "ui.languageLoadFailed": {
+    "text": "無法載入該語言。當前工作語言保持不變。",
+    "source": "7a416cc61349"
+  },
+  "ui.languageRegion": {
+    "text": "語言與地區",
+    "source": "003e875495c3"
+  },
+  "ui.languageSet": {
+    "text": "語言已設為 {value}。",
+    "source": "0861f62cf939"
+  },
+  "ui.leaveDraftDescription": {
+    "text": "丟棄此草稿並離開編輯器嗎？",
+    "source": "a7e0213e137c"
+  },
+  "ui.leaveUnchanged": {
+    "text": "保持不變",
+    "source": "819f6b9f3880"
+  },
+  "ui.loading": {
+    "text": "正在載入…",
+    "source": "ba3bbbe10d8b"
+  },
+  "ui.loadingCases": {
+    "text": "正在載入案件…",
+    "source": "ac19ccc4e348"
+  },
+  "ui.loadingCurrentCase": {
+    "text": "正在載入當前案件…",
+    "source": "961f74c56236"
+  },
+  "ui.loadingHistory": {
+    "text": "正在載入活動…",
+    "source": "a389c395010e"
+  },
+  "ui.loadingLanguage": {
+    "text": "正在載入語言…",
+    "source": "42609e39e159"
+  },
+  "ui.loadingSession": {
+    "text": "正在載入會話…",
+    "source": "3d3c04cbc07b"
+  },
+  "ui.loginInstructions": {
+    "text": "請使用您組織的帳戶登入。",
+    "source": "2d954a0e8a31"
+  },
+  "ui.lookingUp": {
+    "text": "正在查詢…",
+    "source": "a84f1079ee0e"
+  },
+  "ui.mine": {
+    "text": "我負責的",
+    "source": "f57afb7d275a"
+  },
+  "ui.modeSet": {
+    "text": "顏色模式已設為 {value}。",
+    "source": "b525fa9e5b37"
+  },
+  "ui.moreActors": {
+    "text": "更多人員",
+    "source": "95baf92809bb"
+  },
+  "ui.moreCaseActions": {
+    "text": "更多操作",
+    "source": "f8d46c2570e7"
+  },
+  "ui.moreCases": {
+    "text": "載入更多案件",
+    "source": "cd681597c17e"
+  },
+  "ui.moreGrants": {
+    "text": "更多授權",
+    "source": "27f0be44c2db"
+  },
+  "ui.moreHistory": {
+    "text": "載入更多活動",
+    "source": "e3f0587b4839"
+  },
+  "ui.moreReminders": {
+    "text": "更多提醒",
+    "source": "b36b0a1b10e1"
+  },
+  "ui.newReminder": {
+    "text": "添加提醒",
+    "source": "cd566803bf39"
+  },
+  "ui.nextActions": {
+    "text": "後續事項",
+    "source": "f6eb77625278"
+  },
+  "ui.nextAccounts": {
+    "text": "更多帳戶",
+    "source": "743e1725ebd5"
+  },
+  "ui.nextMonth": {
+    "text": "下個月",
+    "source": "74e53211fef4"
+  },
+  "ui.no": {
+    "text": "否",
+    "source": "1ea442a134b2"
+  },
+  "ui.noAccessibleActors": {
+    "text": "沒有可顯示的人員。",
+    "source": "6a83dad36c14"
+  },
+  "ui.noAccessibleCases": {
+    "text": "沒有可顯示的案件。",
+    "source": "4b74e082b9b3"
+  },
+  "ui.noAccessibleHistory": {
+    "text": "沒有可顯示的活動。",
+    "source": "5ddccb9ef206"
+  },
+  "ui.noCasesForView": {
+    "text": "沒有符合此視圖的案件。",
+    "source": "8b8a577e5f3b"
+  },
+  "ui.noEligibleAccounts": {
+    "text": "本頁沒有符合條件的帳戶。",
+    "source": "f9c5ece19d4b"
+  },
+  "ui.noPendingReminders": {
+    "text": "此活動且未結案的案件需要下一事項。有了計劃後，請添加提醒。",
+    "source": "c7a49fc6cf67"
+  },
+  "ui.noReminders": {
+    "text": "沒有符合此視圖的提醒。",
+    "source": "3200239466d8"
+  },
+  "ui.noViews": {
+    "text": "沒有可用的工作視圖。",
+    "source": "3e86bd3913b7"
+  },
+  "ui.notRecorded": {
+    "text": "未記錄",
+    "source": "b37c7879f6c3"
+  },
+  "ui.observeOperation": {
+    "text": "查詢已記錄的結果",
+    "source": "6afd2a4b367f"
+  },
+  "ui.openExactCase": {
+    "text": "打開 {reference}",
+    "source": "544235b8ff17"
+  },
+  "ui.operationAccepted": {
+    "text": "操作 {operationId} 已被接受。",
+    "source": "f2ada3346a34"
+  },
+  "ui.operationLookup": {
+    "text": "操作查詢",
+    "source": "2bc69d814487"
+  },
+  "ui.operationUnresolved": {
+    "text": "尚未確認。",
+    "source": "3ce10de819f7"
+  },
+  "ui.overdueReminders": {
+    "text": "逾期提醒",
+    "source": "051cc2b13b7f"
+  },
+  "ui.pageEnd": {
+    "text": "已顯示全部結果。",
+    "source": "959b6e22691e"
+  },
+  "ui.pageNotFound": {
+    "text": "找不到頁面",
+    "source": "a469ab4ca4e5"
+  },
+  "ui.pageNotFoundDescription": {
+    "text": "此地址未指向 ClaimCore 頁面。",
+    "source": "d35b48f97478"
+  },
+  "ui.pagePartial": {
+    "text": "還有更多結果。",
+    "source": "ff02dd781a42"
+  },
+  "ui.pairedFacts": {
+    "text": "{first}與{second}",
+    "source": "a8c60ace0cf1"
+  },
+  "ui.pendingReminders": {
+    "text": "待辦提醒",
+    "source": "352897daa5d5"
+  },
+  "ui.people.person": {
+    "text": "人員",
+    "source": "6007db63e18e"
+  },
+  "ui.people.roles": {
+    "text": "角色",
+    "source": "c25337055464"
+  },
+  "ui.planAfterOpen": {
+    "text": "案件已新建。安排提醒是單獨的下一步。",
+    "source": "fa8a15963b74"
+  },
+  "ui.preferencesNotSaved": {
+    "text": "偏好設定在本次會話中生效，但無法保存在此瀏覽器中。",
+    "source": "861ebb38b269"
+  },
+  "ui.preparingRecovery": {
+    "text": "正在保存…",
+    "source": "23e39291d613"
+  },
+  "ui.previewing": {
+    "text": "正在審閱…",
+    "source": "fcc53388888f"
+  },
+  "ui.previousAccounts": {
+    "text": "上一批帳戶",
+    "source": "c74522075fca"
+  },
+  "ui.previousMonth": {
+    "text": "上個月",
+    "source": "6a2769502a5d"
+  },
+  "ui.primary": {
+    "text": "主要",
+    "source": "efe10c80ec8a"
+  },
+  "ui.pseudo": {
+    "text": "擴展英語（佈局測試）",
+    "source": "6f81f6466cb2"
+  },
+  "ui.queueDescription": {
+    "text": "查找並繼續處理需要關注的案件工作。",
+    "source": "758595a14f42"
+  },
+  "ui.recordOptionalFact": {
+    "text": "記錄{field}（可選）",
+    "source": "da9e7bdfead7"
+  },
+  "ui.recovery": {
+    "text": "未確認的更改",
+    "source": "5907dc3e66b9"
+  },
+  "ui.recoveryCleanupUnavailable": {
+    "text": "結果已知，但無法清除此本地嘗試。其識別資訊已保留；您可以再次查詢狀態。",
+    "source": "1dc1592f82ad"
+  },
+  "ui.recoveryDescription": {
+    "text": "無法確認這些更改是否已記錄。ClaimCore 會為您檢查。每項回答將在 {window} 內確定。",
+    "source": "eff410b18411"
+  },
+  "ui.recoveryEmpty": {
+    "text": "沒有未確認的更改。",
+    "source": "c2d34418a5dd"
+  },
+  "ui.recoveryListingUnavailable": {
+    "text": "無法讀取或更新恢復識別資訊。現有記錄已保留。請先恢復儲存存取，或使用匹配的用戶端處理舊記錄，再重試。",
+    "source": "e2277d9e955f"
+  },
+  "ui.recoveryUnavailable": {
+    "text": "未傳送：恢復儲存不可用。請啟用網站儲存或釋放空間，然後重試。您的請求尚未傳送。",
+    "source": "d65945e86bb7"
+  },
+  "ui.reference": {
+    "text": "{label}：{reference}",
+    "source": "73fe9c967c0c"
+  },
+  "ui.refreshAccounts": {
+    "text": "刷新符合條件的帳戶",
+    "source": "792e2d92a7aa"
+  },
+  "ui.refreshWork": {
+    "text": "刷新工作",
+    "source": "d8c38c942d9d"
+  },
+  "ui.reloadActors": {
+    "text": "重新載入人員",
+    "source": "8a0c53553115"
+  },
+  "ui.reloadCases": {
+    "text": "重新載入案件",
+    "source": "1e208585b01e"
+  },
+  "ui.reloadContract": {
+    "text": "重新載入頁面",
+    "source": "437d0d63bfbd"
+  },
+  "ui.reloadCurrentCase": {
+    "text": "重新載入當前案件",
+    "source": "dfad4aa77ca3"
+  },
+  "ui.reloadGrants": {
+    "text": "重新載入授權",
+    "source": "6e21644bbc15"
+  },
+  "ui.reloadHistory": {
+    "text": "重新載入活動",
+    "source": "10d39b0ca399"
+  },
+  "ui.reloadInterface": {
+    "text": "重新載入介面",
+    "source": "bdc3a5a1699e"
+  },
+  "ui.reminderAction": {
+    "text": "計劃事項",
+    "source": "5818bdba66cb"
+  },
+  "ui.reminderDetails": {
+    "text": "提醒詳情",
+    "source": "1cd27d608c31"
+  },
+  "ui.reminderDue": {
+    "text": "計劃日期",
+    "source": "37b3b31a9fbe"
+  },
+  "ui.reminderQueueHint": {
+    "text": "這裡的到期篩選適用於每條提醒。案件列表使用每個案件最早的提醒。",
+    "source": "f1ad60c57bf8"
+  },
+  "ui.reminderState": {
+    "text": "提醒狀態",
+    "source": "9320b222ccb0"
+  },
+  "ui.reminders": {
+    "text": "提醒",
+    "source": "7971dd752669"
+  },
+  "ui.removeGrant": {
+    "text": "移除角色",
+    "source": "9a1fb81f279f"
+  },
+  "ui.retryExact": {
+    "text": "再次傳送",
+    "source": "feead925e260"
+  },
+  "ui.retryExactDescription": {
+    "text": "重新發送會發送完全相同的更改，不會重復記錄。離開此頁面後，請打開“未確認的更改”查看回答。",
+    "source": "534e3823f248"
+  },
+  "ui.retryLanguage": {
+    "text": "重試載入語言",
+    "source": "0c776ceb4592"
+  },
+  "ui.retryView": {
+    "text": "重試載入",
+    "source": "a0f859bc4db2"
+  },
+  "ui.returnToCase": {
+    "text": "返回案件",
+    "source": "7a55d0a50325"
+  },
+  "ui.returnToEdit": {
+    "text": "返回編輯",
+    "source": "afc22f861264"
+  },
+  "ui.reviewDescription": {
+    "text": "請檢查更改，然後確認。",
+    "source": "5c2b1066dca1"
+  },
+  "ui.review.basis": {
+    "text": "基於版本 {revision}，檢查時間為 {when}。",
+    "source": "864dfe115c55"
+  },
+  "ui.rightToLeft": {
+    "text": "從右到左",
+    "source": "4667424121a6"
+  },
+  "ui.roleNotAvailableAtScope": {
+    "text": "不適用於所選案件",
+    "source": "008dd6597126"
+  },
+  "ui.roleNotAvailableForService": {
+    "text": "不適用於服務帳戶",
+    "source": "23a43af3092c"
+  },
+  "ui.savedRecoveryAttempt": {
+    "text": "已保存的嘗試",
+    "source": "d152ac80fa8b"
+  },
+  "ui.scalarCount": {
+    "text": "字元數：{count}/{maximum}",
+    "source": "907b0d890dff"
+  },
+  "ui.search": {
+    "text": "搜尋",
+    "source": "49c266baaaa7"
+  },
+  "ui.selectedAccount": {
+    "text": "所選帳戶",
+    "source": "8b63d9475c25"
+  },
+  "ui.settings": {
+    "text": "設定",
+    "source": "74a883a037bc"
+  },
+  "ui.settingsIntroduction": {
+    "text": "這些偏好設定僅適用於此瀏覽器，絕不會更改已記錄的值。",
+    "source": "2364c3aaf5d9"
+  },
+  "ui.shell.administration": {
+    "text": "管理",
+    "source": "4b42c6690ebe"
+  },
+  "ui.shell.authorityHistory": {
+    "text": "權限歷史記錄",
+    "source": "2023c056fe61"
+  },
+  "ui.shell.businessDate": {
+    "text": "業務日期",
+    "source": "e727f917d3c3"
+  },
+  "ui.shell.businessDateChanged": {
+    "text": "業務日期現為 {date}。請刷新以更新到期日期。",
+    "source": "efb3f0ec78c4"
+  },
+  "ui.shell.checkNow": {
+    "text": "立即檢查",
+    "source": "2937cffb37ab"
+  },
+  "ui.shell.people": {
+    "text": "人員與存取權限",
+    "source": "8df747cef67a"
+  },
+  "ui.shell.searchCases": {
+    "text": "搜尋案件",
+    "source": "22c2a4061665"
+  },
+  "ui.shell.unresolved": {
+    "text": "未確認的更改：{count}",
+    "source": "dbbc216f94f3"
+  },
+  "ui.signIn": {
+    "text": "登入",
+    "source": "bfd402b2f6f3"
+  },
+  "ui.signInTitle": {
+    "text": "登入理賠登記簿",
+    "source": "df2702f36960"
+  },
+  "ui.signOut": {
+    "text": "退出登入",
+    "source": "48f0d3d397d4"
+  },
+  "ui.submitting": {
+    "text": "正在記錄…",
+    "source": "7ea93caac0f5"
+  },
+  "ui.summaryCounts": {
+    "text": "匹配的案件數：{count}",
+    "source": "2b9110dcd544"
+  },
+  "ui.summaryDetails": {
+    "text": "顯示匯總資料",
+    "source": "aa9b920c97a9"
+  },
+  "ui.theme": {
+    "text": "主題",
+    "source": "efb52e7172b7"
+  },
+  "ui.themeAccessibility": {
+    "text": "兩種強調色均支援淺色和深色模式，並自動遵循設備的對比度設定。",
+    "source": "efad81ae5929"
+  },
+  "ui.themeDark": {
+    "text": "深色",
+    "source": "60acc53f13a5"
+  },
+  "ui.themeLight": {
+    "text": "淺色",
+    "source": "dbcd5e7bb7a0"
+  },
+  "ui.themeSystem": {
+    "text": "跟隨設備",
+    "source": "5e4aca65d4a4"
+  },
+  "ui.tryAgain": {
+    "text": "重試",
+    "source": "d8b8392e2c54"
+  },
+  "ui.unchangedUntilSubmit": {
+    "text": "確認前不會記錄任何內容。",
+    "source": "23eba3cab92a"
+  },
+  "ui.version": {
+    "text": "版本",
+    "source": "dd167905de0d"
+  },
+  "ui.viewLoadFailed": {
+    "text": "無法載入此視圖。請重試，或在準備好離開當前工作時重新載入。",
+    "source": "8d021b7893a2"
+  },
+  "ui.viewLoading": {
+    "text": "正在載入視圖…",
+    "source": "a91ca23dc6a9"
+  },
+  "ui.workDateBasis": {
+    "text": "業務日期 {date}（{zone}）。",
+    "source": "10dbbbcb3088"
+  },
+  "ui.workQueue": {
+    "text": "工作隊列",
+    "source": "696e7291ea90"
+  },
+  "ui.worklistSearch": {
+    "text": "篩選此視圖",
+    "source": "c2eec812666c"
+  },
+  "ui.yes": {
+    "text": "是",
+    "source": "85a39ab345d6"
+  },
+  "ui.timeline.title": {
+    "text": "活動",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.filter": {
+    "text": "篩選活動",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.all": {
+    "text": "全部",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.facts": {
+    "text": "資料",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.work": {
+    "text": "工作",
+    "source": "104ab9213e28"
+  },
+  "ui.timeline.details": {
+    "text": "顯示詳情",
+    "source": "1af77ee273cb"
+  },
+  "ui.timeline.nextReminder": {
+    "text": "下一提醒",
+    "source": "153fddb917f5"
+  },
+  "ui.timeline.empty": {
+    "text": "沒有可顯示的活動。",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.more": {
+    "text": "載入更多",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.before": {
+    "text": "先前的值：",
+    "source": "fca574a5a363"
+  },
+  "ui.timeline.after": {
+    "text": "新的值：",
+    "source": "dca4696d7a91"
+  },
+  "ui.timeline.withheld": {
+    "text": "您無權存取這些更改。",
+    "source": "d6194fd34931"
+  },
+  "ui.accessState.title": {
+    "text": "您尚無存取權限",
+    "source": "329f122dcf0f"
+  },
+  "ui.accessState.disabled": {
+    "text": "此帳戶已停用",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.requested": {
+    "text": "我們已通知所有者。所有者可為此帳戶授予存取權限。",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.provider": {
+    "text": "提供方",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.copy": {
+    "text": "供管理員參考的資料",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.check": {
+    "text": "檢查存取權限",
+    "source": "abb9a172a69b"
+  },
+  "ui.stage.recorded": {
+    "text": "已記錄",
+    "source": "c7175fa7a0db"
+  },
+  "ui.stage.noDate": {
+    "text": "日期不可用",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.reinstated": {
+    "text": "案件已恢復。請審閱當前資料和後續事項。",
+    "source": "a7a3e603b99e"
+  },
+  "ui.conflict.title": {
+    "text": "此案件已更改",
+    "source": "ae4ec9da2e36"
+  },
+  "ui.conflict.kept": {
+    "text": "已保留您的草稿。請先審閱更改，再基於最新版本準備請求。",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "正在載入最新版本…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "對照最新版本審閱",
+    "source": "f0124537d549"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "根據當前資料，此選項不可用。",
+    "source": "d43925e74ff6"
+  },
+  "ui.returnToWorkspace": {
+    "text": "返回工作區",
+    "source": "02e565ef63bc"
+  },
+  "ui.enterDetails": {
+    "text": "輸入詳細資料",
+    "source": "ebaf73345eea"
+  },
+  "ui.review.checked": {
+    "text": "檢查時間為 {when}。",
+    "source": "e249af3ff82a"
+  },
+  "ui.requests.empty": {
+    "text": "沒有待處理的存取申請。",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "載入更多存取申請",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "刷新存取申請",
+    "source": "0777c623824e"
+  },
+  "ui.manualFilters": {
+    "text": "手動篩選",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "使用手動篩選以包括非活動工作。",
+    "source": "dc4f2d354574"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "尚未確認。回答將在 {finalAt} 前確定。",
+    "source": "fc1019052c76"
+  }
 }

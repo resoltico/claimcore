@@ -46,7 +46,7 @@ it("prefills a deep-linked actor from disclosed identity rather than a stale lis
   actorRoute();
   render(<Dashboard />);
   await expectBoundActor();
-  expect(screen.getByRole("combobox", { name: "Authority action" })).toHaveValue("GRANT");
+  expect(screen.getByRole("combobox", { name: "Access change" })).toHaveValue("GRANT");
   chooseRoleForReview();
   fireEvent.click(screen.getByRole("button", { name: "Review changes" }));
   await waitFor(() => {
@@ -136,7 +136,7 @@ it("declining an uncertain request retarget preserves the exact request and retr
   const [original] = execute.mock.calls[0]!;
   await openActor();
   await grantToSelected();
-  expect(screen.getByText(/does not cancel it/u)).toBeVisible();
+  expect(screen.getByText(/may already be recorded/u)).toBeVisible();
   fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
   fireEvent.click(screen.getByRole("button", { name: "Send again" }));
   await waitFor(() => {
@@ -158,7 +158,7 @@ it("changing acts retains the bound actor identity after discard consent", async
   fireEvent.click(screen.getByRole("button", { name: "Return to editing" }));
   await chooseOption(
     userEvent.setup(),
-    screen.getByRole("combobox", { name: "Authority action" }),
+    screen.getByRole("combobox", { name: "Access change" }),
     "DISABLE",
   );
   fireEvent.click(await screen.findByRole("button", { name: "Discard and change action" }));

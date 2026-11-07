@@ -1,679 +1,2478 @@
 {
-  "act.AMEND_REGISTRATION.label": "請求内容を更新",
-  "act.AMEND_REGISTRATION.meaning": "選択した登録情報を更新します。省略した情報と案件番号は変更されません。",
-  "act.CLEAR_PAYMENT.label": "誤った支払記録を訂正",
-  "act.CLEAR_PAYMENT.meaning": "誤って記録された支払日を削除します。実際の送金の返金や取消ではありません。過去の履歴は残ります。",
-  "act.CLOSE.label": "案件を終了",
-  "act.CLOSE.meaning": "案件を終了します。終了は支払の完了を意味しません。",
-  "act.CORRECT.label": "案件情報を訂正",
-  "act.CORRECT.meaning": "選択した既存の情報をまとめて訂正します。支払済みの決定を変更するには、支払の再確認、置換、削除のいずれかを明示的に行う必要があります。支払日を削除しても返金は行われません。",
-  "act.DECIDE.label": "支払決定を記録",
-  "act.DECIDE.meaning": "決定した金額と通貨を記録または置換します。送金は行われません。",
-  "act.DISABLE.label": "アカウントを無効化",
-  "act.DISABLE.meaning": "このアカウントを無効にします。記録された変更は残ります。",
-  "act.ENABLE.label": "アカウントを有効化",
-  "act.ENABLE.meaning": "既存の役割を維持してこのアカウントを有効にします。",
-  "act.ERASE.label": "案件を消去",
-  "act.ERASE.meaning": "ClaimCoreからこの案件と詳細情報を削除します。他の場所に保管されたコピーは残ります。",
-  "act.ERASE_PROFILE.label": "プロフィールを消去",
-  "act.ERASE_PROFILE.meaning": "このアカウントに保存された表示名と連絡先を完全に削除します。アカウントの識別情報、アクセス権限、記録された業務は残ります。",
-  "act.GRANT.label": "役割を付与",
-  "act.GRANT.meaning": "選択した役割をこのアカウントに割り当てます。",
-  "act.OPEN.label": "案件を登録",
-  "act.OPEN.meaning": "事故、請求者、保険会社、請求額を登録します。",
-  "act.PROVISION_OWNER.label": "所有者を初期設定",
-  "act.RECORD_PAYMENT.label": "実際の支払を記録",
-  "act.RECORD_PAYMENT.meaning": "決定額の全額が実際に支払われた日を記録します。送金の実行や検証は行いません。",
-  "act.REGISTER.label": "アカウントを登録",
-  "act.REGISTER.meaning": "名前と任意の連絡先を登録してアカウントを追加します。役割は別途割り当てられます。",
-  "act.REINSTATE.label": "案件の無効化を解除",
-  "act.REINSTATE.meaning": "無効化した案件で通常の業務を再開できるようにします。",
-  "act.REMINDER_CANCEL.label": "リマインダーを取消",
-  "act.REMINDER_CANCEL.meaning": "履歴を削除せずに、この未完了の作業を取り消します。取消と完了は異なります。",
-  "act.REMINDER_COMPLETE.label": "リマインダーを完了",
-  "act.REMINDER_COMPLETE.meaning": "未完了の作業を完了としたことを記録します。最後のリマインダーも完了できますが、その場合は案件の次の作業を計画する必要が生じることがあります。",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": "完了して次の作業を計画",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": "このリマインダーを完了し、次の作業を同時に計画します。",
-  "act.REMINDER_CREATE.label": "リマインダーを追加",
-  "act.REMINDER_CREATE.meaning": "この案件の次の作業を計画します。",
-  "act.REMINDER_REOPEN.label": "リマインダーを再開",
-  "act.REMINDER_REOPEN.meaning": "新しい期限でこのリマインダーを再開します。",
-  "act.REMINDER_UPDATE.label": "リマインダーを更新",
-  "act.REMINDER_UPDATE.meaning": "この未完了のリマインダーの作業内容または日付を変更します。以前の版は履歴に残ります。",
-  "act.REOPEN.label": "案件を再開",
-  "act.REOPEN.meaning": "詳細情報と履歴を維持して案件を再開します。",
-  "act.REVOKE.label": "役割を取り消す",
-  "act.REVOKE.meaning": "選択した役割の割り当てを取り消します。",
-  "act.SET_PROFILE.label": "プロフィールを更新",
-  "act.SET_PROFILE.meaning": "アカウントの表示名と任意の連絡先を記録します。識別情報やアクセス権限は変更されません。",
-  "act.UPDATE_WORK.label": "案件業務を更新",
-  "act.UPDATE_WORK.meaning": "担当者を変更するか、対応概要を更新します。",
-  "act.VOID.label": "案件を無効化",
-  "act.VOID.meaning": "案件と履歴を残したまま、業務上の操作をできなくします。",
-  "act.WITHDRAW_DECISION.label": "支払決定を撤回",
-  "act.WITHDRAW_DECISION.meaning": "履歴を残して未払いの決定を削除します。",
-  "actFamily.BUSINESS.label": "案件の作業",
-  "actFamily.STEWARDSHIP.label": "データ管理",
-  "actorAvailability.AVAILABLE.label": "利用可能",
-  "actorAvailability.AVAILABLE.meaning": "アカウントは有効で、この状況で利用できます。",
-  "actorAvailability.DISABLED.label": "無効",
-  "actorAvailability.DISABLED.meaning": "このアカウントは無効になっています。",
-  "actorAvailability.NOT_ELIGIBLE.label": "割り当て不可",
-  "actorAvailability.NOT_ELIGIBLE.meaning": "現在、このアカウントをこの業務に割り当てることはできません。",
-  "assignment.MINE.label": "自分の担当",
-  "assignment.MINE.meaning": "現在閲覧できる案件のうち、自分のアカウントが担当する案件です。閲覧権限だけでは担当にはなりません。",
-  "assignment.UNASSIGNED.label": "未割り当て",
-  "attention.ASSIGNEE_UNAVAILABLE.label": "担当者が利用不可",
-  "attention.DUE_TODAY.label": "本日期限",
-  "attention.NO_NEXT_ACTION.label": "次の作業なし",
-  "attention.OVERDUE.label": "期限超過",
-  "attention.READY_TO_CLOSE.label": "終了可能",
-  "attention.UNASSIGNED.label": "未割り当て",
-  "capability.CLOSE.label": "終了と再開",
-  "capability.DECIDE.label": "決定を記録",
-  "capability.MANAGE_AUTHORITY.label": "アクセス権限を管理",
-  "capability.MANAGE_CASE_WORK.label": "案件業務を管理",
-  "capability.READ_AUTHORITY.label": "アクセス権限を閲覧",
-  "capability.READ_CASE.label": "案件を閲覧",
-  "capability.READ_HISTORY.label": "履歴を閲覧",
-  "capability.READ_HISTORY_FULL.label": "全履歴を閲覧",
-  "capability.RECORD_PAYMENT.label": "支払を記録",
-  "capability.REGISTER.label": "案件情報を登録",
-  "capability.STEWARD.label": "案件データを管理",
-  "caseOrder.FOLLOW_UP.label": "フォローアップ日",
-  "caseOrder.NOTIFIED.label": "古い順",
-  "caseOrder.RECENT.label": "情報の更新順",
-  "caseOrder.REFERENCE.label": "案件番号",
-  "correction.CLEAR.label": "記録された値を削除",
-  "correction.KEEP.label": "現在の情報を維持",
-  "correction.REAFFIRM.label": "既存の支払を再確認",
-  "correction.REPLACE.label": "情報を置換",
-  "correction.UPDATE.label": "選択した情報を更新",
-  "diagnostic.ACTOR_ALREADY_REGISTERED": "この認証主体は既に登録されています。",
-  "diagnostic.ACTOR_ID_REQUIRED": "空でないアカウントUUIDを入力してください。",
-  "diagnostic.ACTOR_UNKNOWN": "この認証主体は登録されていません。",
-  "diagnostic.ASSIGNEE_UNAVAILABLE": "現在、選択したアカウントをこの案件に割り当てることはできません。",
-  "diagnostic.CALENDAR_DATE_REQUIRED": "YYYY-MM-DD形式の有効な日付を指定してください。",
-  "diagnostic.CASE_ALREADY_EXISTS": "この案件番号は既に存在します。",
-  "diagnostic.CHRONOLOGICAL_ORDER": "日付の前後関係が正しくありません。",
-  "diagnostic.CONTROL_CHARACTERS": "制御文字は使用できません。",
-  "diagnostic.CORRECTION_NO_CHANGES": "現在の案件の内容が変わる訂正を1つ以上選択してください。",
-  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": "訂正で置換または削除できるのは、この案件に既に記録されている値だけです。",
-  "diagnostic.COUNTRY_FORMAT": "国コードにはASCIIの大文字2文字を使用してください。",
-  "diagnostic.CURRENCY_FORMAT": "通貨識別子にはASCIIの大文字3文字（A–Z）を使用してください。",
-  "diagnostic.DECIMAL_FORMAT": "負でない小数の文字列を使用してください。整数部は最大{maximumIntegerDigits}桁、小数部は最大{maximumFractionalDigits}桁です。符号、指数、不要な先頭の0は使用できません。0.10は有効、00.10は無効です。",
-  "diagnostic.EXPECTED_REVISION_RANGE": "このリクエストに有効な整数のリビジョンを指定してください。上限は9007199254740991です。",
-  "diagnostic.FORMATTING_CHARACTER": "新しく入力する情報には書式制御文字を使用できません。",
-  "diagnostic.FUTURE_DATE": "既に起きた出来事を未来の日付で記録することはできません。",
-  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": "この役割には人の認証主体が必要です。",
-  "diagnostic.IDEMPOTENCY_CONFLICT": "この操作IDは異なる操作内容に使用されています。再利用しないでください。",
-  "diagnostic.INVALID_CURSOR": "ClaimCoreが返したページ送りカーソルを使用してください。",
-  "diagnostic.INVALID_INPUT": "入力の問題：{issueCount}件。",
-  "diagnostic.LAST_OWNER": "有効な人の所有者が少なくとも1人必要です。",
-  "diagnostic.MALFORMED_UNICODE": "不正なUnicodeは使用できません。",
-  "diagnostic.NOT_AUTHORIZED": "この変更には{required}の役割が必要です。所有者に依頼してください。",
-  "diagnostic.OPERATION_ID_REQUIRED": "Use a UUIDv7 operation ID.",
-  "diagnostic.PAGE_LIMIT_RANGE": "1から{maximumPageSize}までの値を使用してください。",
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "支払記録のある決定を更新するには、支払記録を再確認、置換、削除のいずれかで明示的に扱ってください。",
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": "支払済みの決定を削除するには、支払記録も削除する必要があります。",
-  "diagnostic.PRINCIPAL_FORMAT": "正規のHTTPS発行者と、認証主体の種類に対応した有効な主体識別子を使用してください。",
-  "diagnostic.REFERENCE_FORMAT": "空白以外の表示可能なASCII文字を1～80文字使用してください。",
-  "diagnostic.REGISTER_MAINTENANCE": "保守のため台帳への書き込みが一時停止しています。閲覧と既存の操作の状態確認は引き続き行えます。",
-  "diagnostic.REMINDER_ID_REQUIRED": "空でないリマインダーUUIDを使用してください。",
-  "diagnostic.REMINDER_NO_CHANGES": "リマインダーの更新では、作業内容または日付を変更する必要があります。",
-  "diagnostic.RESOURCE_UNAVAILABLE": "要求されたリソースは利用できません。",
-  "diagnostic.REVISION_CONFLICT": "変更したリクエストを送る前に、現在の案件を確認してください。",
-  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": "選択した適用範囲では、この役割に該当する権限がありません。",
-  "diagnostic.SURROUNDING_WHITESPACE": "先頭または末尾の空白は使用できません。",
-  "diagnostic.TEXT_REQUIRED": "空白でない値が必要です。",
-  "diagnostic.TOO_LONG": "値はUnicode文字で{maximumCharacters}文字以内にしてください。",
-  "diagnostic.UPDATE_REQUIRED": "更新または削除する値を1つ以上選択してください。",
-  "diagnostic.WORK_NO_CHANGES": "案件業務の値に変更がありません。",
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": "金額が0の決定を支払として記録することはできません。",
-  "due.INACTIVE.label": "対象外の業務",
-  "due.OVERDUE.label": "期限超過",
-  "due.TODAY.label": "本日期限",
-  "due.UNSCHEDULED.label": "未完了のリマインダーなし",
-  "due.UPCOMING.label": "今後の予定",
-  "endpoint.authority.grants.label": "アカウントの役割を閲覧",
-  "endpoint.authority.grants.meaning": "選択したアカウントの役割の割り当てを1ページ閲覧します。",
-  "endpoint.authority.history.label": "権限変更履歴",
-  "endpoint.authority.history.meaning": "権限の変更を新しい順に確認します。対象アカウントで絞り込むこともできます。",
-  "endpoint.authority.list.label": "アカウント一覧",
-  "endpoint.authority.list.meaning": "登録済みアカウントと利用可能な権限操作を閲覧します。",
-  "endpoint.case.assignees.label": "割り当て可能な担当アカウント",
-  "endpoint.case.assignees.meaning": "現在この案件に割り当てられる、有効な人のアカウントを一覧表示します。選択には正確なアカウントIDを使用します。",
-  "endpoint.case.get.label": "案件を閲覧",
-  "endpoint.case.get.meaning": "現在受理されている案件の表示内容と利用可能な操作を閲覧します。",
-  "endpoint.case.list.label": "案件一覧",
-  "endpoint.case.list.meaning": "アカウントが閲覧できる案件を1ページ取得します。",
-  "endpoint.case.summary.label": "案件の集計",
-  "endpoint.case.summary.meaning": "条件に一致する閲覧可能な案件を数え、請求額と支払決定額を通貨別にそれぞれ集計します。",
-  "endpoint.case.timeline.label": "案件タイムライン",
-  "endpoint.case.timeline.meaning": "現在のアクセス権限で、案件情報、業務、リマインダーの変更を閲覧します。",
-  "endpoint.context.label": "コンテキストを閲覧",
-  "endpoint.context.meaning": "認証されたアカウントの権限と利用可能なリソースを閲覧します。",
-  "endpoint.reminder.get.label": "リマインダーを表示",
-  "endpoint.reminder.get.meaning": "親案件と不変のIDを指定し、完了・取消済みを含む現在のリマインダーを閲覧します。過去の内容の閲覧には全履歴の閲覧権限が必要です。",
-  "endpoint.reminder.list.label": "リマインダー一覧",
-  "endpoint.reminder.list.meaning": "閲覧可能なリマインダーを件数制限付きのページで取得します。既定では、有効で対応中の案件の未完了作業を期限と不変の識別子で並べます。",
-  "fault.CORE_INTERNAL_ERROR": "内部エラーが発生しました。操作を中止して調査してください。",
-  "fault.CORE_OPERATION_CONTENT_CONFLICT": "保存された操作内容に不整合があります。操作を中止して調査してください。",
-  "fault.CORE_SCHEMA_MISMATCH": "スキーマがこのビルドと異なります。この設置環境を保全し、対応するビルドを使用してください。",
-  "fault.CORE_STORE_INTEGRITY_ERROR": "保存されたデータの検証に失敗しました。操作を中止し、verifyを実行してください。",
-  "fault.CORE_STORE_UNAVAILABLE": "ストアを利用できません。再試行してください。",
-  "field.caseReference.label": "案件番号",
-  "field.claimantName.label": "請求者名",
-  "field.claimedAmount.label": "請求額",
-  "field.claimedCurrency.label": "請求通貨",
-  "field.cursor.label": "カーソル",
-  "field.expectedReminderRevision.label": "確認したリマインダーの版",
-  "field.expectedRevision.label": "確認した案件の版",
-  "field.expectedWorkRevision.label": "確認した業務の版",
-  "field.handlingSummary.label": "対応概要",
-  "field.incidentCountry.label": "国",
-  "field.incidentDate.label": "事故日",
-  "field.incidentDescription.label": "事故の説明",
-  "field.incidentNotificationDate.label": "通知日",
-  "field.insurerName.label": "担当保険会社",
-  "field.limit.label": "ページ件数",
-  "field.operationId.label": "操作ID",
-  "field.payableAmount.label": "支払決定額",
-  "field.payableCurrency.label": "支払決定額の通貨",
-  "field.paymentDate.label": "支払日",
-  "field.paymentDecisionDate.label": "支払決定日",
-  "field.principal.issuer.label": "認証情報の発行者",
-  "field.principal.kind.label": "種類",
-  "field.principal.subject.label": "主体識別子またはクライアントID",
-  "field.profile.contact.label": "連絡先",
-  "field.profile.displayName.label": "名前",
-  "field.reason.label": "理由",
-  "field.reminderAction.label": "作業",
-  "field.reminderDueDate.label": "期限",
-  "field.reminderId.label": "リマインダーID",
-  "field.responsibleActor.label": "担当者",
-  "field.role.label": "役割",
-  "field.status.label": "案件の状態",
-  "field.text.label": "検索文字列",
-  "group.decision.label": "支払決定",
-  "group.payment.label": "支払",
-  "group.registration.label": "請求",
-  "headline.CLOSED.label": "終了",
-  "headline.DECIDED.label": "決定済み",
-  "headline.ERASED.label": "消去済み",
-  "headline.PAID.label": "支払済み",
-  "headline.UNDECIDED.label": "未決定",
-  "headline.VOIDED.label": "無効化済み",
-  "host.ANTIFORGERY_REJECTED": "リクエストの検証が拒否されました。",
-  "host.BODY_TOO_LARGE": "リクエスト本文が大きすぎます。",
-  "host.CONNECTION_REJECTED": "接続が拒否されました。",
-  "host.CONTRACT_MISMATCH": "クライアントの契約が異なります。再読み込みするか、対応するクライアントを使用してください。",
-  "host.ENDPOINT_MISSING": "エンドポイントが見つかりません。",
-  "host.INPUT_INVALID": "入力がエンドポイントの契約を満たしていません。",
-  "host.INSTALLATION_MISMATCH": "設置環境が変更されました。リクエストを準備する前に、認証済みコンテキストを更新してください。このリクエストは開始されていません。",
-  "host.INTERNAL": "リクエストを完了できませんでした。",
-  "host.MEDIA_TYPE_REJECTED": "エンドポイントで指定されたメディアタイプを使用してください。",
-  "host.METHOD_REJECTED": "このメソッドはサポートされていません。",
-  "host.ORIGIN_REJECTED": "オリジンが拒否されました。",
-  "host.RATE_LIMITED": "リクエストの受け付けが混雑しています。",
-  "host.RESPONSE_FAILED": "完了した応答を送信できませんでした。",
-  "host.SESSION_REJECTED": "認証が拒否されました。",
-  "input.actorId.label": "アカウントID",
-  "input.assignment.label": "担当の割り当て",
-  "input.caseId.label": "案件ID",
-  "input.caseView.label": "案件ビュー",
-  "input.due.label": "フォローアップの状態",
-  "input.includeInactive.label": "対象外の案件業務を含める",
-  "input.lifecycle.label": "ライフサイクル",
-  "input.order.label": "並び順",
-  "input.progress.label": "支払の進捗",
-  "input.reminderDue.label": "リマインダーの期限",
-  "input.reminderState.label": "リマインダーの状態",
-  "input.reminderView.label": "リマインダービュー",
-  "input.responsibleActorAction.label": "担当の変更",
-  "input.scope.label": "役割の適用範囲",
-  "input.status.label": "状態フィルター",
-  "input.timelineFilter.label": "タイムラインの項目",
-  "interactionEffect.CHANGE_AUTHORITY.label": "アクセス権限を変更",
-  "interactionEffect.CHANGE_LIFECYCLE.label": "案件のライフサイクルを変更",
-  "interactionEffect.CHANGE_REMINDER.label": "リマインダーを変更",
-  "interactionEffect.CHANGE_STATUS.label": "対応中・終了の状態を変更",
-  "interactionEffect.CHANGE_WORK.label": "案件業務を変更",
-  "interactionEffect.ERASE_PAYLOAD.label": "案件の内容を復元不能に消去",
-  "interactionEffect.READ.label": "現在の情報を閲覧",
-  "interactionEffect.RECORD_FACTS.label": "案件情報を記録",
-  "interactionEffect.UPDATE_WORK.label": "案件業務を更新",
-  "label.action": "作業",
-  "label.actionableCases": "有効かつ未終了の案件",
-  "label.assigneeAvailable": "割り当て可能",
-  "label.assigneeUnavailable": "新規割り当て不可",
-  "label.attentionCases": "対応が必要な案件数（重複なし）",
-  "label.availableActs": "利用可能な操作",
-  "label.changedAt": "案件情報の更新日時",
-  "label.characterWarning": "{characters}を含む",
-  "label.enabled": "有効",
-  "label.exactReferenceMatch": "案件番号の完全一致",
-  "label.financialFactsPreserved": "案件の金銭情報と支払記録は維持されます。",
-  "label.formerAccount": "旧アカウント {id}",
-  "label.missingPlanCases": "次の作業がない案件",
-  "label.morePendingReminders": "ほか{count}件",
-  "label.nextFollowUp": "次のフォローアップ",
-  "label.noNextAction": "この対応可能な案件には、未完了の次の作業がありません。",
-  "label.notRecorded": "未記録",
-  "label.observedCaseFacts": "確認時点の案件情報",
-  "label.overdueCases": "業務の期限を過ぎた案件",
-  "label.overdueReminders": "期限超過のリマインダー",
-  "label.pendingReminders": "未完了のリマインダー",
-  "label.reminderRevision": "リマインダーのリビジョン",
-  "label.reviewTitle": "変更を確認",
-  "label.revisionLabel": "リビジョン",
-  "label.unassignedCases": "担当未割り当ての案件",
-  "label.unavailableAssigneeCases": "担当者が利用できない案件",
-  "label.workChangedAt": "業務の更新日時",
-  "label.workRecordedBy": "業務の記録者",
-  "label.workRevision": "業務のリビジョン",
-  "lifecycle.ACTIVE.label": "有効",
-  "lifecycle.ERASED.label": "消去済み",
-  "lifecycle.ERASED.meaning": "消去済み — 案件番号とリビジョンのみが残っています。",
-  "lifecycle.VOIDED.label": "無効化済み",
-  "lifecycle.VOIDED.meaning": "入力誤りにより無効化",
-  "notice.accepted": "完全に一致する操作{operationId}が受理されました。",
-  "notice.alternativeRoles": "{first}または{second}",
-  "notice.cancelled": "This request was cancelled. Earlier unconfirmed changes still need checking.",
-  "notice.definitionMismatch": "設置済みのWeb契約とブラウザーのアセットが一致しません。対応するアセットの公開後に再読み込みしてください。",
-  "notice.fileTooLarge": "選択したファイルは{maximumBytes}バイトを超えています。",
-  "notice.fileUnreadable": "選択したファイルを読み取れませんでした。",
-  "notice.invalidHttp": "ローカルサービスから不正なHTTP {status}応答が返されました。",
-  "notice.invalidInput": "必要な形式で入力を完了してください。",
-  "notice.invalidSession": "セッションの応答が不正です。",
-  "notice.missingCsrf": "認証済みセッションに偽造リクエスト防止トークンが含まれていません。",
-  "notice.notAccepted": "This change was not recorded for your account.",
-  "notice.outcomeUnknown": "操作の結果は不明です。まったく同じ操作を再試行してください。",
-  "notice.responseTimeout": "サービスの応答がタイムアウトしました。",
-  "notice.unknownDiagnostic": "サポートされていない診断情報を受信しました。",
-  "notice.unreachable": "ローカルサービスに接続できませんでした。",
-  "principalKind.HUMAN.label": "人",
-  "principalKind.SERVICE.label": "サービス",
-  "progress.DECIDED.label": "決定済み",
-  "progress.PAID.label": "支払済み",
-  "progress.UNDECIDED.label": "未決定",
-  "reminderAct.CANCEL.label": "リマインダーを取消",
-  "reminderAct.COMPLETE.label": "リマインダーを完了",
-  "reminderAct.COMPLETE_AND_PLAN_NEXT.label": "完了して次の作業を計画",
-  "reminderAct.CREATE.label": "リマインダーを追加",
-  "reminderAct.REOPEN.label": "リマインダーを再開",
-  "reminderAct.UPDATE.label": "リマインダーを更新",
-  "reminderDue.OVERDUE.label": "期限超過",
-  "reminderDue.TODAY.label": "今日",
-  "reminderDue.UPCOMING.label": "今後の予定",
-  "reminderState.CANCELLED.label": "取消済み",
-  "reminderState.COMPLETED.label": "完了",
-  "reminderState.PENDING.label": "未完了",
-  "role.AUDITOR.label": "監査担当者",
-  "role.CASE_HANDLER.label": "案件対応担当者",
-  "role.CASE_READER.label": "案件閲覧者",
-  "role.CASE_REGISTRAR.label": "案件登録担当者",
-  "role.DATA_STEWARD.label": "データ管理担当者",
-  "role.OWNER.label": "所有者",
-  "role.PAYMENT_RECORDER.label": "支払記録担当者",
-  "scalar.country.unknown": "不明または国際",
-  "scope.CASE.label": "1つの案件",
-  "scope.INSTALLATION.label": "設置環境",
-  "section.work.label": "案件業務",
-  "status.CLOSED.label": "終了",
-  "status.OPENED.label": "対応中",
-  "subject.AUTHORITY.label": "権限",
-  "subject.CASE.label": "案件",
-  "subject.REMINDER.label": "リマインダー",
-  "subject.WORK.label": "案件業務",
-  "timelineFilter.FACTS.label": "案件情報",
-  "timelineFilter.WORK.label": "業務とリマインダー",
-  "timelineKind.CASE_FACT.label": "案件の情報項目",
-  "timelineKind.REMINDER.label": "リマインダー",
-  "timelineKind.WORK.label": "業務",
-  "view.ALL.empty": "一致する項目はありません。",
-  "view.ALL.label": "すべて",
-  "view.CANCELLED.empty": "一致する項目はありません。",
-  "view.CANCELLED.label": "取消済み",
-  "view.CLOSED.empty": "一致する項目はありません。",
-  "view.CLOSED.label": "終了",
-  "view.COMPLETED.empty": "一致する項目はありません。",
-  "view.COMPLETED.label": "完了",
-  "view.DECIDED_UNPAID.empty": "一致する項目はありません。",
-  "view.DECIDED_UNPAID.label": "決定済み・未払い",
-  "view.DUE_TODAY.empty": "一致する項目はありません。",
-  "view.DUE_TODAY.label": "本日期限",
-  "view.MINE.empty": "一致する項目はありません。",
-  "view.MINE.label": "自分の担当",
-  "view.NEEDS_ATTENTION.empty": "一致する項目はありません。",
-  "view.NEEDS_ATTENTION.label": "対応が必要",
-  "view.NO_NEXT_ACTION.empty": "一致する項目はありません。",
-  "view.NO_NEXT_ACTION.label": "次の作業なし",
-  "view.OVERDUE.empty": "一致する項目はありません。",
-  "view.OVERDUE.label": "期限超過",
-  "view.PENDING.empty": "一致する項目はありません。",
-  "view.PENDING.label": "未完了",
-  "view.TODAY.empty": "一致する項目はありません。",
-  "view.TODAY.label": "今日",
-  "view.UNASSIGNED.empty": "一致する項目はありません。",
-  "view.UNASSIGNED.label": "未割り当て",
-  "view.UNDECIDED.empty": "一致する項目はありません。",
-  "view.UNDECIDED.label": "未決定",
-  "view.UPCOMING.empty": "一致する項目はありません。",
-  "view.UPCOMING.label": "今後の予定",
-  "view.VOIDED.empty": "一致する項目はありません。",
-  "view.VOIDED.label": "無効化済み",
-  "workAct.UPDATE_WORK.label": "案件業務を更新",
-  "workChange.CLEAR.label": "削除",
-  "workChange.SET.label": "設定",
-  "requesterState.ACTIVE.label": "アカウント有効",
-  "requesterState.ACTIVE.meaning": "自分のアカウントは有効で、役割が割り当てられています。",
-  "requesterState.NO_ROLES.label": "役割未割り当て",
-  "requesterState.NO_ROLES.meaning": "このアカウントにはアクセス用の役割がありません。所有者に割り当てを依頼してください。",
-  "requesterState.DISABLED.label": "アカウント無効",
-  "requesterState.DISABLED.meaning": "このアカウントは無効です。所有者に有効化を依頼してください。",
-  "requesterState.NOT_REGISTERED.label": "アクセス申請済み",
-  "requesterState.NOT_REGISTERED.meaning": "ClaimCoreにアクセスするには、所有者がこのアカウントの追加を承認する必要があります。",
-  "endpoint.authority.requests.label": "アクセス申請",
-  "endpoint.authority.requests.meaning": "承認待ちの申請を1ページ取得します。",
-  "endpoint.authority.requests.dismiss.label": "アクセス申請を却下",
-  "endpoint.authority.requests.dismiss.meaning": "アクセス権限を付与せずにこの申請を削除します。",
-  "caseStage.OPENED.label": "登録済み",
-  "caseStage.DECIDED.label": "決定済み",
-  "caseStage.PAID.label": "支払済み",
-  "caseStage.CLOSED.label": "終了",
-  "input.responsibleActorFilter.label": "担当アカウントのフィルター",
-  "diagnostic.NOT_OFFERED": "この操作は利用できません。案件の状態：{state}。最新の案件を確認してください。",
-  "diagnostic.REMINDER_NOT_OFFERED": "この操作は利用できません。リマインダーの状態：{state}。最新のリマインダーを確認してください。",
-  "act.ADMIT.label": "利用者を追加",
-  "act.ADMIT.meaning": "名前と最初の役割を指定してアカウントを追加します。",
-  "field.grants.label": "アクセス権限の割り当て",
-  "diagnostic.GRANT_COUNT_RANGE": "アクセス権限を1～{maximumGrants}件選択してください。",
-  "diagnostic.DUPLICATE_GRANT": "同じ役割と適用範囲の組み合わせは1回だけ選択してください。",
-  "accountState.ACTIVE.label": "有効・役割あり",
-  "accountState.ACTIVE.meaning": "アカウントは有効で役割が割り当てられています。各操作では引き続き適格性と権限を確認します。",
-  "accountState.NO_ROLES.label": "役割未割り当て",
-  "accountState.NO_ROLES.meaning": "アカウントは登録済みで有効ですが、役割が割り当てられていません。",
-  "accountState.DISABLED.label": "無効",
-  "accountState.DISABLED.meaning": "アカウントは無効です。権限の確認のため、割り当て済みの役割は引き続き表示されます。",
-  "label.attention": "注意",
-  "label.recommendedNext": "推奨される次の作業",
-  "label.notApplicable": "該当なし",
-  "label.recordedAt": "記録日時",
-  "label.recordedBy": "記録者",
-  "label.reminder": "リマインダー",
-  "label.before": "変更前",
-  "label.after": "変更後",
-  "label.changes": "変更内容",
-  "label.unchanged": "変更なし",
-  "label.changesWithheld": "変更内容は開示されていません。",
-  "label.changesErased": "変更内容は消去されています。",
-  "field.incidentDate.rule": "YYYY-MM-DD形式のASCII数字を使用してください。例：2026-10-06。",
-  "field.incidentDate.hint": "事故が発生した日。",
-  "field.incidentNotificationDate.rule": "YYYY-MM-DD形式のASCII数字を使用してください。例：2026-10-06。",
-  "field.incidentNotificationDate.hint": "この事故を最初に知った日。",
-  "field.incidentCountry.rule": "大文字2文字を使用してください。{unknownCode}は不明または国際を意味します。",
-  "field.incidentCountry.hint": "事故が発生した国。",
-  "field.incidentDescription.rule": "任意のプレーンテキストで、Unicodeスカラー値で最大{maximumScalars}文字です。LFによる段落区切りを使用できます。空白とUnicodeの表記は保持され、安全でない制御文字と文字方向の書式制御は拒否されます。",
-  "field.incidentDescription.hint": "何が起きたか、この請求に必要な詳細を記入してください。",
-  "field.claimantName.rule": "最大{maximumCharacters}文字です。",
-  "field.claimantName.hint": "請求を行う人または会社。",
-  "field.insurerName.rule": "最大{maximumCharacters}文字です。",
-  "field.insurerName.hint": "この請求を担当する保険会社。",
-  "field.claimedAmount.rule": "小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用してください。空白、符号、コンマ、不要な先頭の0は使用できません。",
-  "field.claimedAmount.hint": "請求者が求める金額。",
-  "field.claimedCurrency.rule": "ASCIIの大文字{length}文字（A–Z）です。",
-  "field.claimedCurrency.hint": "請求額の通貨。",
-  "field.caseReference.rule": "空白を含まない表示可能なASCII文字を1～{maximumCharacters}文字使用してください。大文字・小文字は同じ案件として扱い、元の表記は保持します。",
-  "field.caseReference.hint": "この案件に付ける独自の番号です。例：CLM-2026-0001。後で変更することはできません。",
-  "field.paymentDecisionDate.rule": "YYYY-MM-DD形式のASCII数字を使用してください。例：2026-10-06。",
-  "field.paymentDecisionDate.hint": "支払額を決定した日。",
-  "field.payableAmount.rule": "小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用してください。空白、符号、コンマ、不要な先頭の0は使用できません。",
-  "field.payableAmount.hint": "支払うことを決定した金額。",
-  "field.payableCurrency.rule": "ASCIIの大文字{length}文字（A–Z）です。",
-  "field.payableCurrency.hint": "支払決定額の通貨。",
-  "field.paymentDate.rule": "YYYY-MM-DD形式のASCII数字を使用してください。例：2026-10-06。",
-  "field.paymentDate.hint": "全額が支払われた日。",
-  "field.status.rule": "案件が対応中か終了済みかを示します。案件の終了は支払の完了を意味しません。",
-  "field.status.hint": "この案件の業務がまだ継続中かどうか。",
-  "field.responsibleActor.rule": "登録済みアカウントの正確なUUIDを使用してください。",
-  "field.responsibleActor.hint": "この案件の担当者。",
-  "field.handlingSummary.rule": "任意のプレーンテキストで、Unicodeスカラー値で最大{maximumScalars}文字です。LFによる段落区切りを使用できます。空白とUnicodeの表記は保持され、安全でない制御文字と文字方向の書式制御は拒否されます。",
-  "field.handlingSummary.hint": "現在の状況と必要な対応。",
-  "field.operationId.rule": "この操作のIDです。同じリクエストを再試行する場合に限り再利用してください。",
-  "field.operationId.hint": "結果を確認する必要がある場合に備えて、この変更識別子を保管してください。",
-  "field.expectedRevision.rule": "このリクエストの基準となる案件のリビジョン。",
-  "field.expectedRevision.hint": "変更前に最新の案件を確認してください。",
-  "field.reason.rule": "最大{maximumCharacters}文字です。",
-  "field.reason.hint": "この変更が必要な理由。",
-  "field.principal.kind.rule": "対象の認証主体が人かサービスかを示します。",
-  "field.principal.kind.hint": "人またはサービスのアカウントを選択してください。",
-  "field.principal.issuer.rule": "対象の認証主体の正確なHTTPS発行者。",
-  "field.principal.issuer.hint": "このアカウントのサインインプロバイダー。",
-  "field.principal.subject.rule": "対象の認証主体の不変の主体識別子またはクライアントID。",
-  "field.principal.subject.hint": "サインインプロバイダーのアカウント識別子。",
-  "field.profile.displayName.rule": "最大{maximumCharacters}文字です。",
-  "field.profile.displayName.hint": "ClaimCoreで他の利用者に表示される名前。",
-  "field.profile.contact.rule": "最大{maximumCharacters}文字です。",
-  "field.profile.contact.hint": "この人への連絡先情報。入力は任意です。",
-  "field.grants.rule": "異なる役割と適用範囲の組み合わせを1～{maximumGrants}件指定してください。UUIDのように見えるものも含め、案件番号は明示的な案件番号として扱います。",
-  "field.grants.hint": "このアカウントに必要な役割と、それぞれの適用範囲を追加してください。",
-  "field.role.rule": "付与または取消の対象となる権限の役割。",
-  "field.role.hint": "このアカウントに持たせるアクセス権限。",
-  "field.limit.rule": "このページで返す最大行数。",
-  "field.limit.hint": "一度に表示する結果の件数。",
-  "field.cursor.rule": "サービスが返した不透明なカーソルから同じクエリを続行します。",
-  "field.cursor.hint": "続きの結果を取得します。",
-  "field.text.rule": "最大{maximumCharacters}文字です。",
-  "field.text.hint": "案件番号、請求者、保険会社から案件を検索します。",
-  "field.reminderId.rule": "この案件の1つのリマインダーを識別する不変のID。",
-  "field.reminderId.hint": "変更するリマインダーを選択してください。",
-  "field.reminderAction.rule": "Unicodeスカラー値で最大{maximumScalars}文字の、1行のプレーンテキストを使用してください。",
-  "field.reminderAction.hint": "次に行う必要があること。",
-  "field.reminderDueDate.rule": "グレゴリオ暦のYYYY-MM-DD形式を使用してください。過去と未来の日付を使用できます。",
-  "field.reminderDueDate.hint": "この作業の期限。",
-  "field.expectedWorkRevision.rule": "確認した業務のリビジョンです。金銭情報のリビジョンとは独立しています。",
-  "field.expectedWorkRevision.hint": "変更前に最新の業務内容を確認してください。",
-  "field.expectedReminderRevision.rule": "確認した当該リマインダーの正のリビジョンを指定してください。他のリマインダーのリビジョンは独立しています。",
-  "field.expectedReminderRevision.hint": "変更前に最新のリマインダーを確認してください。",
-  "input.scope.rule": "役割の適用先が設置環境全体か1つの案件かを示します。",
-  "input.scope.hint": "この役割の適用範囲を選択してください。",
-  "input.actorId.rule": "役割の割り当てや権限履歴を確認する登録済みアカウント。",
-  "input.actorId.hint": "アクセス権限を確認する対象を選択してください。",
-  "input.caseId.rule": "受理済みOPEN操作の不変のUUID。",
-  "input.caseId.hint": "案件を選択してください。",
-  "input.lifecycle.rule": "選択したライフサイクルの結果だけに絞ります。このフィルターを省略するとすべてを含めます。",
-  "input.lifecycle.hint": "表示する結果を選択してください。",
-  "input.status.rule": "選択した対応中または終了済みの案件だけに絞ります。消去済みの案件には状態がありません。",
-  "input.status.hint": "この案件の業務がまだ継続中かどうか。",
-  "input.progress.rule": "未決定、決定済み、支払済みの案件だけに絞ります。消去済みの案件には支払の進捗がありません。",
-  "input.progress.hint": "表示する結果を選択してください。",
-  "input.caseView.rule": "標準の案件ビューを選択してください。他のフィルターでさらに絞り込めます。",
-  "input.caseView.hint": "表示する結果を選択してください。",
-  "input.responsibleActorFilter.rule": "閲覧可能な範囲で、選択したアカウントが担当する案件に絞ります。他のフィルターでさらに絞り込めます。",
-  "input.responsibleActorFilter.hint": "表示する結果を選択してください。",
-  "input.reminderView.rule": "標準のリマインダービューを選択してください。状態、担当、日付、文字列、親案件の明示的なフィルターでさらに絞り込めます。",
-  "input.reminderView.hint": "表示する結果を選択してください。",
-  "input.timelineFilter.rule": "案件情報、または業務とリマインダーを表示します。未指定の場合は両方を表示します。",
-  "input.timelineFilter.hint": "表示する変更を選択してください。",
-  "input.order.rule": "案件番号、案件情報の最終変更、通知日、最も早い未完了リマインダーの日付で並べ替えます。情報の変更は新しい順、通知日とリマインダーの日付は古い順とし、日付がないものは最後に置きます。同じ値の場合は案件番号順です。",
-  "input.order.hint": "結果の並び順を選択してください。",
-  "input.assignment.rule": "現在の閲覧権限を確認した上で、実際の担当の割り当てで絞り込みます。案件単位の閲覧権限だけでは担当にはなりません。",
-  "input.assignment.hint": "表示する結果を選択してください。",
-  "input.due.rule": "最も早い未完了リマインダーに基づき、各案件を期限超過、本日、今後の予定、未完了リマインダーなし、対象外に分類します。個々のリマインダーの日付は別のフィルターを使用します。",
-  "input.due.hint": "表示する結果を選択してください。",
-  "input.reminderState.rule": "現在の未完了、完了、取消済みの記録を選択します。省略すると未完了のリマインダーを選択します。",
-  "input.reminderState.hint": "表示する結果を選択してください。",
-  "input.reminderDue.rule": "設置環境の業務日を基準に個々のリマインダーの日付を絞り込みます。案件の最も早い次回期限とは異なります。",
-  "input.reminderDue.hint": "表示する結果を選択してください。",
-  "input.includeInactive.rule": "終了または無効化した案件の業務を明示的に含めます。未完了のリマインダーの日付と状態は維持されます。",
-  "input.includeInactive.hint": "表示する結果を選択してください。",
-  "input.responsibleActorAction.rule": "setまたはclearを選択してください。省略すると現在の担当アカウントを維持します。",
-  "input.responsibleActorAction.hint": "この案件の担当者を設定または解除します。",
-  "group.registration.rule": "登録情報を維持するか、選択した情報を更新します。省略した情報は変更されず、金額と通貨は同時に指定します。",
-  "group.registration.hint": "変更する内容を選択してください。",
-  "group.decision.rule": "決定を維持するか、選択した情報を更新するか、削除します。金額と通貨は同時に指定する必要があります。",
-  "group.decision.hint": "変更する内容を選択してください。",
-  "group.payment.rule": "記録された支払日を維持、置換、再確認、削除のいずれかで扱います。再確認では日付を維持し、削除しても返金は行いません。",
-  "group.payment.hint": "変更する内容を選択してください。",
-  "diagnostic.CALENDAR_DATE_REQUIRED.gui": "実在する日付を入力してください。",
-  "diagnostic.COUNTRY_FORMAT.gui": "国を示す2文字を入力してください。例：LV。",
-  "diagnostic.CURRENCY_FORMAT.gui": "3文字の通貨コードを入力してください。例：EUR。",
-  "diagnostic.EXPECTED_REVISION_RANGE.gui": "変更前に最新の記録を確認してください。",
-  "diagnostic.REFERENCE_FORMAT.gui": "空白を含まない案件番号を入力してください。",
-  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": "ここで使用できる役割を選択してください。",
-  "diagnostic.DUPLICATE_GRANT.gui": "同じ役割と適用範囲は1回だけ選択してください。",
-  "act.OPEN.done": "案件を登録しました。",
-  "act.OPEN.consequence": "事故、請求者、保険会社、請求額を登録します。",
-  "act.AMEND_REGISTRATION.done": "登録情報を更新しました。",
-  "act.AMEND_REGISTRATION.consequence": "選択した登録情報を更新します。省略した情報と案件番号は変更されません。",
-  "act.CORRECT.done": "案件情報を訂正しました。",
-  "act.CORRECT.consequence": "選択した既存の情報をまとめて訂正します。支払済みの決定を変更するには、支払の再確認、置換、削除のいずれかを明示的に行う必要があります。支払日を削除しても返金は行われません。",
-  "act.DECIDE.done": "支払決定を記録しました。",
-  "act.DECIDE.consequence": "決定した金額と通貨を記録または置換します。送金は行われません。",
-  "act.WITHDRAW_DECISION.done": "支払決定を撤回しました。",
-  "act.WITHDRAW_DECISION.consequence": "履歴を残して未払いの決定を削除します。",
-  "act.RECORD_PAYMENT.done": "支払を記録しました。",
-  "act.RECORD_PAYMENT.consequence": "決定額の全額が実際に支払われた日を記録します。送金の実行や検証は行いません。",
-  "act.CLEAR_PAYMENT.done": "支払記録を削除しました。",
-  "act.CLEAR_PAYMENT.consequence": "誤って記録された支払日を削除します。実際の送金の返金や取消ではありません。過去の履歴は残ります。",
-  "act.CLOSE.done": "案件を終了しました。",
-  "act.CLOSE.consequence": "案件を終了します。終了は支払の完了を意味しません。",
-  "act.REOPEN.done": "案件を再開しました。",
-  "act.REOPEN.consequence": "詳細情報と履歴を維持して案件を再開します。",
-  "act.VOID.done": "案件を無効化しました。",
-  "act.VOID.consequence": "案件は記録に残り、復帰するまで通常業務の対象から外れます。",
-  "act.REINSTATE.done": "案件の無効化を解除しました。",
-  "act.REINSTATE.consequence": "案件が再び有効になります。対応中または終了の状態は変わりません。",
-  "act.ERASE.done": "案件を消去しました。",
-  "act.ERASE.consequence": "ClaimCoreから案件の詳細、業務、リマインダーを完全に削除します。案件番号と変更の記録は残ります。",
-  "act.REGISTER.done": "アカウントを登録しました。",
-  "act.REGISTER.consequence": "名前と任意の連絡先を登録してアカウントを追加します。役割は別途割り当てられます。",
-  "act.ADMIT.done": "役割とともにアカウントを追加しました。",
-  "act.ADMIT.consequence": "アカウントの追加、プロフィールの保存、選択したすべての役割の記録をまとめて行います。",
-  "act.SET_PROFILE.done": "プロフィールを更新しました。",
-  "act.SET_PROFILE.consequence": "アカウントの表示名と任意の連絡先を記録します。識別情報やアクセス権限は変更されません。",
-  "act.ERASE_PROFILE.done": "プロフィールを消去しました。",
-  "act.ERASE_PROFILE.consequence": "保存された名前と連絡先を完全に削除します。過去の変更には匿名のアカウント名が表示されます。",
-  "act.GRANT.done": "役割を付与しました。",
-  "act.GRANT.consequence": "このアカウントに選択した役割の割り当てを記録します。",
-  "act.REVOKE.done": "役割を取り消しました。",
-  "act.REVOKE.consequence": "選択した役割の割り当てを解除します。",
-  "act.ENABLE.done": "アカウントを有効にしました。",
-  "act.ENABLE.consequence": "既存の役割を維持してこのアカウントを有効にします。",
-  "act.DISABLE.done": "アカウントを無効にしました。",
-  "act.DISABLE.consequence": "このアカウントはClaimCoreにアクセスできなくなります。記録された変更は残ります。",
-  "act.UPDATE_WORK.done": "案件業務を更新しました。",
-  "act.UPDATE_WORK.consequence": "担当者を変更するか、対応概要を更新します。",
-  "act.REMINDER_CREATE.done": "リマインダーを追加しました。",
-  "act.REMINDER_CREATE.consequence": "この案件の次の作業を計画します。",
-  "act.REMINDER_UPDATE.done": "リマインダーを更新しました。",
-  "act.REMINDER_UPDATE.consequence": "この未完了のリマインダーの作業内容または日付を変更します。以前の版は履歴に残ります。",
-  "act.REMINDER_COMPLETE.done": "リマインダーを完了しました。",
-  "act.REMINDER_COMPLETE.consequence": "未完了の作業を完了としたことを記録します。最後のリマインダーも完了できますが、その場合は案件の次の作業を計画する必要が生じることがあります。",
-  "act.REMINDER_CANCEL.done": "リマインダーを取り消しました。",
-  "act.REMINDER_CANCEL.consequence": "履歴を削除せずに、この未完了の作業を取り消します。取消と完了は異なります。",
-  "act.REMINDER_REOPEN.done": "リマインダーを再開しました。",
-  "act.REMINDER_REOPEN.consequence": "新しい期限でこのリマインダーを再開します。",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": "リマインダーを完了し、次の作業を計画しました。",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence": "このリマインダーを完了し、次の作業を同時に計画します。",
-  "endpoint.authority.requests.dismiss.done": "アクセス申請を却下しました。",
-  "label.accountState": "アカウントの状態",
-  "label.responsibleCases": "担当案件",
-  "label.account": "アカウント",
-  "label.targetAccount": "変更対象のアカウント",
-  "label.sequence": "記録番号",
-  "label.authorityHistory": "アクセス権限の履歴",
-  "label.requestedName": "申請時の名前",
-  "label.requestedUsername": "申請時のユーザー名",
-  "label.requestedEmail": "申請時のメールアドレス",
-  "label.accessRequest": "アクセス申請",
-  "label.firstSeen": "最初の申請",
-  "label.lastSeen": "最後の申請",
-  "label.capabilities": "権限",
-  "label.views": "利用可能なビュー",
-  "label.installationId": "設置環境ID",
-  "label.productVersion": "製品バージョン",
-  "label.businessDate": "業務日",
-  "label.timeZone": "タイムゾーン",
-  "label.total": "合計",
-  "label.cases": "案件",
-  "label.claimedTotals": "通貨別の請求合計",
-  "label.payableTotals": "通貨別の支払決定額の合計",
-  "boolean.TRUE.label": "はい",
-  "boolean.FALSE.label": "いいえ",
-  "view.CASES.label": "案件",
-  "view.AUTHORITY.label": "利用者とアクセス権限",
-  "view.OPERATIONS.label": "操作",
-  "label.requestDismissed": "アクセス申請を却下しました。",
-  "label.details": "詳細",
-  "field.directorySearch.label": "利用者を検索",
-  "field.directorySearch.hint": "現在保存されている名前や連絡先を検索します。",
-  "field.directorySearch.rule": "最大{maximumCharacters}文字で指定してください。大文字・小文字は区別しません。",
-  "label.installationRoleAssigned": "設置環境の役割を割り当て済み",
-  "label.caseRoleAssignments": "案件単位の役割の割り当て",
-  "label.directRoles": "直接割り当てた役割",
-  "label.inheritedRoles": "設置環境の役割",
-  "label.effect": "効果",
-  "label.recordedChange": "記録された変更",
-  "label.recordedFacts": "記録された情報",
-  "label.detailsWithheld": "詳細は開示されていません。",
-  "label.recordDetails": "記録の詳細",
-  "label.recorded": "記録しました。",
-  "label.alreadyRecorded": "既に記録されています。",
-  "label.stages": "案件の段階",
-  "label.currentStage": "現在の段階",
-  "label.stageCompleted": "完了",
-  "label.stageDate": "日付",
-  "label.stageAmount": "金額",
-  "label.stageReinstated": "案件の無効化を解除しました。以前の段階の日付は記録された情報として残ります。",
-  "label.summaryChangedAt": "概要の更新日時",
-  "label.summaryRecordedBy": "概要の記入者",
-  "label.unavailableActions": "利用できない操作",
-  "label.authenticated": "認証済み",
-  "label.contractIdentity": "契約識別子",
-  "label.signedOut": "サインアウトしました。",
-  "input.roleFilter.label": "役割フィルター",
-  "input.roleFilter.hint": "無効なアカウントを含め、この役割が割り当てられた利用者を検索します。",
-  "input.roleFilter.rule": "設置環境全体または個々の案件での該当する役割の割り当てを検索します。このフィルターは、現在の権限やアカウントの有効・無効を確認しません。",
-  "role.OWNER.meaning": "利用者、プロフィール、役割を管理します。この役割だけでは案件情報へのアクセス権限は付与されません。",
-  "role.CASE_READER.meaning": "割り当てられたアクセス権限の範囲内で、案件情報と基本的な変更履歴を閲覧します。",
-  "role.CASE_REGISTRAR.meaning": "請求内容を記録または訂正し、案件情報と基本履歴を閲覧します。新規案件の登録には設置環境全体への割り当てが必要です。",
-  "role.CASE_HANDLER.meaning": "案件情報、決定、終了を扱い、全履歴を閲覧します。担当、概要、リマインダーを管理できるのは人だけです。新規案件の登録には設置環境全体へのアクセス権限が必要です。",
-  "role.PAYMENT_RECORDER.meaning": "支払日を記録または削除し、案件情報と基本履歴を閲覧します。送金は行いません。",
-  "role.DATA_STEWARD.meaning": "案件の無効化、復帰、内容の消去を行います。案件情報と基本履歴を閲覧します。この役割は人専用です。",
-  "role.AUDITOR.meaning": "割り当てられたアクセス権限の範囲内で、案件情報と全変更履歴を閲覧します。アカウントのアクセス権限を閲覧するには設置環境全体への割り当てが必要です。これらを変更することはできません。",
-  "timeline.event.caseOpened": "案件登録",
-  "timeline.event.registrationAmended": "請求内容の更新",
-  "timeline.event.factsCorrected": "情報の訂正",
-  "timeline.event.decisionRecorded": "支払決定の記録",
-  "timeline.event.decisionWithdrawn": "支払決定の撤回",
-  "timeline.event.paymentRecorded": "支払日の記録",
-  "timeline.event.paymentCleared": "記録された支払日の削除",
-  "timeline.event.caseClosed": "案件終了",
-  "timeline.event.caseReopened": "案件再開",
-  "timeline.event.caseVoided": "案件の無効化",
-  "timeline.event.caseReinstated": "案件の復帰",
-  "timeline.event.caseErased": "案件の消去",
-  "timeline.event.responsibilityAssigned": "{person}を担当者に設定",
-  "timeline.event.responsibilityCleared": "{person}の担当を解除",
-  "timeline.event.workRecorded": "案件業務の更新",
-  "timeline.event.handlingSummaryAdded": "対応概要の追加",
-  "timeline.event.handlingSummaryChanged": "対応概要の変更",
-  "timeline.event.handlingSummaryCleared": "対応概要の削除",
-  "timeline.event.reminderPlanned": "リマインダー「{action}」を計画（期限：{due}）",
-  "timeline.event.reminderChanged": "リマインダー「{action}」を更新",
-  "timeline.event.reminderCompleted": "リマインダー「{action}」を完了",
-  "timeline.event.reminderCancelled": "リマインダー「{action}」を取消",
-  "timeline.event.reminderReopened": "リマインダー「{action}」を再開（期限：{due}）",
-  "timeline.event.reminderCompletedAndPlanned": "「{completedAction}」を完了し、「{nextAction}」を計画（期限：{nextDue}）",
-  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": "This change was not started: its operation ID is outside the allowed time window. Prepare a new change with a new ID.",
-  "endpoint.operation.get.label": "Check an unconfirmed change",
-  "endpoint.operation.get.meaning": "Read the accepted receipt when visible, or wait until the operation lifetime ends for a final answer that this account’s change was not accepted.",
-  "endpoint.work.views.label": "Work view counts",
-  "endpoint.work.views.meaning": "Read case and reminder view counts from the same snapshot and date basis.",
-  "historyAccess.NONE.label": "No history access",
-  "historyAccess.SUMMARY.label": "History metadata",
-  "historyAccess.FULL.label": "Full history",
-  "label.reminders": "Reminders"
+  "act.AMEND_REGISTRATION.label": {
+    "text": "請求内容を更新",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "選択した請求情報を変更します。指定しない情報と案件番号はそのまま保持されます。",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "誤った支払記録を訂正",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "誤って記録された支払日を削除します。実際の送金の返金や取消ではありません。過去の履歴は残ります。",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "案件を終了",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "必要な作業がなくなったら案件を終了します。終了しても請求が支払済みであるとは限りません。",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "案件情報を訂正",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "誤って記録した情報を訂正します。支払済みの案件で決定を変更する場合は、支払日も確認、置換、または削除してください。支払日を削除しても返金は行われません。",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "支払決定を記録",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "決定した金額と通貨を記録または置換します。送金は行われません。",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "アカウントを無効化",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "このアカウントによるClaimCoreの利用を停止します。記録済みの変更は保持されます。",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "アカウントを有効化",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "このアカウントが既存の役割でClaimCoreを再び利用できるようにします。",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "案件を消去",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "この案件の情報、作業、リマインダーをClaimCoreから完全に消去します。案件番号と変更一覧は残ります。外部に保存されたコピーには影響しません。",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "プロフィールを消去",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "このアカウントの保存済みの名前と連絡先を完全に消去します。サインイン情報、役割、記録済みの作業は保持されます。過去の変更には「以前のアカウント」と表示されます。",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "役割を付与",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "選択した役割をこのアカウントに割り当てます。",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "案件を登録",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "事故、請求者、保険会社、請求額を登録します。",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "最初の所有者を設定",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "実際の支払を記録",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "決定額の全額が実際に支払われた日を記録します。送金の実行や検証は行いません。",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "アカウントを登録",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "名前と任意の連絡先を持つアカウントを追加します。役割は別途割り当てます。",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "案件の無効化を解除",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "この無効化された案件の作業を再び許可します。進行中または終了の状態は変わりません。",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "リマインダーを取消",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "この作業を完了扱いにせず取り消します。履歴は保持されます。",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "リマインダーを完了",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "この作業を完了にします。最後の作業だった場合は、案件に次の作業が必要になります。",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "完了して次の作業を計画",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "このリマインダーを完了し、次の作業を同時に計画します。",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "リマインダーを追加",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "この案件の次の作業を計画します。",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "リマインダーを再開",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "新しい期限を指定して、この作業を再び未完了にします。",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "リマインダーを更新",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "この未完了のリマインダーの作業内容または日付を変更します。以前の版は履歴に残ります。",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "案件を再開",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "案件を再開します。情報と履歴は保持されます。",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "役割を取り消す",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "選択した役割の割り当てを取り消します。",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "プロフィールを更新",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "アカウントの表示名と任意の連絡先を記録します。識別情報やアクセス権限は変更されません。",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "案件業務を更新",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "担当者を変更するか、対応概要を更新します。",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "案件を無効化",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "誤って入力した場合などに、この案件のすべての作業を停止します。案件と履歴は保持されます。",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "支払決定を撤回",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "支払う前に支払決定を取り消します。履歴は保持されます。",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "案件の作業",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "無効化と消去",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "利用可能",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "アカウントは有効で、この状況で利用できます。",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "無効",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "このアカウントは無効になっています。",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "割り当て不可",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "このアカウントをこの案件の担当者にはできません。",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "自分の担当",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "自分が担当する案件です。閲覧できるだけでは担当者にはなりません。",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "未割り当て",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "担当者が利用不可",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "本日期限",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "次の作業なし",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "終了可能",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "未割り当て",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "案件の終了と再開",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "支払決定の記録",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "利用者とアクセスの管理",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "案件業務を管理",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "アクセスの閲覧",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "案件の閲覧",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "履歴の閲覧",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "全履歴の閲覧",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "支払の記録",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "請求情報の記録",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "案件の無効化、復元、消去",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "次の対応",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "通知日（古い順）",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "最近の変更",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "案件番号",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "記録された値を削除",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "現在の情報を維持",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "既存の支払を再確認",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "情報を置換",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "選択した情報を更新",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "このアカウントは登録済みです。",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "空でないアカウントUUIDを入力してください。",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "このアカウントは登録されていません。",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "現在、選択したアカウントをこの案件に割り当てることはできません。",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "YYYY-MM-DD形式の有効な日付を指定してください。",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "この案件番号は既に存在します。",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "日付の順序が正しくありません。",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "制御文字は使用できません。",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "案件を変更する訂正を少なくとも1つ選択してください。",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "訂正で置換または削除できるのは、この案件に既に記録されている値だけです。",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "国コードにはASCIIの大文字2文字を使用してください。",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "通貨識別子にはASCIIの大文字3文字（A–Z）を使用してください。",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "負でない小数の文字列を使用してください。整数部は最大{maximumIntegerDigits}桁、小数部は最大{maximumFractionalDigits}桁です。符号、指数、不要な先頭の0は使用できません。0.10は有効、00.10は無効です。",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "このリクエストに有効な整数の版を指定してください。上限は9007199254740991です。",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "目に見えない書式制御文字は使用できません。",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "未来の日付です。実際に出来事が起きた日付を使用してください。",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "この役割を持てるのは人のアカウントだけです。",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "この操作IDは別の変更に使用済みです。新しいIDを使用してください。",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "このページへのリンクは無効です。最初のページからやり直してください。",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "確認が必要な項目：{issueCount}。",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "ClaimCoreには所有者の役割を持つ有効な人のアカウントが最低1つ必要です。",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "テキストに無効な文字が含まれています。",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "この変更には{required}の役割が必要です。所有者に依頼してください。",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "変更の送信時に作成するUUIDバージョン7を使用してください。",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "1から{maximumPageSize}までの値を使用してください。",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "支払記録のある決定を更新するには、支払記録を再確認、置換、削除のいずれかで明示的に扱ってください。",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "支払済みの決定を削除するには、支払記録も削除する必要があります。",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "正規のHTTPS発行者と、認証主体の種類に対応した有効な主体識別子を使用してください。",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "空白以外の表示可能なASCII文字を1～80文字使用してください。",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "保守のため変更を停止しています。案件の閲覧と以前の変更の確認は引き続き行えます。",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "空でないリマインダーUUIDを使用してください。",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "リマインダーの更新では、作業内容または日付を変更する必要があります。",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "この項目が存在しないか、アクセス権がありません。",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "開いた後にこの項目が変更されました。最新の版を確認してから再試行してください。",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "この役割には選択した案件への権限がありません。",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "先頭または末尾の空白を削除してください。",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "空白でない値が必要です。",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "{maximumCharacters}文字以内で入力してください。",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "更新または削除する値を1つ以上選択してください。",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "案件業務の値に変更がありません。",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "金額がゼロの支払決定には支払を記録できません。",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "対象外の業務",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "本日期限",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "未完了のリマインダーなし",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "今後の予定",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "役割の閲覧",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "アカウントに割り当てられた役割を一覧表示します。",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "アクセス履歴",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "アクセスの変更を新しい順に表示します。",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "利用者一覧",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "アカウントと利用可能なアクセス変更を一覧表示します。",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "担当可能な利用者",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "この案件の担当者になれる利用者を一覧表示します。",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "案件の閲覧",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "案件の現在の情報と利用可能な作業を表示します。",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "案件一覧",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "閲覧できる案件を一覧表示します。",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "案件の集計",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "閲覧できる案件を数え、請求額と支払決定額を通貨別に合計します。",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "案件の活動",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "閲覧が許可されている案件情報、作業、リマインダーの変更です。",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "自分のアクセス",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "自分の権限と利用可能なリソースを表示します。",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "リマインダーの閲覧",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "完了または取消済みの状態も含め、このリマインダーを表示します。",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "リマインダー一覧",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "閲覧できるリマインダーを期限の早い順に一覧表示します。",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "内部エラーが発生しました。操作を中止して調査してください。",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "保存された操作内容に不整合があります。操作を中止して調査してください。",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "保存データがこの版のClaimCoreに対応していません。操作を止め、管理者に対応するプログラムの使用を依頼してください。",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "保存データが整合性検査に合格しませんでした。操作を止め、管理者に検証の実行を依頼してください。",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "ClaimCoreの保存先を利用できません。しばらくしてから再試行してください。",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "案件番号",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "請求者名",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "請求額",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "請求通貨",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "カーソル",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "確認したリマインダーの版",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "確認した案件の版",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "確認した業務の版",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "対応概要",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "国",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "事故日",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "事故の説明",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "通知日",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "保険会社",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "ページ件数",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "操作ID",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "支払決定額",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "支払通貨",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "支払日",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "支払決定日",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "サインイン提供元",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "アカウント種別",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "サインインID",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "連絡先",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "名前",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "理由",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "作業",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "期限",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "リマインダーID",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "担当者",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "役割",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "案件の状態",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "検索文字列",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "支払決定",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "支払",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "請求",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "終了",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "決定済み",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "消去済み",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "支払済み",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "未決定",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "無効化済み",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "セッションを確認できませんでした。ページを再読み込みしてください。",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "リクエスト本文が大きすぎます。",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "接続が拒否されました。",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "このページは古くなっています。再読み込みしてください。",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "この機能は存在しません。",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "要求が想定された形式ではありません。",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "ClaimCoreが再インストールされました。変更前にページを再読み込みしてください。何も記録されていません。",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "リクエストを完了できませんでした。",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "エンドポイントで指定されたメディアタイプを使用してください。",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "このメソッドはサポートされていません。",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "このアドレスからの要求は許可されていません。",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCoreが混み合っています。少し待ってから再試行してください。",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "結果を届けられませんでした。",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "サインアウトしています。再度サインインしてください。",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "アカウントID",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "担当の割り当て",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "案件ID",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "案件ビュー",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "フォローアップの状態",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "対象外の案件業務を含める",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "ライフサイクル",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "並び順",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "支払の進捗",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "リマインダーの期限",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "リマインダーの状態",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "リマインダービュー",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "担当の変更",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "役割の適用範囲",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "状態フィルター",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "タイムラインの項目",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "アクセスの変更",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "案件の無効化または復元",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "リマインダーを変更",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "案件の開始または終了",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "案件業務を変更",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "案件情報の完全消去",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "閲覧のみ",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "案件情報を記録",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "案件業務を更新",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "作業",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "有効かつ未終了の案件",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "割り当て可能",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "新規割り当て不可",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "対応が必要な案件数（重複なし）",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "利用可能な操作",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "案件情報の更新日時",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "{characters}を含む",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "有効",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "案件番号の完全一致",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "案件の金銭情報と支払記録は維持されます。",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "旧アカウント {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "次の作業がない案件",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "追加のリマインダー：{count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "次の対応",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "この進行中の案件には次の作業が予定されていません。",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "未記録",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "確認時の案件情報",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "業務の期限を過ぎた案件",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "期限超過のリマインダー",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "未完了のリマインダー",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "リマインダーの版",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "変更を確認",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "版",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "担当未割り当ての案件",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "担当者が利用できない案件",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "業務の更新日時",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "業務の記録者",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "業務の版",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "有効",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "消去済み",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "消去済みです。案件番号だけが残ります。",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "無効化済み",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "誤入力などの理由で無効化されています。",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "変更を記録しました（{operationId}）。",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first}または{second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "この要求を取り消しました。送信済みの場合は記録されたか確認してください。",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "ClaimCoreが更新されました。ページを再読み込みしてください。",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "選択したファイルは{maximumBytes}バイトを超えています。",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "選択したファイルを読み取れませんでした。",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "ClaimCoreから予期しない応答がありました（HTTP {status}）。",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "必要な形式で入力を完了してください。",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "セッションを読み取れませんでした。再度サインインしてください。",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "サインインが完了しませんでした。ページを再読み込みして再度サインインしてください。",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "この変更は記録されませんでした。再度準備できます。",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "この変更が記録されたか確認できませんでした。再送信してください。二重に記録されることはありません。",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "ClaimCoreが制限時間内に応答しませんでした。",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "このページで認識できないメッセージがClaimCoreから届きました。ページを再読み込みしてください。",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "ClaimCoreに接続できませんでした。接続を確認してください。",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "個人",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "サービスアカウント",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "決定済み",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "支払済み",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "未決定",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "今日",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "今後の予定",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "取消済み",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "完了",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "未完了",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "監査担当者",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "案件対応担当者",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "案件閲覧者",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "案件登録担当者",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "データ管理担当者",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "所有者",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "支払記録担当者",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "不明または国際",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "1つの案件",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "すべての案件",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "案件業務",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "終了",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "対応中",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "アクセス",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "案件",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "リマインダー",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "案件業務",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "案件情報",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "業務とリマインダー",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "案件の情報項目",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "リマインダー",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "業務",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "すべて",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "取消済み",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "終了",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "完了",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "決定済み・未払い",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "本日期限",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "自分の担当",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "対応が必要",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "次の作業なし",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "期限超過",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "未完了",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "今日",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "未割り当て",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "未決定",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "今後の予定",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "無効化済み",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "削除",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "設定",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "アカウント有効",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "自分のアカウントは有効で、役割が割り当てられています。",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "役割未割り当て",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "このアカウントにはアクセス用の役割がありません。所有者に割り当てを依頼してください。",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "アカウント無効",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "このアカウントは無効です。所有者に有効化を依頼してください。",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "アクセス申請済み",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "ClaimCoreにアクセスするには、所有者がこのアカウントの追加を承認する必要があります。",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "アクセス申請",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "アクセスの許可を待っているサインイン要求を一覧表示します。",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "アクセス申請を却下",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "アクセス権限を付与せずにこの申請を削除します。",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "登録済み",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "決定済み",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "支払済み",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "終了",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "担当アカウントのフィルター",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "この操作は利用できません。案件の状態：{state}。最新の案件を確認してください。",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "この操作は利用できません。リマインダーの状態：{state}。最新のリマインダーを確認してください。",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "利用者を追加",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "名前と最初の役割を指定して個人またはサービスアカウントを追加します。",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "アクセス権限の割り当て",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "アクセス権限を1～{maximumGrants}件選択してください。",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "同じ役割と適用範囲の組み合わせは1回だけ選択してください。",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "有効・役割あり",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "アカウントは有効で役割が割り当てられています。各操作では引き続き適格性と権限を確認します。",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "役割未割り当て",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "アカウントは登録済みで有効ですが、役割が割り当てられていません。",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "無効",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "アカウントは無効です。権限の確認のため、割り当て済みの役割は引き続き表示されます。",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "注意",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "推奨される次の作業",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "該当なし",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "記録日時",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "記録者",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "リマインダー",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "変更前",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "変更後",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "変更内容",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "変更なし",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "これらの変更へのアクセス権がありません。",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "変更内容は消去されています。",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "事故が発生した日。",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "この事故を最初に知った日。",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "大文字2文字を使用してください。{unknownCode}は不明または国際を意味します。",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "事故が発生した国。",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "何が起きたか、この請求に必要な詳細を記入してください。",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "請求を行う人または会社。",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "この請求を担当する保険会社。",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用してください。空白、符号、コンマ、不要な先頭の0は使用できません。",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "請求者が求める金額。",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "ASCIIの大文字{length}文字（A–Z）です。",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "請求額の通貨。",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "空白を含まない表示可能なASCII文字を1～{maximumCharacters}文字使用してください。大文字・小文字は同じ案件として扱い、元の表記は保持します。",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "この案件に付ける独自の番号です。例：CLM-2026-0001。後で変更することはできません。",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "支払額を決定した日。",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "小数点の前は最大{maximumIntegerDigits}桁、後は最大{maximumFractionDigits}桁です。ASCII数字とピリオドを使用してください。空白、符号、コンマ、不要な先頭の0は使用できません。",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "支払うことを決定した金額。",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "ASCIIの大文字{length}文字（A–Z）です。",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "支払決定額の通貨。",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "全額が支払われた日。",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "案件が対応中か終了済みかを示します。案件の終了は支払の完了を意味しません。",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "この案件の業務がまだ継続中かどうか。",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "登録済みアカウントの正確なUUIDを使用してください。",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "この案件の担当者。",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "現在の状況と必要な対応。",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "この変更を識別するUUIDバージョン7です。同じ変更を再試行する場合にだけ再利用してください。",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "変更の結果を確認する必要がある場合に備えて、このIDを保管してください。",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "確認した案件の版です。",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "変更前に最新の案件を確認してください。",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "この変更が必要な理由。",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "対象の認証主体が人かサービスかを示します。",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "人またはサービスのアカウントを選択してください。",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "対象の認証主体の正確なHTTPS発行者。",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "このアカウントのサインインプロバイダー。",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "対象の認証主体の不変の主体識別子またはクライアントID。",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "サインインプロバイダーのアカウント識別子。",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "ClaimCoreで他の利用者に表示される名前。",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "この人への連絡先情報。入力は任意です。",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "異なる役割と案件の組み合わせを1～{maximumGrants}件指定します。案件は正確な案件番号で指定してください。",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "このアカウントに必要な役割と、それぞれの適用範囲を追加してください。",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "付与または取消の対象となる権限の役割。",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "このアカウントに持たせるアクセス権限。",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "このページで返す最大行数。",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "一度に表示する結果の件数。",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "前の応答に含まれる次ページのカーソルです。",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "続きの結果を取得します。",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "案件番号、請求者、保険会社から案件を検索します。",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "この案件の1つのリマインダーを識別する不変のID。",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "変更するリマインダーを選択してください。",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "Unicodeスカラー値で最大{maximumScalars}文字の、1行のプレーンテキストを使用してください。",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "次に行う必要があること。",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "グレゴリオ暦のYYYY-MM-DD形式を使用してください。過去と未来の日付を使用できます。",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "この作業の期限。",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "確認した業務の版です。金銭情報の版とは独立しています。",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "変更前に最新の業務内容を確認してください。",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "確認した当該リマインダーの正の版を指定してください。他のリマインダーの版は独立しています。",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "変更前に最新のリマインダーを確認してください。",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "役割の適用先が設置環境全体か1つの案件かを示します。",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "この役割の適用範囲を選択してください。",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "役割の割り当てや権限履歴を確認する登録済みアカウント。",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "アクセス権限を確認する対象を選択してください。",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "受理済みOPEN操作の不変のUUID。",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "案件を選択してください。",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "選択したライフサイクルの結果だけに絞ります。このフィルターを省略するとすべてを含めます。",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "選択した対応中または終了済みの案件だけに絞ります。消去済みの案件には状態がありません。",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "この案件の業務がまだ継続中かどうか。",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "未決定、決定済み、支払済みの案件だけに絞ります。消去済みの案件には支払の進捗がありません。",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "標準の案件ビューを選択してください。他のフィルターでさらに絞り込めます。",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "閲覧可能な範囲で、選択したアカウントが担当する案件に絞ります。他のフィルターでさらに絞り込めます。",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "標準のリマインダービューを選択してください。状態、担当、日付、文字列、親案件の明示的なフィルターでさらに絞り込めます。",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "案件情報、または業務とリマインダーを表示します。未指定の場合は両方を表示します。",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "表示する変更を選択してください。",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "案件番号、案件情報の最終変更、通知日、最も早い未完了リマインダーの日付で並べ替えます。情報の変更は新しい順、通知日とリマインダーの日付は古い順とし、日付がないものは最後に置きます。同じ値の場合は案件番号順です。",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "結果の並び順を選択してください。",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "閲覧できる案件を担当者で絞り込みます。閲覧権限だけでは担当者にはなりません。",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "最も早い未完了リマインダーに基づき、各案件を期限超過、本日、今後の予定、未完了リマインダーなし、対象外に分類します。個々のリマインダーの日付は別のフィルターを使用します。",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "現在の未完了、完了、取消済みの記録を選択します。省略すると未完了のリマインダーを選択します。",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "設置環境の業務日を基準に個々のリマインダーの日付を絞り込みます。案件の最も早い次回期限とは異なります。",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "終了または無効化した案件の業務を明示的に含めます。未完了のリマインダーの日付と状態は維持されます。",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "setまたはclearを選択してください。省略すると現在の担当アカウントを維持します。",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "この案件の担当者を設定または解除します。",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "登録情報を維持するか、選択した情報を更新します。省略した情報は変更されず、金額と通貨は同時に指定します。",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "変更する内容を選択してください。",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "決定を維持するか、選択した情報を更新するか、削除します。金額と通貨は同時に指定する必要があります。",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "変更する内容を選択してください。",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "記録された支払日を維持、置換、再確認、削除のいずれかで扱います。再確認では日付を維持し、削除しても返金は行いません。",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "変更する内容を選択してください。",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "実在する日付を入力してください。",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "国を示す2文字を入力してください。例：LV。",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "3文字の通貨コードを入力してください。例：EUR。",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "変更前に最新の記録を確認してください。",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "空白を含まない案件番号を入力してください。",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "ここで使用できる役割を選択してください。",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "同じ役割と適用範囲は1回だけ選択してください。",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "案件を登録しました。",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "登録情報を更新しました。",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "案件情報を訂正しました。",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "支払決定を記録しました。",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "支払決定を撤回しました。",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "支払を記録しました。",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "支払記録を削除しました。",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "案件を終了しました。",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "案件を再開しました。",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "案件を無効化しました。",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "案件は記録に残り、復帰するまで通常業務の対象から外れます。",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "案件の無効化を解除しました。",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "案件が再び有効になります。対応中または終了の状態は変わりません。",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "案件を消去しました。",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "ClaimCoreから案件の詳細、業務、リマインダーを完全に削除します。案件番号と変更の記録は残ります。",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "アカウントを登録しました。",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "役割とともにアカウントを追加しました。",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "アカウントの追加、プロフィールの保存、選択したすべての役割の記録をまとめて行います。",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "プロフィールを更新しました。",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "プロフィールを消去しました。",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "保存された名前と連絡先を完全に削除します。過去の変更には匿名のアカウント名が表示されます。",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "役割を付与しました。",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "このアカウントに選択した役割の割り当てを記録します。",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "役割を取り消しました。",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "選択した役割の割り当てを解除します。",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "アカウントを有効にしました。",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "アカウントを無効にしました。",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "このアカウントはClaimCoreにアクセスできなくなります。記録された変更は残ります。",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "案件業務を更新しました。",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "リマインダーを追加しました。",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "リマインダーを更新しました。",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "リマインダーを完了しました。",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "リマインダーを取り消しました。",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "リマインダーを再開しました。",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "リマインダーを完了し、次の作業を計画しました。",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "アクセス申請を却下しました。",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "アカウントの状態",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "担当案件",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "アカウント",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "変更対象のアカウント",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "記録番号",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "アクセス履歴",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "申請時の名前",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "申請時のユーザー名",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "申請時のメールアドレス",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "アクセス申請",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "最初の申請",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "最後の申請",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "権限",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "利用可能なビュー",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "設置環境ID",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "製品バージョン",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "業務日",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "タイムゾーン",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "合計",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "案件",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "通貨別の請求合計",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "通貨別の支払決定額の合計",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "はい",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "いいえ",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "案件",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "利用者とアクセス権限",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "操作",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "アクセス申請を却下しました。",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "詳細",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "利用者を検索",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "現在保存されている名前や連絡先を検索します。",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "最大{maximumCharacters}文字で指定してください。大文字・小文字は区別しません。",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "設置環境の役割を割り当て済み",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "案件単位の役割の割り当て",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "直接割り当てた役割",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "設置環境の役割",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "効果",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "記録された変更",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "記録された情報",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "これらの情報へのアクセス権がありません。",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "記録の詳細",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "記録しました。",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "既に記録されています。",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "案件の段階",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "現在の段階",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "完了",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "日付",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "金額",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "案件の無効化を解除しました。以前の段階の日付は記録された情報として残ります。",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "概要の更新日時",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "概要の記入者",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "利用できない操作",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "認証済み",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "契約識別子",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "サインアウトしました。",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "役割フィルター",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "無効なアカウントを含め、この役割が割り当てられた利用者を検索します。",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "設置環境全体または個々の案件での該当する役割の割り当てを検索します。このフィルターは、現在の権限やアカウントの有効・無効を確認しません。",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "利用者、プロフィール、役割を管理します。案件へのアクセス権は付与しません。",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "案件とその基本履歴を閲覧します。",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "請求情報を記録・訂正し、案件と基本履歴を閲覧します。新規案件を開始するには、すべての案件に対するこの役割が必要です。",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "決定の記録、案件の終了・再開、全履歴の閲覧を行います。担当、要約、リマインダーを管理できるのは個人だけです。新規案件を開始するには、すべての案件に対するこの役割が必要です。",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "支払日の記録・削除を行い、案件と基本履歴を閲覧します。送金はしません。",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "案件の無効化・復元・消去を行い、案件と基本履歴を閲覧します。個人専用です。",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "案件と全履歴を閲覧します。すべての案件に対してこの役割を持つ場合、利用者とアクセスも閲覧します。変更はできません。",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "案件登録",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "請求内容の更新",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "情報の訂正",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "支払決定の記録",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "支払決定の撤回",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "支払日の記録",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "記録された支払日の削除",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "案件終了",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "案件再開",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "案件の無効化",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "案件の復帰",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "案件の消去",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "{person}を担当者に設定",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "{person}の担当を解除",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "案件業務の更新",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "対応概要の追加",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "対応概要の変更",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "対応概要の削除",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "リマインダー「{action}」を計画（期限：{due}）",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "リマインダー「{action}」を更新",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "リマインダー「{action}」を完了",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "リマインダー「{action}」を取消",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "リマインダー「{action}」を再開（期限：{due}）",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "「{completedAction}」を完了し、「{nextAction}」を計画（期限：{nextDue}）",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "この変更の準備から時間が経ちすぎているか、端末の時計が正しくありません。再度準備してください。",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "変更の確認",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "変更が記録されたかを表示します。未記録の場合、準備から{window}で回答が確定します。",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "作業ビュー",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "今日の各ビューに含まれる案件とリマインダーの件数です。",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "履歴へのアクセスなし",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "履歴の基本情報",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "全履歴",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "リマインダー",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "このビューに表示する項目はありません。",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "YYYY-MM-DDを使用してください。例：2026-10-06。",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "最大{maximumCharacters}文字です。",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "任意です。{maximumScalars}文字以内で、改行できます。空白と表記は入力どおりに保持されます。制御文字と文字方向の制御文字は使用できません。",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes}分",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "サインイン提供元とアカウントIDを確認してください。",
+    "source": "5a875ddb5598"
+  }
 }

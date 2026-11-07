@@ -46,7 +46,7 @@ it("shows every ordered core admission effect including profile and differently 
     "anna@example.invalid",
     "Owner",
     "Case reader",
-    "Installation",
+    "All cases",
     "One case",
     "CASE/مرجع",
   ]) {

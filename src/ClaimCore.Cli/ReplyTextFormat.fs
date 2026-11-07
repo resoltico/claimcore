@@ -32,7 +32,9 @@ module internal ReplyTextFormat =
         ActorPresentation.displayName (MessageCatalogs.render language) actor
 
     let term language vocabulary value =
-        label language (Vocabulary.messageKey vocabulary value "label")
+        label
+            language
+            (PresentationKeys.code (Vocabulary.name vocabulary) (Vocabulary.token vocabulary value))
 
     let principalKind language value =
         term language PrincipalKind.vocabulary value

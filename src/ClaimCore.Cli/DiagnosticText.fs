@@ -88,13 +88,34 @@ module internal DiagnosticText =
                 (CliMessages.key CliMessage.NextLabel)
                 (MessageCatalogs.renderCli language message))
 
+    let private conflictEntry language (entry: CaseTimelineEntry) =
+        let name = actorName language entry.RecordedBy |> Some |> displayed language
+        let heading = name + " · " + instant entry.RecordedAt
+
+        let changes =
+            match entry.Changes with
+            | TimelineChanges.Withheld -> [ label language "label.changesWithheld" ]
+            | TimelineChanges.Erased -> [ label language "label.changesErased" ]
+            | TimelineChanges.Disclosed disclosure ->
+                disclosure.Items
+                |> List.collect TimelineCsv.scalarDifferences
+                |> List.map (fun (key, before, after) ->
+                    let field =
+                        Vocabulary.tryParse BusinessField.vocabulary key
+                        |> Option.map (FieldPresentation.labelId >> label language)
+                        |> Option.defaultValue (TerminalText.data key)
+
+                    field + ": " + TerminalText.data before + " → " + TerminalText.data after)
+
+        heading :: changes
+
     let private conflictLines language reference =
         function
         | Refusal.RevisionConflict conflict ->
             match conflict.Changes with
             | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
             | Some(ConflictChanges.Page page) ->
-                []
+                (page.Entries |> List.collect (conflictEntry language))
                 @ (match reference, page.NextCursor with
                    | Some reference, Some cursor ->
                        [

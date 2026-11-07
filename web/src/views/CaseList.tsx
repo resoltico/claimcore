@@ -48,9 +48,7 @@ type Page = ReturnType<typeof useWorklist>;
 const WorklistEmpty = ({ page, filtered }: { page: Page; filtered: boolean }) => {
   const p = usePresentation();
   const emptyMessage =
-    filtered || page.query.view === undefined
-      ? p.text("ui.noCasesForView")
-      : p.text(`view.${page.query.view}.empty`);
+    filtered || page.query.view === undefined ? p.text("ui.noCasesForView") : p.text("view.empty");
   return (
     <p>
       {emptyMessage}{" "}

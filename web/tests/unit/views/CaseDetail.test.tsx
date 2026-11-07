@@ -35,7 +35,7 @@ it("erased cases retain their exact reference and revision but expose no facts o
       onAct={vi.fn()}
     />,
   );
-  expect(await screen.findByText(/Erased — only/u)).toBeVisible();
+  expect(await screen.findByText(/Erased\. Only/u)).toBeVisible();
   expect(document.body).toHaveTextContent("ERASED-1");
   expect(document.querySelector('.record-view [data-entry="claimantName"]')).toBeNull();
   expect(screen.queryByText("Available acts")).toBeNull();

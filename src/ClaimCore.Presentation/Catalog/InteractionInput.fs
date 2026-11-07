@@ -59,7 +59,14 @@ module InteractionInput =
     let messageKey input part =
         match input with
         | InteractionInput.Target(InputTarget.Field field) ->
-            Vocabulary.messageKey BusinessField.vocabulary field part
+            if part = "rule" then
+                FieldPresentation.ruleId field
+            else
+                Vocabulary.messageKey BusinessField.vocabulary field part
+        | InteractionInput.Target(InputTarget.Reason | InputTarget.Text | InputTarget.ProfileDisplayName | InputTarget.ProfileContact) when
+            part = "rule"
+            ->
+            "scalar.text.guidance"
         | InteractionInput.Target(InputTarget.Group group) ->
             Vocabulary.messageKey RecordGroup.vocabulary group part
         | InteractionInput.Target target -> Vocabulary.messageKey InputTarget.vocabulary target part
@@ -98,3 +105,17 @@ module InteractionInput =
              | _ -> Some(InteractionInput.Target target)))
         @ extras
         @ [ InteractionInput.WorkChoice BusinessField.ResponsibleActor ]
+
+    let hintId input =
+        match input with
+        | InteractionInput.Lifecycle
+        | InteractionInput.Progress
+        | InteractionInput.CaseView
+        | InteractionInput.ResponsibleActorFilter
+        | InteractionInput.ReminderView
+        | InteractionInput.Assignment
+        | InteractionInput.Due
+        | InteractionInput.ReminderState
+        | InteractionInput.ReminderDue
+        | InteractionInput.IncludeInactive -> None
+        | _ -> Some(messageKey input "hint")

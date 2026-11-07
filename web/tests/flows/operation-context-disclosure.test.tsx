@@ -81,7 +81,7 @@ it("requires an explicit warning before discarding a possibly accepted request",
   await screen.findByRole("button", { name: "Send again" });
   await user.click(screen.getAllByRole("button", { name: "Close" })[0]!);
   const dialog = screen.getByRole("dialog");
-  expect(dialog).toHaveTextContent("does not cancel it");
+  expect(dialog).toHaveTextContent("may already be recorded");
   expect(close).not.toHaveBeenCalled();
   await user.click(within(dialog).getByRole("button", { name: "Discard and leave" }));
   expect(close).toHaveBeenCalledOnce();

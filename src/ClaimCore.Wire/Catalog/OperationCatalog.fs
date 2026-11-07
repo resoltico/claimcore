@@ -39,7 +39,7 @@ module OperationCatalog =
 
     let consequenceId (operation: CatalogOperation) =
         match operation.SelectedAct, operation.Endpoint with
-        | Some _, _ -> Some(message operation "consequence")
+        | Some act, _ -> Some(PresentationKeys.consequence act)
         | _ -> None
 
     let doneId (operation: CatalogOperation) =

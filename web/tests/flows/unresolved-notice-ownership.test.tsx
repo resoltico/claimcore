@@ -75,7 +75,9 @@ it("automatically checks and clears final absence without resubmitting a change"
     expect.any(AbortSignal),
   );
   expect(execute).not.toHaveBeenCalled();
-  expect(await screen.findByText("This change was not recorded for your account.")).toBeVisible();
+  expect(
+    await screen.findByText("This change was not recorded. You can prepare it again."),
+  ).toBeVisible();
 });
 
 it("shows the deadline and repeats pending checks until a final answer", async () => {
@@ -87,7 +89,9 @@ it("shows the deadline and repeats pending checks until a final answer", async (
     .mockResolvedValueOnce(waiting(record.operationId));
   render(view(requester));
   expect(
-    await screen.findByText("Waiting for a final answer until 2026-11-07T10:10:00.000000Z."),
+    await screen.findByText(
+      "Not confirmed yet. The answer will be final by 2026-11-07T10:10:00.000000Z.",
+    ),
   ).toBeVisible();
   expect(await testJournal.list(recoveryScope)).toEqual([record]);
   await waitFor(

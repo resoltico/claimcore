@@ -59,7 +59,7 @@ it("presents closed correction targets through groups while preserving exact act
   expect(en.authoredTargetLabel("registration.action")).toBe("Claim · Action");
   expect(en.authoredTargetLabel("decision.action")).toBe("Payment decision · Action");
   expect(en.authoredTargetLabel("payment.action")).toBe("Payment · Action");
-  expect(en.authoredTargetLabel("claimedAmount")).toBe("Amount claimed");
+  expect(en.authoredTargetLabel("claimedAmount")).toBe("Claimed amount");
   expect(en.term("correction", "REPLACE")).toBe("Replace details");
   for (const language of ["lv", "ar"] as const) {
     const p = createPresenter({

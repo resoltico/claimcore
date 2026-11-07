@@ -66,7 +66,7 @@ it("shows core account state and raw roles with one native person link and no ro
     expect(header).toHaveAttribute("scope", "col");
   }
   const link = within(table).getByRole("link", {
-    name: `Human · ${displayName} Enabled with roles`,
+    name: `Person · ${displayName} Enabled with roles`,
   });
   expect(within(table).getAllByRole("link")).toHaveLength(1);
   expect(within(table).getAllByRole("cell")).toHaveLength(4);
@@ -133,7 +133,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
     },
   });
   const user = userEvent.setup();
-  await user.click(screen.getByRole("button", { name: "More actors" }));
+  await user.click(screen.getByRole("button", { name: "More people" }));
   expect(listing.mock.calls[1]![1]).toEqual({ limit: 50, cursor: "opaque-next" });
   const literal = "Ａ名+س@example.invalid";
   await user.type(screen.getByRole("searchbox", { name: "Search people" }), literal);
@@ -143,7 +143,7 @@ it("sends literal name/contact and raw role filters to the server, resets its cu
   expect(listing.mock.calls[2]![1]).toEqual({ limit: 50, text: literal, role: "CASE_READER" });
   expect(listing.mock.calls[1]![2]?.aborted).toBe(true);
   expect(screen.queryByText(displayName)).toBeNull();
-  expect(screen.queryByRole("button", { name: "More actors" })).toBeNull();
+  expect(screen.queryByRole("button", { name: "More people" })).toBeNull();
   await act(async () => {
     pending.resolve({
       kind: "outcome",

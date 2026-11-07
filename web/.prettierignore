@@ -5,3 +5,5 @@ src/generated/core-catalogs.ts
 src/generated/chrome-catalogs.ts
 src/generated/chrome-boot.ts
 src/generated/catalog-loaders.ts
+src/generated/catalog-*.ts
+src/generated/translation-report.json

@@ -80,7 +80,7 @@ let tests =
                     (OperationText.getLines
                         "en"
                         (Outcome.Succeeded PresentedLookupResult.NotAccepted))
-                    [ "This change was not recorded for your account." ]
+                    [ "This change was not recorded. You can prepare it again." ]
                     "Only actual final nonacceptance gets this completion"
 
                 Expect.equal

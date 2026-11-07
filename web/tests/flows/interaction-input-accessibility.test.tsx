@@ -49,7 +49,7 @@ it.each(["en", "lv", "ar"] as const)(
       );
       expect(input).toHaveAccessibleName(name);
       expect(input).toHaveAccessibleDescription(
-        `${meaning} ${catalogs[language]["diagnostic.PRINCIPAL_FORMAT"]}`,
+        `${meaning} ${catalogs[language]["diagnostic.PRINCIPAL_FORMAT.gui"]}`,
       );
       expect(input).toHaveAttribute("aria-invalid", "true");
       await user.click(screen.getByText(name, { exact: true, selector: "label" }));

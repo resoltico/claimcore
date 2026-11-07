@@ -134,7 +134,7 @@ it.each(["INSTALLATION", "CASE"] as const)(
       }),
     ).toHaveLength(1);
     expect(
-      within(dialog).getAllByText(kind === "CASE" ? "One case" : "Installation", {
+      within(dialog).getAllByText(kind === "CASE" ? "One case" : "All cases", {
         exact: true,
       }),
     ).toHaveLength(1);
@@ -265,7 +265,7 @@ it("erasure review retains its act meaning and external-copy limitation", () => 
       )}
     />,
   );
-  expect(screen.getByRole("dialog")).toHaveTextContent(/Copies held elsewhere remain/u);
+  expect(screen.getByRole("dialog")).toHaveTextContent(/Copies held elsewhere are not affected/u);
 });
 
 it("shows the core's profile values in authority review before consent", () => {

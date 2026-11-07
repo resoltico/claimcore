@@ -5,7 +5,10 @@ open ClaimCore.Presentation
 module internal ViewText =
     let private renderWithHeader includeHeader options language =
         function
-        | View.Record sections -> TextDescriptorValue.sections language sections
+        | View.Record sections ->
+            match TextDescriptorValue.sections language sections with
+            | [] -> [ ReplyTextFormat.label language "view.empty" ]
+            | lines -> lines
         | View.Table(columns, rows) ->
             let definitions =
                 columns

@@ -3,6 +3,7 @@ module ClaimCore.ContractGenerator.Program
 open System
 open System.IO
 open ClaimCore.Domain
+open ClaimCore.Presentation
 open ClaimCore.ContractGeneration
 
 let private invocation arguments =
@@ -62,6 +63,40 @@ let main arguments =
     let bootChrome =
         MessageGeneration.chromeBootstrapSource (CatalogValidation.validate ())
 
+    let auxiliary =
+        [
+            chromeRuntimePath, runtimeChrome
+            chromeBootPath, bootChrome
+            coreRuntimePath, runtimeCore
+            loadersPath, loaders
+            chromePath
+            |> Option.map (fun path ->
+                Path.Combine(Path.GetDirectoryName path |> nonNull, "translation-report.json")),
+            System.Text.Json.JsonSerializer.Serialize(AuthoredMessages.issues ())
+            |> System.Text.Encoding.UTF8.GetBytes
+            yield!
+                LocalizationPolicy.languages
+                |> List.collect (fun language ->
+                    [
+                        chromePath
+                        |> Option.map (fun path ->
+                            Path.Combine(
+                                Path.GetDirectoryName path |> nonNull,
+                                "catalog-" + language + ".ts"
+                            )),
+                        MessageGeneration.languageSource language
+                        chromePath
+                        |> Option.map (fun _ ->
+                            Path.GetFullPath(
+                                "src/ClaimCore.Cli/Localization/Runtime/" + language + ".json"
+                            )),
+                        MessageGeneration.cliSource language
+                    ])
+        ]
+
+    for issue in AuthoredMessages.issues () do
+        eprintfn "Translation %s: %s %s (English fallback)." issue.Reason issue.Language issue.Key
+
     if checking then
         let referenceMatches =
             documentationPath
@@ -73,18 +108,14 @@ let main arguments =
             |> Option.forall (fun path -> File.Exists path && File.ReadAllBytes path = chrome)
 
         let auxiliaryMatches =
-            [
-                chromeRuntimePath, runtimeChrome
-                chromeBootPath, bootChrome
-                coreRuntimePath, runtimeCore
-                loadersPath, loaders
-            ]
+            auxiliary
             |> List.forall (fun (path, bytes) ->
                 path
                 |> Option.forall (fun path -> File.Exists path && File.ReadAllBytes path = bytes))
 
         if
-            ArtifactPublication.check output artifacts
+            (AuthoredMessages.requiredIssues ()).IsEmpty
+            && ArtifactPublication.check output artifacts
             && referenceMatches
             && chromeMatches
             && auxiliaryMatches
@@ -103,13 +134,7 @@ let main arguments =
             Directory.CreateDirectory(Path.GetDirectoryName path |> nonNull) |> ignore
             File.WriteAllBytes(path, chrome))
 
-        for path, bytes in
-            [
-                chromeRuntimePath, runtimeChrome
-                chromeBootPath, bootChrome
-                coreRuntimePath, runtimeCore
-                loadersPath, loaders
-            ] do
+        for path, bytes in auxiliary do
             path |> Option.iter (fun path -> File.WriteAllBytes(path, bytes))
 
         documentationPath

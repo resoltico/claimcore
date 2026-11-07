@@ -1,679 +1,2478 @@
 {
-  "act.AMEND_REGISTRATION.label": "تحديث بيانات المطالبة",
-  "act.AMEND_REGISTRATION.meaning": "حدّث بيانات التسجيل المحددة. تبقى البيانات غير المحددة ومرجع الملف دون تغيير.",
-  "act.CLEAR_PAYMENT.label": "تصحيح سجل دفع خاطئ",
-  "act.CLEAR_PAYMENT.meaning": "إزالة تاريخ دفع سُجّل خطأً. هذا ليس استردادًا أو عكسًا لتحويل فعلي. يبقى السجل السابق.",
-  "act.CLOSE.label": "إغلاق الملف",
-  "act.CLOSE.meaning": "تعيين حالة الملف إلى مغلق. الإغلاق لا يعني حصول أي دفع.",
-  "act.CORRECT.label": "تصحيح وقائع الملف",
-  "act.CORRECT.meaning": "صحح البيانات الحالية المحددة معًا. يتطلب تغيير قرار مدفوع تأكيد سجل الدفع صراحة أو استبداله أو مسحه. مسح تاريخ الدفع لا يعيد الأموال.",
-  "act.DECIDE.label": "تسجيل قرار الدفع",
-  "act.DECIDE.meaning": "تسجيل أو استبدال المبلغ والعملة المقررين. لا يرسل ذلك أموالًا.",
-  "act.DISABLE.label": "تعطيل الحساب",
-  "act.DISABLE.meaning": "عطّل هذا الحساب. وتبقى تغييراته المسجلة.",
-  "act.ENABLE.label": "تمكين الحساب",
-  "act.ENABLE.meaning": "فعّل هذا الحساب بأدواره الحالية.",
-  "act.ERASE.label": "محو الملف",
-  "act.ERASE.meaning": "امحُ هذا الملف وتفاصيله من ClaimCore. وتبقى النسخ المحفوظة في أماكن أخرى.",
-  "act.ERASE_PROFILE.label": "محو الملف الشخصي",
-  "act.ERASE_PROFILE.meaning": "إزالة اسم العرض وبيانات الاتصال المحفوظة لهذا الحساب نهائياً. تبقى هويته وصلاحيات وصوله والعمل المسجل.",
-  "act.GRANT.label": "منح دور",
-  "act.GRANT.meaning": "عيّن الدور المحدد لهذا الحساب.",
-  "act.OPEN.label": "فتح ملف",
-  "act.OPEN.meaning": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
-  "act.PROVISION_OWNER.label": "تعيين المالك الأول",
-  "act.RECORD_PAYMENT.label": "تسجيل الدفع الفعلي",
-  "act.RECORD_PAYMENT.meaning": "تسجيل تاريخ الدفع الفعلي لكامل المبلغ المقرر. لا ينفّذ ذلك التحويل ولا يتحقق منه.",
-  "act.REGISTER.label": "تسجيل حساب",
-  "act.REGISTER.meaning": "أضف حسابًا مسجلًا باسم وبيانات اتصال اختيارية. ويمكن تعيين الأدوار بشكل منفصل.",
-  "act.REINSTATE.label": "إعادة سجل الملف",
-  "act.REINSTATE.meaning": "استعادة العمل المعتاد في سجل ملف مبطل.",
-  "act.REMINDER_CANCEL.label": "إلغاء التذكير",
-  "act.REMINDER_CANCEL.meaning": "إلغاء هذا الإجراء المعلق دون حذف سجله. الإلغاء يختلف عن الإكمال.",
-  "act.REMINDER_COMPLETE.label": "إكمال التذكير",
-  "act.REMINDER_COMPLETE.meaning": "تسجيل أنك وضعت علامة «مكتمل» على الإجراء المعلّق. يُسمح بإكمال آخر تذكير، وقد يبقى الملف بحاجة إلى إجراء تالٍ.",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": "إكمال وتخطيط الإجراء التالي",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": "أكمل هذا التذكير وخطط للإجراء التالي معًا.",
-  "act.REMINDER_CREATE.label": "إضافة تذكير",
-  "act.REMINDER_CREATE.meaning": "خطط للإجراء التالي لهذا الملف.",
-  "act.REMINDER_REOPEN.label": "إعادة فتح التذكير",
-  "act.REMINDER_REOPEN.meaning": "أعد فتح هذا التذكير بموعد جديد.",
-  "act.REMINDER_UPDATE.label": "تحديث التذكير",
-  "act.REMINDER_UPDATE.meaning": "تغيير الإجراء أو التاريخ لهذا التذكير المعلق. تبقى النسخ السابقة في السجل.",
-  "act.REOPEN.label": "إعادة فتح الملف",
-  "act.REOPEN.meaning": "تعيين حالة الملف إلى مفتوح مع الاحتفاظ ببقية الحقول والسجل.",
-  "act.REVOKE.label": "سحب دور",
-  "act.REVOKE.meaning": "أزل تعيين الدور المحدد.",
-  "act.SET_PROFILE.label": "تحديث الملف الشخصي",
-  "act.SET_PROFILE.meaning": "تسجيل اسم عرض وبيانات اتصال اختيارية للحساب. لا يغيّر ذلك هويته أو صلاحيات وصوله.",
-  "act.UPDATE_WORK.label": "تحديث عمل الملف",
-  "act.UPDATE_WORK.meaning": "غيّر المسؤول أو حدّث ملخص العمل.",
-  "act.VOID.label": "إبطال سجل الملف",
-  "act.VOID.meaning": "إيقاف عمليات الملف مع الاحتفاظ بالملف وسجله.",
-  "act.WITHDRAW_DECISION.label": "سحب قرار الدفع",
-  "act.WITHDRAW_DECISION.meaning": "إزالة حقول القرار غير المدفوع مع الاحتفاظ بالسجل السابق.",
-  "actFamily.BUSINESS.label": "مهام الملف",
-  "actFamily.STEWARDSHIP.label": "الإشراف على البيانات",
-  "actorAvailability.AVAILABLE.label": "متاح",
-  "actorAvailability.AVAILABLE.meaning": "الحساب مفعّل ومتاح في هذا السياق.",
-  "actorAvailability.DISABLED.label": "معطّل",
-  "actorAvailability.DISABLED.meaning": "تم تعطيل الحساب.",
-  "actorAvailability.NOT_ELIGIBLE.label": "غير مؤهل",
-  "actorAvailability.NOT_ELIGIBLE.meaning": "لا يمكن حالياً إسناد هذا العمل إلى الحساب.",
-  "assignment.MINE.label": "المسندة إليّ",
-  "assignment.MINE.meaning": "الملفات المرئية حاليًا والمسندة إلى حسابك. صلاحية القراءة وحدها لا تسند المسؤولية.",
-  "assignment.UNASSIGNED.label": "دون مسؤول",
-  "attention.ASSIGNEE_UNAVAILABLE.label": "المسؤول غير متاح",
-  "attention.DUE_TODAY.label": "موعدها اليوم",
-  "attention.NO_NEXT_ACTION.label": "لا يوجد إجراء تالٍ",
-  "attention.OVERDUE.label": "متأخرة",
-  "attention.READY_TO_CLOSE.label": "جاهز للإغلاق",
-  "attention.UNASSIGNED.label": "بلا مسؤول",
-  "capability.CLOSE.label": "الإغلاق وإعادة الفتح",
-  "capability.DECIDE.label": "تسجيل القرار",
-  "capability.MANAGE_AUTHORITY.label": "إدارة الوصول",
-  "capability.MANAGE_CASE_WORK.label": "إدارة عمل الملف",
-  "capability.READ_AUTHORITY.label": "قراءة صلاحيات الوصول",
-  "capability.READ_CASE.label": "قراءة الملف",
-  "capability.READ_HISTORY.label": "قراءة السجل",
-  "capability.READ_HISTORY_FULL.label": "قراءة السجل الكامل",
-  "capability.RECORD_PAYMENT.label": "تسجيل الدفع",
-  "capability.REGISTER.label": "تسجيل وقائع الملف",
-  "capability.STEWARD.label": "الإشراف على بيانات الملف",
-  "caseOrder.FOLLOW_UP.label": "تاريخ المتابعة",
-  "caseOrder.NOTIFIED.label": "الأقدم إخطارًا أولًا",
-  "caseOrder.RECENT.label": "أحدث تغييرات الحقائق",
-  "caseOrder.REFERENCE.label": "مرجع الملف",
-  "correction.CLEAR.label": "مسح القيمة المسجّلة",
-  "correction.KEEP.label": "إبقاء التفاصيل الحالية",
-  "correction.REAFFIRM.label": "تأكيد سجل الدفع الحالي",
-  "correction.REPLACE.label": "استبدال التفاصيل",
-  "correction.UPDATE.label": "تحديث البيانات المحددة",
-  "diagnostic.ACTOR_ALREADY_REGISTERED": "هذه الهوية مسجلة بالفعل.",
-  "diagnostic.ACTOR_ID_REQUIRED": "أدخل معرّف UUID لحساب غير فارغ.",
-  "diagnostic.ACTOR_UNKNOWN": "هذه الهوية غير مسجلة.",
-  "diagnostic.ASSIGNEE_UNAVAILABLE": "لا يمكن حاليًا إسناد هذا الملف إلى الحساب المحدد.",
-  "diagnostic.CALENDAR_DATE_REQUIRED": "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
-  "diagnostic.CASE_ALREADY_EXISTS": "مرجع الملف موجود بالفعل.",
-  "diagnostic.CHRONOLOGICAL_ORDER": "الترتيب الزمني للتواريخ غير صالح.",
-  "diagnostic.CONTROL_CHARACTERS": "لا تُقبل محارف التحكم.",
-  "diagnostic.CORRECTION_NO_CHANGES": "اختر تصحيحًا واقعيًا واحدًا على الأقل يغيّر الملف الحالي.",
-  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط.",
-  "diagnostic.COUNTRY_FORMAT": "استخدم حرفي ASCII كبيرين لرمز البلد.",
-  "diagnostic.CURRENCY_FORMAT": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
-  "diagnostic.DECIMAL_FORMAT": "استخدم نصًا عشريًا غير سالب: حتى {maximumIntegerDigits} رقمًا صحيحًا و{maximumFractionalDigits} أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
-  "diagnostic.EXPECTED_REVISION_RANGE": "استخدم رقم مراجعة صحيحًا صالحًا لهذا الطلب، لا يتجاوز 9007199254740991.",
-  "diagnostic.FORMATTING_CHARACTER": "لا تُقبل محارف التنسيق في البيانات الجديدة.",
-  "diagnostic.FUTURE_DATE": "لا يمكن استخدام تاريخ مستقبلي لتسجيل واقعة حدثت بالفعل.",
-  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": "يتطلب هذا الدور هوية شخص.",
-  "diagnostic.IDEMPOTENCY_CONFLICT": "يخص معرّف العملية هذا محتوى أمر مختلفًا. لا تعِد استخدامه.",
-  "diagnostic.INVALID_CURSOR": "لم يعد مؤشر متابعة الصفحة صالحًا. أعد تحميل القائمة من البداية.",
-  "diagnostic.INVALID_INPUT": "عدد مشكلات الإدخال: {issueCount}.",
-  "diagnostic.LAST_OWNER": "يجب أن يبقى مالك بشري واحد مفعّل على الأقل.",
-  "diagnostic.MALFORMED_UNICODE": "لا يُقبل Unicode غير السليم.",
-  "diagnostic.NOT_AUTHORIZED": "لإجراء هذا التغيير تحتاج إلى دور {required}. اطلبه من أحد المالكين.",
-  "diagnostic.OPERATION_ID_REQUIRED": "Use a UUIDv7 operation ID.",
-  "diagnostic.PAGE_LIMIT_RANGE": "استخدم قيمة من 1 إلى {maximumPageSize}.",
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "لتحديث قرار له دفعة مسجّلة، أكّد سجل الدفع مجددًا أو استبدله أو امسحه صراحةً.",
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا.",
-  "diagnostic.PRINCIPAL_FORMAT": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
-  "diagnostic.REFERENCE_FORMAT": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات.",
-  "diagnostic.REGISTER_MAINTENANCE": "كتابة السجل متوقفة للصيانة. يمكنك متابعة القراءة والتحقق من حالة العمليات.",
-  "diagnostic.REMINDER_ID_REQUIRED": "استخدم معرف UUID غير فارغ للتذكير.",
-  "diagnostic.REMINDER_NO_CHANGES": "يجب أن يغير تحديث التذكير الإجراء أو التاريخ.",
-  "diagnostic.RESOURCE_UNAVAILABLE": "هذا المورد غير متاح.",
-  "diagnostic.REVISION_CONFLICT": "اقرأ الملف الحالي قبل إنشاء طلب معدّل.",
-  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": "ليس لهذا الدور أي صلاحية تنطبق على النطاق المحدد.",
-  "diagnostic.SURROUNDING_WHITESPACE": "لا تُقبل المسافات في بداية القيمة أو نهايتها.",
-  "diagnostic.TEXT_REQUIRED": "يجب إدخال قيمة غير فارغة.",
-  "diagnostic.TOO_LONG": "يجب ألا تتجاوز القيمة {maximumCharacters} محارف Unicode.",
-  "diagnostic.UPDATE_REQUIRED": "حدد قيمة واحدة على الأقل لتحديثها أو مسحها.",
-  "diagnostic.WORK_NO_CHANGES": "لن تتغير أي قيمة في عمل الملف.",
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": "القرار بمبلغ صفر ليس دفعًا.",
-  "due.INACTIVE.label": "عمل غير نشط",
-  "due.OVERDUE.label": "متأخرة",
-  "due.TODAY.label": "موعدها اليوم",
-  "due.UNSCHEDULED.label": "لا يوجد تذكير معلق",
-  "due.UPCOMING.label": "قادمة",
-  "endpoint.authority.grants.label": "قراءة صلاحيات الجهة",
-  "endpoint.authority.grants.meaning": "قراءة صفحة من صلاحيات الجهة المحددة.",
-  "endpoint.authority.history.label": "سجل الصلاحيات",
-  "endpoint.authority.history.meaning": "عرض تغييرات الصلاحيات من الأحدث إلى الأقدم، مع إمكانية تصفيتها حسب الجهة المستهدفة.",
-  "endpoint.authority.list.label": "قائمة الجهات",
-  "endpoint.authority.list.meaning": "قراءة الجهات المسجلة وأفعال الصلاحيات المتاحة.",
-  "endpoint.case.assignees.label": "الحسابات المؤهلة للمسؤولية",
-  "endpoint.case.assignees.meaning": "اعرض حسابات الأشخاص المفعّلة والمؤهلة حاليًا لتولي هذا الملف. يستخدم الاختيار معرّف الحساب الدقيق.",
-  "endpoint.case.get.label": "قراءة ملف",
-  "endpoint.case.get.meaning": "قراءة العرض المقبول الحالي للملف والأفعال المتاحة.",
-  "endpoint.case.list.label": "قائمة الملفات",
-  "endpoint.case.list.meaning": "قراءة صفحة من الملفات المرئية للجهة.",
-  "endpoint.case.summary.label": "ملخص الملفات",
-  "endpoint.case.summary.meaning": "عدّ الملفات المرئية المطابقة وجمع المبالغ المطالب بها والمستحقة للدفع لكل عملة على حدة.",
-  "endpoint.case.timeline.label": "الخط الزمني للملف",
-  "endpoint.case.timeline.meaning": "اعرض تغييرات وقائع الملف والعمل والتذكيرات وفق صلاحيات الوصول الحالية.",
-  "endpoint.context.label": "قراءة السياق",
-  "endpoint.context.meaning": "قراءة قدرات الجهة الموثقة والموارد المتاحة.",
-  "endpoint.reminder.get.label": "عرض التذكير",
-  "endpoint.reminder.get.meaning": "قراءة التذكير الحالي بحسب ملفه ومعرفه الثابت، بما يشمل السجلات المنتهية. تتطلب النسخ السابقة صلاحية السجل الكامل.",
-  "endpoint.reminder.list.label": "قائمة التذكيرات",
-  "endpoint.reminder.list.meaning": "صفحات محدودة للتذكيرات المتاحة. افتراضيا ترتب الإجراءات المعلقة للملفات النشطة المفتوحة بحسب التاريخ والمعرف الثابت.",
-  "fault.CORE_INTERNAL_ERROR": "حدث خطأ داخلي. توقف وتحقق من السبب.",
-  "fault.CORE_OPERATION_CONTENT_CONFLICT": "محتوى العملية المخزّن غير متسق. توقف وتحقق من السبب.",
-  "fault.CORE_SCHEMA_MISMATCH": "يختلف مخطط قاعدة البيانات عن هذا الإصدار من البرنامج. حافظ على هذا التثبيت واستخدم إصدار البرنامج المطابق له.",
-  "fault.CORE_STORE_INTEGRITY_ERROR": "لم تجتز البيانات المخزنة التحقق. توقف وشغّل verify.",
-  "fault.CORE_STORE_UNAVAILABLE": "المخزن غير متاح. أعد المحاولة.",
-  "field.caseReference.label": "مرجع الملف لدى المعالج",
-  "field.claimantName.label": "اسم المطالب",
-  "field.claimedAmount.label": "المبلغ المطالب به",
-  "field.claimedCurrency.label": "عملة المبلغ المطالب به",
-  "field.cursor.label": "مؤشر التصفح",
-  "field.expectedReminderRevision.label": "إصدار التذكير الذي راجعته",
-  "field.expectedRevision.label": "إصدار الملف الذي راجعته",
-  "field.expectedWorkRevision.label": "إصدار العمل الذي راجعته",
-  "field.handlingSummary.label": "ملخص المعالجة",
-  "field.incidentCountry.label": "بلد الواقعة",
-  "field.incidentDate.label": "تاريخ الواقعة",
-  "field.incidentDescription.label": "وصف الحادث",
-  "field.incidentNotificationDate.label": "تاريخ الإخطار الأول بالواقعة (FNOL)",
-  "field.insurerName.label": "شركة التأمين المسؤولة",
-  "field.limit.label": "حجم الصفحة",
-  "field.operationId.label": "معرّف العملية",
-  "field.payableAmount.label": "المبلغ الواجب دفعه",
-  "field.payableCurrency.label": "عملة المبلغ الواجب دفعه",
-  "field.paymentDate.label": "تاريخ الدفع",
-  "field.paymentDecisionDate.label": "تاريخ قرار الدفع",
-  "field.principal.issuer.label": "مُصدر الهوية",
-  "field.principal.kind.label": "النوع",
-  "field.principal.subject.label": "معرّف المستخدم أو العميل",
-  "field.profile.contact.label": "بيانات الاتصال",
-  "field.profile.displayName.label": "اسم العرض",
-  "field.reason.label": "سبب إدارة السجل",
-  "field.reminderAction.label": "الإجراء",
-  "field.reminderDueDate.label": "تاريخ الاستحقاق",
-  "field.reminderId.label": "معرف التذكير",
-  "field.responsibleActor.label": "الحساب المسؤول",
-  "field.role.label": "الدور",
-  "field.status.label": "حالة الملف",
-  "field.text.label": "نص البحث",
-  "group.decision.label": "قرار الدفع",
-  "group.payment.label": "الدفع",
-  "group.registration.label": "المطالبة",
-  "headline.CLOSED.label": "مغلق",
-  "headline.DECIDED.label": "بقرار",
-  "headline.ERASED.label": "تم المحو",
-  "headline.PAID.label": "مدفوع",
-  "headline.UNDECIDED.label": "دون قرار",
-  "headline.VOIDED.label": "مُبطَل",
-  "host.ANTIFORGERY_REJECTED": "رُفض التحقق من الطلب.",
-  "host.BODY_TOO_LARGE": "محتوى الطلب كبير جدًا.",
-  "host.CONNECTION_REJECTED": "رُفض الاتصال.",
-  "host.CONTRACT_MISMATCH": "عقد العميل مختلف. أعد تحميل الصفحة أو استخدم عميلًا متوافقًا.",
-  "host.ENDPOINT_MISSING": "لم يُعثر على نقطة النهاية.",
-  "host.INPUT_INVALID": "المدخلات لا تطابق عقد نقطة النهاية.",
-  "host.INSTALLATION_MISMATCH": "تغيّر التثبيت. حدّث السياق المعتمد قبل إعداد طلب. لم يبدأ هذا الطلب.",
-  "host.INTERNAL": "تعذر إكمال الطلب.",
-  "host.MEDIA_TYPE_REJECTED": "استخدم نوع المحتوى المحدد لنقطة النهاية.",
-  "host.METHOD_REJECTED": "الطريقة غير مدعومة.",
-  "host.ORIGIN_REJECTED": "رُفض مصدر الطلب.",
-  "host.RATE_LIMITED": "قبول الطلبات مشغول حاليًا.",
-  "host.RESPONSE_FAILED": "تعذر تسليم استجابة العملية المكتملة.",
-  "host.SESSION_REJECTED": "رُفضت المصادقة.",
-  "input.actorId.label": "معرّف الجهة",
-  "input.assignment.label": "المسؤولية",
-  "input.caseId.label": "معرّف الملف",
-  "input.caseView.label": "عرض الملفات",
-  "input.due.label": "حالة المتابعة",
-  "input.includeInactive.label": "تضمين عمل الملفات غير النشطة",
-  "input.lifecycle.label": "دورة حياة الملف",
-  "input.order.label": "الترتيب",
-  "input.progress.label": "تقدم الدفع",
-  "input.reminderDue.label": "استحقاق التذكير",
-  "input.reminderState.label": "حالة التذكير",
-  "input.reminderView.label": "طريقة عرض التذكيرات",
-  "input.responsibleActorAction.label": "تغيير المسؤولية",
-  "input.scope.label": "نطاق الصلاحية",
-  "input.status.label": "مرشح الحالة",
-  "input.timelineFilter.label": "إدخالات الخط الزمني",
-  "interactionEffect.CHANGE_AUTHORITY.label": "تغيير صلاحيات الوصول",
-  "interactionEffect.CHANGE_LIFECYCLE.label": "تغيير دورة حياة الملف",
-  "interactionEffect.CHANGE_REMINDER.label": "تغيير التذكير",
-  "interactionEffect.CHANGE_STATUS.label": "تغيير حالة الفتح أو الإغلاق",
-  "interactionEffect.CHANGE_WORK.label": "تغيير عمل الملف",
-  "interactionEffect.ERASE_PAYLOAD.label": "محو بيانات الملف بصورة لا رجعة فيها",
-  "interactionEffect.READ.label": "قراءة المعلومات الحالية",
-  "interactionEffect.RECORD_FACTS.label": "تسجيل بيانات الملف",
-  "interactionEffect.UPDATE_WORK.label": "تحديث عمل الملف",
-  "label.action": "الإجراء",
-  "label.actionableCases": "الملفات النشطة المفتوحة",
-  "label.assigneeAvailable": "متاح للإسناد",
-  "label.assigneeUnavailable": "غير متاح لإسناد جديد",
-  "label.attentionCases": "عدد الملفات التي تحتاج إلى اهتمام (دون تكرار)",
-  "label.availableActs": "الإجراءات المتاحة",
-  "label.changedAt": "تغيير حقائق الملف",
-  "label.characterWarning": "يحتوي على {characters}",
-  "label.enabled": "مفعّل",
-  "label.exactReferenceMatch": "مرجع مطابق تمامًا",
-  "label.financialFactsPreserved": "تحفظ الحقائق المالية للملف وسجلات الدفع.",
-  "label.formerAccount": "حساب سابق {id}",
-  "label.missingPlanCases": "الملفات بلا إجراء تال",
-  "label.morePendingReminders": "+{count} أخرى",
-  "label.nextFollowUp": "المتابعة التالية",
-  "label.noNextAction": "لا يوجد إجراء تالٍ معلّق لهذا الملف الذي يمكن العمل عليه.",
-  "label.notRecorded": "غير مسجّل",
-  "label.observedCaseFacts": "حقائق الملف المرصودة عند المراجعة",
-  "label.overdueCases": "الملفات ذات العمل المتأخر",
-  "label.overdueReminders": "التذكيرات المتأخرة",
-  "label.pendingReminders": "التذكيرات المعلقة",
-  "label.reminderRevision": "مراجعة التذكير",
-  "label.reviewTitle": "مراجعة التغييرات",
-  "label.revisionLabel": "المراجعة",
-  "label.unassignedCases": "الملفات غير المسندة",
-  "label.unavailableAssigneeCases": "الملفات ذات المسؤول غير المتاح",
-  "label.workChangedAt": "وقت تغيير العمل",
-  "label.workRecordedBy": "مسجل العمل",
-  "label.workRevision": "مراجعة العمل",
-  "lifecycle.ACTIVE.label": "نشط",
-  "lifecycle.ERASED.label": "تم المحو",
-  "lifecycle.ERASED.meaning": "تم المحو — لم يبقَ سوى مرجع الملف ورقم المراجعة.",
-  "lifecycle.VOIDED.label": "مُبطَل",
-  "lifecycle.VOIDED.meaning": "أُبطل بسبب خطأ في إدخال البيانات",
-  "notice.accepted": "اعتُمدت العملية نفسها {operationId}.",
-  "notice.alternativeRoles": "{first} أو {second}",
-  "notice.cancelled": "This request was cancelled. Earlier unconfirmed changes still need checking.",
-  "notice.definitionMismatch": "لا يطابق عقد الويب المثبّت موارد المتصفح هذه. أعد التحميل بعد نشر الموارد المطابقة.",
-  "notice.fileTooLarge": "يتجاوز الملف المحدد {maximumBytes} بايت.",
-  "notice.fileUnreadable": "تعذرت قراءة الملف المحدد.",
-  "notice.invalidHttp": "أعادت الخدمة المحلية استجابة HTTP {status} غير صالحة.",
-  "notice.invalidInput": "أكمل هذا الحقل بالتنسيق المطلوب.",
-  "notice.invalidSession": "استجابة الجلسة غير صالحة.",
-  "notice.missingCsrf": "لم تتضمن الجلسة الموثّقة رمز الحماية من تزوير الطلبات.",
-  "notice.notAccepted": "This change was not recorded for your account.",
-  "notice.outcomeUnknown": "نتيجة العملية غير معروفة. أعد إرسال العملية نفسها دون تغيير.",
-  "notice.responseTimeout": "انتهت مهلة انتظار استجابة الخدمة.",
-  "notice.unknownDiagnostic": "تم استلام تشخيص غير مدعوم.",
-  "notice.unreachable": "تعذر الوصول إلى الخدمة المحلية.",
-  "principalKind.HUMAN.label": "شخص",
-  "principalKind.SERVICE.label": "خدمة",
-  "progress.DECIDED.label": "بقرار",
-  "progress.PAID.label": "مدفوع",
-  "progress.UNDECIDED.label": "دون قرار",
-  "reminderAct.CANCEL.label": "إلغاء التذكير",
-  "reminderAct.COMPLETE.label": "إكمال التذكير",
-  "reminderAct.COMPLETE_AND_PLAN_NEXT.label": "إكمال وتخطيط الإجراء التالي",
-  "reminderAct.CREATE.label": "إضافة تذكير",
-  "reminderAct.REOPEN.label": "إعادة فتح التذكير",
-  "reminderAct.UPDATE.label": "تحديث التذكير",
-  "reminderDue.OVERDUE.label": "متأخر",
-  "reminderDue.TODAY.label": "اليوم",
-  "reminderDue.UPCOMING.label": "قادم",
-  "reminderState.CANCELLED.label": "ملغى",
-  "reminderState.COMPLETED.label": "مكتمل",
-  "reminderState.PENDING.label": "معلق",
-  "role.AUDITOR.label": "المدقق",
-  "role.CASE_HANDLER.label": "معالج الملفات",
-  "role.CASE_READER.label": "قارئ الملفات",
-  "role.CASE_REGISTRAR.label": "مسجل الملفات",
-  "role.DATA_STEWARD.label": "مشرف البيانات",
-  "role.OWNER.label": "المالك",
-  "role.PAYMENT_RECORDER.label": "مسجل المدفوعات",
-  "scalar.country.unknown": "غير معروف أو دولي",
-  "scope.CASE.label": "ملف واحد",
-  "scope.INSTALLATION.label": "التثبيت",
-  "section.work.label": "عمل الملف",
-  "status.CLOSED.label": "مغلق",
-  "status.OPENED.label": "مفتوح",
-  "subject.AUTHORITY.label": "الصلاحيات",
-  "subject.CASE.label": "ملف",
-  "subject.REMINDER.label": "التذكير",
-  "subject.WORK.label": "عمل الملف",
-  "timelineFilter.FACTS.label": "وقائع الملف",
-  "timelineFilter.WORK.label": "العمل والتذكيرات",
-  "timelineKind.CASE_FACT.label": "واقعة الملف",
-  "timelineKind.REMINDER.label": "تذكير",
-  "timelineKind.WORK.label": "العمل",
-  "view.ALL.empty": "لا توجد عناصر مطابقة.",
-  "view.ALL.label": "الكل",
-  "view.CANCELLED.empty": "لا توجد عناصر مطابقة.",
-  "view.CANCELLED.label": "ملغاة",
-  "view.CLOSED.empty": "لا توجد عناصر مطابقة.",
-  "view.CLOSED.label": "مغلقة",
-  "view.COMPLETED.empty": "لا توجد عناصر مطابقة.",
-  "view.COMPLETED.label": "مكتملة",
-  "view.DECIDED_UNPAID.empty": "لا توجد عناصر مطابقة.",
-  "view.DECIDED_UNPAID.label": "صدر قرار ولم يُدفع",
-  "view.DUE_TODAY.empty": "لا توجد عناصر مطابقة.",
-  "view.DUE_TODAY.label": "مستحقة اليوم",
-  "view.MINE.empty": "لا توجد عناصر مطابقة.",
-  "view.MINE.label": "المسندة إليّ",
-  "view.NEEDS_ATTENTION.empty": "لا توجد عناصر مطابقة.",
-  "view.NEEDS_ATTENTION.label": "تحتاج إلى انتباه",
-  "view.NO_NEXT_ACTION.empty": "لا توجد عناصر مطابقة.",
-  "view.NO_NEXT_ACTION.label": "لا يوجد إجراء تالٍ",
-  "view.OVERDUE.empty": "لا توجد عناصر مطابقة.",
-  "view.OVERDUE.label": "متأخرة",
-  "view.PENDING.empty": "لا توجد عناصر مطابقة.",
-  "view.PENDING.label": "قيد الانتظار",
-  "view.TODAY.empty": "لا توجد عناصر مطابقة.",
-  "view.TODAY.label": "اليوم",
-  "view.UNASSIGNED.empty": "لا توجد عناصر مطابقة.",
-  "view.UNASSIGNED.label": "غير مسندة",
-  "view.UNDECIDED.empty": "لا توجد عناصر مطابقة.",
-  "view.UNDECIDED.label": "دون قرار",
-  "view.UPCOMING.empty": "لا توجد عناصر مطابقة.",
-  "view.UPCOMING.label": "قادمة",
-  "view.VOIDED.empty": "لا توجد عناصر مطابقة.",
-  "view.VOIDED.label": "مُبطَلة",
-  "workAct.UPDATE_WORK.label": "تحديث عمل الملف",
-  "workChange.CLEAR.label": "مسح",
-  "workChange.SET.label": "تعيين",
-  "requesterState.ACTIVE.label": "مفعّل وله أدوار",
-  "requesterState.ACTIVE.meaning": "الحساب مفعّل وله أدوار معيّنة. تظل كل عملية خاضعة للتحقق من الأهلية والتفويض.",
-  "requesterState.NO_ROLES.label": "لم يتم تعيين أدوار",
-  "requesterState.NO_ROLES.meaning": "ليس لهذا الحساب أدوار وصول. اطلب من المالك منح الوصول.",
-  "requesterState.DISABLED.label": "الحساب معطّل",
-  "requesterState.DISABLED.meaning": "تم تعطيل هذا الحساب. اطلب من المالك تفعيل الوصول.",
-  "requesterState.NOT_REGISTERED.label": "تم طلب الوصول",
-  "requesterState.NOT_REGISTERED.meaning": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
-  "endpoint.authority.requests.label": "طلبات الوصول",
-  "endpoint.authority.requests.meaning": "قراءة صفحة واحدة من الطلبات التي تنتظر القبول.",
-  "endpoint.authority.requests.dismiss.label": "تجاهل طلب الوصول",
-  "endpoint.authority.requests.dismiss.meaning": "إزالة هذا الطلب دون منح الوصول.",
-  "caseStage.OPENED.label": "مفتوح",
-  "caseStage.DECIDED.label": "بقرار",
-  "caseStage.PAID.label": "مدفوع",
-  "caseStage.CLOSED.label": "مغلق",
-  "input.responsibleActorFilter.label": "تصفية حسب الحساب المسؤول",
-  "diagnostic.NOT_OFFERED": "هذا الإجراء غير متاح. حالة الملف الحالي: {state}. راجع أحدث بيانات المطالبة.",
-  "diagnostic.REMINDER_NOT_OFFERED": "هذا الإجراء غير متاح. حالة التذكير الحالية: {state}. راجع أحدث بيانات التذكير.",
-  "act.ADMIT.label": "إضافة شخص",
-  "act.ADMIT.meaning": "أضف حسابًا باسمه وأدواره الأولية معًا.",
-  "field.grants.label": "منح الوصول",
-  "diagnostic.GRANT_COUNT_RANGE": "اختر من 1 إلى {maximumGrants} من منح الوصول.",
-  "diagnostic.DUPLICATE_GRANT": "اختر كل زوج من الدور والنطاق مرة واحدة فقط.",
-  "accountState.ACTIVE.label": "مفعّل وله أدوار",
-  "accountState.ACTIVE.meaning": "الحساب مفعّل وله أدوار معيّنة. تظل كل عملية خاضعة للتحقق من الأهلية والتفويض.",
-  "accountState.NO_ROLES.label": "لم يتم تعيين أدوار",
-  "accountState.NO_ROLES.meaning": "الحساب مسجّل ومفعّل ولكن لم يتم تعيين أدوار له.",
-  "accountState.DISABLED.label": "معطّل",
-  "accountState.DISABLED.meaning": "الحساب معطّل. تظل الأدوار المعيّنة مرئية لمراجعة الصلاحيات.",
-  "label.attention": "يحتاج إلى الانتباه",
-  "label.recommendedNext": "الإجراء التالي المقترح",
-  "label.notApplicable": "لا ينطبق",
-  "label.recordedAt": "وقت التسجيل",
-  "label.recordedBy": "سجّله",
-  "label.reminder": "تذكير",
-  "label.before": "قبل",
-  "label.after": "بعد",
-  "label.changes": "التغييرات",
-  "label.unchanged": "دون تغيير",
-  "label.changesWithheld": "التغييرات غير معروضة.",
-  "label.changesErased": "مُحيت التغييرات.",
-  "field.incidentDate.rule": "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06.",
-  "field.incidentDate.hint": "متى وقعت الواقعة.",
-  "field.incidentNotificationDate.rule": "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06.",
-  "field.incidentNotificationDate.hint": "متى أُبلغت بالواقعة لأول مرة.",
-  "field.incidentCountry.rule": "استخدم حرفين كبيرين. يعني {unknownCode} موقعًا غير معروف أو دوليًا.",
-  "field.incidentCountry.hint": "أين وقعت الواقعة.",
-  "field.incidentDescription.rule": "نص عادي اختياري، بحد أقصى {maximumScalars} قيمة Unicode قياسية. يسمح بفواصل فقرات LF. تحفظ المسافات والكتابة الأصلية؛ وترفض محارف التحكم غير الآمنة وتنسيق الاتجاه.",
-  "field.incidentDescription.hint": "ما الذي حدث. أضف التفاصيل المهمة لهذه المطالبة.",
-  "field.claimantName.rule": "حتى {maximumCharacters} محرفًا.",
-  "field.claimantName.hint": "الشخص أو الشركة التي تقدم المطالبة.",
-  "field.insurerName.rule": "حتى {maximumCharacters} محرفًا.",
-  "field.insurerName.hint": "شركة التأمين المسؤولة عن المطالبة.",
-  "field.claimedAmount.rule": "استخدم حتى {maximumIntegerDigits} رقمًا قبل النقطة العشرية وحتى {maximumFractionDigits} بعدها. استخدم أرقام ASCII والنقطة، دون مسافات أو إشارات أو فواصل أو أصفار زائدة في البداية.",
-  "field.claimedAmount.hint": "المبلغ الذي يطلبه المطالب.",
-  "field.claimedCurrency.rule": "{length} أحرف ASCII كبيرة من A إلى Z.",
-  "field.claimedCurrency.hint": "اختر العملة التي طُلب بها المبلغ.",
-  "field.caseReference.rule": "استخدم من 1 إلى {maximumCharacters} محرف ASCII قابل للطباعة دون مسافات. لا يغيّر اختلاف حالة الأحرف هوية الملف، وتُحفظ الكتابة الأصلية.",
-  "field.caseReference.hint": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
-  "field.paymentDecisionDate.rule": "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06.",
-  "field.paymentDecisionDate.hint": "متى تقرر المبلغ الواجب دفعه.",
-  "field.payableAmount.rule": "استخدم حتى {maximumIntegerDigits} رقمًا قبل النقطة العشرية وحتى {maximumFractionDigits} بعدها. استخدم أرقام ASCII والنقطة، دون مسافات أو إشارات أو فواصل أو أصفار زائدة في البداية.",
-  "field.payableAmount.hint": "المبلغ الذي تقرر دفعه.",
-  "field.payableCurrency.rule": "{length} أحرف ASCII كبيرة من A إلى Z.",
-  "field.payableCurrency.hint": "اختر العملة التي سيُدفع بها المبلغ.",
-  "field.paymentDate.rule": "استخدم أرقام ASCII بالتنسيق YYYY-MM-DD، مثل 2026-10-06.",
-  "field.paymentDate.hint": "متى دُفع المبلغ كاملًا.",
-  "field.status.rule": "هل الملف مفتوح أم مغلق. إغلاق الملف لا يعني أن الدفع قد تمّ.",
-  "field.status.hint": "هل ما زال العمل على هذا الملف مفتوحًا.",
-  "field.responsibleActor.rule": "استخدم معرّف UUID الدقيق للحساب المسجل.",
-  "field.responsibleActor.hint": "من يتولى هذا الملف.",
-  "field.handlingSummary.rule": "نص عادي اختياري، بحد أقصى {maximumScalars} قيمة Unicode قياسية. يسمح بفواصل فقرات LF. تحفظ المسافات والكتابة الأصلية؛ وترفض محارف التحكم غير الآمنة وتنسيق الاتجاه.",
-  "field.handlingSummary.hint": "الوضع الحالي وما يلزم عمله.",
-  "field.operationId.rule": "معرّف هذه العملية. يُعاد استخدامه فقط عند إعادة الطلب نفسه.",
-  "field.operationId.hint": "احتفظ بمعرّف هذا التغيير إذا احتجت إلى التحقق من النتيجة.",
-  "field.expectedRevision.rule": "مراجعة الملف التي يستند إليها هذا الطلب.",
-  "field.expectedRevision.hint": "راجع أحدث بيانات الملف قبل تغييره.",
-  "field.reason.rule": "حتى {maximumCharacters} محرفًا.",
-  "field.reason.hint": "لماذا يلزم هذا التغيير.",
-  "field.principal.kind.rule": "ما إذا كانت هوية الجهة المستهدفة لشخص أو لخدمة.",
-  "field.principal.kind.hint": "اختر شخصًا أو حساب خدمة.",
-  "field.principal.issuer.rule": "مُصدر HTTPS المطابق لهوية الجهة المستهدفة.",
-  "field.principal.issuer.hint": "موفر تسجيل الدخول لهذا الحساب.",
-  "field.principal.subject.rule": "معرّف الموضوع أو العميل الثابت لهوية الجهة المستهدفة.",
-  "field.principal.subject.hint": "معرّف الحساب لدى موفر تسجيل الدخول.",
-  "field.profile.displayName.rule": "حتى {maximumCharacters} محرفًا.",
-  "field.profile.displayName.hint": "الاسم الذي سيظهر للآخرين في ClaimCore.",
-  "field.profile.contact.rule": "حتى {maximumCharacters} محرفًا.",
-  "field.profile.contact.hint": "بيانات اختيارية للتواصل مع هذا الشخص.",
-  "field.grants.rule": "قدّم من 1 إلى {maximumGrants} زوجًا مختلفًا من الدور والنطاق. مراجع الملفات مراجع صريحة حتى إن كانت تشبه UUID.",
-  "field.grants.hint": "أضف الأدوار التي يحتاجها الحساب وحدد أين تنطبق.",
-  "field.role.rule": "دور القدرة المراد منحه أو سحبه.",
-  "field.role.hint": "ما الصلاحيات التي ينبغي منحها لهذا الحساب.",
-  "field.limit.rule": "الحد الأقصى لعدد الصفوف المعادة في هذه الصفحة.",
-  "field.limit.hint": "كم نتيجة تُعرض في كل مرة.",
-  "field.cursor.rule": "متابعة الاستعلام نفسه من المؤشر المعتم الذي أعادته الخدمة.",
-  "field.cursor.hint": "تابع إلى النتائج التالية.",
-  "field.text.rule": "حتى {maximumCharacters} محرفًا.",
-  "field.text.hint": "ابحث عن ملف بالمرجع أو المطالب أو شركة التأمين.",
-  "field.reminderId.rule": "المعرف الثابت لتذكير واحد في هذا الملف.",
-  "field.reminderId.hint": "اختر التذكير الذي تريد تغييره.",
-  "field.reminderAction.rule": "استخدم سطرًا واحدًا من النص العادي، حتى {maximumScalars} قيمة Unicode مفردة.",
-  "field.reminderAction.hint": "ما الذي يجب فعله بعد ذلك.",
-  "field.reminderDueDate.rule": "استخدم تاريخًا ميلاديًا بصيغة YYYY-MM-DD. تُقبل التواريخ الماضية والمستقبلية.",
-  "field.reminderDueDate.hint": "متى يحين موعد هذا الإجراء.",
-  "field.expectedWorkRevision.rule": "مراجعة العمل التي راجعتها. مراجعات الحقائق المالية مستقلة.",
-  "field.expectedWorkRevision.hint": "راجع أحدث تفاصيل العمل قبل تغييرها.",
-  "field.expectedReminderRevision.rule": "استخدم رقم المراجعة الموجب لهذا التذكير نفسه الذي راجعته. للتذكيرات الأخرى مراجعات مستقلة.",
-  "field.expectedReminderRevision.hint": "راجع أحدث تذكير قبل تغييره.",
-  "input.scope.rule": "ما إذا كان الدور ينطبق على التثبيت أو على ملف واحد.",
-  "input.scope.hint": "اختر أين ينطبق هذا الدور.",
-  "input.actorId.rule": "الجهة المسجلة المحددة لمراجعة الصلاحيات أو سجل تغييراتها.",
-  "input.actorId.hint": "اختر الحساب الذي تريد مراجعة صلاحياته.",
-  "input.caseId.rule": "معرّف UUID الثابت لعملية OPEN المقبولة.",
-  "input.caseId.hint": "اختر الملف.",
-  "input.lifecycle.rule": "حصر النتائج في حالات دورة الحياة المحددة. إذا لم يُحدد المرشح، تُدرج جميع حالات دورة الحياة.",
-  "input.lifecycle.hint": "اختر النتائج التي تريد عرضها.",
-  "input.status.rule": "حصر النتائج في حالات الفتح أو الإغلاق المحددة. لا تحمل الملفات الممحوة حالة.",
-  "input.status.hint": "هل ما زال العمل على هذا الملف مفتوحًا.",
-  "input.progress.rule": "حصر النتائج في الملفات التي لم يُتخذ فيها قرار أو اتُّخذ فيها قرار أو سُجّل دفعها. لا تحمل الملفات الممحوة تقدمًا للدفع.",
-  "input.progress.hint": "اختر النتائج التي تريد عرضها.",
-  "input.caseView.rule": "اختر عرضًا محددًا للملفات. تحدد عوامل التصفية الأخرى النتائج بشكل إضافي.",
-  "input.caseView.hint": "اختر النتائج التي تريد عرضها.",
-  "input.responsibleActorFilter.rule": "اعرض الملفات المسندة إلى الحساب المحدد ضمن نطاق الملفات التي يحق لك قراءتها، مع تطبيق عوامل التصفية الأخرى.",
-  "input.responsibleActorFilter.hint": "اختر النتائج التي تريد عرضها.",
-  "input.reminderView.rule": "اختر طريقة عرض قياسية للتذكيرات. تُضيّق عوامل تصفية الحالة والإسناد والتاريخ والنص والملف المحددة النتائج أكثر.",
-  "input.reminderView.hint": "اختر النتائج التي تريد عرضها.",
-  "input.timelineFilter.rule": "اعرض وقائع الملف أو العمل والتذكيرات. اترك الخيار فارغًا لعرض الاثنين.",
-  "input.timelineFilter.hint": "اختر التغييرات التي تريد عرضها.",
-  "input.order.rule": "رتّب حسب المرجع، أو آخر تغيير في وقائع الملف، أو تاريخ الإخطار، أو أقرب تاريخ لتذكير معلّق. تُرتّب تغييرات الوقائع من الأحدث أولًا، وتواريخ الإخطار والتذكير من الأقدم أولًا، وتوضع التواريخ غير المسجّلة أخيرًا. يفصل المرجع بين القيم المتساوية.",
-  "input.order.hint": "اختر ترتيب النتائج.",
-  "input.assignment.rule": "التصفية حسب المسؤولية الفعلية بعد تطبيق صلاحيات الرؤية الحالية. صلاحية قراءة ملف محدد وحدها لا تسند المسؤولية.",
-  "input.assignment.hint": "اختر النتائج التي تريد عرضها.",
-  "input.due.rule": "تصنيف كل ملف بحسب أقرب تذكير معلق: متأخر أو اليوم أو قادم أو بلا تذكير معلق أو غير نشط. لتواريخ التذكيرات الفردية مرشح منفصل في القائمة.",
-  "input.due.hint": "اختر النتائج التي تريد عرضها.",
-  "input.reminderState.rule": "اختر السجلات الحالية المعلقة أو المكتملة أو الملغاة. الإغفال يختار التذكيرات المعلقة.",
-  "input.reminderState.hint": "اختر النتائج التي تريد عرضها.",
-  "input.reminderDue.rule": "ترشيح تواريخ التذكيرات الفردية بحسب تاريخ العمل للتثبيت؛ ويختلف عن أقرب استحقاق للملف.",
-  "input.reminderDue.hint": "اختر النتائج التي تريد عرضها.",
-  "input.includeInactive.rule": "تضمين العمل على الملفات المغلقة أو المبطلة صراحة. تحتفظ التذكيرات المعلقة بتواريخها وحالتها.",
-  "input.includeInactive.hint": "اختر النتائج التي تريد عرضها.",
-  "input.responsibleActorAction.rule": "اختر التعيين أو المسح؛ اترك الخيار دون تحديد للاحتفاظ بالحساب المسؤول الحالي.",
-  "input.responsibleActorAction.hint": "حدد المسؤول عن هذا الملف أو أزل تعيينه.",
-  "group.registration.rule": "إبقاء بيانات التسجيل أو تحديث البيانات المختارة. تبقى البيانات غير المحددة كما هي، ويجب إدخال المبلغ والعملة معًا.",
-  "group.registration.hint": "اختر التفاصيل التي تريد تغييرها.",
-  "group.decision.rule": "إبقاء القرار أو تحديث البيانات المختارة أو مسح القرار. يجب إدخال المبلغ والعملة معًا.",
-  "group.decision.hint": "اختر التفاصيل التي تريد تغييرها.",
-  "group.payment.rule": "إبقاء تاريخ الدفع المسجّل أو استبداله أو إعادة تأكيده أو مسحه. إعادة التأكيد تُبقي التاريخ، ومسحه لا يعيد الأموال.",
-  "group.payment.hint": "اختر التفاصيل التي تريد تغييرها.",
-  "diagnostic.CALENDAR_DATE_REQUIRED.gui": "أدخل تاريخًا صحيحًا.",
-  "diagnostic.COUNTRY_FORMAT.gui": "أدخل حرفين للبلد، مثل LV.",
-  "diagnostic.CURRENCY_FORMAT.gui": "أدخل رمز عملة من ثلاثة أحرف، مثل EUR.",
-  "diagnostic.EXPECTED_REVISION_RANGE.gui": "راجع أحدث سجل قبل تغييره.",
-  "diagnostic.REFERENCE_FORMAT.gui": "أدخل مرجع ملف دون مسافات.",
-  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": "اختر دورًا يمكن استخدامه هنا.",
-  "diagnostic.DUPLICATE_GRANT.gui": "اختر كل دور ومكان تطبيقه مرة واحدة فقط.",
-  "act.OPEN.done": "فُتح الملف.",
-  "act.OPEN.consequence": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
-  "act.AMEND_REGISTRATION.done": "حُدّثت بيانات التسجيل.",
-  "act.AMEND_REGISTRATION.consequence": "حدّث بيانات التسجيل المحددة. تبقى البيانات غير المحددة ومرجع الملف دون تغيير.",
-  "act.CORRECT.done": "صُحّحت بيانات الملف.",
-  "act.CORRECT.consequence": "صحح البيانات الحالية المحددة معًا. يتطلب تغيير قرار مدفوع تأكيد سجل الدفع صراحة أو استبداله أو مسحه. مسح تاريخ الدفع لا يعيد الأموال.",
-  "act.DECIDE.done": "سُجّل قرار الدفع.",
-  "act.DECIDE.consequence": "تسجيل أو استبدال المبلغ والعملة المقررين. لا يرسل ذلك أموالًا.",
-  "act.WITHDRAW_DECISION.done": "سُحب قرار الدفع.",
-  "act.WITHDRAW_DECISION.consequence": "إزالة حقول القرار غير المدفوع مع الاحتفاظ بالسجل السابق.",
-  "act.RECORD_PAYMENT.done": "سُجّل الدفع.",
-  "act.RECORD_PAYMENT.consequence": "تسجيل تاريخ الدفع الفعلي لكامل المبلغ المقرر. لا ينفّذ ذلك التحويل ولا يتحقق منه.",
-  "act.CLEAR_PAYMENT.done": "مُحي سجل الدفع.",
-  "act.CLEAR_PAYMENT.consequence": "إزالة تاريخ دفع سُجّل خطأً. هذا ليس استردادًا أو عكسًا لتحويل فعلي. يبقى السجل السابق.",
-  "act.CLOSE.done": "أُغلق الملف.",
-  "act.CLOSE.consequence": "تعيين حالة الملف إلى مغلق. الإغلاق لا يعني حصول أي دفع.",
-  "act.REOPEN.done": "أُعيد فتح الملف.",
-  "act.REOPEN.consequence": "تعيين حالة الملف إلى مفتوح مع الاحتفاظ ببقية الحقول والسجل.",
-  "act.VOID.done": "أُبطل الملف.",
-  "act.VOID.consequence": "يبقى الملف مسجلًا ويخرج من العمل اليومي حتى يُعاد تفعيله.",
-  "act.REINSTATE.done": "أُعيد تفعيل الملف.",
-  "act.REINSTATE.consequence": "يصبح الملف نشطًا مجددًا. وتبقى حالته مفتوحة أو مغلقة كما هي.",
-  "act.ERASE.done": "مُحي الملف.",
-  "act.ERASE.consequence": "يؤدي هذا إلى محو تفاصيل الملف وعمله وتذكيراته نهائيًا من ClaimCore. ويبقى المرجع وسجل التغييرات.",
-  "act.REGISTER.done": "سُجّل الحساب.",
-  "act.REGISTER.consequence": "أضف حسابًا مسجلًا باسم وبيانات اتصال اختيارية. ويمكن تعيين الأدوار بشكل منفصل.",
-  "act.ADMIT.done": "أُضيف الحساب مع أدواره.",
-  "act.ADMIT.consequence": "يضيف هذا الحساب ويحفظ ملفه الشخصي ويسجل جميع الأدوار المحددة معًا.",
-  "act.SET_PROFILE.done": "حُدّث الملف الشخصي.",
-  "act.SET_PROFILE.consequence": "تسجيل اسم عرض وبيانات اتصال اختيارية للحساب. لا يغيّر ذلك هويته أو صلاحيات وصوله.",
-  "act.ERASE_PROFILE.done": "مُحي الملف الشخصي.",
-  "act.ERASE_PROFILE.consequence": "يؤدي هذا إلى محو الاسم وبيانات الاتصال المحفوظة نهائيًا. وتظهر التغييرات السابقة باسم حساب مجهول.",
-  "act.GRANT.done": "مُنح الدور.",
-  "act.GRANT.consequence": "يسجل هذا تعيين الدور المحدد لهذا الحساب.",
-  "act.REVOKE.done": "سُحب الدور.",
-  "act.REVOKE.consequence": "يزيل هذا تعيين الدور المحدد.",
-  "act.ENABLE.done": "فُعّل الحساب.",
-  "act.ENABLE.consequence": "فعّل هذا الحساب بأدواره الحالية.",
-  "act.DISABLE.done": "عُطّل الحساب.",
-  "act.DISABLE.consequence": "يفقد هذا الحساب الوصول إلى ClaimCore. وتبقى تغييراته المسجلة محفوظة.",
-  "act.UPDATE_WORK.done": "حُدّث عمل الملف.",
-  "act.UPDATE_WORK.consequence": "غيّر المسؤول أو حدّث ملخص العمل.",
-  "act.REMINDER_CREATE.done": "أُضيف التذكير.",
-  "act.REMINDER_CREATE.consequence": "خطط للإجراء التالي لهذا الملف.",
-  "act.REMINDER_UPDATE.done": "حُدّث التذكير.",
-  "act.REMINDER_UPDATE.consequence": "تغيير الإجراء أو التاريخ لهذا التذكير المعلق. تبقى النسخ السابقة في السجل.",
-  "act.REMINDER_COMPLETE.done": "أُكمل التذكير.",
-  "act.REMINDER_COMPLETE.consequence": "تسجيل أنك وضعت علامة «مكتمل» على الإجراء المعلّق. يُسمح بإكمال آخر تذكير، وقد يبقى الملف بحاجة إلى إجراء تالٍ.",
-  "act.REMINDER_CANCEL.done": "أُلغي التذكير.",
-  "act.REMINDER_CANCEL.consequence": "إلغاء هذا الإجراء المعلق دون حذف سجله. الإلغاء يختلف عن الإكمال.",
-  "act.REMINDER_REOPEN.done": "أُعيد فتح التذكير.",
-  "act.REMINDER_REOPEN.consequence": "أعد فتح هذا التذكير بموعد جديد.",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": "أُكمل التذكير وخُطط للإجراء التالي.",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence": "أكمل هذا التذكير وخطط للإجراء التالي معًا.",
-  "endpoint.authority.requests.dismiss.done": "رُفض طلب الوصول.",
-  "label.accountState": "حالة الحساب",
-  "label.responsibleCases": "الملفات المسندة",
-  "label.account": "الحساب",
-  "label.targetAccount": "الحساب المعدّل",
-  "label.sequence": "رقم السجل",
-  "label.authorityHistory": "سجل الصلاحيات",
-  "label.requestedName": "الاسم المطلوب",
-  "label.requestedUsername": "اسم المستخدم المطلوب",
-  "label.requestedEmail": "البريد الإلكتروني المطلوب",
-  "label.accessRequest": "طلب الوصول",
-  "label.firstSeen": "أول طلب",
-  "label.lastSeen": "آخر طلب",
-  "label.capabilities": "الأذونات",
-  "label.views": "العروض المتاحة",
-  "label.installationId": "معرّف التثبيت",
-  "label.productVersion": "إصدار المنتج",
-  "label.businessDate": "تاريخ العمل",
-  "label.timeZone": "المنطقة الزمنية",
-  "label.total": "الإجمالي",
-  "label.cases": "الملفات",
-  "label.claimedTotals": "إجمالي المطالبات حسب العملة",
-  "label.payableTotals": "إجمالي المبالغ المستحقة حسب العملة",
-  "boolean.TRUE.label": "نعم",
-  "boolean.FALSE.label": "لا",
-  "view.CASES.label": "الملفات",
-  "view.AUTHORITY.label": "الأشخاص والصلاحيات",
-  "view.OPERATIONS.label": "العمليات",
-  "label.requestDismissed": "تم استبعاد طلب الوصول.",
-  "label.details": "التفاصيل",
-  "field.directorySearch.label": "البحث عن أشخاص",
-  "field.directorySearch.hint": "ابحث في الأسماء أو بيانات الاتصال المحفوظة حاليًا.",
-  "field.directorySearch.rule": "استخدم حتى {maximumCharacters} حرفًا. لا تهم حالة الأحرف.",
-  "label.installationRoleAssigned": "دور مُسنَد على مستوى التثبيت",
-  "label.caseRoleAssignments": "إسنادات الدور للملفات",
-  "label.directRoles": "الأدوار المباشرة",
-  "label.inheritedRoles": "أدوار التثبيت",
-  "label.effect": "الأثر",
-  "label.recordedChange": "التغيير المسجّل",
-  "label.recordedFacts": "البيانات المسجّلة",
-  "label.detailsWithheld": "التفاصيل غير معروضة.",
-  "label.recordDetails": "تفاصيل السجل",
-  "label.recorded": "تم التسجيل.",
-  "label.alreadyRecorded": "مسجّل بالفعل.",
-  "label.stages": "مراحل الملف",
-  "label.currentStage": "المرحلة الحالية",
-  "label.stageCompleted": "مكتملة",
-  "label.stageDate": "التاريخ",
-  "label.stageAmount": "المبلغ",
-  "label.stageReinstated": "أُعيد تفعيل الملف. تبقى تواريخ المراحل السابقة ضمن البيانات المسجّلة.",
-  "label.summaryChangedAt": "تاريخ تعديل الملخص",
-  "label.summaryRecordedBy": "كاتب الملخص",
-  "label.unavailableActions": "الإجراءات غير المتاحة",
-  "label.authenticated": "تمت المصادقة",
-  "label.contractIdentity": "معرّف العقد",
-  "label.signedOut": "تم تسجيل الخروج.",
-  "input.roleFilter.label": "تصفية حسب الدور",
-  "input.roleFilter.hint": "ابحث عن الأشخاص المسند إليهم هذا الدور، بما في ذلك الحسابات المعطلة.",
-  "input.roleFilter.rule": "طابق الأدوار المسندة المعترف بها على مستوى التثبيت أو الملفات الفردية. لا يختبر عامل التصفية الصلاحيات الحالية أو ما إذا كان الحساب مفعّلًا.",
-  "role.OWNER.meaning": "يدير الحسابات والملفات الشخصية والأدوار. لا يمنح هذا الدور وحده حق قراءة بيانات الملفات.",
-  "role.CASE_READER.meaning": "يقرأ بيانات الملفات وسجل التغييرات الأساسي ضمن صلاحيات الوصول المسندة.",
-  "role.CASE_REGISTRAR.meaning": "يسجل بيانات المطالبة أو يصححها ويقرأ بيانات الملفات وسجلها الأساسي. يتطلب فتح ملفات جديدة إسناد الدور على مستوى التثبيت.",
-  "role.CASE_HANDLER.meaning": "يتولى بيانات الملفات والقرارات وإغلاق الملفات ويقرأ السجل الكامل. يمكن للأشخاص فقط إدارة المسؤولية والملخصات والتذكيرات؛ ويتطلب فتح الملفات صلاحية على مستوى التثبيت.",
-  "role.PAYMENT_RECORDER.meaning": "يسجل تواريخ الدفع أو يزيلها ويقرأ بيانات الملفات وسجلها الأساسي. لا يرسل أموالاً.",
-  "role.DATA_STEWARD.meaning": "يبطل الملفات ويعيد تفعيلها أو يمحو محتوياتها. يقرأ بيانات الملفات وسجلها الأساسي. هذا الدور مخصص للأشخاص.",
-  "role.AUDITOR.meaning": "يقرأ بيانات الملفات وسجل التغييرات الكامل ضمن صلاحيات الوصول المسندة. ويقرأ صلاحيات الحسابات فقط عند إسناد الدور على مستوى التثبيت. لا يمنح هذا الدور حق تغييرها.",
-  "timeline.event.caseOpened": "فُتح الملف",
-  "timeline.event.registrationAmended": "حُدّثت تفاصيل المطالبة",
-  "timeline.event.factsCorrected": "صُحّحت الوقائع",
-  "timeline.event.decisionRecorded": "سُجّل قرار الدفع",
-  "timeline.event.decisionWithdrawn": "سُحب قرار الدفع",
-  "timeline.event.paymentRecorded": "سُجّل تاريخ الدفع",
-  "timeline.event.paymentCleared": "أُزيل تاريخ الدفع المسجّل",
-  "timeline.event.caseClosed": "أُغلق الملف",
-  "timeline.event.caseReopened": "أُعيد فتح الملف",
-  "timeline.event.caseVoided": "أُبطل الملف",
-  "timeline.event.caseReinstated": "أُعيد تفعيل الملف",
-  "timeline.event.caseErased": "مُحي الملف",
-  "timeline.event.responsibilityAssigned": "أُسندت المسؤولية إلى {person}",
-  "timeline.event.responsibilityCleared": "لم تعد المسؤولية مسندة إلى {person}",
-  "timeline.event.workRecorded": "حُدّث عمل الملف",
-  "timeline.event.handlingSummaryAdded": "أُضيف ملخص المعالجة",
-  "timeline.event.handlingSummaryChanged": "عُدّل ملخص المعالجة",
-  "timeline.event.handlingSummaryCleared": "أُزيل ملخص المعالجة",
-  "timeline.event.reminderPlanned": "خُطط للتذكير «{action}» بتاريخ {due}",
-  "timeline.event.reminderChanged": "عُدّل التذكير «{action}»",
-  "timeline.event.reminderCompleted": "أُكمل التذكير «{action}»",
-  "timeline.event.reminderCancelled": "أُلغي التذكير «{action}»",
-  "timeline.event.reminderReopened": "أُعيد فتح التذكير «{action}» بتاريخ {due}",
-  "timeline.event.reminderCompletedAndPlanned": "أُكمل «{completedAction}»؛ وخُطط لـ«{nextAction}» بتاريخ {nextDue}",
-  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": "This change was not started: its operation ID is outside the allowed time window. Prepare a new change with a new ID.",
-  "endpoint.operation.get.label": "Check an unconfirmed change",
-  "endpoint.operation.get.meaning": "Read the accepted receipt when visible, or wait until the operation lifetime ends for a final answer that this account’s change was not accepted.",
-  "endpoint.work.views.label": "Work view counts",
-  "endpoint.work.views.meaning": "Read case and reminder view counts from the same snapshot and date basis.",
-  "historyAccess.NONE.label": "No history access",
-  "historyAccess.SUMMARY.label": "History metadata",
-  "historyAccess.FULL.label": "Full history",
-  "label.reminders": "Reminders"
+  "act.AMEND_REGISTRATION.label": {
+    "text": "تحديث بيانات المطالبة",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "تغيير تفاصيل المطالبة المحددة. تبقى التفاصيل غير المحددة ومرجع الملف كما هي.",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "تصحيح سجل دفع خاطئ",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "إزالة تاريخ دفع سُجّل خطأً. هذا ليس استردادًا أو عكسًا لتحويل فعلي. يبقى السجل السابق.",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "إغلاق الملف",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "إغلاق الملف عندما لا تبقى أعمال مطلوبة. لا يعني الإغلاق أن المطالبة دُفعت.",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "تصحيح وقائع الملف",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "تصحيح التفاصيل المسجلة خطأً. إذا كان الملف مدفوعًا وتغير القرار، فيلزم أيضًا تأكيد تاريخ الدفع أو استبداله أو إزالته. إزالة تاريخ الدفع لا تعيد المال.",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "تسجيل قرار الدفع",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "تسجيل أو استبدال المبلغ والعملة المقررين. لا يرسل ذلك أموالًا.",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "تعطيل الحساب",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "منع هذا الحساب من استخدام ClaimCore. تبقى تغييراته المسجلة محفوظة.",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "تمكين الحساب",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "السماح لهذا الحساب باستخدام ClaimCore مجددًا بأدواره الحالية.",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "محو الملف",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "محو تفاصيل هذا الملف وأعماله وتذكيراته نهائيًا من ClaimCore. يبقى مرجع الملف وقائمة التغييرات. لا تتأثر النسخ المحفوظة في أماكن أخرى.",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "محو الملف الشخصي",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "محو الاسم وبيانات الاتصال المحفوظة لهذا الحساب نهائيًا. تبقى هوية تسجيل الدخول والأدوار والأعمال المسجلة. تظهر التغييرات السابقة باسم «حساب سابق».",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "منح دور",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "عيّن الدور المحدد لهذا الحساب.",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "فتح ملف",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "تسجيل الواقعة والمطالب وشركة التأمين والمبلغ المطالب به.",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "إعداد المالك الأول",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "تسجيل الدفع الفعلي",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "تسجيل تاريخ الدفع الفعلي لكامل المبلغ المقرر. لا ينفّذ ذلك التحويل ولا يتحقق منه.",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "تسجيل حساب",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "إضافة حساب باسم وبيانات اتصال اختيارية. تُسند الأدوار بشكل منفصل.",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "إعادة تفعيل الملف",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "السماح بمتابعة العمل على هذا الملف المبطل. لا تتغير حالته المفتوحة أو المغلقة.",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "إلغاء التذكير",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "إلغاء هذا الإجراء دون اعتباره مكتملًا. يبقى سجله محفوظًا.",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "إكمال التذكير",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "تحديد هذا الإجراء كمكتمل. إذا كان الأخير، فسيحتاج الملف إلى إجراء تالٍ.",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "إكمال وتخطيط الإجراء التالي",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "أكمل هذا التذكير وخطط للإجراء التالي معًا.",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "إضافة تذكير",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "خطط للإجراء التالي لهذا الملف.",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "إعادة فتح التذكير",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "إعادة هذا الإجراء إلى حالة الانتظار بتاريخ استحقاق جديد.",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "تحديث التذكير",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "تغيير الإجراء أو التاريخ لهذا التذكير المعلق. تبقى النسخ السابقة في السجل.",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "إعادة فتح الملف",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "إعادة فتح الملف. تبقى تفاصيله وسجله محفوظين.",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "سحب دور",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "أزل تعيين الدور المحدد.",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "تحديث الملف الشخصي",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "تسجيل اسم عرض وبيانات اتصال اختيارية للحساب. لا يغيّر ذلك هويته أو صلاحيات وصوله.",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "تحديث عمل الملف",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "غيّر المسؤول أو حدّث ملخص العمل.",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "إبطال سجل الملف",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "إيقاف جميع الأعمال على هذا الملف، مثلًا إذا أُدخل بالخطأ. يبقى الملف وسجله محفوظين.",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "سحب قرار الدفع",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "إزالة قرار الدفع قبل دفع أي مبلغ. يبقى سجله محفوظًا.",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "مهام الملف",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "الإبطال والمحو",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "متاح",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "الحساب مفعّل ومتاح في هذا السياق.",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "معطّل",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "تم تعطيل الحساب.",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "غير مؤهل",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "لا يمكن إسناد مسؤولية هذا الملف إلى هذا الحساب.",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "المسندة إليّ",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "الملفات التي تتولى مسؤوليتها. إمكانية عرض ملف لا تعني أنك مسؤول عنه.",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "دون مسؤول",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "المسؤول غير متاح",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "موعدها اليوم",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "لا يوجد إجراء تالٍ",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "متأخرة",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "جاهز للإغلاق",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "بلا مسؤول",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "إغلاق الملفات وإعادة فتحها",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "تسجيل قرارات الدفع",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "إدارة الأشخاص والصلاحيات",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "إدارة عمل الملف",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "عرض الصلاحيات",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "عرض الملفات",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "عرض السجل",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "عرض السجل الكامل",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "تسجيل المدفوعات",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "تسجيل تفاصيل المطالبة",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "إبطال الملفات وإعادة تفعيلها ومحوها",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "المتابعة التالية",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "تاريخ الإبلاغ (الأقدم أولًا)",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "المعدلة مؤخرًا",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "مرجع الملف",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "مسح القيمة المسجّلة",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "إبقاء التفاصيل الحالية",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "تأكيد سجل الدفع الحالي",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "استبدال التفاصيل",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "تحديث البيانات المحددة",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "هذا الحساب مسجل بالفعل.",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "أدخل معرّف UUID لحساب غير فارغ.",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "هذا الحساب غير مسجل.",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "لا يمكن حاليًا إسناد هذا الملف إلى الحساب المحدد.",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "استخدم تاريخًا تقويميًا صالحًا واحدًا بالصيغة YYYY-MM-DD.",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "مرجع الملف موجود بالفعل.",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "ترتيب هذه التواريخ غير صحيح.",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "أحرف التحكم غير مسموحة.",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "اختر تصحيحًا واحدًا على الأقل يغير الملف.",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "يمكن للتصحيح استبدال أو مسح قيمة مسجّلة بالفعل في هذا الملف فقط.",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "استخدم حرفي ASCII كبيرين لرمز البلد.",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "استخدم ثلاثة أحرف ASCII كبيرة من A إلى Z لمعرّف العملة.",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "استخدم نصًا عشريًا غير سالب: حتى {maximumIntegerDigits} رقمًا صحيحًا و{maximumFractionalDigits} أرقام كسرية؛ دون إشارة أو أس. دون أصفار بادئة زائدة: 0.10 صحيح؛ 00.10 غير صحيح.",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "استخدم رقم مراجعة صحيحًا صالحًا لهذا الطلب، لا يتجاوز 9007199254740991.",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "أحرف التنسيق غير المرئية غير مسموحة.",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "هذا التاريخ في المستقبل. استخدم تاريخ وقوع الحدث.",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "هذا الدور متاح لشخص فقط.",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "استُخدم معرّف العملية هذا لتغيير مختلف. استخدم معرّفًا جديدًا.",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "رابط الصفحة هذا لم يعد صالحًا. ابدأ من الصفحة الأولى.",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "الحقول المطلوب التحقق منها: {issueCount}.",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "يحتاج ClaimCore إلى شخص مفعّل واحد على الأقل بدور المالك.",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "يحتوي النص على أحرف غير صالحة.",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "لإجراء هذا التغيير تحتاج إلى دور {required}. اطلبه من أحد المالكين.",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "استخدم UUID بالإصدار 7 يُنشأ عند إرسال التغيير.",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "استخدم قيمة من 1 إلى {maximumPageSize}.",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "لتحديث قرار له دفعة مسجّلة، أكّد سجل الدفع مجددًا أو استبدله أو امسحه صراحةً.",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "يتطلب مسح قرار مدفوع مسح سجل الدفع أيضًا.",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "استخدم جهة إصدار HTTPS معيارية ومعرّف موضوع صالحًا لنوع الهوية.",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "استخدم من 1 إلى 80 محرف ASCII قابل للطباعة دون مسافات.",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "التغييرات موقوفة للصيانة. لا يزال بإمكانك عرض الملفات والتحقق من التغييرات السابقة.",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "استخدم معرف UUID غير فارغ للتذكير.",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "يجب أن يغير تحديث التذكير الإجراء أو التاريخ.",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "هذا العنصر غير موجود أو ليس لديك صلاحية الوصول إليه.",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "تغير هذا العنصر بعد فتحه. راجع أحدث إصدار وحاول مجددًا.",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "لا يمنح هذا الدور صلاحيات للملفات المحددة.",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "أزل المسافات من البداية أو النهاية.",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "يجب إدخال قيمة غير فارغة.",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "استخدم {maximumCharacters} حرفًا كحد أقصى.",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "حدد قيمة واحدة على الأقل لتحديثها أو مسحها.",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "لن تتغير أي قيمة في عمل الملف.",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "لا يمكن دفع قرار دفع بقيمة صفر.",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "عمل غير نشط",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "متأخرة",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "موعدها اليوم",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "لا يوجد تذكير معلق",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "قادمة",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "عرض الأدوار",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "سرد الأدوار المسندة إلى حساب.",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "سجل الصلاحيات",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "عرض تغييرات الصلاحيات بدءًا من الأحدث.",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "قائمة الأشخاص",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "سرد الحسابات وتغييرات الصلاحيات المتاحة.",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "الأشخاص المؤهلون للمسؤولية",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "سرد الأشخاص الذين يمكن إسناد مسؤولية هذا الملف إليهم.",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "عرض ملف",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "عرض تفاصيل الملف الحالية والإجراءات المتاحة.",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "قائمة الملفات",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "سرد الملفات التي يمكنك عرضها.",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "ملخص الملفات",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "حساب الملفات التي يمكنك عرضها وجمع المبالغ المطالب بها والمستحقة حسب العملة.",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "نشاط الملف",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "التغييرات على تفاصيل الملف وأعماله وتذكيراته التي يُسمح لك بعرضها.",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "صلاحياتك",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "عرض صلاحياتك والموارد المتاحة.",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "عرض تذكير",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "عرض هذا التذكير، بما في ذلك ما إذا كان مكتملًا أو ملغى.",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "قائمة التذكيرات",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "سرد التذكيرات التي يمكنك عرضها بدءًا من أقرب تاريخ استحقاق.",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "حدث خطأ داخلي. توقف وتحقق من السبب.",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "محتوى العملية المخزّن غير متسق. توقف وتحقق من السبب.",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "البيانات المحفوظة لا تتطابق مع هذا الإصدار من ClaimCore. توقف واطلب من المسؤول استخدام إصدار البرنامج المطابق.",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "فشل التحقق من سلامة البيانات المحفوظة. توقف واطلب من المسؤول إجراء التحقق.",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "تخزين ClaimCore غير متاح. حاول مجددًا بعد قليل.",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "مرجع الملف",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "اسم المطالب",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "المبلغ المطالب به",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "عملة المبلغ المطالب به",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "مؤشر التصفح",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "إصدار التذكير الذي راجعته",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "إصدار الملف الذي راجعته",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "إصدار العمل الذي راجعته",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "ملخص المعالجة",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "بلد الواقعة",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "تاريخ الواقعة",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "وصف الحادث",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "تاريخ الإبلاغ",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "شركة التأمين",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "حجم الصفحة",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "معرّف العملية",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "المبلغ المستحق",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "عملة المبلغ المستحق",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "تاريخ الدفع",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "تاريخ قرار الدفع",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "موفر تسجيل الدخول",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "نوع الحساب",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "معرّف تسجيل الدخول",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "بيانات الاتصال",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "اسم العرض",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "سبب إدارة السجل",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "الإجراء",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "تاريخ الاستحقاق",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "معرف التذكير",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "الشخص المسؤول",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "الدور",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "حالة الملف",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "نص البحث",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "قرار الدفع",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "الدفع",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "المطالبة",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "مغلق",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "بقرار",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "تم المحو",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "دون قرار",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "مُبطَل",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "تعذر التحقق من جلستك. أعد تحميل الصفحة.",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "محتوى الطلب كبير جدًا.",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "رُفض الاتصال.",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "هذه الصفحة قديمة. أعد تحميلها.",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "هذه الوظيفة غير موجودة.",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "الطلب ليس بالتنسيق المتوقع.",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "أُعيد تثبيت ClaimCore. أعد تحميل الصفحة قبل إجراء تغييرات. لم يُسجل شيء.",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "تعذر إكمال الطلب.",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "استخدم نوع المحتوى المحدد لنقطة النهاية.",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "الطريقة غير مدعومة.",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "الطلبات من هذا العنوان غير مسموحة.",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCore مشغول. حاول مجددًا بعد لحظة.",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "تعذر تسليم النتيجة.",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "أنت مسجل الخروج. سجل الدخول مجددًا.",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "معرّف الحساب",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "المسؤولية",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "معرّف الملف",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "عرض الملفات",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "حالة المتابعة",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "تضمين عمل الملفات غير النشطة",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "دورة حياة الملف",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "الترتيب",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "تقدم الدفع",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "استحقاق التذكير",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "حالة التذكير",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "طريقة عرض التذكيرات",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "تغيير المسؤولية",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "نطاق الصلاحية",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "مرشح الحالة",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "إدخالات الخط الزمني",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "تغيير الصلاحيات",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "إبطال الملف أو إعادة تفعيله",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "تغيير التذكير",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "فتح الملف أو إغلاقه",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "تغيير عمل الملف",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "محو تفاصيل الملف نهائيًا",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "العرض فقط",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "تسجيل بيانات الملف",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "تحديث عمل الملف",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "الإجراء",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "الملفات النشطة المفتوحة",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "متاح للإسناد",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "غير متاح لإسناد جديد",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "عدد الملفات التي تحتاج إلى اهتمام (دون تكرار)",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "الإجراءات المتاحة",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "تغيير حقائق الملف",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "يحتوي على {characters}",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "مفعّل",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "مرجع مطابق تمامًا",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "تحفظ الحقائق المالية للملف وسجلات الدفع.",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "حساب سابق {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "الملفات بلا إجراء تال",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "تذكيرات إضافية: {count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "المتابعة التالية",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "لا يوجد إجراء تالٍ مخطط لهذا الملف المفتوح.",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "غير مسجّل",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "تفاصيل الملف وقت المراجعة",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "الملفات ذات العمل المتأخر",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "التذكيرات المتأخرة",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "التذكيرات المعلقة",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "مراجعة التذكير",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "مراجعة التغييرات",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "المراجعة",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "الملفات غير المسندة",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "الملفات ذات المسؤول غير المتاح",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "وقت تغيير العمل",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "مسجل العمل",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "مراجعة العمل",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "نشط",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "تم المحو",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "ممحُوّ. لم يبقَ سوى مرجع الملف.",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "مُبطَل",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "مبطل، مثلًا لأنه أُدخل بالخطأ.",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "سُجل التغيير ({operationId}).",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first} أو {second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "ألغيت هذا الطلب. إذا كان قد أُرسل بالفعل، فتحقق مما إذا كان قد سُجل.",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "حُدّث ClaimCore. أعد تحميل الصفحة.",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "يتجاوز الملف المحدد {maximumBytes} بايت.",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "تعذرت قراءة الملف المحدد.",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "أرسل ClaimCore استجابة غير متوقعة (HTTP {status}).",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "أكمل هذا الحقل بالتنسيق المطلوب.",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "تعذرت قراءة جلستك. سجل الدخول مجددًا.",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "لم يكتمل تسجيل الدخول. أعد تحميل الصفحة وسجل الدخول مجددًا.",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "لم يُسجل هذا التغيير. يمكنك إعداده مجددًا.",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "تعذر تأكيد تسجيل هذا التغيير. أرسله مجددًا؛ لا يمكن تسجيله مرتين.",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "لم يستجب ClaimCore في الوقت المحدد.",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "أرسل ClaimCore رسالة لا تتعرف عليها هذه الصفحة. أعد تحميل الصفحة.",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "تعذر الاتصال بـ ClaimCore. تحقق من اتصالك.",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "شخص",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "حساب خدمة",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "بقرار",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "دون قرار",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "متأخر",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "اليوم",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "قادم",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "ملغى",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "مكتمل",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "معلق",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "المدقق",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "معالج الملفات",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "قارئ الملفات",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "مسجل الملفات",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "مشرف البيانات",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "المالك",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "مسجل المدفوعات",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "غير معروف أو دولي",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "ملف واحد",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "جميع الملفات",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "عمل الملف",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "مغلق",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "مفتوح",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "الصلاحيات",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "ملف",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "التذكير",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "عمل الملف",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "وقائع الملف",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "العمل والتذكيرات",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "واقعة الملف",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "تذكير",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "العمل",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "الكل",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "ملغاة",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "مغلقة",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "مكتملة",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "صدر قرار ولم يُدفع",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "مستحقة اليوم",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "المسندة إليّ",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "تحتاج إلى انتباه",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "لا يوجد إجراء تالٍ",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "متأخرة",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "قيد الانتظار",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "اليوم",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "غير مسندة",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "دون قرار",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "قادمة",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "مُبطَلة",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "مسح",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "تعيين",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "مفعّل وله أدوار",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "الحساب مفعّل وله أدوار معيّنة. تظل كل عملية خاضعة للتحقق من الأهلية والتفويض.",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "لم يتم تعيين أدوار",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "ليس لهذا الحساب أدوار وصول. اطلب من المالك منح الوصول.",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "الحساب معطّل",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "تم تعطيل هذا الحساب. اطلب من المالك تفعيل الوصول.",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "تم طلب الوصول",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "يحتاج المالك إلى قبول هذا الحساب قبل أن يتمكن من الوصول إلى ClaimCore.",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "طلبات الوصول",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "سرد طلبات تسجيل الدخول التي تنتظر صلاحية الوصول.",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "تجاهل طلب الوصول",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "إزالة هذا الطلب دون منح الوصول.",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "مفتوح",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "بقرار",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "مدفوع",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "مغلق",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "تصفية حسب الحساب المسؤول",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "هذا الإجراء غير متاح. حالة الملف الحالي: {state}. راجع أحدث بيانات المطالبة.",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "هذا الإجراء غير متاح. حالة التذكير الحالية: {state}. راجع أحدث بيانات التذكير.",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "إضافة شخص",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "إضافة شخص أو حساب خدمة باسم وأدواره الأولى.",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "منح الوصول",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "اختر من 1 إلى {maximumGrants} من منح الوصول.",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "اختر كل زوج من الدور والنطاق مرة واحدة فقط.",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "مفعّل وله أدوار",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "الحساب مفعّل وله أدوار معيّنة. تظل كل عملية خاضعة للتحقق من الأهلية والتفويض.",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "لم يتم تعيين أدوار",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "الحساب مسجّل ومفعّل ولكن لم يتم تعيين أدوار له.",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "معطّل",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "الحساب معطّل. تظل الأدوار المعيّنة مرئية لمراجعة الصلاحيات.",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "يحتاج إلى الانتباه",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "الإجراء التالي المقترح",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "لا ينطبق",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "وقت التسجيل",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "سجّله",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "تذكير",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "قبل",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "بعد",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "التغييرات",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "دون تغيير",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "ليس لديك صلاحية الوصول إلى هذه التغييرات.",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "مُحيت التغييرات.",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "متى وقعت الواقعة.",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "متى أُبلغت بالواقعة لأول مرة.",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "استخدم حرفين كبيرين. يعني {unknownCode} موقعًا غير معروف أو دوليًا.",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "أين وقعت الواقعة.",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "ما الذي حدث. أضف التفاصيل المهمة لهذه المطالبة.",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "الشخص أو الشركة التي تقدم المطالبة.",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "شركة التأمين المسؤولة عن المطالبة.",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "استخدم حتى {maximumIntegerDigits} رقمًا قبل النقطة العشرية وحتى {maximumFractionDigits} بعدها. استخدم أرقام ASCII والنقطة، دون مسافات أو إشارات أو فواصل أو أصفار زائدة في البداية.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "المبلغ الذي يطلبه المطالب.",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "{length} أحرف ASCII كبيرة من A إلى Z.",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "اختر العملة التي طُلب بها المبلغ.",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "استخدم من 1 إلى {maximumCharacters} محرف ASCII قابل للطباعة دون مسافات. لا يغيّر اختلاف حالة الأحرف هوية الملف، وتُحفظ الكتابة الأصلية.",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "مرجعك لهذا الملف، مثل CLM-2026-0001. لا يمكن تغييره لاحقًا.",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "متى تقرر المبلغ الواجب دفعه.",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "استخدم حتى {maximumIntegerDigits} رقمًا قبل النقطة العشرية وحتى {maximumFractionDigits} بعدها. استخدم أرقام ASCII والنقطة، دون مسافات أو إشارات أو فواصل أو أصفار زائدة في البداية.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "المبلغ الذي تقرر دفعه.",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "{length} أحرف ASCII كبيرة من A إلى Z.",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "اختر العملة التي سيُدفع بها المبلغ.",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "متى دُفع المبلغ كاملًا.",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "هل الملف مفتوح أم مغلق. إغلاق الملف لا يعني أن الدفع قد تمّ.",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "هل ما زال العمل على هذا الملف مفتوحًا.",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "استخدم معرّف UUID الدقيق للحساب المسجل.",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "من يتولى هذا الملف.",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "الوضع الحالي وما يلزم عمله.",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "UUID بالإصدار 7 يعرّف هذا التغيير. أعد استخدامه فقط لإعادة محاولة التغيير نفسه.",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "احتفظ بهذا المعرّف إذا احتجت إلى التحقق من نتيجة التغيير.",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "إصدار الملف الذي راجعته.",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "راجع أحدث بيانات الملف قبل تغييره.",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "لماذا يلزم هذا التغيير.",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "ما إذا كانت هوية الجهة المستهدفة لشخص أو لخدمة.",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "اختر شخصًا أو حساب خدمة.",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "مُصدر HTTPS المطابق لهوية الجهة المستهدفة.",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "موفر تسجيل الدخول لهذا الحساب.",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "معرّف الموضوع أو العميل الثابت لهوية الجهة المستهدفة.",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "معرّف الحساب لدى موفر تسجيل الدخول.",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "الاسم الذي سيظهر للآخرين في ClaimCore.",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "بيانات اختيارية للتواصل مع هذا الشخص.",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "من 1 إلى {maximumGrants} من أزواج الدور والملف المختلفة. حدد الملف بمرجعه الدقيق.",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "أضف الأدوار التي يحتاجها الحساب وحدد أين تنطبق.",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "دور القدرة المراد منحه أو سحبه.",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "ما الصلاحيات التي ينبغي منحها لهذا الحساب.",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "الحد الأقصى لعدد الصفوف المعادة في هذه الصفحة.",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "كم نتيجة تُعرض في كل مرة.",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "مؤشر الصفحة التالية من الاستجابة السابقة.",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "تابع إلى النتائج التالية.",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "ابحث عن ملف بالمرجع أو المطالب أو شركة التأمين.",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "المعرف الثابت لتذكير واحد في هذا الملف.",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "اختر التذكير الذي تريد تغييره.",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "استخدم سطرًا واحدًا من النص العادي، حتى {maximumScalars} قيمة Unicode مفردة.",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "ما الذي يجب فعله بعد ذلك.",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "استخدم تاريخًا ميلاديًا بصيغة YYYY-MM-DD. تُقبل التواريخ الماضية والمستقبلية.",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "متى يحين موعد هذا الإجراء.",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "مراجعة العمل التي راجعتها. مراجعات الحقائق المالية مستقلة.",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "راجع أحدث تفاصيل العمل قبل تغييرها.",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "استخدم رقم المراجعة الموجب لهذا التذكير نفسه الذي راجعته. للتذكيرات الأخرى مراجعات مستقلة.",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "راجع أحدث تذكير قبل تغييره.",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "ما إذا كان الدور ينطبق على التثبيت أو على ملف واحد.",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "اختر أين ينطبق هذا الدور.",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "الجهة المسجلة المحددة لمراجعة الصلاحيات أو سجل تغييراتها.",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "اختر الحساب الذي تريد مراجعة صلاحياته.",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "معرّف UUID الثابت لعملية OPEN المقبولة.",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "اختر الملف.",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "حصر النتائج في حالات دورة الحياة المحددة. إذا لم يُحدد المرشح، تُدرج جميع حالات دورة الحياة.",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "حصر النتائج في حالات الفتح أو الإغلاق المحددة. لا تحمل الملفات الممحوة حالة.",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "هل ما زال العمل على هذا الملف مفتوحًا.",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "حصر النتائج في الملفات التي لم يُتخذ فيها قرار أو اتُّخذ فيها قرار أو سُجّل دفعها. لا تحمل الملفات الممحوة تقدمًا للدفع.",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "اختر عرضًا محددًا للملفات. تحدد عوامل التصفية الأخرى النتائج بشكل إضافي.",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "اعرض الملفات المسندة إلى الحساب المحدد ضمن نطاق الملفات التي يحق لك قراءتها، مع تطبيق عوامل التصفية الأخرى.",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "اختر طريقة عرض قياسية للتذكيرات. تُضيّق عوامل تصفية الحالة والإسناد والتاريخ والنص والملف المحددة النتائج أكثر.",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "اعرض وقائع الملف أو العمل والتذكيرات. اترك الخيار فارغًا لعرض الاثنين.",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "اختر التغييرات التي تريد عرضها.",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "رتّب حسب المرجع، أو آخر تغيير في وقائع الملف، أو تاريخ الإخطار، أو أقرب تاريخ لتذكير معلّق. تُرتّب تغييرات الوقائع من الأحدث أولًا، وتواريخ الإخطار والتذكير من الأقدم أولًا، وتوضع التواريخ غير المسجّلة أخيرًا. يفصل المرجع بين القيم المتساوية.",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "اختر ترتيب النتائج.",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "تصفية الملفات التي يمكنك عرضها حسب الشخص المسؤول. صلاحية العرض وحدها لا تجعل أحدًا مسؤولًا.",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "تصنيف كل ملف بحسب أقرب تذكير معلق: متأخر أو اليوم أو قادم أو بلا تذكير معلق أو غير نشط. لتواريخ التذكيرات الفردية مرشح منفصل في القائمة.",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "اختر السجلات الحالية المعلقة أو المكتملة أو الملغاة. الإغفال يختار التذكيرات المعلقة.",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "ترشيح تواريخ التذكيرات الفردية بحسب تاريخ العمل للتثبيت؛ ويختلف عن أقرب استحقاق للملف.",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "تضمين العمل على الملفات المغلقة أو المبطلة صراحة. تحتفظ التذكيرات المعلقة بتواريخها وحالتها.",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "اختر التعيين أو المسح؛ اترك الخيار دون تحديد للاحتفاظ بالحساب المسؤول الحالي.",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "حدد المسؤول عن هذا الملف أو أزل تعيينه.",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "إبقاء بيانات التسجيل أو تحديث البيانات المختارة. تبقى البيانات غير المحددة كما هي، ويجب إدخال المبلغ والعملة معًا.",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "اختر التفاصيل التي تريد تغييرها.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "إبقاء القرار أو تحديث البيانات المختارة أو مسح القرار. يجب إدخال المبلغ والعملة معًا.",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "اختر التفاصيل التي تريد تغييرها.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "إبقاء تاريخ الدفع المسجّل أو استبداله أو إعادة تأكيده أو مسحه. إعادة التأكيد تُبقي التاريخ، ومسحه لا يعيد الأموال.",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "اختر التفاصيل التي تريد تغييرها.",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "أدخل تاريخًا صحيحًا.",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "أدخل حرفين للبلد، مثل LV.",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "أدخل رمز عملة من ثلاثة أحرف، مثل EUR.",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "راجع أحدث سجل قبل تغييره.",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "أدخل مرجع ملف دون مسافات.",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "اختر دورًا يمكن استخدامه هنا.",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "اختر كل دور ومكان تطبيقه مرة واحدة فقط.",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "فُتح الملف.",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "حُدّثت بيانات التسجيل.",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "صُحّحت بيانات الملف.",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "سُجّل قرار الدفع.",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "سُحب قرار الدفع.",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "سُجّل الدفع.",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "مُحي سجل الدفع.",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "أُغلق الملف.",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "أُعيد فتح الملف.",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "أُبطل الملف.",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "يبقى الملف مسجلًا ويخرج من العمل اليومي حتى يُعاد تفعيله.",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "أُعيد تفعيل الملف.",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "يصبح الملف نشطًا مجددًا. وتبقى حالته مفتوحة أو مغلقة كما هي.",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "مُحي الملف.",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "يؤدي هذا إلى محو تفاصيل الملف وعمله وتذكيراته نهائيًا من ClaimCore. ويبقى المرجع وسجل التغييرات.",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "سُجّل الحساب.",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "أُضيف الحساب مع أدواره.",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "يضيف هذا الحساب ويحفظ ملفه الشخصي ويسجل جميع الأدوار المحددة معًا.",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "حُدّث الملف الشخصي.",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "مُحي الملف الشخصي.",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "يؤدي هذا إلى محو الاسم وبيانات الاتصال المحفوظة نهائيًا. وتظهر التغييرات السابقة باسم حساب مجهول.",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "مُنح الدور.",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "يسجل هذا تعيين الدور المحدد لهذا الحساب.",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "سُحب الدور.",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "يزيل هذا تعيين الدور المحدد.",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "فُعّل الحساب.",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "عُطّل الحساب.",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "يفقد هذا الحساب الوصول إلى ClaimCore. وتبقى تغييراته المسجلة محفوظة.",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "حُدّث عمل الملف.",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "أُضيف التذكير.",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "حُدّث التذكير.",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "أُكمل التذكير.",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "أُلغي التذكير.",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "أُعيد فتح التذكير.",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "أُكمل التذكير وخُطط للإجراء التالي.",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "تم استبعاد طلب الوصول.",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "حالة الحساب",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "الملفات المسندة",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "الحساب",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "الحساب المعدّل",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "رقم السجل",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "سجل الصلاحيات",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "الاسم المطلوب",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "اسم المستخدم المطلوب",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "البريد الإلكتروني المطلوب",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "طلب الوصول",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "أول طلب",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "آخر طلب",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "الأذونات",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "العروض المتاحة",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "معرّف التثبيت",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "إصدار المنتج",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "تاريخ العمل",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "المنطقة الزمنية",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "الإجمالي",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "الملفات",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "إجمالي المطالبات حسب العملة",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "إجمالي المبالغ المستحقة حسب العملة",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "نعم",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "لا",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "الملفات",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "الأشخاص والصلاحيات",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "العمليات",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "تم استبعاد طلب الوصول.",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "التفاصيل",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "البحث عن أشخاص",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "ابحث في الأسماء أو بيانات الاتصال المحفوظة حاليًا.",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "استخدم حتى {maximumCharacters} حرفًا. لا تهم حالة الأحرف.",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "دور مُسنَد على مستوى التثبيت",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "إسنادات الدور للملفات",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "الأدوار المباشرة",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "أدوار التثبيت",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "الأثر",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "التغيير المسجّل",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "البيانات المسجّلة",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "ليس لديك صلاحية الوصول إلى هذه التفاصيل.",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "تفاصيل السجل",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "تم التسجيل.",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "مسجّل بالفعل.",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "مراحل الملف",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "المرحلة الحالية",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "مكتملة",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "التاريخ",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "المبلغ",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "أُعيد تفعيل الملف. تبقى تواريخ المراحل السابقة ضمن البيانات المسجّلة.",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "تاريخ تعديل الملخص",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "كاتب الملخص",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "الإجراءات غير المتاحة",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "تمت المصادقة",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "معرّف العقد",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "تم تسجيل الخروج.",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "تصفية حسب الدور",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "ابحث عن الأشخاص المسند إليهم هذا الدور، بما في ذلك الحسابات المعطلة.",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "طابق الأدوار المسندة المعترف بها على مستوى التثبيت أو الملفات الفردية. لا يختبر عامل التصفية الصلاحيات الحالية أو ما إذا كان الحساب مفعّلًا.",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "يدير الأشخاص والملفات الشخصية والأدوار. لا يمنح صلاحية الوصول إلى الملفات.",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "يعرض الملفات وسجلها الأساسي.",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "يسجل تفاصيل المطالبات ويصححها ويعرض الملفات وسجلها الأساسي. يتطلب فتح ملفات جديدة هذا الدور لجميع الملفات.",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "يتولى الملفات: يسجل القرارات ويغلق الملفات ويعيد فتحها ويعرض السجل الكامل. يتولى الأشخاص فقط المسؤوليات والملخصات والتذكيرات. يتطلب فتح ملفات جديدة هذا الدور لجميع الملفات.",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "يسجل تواريخ الدفع ويزيلها ويعرض الملفات وسجلها الأساسي. لا يرسل المال.",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "يبطل الملفات ويعيد تفعيلها ويمحوها ويعرض الملفات وسجلها الأساسي. للأشخاص فقط.",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "يعرض الملفات وسجلها الكامل. ومع هذا الدور لجميع الملفات، يعرض أيضًا الأشخاص والصلاحيات. لا يمكنه تغيير شيء.",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "فُتح الملف",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "حُدّثت تفاصيل المطالبة",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "صُحّحت الوقائع",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "سُجّل قرار الدفع",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "سُحب قرار الدفع",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "سُجّل تاريخ الدفع",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "أُزيل تاريخ الدفع المسجّل",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "أُغلق الملف",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "أُعيد فتح الملف",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "أُبطل الملف",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "أُعيد تفعيل الملف",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "مُحي الملف",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "أُسندت المسؤولية إلى {person}",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "لم تعد المسؤولية مسندة إلى {person}",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "حُدّث عمل الملف",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "أُضيف ملخص المعالجة",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "عُدّل ملخص المعالجة",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "أُزيل ملخص المعالجة",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "خُطط للتذكير «{action}» بتاريخ {due}",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "عُدّل التذكير «{action}»",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "أُكمل التذكير «{action}»",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "أُلغي التذكير «{action}»",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "أُعيد فتح التذكير «{action}» بتاريخ {due}",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "أُكمل «{completedAction}»؛ وخُطط لـ«{nextAction}» بتاريخ {nextDue}",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "أُعد هذا التغيير منذ مدة طويلة، أو ساعة هذا الجهاز غير صحيحة. أعد إعداده.",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "التحقق من تغيير",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "يبين ما إذا كان التغيير قد سُجل. وإذا لم يُسجل، تصبح الإجابة نهائية بعد {window} من إعداد التغيير.",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "عروض العمل",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "عدد الملفات والتذكيرات في كل عرض اليوم.",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "لا توجد صلاحية لعرض السجل",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "معلومات السجل الأساسية",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "السجل الكامل",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "التذكيرات",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "لا يوجد ما يُعرض هنا.",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "استخدم YYYY-MM-DD، مثل 2026-10-06.",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "حتى {maximumCharacters} محرفًا.",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "اختياري. حتى {maximumScalars} حرفًا؛ يُسمح بفواصل الأسطر. تُحفظ المسافات والكتابة كما أُدخلت؛ لا يُسمح بأحرف التحكم أو اتجاه النص.",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes} دقائق",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "تحقق من موفر تسجيل الدخول ومعرّف الحساب.",
+    "source": "5a875ddb5598"
+  }
 }

@@ -82,7 +82,7 @@ let tests =
 
                 Expect.equal
                     output
-                    [ "Amou…"; "999,999,999,999,999,999.9999 EUR" ]
+                    [ "Clai…"; "999,999,999,999,999,999.9999 EUR" ]
                     "Narrow cards preserve every monetary digit for terminal wrapping"
 
                 let wide = TextTable.rows "en" (options 50 false) columns [ [ value ] ]

@@ -302,7 +302,7 @@ it.each(["context", "listing"] as const)(
     expect(listing).toHaveBeenCalledTimes(2);
     expect(screen.queryByText("synthetic-authored")).toBeNull();
     expect(screen.queryByRole("option")).toBeNull();
-    fireEvent.click(screen.getByRole("button", { name: "Reload actors" }));
+    fireEvent.click(screen.getByRole("button", { name: "Reload people" }));
     await waitFor(() => {
       expect(listing).toHaveBeenCalledTimes(3);
     });

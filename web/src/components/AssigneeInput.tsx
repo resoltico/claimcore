@@ -81,7 +81,11 @@ export const AssigneeInput = ({ current, ...props }: Props) => {
   return (
     <fieldset id={`field-${props.inputName}`} className="assignee-input" disabled={props.disabled}>
       <legend>{p.fieldLabel(props.field.name)}</legend>
-      <FieldHelp label={p.fieldLabel(props.field.name)} ruleId={props.field.ruleId} />
+      <FieldHelp
+        name={props.field.name}
+        label={p.fieldLabel(props.field.name)}
+        ruleId={props.field.ruleId}
+      />
       <p>{p.hint(props.field)}</p>
       <SelectedAssignee current={current} value={props.value} />
       {result.loading ? <p role="status">{p.text("ui.loading")}</p> : null}

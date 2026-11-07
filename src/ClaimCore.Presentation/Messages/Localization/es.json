@@ -1,679 +1,2478 @@
 {
-  "act.AMEND_REGISTRATION.label": "Actualizar los datos de la reclamación",
-  "act.AMEND_REGISTRATION.meaning": "Actualizar los datos de registro seleccionados. Los datos omitidos y la referencia del expediente no cambian.",
-  "act.CLEAR_PAYMENT.label": "Corregir un registro de pago erróneo",
-  "act.CLEAR_PAYMENT.meaning": "Eliminar una fecha de pago registrada por error. Esto no es un reembolso ni la reversión de una transferencia real. Se conserva el historial anterior.",
-  "act.CLOSE.label": "Cerrar el expediente",
-  "act.CLOSE.meaning": "Cerrar el expediente. El cierre no significa que se haya realizado el pago.",
-  "act.CORRECT.label": "Corregir los datos del expediente",
-  "act.CORRECT.meaning": "Corregir conjuntamente los datos existentes seleccionados. Cambiar una decisión ya pagada exige confirmar, sustituir o eliminar explícitamente el registro del pago. Eliminar una fecha de pago no reembolsa dinero.",
-  "act.DECIDE.label": "Registrar la decisión de pago",
-  "act.DECIDE.meaning": "Registrar o sustituir el importe y la moneda de la decisión. Esto no envía dinero.",
-  "act.DISABLE.label": "Desactivar la cuenta",
-  "act.DISABLE.meaning": "Desactivar esta cuenta. Se conservan los cambios que registró.",
-  "act.ENABLE.label": "Activar la cuenta",
-  "act.ENABLE.meaning": "Activar esta cuenta con sus roles existentes.",
-  "act.ERASE.label": "Borrar el expediente",
-  "act.ERASE.meaning": "Eliminar este expediente y sus datos de ClaimCore. Se conservan las copias guardadas en otros lugares.",
-  "act.ERASE_PROFILE.label": "Borrar el perfil",
-  "act.ERASE_PROFILE.meaning": "Eliminar permanentemente el nombre visible y los datos de contacto guardados de esta cuenta. Se conservan su identidad, permisos de acceso y trabajo registrado.",
-  "act.GRANT.label": "Asignar un rol",
-  "act.GRANT.meaning": "Asignar el rol seleccionado a esta cuenta.",
-  "act.OPEN.label": "Abrir un expediente",
-  "act.OPEN.meaning": "Registrar el incidente, el reclamante, la aseguradora y el importe reclamado.",
-  "act.PROVISION_OWNER.label": "Configurar un propietario",
-  "act.RECORD_PAYMENT.label": "Registrar el pago realizado",
-  "act.RECORD_PAYMENT.meaning": "Registrar la fecha en que se pagó realmente la totalidad del importe decidido. Esto no ejecuta ni verifica una transferencia.",
-  "act.REGISTER.label": "Registrar una cuenta",
-  "act.REGISTER.meaning": "Añadir una cuenta registrada con un nombre y datos de contacto opcionales. Los roles se pueden asignar por separado.",
-  "act.REINSTATE.label": "Restablecer el expediente",
-  "act.REINSTATE.meaning": "Restablecer la tramitación habitual de un expediente anulado.",
-  "act.REMINDER_CANCEL.label": "Cancelar el recordatorio",
-  "act.REMINDER_CANCEL.meaning": "Cancelar esta acción pendiente sin borrar su historial. Cancelar es distinto de completar.",
-  "act.REMINDER_COMPLETE.label": "Completar el recordatorio",
-  "act.REMINDER_COMPLETE.meaning": "Registrar que has marcado la acción pendiente como completada. Se permite completar el último recordatorio; el expediente puede quedar sin una próxima acción.",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": "Completar y planificar la próxima acción",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": "Completar este recordatorio y planificar la próxima acción a la vez.",
-  "act.REMINDER_CREATE.label": "Añadir un recordatorio",
-  "act.REMINDER_CREATE.meaning": "Planificar la próxima acción de este expediente.",
-  "act.REMINDER_REOPEN.label": "Reabrir el recordatorio",
-  "act.REMINDER_REOPEN.meaning": "Reabrir este recordatorio con una nueva fecha de vencimiento.",
-  "act.REMINDER_UPDATE.label": "Actualizar el recordatorio",
-  "act.REMINDER_UPDATE.meaning": "Cambiar la acción o la fecha de este recordatorio pendiente. Las versiones anteriores se conservan en el historial.",
-  "act.REOPEN.label": "Reabrir el expediente",
-  "act.REOPEN.meaning": "Reabrir el expediente conservando sus datos y su historial.",
-  "act.REVOKE.label": "Revocar un rol",
-  "act.REVOKE.meaning": "Eliminar la asignación del rol seleccionado.",
-  "act.SET_PROFILE.label": "Actualizar el perfil",
-  "act.SET_PROFILE.meaning": "Registrar un nombre visible y datos de contacto opcionales para una cuenta. Esto no cambia su identidad ni sus permisos de acceso.",
-  "act.UPDATE_WORK.label": "Actualizar la tramitación",
-  "act.UPDATE_WORK.meaning": "Cambiar la persona responsable o actualizar el resumen de tramitación.",
-  "act.VOID.label": "Anular el expediente",
-  "act.VOID.meaning": "Bloquear las acciones de negocio conservando el expediente y su historial.",
-  "act.WITHDRAW_DECISION.label": "Retirar la decisión de pago",
-  "act.WITHDRAW_DECISION.meaning": "Eliminar la decisión aún no pagada conservando su historial.",
-  "actFamily.BUSINESS.label": "Tareas del expediente",
-  "actFamily.STEWARDSHIP.label": "Custodia de datos",
-  "actorAvailability.AVAILABLE.label": "Disponible",
-  "actorAvailability.AVAILABLE.meaning": "La cuenta está activada y disponible en este contexto.",
-  "actorAvailability.DISABLED.label": "Desactivada",
-  "actorAvailability.DISABLED.meaning": "La cuenta se ha desactivado.",
-  "actorAvailability.NOT_ELIGIBLE.label": "No apta",
-  "actorAvailability.NOT_ELIGIBLE.meaning": "La cuenta no se puede asignar actualmente a este trabajo.",
-  "assignment.MINE.label": "Mis expedientes",
-  "assignment.MINE.meaning": "Expedientes actualmente visibles de los que tu cuenta es responsable. Un permiso de lectura por sí solo no constituye una asignación.",
-  "assignment.UNASSIGNED.label": "Sin asignar",
-  "attention.ASSIGNEE_UNAVAILABLE.label": "Persona responsable no disponible",
-  "attention.DUE_TODAY.label": "Vence hoy",
-  "attention.NO_NEXT_ACTION.label": "Sin próxima acción",
-  "attention.OVERDUE.label": "Vencido",
-  "attention.READY_TO_CLOSE.label": "Listo para cerrar",
-  "attention.UNASSIGNED.label": "Sin asignar",
-  "capability.CLOSE.label": "Cerrar y reabrir",
-  "capability.DECIDE.label": "Registrar una decisión",
-  "capability.MANAGE_AUTHORITY.label": "Gestionar el acceso",
-  "capability.MANAGE_CASE_WORK.label": "Gestionar la tramitación",
-  "capability.READ_AUTHORITY.label": "Consultar el acceso",
-  "capability.READ_CASE.label": "Consultar el expediente",
-  "capability.READ_HISTORY.label": "Consultar el historial",
-  "capability.READ_HISTORY_FULL.label": "Consultar el historial completo",
-  "capability.RECORD_PAYMENT.label": "Registrar un pago",
-  "capability.REGISTER.label": "Registrar los datos del expediente",
-  "capability.STEWARD.label": "Custodiar los datos del expediente",
-  "caseOrder.FOLLOW_UP.label": "Fecha de seguimiento",
-  "caseOrder.NOTIFIED.label": "Más antiguos primero",
-  "caseOrder.RECENT.label": "Cambios de datos recientes",
-  "caseOrder.REFERENCE.label": "Referencia",
-  "correction.CLEAR.label": "Eliminar el valor registrado",
-  "correction.KEEP.label": "Conservar los datos actuales",
-  "correction.REAFFIRM.label": "Confirmar de nuevo el pago existente",
-  "correction.REPLACE.label": "Sustituir los datos",
-  "correction.UPDATE.label": "Actualizar los datos seleccionados",
-  "diagnostic.ACTOR_ALREADY_REGISTERED": "Esta identidad ya está registrada.",
-  "diagnostic.ACTOR_ID_REQUIRED": "Introduce un UUID de cuenta no vacío.",
-  "diagnostic.ACTOR_UNKNOWN": "Esta identidad no está registrada.",
-  "diagnostic.ASSIGNEE_UNAVAILABLE": "La cuenta seleccionada no se puede asignar actualmente a este expediente.",
-  "diagnostic.CALENDAR_DATE_REQUIRED": "Usa una fecha de calendario válida con el formato YYYY-MM-DD.",
-  "diagnostic.CASE_ALREADY_EXISTS": "La referencia del expediente ya existe.",
-  "diagnostic.CHRONOLOGICAL_ORDER": "Las fechas no están en un orden cronológico válido.",
-  "diagnostic.CONTROL_CHARACTERS": "No se aceptan caracteres de control.",
-  "diagnostic.CORRECTION_NO_CHANGES": "Elige al menos una corrección de datos que cambie el expediente actual.",
-  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": "Una corrección solo puede sustituir o eliminar un valor ya registrado en este expediente.",
-  "diagnostic.COUNTRY_FORMAT": "Usa dos letras ASCII mayúsculas para el código de país.",
-  "diagnostic.CURRENCY_FORMAT": "Usa tres letras ASCII mayúsculas (A–Z) para el identificador de moneda.",
-  "diagnostic.DECIMAL_FORMAT": "Usa texto decimal no negativo: hasta {maximumIntegerDigits} dígitos enteros y {maximumFractionalDigits} decimales; sin signo, exponente ni ceros iniciales redundantes: 0.10 es válido; 00.10 no es válido.",
-  "diagnostic.EXPECTED_REVISION_RANGE": "Usa una versión entera válida para esta solicitud, no superior a 9007199254740991.",
-  "diagnostic.FORMATTING_CHARACTER": "No se aceptan caracteres de formato en datos nuevos.",
-  "diagnostic.FUTURE_DATE": "Una fecha futura no puede registrar un suceso que ya ha ocurrido.",
-  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": "Este rol requiere una identidad de persona.",
-  "diagnostic.IDEMPOTENCY_CONFLICT": "Este ID de operación pertenece a una acción con otro contenido. No lo reutilices.",
-  "diagnostic.INVALID_CURSOR": "Usa un cursor de paginación devuelto por ClaimCore.",
-  "diagnostic.INVALID_INPUT": "Problemas de entrada: {issueCount}.",
-  "diagnostic.LAST_OWNER": "Se requiere al menos un propietario humano con la cuenta activada.",
-  "diagnostic.MALFORMED_UNICODE": "No se acepta Unicode mal formado.",
-  "diagnostic.NOT_AUTHORIZED": "Necesitas el rol {required} para realizar este cambio. Consulta a un propietario.",
-  "diagnostic.OPERATION_ID_REQUIRED": "Use a UUIDv7 operation ID.",
-  "diagnostic.PAGE_LIMIT_RANGE": "Usa un valor entre 1 y {maximumPageSize}.",
-  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": "Para actualizar una decisión con un pago registrado, confirma de nuevo, sustituye o elimina explícitamente el registro del pago.",
-  "diagnostic.PAYMENT_CLEAR_REQUIRED": "Eliminar una decisión ya pagada exige eliminar el registro del pago.",
-  "diagnostic.PRINCIPAL_FORMAT": "Usa un emisor HTTPS canónico y un identificador válido para el tipo de identidad.",
-  "diagnostic.REFERENCE_FORMAT": "Usa entre 1 y 80 caracteres ASCII imprimibles sin espacios.",
-  "diagnostic.REGISTER_MAINTENANCE": "Las escrituras en el registro están pausadas por mantenimiento. Puedes seguir consultando datos y comprobando el estado de operaciones existentes.",
-  "diagnostic.REMINDER_ID_REQUIRED": "Usa un UUID de recordatorio no vacío.",
-  "diagnostic.REMINDER_NO_CHANGES": "La actualización del recordatorio debe cambiar la acción o la fecha.",
-  "diagnostic.RESOURCE_UNAVAILABLE": "El recurso solicitado no está disponible.",
-  "diagnostic.REVISION_CONFLICT": "Consulta el expediente actual antes de enviar una solicitud modificada.",
-  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": "Este rol no tiene ninguna capacidad aplicable en el ámbito seleccionado.",
-  "diagnostic.SURROUNDING_WHITESPACE": "No se aceptan espacios en blanco al principio ni al final.",
-  "diagnostic.TEXT_REQUIRED": "Se requiere un valor que no esté en blanco.",
-  "diagnostic.TOO_LONG": "El valor no debe superar los {maximumCharacters} caracteres Unicode.",
-  "diagnostic.UPDATE_REQUIRED": "Selecciona al menos un valor para actualizar o eliminar.",
-  "diagnostic.WORK_NO_CHANGES": "No cambiaría ningún valor de la tramitación.",
-  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": "Una decisión de importe cero no es un pago.",
-  "due.INACTIVE.label": "Tramitación inactiva",
-  "due.OVERDUE.label": "Vencido",
-  "due.TODAY.label": "Vence hoy",
-  "due.UNSCHEDULED.label": "Sin recordatorios pendientes",
-  "due.UPCOMING.label": "Próximos vencimientos",
-  "endpoint.authority.grants.label": "Consultar las asignaciones de roles de un actor",
-  "endpoint.authority.grants.meaning": "Consultar una página de asignaciones de roles del actor seleccionado.",
-  "endpoint.authority.history.label": "Historial de acceso",
-  "endpoint.authority.history.meaning": "Revisar los cambios de acceso, del más reciente al más antiguo, con un filtro opcional por actor de destino.",
-  "endpoint.authority.list.label": "Listar actores",
-  "endpoint.authority.list.meaning": "Consultar los actores registrados y las acciones de acceso disponibles.",
-  "endpoint.case.assignees.label": "Cuentas aptas para la asignación",
-  "endpoint.case.assignees.meaning": "Listar las cuentas activadas de personas que se pueden asignar actualmente a este expediente. La selección usa el ID exacto de la cuenta.",
-  "endpoint.case.get.label": "Consultar un expediente",
-  "endpoint.case.get.meaning": "Consultar la vista actual aceptada del expediente y las acciones disponibles.",
-  "endpoint.case.list.label": "Listar expedientes",
-  "endpoint.case.list.meaning": "Consultar una página de expedientes visibles para el actor.",
-  "endpoint.case.summary.label": "Resumen de expedientes",
-  "endpoint.case.summary.meaning": "Contar los expedientes visibles que coinciden y sumar por separado los importes reclamados y pagaderos para cada moneda.",
-  "endpoint.case.timeline.label": "Cronología del expediente",
-  "endpoint.case.timeline.meaning": "Consultar los cambios de datos, tramitación y recordatorios con tus permisos actuales.",
-  "endpoint.context.label": "Consultar el contexto",
-  "endpoint.context.meaning": "Consultar las capacidades del actor autenticado y los recursos disponibles.",
-  "endpoint.reminder.get.label": "Mostrar el recordatorio",
-  "endpoint.reminder.get.meaning": "Consultar este recordatorio actual por su expediente y su ID inmutable, incluidos los registros finalizados. Las versiones anteriores del contenido requieren acceso al historial completo.",
-  "endpoint.reminder.list.label": "Cola de recordatorios",
-  "endpoint.reminder.list.meaning": "Páginas limitadas de recordatorios accesibles. Por defecto, las acciones pendientes de expedientes activos y abiertos se ordenan por fecha de vencimiento e identidad estable.",
-  "fault.CORE_INTERNAL_ERROR": "Se ha producido un error interno. Detente e investiga la causa.",
-  "fault.CORE_OPERATION_CONTENT_CONFLICT": "El contenido almacenado de la operación es incoherente. Detente e investiga la causa.",
-  "fault.CORE_SCHEMA_MISMATCH": "El esquema no coincide con esta compilación. Conserva esta instalación y usa la compilación correspondiente.",
-  "fault.CORE_STORE_INTEGRITY_ERROR": "Los datos almacenados no han superado la verificación. Detente y ejecuta verify.",
-  "fault.CORE_STORE_UNAVAILABLE": "El almacenamiento no está disponible. Vuelve a intentarlo.",
-  "field.caseReference.label": "Referencia del expediente",
-  "field.claimantName.label": "Nombre del reclamante",
-  "field.claimedAmount.label": "Importe reclamado",
-  "field.claimedCurrency.label": "Moneda del importe reclamado",
-  "field.cursor.label": "Cursor",
-  "field.expectedReminderRevision.label": "Versión revisada del recordatorio",
-  "field.expectedRevision.label": "Versión revisada del expediente",
-  "field.expectedWorkRevision.label": "Versión revisada de la tramitación",
-  "field.handlingSummary.label": "Resumen de tramitación",
-  "field.incidentCountry.label": "País",
-  "field.incidentDate.label": "Fecha del incidente",
-  "field.incidentDescription.label": "Descripción del incidente",
-  "field.incidentNotificationDate.label": "Fecha de notificación",
-  "field.insurerName.label": "Aseguradora responsable",
-  "field.limit.label": "Tamaño de página",
-  "field.operationId.label": "ID de operación",
-  "field.payableAmount.label": "Importe a pagar",
-  "field.payableCurrency.label": "Moneda del importe a pagar",
-  "field.paymentDate.label": "Fecha de pago",
-  "field.paymentDecisionDate.label": "Fecha de la decisión de pago",
-  "field.principal.issuer.label": "Emisor de identidad",
-  "field.principal.kind.label": "Tipo",
-  "field.principal.subject.label": "Identificador de sujeto o de cliente",
-  "field.profile.contact.label": "Datos de contacto",
-  "field.profile.displayName.label": "Nombre",
-  "field.reason.label": "Motivo",
-  "field.reminderAction.label": "Acción",
-  "field.reminderDueDate.label": "Fecha de vencimiento",
-  "field.reminderId.label": "ID del recordatorio",
-  "field.responsibleActor.label": "Responsable",
-  "field.role.label": "Rol",
-  "field.status.label": "Estado del expediente",
-  "field.text.label": "Texto de búsqueda",
-  "group.decision.label": "Decisión de pago",
-  "group.payment.label": "Pago",
-  "group.registration.label": "Reclamación",
-  "headline.CLOSED.label": "Cerrado",
-  "headline.DECIDED.label": "Con decisión",
-  "headline.ERASED.label": "Borrado",
-  "headline.PAID.label": "Pagado",
-  "headline.UNDECIDED.label": "Sin decisión",
-  "headline.VOIDED.label": "Anulado",
-  "host.ANTIFORGERY_REJECTED": "Se ha rechazado la verificación de la solicitud.",
-  "host.BODY_TOO_LARGE": "El cuerpo de la solicitud es demasiado grande.",
-  "host.CONNECTION_REJECTED": "Se ha rechazado la conexión.",
-  "host.CONTRACT_MISMATCH": "El contrato del cliente es distinto. Recarga o usa un cliente compatible.",
-  "host.ENDPOINT_MISSING": "No se ha encontrado el punto de conexión.",
-  "host.INPUT_INVALID": "La entrada no cumple el contrato del punto de conexión.",
-  "host.INSTALLATION_MISMATCH": "La instalación ha cambiado. Actualiza el contexto autenticado antes de preparar una solicitud. Esta solicitud no se ha iniciado.",
-  "host.INTERNAL": "No se ha podido completar la solicitud.",
-  "host.MEDIA_TYPE_REJECTED": "Usa el tipo de medio del punto de conexión.",
-  "host.METHOD_REJECTED": "El método no es compatible.",
-  "host.ORIGIN_REJECTED": "Se ha rechazado el origen.",
-  "host.RATE_LIMITED": "La admisión de solicitudes está ocupada.",
-  "host.RESPONSE_FAILED": "No se ha podido entregar la respuesta completada.",
-  "host.SESSION_REJECTED": "Se ha rechazado la autenticación.",
-  "input.actorId.label": "ID del actor",
-  "input.assignment.label": "Responsabilidad",
-  "input.caseId.label": "ID del expediente",
-  "input.caseView.label": "Vista de expedientes",
-  "input.due.label": "Estado de seguimiento",
-  "input.includeInactive.label": "Incluir la tramitación inactiva",
-  "input.lifecycle.label": "Ciclo de vida",
-  "input.order.label": "Orden",
-  "input.progress.label": "Progreso del pago",
-  "input.reminderDue.label": "Vencimiento del recordatorio",
-  "input.reminderState.label": "Estado del recordatorio",
-  "input.reminderView.label": "Vista de recordatorios",
-  "input.responsibleActorAction.label": "Cambio de responsabilidad",
-  "input.scope.label": "Ámbito de la asignación",
-  "input.status.label": "Filtro de estado",
-  "input.timelineFilter.label": "Entradas de la cronología",
-  "interactionEffect.CHANGE_AUTHORITY.label": "Cambiar los permisos de acceso",
-  "interactionEffect.CHANGE_LIFECYCLE.label": "Cambiar el ciclo de vida del expediente",
-  "interactionEffect.CHANGE_REMINDER.label": "Cambiar el recordatorio",
-  "interactionEffect.CHANGE_STATUS.label": "Cambiar el estado abierto o cerrado",
-  "interactionEffect.CHANGE_WORK.label": "Cambiar la tramitación",
-  "interactionEffect.ERASE_PAYLOAD.label": "Borrar irreversiblemente el contenido del expediente",
-  "interactionEffect.READ.label": "Consultar la información actual",
-  "interactionEffect.RECORD_FACTS.label": "Registrar los datos del expediente",
-  "interactionEffect.UPDATE_WORK.label": "Actualizar la tramitación",
-  "label.action": "Acción",
-  "label.actionableCases": "Expedientes activos y abiertos",
-  "label.assigneeAvailable": "Disponible para la asignación",
-  "label.assigneeUnavailable": "No disponible para nuevas asignaciones",
-  "label.attentionCases": "Expedientes distintos que requieren atención",
-  "label.availableActs": "Acciones disponibles",
-  "label.changedAt": "Datos del expediente modificados",
-  "label.characterWarning": "Contiene {characters}",
-  "label.enabled": "Activada",
-  "label.exactReferenceMatch": "Coincidencia exacta de la referencia",
-  "label.financialFactsPreserved": "Se conservan los datos financieros y los registros de pago del expediente.",
-  "label.formerAccount": "Cuenta anterior {id}",
-  "label.missingPlanCases": "Expedientes sin próxima acción",
-  "label.morePendingReminders": "+{count} más",
-  "label.nextFollowUp": "Próximo seguimiento",
-  "label.noNextAction": "Este expediente que requiere actuación no tiene una próxima acción pendiente.",
-  "label.notRecorded": "Sin registrar",
-  "label.observedCaseFacts": "Datos del expediente observados en la revisión",
-  "label.overdueCases": "Expedientes con trabajo vencido",
-  "label.overdueReminders": "Recordatorios vencidos",
-  "label.pendingReminders": "Recordatorios pendientes",
-  "label.reminderRevision": "Versión del recordatorio",
-  "label.reviewTitle": "Revisar los cambios",
-  "label.revisionLabel": "Versión",
-  "label.unassignedCases": "Expedientes sin asignar",
-  "label.unavailableAssigneeCases": "Expedientes con responsable no disponible",
-  "label.workChangedAt": "Tramitación modificada el",
-  "label.workRecordedBy": "Tramitación registrada por",
-  "label.workRevision": "Versión de la tramitación",
-  "lifecycle.ACTIVE.label": "Activo",
-  "lifecycle.ERASED.label": "Borrado",
-  "lifecycle.ERASED.meaning": "Borrado: solo se conservan la referencia y la versión del expediente.",
-  "lifecycle.VOIDED.label": "Anulado",
-  "lifecycle.VOIDED.meaning": "Anulado por un error de introducción de datos",
-  "notice.accepted": "Se ha aceptado la operación exacta {operationId}.",
-  "notice.alternativeRoles": "{first} o {second}",
-  "notice.cancelled": "This request was cancelled. Earlier unconfirmed changes still need checking.",
-  "notice.definitionMismatch": "El contrato web instalado no coincide con estos archivos del navegador. Recarga después de publicar los archivos correspondientes.",
-  "notice.fileTooLarge": "El archivo seleccionado supera los {maximumBytes} bytes.",
-  "notice.fileUnreadable": "No se ha podido leer el archivo seleccionado.",
-  "notice.invalidHttp": "El servicio local ha devuelto una respuesta HTTP {status} no válida.",
-  "notice.invalidInput": "Completa esta entrada con el formato requerido.",
-  "notice.invalidSession": "Respuesta de sesión no válida.",
-  "notice.missingCsrf": "La sesión autenticada no incluía un token contra la falsificación de solicitudes.",
-  "notice.notAccepted": "This change was not recorded for your account.",
-  "notice.outcomeUnknown": "Se desconoce el resultado de la operación. Repite exactamente la misma operación.",
-  "notice.responseTimeout": "Se ha agotado el tiempo de espera de la respuesta del servicio.",
-  "notice.unknownDiagnostic": "Se ha recibido un diagnóstico no compatible.",
-  "notice.unreachable": "No se ha podido contactar con el servicio local.",
-  "principalKind.HUMAN.label": "Persona",
-  "principalKind.SERVICE.label": "Servicio",
-  "progress.DECIDED.label": "Con decisión",
-  "progress.PAID.label": "Pagado",
-  "progress.UNDECIDED.label": "Sin decisión",
-  "reminderAct.CANCEL.label": "Cancelar el recordatorio",
-  "reminderAct.COMPLETE.label": "Completar el recordatorio",
-  "reminderAct.COMPLETE_AND_PLAN_NEXT.label": "Completar y planificar la próxima acción",
-  "reminderAct.CREATE.label": "Añadir un recordatorio",
-  "reminderAct.REOPEN.label": "Reabrir el recordatorio",
-  "reminderAct.UPDATE.label": "Actualizar el recordatorio",
-  "reminderDue.OVERDUE.label": "Vencido",
-  "reminderDue.TODAY.label": "Hoy",
-  "reminderDue.UPCOMING.label": "Próximos",
-  "reminderState.CANCELLED.label": "Cancelado",
-  "reminderState.COMPLETED.label": "Completado",
-  "reminderState.PENDING.label": "Pendiente",
-  "role.AUDITOR.label": "Auditor",
-  "role.CASE_HANDLER.label": "Tramitador de expedientes",
-  "role.CASE_READER.label": "Lector de expedientes",
-  "role.CASE_REGISTRAR.label": "Registrador de expedientes",
-  "role.DATA_STEWARD.label": "Custodio de datos",
-  "role.OWNER.label": "Propietario",
-  "role.PAYMENT_RECORDER.label": "Registrador de pagos",
-  "scalar.country.unknown": "Desconocido o internacional",
-  "scope.CASE.label": "Un expediente",
-  "scope.INSTALLATION.label": "Instalación",
-  "section.work.label": "Tramitación",
-  "status.CLOSED.label": "Cerrado",
-  "status.OPENED.label": "Abierto",
-  "subject.AUTHORITY.label": "Acceso",
-  "subject.CASE.label": "Expediente",
-  "subject.REMINDER.label": "Recordatorio",
-  "subject.WORK.label": "Tramitación",
-  "timelineFilter.FACTS.label": "Datos del expediente",
-  "timelineFilter.WORK.label": "Tramitación y recordatorios",
-  "timelineKind.CASE_FACT.label": "Dato del expediente",
-  "timelineKind.REMINDER.label": "Recordatorio",
-  "timelineKind.WORK.label": "Tramitación",
-  "view.ALL.empty": "No hay elementos coincidentes.",
-  "view.ALL.label": "Todos",
-  "view.CANCELLED.empty": "No hay elementos coincidentes.",
-  "view.CANCELLED.label": "Cancelados",
-  "view.CLOSED.empty": "No hay elementos coincidentes.",
-  "view.CLOSED.label": "Cerrados",
-  "view.COMPLETED.empty": "No hay elementos coincidentes.",
-  "view.COMPLETED.label": "Completados",
-  "view.DECIDED_UNPAID.empty": "No hay elementos coincidentes.",
-  "view.DECIDED_UNPAID.label": "Con decisión, sin pagar",
-  "view.DUE_TODAY.empty": "No hay elementos coincidentes.",
-  "view.DUE_TODAY.label": "Vencen hoy",
-  "view.MINE.empty": "No hay elementos coincidentes.",
-  "view.MINE.label": "Mis expedientes",
-  "view.NEEDS_ATTENTION.empty": "No hay elementos coincidentes.",
-  "view.NEEDS_ATTENTION.label": "Requieren atención",
-  "view.NO_NEXT_ACTION.empty": "No hay elementos coincidentes.",
-  "view.NO_NEXT_ACTION.label": "Sin próxima acción",
-  "view.OVERDUE.empty": "No hay elementos coincidentes.",
-  "view.OVERDUE.label": "Vencidos",
-  "view.PENDING.empty": "No hay elementos coincidentes.",
-  "view.PENDING.label": "Pendientes",
-  "view.TODAY.empty": "No hay elementos coincidentes.",
-  "view.TODAY.label": "Hoy",
-  "view.UNASSIGNED.empty": "No hay elementos coincidentes.",
-  "view.UNASSIGNED.label": "Sin asignar",
-  "view.UNDECIDED.empty": "No hay elementos coincidentes.",
-  "view.UNDECIDED.label": "Sin decisión",
-  "view.UPCOMING.empty": "No hay elementos coincidentes.",
-  "view.UPCOMING.label": "Próximos",
-  "view.VOIDED.empty": "No hay elementos coincidentes.",
-  "view.VOIDED.label": "Anulados",
-  "workAct.UPDATE_WORK.label": "Actualizar la tramitación",
-  "workChange.CLEAR.label": "Eliminar",
-  "workChange.SET.label": "Establecer",
-  "requesterState.ACTIVE.label": "Cuenta activada",
-  "requesterState.ACTIVE.meaning": "Tu cuenta está activada y tiene roles asignados.",
-  "requesterState.NO_ROLES.label": "Sin roles asignados",
-  "requesterState.NO_ROLES.meaning": "Esta cuenta no tiene roles de acceso. Pide acceso a un propietario.",
-  "requesterState.DISABLED.label": "Cuenta desactivada",
-  "requesterState.DISABLED.meaning": "Esta cuenta se ha desactivado. Pide a un propietario que active el acceso.",
-  "requesterState.NOT_REGISTERED.label": "Acceso solicitado",
-  "requesterState.NOT_REGISTERED.meaning": "Un propietario debe admitir esta cuenta para que pueda acceder a ClaimCore.",
-  "endpoint.authority.requests.label": "Solicitudes de acceso",
-  "endpoint.authority.requests.meaning": "Consultar una página de solicitudes pendientes de admisión.",
-  "endpoint.authority.requests.dismiss.label": "Descartar la solicitud de acceso",
-  "endpoint.authority.requests.dismiss.meaning": "Eliminar esta solicitud sin conceder acceso.",
-  "caseStage.OPENED.label": "Abierto",
-  "caseStage.DECIDED.label": "Con decisión",
-  "caseStage.PAID.label": "Pagado",
-  "caseStage.CLOSED.label": "Cerrado",
-  "input.responsibleActorFilter.label": "Filtro de cuenta responsable",
-  "diagnostic.NOT_OFFERED": "Esta acción no está disponible. Estado del expediente: {state}. Revisa la última versión del expediente.",
-  "diagnostic.REMINDER_NOT_OFFERED": "Esta acción no está disponible. Estado del recordatorio: {state}. Revisa la última versión del recordatorio.",
-  "act.ADMIT.label": "Añadir una persona",
-  "act.ADMIT.meaning": "Añadir una cuenta con su nombre y sus roles iniciales a la vez.",
-  "field.grants.label": "Asignaciones de acceso",
-  "diagnostic.GRANT_COUNT_RANGE": "Elige entre 1 y {maximumGrants} asignaciones de acceso.",
-  "diagnostic.DUPLICATE_GRANT": "Elige cada combinación de rol y ámbito una sola vez.",
-  "accountState.ACTIVE.label": "Activada con roles",
-  "accountState.ACTIVE.meaning": "La cuenta está activada y tiene roles asignados. Cada operación sigue comprobando los requisitos y la autorización.",
-  "accountState.NO_ROLES.label": "Sin roles asignados",
-  "accountState.NO_ROLES.meaning": "La cuenta está registrada y activada, pero no tiene roles asignados.",
-  "accountState.DISABLED.label": "Desactivada",
-  "accountState.DISABLED.meaning": "La cuenta está desactivada. Los roles asignados siguen visibles para revisar el acceso.",
-  "label.attention": "Atención",
-  "label.recommendedNext": "Próxima acción recomendada",
-  "label.notApplicable": "No aplicable",
-  "label.recordedAt": "Registrado el",
-  "label.recordedBy": "Registrado por",
-  "label.reminder": "Recordatorio",
-  "label.before": "Antes",
-  "label.after": "Después",
-  "label.changes": "Cambios",
-  "label.unchanged": "Sin cambios",
-  "label.changesWithheld": "No se divulgan los cambios.",
-  "label.changesErased": "Cambios borrados.",
-  "field.incidentDate.rule": "Usa dígitos ASCII con el formato YYYY-MM-DD, por ejemplo 2026-10-06.",
-  "field.incidentDate.hint": "Cuándo ocurrió el incidente.",
-  "field.incidentNotificationDate.rule": "Usa dígitos ASCII con el formato YYYY-MM-DD, por ejemplo 2026-10-06.",
-  "field.incidentNotificationDate.hint": "Cuándo tuviste conocimiento de este incidente por primera vez.",
-  "field.incidentCountry.rule": "Usa dos letras mayúsculas. {unknownCode} significa desconocido o internacional.",
-  "field.incidentCountry.hint": "Dónde ocurrió el incidente.",
-  "field.incidentDescription.rule": "Texto sin formato opcional, de hasta {maximumScalars} valores escalares Unicode. Se permiten saltos de párrafo LF. Se conservan los espacios en blanco y la escritura Unicode; se rechazan los controles inseguros y el formato direccional.",
-  "field.incidentDescription.hint": "Qué ocurrió. Añade los detalles relevantes para esta reclamación.",
-  "field.claimantName.rule": "Hasta {maximumCharacters} caracteres.",
-  "field.claimantName.hint": "La persona o empresa que presenta la reclamación.",
-  "field.insurerName.rule": "Hasta {maximumCharacters} caracteres.",
-  "field.insurerName.hint": "La aseguradora responsable de la reclamación.",
-  "field.claimedAmount.rule": "Usa hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Usa dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales redundantes.",
-  "field.claimedAmount.hint": "El importe que solicita el reclamante.",
-  "field.claimedCurrency.rule": "{length} letras ASCII mayúsculas (A–Z).",
-  "field.claimedCurrency.hint": "La moneda del importe reclamado.",
-  "field.caseReference.rule": "Usa entre 1 y {maximumCharacters} caracteres ASCII imprimibles sin espacios. Las mayúsculas y minúsculas identifican el mismo expediente; se conserva la escritura original.",
-  "field.caseReference.hint": "Tu propia referencia para este expediente, por ejemplo CLM-2026-0001. No se puede cambiar después.",
-  "field.paymentDecisionDate.rule": "Usa dígitos ASCII con el formato YYYY-MM-DD, por ejemplo 2026-10-06.",
-  "field.paymentDecisionDate.hint": "Cuándo decidiste el importe a pagar.",
-  "field.payableAmount.rule": "Usa hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Usa dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales redundantes.",
-  "field.payableAmount.hint": "El importe que decidiste que se debía pagar.",
-  "field.payableCurrency.rule": "{length} letras ASCII mayúsculas (A–Z).",
-  "field.payableCurrency.hint": "La moneda del importe a pagar.",
-  "field.paymentDate.rule": "Usa dígitos ASCII con el formato YYYY-MM-DD, por ejemplo 2026-10-06.",
-  "field.paymentDate.hint": "Cuándo se pagó la totalidad del importe.",
-  "field.status.rule": "Si el expediente está abierto o cerrado. Cerrar un expediente no significa que se haya realizado el pago.",
-  "field.status.hint": "Si la tramitación de este expediente sigue abierta.",
-  "field.responsibleActor.rule": "Usa el UUID exacto de la cuenta registrada.",
-  "field.responsibleActor.hint": "Quién tramita este expediente.",
-  "field.handlingSummary.rule": "Texto sin formato opcional, de hasta {maximumScalars} valores escalares Unicode. Se permiten saltos de párrafo LF. Se conservan los espacios en blanco y la escritura Unicode; se rechazan los controles inseguros y el formato direccional.",
-  "field.handlingSummary.hint": "La situación actual y lo que hay que hacer.",
-  "field.operationId.rule": "Un ID para esta operación. Reutilízalo únicamente al repetir la misma solicitud.",
-  "field.operationId.hint": "Conserva este identificador del cambio por si necesitas comprobar qué ocurrió.",
-  "field.expectedRevision.rule": "La versión del expediente en la que se basa esta solicitud.",
-  "field.expectedRevision.hint": "Consulta la última versión del expediente antes de modificarlo.",
-  "field.reason.rule": "Hasta {maximumCharacters} caracteres.",
-  "field.reason.hint": "Por qué es necesario este cambio.",
-  "field.principal.kind.rule": "Si la identidad de destino es una persona o un servicio.",
-  "field.principal.kind.hint": "Elige una persona o una cuenta de servicio.",
-  "field.principal.issuer.rule": "El emisor HTTPS exacto de la identidad de destino.",
-  "field.principal.issuer.hint": "El proveedor de inicio de sesión de esta cuenta.",
-  "field.principal.subject.rule": "El identificador inmutable de sujeto o de cliente de la identidad de destino.",
-  "field.principal.subject.hint": "El identificador de la cuenta en el proveedor de inicio de sesión.",
-  "field.profile.displayName.rule": "Hasta {maximumCharacters} caracteres.",
-  "field.profile.displayName.hint": "El nombre que verán las personas en ClaimCore.",
-  "field.profile.contact.rule": "Hasta {maximumCharacters} caracteres.",
-  "field.profile.contact.hint": "Datos opcionales para contactar con esta persona.",
-  "field.grants.rule": "Proporciona entre 1 y {maximumGrants} combinaciones distintas de rol y ámbito. Las referencias de expediente son referencias explícitas, incluidas las que parecen UUID.",
-  "field.grants.hint": "Añade los roles que necesita esta cuenta y dónde se aplican.",
-  "field.role.rule": "El rol de capacidades que se va a asignar o revocar.",
-  "field.role.hint": "El acceso que debe tener esta cuenta.",
-  "field.limit.rule": "El número máximo de filas que se devolverán en esta página.",
-  "field.limit.hint": "Cuántos resultados se muestran a la vez.",
-  "field.cursor.rule": "Continuar la misma consulta desde el cursor opaco devuelto por el servicio.",
-  "field.cursor.hint": "Continuar con los siguientes resultados.",
-  "field.text.rule": "Hasta {maximumCharacters} caracteres.",
-  "field.text.hint": "Buscar un expediente por su referencia, reclamante o aseguradora.",
-  "field.reminderId.rule": "La identidad inmutable de un recordatorio de este expediente.",
-  "field.reminderId.hint": "Elige el recordatorio que deseas cambiar.",
-  "field.reminderAction.rule": "Usa una línea de texto sin formato, de hasta {maximumScalars} valores escalares Unicode.",
-  "field.reminderAction.hint": "Lo que debe suceder a continuación.",
-  "field.reminderDueDate.rule": "Usa una fecha gregoriana, YYYY-MM-DD. Se permiten fechas pasadas y futuras.",
-  "field.reminderDueDate.hint": "Cuándo vence esta acción.",
-  "field.expectedWorkRevision.rule": "La versión de tramitación que revisaste. Las versiones de los datos financieros son independientes.",
-  "field.expectedWorkRevision.hint": "Consulta los últimos datos de tramitación antes de modificarlos.",
-  "field.expectedReminderRevision.rule": "Usa la versión positiva de este recordatorio exacto que revisaste. Los demás recordatorios tienen versiones independientes.",
-  "field.expectedReminderRevision.hint": "Consulta la última versión del recordatorio antes de modificarlo.",
-  "input.scope.rule": "Si el rol se aplica a la instalación o a un expediente.",
-  "input.scope.hint": "Elige dónde se aplica este rol.",
-  "input.actorId.rule": "El actor registrado seleccionado para revisar las asignaciones o el historial de acceso.",
-  "input.actorId.hint": "Elige de quién quieres revisar el acceso.",
-  "input.caseId.rule": "UUID estable de la operación OPEN aceptada.",
-  "input.caseId.hint": "Elige el expediente.",
-  "input.lifecycle.rule": "Limitar los resultados a los ciclos de vida seleccionados. Omite este filtro para incluir todos los ciclos de vida.",
-  "input.lifecycle.hint": "Elige los resultados que deseas ver.",
-  "input.status.rule": "Limitar los resultados a los estados abierto o cerrado seleccionados. Los expedientes borrados no tienen estado.",
-  "input.status.hint": "Si la tramitación de este expediente sigue abierta.",
-  "input.progress.rule": "Limitar los resultados a expedientes sin decisión, con decisión o pagados. Los expedientes borrados no tienen progreso de pago.",
-  "input.progress.hint": "Elige los resultados que deseas ver.",
-  "input.caseView.rule": "Elige una vista estándar de expedientes. Los demás filtros restringen aún más sus resultados.",
-  "input.caseView.hint": "Elige los resultados que deseas ver.",
-  "input.responsibleActorFilter.rule": "Limitar los expedientes a la cuenta responsable seleccionada dentro de tu ámbito de lectura. Los demás filtros restringen aún más los resultados.",
-  "input.responsibleActorFilter.hint": "Elige los resultados que deseas ver.",
-  "input.reminderView.rule": "Elige una vista estándar de recordatorios. Los filtros explícitos de estado, asignación, fecha, texto y expediente restringen aún más sus resultados.",
-  "input.reminderView.hint": "Elige los resultados que deseas ver.",
-  "input.timelineFilter.rule": "Mostrar los datos del expediente o la tramitación y los recordatorios. Déjalo sin establecer para mostrar ambos.",
-  "input.timelineFilter.hint": "Elige qué cambios se muestran.",
-  "input.order.rule": "Ordenar por referencia, último cambio de datos del expediente, fecha de notificación o fecha más próxima de recordatorio pendiente. Los cambios de datos van del más reciente al más antiguo; las fechas de notificación y de recordatorios, de la más antigua a la más reciente, con las fechas ausentes al final. La referencia resuelve los empates.",
-  "input.order.hint": "Elige cómo ordenar los resultados.",
-  "input.assignment.rule": "Filtrar por responsabilidad efectiva dentro de la visibilidad actual. Un permiso de lectura de un expediente por sí solo no constituye una asignación.",
-  "input.assignment.hint": "Elige los resultados que deseas ver.",
-  "input.due.rule": "Clasificar cada expediente por su recordatorio pendiente más próximo: vencido, hoy, próximo, sin recordatorio pendiente o inactivo. Las fechas individuales de la cola de recordatorios usan otro filtro.",
-  "input.due.hint": "Elige los resultados que deseas ver.",
-  "input.reminderState.rule": "Seleccionar registros actuales pendientes, completados o cancelados. Si se omite, se seleccionan los recordatorios pendientes.",
-  "input.reminderState.hint": "Elige los resultados que deseas ver.",
-  "input.reminderDue.rule": "Filtrar las fechas individuales de recordatorios con respecto a la fecha operativa de la instalación; difiere del próximo vencimiento mínimo del expediente.",
-  "input.reminderDue.hint": "Elige los resultados que deseas ver.",
-  "input.includeInactive.rule": "Incluir explícitamente la tramitación de expedientes cerrados o anulados. Los recordatorios pendientes conservan sus fechas y su estado.",
-  "input.includeInactive.hint": "Elige los resultados que deseas ver.",
-  "input.responsibleActorAction.rule": "Elige establecer o eliminar; omítelo para conservar la cuenta responsable actual.",
-  "input.responsibleActorAction.hint": "Establecer o eliminar la persona responsable de este expediente.",
-  "group.registration.rule": "Conservar los datos de registro o actualizar los seleccionados. Los datos omitidos no cambian; el importe y la moneda se indican juntos.",
-  "group.registration.hint": "Elige qué datos cambiar.",
-  "group.decision.rule": "Conservar la decisión, actualizar los datos seleccionados o eliminarla. El importe y la moneda deben indicarse juntos.",
-  "group.decision.hint": "Elige qué datos cambiar.",
-  "group.payment.rule": "Conservar, sustituir, confirmar de nuevo o eliminar la fecha de pago registrada. Confirmarla de nuevo conserva la fecha; eliminarla no reembolsa dinero.",
-  "group.payment.hint": "Elige qué datos cambiar.",
-  "diagnostic.CALENDAR_DATE_REQUIRED.gui": "Introduce una fecha real.",
-  "diagnostic.COUNTRY_FORMAT.gui": "Introduce dos letras para el país, por ejemplo LV.",
-  "diagnostic.CURRENCY_FORMAT.gui": "Introduce un código de moneda de tres letras, por ejemplo EUR.",
-  "diagnostic.EXPECTED_REVISION_RANGE.gui": "Revisa la última versión del registro antes de modificarlo.",
-  "diagnostic.REFERENCE_FORMAT.gui": "Introduce una referencia de expediente sin espacios.",
-  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": "Elige un rol que pueda usarse aquí.",
-  "diagnostic.DUPLICATE_GRANT.gui": "Elige cada rol y su ámbito una sola vez.",
-  "act.OPEN.done": "Expediente abierto.",
-  "act.OPEN.consequence": "Registrar el incidente, el reclamante, la aseguradora y el importe reclamado.",
-  "act.AMEND_REGISTRATION.done": "Registro actualizado.",
-  "act.AMEND_REGISTRATION.consequence": "Actualizar los datos de registro seleccionados. Los datos omitidos y la referencia del expediente no cambian.",
-  "act.CORRECT.done": "Datos del expediente corregidos.",
-  "act.CORRECT.consequence": "Corregir conjuntamente los datos existentes seleccionados. Cambiar una decisión ya pagada exige confirmar, sustituir o eliminar explícitamente el registro del pago. Eliminar una fecha de pago no reembolsa dinero.",
-  "act.DECIDE.done": "Decisión de pago registrada.",
-  "act.DECIDE.consequence": "Registrar o sustituir el importe y la moneda de la decisión. Esto no envía dinero.",
-  "act.WITHDRAW_DECISION.done": "Decisión de pago retirada.",
-  "act.WITHDRAW_DECISION.consequence": "Eliminar la decisión aún no pagada conservando su historial.",
-  "act.RECORD_PAYMENT.done": "Pago registrado.",
-  "act.RECORD_PAYMENT.consequence": "Registrar la fecha en que se pagó realmente la totalidad del importe decidido. Esto no ejecuta ni verifica una transferencia.",
-  "act.CLEAR_PAYMENT.done": "Registro de pago eliminado.",
-  "act.CLEAR_PAYMENT.consequence": "Eliminar una fecha de pago registrada por error. Esto no es un reembolso ni la reversión de una transferencia real. Se conserva el historial anterior.",
-  "act.CLOSE.done": "Expediente cerrado.",
-  "act.CLOSE.consequence": "Cerrar el expediente. El cierre no significa que se haya realizado el pago.",
-  "act.REOPEN.done": "Expediente reabierto.",
-  "act.REOPEN.consequence": "Reabrir el expediente conservando sus datos y su historial.",
-  "act.VOID.done": "Expediente anulado.",
-  "act.VOID.consequence": "El expediente sigue registrado y queda fuera del trabajo cotidiano hasta que se restablezca.",
-  "act.REINSTATE.done": "Expediente restablecido.",
-  "act.REINSTATE.consequence": "El expediente vuelve a estar activo. Su estado abierto o cerrado no cambia.",
-  "act.ERASE.done": "Expediente borrado.",
-  "act.ERASE.consequence": "Esto elimina permanentemente de ClaimCore los datos del expediente, su tramitación y sus recordatorios. Se conservan la referencia y el registro de cambios.",
-  "act.REGISTER.done": "Cuenta registrada.",
-  "act.REGISTER.consequence": "Añadir una cuenta registrada con un nombre y datos de contacto opcionales. Los roles se pueden asignar por separado.",
-  "act.ADMIT.done": "Cuenta añadida con sus roles.",
-  "act.ADMIT.consequence": "Esto añade la cuenta, guarda su perfil y registra todos los roles seleccionados a la vez.",
-  "act.SET_PROFILE.done": "Perfil actualizado.",
-  "act.SET_PROFILE.consequence": "Registrar un nombre visible y datos de contacto opcionales para una cuenta. Esto no cambia su identidad ni sus permisos de acceso.",
-  "act.ERASE_PROFILE.done": "Perfil borrado.",
-  "act.ERASE_PROFILE.consequence": "Esto elimina permanentemente el nombre y los datos de contacto guardados. Los cambios anteriores muestran un nombre de cuenta anónimo.",
-  "act.GRANT.done": "Rol asignado.",
-  "act.GRANT.consequence": "Esto registra la asignación del rol seleccionado para esta cuenta.",
-  "act.REVOKE.done": "Rol revocado.",
-  "act.REVOKE.consequence": "Esto elimina la asignación del rol seleccionado.",
-  "act.ENABLE.done": "Cuenta activada.",
-  "act.ENABLE.consequence": "Activar esta cuenta con sus roles existentes.",
-  "act.DISABLE.done": "Cuenta desactivada.",
-  "act.DISABLE.consequence": "Esta cuenta pierde el acceso a ClaimCore. Los cambios que registró se conservan.",
-  "act.UPDATE_WORK.done": "Tramitación actualizada.",
-  "act.UPDATE_WORK.consequence": "Cambiar la persona responsable o actualizar el resumen de tramitación.",
-  "act.REMINDER_CREATE.done": "Recordatorio añadido.",
-  "act.REMINDER_CREATE.consequence": "Planificar la próxima acción de este expediente.",
-  "act.REMINDER_UPDATE.done": "Recordatorio actualizado.",
-  "act.REMINDER_UPDATE.consequence": "Cambiar la acción o la fecha de este recordatorio pendiente. Las versiones anteriores se conservan en el historial.",
-  "act.REMINDER_COMPLETE.done": "Recordatorio completado.",
-  "act.REMINDER_COMPLETE.consequence": "Registrar que has marcado la acción pendiente como completada. Se permite completar el último recordatorio; el expediente puede quedar sin una próxima acción.",
-  "act.REMINDER_CANCEL.done": "Recordatorio cancelado.",
-  "act.REMINDER_CANCEL.consequence": "Cancelar esta acción pendiente sin borrar su historial. Cancelar es distinto de completar.",
-  "act.REMINDER_REOPEN.done": "Recordatorio reabierto.",
-  "act.REMINDER_REOPEN.consequence": "Reabrir este recordatorio con una nueva fecha de vencimiento.",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": "Recordatorio completado y próxima acción planificada.",
-  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.consequence": "Completar este recordatorio y planificar la próxima acción a la vez.",
-  "endpoint.authority.requests.dismiss.done": "Solicitud de acceso descartada.",
-  "label.accountState": "Estado de la cuenta",
-  "label.responsibleCases": "Expedientes a cargo",
-  "label.account": "Cuenta",
-  "label.targetAccount": "Cuenta modificada",
-  "label.sequence": "Número de registro",
-  "label.authorityHistory": "Historial de acceso",
-  "label.requestedName": "Nombre solicitado",
-  "label.requestedUsername": "Nombre de usuario solicitado",
-  "label.requestedEmail": "Correo electrónico solicitado",
-  "label.accessRequest": "Solicitud de acceso",
-  "label.firstSeen": "Primera solicitud",
-  "label.lastSeen": "Última solicitud",
-  "label.capabilities": "Permisos",
-  "label.views": "Vistas disponibles",
-  "label.installationId": "ID de instalación",
-  "label.productVersion": "Versión del producto",
-  "label.businessDate": "Fecha operativa",
-  "label.timeZone": "Zona horaria",
-  "label.total": "Total",
-  "label.cases": "Expedientes",
-  "label.claimedTotals": "Totales reclamados por moneda",
-  "label.payableTotals": "Totales pagaderos por moneda",
-  "boolean.TRUE.label": "Sí",
-  "boolean.FALSE.label": "No",
-  "view.CASES.label": "Expedientes",
-  "view.AUTHORITY.label": "Personas y acceso",
-  "view.OPERATIONS.label": "Operaciones",
-  "label.requestDismissed": "Solicitud de acceso descartada.",
-  "label.details": "Detalles",
-  "field.directorySearch.label": "Buscar personas",
-  "field.directorySearch.hint": "Buscar en los nombres o datos de contacto guardados actualmente.",
-  "field.directorySearch.rule": "Usa hasta {maximumCharacters} caracteres. No se distingue entre mayúsculas y minúsculas.",
-  "label.installationRoleAssigned": "Rol de instalación asignado",
-  "label.caseRoleAssignments": "Asignaciones de roles de expediente",
-  "label.directRoles": "Roles directos",
-  "label.inheritedRoles": "Roles de instalación",
-  "label.effect": "Efecto",
-  "label.recordedChange": "Cambio registrado",
-  "label.recordedFacts": "Datos registrados",
-  "label.detailsWithheld": "No se divulgan los detalles.",
-  "label.recordDetails": "Detalles del registro",
-  "label.recorded": "Registrado.",
-  "label.alreadyRecorded": "Ya registrado.",
-  "label.stages": "Etapas del expediente",
-  "label.currentStage": "Etapa actual",
-  "label.stageCompleted": "Completada",
-  "label.stageDate": "Fecha",
-  "label.stageAmount": "Importe",
-  "label.stageReinstated": "Expediente restablecido. Las fechas de etapas anteriores siguen siendo datos registrados.",
-  "label.summaryChangedAt": "Resumen modificado",
-  "label.summaryRecordedBy": "Resumen escrito por",
-  "label.unavailableActions": "Acciones no disponibles",
-  "label.authenticated": "Autenticado",
-  "label.contractIdentity": "Identidad del contrato",
-  "label.signedOut": "Sesión cerrada.",
-  "input.roleFilter.label": "Filtro de roles",
-  "input.roleFilter.hint": "Buscar personas con este rol asignado, incluidas las cuentas desactivadas.",
-  "input.roleFilter.rule": "Buscar asignaciones de roles reconocidas en la instalación o en expedientes individuales. Este filtro no comprueba las capacidades actuales ni si la cuenta está activada.",
-  "role.OWNER.meaning": "Gestiona personas, perfiles y roles. Este rol por sí solo no concede acceso a los datos de expedientes.",
-  "role.CASE_READER.meaning": "Consulta los datos del expediente y el historial básico de cambios dentro del acceso asignado.",
-  "role.CASE_REGISTRAR.meaning": "Registra o corrige los datos de la reclamación y consulta los datos del expediente y su historial básico. Abrir expedientes nuevos requiere una asignación para toda la instalación.",
-  "role.CASE_HANDLER.meaning": "Tramita los datos del expediente, las decisiones y el cierre, y consulta el historial completo. Solo las personas pueden gestionar la responsabilidad, los resúmenes y los recordatorios; abrir expedientes requiere acceso a toda la instalación.",
-  "role.PAYMENT_RECORDER.meaning": "Registra o elimina fechas de pago y consulta los datos del expediente y el historial básico. No envía dinero.",
-  "role.DATA_STEWARD.meaning": "Anula y restablece expedientes o borra su contenido. Consulta los datos del expediente y su historial básico. Este rol es para personas.",
-  "role.AUDITOR.meaning": "Consulta los datos del expediente y el historial completo de cambios dentro del acceso asignado. Consulta el acceso de las cuentas solo con una asignación para toda la instalación. Este rol no puede modificarlos.",
-  "timeline.event.caseOpened": "Expediente abierto",
-  "timeline.event.registrationAmended": "Datos de la reclamación actualizados",
-  "timeline.event.factsCorrected": "Datos corregidos",
-  "timeline.event.decisionRecorded": "Decisión de pago registrada",
-  "timeline.event.decisionWithdrawn": "Decisión de pago retirada",
-  "timeline.event.paymentRecorded": "Fecha de pago registrada",
-  "timeline.event.paymentCleared": "Fecha de pago registrada eliminada",
-  "timeline.event.caseClosed": "Expediente cerrado",
-  "timeline.event.caseReopened": "Expediente reabierto",
-  "timeline.event.caseVoided": "Expediente anulado",
-  "timeline.event.caseReinstated": "Expediente restablecido",
-  "timeline.event.caseErased": "Expediente borrado",
-  "timeline.event.responsibilityAssigned": "Se asignó la responsabilidad a {person}",
-  "timeline.event.responsibilityCleared": "{person} ya no es responsable",
-  "timeline.event.workRecorded": "Tramitación actualizada",
-  "timeline.event.handlingSummaryAdded": "Resumen de tramitación añadido",
-  "timeline.event.handlingSummaryChanged": "Resumen de tramitación modificado",
-  "timeline.event.handlingSummaryCleared": "Resumen de tramitación eliminado",
-  "timeline.event.reminderPlanned": "Recordatorio «{action}» planificado para {due}",
-  "timeline.event.reminderChanged": "Recordatorio «{action}» actualizado",
-  "timeline.event.reminderCompleted": "Recordatorio «{action}» completado",
-  "timeline.event.reminderCancelled": "Recordatorio «{action}» cancelado",
-  "timeline.event.reminderReopened": "Recordatorio «{action}» reabierto para {due}",
-  "timeline.event.reminderCompletedAndPlanned": "«{completedAction}» completado; «{nextAction}» planificado para {nextDue}",
-  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": "This change was not started: its operation ID is outside the allowed time window. Prepare a new change with a new ID.",
-  "endpoint.operation.get.label": "Check an unconfirmed change",
-  "endpoint.operation.get.meaning": "Read the accepted receipt when visible, or wait until the operation lifetime ends for a final answer that this account’s change was not accepted.",
-  "endpoint.work.views.label": "Work view counts",
-  "endpoint.work.views.meaning": "Read case and reminder view counts from the same snapshot and date basis.",
-  "historyAccess.NONE.label": "No history access",
-  "historyAccess.SUMMARY.label": "History metadata",
-  "historyAccess.FULL.label": "Full history",
-  "label.reminders": "Reminders"
+  "act.AMEND_REGISTRATION.label": {
+    "text": "Actualizar los datos de la reclamación",
+    "source": "5ae6604c4520"
+  },
+  "act.AMEND_REGISTRATION.meaning": {
+    "text": "Cambiar los datos seleccionados de la reclamación. Los datos que omitas y la referencia del expediente se conservan.",
+    "source": "2c651083c926"
+  },
+  "act.CLEAR_PAYMENT.label": {
+    "text": "Corregir un registro de pago erróneo",
+    "source": "9fc89effa319"
+  },
+  "act.CLEAR_PAYMENT.meaning": {
+    "text": "Eliminar una fecha de pago registrada por error. Esto no es un reembolso ni la reversión de una transferencia real. Se conserva el historial anterior.",
+    "source": "b50e2e7abebe"
+  },
+  "act.CLOSE.label": {
+    "text": "Cerrar el expediente",
+    "source": "5cad104f0e26"
+  },
+  "act.CLOSE.meaning": {
+    "text": "Cerrar el expediente cuando no quede trabajo pendiente. Cerrarlo no significa que se haya pagado la reclamación.",
+    "source": "6059fdf3ac25"
+  },
+  "act.CORRECT.label": {
+    "text": "Corregir los datos del expediente",
+    "source": "e3eeb9561f2e"
+  },
+  "act.CORRECT.meaning": {
+    "text": "Corregir datos registrados por error. Si el expediente ya está pagado y cambias la decisión, confirma, sustituye o quita también la fecha de pago. Quitarla no devuelve dinero.",
+    "source": "9693bda23166"
+  },
+  "act.DECIDE.label": {
+    "text": "Registrar la decisión de pago",
+    "source": "17b6161410d5"
+  },
+  "act.DECIDE.meaning": {
+    "text": "Registrar o sustituir el importe y la moneda de la decisión. Esto no envía dinero.",
+    "source": "17d0f005a684"
+  },
+  "act.DISABLE.label": {
+    "text": "Desactivar la cuenta",
+    "source": "9f024ada2282"
+  },
+  "act.DISABLE.meaning": {
+    "text": "Impedir que esta cuenta use ClaimCore. Sus cambios registrados se conservan.",
+    "source": "a43350b66b04"
+  },
+  "act.ENABLE.label": {
+    "text": "Activar la cuenta",
+    "source": "1965185f3488"
+  },
+  "act.ENABLE.meaning": {
+    "text": "Permitir que esta cuenta vuelva a usar ClaimCore con sus roles actuales.",
+    "source": "94ba3463b2e3"
+  },
+  "act.ERASE.label": {
+    "text": "Suprimir",
+    "source": "29b338cac964"
+  },
+  "act.ERASE.meaning": {
+    "text": "Suprimir permanentemente de ClaimCore los datos, el trabajo y los recordatorios de este expediente. Se conservan la referencia y la lista de cambios. Las copias externas no se ven afectadas.",
+    "source": "8705b2ea28a6"
+  },
+  "act.ERASE_PROFILE.label": {
+    "text": "Suprimir perfil",
+    "source": "55056e69d504"
+  },
+  "act.ERASE_PROFILE.meaning": {
+    "text": "Suprimir permanentemente el nombre y los datos de contacto guardados de esta cuenta. Se conservan su identidad de acceso, roles y trabajo registrado. Los cambios anteriores mostrarán «Cuenta anterior».",
+    "source": "871f791ea524"
+  },
+  "act.GRANT.label": {
+    "text": "Asignar un rol",
+    "source": "4549a77f3b6c"
+  },
+  "act.GRANT.meaning": {
+    "text": "Asignar el rol seleccionado a esta cuenta.",
+    "source": "c0ad11901493"
+  },
+  "act.OPEN.label": {
+    "text": "Abrir un expediente",
+    "source": "100d2c104336"
+  },
+  "act.OPEN.meaning": {
+    "text": "Registrar el incidente, el reclamante, la aseguradora y el importe reclamado.",
+    "source": "bd4ea9e91f3a"
+  },
+  "act.PROVISION_OWNER.label": {
+    "text": "Configurar el primer propietario",
+    "source": "2a7018cea51b"
+  },
+  "act.RECORD_PAYMENT.label": {
+    "text": "Registrar el pago realizado",
+    "source": "0d13e856322a"
+  },
+  "act.RECORD_PAYMENT.meaning": {
+    "text": "Registrar la fecha en que se pagó realmente la totalidad del importe decidido. Esto no ejecuta ni verifica una transferencia.",
+    "source": "8e73f70b8cc2"
+  },
+  "act.REGISTER.label": {
+    "text": "Registrar una cuenta",
+    "source": "2ce51f0219a2"
+  },
+  "act.REGISTER.meaning": {
+    "text": "Añadir una cuenta con nombre y datos de contacto opcionales. Los roles se asignan por separado.",
+    "source": "b056b3b46015"
+  },
+  "act.REINSTATE.label": {
+    "text": "Restablecer el expediente",
+    "source": "d28eb327714f"
+  },
+  "act.REINSTATE.meaning": {
+    "text": "Permitir de nuevo el trabajo en este expediente anulado. Su estado abierto o cerrado no cambia.",
+    "source": "c48d44c1b7c1"
+  },
+  "act.REMINDER_CANCEL.label": {
+    "text": "Cancelar el recordatorio",
+    "source": "948e115bd6a0"
+  },
+  "act.REMINDER_CANCEL.meaning": {
+    "text": "Cancelar esta acción sin marcarla como completada. Se conserva su historial.",
+    "source": "0d349a8b5a58"
+  },
+  "act.REMINDER_COMPLETE.label": {
+    "text": "Completar el recordatorio",
+    "source": "80f73f9e9a9b"
+  },
+  "act.REMINDER_COMPLETE.meaning": {
+    "text": "Marcar esta acción como completada. Si era la última, el expediente necesitará una próxima acción.",
+    "source": "47465ff6d73b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.label": {
+    "text": "Completar y planificar la próxima acción",
+    "source": "329a45fe88c6"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.meaning": {
+    "text": "Completar este recordatorio y planificar la próxima acción a la vez.",
+    "source": "6da6febc07ca"
+  },
+  "act.REMINDER_CREATE.label": {
+    "text": "Añadir un recordatorio",
+    "source": "cd566803bf39"
+  },
+  "act.REMINDER_CREATE.meaning": {
+    "text": "Planificar la próxima acción de este expediente.",
+    "source": "c072c5b2420d"
+  },
+  "act.REMINDER_REOPEN.label": {
+    "text": "Reabrir el recordatorio",
+    "source": "a1dceb5971c8"
+  },
+  "act.REMINDER_REOPEN.meaning": {
+    "text": "Volver a dejar esta acción pendiente con una nueva fecha de vencimiento.",
+    "source": "00cf210f8d8f"
+  },
+  "act.REMINDER_UPDATE.label": {
+    "text": "Actualizar el recordatorio",
+    "source": "5a4f907e9a23"
+  },
+  "act.REMINDER_UPDATE.meaning": {
+    "text": "Cambiar la acción o la fecha de este recordatorio pendiente. Las versiones anteriores se conservan en el historial.",
+    "source": "d87307f6a6cd"
+  },
+  "act.REOPEN.label": {
+    "text": "Reabrir el expediente",
+    "source": "e1469dc1ace7"
+  },
+  "act.REOPEN.meaning": {
+    "text": "Reabrir el expediente. Se conservan sus datos e historial.",
+    "source": "9afd35e2c444"
+  },
+  "act.REVOKE.label": {
+    "text": "Revocar un rol",
+    "source": "13287c1eda24"
+  },
+  "act.REVOKE.meaning": {
+    "text": "Eliminar la asignación del rol seleccionado.",
+    "source": "4bd25ffa16ef"
+  },
+  "act.SET_PROFILE.label": {
+    "text": "Actualizar el perfil",
+    "source": "34540d1107b7"
+  },
+  "act.SET_PROFILE.meaning": {
+    "text": "Registrar un nombre visible y datos de contacto opcionales para una cuenta. Esto no cambia su identidad ni sus permisos de acceso.",
+    "source": "eee65a67f467"
+  },
+  "act.UPDATE_WORK.label": {
+    "text": "Actualizar la tramitación",
+    "source": "a55a9d3a672f"
+  },
+  "act.UPDATE_WORK.meaning": {
+    "text": "Cambiar la persona responsable o actualizar el resumen de tramitación.",
+    "source": "3d22d9afd8ec"
+  },
+  "act.VOID.label": {
+    "text": "Anular el expediente",
+    "source": "dcb1ab478602"
+  },
+  "act.VOID.meaning": {
+    "text": "Detener todo el trabajo en este expediente, por ejemplo si se introdujo por error. Se conservan el expediente y su historial.",
+    "source": "692f8455f851"
+  },
+  "act.WITHDRAW_DECISION.label": {
+    "text": "Retirar la decisión de pago",
+    "source": "5094d2f8f699"
+  },
+  "act.WITHDRAW_DECISION.meaning": {
+    "text": "Quitar la decisión de pago antes de que se haya pagado algo. Se conserva su historial.",
+    "source": "4579673a4146"
+  },
+  "actFamily.BUSINESS.label": {
+    "text": "Tareas del expediente",
+    "source": "8439fe454033"
+  },
+  "actFamily.STEWARDSHIP.label": {
+    "text": "Anular y suprimir",
+    "source": "9a6bb27ba4f4"
+  },
+  "actorAvailability.AVAILABLE.label": {
+    "text": "Disponible",
+    "source": "e674447337e8"
+  },
+  "actorAvailability.AVAILABLE.meaning": {
+    "text": "La cuenta está activada y disponible en este contexto.",
+    "source": "db97f1889d60"
+  },
+  "actorAvailability.DISABLED.label": {
+    "text": "Desactivada",
+    "source": "75081b593d15"
+  },
+  "actorAvailability.DISABLED.meaning": {
+    "text": "La cuenta se ha desactivado.",
+    "source": "63ff145c9d59"
+  },
+  "actorAvailability.NOT_ELIGIBLE.label": {
+    "text": "No apta",
+    "source": "1add22631d49"
+  },
+  "actorAvailability.NOT_ELIGIBLE.meaning": {
+    "text": "Esta cuenta no puede ser responsable de este expediente.",
+    "source": "20010096f28e"
+  },
+  "assignment.MINE.label": {
+    "text": "Mis expedientes",
+    "source": "f57afb7d275a"
+  },
+  "assignment.MINE.meaning": {
+    "text": "Expedientes de los que eres responsable. Poder ver un expediente no te hace responsable de él.",
+    "source": "7096ce944bfb"
+  },
+  "assignment.UNASSIGNED.label": {
+    "text": "Sin asignar",
+    "source": "14d33bd014e6"
+  },
+  "attention.ASSIGNEE_UNAVAILABLE.label": {
+    "text": "Persona responsable no disponible",
+    "source": "f5a70e0c561b"
+  },
+  "attention.DUE_TODAY.label": {
+    "text": "Vence hoy",
+    "source": "19e82138c35f"
+  },
+  "attention.NO_NEXT_ACTION.label": {
+    "text": "Sin próxima acción",
+    "source": "ddec78195f2c"
+  },
+  "attention.OVERDUE.label": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "attention.READY_TO_CLOSE.label": {
+    "text": "Listo para cerrar",
+    "source": "1081a44daea5"
+  },
+  "attention.UNASSIGNED.label": {
+    "text": "Sin asignar",
+    "source": "14d33bd014e6"
+  },
+  "capability.CLOSE.label": {
+    "text": "Cerrar y reabrir expedientes",
+    "source": "f4f11e40da2c"
+  },
+  "capability.DECIDE.label": {
+    "text": "Registrar decisiones de pago",
+    "source": "2ff9882dcfbc"
+  },
+  "capability.MANAGE_AUTHORITY.label": {
+    "text": "Gestionar personas y acceso",
+    "source": "da7fc871fa3c"
+  },
+  "capability.MANAGE_CASE_WORK.label": {
+    "text": "Gestionar la tramitación",
+    "source": "df43d3bc49f6"
+  },
+  "capability.READ_AUTHORITY.label": {
+    "text": "Ver acceso",
+    "source": "f5462009cf42"
+  },
+  "capability.READ_CASE.label": {
+    "text": "Ver expedientes",
+    "source": "62759e412473"
+  },
+  "capability.READ_HISTORY.label": {
+    "text": "Ver historial",
+    "source": "a5932bc4ce51"
+  },
+  "capability.READ_HISTORY_FULL.label": {
+    "text": "Ver historial completo",
+    "source": "51a994aaec25"
+  },
+  "capability.RECORD_PAYMENT.label": {
+    "text": "Registrar pagos",
+    "source": "05bd5b78c069"
+  },
+  "capability.REGISTER.label": {
+    "text": "Registrar datos de reclamaciones",
+    "source": "7c721aff6c01"
+  },
+  "capability.STEWARD.label": {
+    "text": "Anular, restablecer y suprimir expedientes",
+    "source": "06f9c12509e0"
+  },
+  "caseOrder.FOLLOW_UP.label": {
+    "text": "Próximo seguimiento",
+    "source": "3fc2f012c68c"
+  },
+  "caseOrder.NOTIFIED.label": {
+    "text": "Fecha de notificación (más antigua primero)",
+    "source": "41b4f3e7d713"
+  },
+  "caseOrder.RECENT.label": {
+    "text": "Modificados recientemente",
+    "source": "5c79d33c3443"
+  },
+  "caseOrder.REFERENCE.label": {
+    "text": "Referencia del expediente",
+    "source": "14546393a90a"
+  },
+  "correction.CLEAR.label": {
+    "text": "Eliminar el valor registrado",
+    "source": "726a6f95d697"
+  },
+  "correction.KEEP.label": {
+    "text": "Conservar los datos actuales",
+    "source": "050456df4077"
+  },
+  "correction.REAFFIRM.label": {
+    "text": "Confirmar de nuevo el pago existente",
+    "source": "a65e3baabd63"
+  },
+  "correction.REPLACE.label": {
+    "text": "Sustituir los datos",
+    "source": "fa9bf6da404c"
+  },
+  "correction.UPDATE.label": {
+    "text": "Actualizar los datos seleccionados",
+    "source": "785112e99896"
+  },
+  "diagnostic.ACTOR_ALREADY_REGISTERED": {
+    "text": "Esta cuenta ya está registrada.",
+    "source": "a1560e33dbb6"
+  },
+  "diagnostic.ACTOR_ID_REQUIRED": {
+    "text": "Introduce un UUID de cuenta no vacío.",
+    "source": "b4b444a028f2"
+  },
+  "diagnostic.ACTOR_UNKNOWN": {
+    "text": "Esta cuenta no está registrada.",
+    "source": "8ba445f43510"
+  },
+  "diagnostic.ASSIGNEE_UNAVAILABLE": {
+    "text": "La cuenta seleccionada no se puede asignar actualmente a este expediente.",
+    "source": "8e166e36f9ad"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED": {
+    "text": "Usa una fecha de calendario válida con el formato YYYY-MM-DD.",
+    "source": "568f83da1b98"
+  },
+  "diagnostic.CASE_ALREADY_EXISTS": {
+    "text": "La referencia del expediente ya existe.",
+    "source": "a3f9c947fa47"
+  },
+  "diagnostic.CHRONOLOGICAL_ORDER": {
+    "text": "Estas fechas están en un orden incorrecto.",
+    "source": "a0b9f6502de7"
+  },
+  "diagnostic.CONTROL_CHARACTERS": {
+    "text": "No se permiten caracteres de control.",
+    "source": "27b9975ce3fa"
+  },
+  "diagnostic.CORRECTION_NO_CHANGES": {
+    "text": "Elige al menos una corrección que cambie el expediente.",
+    "source": "d0fecfa24d82"
+  },
+  "diagnostic.CORRECTION_REQUIRES_EXISTING_VALUE": {
+    "text": "Una corrección solo puede sustituir o eliminar un valor ya registrado en este expediente.",
+    "source": "50abf836badc"
+  },
+  "diagnostic.COUNTRY_FORMAT": {
+    "text": "Usa dos letras ASCII mayúsculas para el código de país.",
+    "source": "fbf4339c8839"
+  },
+  "diagnostic.CURRENCY_FORMAT": {
+    "text": "Usa tres letras ASCII mayúsculas (A–Z) para el identificador de moneda.",
+    "source": "adbb790bfab3"
+  },
+  "diagnostic.DECIMAL_FORMAT": {
+    "text": "Usa texto decimal no negativo: hasta {maximumIntegerDigits} dígitos enteros y {maximumFractionalDigits} decimales; sin signo, exponente ni ceros iniciales redundantes: 0.10 es válido; 00.10 no es válido.",
+    "source": "9aeeb09dbc51"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE": {
+    "text": "Usa una versión entera válida para esta solicitud, no superior a 9007199254740991.",
+    "source": "a82d300fdff6"
+  },
+  "diagnostic.FORMATTING_CHARACTER": {
+    "text": "No se permiten caracteres de formato invisibles.",
+    "source": "74ecb01e93d6"
+  },
+  "diagnostic.FUTURE_DATE": {
+    "text": "Esta fecha está en el futuro. Usa la fecha en que ocurrió el hecho.",
+    "source": "0194b02210ae"
+  },
+  "diagnostic.HUMAN_PRINCIPAL_REQUIRED": {
+    "text": "Solo una persona puede tener este rol.",
+    "source": "c3f69b4c3767"
+  },
+  "diagnostic.IDEMPOTENCY_CONFLICT": {
+    "text": "Este ID de operación ya se usó para otro cambio. Usa un ID nuevo.",
+    "source": "82f8d1154e37"
+  },
+  "diagnostic.INVALID_CURSOR": {
+    "text": "Este enlace de página ya no es válido. Empieza desde la primera página.",
+    "source": "aad4386ef728"
+  },
+  "diagnostic.INVALID_INPUT": {
+    "text": "Campos que debes revisar: {issueCount}.",
+    "source": "a9f9cf5ee60b"
+  },
+  "diagnostic.LAST_OWNER": {
+    "text": "ClaimCore necesita al menos una persona habilitada con el rol Propietario.",
+    "source": "e5fb2d35e0dd"
+  },
+  "diagnostic.MALFORMED_UNICODE": {
+    "text": "El texto contiene caracteres no válidos.",
+    "source": "a60aa3e9de29"
+  },
+  "diagnostic.NOT_AUTHORIZED": {
+    "text": "Necesitas el rol {required} para realizar este cambio. Consulta a un propietario.",
+    "source": "65cd70b67bcc"
+  },
+  "diagnostic.OPERATION_ID_REQUIRED": {
+    "text": "Usa un UUID de versión 7 creado al enviar el cambio.",
+    "source": "9d01762ebb48"
+  },
+  "diagnostic.PAGE_LIMIT_RANGE": {
+    "text": "Usa un valor entre 1 y {maximumPageSize}.",
+    "source": "2dcace3f1d8c"
+  },
+  "diagnostic.PAYMENT_ACKNOWLEDGEMENT_REQUIRED": {
+    "text": "Para actualizar una decisión con un pago registrado, confirma de nuevo, sustituye o elimina explícitamente el registro del pago.",
+    "source": "a182cc071019"
+  },
+  "diagnostic.PAYMENT_CLEAR_REQUIRED": {
+    "text": "Eliminar una decisión ya pagada exige eliminar el registro del pago.",
+    "source": "70a55336c998"
+  },
+  "diagnostic.PRINCIPAL_FORMAT": {
+    "text": "Usa un emisor HTTPS canónico y un identificador válido para el tipo de identidad.",
+    "source": "01b2620de3a4"
+  },
+  "diagnostic.REFERENCE_FORMAT": {
+    "text": "Usa entre 1 y 80 caracteres ASCII imprimibles sin espacios.",
+    "source": "a4d1a5f9f416"
+  },
+  "diagnostic.REGISTER_MAINTENANCE": {
+    "text": "Los cambios están pausados por mantenimiento. Puedes seguir viendo expedientes y comprobando cambios anteriores.",
+    "source": "432576d29a33"
+  },
+  "diagnostic.REMINDER_ID_REQUIRED": {
+    "text": "Usa un UUID de recordatorio no vacío.",
+    "source": "6909c3db0033"
+  },
+  "diagnostic.REMINDER_NO_CHANGES": {
+    "text": "La actualización del recordatorio debe cambiar la acción o la fecha.",
+    "source": "3ebb87d06f00"
+  },
+  "diagnostic.RESOURCE_UNAVAILABLE": {
+    "text": "Este elemento no existe o no tienes acceso a él.",
+    "source": "cca0cfa8f6ae"
+  },
+  "diagnostic.REVISION_CONFLICT": {
+    "text": "Este elemento cambió después de que lo abrieras. Revisa la última versión e inténtalo de nuevo.",
+    "source": "ed6b3d85f1e2"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE": {
+    "text": "Este rol no concede permisos para los expedientes seleccionados.",
+    "source": "6cf233013821"
+  },
+  "diagnostic.SURROUNDING_WHITESPACE": {
+    "text": "Quita los espacios del principio o del final.",
+    "source": "b192c15c9a18"
+  },
+  "diagnostic.TEXT_REQUIRED": {
+    "text": "Se requiere un valor que no esté en blanco.",
+    "source": "5cdc2a00a4ad"
+  },
+  "diagnostic.TOO_LONG": {
+    "text": "Usa como máximo {maximumCharacters} caracteres.",
+    "source": "2de6ea967f87"
+  },
+  "diagnostic.UPDATE_REQUIRED": {
+    "text": "Selecciona al menos un valor para actualizar o eliminar.",
+    "source": "bb8165d6ecb9"
+  },
+  "diagnostic.WORK_NO_CHANGES": {
+    "text": "No cambiaría ningún valor de la tramitación.",
+    "source": "e6095e0b5f69"
+  },
+  "diagnostic.ZERO_DECISION_CANNOT_BE_PAID": {
+    "text": "No se puede pagar una decisión de pago de importe cero.",
+    "source": "ed87403ba321"
+  },
+  "due.INACTIVE.label": {
+    "text": "Tramitación inactiva",
+    "source": "346b4b8084da"
+  },
+  "due.OVERDUE.label": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "due.TODAY.label": {
+    "text": "Vence hoy",
+    "source": "19e82138c35f"
+  },
+  "due.UNSCHEDULED.label": {
+    "text": "Sin recordatorios pendientes",
+    "source": "6b50d5836921"
+  },
+  "due.UPCOMING.label": {
+    "text": "Próximos vencimientos",
+    "source": "5f1a2542e4e4"
+  },
+  "endpoint.authority.grants.label": {
+    "text": "Ver roles",
+    "source": "baa2809b34eb"
+  },
+  "endpoint.authority.grants.meaning": {
+    "text": "Mostrar los roles asignados a una cuenta.",
+    "source": "a0171895698a"
+  },
+  "endpoint.authority.history.label": {
+    "text": "Historial de acceso",
+    "source": "29e9d0964e33"
+  },
+  "endpoint.authority.history.meaning": {
+    "text": "Ver los cambios de acceso, empezando por los más recientes.",
+    "source": "5f18e1d68412"
+  },
+  "endpoint.authority.list.label": {
+    "text": "Listar personas",
+    "source": "59c1126b3c3c"
+  },
+  "endpoint.authority.list.meaning": {
+    "text": "Mostrar las cuentas y los cambios de acceso disponibles.",
+    "source": "b16e0b16d7eb"
+  },
+  "endpoint.case.assignees.label": {
+    "text": "Personas responsables disponibles",
+    "source": "5560b349dac5"
+  },
+  "endpoint.case.assignees.meaning": {
+    "text": "Mostrar las personas que pueden ser responsables de este expediente.",
+    "source": "a35f48894530"
+  },
+  "endpoint.case.get.label": {
+    "text": "Ver un expediente",
+    "source": "c97d0b105cd4"
+  },
+  "endpoint.case.get.meaning": {
+    "text": "Ver los datos actuales del expediente y las acciones disponibles.",
+    "source": "d265e9c0f6aa"
+  },
+  "endpoint.case.list.label": {
+    "text": "Listar expedientes",
+    "source": "12c7a3ff4e39"
+  },
+  "endpoint.case.list.meaning": {
+    "text": "Mostrar los expedientes que puedes ver.",
+    "source": "6957d8aada53"
+  },
+  "endpoint.case.summary.label": {
+    "text": "Resumen de expedientes",
+    "source": "8c0199f1bc6e"
+  },
+  "endpoint.case.summary.meaning": {
+    "text": "Contar los expedientes visibles y sumar los importes reclamados y pagaderos por moneda.",
+    "source": "b414c5910736"
+  },
+  "endpoint.case.timeline.label": {
+    "text": "Actividad del expediente",
+    "source": "036bae65f4a0"
+  },
+  "endpoint.case.timeline.meaning": {
+    "text": "Cambios en los datos, el trabajo y los recordatorios del expediente que puedes ver.",
+    "source": "1713809c0bcc"
+  },
+  "endpoint.context.label": {
+    "text": "Tu acceso",
+    "source": "ecedb386ba91"
+  },
+  "endpoint.context.meaning": {
+    "text": "Mostrar tus permisos y recursos disponibles.",
+    "source": "220246d207ce"
+  },
+  "endpoint.reminder.get.label": {
+    "text": "Ver un recordatorio",
+    "source": "691d84da66f5"
+  },
+  "endpoint.reminder.get.meaning": {
+    "text": "Ver este recordatorio, incluido si está completado o cancelado.",
+    "source": "4a5ad0df1e1d"
+  },
+  "endpoint.reminder.list.label": {
+    "text": "Listar recordatorios",
+    "source": "fc1c0d238a20"
+  },
+  "endpoint.reminder.list.meaning": {
+    "text": "Mostrar los recordatorios visibles, empezando por el vencimiento más próximo.",
+    "source": "05f50edee841"
+  },
+  "fault.CORE_INTERNAL_ERROR": {
+    "text": "Se ha producido un error interno. Detente e investiga la causa.",
+    "source": "049cb5302172"
+  },
+  "fault.CORE_OPERATION_CONTENT_CONFLICT": {
+    "text": "El contenido almacenado de la operación es incoherente. Detente e investiga la causa.",
+    "source": "7b096a48b141"
+  },
+  "fault.CORE_SCHEMA_MISMATCH": {
+    "text": "Los datos guardados no corresponden a esta versión de ClaimCore. Detente y pide al administrador que use la versión adecuada.",
+    "source": "2e933ac0621c"
+  },
+  "fault.CORE_STORE_INTEGRITY_ERROR": {
+    "text": "Los datos guardados no superaron la comprobación de integridad. Detente y pide al administrador que ejecute la verificación.",
+    "source": "2fb7ba4515d8"
+  },
+  "fault.CORE_STORE_UNAVAILABLE": {
+    "text": "El almacenamiento de ClaimCore no está disponible. Inténtalo de nuevo en breve.",
+    "source": "6fcf305fcc3a"
+  },
+  "field.caseReference.label": {
+    "text": "Referencia del expediente",
+    "source": "14546393a90a"
+  },
+  "field.claimantName.label": {
+    "text": "Nombre del reclamante",
+    "source": "905eab24ab68"
+  },
+  "field.claimedAmount.label": {
+    "text": "Importe reclamado",
+    "source": "36ea8f5c9f5f"
+  },
+  "field.claimedCurrency.label": {
+    "text": "Moneda reclamada",
+    "source": "481a8c64afe5"
+  },
+  "field.cursor.label": {
+    "text": "Cursor",
+    "source": "2c014f8f8986"
+  },
+  "field.expectedReminderRevision.label": {
+    "text": "Versión revisada del recordatorio",
+    "source": "515d50bce7de"
+  },
+  "field.expectedRevision.label": {
+    "text": "Versión revisada del expediente",
+    "source": "8f3d37032769"
+  },
+  "field.expectedWorkRevision.label": {
+    "text": "Versión revisada de la tramitación",
+    "source": "834da46f286c"
+  },
+  "field.handlingSummary.label": {
+    "text": "Resumen de tramitación",
+    "source": "d7b36b2157ea"
+  },
+  "field.incidentCountry.label": {
+    "text": "País",
+    "source": "701d021d08c5"
+  },
+  "field.incidentDate.label": {
+    "text": "Fecha del incidente",
+    "source": "b84a71703fe5"
+  },
+  "field.incidentDescription.label": {
+    "text": "Descripción del incidente",
+    "source": "521e33aecb98"
+  },
+  "field.incidentNotificationDate.label": {
+    "text": "Fecha de notificación",
+    "source": "3f82631653e9"
+  },
+  "field.insurerName.label": {
+    "text": "Aseguradora",
+    "source": "949b10334d29"
+  },
+  "field.limit.label": {
+    "text": "Tamaño de página",
+    "source": "bd69e66e00ef"
+  },
+  "field.operationId.label": {
+    "text": "ID de operación",
+    "source": "05a6857f87c5"
+  },
+  "field.payableAmount.label": {
+    "text": "Importe pagadero",
+    "source": "670a8027f911"
+  },
+  "field.payableCurrency.label": {
+    "text": "Moneda pagadera",
+    "source": "886f33e49d8f"
+  },
+  "field.paymentDate.label": {
+    "text": "Fecha de pago",
+    "source": "65d5165f2587"
+  },
+  "field.paymentDecisionDate.label": {
+    "text": "Fecha de la decisión de pago",
+    "source": "72bc76e515ef"
+  },
+  "field.principal.issuer.label": {
+    "text": "Proveedor de acceso",
+    "source": "b4dae55609bd"
+  },
+  "field.principal.kind.label": {
+    "text": "Tipo de cuenta",
+    "source": "dac7998fba76"
+  },
+  "field.principal.subject.label": {
+    "text": "ID de acceso",
+    "source": "2b715e4af906"
+  },
+  "field.profile.contact.label": {
+    "text": "Datos de contacto",
+    "source": "9681395de456"
+  },
+  "field.profile.displayName.label": {
+    "text": "Nombre",
+    "source": "dcd1d5223f73"
+  },
+  "field.reason.label": {
+    "text": "Motivo",
+    "source": "f81ab834de5f"
+  },
+  "field.reminderAction.label": {
+    "text": "Acción",
+    "source": "64cff1319d2f"
+  },
+  "field.reminderDueDate.label": {
+    "text": "Fecha de vencimiento",
+    "source": "e1cb6d30fa3f"
+  },
+  "field.reminderId.label": {
+    "text": "ID del recordatorio",
+    "source": "58236ec5a691"
+  },
+  "field.responsibleActor.label": {
+    "text": "Persona responsable",
+    "source": "9b1c45de70ba"
+  },
+  "field.role.label": {
+    "text": "Rol",
+    "source": "14736a2eb9f4"
+  },
+  "field.status.label": {
+    "text": "Estado del expediente",
+    "source": "1ee95710aa59"
+  },
+  "field.text.label": {
+    "text": "Texto de búsqueda",
+    "source": "38d268a10995"
+  },
+  "group.decision.label": {
+    "text": "Decisión de pago",
+    "source": "57372fefe301"
+  },
+  "group.payment.label": {
+    "text": "Pago",
+    "source": "7048f38b33f1"
+  },
+  "group.registration.label": {
+    "text": "Reclamación",
+    "source": "4ca41db02825"
+  },
+  "headline.CLOSED.label": {
+    "text": "Cerrado",
+    "source": "c21ead0614e7"
+  },
+  "headline.DECIDED.label": {
+    "text": "Con decisión",
+    "source": "30ba702eee51"
+  },
+  "headline.ERASED.label": {
+    "text": "Suprimido",
+    "source": "1c9a70fabcb6"
+  },
+  "headline.PAID.label": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "headline.UNDECIDED.label": {
+    "text": "Sin decisión",
+    "source": "00cc364fc524"
+  },
+  "headline.VOIDED.label": {
+    "text": "Anulado",
+    "source": "9f9ae2c9bcba"
+  },
+  "host.ANTIFORGERY_REJECTED": {
+    "text": "No se pudo verificar tu sesión. Recarga la página.",
+    "source": "a82d5ec518fe"
+  },
+  "host.BODY_TOO_LARGE": {
+    "text": "El cuerpo de la solicitud es demasiado grande.",
+    "source": "bc4da98a5fba"
+  },
+  "host.CONNECTION_REJECTED": {
+    "text": "Se ha rechazado la conexión.",
+    "source": "15b5cfb18ced"
+  },
+  "host.CONTRACT_MISMATCH": {
+    "text": "Esta página está desactualizada. Recárgala.",
+    "source": "f5508408c837"
+  },
+  "host.ENDPOINT_MISSING": {
+    "text": "Esta función no existe.",
+    "source": "0416406dde0b"
+  },
+  "host.INPUT_INVALID": {
+    "text": "La solicitud no tiene el formato esperado.",
+    "source": "7680f2f10141"
+  },
+  "host.INSTALLATION_MISMATCH": {
+    "text": "Se reinstaló ClaimCore. Recarga la página antes de hacer cambios. No se registró nada.",
+    "source": "f0501a217874"
+  },
+  "host.INTERNAL": {
+    "text": "No se ha podido completar la solicitud.",
+    "source": "4c9681ac326d"
+  },
+  "host.MEDIA_TYPE_REJECTED": {
+    "text": "Usa el tipo de medio del punto de conexión.",
+    "source": "d42dd52f3768"
+  },
+  "host.METHOD_REJECTED": {
+    "text": "El método no es compatible.",
+    "source": "275f6c878f1e"
+  },
+  "host.ORIGIN_REJECTED": {
+    "text": "No se permiten solicitudes desde esta dirección.",
+    "source": "89e09d7f5a5b"
+  },
+  "host.RATE_LIMITED": {
+    "text": "ClaimCore está ocupado. Inténtalo de nuevo en un momento.",
+    "source": "798ee2e9ebc5"
+  },
+  "host.RESPONSE_FAILED": {
+    "text": "No se pudo entregar el resultado.",
+    "source": "d9c4c308c7dc"
+  },
+  "host.SESSION_REJECTED": {
+    "text": "Has cerrado sesión. Inicia sesión de nuevo.",
+    "source": "94e410fdef27"
+  },
+  "input.actorId.label": {
+    "text": "ID de cuenta",
+    "source": "919bb4cb2182"
+  },
+  "input.assignment.label": {
+    "text": "Responsabilidad",
+    "source": "c91217be093a"
+  },
+  "input.caseId.label": {
+    "text": "ID del expediente",
+    "source": "e0aed7cf64e8"
+  },
+  "input.caseView.label": {
+    "text": "Vista de expedientes",
+    "source": "b60903f2b2c4"
+  },
+  "input.due.label": {
+    "text": "Estado de seguimiento",
+    "source": "c1275cb81462"
+  },
+  "input.includeInactive.label": {
+    "text": "Incluir la tramitación inactiva",
+    "source": "8ca6c3a219c2"
+  },
+  "input.lifecycle.label": {
+    "text": "Ciclo de vida",
+    "source": "46459b1fa919"
+  },
+  "input.order.label": {
+    "text": "Orden",
+    "source": "6be090825c99"
+  },
+  "input.progress.label": {
+    "text": "Progreso del pago",
+    "source": "8ea5e4c38208"
+  },
+  "input.reminderDue.label": {
+    "text": "Vencimiento del recordatorio",
+    "source": "6335b2d2a1be"
+  },
+  "input.reminderState.label": {
+    "text": "Estado del recordatorio",
+    "source": "9320b222ccb0"
+  },
+  "input.reminderView.label": {
+    "text": "Vista de recordatorios",
+    "source": "7c0dac288f81"
+  },
+  "input.responsibleActorAction.label": {
+    "text": "Cambio de responsabilidad",
+    "source": "88568adf4439"
+  },
+  "input.scope.label": {
+    "text": "Ámbito de la asignación",
+    "source": "d6417785a41b"
+  },
+  "input.status.label": {
+    "text": "Filtro de estado",
+    "source": "9bfe8b184f0c"
+  },
+  "input.timelineFilter.label": {
+    "text": "Entradas de la cronología",
+    "source": "f2af358c083c"
+  },
+  "interactionEffect.CHANGE_AUTHORITY.label": {
+    "text": "Cambiar acceso",
+    "source": "0d6c171bedc2"
+  },
+  "interactionEffect.CHANGE_LIFECYCLE.label": {
+    "text": "Anular o restablecer el expediente",
+    "source": "ae7ed94fe469"
+  },
+  "interactionEffect.CHANGE_REMINDER.label": {
+    "text": "Cambiar el recordatorio",
+    "source": "585bb08490f3"
+  },
+  "interactionEffect.CHANGE_STATUS.label": {
+    "text": "Abrir o cerrar el expediente",
+    "source": "002dbd35781a"
+  },
+  "interactionEffect.CHANGE_WORK.label": {
+    "text": "Cambiar la tramitación",
+    "source": "9715150cf462"
+  },
+  "interactionEffect.ERASE_PAYLOAD.label": {
+    "text": "Suprimir permanentemente los datos del expediente",
+    "source": "3b09dab9d787"
+  },
+  "interactionEffect.READ.label": {
+    "text": "Solo ver",
+    "source": "9b4c6c8590e9"
+  },
+  "interactionEffect.RECORD_FACTS.label": {
+    "text": "Registrar los datos del expediente",
+    "source": "a585b6eff5c1"
+  },
+  "interactionEffect.UPDATE_WORK.label": {
+    "text": "Actualizar la tramitación",
+    "source": "a55a9d3a672f"
+  },
+  "label.action": {
+    "text": "Acción",
+    "source": "64cff1319d2f"
+  },
+  "label.actionableCases": {
+    "text": "Expedientes activos y abiertos",
+    "source": "0ce8e52850a7"
+  },
+  "label.assigneeAvailable": {
+    "text": "Disponible para la asignación",
+    "source": "21e8e18cb4d5"
+  },
+  "label.assigneeUnavailable": {
+    "text": "No disponible para nuevas asignaciones",
+    "source": "35bfe79f6e80"
+  },
+  "label.attentionCases": {
+    "text": "Expedientes distintos que requieren atención",
+    "source": "e15ec6ddf438"
+  },
+  "label.availableActs": {
+    "text": "Acciones disponibles",
+    "source": "6a70c39bf17c"
+  },
+  "label.changedAt": {
+    "text": "Datos del expediente modificados",
+    "source": "40a2f47ae1b0"
+  },
+  "label.characterWarning": {
+    "text": "Contiene {characters}",
+    "source": "0bf51abc0a77"
+  },
+  "label.enabled": {
+    "text": "Activada",
+    "source": "92c1cdfdf4cb"
+  },
+  "label.exactReferenceMatch": {
+    "text": "Coincidencia exacta de la referencia",
+    "source": "9b014424509f"
+  },
+  "label.financialFactsPreserved": {
+    "text": "Se conservan los datos financieros y los registros de pago del expediente.",
+    "source": "8df077677daa"
+  },
+  "label.formerAccount": {
+    "text": "Cuenta anterior {id}",
+    "source": "3a235c6fa105"
+  },
+  "label.missingPlanCases": {
+    "text": "Expedientes sin próxima acción",
+    "source": "b054f536e0ec"
+  },
+  "label.morePendingReminders": {
+    "text": "Más recordatorios: {count}",
+    "source": "f38709773c32"
+  },
+  "label.nextFollowUp": {
+    "text": "Próximo seguimiento",
+    "source": "3fc2f012c68c"
+  },
+  "label.noNextAction": {
+    "text": "Este expediente abierto no tiene una próxima acción prevista.",
+    "source": "60c2cc2ccb4d"
+  },
+  "label.notRecorded": {
+    "text": "Sin registrar",
+    "source": "b37c7879f6c3"
+  },
+  "label.observedCaseFacts": {
+    "text": "Datos del expediente cuando lo revisaste",
+    "source": "16075c6245f6"
+  },
+  "label.overdueCases": {
+    "text": "Expedientes con trabajo vencido",
+    "source": "9a2a9e55b47e"
+  },
+  "label.overdueReminders": {
+    "text": "Recordatorios vencidos",
+    "source": "051cc2b13b7f"
+  },
+  "label.pendingReminders": {
+    "text": "Recordatorios pendientes",
+    "source": "352897daa5d5"
+  },
+  "label.reminderRevision": {
+    "text": "Versión del recordatorio",
+    "source": "931f4169d420"
+  },
+  "label.reviewTitle": {
+    "text": "Revisar los cambios",
+    "source": "6a47708f4e14"
+  },
+  "label.revisionLabel": {
+    "text": "Versión",
+    "source": "2e516d68f42f"
+  },
+  "label.unassignedCases": {
+    "text": "Expedientes sin asignar",
+    "source": "c43513ee0ef3"
+  },
+  "label.unavailableAssigneeCases": {
+    "text": "Expedientes con responsable no disponible",
+    "source": "49f4f5aa7c96"
+  },
+  "label.workChangedAt": {
+    "text": "Tramitación modificada el",
+    "source": "0167782775c3"
+  },
+  "label.workRecordedBy": {
+    "text": "Tramitación registrada por",
+    "source": "0b1a104be688"
+  },
+  "label.workRevision": {
+    "text": "Versión de la tramitación",
+    "source": "adee42d56301"
+  },
+  "lifecycle.ACTIVE.label": {
+    "text": "Activo",
+    "source": "92340695899b"
+  },
+  "lifecycle.ERASED.label": {
+    "text": "Suprimido",
+    "source": "1c9a70fabcb6"
+  },
+  "lifecycle.ERASED.meaning": {
+    "text": "Suprimido. Solo queda la referencia del expediente.",
+    "source": "e63410fae906"
+  },
+  "lifecycle.VOIDED.label": {
+    "text": "Anulado",
+    "source": "9f9ae2c9bcba"
+  },
+  "lifecycle.VOIDED.meaning": {
+    "text": "Anulado, por ejemplo porque se introdujo por error.",
+    "source": "22c3d6b6318a"
+  },
+  "notice.accepted": {
+    "text": "Cambio registrado ({operationId}).",
+    "source": "50f1f6209809"
+  },
+  "notice.alternativeRoles": {
+    "text": "{first} o {second}",
+    "source": "2939fae649a3"
+  },
+  "notice.cancelled": {
+    "text": "Has cancelado esta solicitud. Si ya se había enviado, comprueba si se registró.",
+    "source": "7517c2209f4f"
+  },
+  "notice.definitionMismatch": {
+    "text": "ClaimCore se actualizó. Recarga la página.",
+    "source": "382dbd5c7910"
+  },
+  "notice.fileTooLarge": {
+    "text": "El archivo seleccionado supera los {maximumBytes} bytes.",
+    "source": "6ad4db126777"
+  },
+  "notice.fileUnreadable": {
+    "text": "No se ha podido leer el archivo seleccionado.",
+    "source": "3345dd67f1a3"
+  },
+  "notice.invalidHttp": {
+    "text": "ClaimCore envió una respuesta inesperada (HTTP {status}).",
+    "source": "a6a3eabaf187"
+  },
+  "notice.invalidInput": {
+    "text": "Completa esta entrada con el formato requerido.",
+    "source": "c9cc4e51b5ba"
+  },
+  "notice.invalidSession": {
+    "text": "No se pudo leer tu sesión. Inicia sesión de nuevo.",
+    "source": "63d1b6c2fe16"
+  },
+  "notice.missingCsrf": {
+    "text": "No se completó el inicio de sesión. Recarga la página e inicia sesión de nuevo.",
+    "source": "d6cf8a04cf6f"
+  },
+  "notice.notAccepted": {
+    "text": "Este cambio no se registró. Puedes prepararlo de nuevo.",
+    "source": "4c598478986a"
+  },
+  "notice.outcomeUnknown": {
+    "text": "No pudimos confirmar si este cambio se registró. Envíalo de nuevo; no puede registrarse dos veces.",
+    "source": "eee61e7f5874"
+  },
+  "notice.responseTimeout": {
+    "text": "ClaimCore no respondió a tiempo.",
+    "source": "d0026133eb6c"
+  },
+  "notice.unknownDiagnostic": {
+    "text": "ClaimCore envió un mensaje que esta página no reconoce. Recarga la página.",
+    "source": "a536ec9b3612"
+  },
+  "notice.unreachable": {
+    "text": "No se pudo contactar con ClaimCore. Comprueba tu conexión.",
+    "source": "dd819b1da73e"
+  },
+  "principalKind.HUMAN.label": {
+    "text": "Persona",
+    "source": "6007db63e18e"
+  },
+  "principalKind.SERVICE.label": {
+    "text": "Cuenta de servicio",
+    "source": "ce5e9df4a78f"
+  },
+  "progress.DECIDED.label": {
+    "text": "Con decisión",
+    "source": "30ba702eee51"
+  },
+  "progress.PAID.label": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "progress.UNDECIDED.label": {
+    "text": "Sin decisión",
+    "source": "00cc364fc524"
+  },
+  "reminderDue.OVERDUE.label": {
+    "text": "Vencido",
+    "source": "d660945bc299"
+  },
+  "reminderDue.TODAY.label": {
+    "text": "Hoy",
+    "source": "2b065c7c9ce4"
+  },
+  "reminderDue.UPCOMING.label": {
+    "text": "Próximos",
+    "source": "5f1a2542e4e4"
+  },
+  "reminderState.CANCELLED.label": {
+    "text": "Cancelado",
+    "source": "d353a99eb455"
+  },
+  "reminderState.COMPLETED.label": {
+    "text": "Completado",
+    "source": "22a970d2e5b1"
+  },
+  "reminderState.PENDING.label": {
+    "text": "Pendiente",
+    "source": "331551b0de41"
+  },
+  "role.AUDITOR.label": {
+    "text": "Auditor",
+    "source": "465b5967e292"
+  },
+  "role.CASE_HANDLER.label": {
+    "text": "Tramitador de expedientes",
+    "source": "0bf2c330a44f"
+  },
+  "role.CASE_READER.label": {
+    "text": "Lector de expedientes",
+    "source": "dcad0afd58ac"
+  },
+  "role.CASE_REGISTRAR.label": {
+    "text": "Registrador de expedientes",
+    "source": "36159b333d10"
+  },
+  "role.DATA_STEWARD.label": {
+    "text": "Custodio de datos",
+    "source": "154bcf4ddf7d"
+  },
+  "role.OWNER.label": {
+    "text": "Propietario",
+    "source": "4b1b8aa3608a"
+  },
+  "role.PAYMENT_RECORDER.label": {
+    "text": "Registrador de pagos",
+    "source": "700b2825d9eb"
+  },
+  "scalar.country.unknown": {
+    "text": "Desconocido o internacional",
+    "source": "55ec863c776b"
+  },
+  "scope.CASE.label": {
+    "text": "Un expediente",
+    "source": "bb4ad0b2b38b"
+  },
+  "scope.INSTALLATION.label": {
+    "text": "Todos los expedientes",
+    "source": "a593cc9212ab"
+  },
+  "section.work.label": {
+    "text": "Tramitación",
+    "source": "a81fc1d573ac"
+  },
+  "status.CLOSED.label": {
+    "text": "Cerrado",
+    "source": "c21ead0614e7"
+  },
+  "status.OPENED.label": {
+    "text": "Abierto",
+    "source": "ed077f3d8125"
+  },
+  "subject.AUTHORITY.label": {
+    "text": "Acceso",
+    "source": "ec5ba0abb717"
+  },
+  "subject.CASE.label": {
+    "text": "Expediente",
+    "source": "15f86e24ed25"
+  },
+  "subject.REMINDER.label": {
+    "text": "Recordatorio",
+    "source": "31757bbfa17e"
+  },
+  "subject.WORK.label": {
+    "text": "Tramitación",
+    "source": "a81fc1d573ac"
+  },
+  "timelineFilter.FACTS.label": {
+    "text": "Datos del expediente",
+    "source": "986828668c71"
+  },
+  "timelineFilter.WORK.label": {
+    "text": "Tramitación y recordatorios",
+    "source": "182bf8f45bb5"
+  },
+  "timelineKind.CASE_FACT.label": {
+    "text": "Dato del expediente",
+    "source": "98e3e674db65"
+  },
+  "timelineKind.REMINDER.label": {
+    "text": "Recordatorio",
+    "source": "31757bbfa17e"
+  },
+  "timelineKind.WORK.label": {
+    "text": "Tramitación",
+    "source": "104ab9213e28"
+  },
+  "view.ALL.label": {
+    "text": "Todos",
+    "source": "a52ace420f21"
+  },
+  "view.CANCELLED.label": {
+    "text": "Cancelados",
+    "source": "d353a99eb455"
+  },
+  "view.CLOSED.label": {
+    "text": "Cerrados",
+    "source": "c21ead0614e7"
+  },
+  "view.COMPLETED.label": {
+    "text": "Completados",
+    "source": "22a970d2e5b1"
+  },
+  "view.DECIDED_UNPAID.label": {
+    "text": "Con decisión, sin pagar",
+    "source": "fbac96206d3c"
+  },
+  "view.DUE_TODAY.label": {
+    "text": "Vencen hoy",
+    "source": "19e82138c35f"
+  },
+  "view.MINE.label": {
+    "text": "Mis expedientes",
+    "source": "f57afb7d275a"
+  },
+  "view.NEEDS_ATTENTION.label": {
+    "text": "Requieren atención",
+    "source": "c1ebc7817870"
+  },
+  "view.NO_NEXT_ACTION.label": {
+    "text": "Sin próxima acción",
+    "source": "ddec78195f2c"
+  },
+  "view.OVERDUE.label": {
+    "text": "Vencidos",
+    "source": "d660945bc299"
+  },
+  "view.PENDING.label": {
+    "text": "Pendientes",
+    "source": "331551b0de41"
+  },
+  "view.TODAY.label": {
+    "text": "Hoy",
+    "source": "2b065c7c9ce4"
+  },
+  "view.UNASSIGNED.label": {
+    "text": "Sin asignar",
+    "source": "14d33bd014e6"
+  },
+  "view.UNDECIDED.label": {
+    "text": "Sin decisión",
+    "source": "00cc364fc524"
+  },
+  "view.UPCOMING.label": {
+    "text": "Próximos",
+    "source": "5f1a2542e4e4"
+  },
+  "view.VOIDED.label": {
+    "text": "Anulados",
+    "source": "9f9ae2c9bcba"
+  },
+  "workChange.CLEAR.label": {
+    "text": "Eliminar",
+    "source": "83b12c2216ef"
+  },
+  "workChange.SET.label": {
+    "text": "Establecer",
+    "source": "b6f6f3ad07b3"
+  },
+  "requesterState.ACTIVE.label": {
+    "text": "Cuenta activada",
+    "source": "26582b656dcf"
+  },
+  "requesterState.ACTIVE.meaning": {
+    "text": "Tu cuenta está activada y tiene roles asignados.",
+    "source": "3d9d53cbd83c"
+  },
+  "requesterState.NO_ROLES.label": {
+    "text": "Sin roles asignados",
+    "source": "0d59908d2b75"
+  },
+  "requesterState.NO_ROLES.meaning": {
+    "text": "Esta cuenta no tiene roles de acceso. Pide acceso a un propietario.",
+    "source": "2555e663c0d6"
+  },
+  "requesterState.DISABLED.label": {
+    "text": "Cuenta desactivada",
+    "source": "dbada5f67e74"
+  },
+  "requesterState.DISABLED.meaning": {
+    "text": "Esta cuenta se ha desactivado. Pide a un propietario que active el acceso.",
+    "source": "1465f2b6264a"
+  },
+  "requesterState.NOT_REGISTERED.label": {
+    "text": "Acceso solicitado",
+    "source": "119387f35ffc"
+  },
+  "requesterState.NOT_REGISTERED.meaning": {
+    "text": "Un propietario debe admitir esta cuenta para que pueda acceder a ClaimCore.",
+    "source": "9f93027815d5"
+  },
+  "endpoint.authority.requests.label": {
+    "text": "Solicitudes de acceso",
+    "source": "34185554f83d"
+  },
+  "endpoint.authority.requests.meaning": {
+    "text": "Mostrar las solicitudes de inicio de sesión que esperan acceso.",
+    "source": "cf0e3a6ea687"
+  },
+  "endpoint.authority.requests.dismiss.label": {
+    "text": "Descartar la solicitud de acceso",
+    "source": "83aeff49e156"
+  },
+  "endpoint.authority.requests.dismiss.meaning": {
+    "text": "Eliminar esta solicitud sin conceder acceso.",
+    "source": "0201b260d157"
+  },
+  "caseStage.OPENED.label": {
+    "text": "Abierto",
+    "source": "b19fb8d1b395"
+  },
+  "caseStage.DECIDED.label": {
+    "text": "Con decisión",
+    "source": "30ba702eee51"
+  },
+  "caseStage.PAID.label": {
+    "text": "Pagado",
+    "source": "fb81b961af45"
+  },
+  "caseStage.CLOSED.label": {
+    "text": "Cerrado",
+    "source": "c21ead0614e7"
+  },
+  "input.responsibleActorFilter.label": {
+    "text": "Filtro de cuenta responsable",
+    "source": "dd2b256041d7"
+  },
+  "diagnostic.NOT_OFFERED": {
+    "text": "Esta acción no está disponible. Estado del expediente: {state}. Revisa la última versión del expediente.",
+    "source": "73e12fd5253c"
+  },
+  "diagnostic.REMINDER_NOT_OFFERED": {
+    "text": "Esta acción no está disponible. Estado del recordatorio: {state}. Revisa la última versión del recordatorio.",
+    "source": "1ae8310d09d9"
+  },
+  "act.ADMIT.label": {
+    "text": "Añadir una persona",
+    "source": "66848b5361f4"
+  },
+  "act.ADMIT.meaning": {
+    "text": "Añadir una persona o una cuenta de servicio con nombre y sus primeros roles.",
+    "source": "57a856554f42"
+  },
+  "field.grants.label": {
+    "text": "Asignaciones de acceso",
+    "source": "2fd169b4b39d"
+  },
+  "diagnostic.GRANT_COUNT_RANGE": {
+    "text": "Elige entre 1 y {maximumGrants} asignaciones de acceso.",
+    "source": "d7a1ec1278fd"
+  },
+  "diagnostic.DUPLICATE_GRANT": {
+    "text": "Elige cada combinación de rol y ámbito una sola vez.",
+    "source": "0987eca85974"
+  },
+  "accountState.ACTIVE.label": {
+    "text": "Activada con roles",
+    "source": "1ae3edef3f1d"
+  },
+  "accountState.ACTIVE.meaning": {
+    "text": "La cuenta está activada y tiene roles asignados. Cada operación sigue comprobando los requisitos y la autorización.",
+    "source": "3d7f59a88f38"
+  },
+  "accountState.NO_ROLES.label": {
+    "text": "Sin roles asignados",
+    "source": "0d59908d2b75"
+  },
+  "accountState.NO_ROLES.meaning": {
+    "text": "La cuenta está registrada y activada, pero no tiene roles asignados.",
+    "source": "865ca1078a74"
+  },
+  "accountState.DISABLED.label": {
+    "text": "Desactivada",
+    "source": "75081b593d15"
+  },
+  "accountState.DISABLED.meaning": {
+    "text": "La cuenta está desactivada. Los roles asignados siguen visibles para revisar el acceso.",
+    "source": "0da44badae93"
+  },
+  "label.attention": {
+    "text": "Atención",
+    "source": "c2eb8cd9d956"
+  },
+  "label.recommendedNext": {
+    "text": "Próxima acción recomendada",
+    "source": "3dfcba725b2b"
+  },
+  "label.notApplicable": {
+    "text": "No aplicable",
+    "source": "5237c96ac1a2"
+  },
+  "label.recordedAt": {
+    "text": "Registrado el",
+    "source": "e4cea0827a11"
+  },
+  "label.recordedBy": {
+    "text": "Registrado por",
+    "source": "cebc8d0d5452"
+  },
+  "label.reminder": {
+    "text": "Recordatorio",
+    "source": "31757bbfa17e"
+  },
+  "label.before": {
+    "text": "Antes",
+    "source": "9bb725005055"
+  },
+  "label.after": {
+    "text": "Después",
+    "source": "7b68fe551085"
+  },
+  "label.changes": {
+    "text": "Cambios",
+    "source": "bbd4b6a86bc6"
+  },
+  "label.unchanged": {
+    "text": "Sin cambios",
+    "source": "88b6f7429ce7"
+  },
+  "label.changesWithheld": {
+    "text": "No tienes acceso a estos cambios.",
+    "source": "d6194fd34931"
+  },
+  "label.changesErased": {
+    "text": "Cambios suprimidos.",
+    "source": "0a63d396429e"
+  },
+  "field.incidentDate.hint": {
+    "text": "Cuándo ocurrió el incidente.",
+    "source": "ddc981f4ff37"
+  },
+  "field.incidentNotificationDate.hint": {
+    "text": "Cuándo tuviste conocimiento de este incidente por primera vez.",
+    "source": "3ec88dfe4c38"
+  },
+  "field.incidentCountry.rule": {
+    "text": "Usa dos letras mayúsculas. {unknownCode} significa desconocido o internacional.",
+    "source": "682819af1901"
+  },
+  "field.incidentCountry.hint": {
+    "text": "Dónde ocurrió el incidente.",
+    "source": "5d6dde720543"
+  },
+  "field.incidentDescription.hint": {
+    "text": "Qué ocurrió. Añade los detalles relevantes para esta reclamación.",
+    "source": "85ee20de7828"
+  },
+  "field.claimantName.hint": {
+    "text": "La persona o empresa que presenta la reclamación.",
+    "source": "f783e293414b"
+  },
+  "field.insurerName.hint": {
+    "text": "La aseguradora responsable de la reclamación.",
+    "source": "252df5107d9a"
+  },
+  "field.claimedAmount.rule": {
+    "text": "Usa hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Usa dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales redundantes.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.claimedAmount.hint": {
+    "text": "El importe que solicita el reclamante.",
+    "source": "f0ed705645cd"
+  },
+  "field.claimedCurrency.rule": {
+    "text": "{length} letras ASCII mayúsculas (A–Z).",
+    "source": "2460daa09c6d"
+  },
+  "field.claimedCurrency.hint": {
+    "text": "La moneda del importe reclamado.",
+    "source": "a9c7400c8361"
+  },
+  "field.caseReference.rule": {
+    "text": "Usa entre 1 y {maximumCharacters} caracteres ASCII imprimibles sin espacios. Las mayúsculas y minúsculas identifican el mismo expediente; se conserva la escritura original.",
+    "source": "b43a33360aed"
+  },
+  "field.caseReference.hint": {
+    "text": "Tu propia referencia para este expediente, por ejemplo CLM-2026-0001. No se puede cambiar después.",
+    "source": "10559d041918"
+  },
+  "field.paymentDecisionDate.hint": {
+    "text": "Cuándo decidiste el importe a pagar.",
+    "source": "bb91da5a3bc7"
+  },
+  "field.payableAmount.rule": {
+    "text": "Usa hasta {maximumIntegerDigits} dígitos antes del punto decimal y {maximumFractionDigits} después. Usa dígitos ASCII y un punto; sin espacios, signos, comas ni ceros iniciales redundantes.",
+    "source": "24dd73e5d5c1"
+  },
+  "field.payableAmount.hint": {
+    "text": "El importe que decidiste que se debía pagar.",
+    "source": "4f043cfac46b"
+  },
+  "field.payableCurrency.rule": {
+    "text": "{length} letras ASCII mayúsculas (A–Z).",
+    "source": "2460daa09c6d"
+  },
+  "field.payableCurrency.hint": {
+    "text": "La moneda del importe a pagar.",
+    "source": "50e0cf22224e"
+  },
+  "field.paymentDate.hint": {
+    "text": "Cuándo se pagó la totalidad del importe.",
+    "source": "97718af60117"
+  },
+  "field.status.rule": {
+    "text": "Si el expediente está abierto o cerrado. Cerrar un expediente no significa que se haya realizado el pago.",
+    "source": "ff336eb1fedf"
+  },
+  "field.status.hint": {
+    "text": "Si la tramitación de este expediente sigue abierta.",
+    "source": "fffd4956b488"
+  },
+  "field.responsibleActor.rule": {
+    "text": "Usa el UUID exacto de la cuenta registrada.",
+    "source": "0b1ca0dd22d3"
+  },
+  "field.responsibleActor.hint": {
+    "text": "Quién tramita este expediente.",
+    "source": "3512f100a1a3"
+  },
+  "field.handlingSummary.hint": {
+    "text": "La situación actual y lo que hay que hacer.",
+    "source": "005333f39f9d"
+  },
+  "field.operationId.rule": {
+    "text": "Un UUID de versión 7 que identifica este cambio. Reutilízalo solo para reintentar el mismo cambio.",
+    "source": "f6d7498097ed"
+  },
+  "field.operationId.hint": {
+    "text": "Guarda este ID si necesitas comprobar el resultado del cambio.",
+    "source": "e8127247ede6"
+  },
+  "field.expectedRevision.rule": {
+    "text": "La versión del expediente que revisaste.",
+    "source": "8965c7efb1dc"
+  },
+  "field.expectedRevision.hint": {
+    "text": "Consulta la última versión del expediente antes de modificarlo.",
+    "source": "de14cae9e98d"
+  },
+  "field.reason.hint": {
+    "text": "Por qué es necesario este cambio.",
+    "source": "5807ee313f68"
+  },
+  "field.principal.kind.rule": {
+    "text": "Si la identidad de destino es una persona o un servicio.",
+    "source": "a4da4348fde8"
+  },
+  "field.principal.kind.hint": {
+    "text": "Elige una persona o una cuenta de servicio.",
+    "source": "9299fa620354"
+  },
+  "field.principal.issuer.rule": {
+    "text": "El emisor HTTPS exacto de la identidad de destino.",
+    "source": "8792a731d1ce"
+  },
+  "field.principal.issuer.hint": {
+    "text": "El proveedor de inicio de sesión de esta cuenta.",
+    "source": "f498f8b21cc0"
+  },
+  "field.principal.subject.rule": {
+    "text": "El identificador inmutable de sujeto o de cliente de la identidad de destino.",
+    "source": "4aa545f644eb"
+  },
+  "field.principal.subject.hint": {
+    "text": "El identificador de la cuenta en el proveedor de inicio de sesión.",
+    "source": "e507ab2a5a13"
+  },
+  "field.profile.displayName.hint": {
+    "text": "El nombre que verán las personas en ClaimCore.",
+    "source": "f8b0c52d2976"
+  },
+  "field.profile.contact.hint": {
+    "text": "Datos opcionales para contactar con esta persona.",
+    "source": "f80f8b36b4e5"
+  },
+  "field.grants.rule": {
+    "text": "De 1 a {maximumGrants} pares distintos de rol y expediente. Identifica el expediente por su referencia exacta.",
+    "source": "d0ade9e832a8"
+  },
+  "field.grants.hint": {
+    "text": "Añade los roles que necesita esta cuenta y dónde se aplican.",
+    "source": "d5157eb5b897"
+  },
+  "field.role.rule": {
+    "text": "El rol de capacidades que se va a asignar o revocar.",
+    "source": "5200f053cb35"
+  },
+  "field.role.hint": {
+    "text": "El acceso que debe tener esta cuenta.",
+    "source": "82f74f6f8210"
+  },
+  "field.limit.rule": {
+    "text": "El número máximo de filas que se devolverán en esta página.",
+    "source": "3be08d2294cb"
+  },
+  "field.limit.hint": {
+    "text": "Cuántos resultados se muestran a la vez.",
+    "source": "862c69b216db"
+  },
+  "field.cursor.rule": {
+    "text": "El cursor de la página siguiente de la respuesta anterior.",
+    "source": "28ace76eeb26"
+  },
+  "field.cursor.hint": {
+    "text": "Continuar con los siguientes resultados.",
+    "source": "d0f6191b7a15"
+  },
+  "field.text.hint": {
+    "text": "Buscar un expediente por su referencia, reclamante o aseguradora.",
+    "source": "85c1e3c50baf"
+  },
+  "field.reminderId.rule": {
+    "text": "La identidad inmutable de un recordatorio de este expediente.",
+    "source": "75b144c00d7f"
+  },
+  "field.reminderId.hint": {
+    "text": "Elige el recordatorio que deseas cambiar.",
+    "source": "45cd075a5640"
+  },
+  "field.reminderAction.rule": {
+    "text": "Usa una línea de texto sin formato, de hasta {maximumScalars} valores escalares Unicode.",
+    "source": "c43c883a8a17"
+  },
+  "field.reminderAction.hint": {
+    "text": "Lo que debe suceder a continuación.",
+    "source": "519a734862e6"
+  },
+  "field.reminderDueDate.rule": {
+    "text": "Usa una fecha gregoriana, YYYY-MM-DD. Se permiten fechas pasadas y futuras.",
+    "source": "5ba5ae626394"
+  },
+  "field.reminderDueDate.hint": {
+    "text": "Cuándo vence esta acción.",
+    "source": "869b1b89088f"
+  },
+  "field.expectedWorkRevision.rule": {
+    "text": "La versión de tramitación que revisaste. Las versiones de los datos financieros son independientes.",
+    "source": "24802e421c07"
+  },
+  "field.expectedWorkRevision.hint": {
+    "text": "Consulta los últimos datos de tramitación antes de modificarlos.",
+    "source": "bca0fe53b07f"
+  },
+  "field.expectedReminderRevision.rule": {
+    "text": "Usa la versión positiva de este recordatorio exacto que revisaste. Los demás recordatorios tienen versiones independientes.",
+    "source": "a55c9de3f238"
+  },
+  "field.expectedReminderRevision.hint": {
+    "text": "Consulta la última versión del recordatorio antes de modificarlo.",
+    "source": "212bd0b60272"
+  },
+  "input.scope.rule": {
+    "text": "Si el rol se aplica a la instalación o a un expediente.",
+    "source": "203e1f55cc8f"
+  },
+  "input.scope.hint": {
+    "text": "Elige dónde se aplica este rol.",
+    "source": "784a1e8ee628"
+  },
+  "input.actorId.rule": {
+    "text": "El actor registrado seleccionado para revisar las asignaciones o el historial de acceso.",
+    "source": "7011d79dbcce"
+  },
+  "input.actorId.hint": {
+    "text": "Elige de quién quieres revisar el acceso.",
+    "source": "e258953ada04"
+  },
+  "input.caseId.rule": {
+    "text": "UUID estable de la operación OPEN aceptada.",
+    "source": "82ff12a11221"
+  },
+  "input.caseId.hint": {
+    "text": "Elige el expediente.",
+    "source": "a227ac8a86b0"
+  },
+  "input.lifecycle.rule": {
+    "text": "Limitar los resultados a los ciclos de vida seleccionados. Omite este filtro para incluir todos los ciclos de vida.",
+    "source": "ebd7b5d4233e"
+  },
+  "input.status.rule": {
+    "text": "Limitar los resultados a los estados abierto o cerrado seleccionados. Los expedientes suprimidos no tienen estado.",
+    "source": "4681d2777c7f"
+  },
+  "input.status.hint": {
+    "text": "Si la tramitación de este expediente sigue abierta.",
+    "source": "fffd4956b488"
+  },
+  "input.progress.rule": {
+    "text": "Limitar los resultados a expedientes sin decisión, con decisión o pagados. Los expedientes suprimidos no tienen progreso de pago.",
+    "source": "4b11514071d0"
+  },
+  "input.caseView.rule": {
+    "text": "Elige una vista estándar de expedientes. Los demás filtros restringen aún más sus resultados.",
+    "source": "f7d985fc86fb"
+  },
+  "input.responsibleActorFilter.rule": {
+    "text": "Limitar los expedientes a la cuenta responsable seleccionada dentro de tu ámbito de lectura. Los demás filtros restringen aún más los resultados.",
+    "source": "368701d9a38a"
+  },
+  "input.reminderView.rule": {
+    "text": "Elige una vista estándar de recordatorios. Los filtros explícitos de estado, asignación, fecha, texto y expediente restringen aún más sus resultados.",
+    "source": "f7854da89426"
+  },
+  "input.timelineFilter.rule": {
+    "text": "Mostrar los datos del expediente o la tramitación y los recordatorios. Déjalo sin establecer para mostrar ambos.",
+    "source": "b509fa37dbfc"
+  },
+  "input.timelineFilter.hint": {
+    "text": "Elige qué cambios se muestran.",
+    "source": "2e4de5dc64ba"
+  },
+  "input.order.rule": {
+    "text": "Ordenar por referencia, último cambio de datos del expediente, fecha de notificación o fecha más próxima de recordatorio pendiente. Los cambios de datos van del más reciente al más antiguo; las fechas de notificación y de recordatorios, de la más antigua a la más reciente, con las fechas ausentes al final. La referencia resuelve los empates.",
+    "source": "009775c9c5fe"
+  },
+  "input.order.hint": {
+    "text": "Elige cómo ordenar los resultados.",
+    "source": "605e54f803e9"
+  },
+  "input.assignment.rule": {
+    "text": "Filtra los expedientes visibles por persona responsable. El acceso de lectura por sí solo no hace a nadie responsable.",
+    "source": "c1fd9ddc9516"
+  },
+  "input.due.rule": {
+    "text": "Clasificar cada expediente por su recordatorio pendiente más próximo: vencido, hoy, próximo, sin recordatorio pendiente o inactivo. Las fechas individuales de la cola de recordatorios usan otro filtro.",
+    "source": "4ee74c3f8c1a"
+  },
+  "input.reminderState.rule": {
+    "text": "Seleccionar registros actuales pendientes, completados o cancelados. Si se omite, se seleccionan los recordatorios pendientes.",
+    "source": "dc7650ae567a"
+  },
+  "input.reminderDue.rule": {
+    "text": "Filtrar las fechas individuales de recordatorios con respecto a la fecha operativa de la instalación; difiere del próximo vencimiento mínimo del expediente.",
+    "source": "e22d6ed24c26"
+  },
+  "input.includeInactive.rule": {
+    "text": "Incluir explícitamente la tramitación de expedientes cerrados o anulados. Los recordatorios pendientes conservan sus fechas y su estado.",
+    "source": "c8addb209dac"
+  },
+  "input.responsibleActorAction.rule": {
+    "text": "Elige establecer o eliminar; omítelo para conservar la cuenta responsable actual.",
+    "source": "8ce2f605d741"
+  },
+  "input.responsibleActorAction.hint": {
+    "text": "Establecer o eliminar la persona responsable de este expediente.",
+    "source": "d788923ffdfd"
+  },
+  "group.registration.rule": {
+    "text": "Conservar los datos de registro o actualizar los seleccionados. Los datos omitidos no cambian; el importe y la moneda se indican juntos.",
+    "source": "b1e2f43d3bf8"
+  },
+  "group.registration.hint": {
+    "text": "Elige qué datos cambiar.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.decision.rule": {
+    "text": "Conservar la decisión, actualizar los datos seleccionados o eliminarla. El importe y la moneda deben indicarse juntos.",
+    "source": "76320d908964"
+  },
+  "group.decision.hint": {
+    "text": "Elige qué datos cambiar.",
+    "source": "d7cfcb3fc991"
+  },
+  "group.payment.rule": {
+    "text": "Conservar, sustituir, confirmar de nuevo o eliminar la fecha de pago registrada. Confirmarla de nuevo conserva la fecha; eliminarla no reembolsa dinero.",
+    "source": "91a10732687a"
+  },
+  "group.payment.hint": {
+    "text": "Elige qué datos cambiar.",
+    "source": "d7cfcb3fc991"
+  },
+  "diagnostic.CALENDAR_DATE_REQUIRED.gui": {
+    "text": "Introduce una fecha real.",
+    "source": "8d5f43e9e470"
+  },
+  "diagnostic.COUNTRY_FORMAT.gui": {
+    "text": "Introduce dos letras para el país, por ejemplo LV.",
+    "source": "a72f9540c0da"
+  },
+  "diagnostic.CURRENCY_FORMAT.gui": {
+    "text": "Introduce un código de moneda de tres letras, por ejemplo EUR.",
+    "source": "91065275e1e5"
+  },
+  "diagnostic.EXPECTED_REVISION_RANGE.gui": {
+    "text": "Revisa la última versión del registro antes de modificarlo.",
+    "source": "02df940bf32a"
+  },
+  "diagnostic.REFERENCE_FORMAT.gui": {
+    "text": "Introduce una referencia de expediente sin espacios.",
+    "source": "5722da0c601c"
+  },
+  "diagnostic.ROLE_SCOPE_NOT_APPLICABLE.gui": {
+    "text": "Elige un rol que pueda usarse aquí.",
+    "source": "bc1c13776d33"
+  },
+  "diagnostic.DUPLICATE_GRANT.gui": {
+    "text": "Elige cada rol y su ámbito una sola vez.",
+    "source": "7a0f01238fda"
+  },
+  "act.OPEN.done": {
+    "text": "Expediente abierto.",
+    "source": "87e4c2288a79"
+  },
+  "act.AMEND_REGISTRATION.done": {
+    "text": "Registro actualizado.",
+    "source": "bf64cd9ad6ac"
+  },
+  "act.CORRECT.done": {
+    "text": "Datos del expediente corregidos.",
+    "source": "a36e2011a7df"
+  },
+  "act.DECIDE.done": {
+    "text": "Decisión de pago registrada.",
+    "source": "5c37a8e391bc"
+  },
+  "act.WITHDRAW_DECISION.done": {
+    "text": "Decisión de pago retirada.",
+    "source": "264b3e2b75e7"
+  },
+  "act.RECORD_PAYMENT.done": {
+    "text": "Pago registrado.",
+    "source": "08d843e2c987"
+  },
+  "act.CLEAR_PAYMENT.done": {
+    "text": "Registro de pago eliminado.",
+    "source": "04069f37ec0e"
+  },
+  "act.CLOSE.done": {
+    "text": "Expediente cerrado.",
+    "source": "e474c5de64f5"
+  },
+  "act.REOPEN.done": {
+    "text": "Expediente reabierto.",
+    "source": "2f0851679340"
+  },
+  "act.VOID.done": {
+    "text": "Expediente anulado.",
+    "source": "3879f4c74f67"
+  },
+  "act.VOID.consequence": {
+    "text": "El expediente sigue registrado y queda fuera del trabajo cotidiano hasta que se restablezca.",
+    "source": "b10ae3c17e24"
+  },
+  "act.REINSTATE.done": {
+    "text": "Expediente restablecido.",
+    "source": "e8b79ac26253"
+  },
+  "act.REINSTATE.consequence": {
+    "text": "El expediente vuelve a estar activo. Su estado abierto o cerrado no cambia.",
+    "source": "d174ff361378"
+  },
+  "act.ERASE.done": {
+    "text": "Expediente suprimido.",
+    "source": "c808ff2c3abd"
+  },
+  "act.ERASE.consequence": {
+    "text": "Esto suprime permanentemente de ClaimCore los datos del expediente, su tramitación y sus recordatorios. Se conservan la referencia y el registro de cambios.",
+    "source": "e774df6acd21"
+  },
+  "act.REGISTER.done": {
+    "text": "Cuenta registrada.",
+    "source": "8beb0718d0ce"
+  },
+  "act.ADMIT.done": {
+    "text": "Cuenta añadida con sus roles.",
+    "source": "34e9d9f27a5d"
+  },
+  "act.ADMIT.consequence": {
+    "text": "Esto añade la cuenta, guarda su perfil y registra todos los roles seleccionados a la vez.",
+    "source": "9f450fe5937d"
+  },
+  "act.SET_PROFILE.done": {
+    "text": "Perfil actualizado.",
+    "source": "3a06720a52cb"
+  },
+  "act.ERASE_PROFILE.done": {
+    "text": "Perfil suprimido.",
+    "source": "3f92d421b5a7"
+  },
+  "act.ERASE_PROFILE.consequence": {
+    "text": "Esto suprime permanentemente el nombre y los datos de contacto guardados. Los cambios anteriores muestran un nombre de cuenta anónimo.",
+    "source": "59d90d4c6095"
+  },
+  "act.GRANT.done": {
+    "text": "Rol asignado.",
+    "source": "58d5cb320b79"
+  },
+  "act.GRANT.consequence": {
+    "text": "Esto registra la asignación del rol seleccionado para esta cuenta.",
+    "source": "2516ad2235ce"
+  },
+  "act.REVOKE.done": {
+    "text": "Rol revocado.",
+    "source": "8cb5dd549927"
+  },
+  "act.REVOKE.consequence": {
+    "text": "Esto elimina la asignación del rol seleccionado.",
+    "source": "04f9c1d1eb16"
+  },
+  "act.ENABLE.done": {
+    "text": "Cuenta activada.",
+    "source": "bc5cec779f5e"
+  },
+  "act.DISABLE.done": {
+    "text": "Cuenta desactivada.",
+    "source": "baa0517c0ffc"
+  },
+  "act.DISABLE.consequence": {
+    "text": "Esta cuenta pierde el acceso a ClaimCore. Los cambios que registró se conservan.",
+    "source": "ecd5b17ec840"
+  },
+  "act.UPDATE_WORK.done": {
+    "text": "Tramitación actualizada.",
+    "source": "fbdedb4562e0"
+  },
+  "act.REMINDER_CREATE.done": {
+    "text": "Recordatorio añadido.",
+    "source": "5e9e2dcc0b92"
+  },
+  "act.REMINDER_UPDATE.done": {
+    "text": "Recordatorio actualizado.",
+    "source": "b744baec4246"
+  },
+  "act.REMINDER_COMPLETE.done": {
+    "text": "Recordatorio completado.",
+    "source": "7b359664f423"
+  },
+  "act.REMINDER_CANCEL.done": {
+    "text": "Recordatorio cancelado.",
+    "source": "d4f1d5514d81"
+  },
+  "act.REMINDER_REOPEN.done": {
+    "text": "Recordatorio reabierto.",
+    "source": "8b94105daf2b"
+  },
+  "act.REMINDER_COMPLETE_AND_PLAN_NEXT.done": {
+    "text": "Recordatorio completado y próxima acción planificada.",
+    "source": "99dc5d907128"
+  },
+  "endpoint.authority.requests.dismiss.done": {
+    "text": "Solicitud de acceso descartada.",
+    "source": "5dcca45467bc"
+  },
+  "label.accountState": {
+    "text": "Estado de la cuenta",
+    "source": "f4d5f36fe0e2"
+  },
+  "label.responsibleCases": {
+    "text": "Expedientes a cargo",
+    "source": "8b3937308b8d"
+  },
+  "label.account": {
+    "text": "Cuenta",
+    "source": "7e1b0d5641f2"
+  },
+  "label.targetAccount": {
+    "text": "Cuenta modificada",
+    "source": "ee6c6ad65095"
+  },
+  "label.sequence": {
+    "text": "Número de registro",
+    "source": "262fca96392a"
+  },
+  "label.authorityHistory": {
+    "text": "Historial de acceso",
+    "source": "29e9d0964e33"
+  },
+  "label.requestedName": {
+    "text": "Nombre solicitado",
+    "source": "ca0175e2d2c8"
+  },
+  "label.requestedUsername": {
+    "text": "Nombre de usuario solicitado",
+    "source": "2bfe148a8785"
+  },
+  "label.requestedEmail": {
+    "text": "Correo electrónico solicitado",
+    "source": "50cffab6e474"
+  },
+  "label.accessRequest": {
+    "text": "Solicitud de acceso",
+    "source": "8096ea7049c2"
+  },
+  "label.firstSeen": {
+    "text": "Primera solicitud",
+    "source": "e2b217b3bde9"
+  },
+  "label.lastSeen": {
+    "text": "Última solicitud",
+    "source": "45003edbe039"
+  },
+  "label.capabilities": {
+    "text": "Permisos",
+    "source": "abccc78cc93c"
+  },
+  "label.views": {
+    "text": "Vistas disponibles",
+    "source": "a9a9831ca336"
+  },
+  "label.installationId": {
+    "text": "ID de instalación",
+    "source": "a20e85bba3cf"
+  },
+  "label.productVersion": {
+    "text": "Versión del producto",
+    "source": "9bb14a0cefac"
+  },
+  "label.businessDate": {
+    "text": "Fecha operativa",
+    "source": "e727f917d3c3"
+  },
+  "label.timeZone": {
+    "text": "Zona horaria",
+    "source": "b9fe1464783e"
+  },
+  "label.total": {
+    "text": "Total",
+    "source": "c9b3c38247f7"
+  },
+  "label.cases": {
+    "text": "Expedientes",
+    "source": "2249bd503ec4"
+  },
+  "label.claimedTotals": {
+    "text": "Totales reclamados por moneda",
+    "source": "03421d768ad1"
+  },
+  "label.payableTotals": {
+    "text": "Totales pagaderos por moneda",
+    "source": "5132fda471f1"
+  },
+  "boolean.TRUE.label": {
+    "text": "Sí",
+    "source": "85a39ab345d6"
+  },
+  "boolean.FALSE.label": {
+    "text": "No",
+    "source": "1ea442a134b2"
+  },
+  "view.CASES.label": {
+    "text": "Expedientes",
+    "source": "2249bd503ec4"
+  },
+  "view.AUTHORITY.label": {
+    "text": "Personas y acceso",
+    "source": "1e133caaec46"
+  },
+  "view.OPERATIONS.label": {
+    "text": "Operaciones",
+    "source": "358cc201f87d"
+  },
+  "label.requestDismissed": {
+    "text": "Solicitud de acceso descartada.",
+    "source": "5dcca45467bc"
+  },
+  "label.details": {
+    "text": "Detalles",
+    "source": "45989de49fb7"
+  },
+  "field.directorySearch.label": {
+    "text": "Buscar personas",
+    "source": "8a7e7f1bc563"
+  },
+  "field.directorySearch.hint": {
+    "text": "Buscar en los nombres o datos de contacto guardados actualmente.",
+    "source": "67c9d6f805b1"
+  },
+  "field.directorySearch.rule": {
+    "text": "Usa hasta {maximumCharacters} caracteres. No se distingue entre mayúsculas y minúsculas.",
+    "source": "93fa90aba753"
+  },
+  "label.installationRoleAssigned": {
+    "text": "Rol de instalación asignado",
+    "source": "334357fa72e6"
+  },
+  "label.caseRoleAssignments": {
+    "text": "Asignaciones de roles de expediente",
+    "source": "56c44e688151"
+  },
+  "label.directRoles": {
+    "text": "Roles directos",
+    "source": "57010719ec0f"
+  },
+  "label.inheritedRoles": {
+    "text": "Roles de instalación",
+    "source": "b9277081250e"
+  },
+  "label.effect": {
+    "text": "Efecto",
+    "source": "2252d5cf9376"
+  },
+  "label.recordedChange": {
+    "text": "Cambio registrado",
+    "source": "595214b94033"
+  },
+  "label.recordedFacts": {
+    "text": "Datos registrados",
+    "source": "2c506eb5768e"
+  },
+  "label.detailsWithheld": {
+    "text": "No tienes acceso a estos datos.",
+    "source": "d23b2f106566"
+  },
+  "label.recordDetails": {
+    "text": "Detalles del registro",
+    "source": "1c9b48608e25"
+  },
+  "label.recorded": {
+    "text": "Registrado.",
+    "source": "6f77cb394836"
+  },
+  "label.alreadyRecorded": {
+    "text": "Ya registrado.",
+    "source": "02a4fc57f331"
+  },
+  "label.stages": {
+    "text": "Etapas del expediente",
+    "source": "8a706bf4add1"
+  },
+  "label.currentStage": {
+    "text": "Etapa actual",
+    "source": "91766a00731b"
+  },
+  "label.stageCompleted": {
+    "text": "Completada",
+    "source": "22a970d2e5b1"
+  },
+  "label.stageDate": {
+    "text": "Fecha",
+    "source": "99c40ab40592"
+  },
+  "label.stageAmount": {
+    "text": "Importe",
+    "source": "49e96d7cdf58"
+  },
+  "label.stageReinstated": {
+    "text": "Expediente restablecido. Las fechas de etapas anteriores siguen siendo datos registrados.",
+    "source": "fcb51fd4effa"
+  },
+  "label.summaryChangedAt": {
+    "text": "Resumen modificado",
+    "source": "7a864ec4cf9a"
+  },
+  "label.summaryRecordedBy": {
+    "text": "Resumen escrito por",
+    "source": "0a42850c2ef1"
+  },
+  "label.unavailableActions": {
+    "text": "Acciones no disponibles",
+    "source": "8c8d95b95e90"
+  },
+  "label.authenticated": {
+    "text": "Autenticado",
+    "source": "6ab694cfc6fa"
+  },
+  "label.contractIdentity": {
+    "text": "Identidad del contrato",
+    "source": "002a152b2dfc"
+  },
+  "label.signedOut": {
+    "text": "Sesión cerrada.",
+    "source": "c99a647715b4"
+  },
+  "input.roleFilter.label": {
+    "text": "Filtro de roles",
+    "source": "919616461a99"
+  },
+  "input.roleFilter.hint": {
+    "text": "Buscar personas con este rol asignado, incluidas las cuentas desactivadas.",
+    "source": "af740161e26b"
+  },
+  "input.roleFilter.rule": {
+    "text": "Buscar asignaciones de roles reconocidas en la instalación o en expedientes individuales. Este filtro no comprueba las capacidades actuales ni si la cuenta está activada.",
+    "source": "7c1f18508d0a"
+  },
+  "role.OWNER.meaning": {
+    "text": "Gestiona personas, perfiles y roles. No da acceso a expedientes.",
+    "source": "d4b58dce6be6"
+  },
+  "role.CASE_READER.meaning": {
+    "text": "Ve expedientes y su historial básico.",
+    "source": "ed9a4b343f15"
+  },
+  "role.CASE_REGISTRAR.meaning": {
+    "text": "Registra y corrige datos de reclamaciones y ve expedientes y su historial básico. Abrir expedientes nuevos requiere este rol para todos los expedientes.",
+    "source": "1c5e9dc7aa0f"
+  },
+  "role.CASE_HANDLER.meaning": {
+    "text": "Gestiona expedientes: registra decisiones, cierra y reabre expedientes y ve el historial completo. Solo las personas gestionan responsabilidades, resúmenes y recordatorios. Abrir expedientes nuevos requiere este rol para todos los expedientes.",
+    "source": "10c565c43b6f"
+  },
+  "role.PAYMENT_RECORDER.meaning": {
+    "text": "Registra y quita fechas de pago y ve expedientes y su historial básico. No envía dinero.",
+    "source": "fdc63f0a37f2"
+  },
+  "role.DATA_STEWARD.meaning": {
+    "text": "Anula, restablece y suprime expedientes y ve expedientes y su historial básico. Solo para personas.",
+    "source": "9dcf59f71051"
+  },
+  "role.AUDITOR.meaning": {
+    "text": "Ve expedientes y su historial completo. Con este rol para todos los expedientes, también ve personas y acceso. No puede cambiar nada.",
+    "source": "5c16effd2666"
+  },
+  "timeline.event.caseOpened": {
+    "text": "Expediente abierto",
+    "source": "06d0c814073c"
+  },
+  "timeline.event.registrationAmended": {
+    "text": "Datos de la reclamación actualizados",
+    "source": "3464951cbb5f"
+  },
+  "timeline.event.factsCorrected": {
+    "text": "Datos corregidos",
+    "source": "b90ba017d774"
+  },
+  "timeline.event.decisionRecorded": {
+    "text": "Decisión de pago registrada",
+    "source": "17798f3d21af"
+  },
+  "timeline.event.decisionWithdrawn": {
+    "text": "Decisión de pago retirada",
+    "source": "0f54656f1d92"
+  },
+  "timeline.event.paymentRecorded": {
+    "text": "Fecha de pago registrada",
+    "source": "bba7521a5c9f"
+  },
+  "timeline.event.paymentCleared": {
+    "text": "Fecha de pago registrada eliminada",
+    "source": "41d0610ab261"
+  },
+  "timeline.event.caseClosed": {
+    "text": "Expediente cerrado",
+    "source": "aa56ad4b2d16"
+  },
+  "timeline.event.caseReopened": {
+    "text": "Expediente reabierto",
+    "source": "00dae005cb0c"
+  },
+  "timeline.event.caseVoided": {
+    "text": "Expediente anulado",
+    "source": "38d380a51a59"
+  },
+  "timeline.event.caseReinstated": {
+    "text": "Expediente restablecido",
+    "source": "d9c28b4df570"
+  },
+  "timeline.event.caseErased": {
+    "text": "Expediente suprimido",
+    "source": "258332be465d"
+  },
+  "timeline.event.responsibilityAssigned": {
+    "text": "Se asignó la responsabilidad a {person}",
+    "source": "1cea0340442f"
+  },
+  "timeline.event.responsibilityCleared": {
+    "text": "{person} ya no es responsable",
+    "source": "c7f660305433"
+  },
+  "timeline.event.workRecorded": {
+    "text": "Tramitación actualizada",
+    "source": "3dceb48f1eb4"
+  },
+  "timeline.event.handlingSummaryAdded": {
+    "text": "Resumen de tramitación añadido",
+    "source": "3a01b6b4766a"
+  },
+  "timeline.event.handlingSummaryChanged": {
+    "text": "Resumen de tramitación modificado",
+    "source": "d3f10a0b9c6d"
+  },
+  "timeline.event.handlingSummaryCleared": {
+    "text": "Resumen de tramitación eliminado",
+    "source": "36f0669f42f8"
+  },
+  "timeline.event.reminderPlanned": {
+    "text": "Recordatorio «{action}» planificado para {due}",
+    "source": "bc4358db80c1"
+  },
+  "timeline.event.reminderChanged": {
+    "text": "Recordatorio «{action}» actualizado",
+    "source": "d9b3c3c176d0"
+  },
+  "timeline.event.reminderCompleted": {
+    "text": "Recordatorio «{action}» completado",
+    "source": "75b9b8bb82a7"
+  },
+  "timeline.event.reminderCancelled": {
+    "text": "Recordatorio «{action}» cancelado",
+    "source": "db0f0854bd37"
+  },
+  "timeline.event.reminderReopened": {
+    "text": "Recordatorio «{action}» reabierto para {due}",
+    "source": "8c4f1a5f4c44"
+  },
+  "timeline.event.reminderCompletedAndPlanned": {
+    "text": "«{completedAction}» completado; «{nextAction}» planificado para {nextDue}",
+    "source": "d237d430694e"
+  },
+  "diagnostic.OPERATION_ID_OUT_OF_WINDOW": {
+    "text": "Este cambio se preparó hace demasiado tiempo o el reloj del dispositivo es incorrecto. Prepáralo de nuevo.",
+    "source": "989756780f37"
+  },
+  "endpoint.operation.get.label": {
+    "text": "Comprobar un cambio",
+    "source": "026230b34d61"
+  },
+  "endpoint.operation.get.meaning": {
+    "text": "Muestra si un cambio se registró. Si no, la respuesta pasa a ser definitiva {window} después de preparar el cambio.",
+    "source": "9e4c001adc75"
+  },
+  "endpoint.work.views.label": {
+    "text": "Vistas de trabajo",
+    "source": "f48e918dd51a"
+  },
+  "endpoint.work.views.meaning": {
+    "text": "Cuántos expedientes y recordatorios hay hoy en cada vista.",
+    "source": "e6e16f38405a"
+  },
+  "historyAccess.NONE.label": {
+    "text": "Sin acceso al historial",
+    "source": "7b14d63fd5c6"
+  },
+  "historyAccess.SUMMARY.label": {
+    "text": "Información básica del historial",
+    "source": "b3c1f0c9b2d9"
+  },
+  "historyAccess.FULL.label": {
+    "text": "Historial completo",
+    "source": "0036ce42c23e"
+  },
+  "label.reminders": {
+    "text": "Recordatorios",
+    "source": "7971dd752669"
+  },
+  "view.empty": {
+    "text": "No hay nada que mostrar en esta vista.",
+    "source": "349bbe9bc791"
+  },
+  "scalar.calendarDate.guidance": {
+    "text": "Usa YYYY-MM-DD, por ejemplo 2026-10-06.",
+    "source": "4be0526a5f3c"
+  },
+  "scalar.text.guidance": {
+    "text": "Hasta {maximumCharacters} caracteres.",
+    "source": "caa21d8eaae9"
+  },
+  "scalar.narrative.guidance": {
+    "text": "Opcional. Hasta {maximumScalars} caracteres; se permiten saltos de línea. Se conservan los espacios y la escritura tal como se introducen; no se permiten caracteres de control ni de dirección del texto.",
+    "source": "0d501fb19878"
+  },
+  "label.operationWindow": {
+    "text": "{minutes} minutos",
+    "source": "fc339bac371e"
+  },
+  "diagnostic.PRINCIPAL_FORMAT.gui": {
+    "text": "Comprueba el proveedor de acceso y el ID de cuenta.",
+    "source": "5a875ddb5598"
+  }
 }

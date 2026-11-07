@@ -1528,7 +1528,7 @@ module Descriptor =
                 | Consequence.Routine -> []
                 | Consequence.Stewardship
                 | Consequence.Irreversible ->
-                    [ Vocabulary.messageKey ActKind.vocabulary kind "consequence" ]
+                    [ PresentationKeys.consequence kind ]
                     |> List.map (fun key ->
                         section
                             "label.effect"

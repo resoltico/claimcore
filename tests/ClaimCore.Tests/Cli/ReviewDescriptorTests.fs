@@ -274,7 +274,7 @@ let reviews =
 
                     Expect.stringContains
                         output
-                        "Details are not disclosed."
+                        "You do not have access to these details."
                         "Withholding is not profile erasure"
 
                     Expect.stringContains

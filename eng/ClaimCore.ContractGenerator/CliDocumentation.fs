@@ -29,7 +29,24 @@ module CliDocumentation =
 
     let source () =
         let english = CatalogValidation.validate () |> Map.find "en"
-        let message key = Template.render english[key] Map.empty
+
+        let message key =
+            let arguments =
+                if key = "endpoint.operation.get.meaning" then
+                    let duration =
+                        Template.render
+                            english["label.operationWindow"]
+                            (Map.ofList
+                                [
+                                    "minutes",
+                                    string (OperationLifetime.WindowMilliseconds / 60000L)
+                                ])
+
+                    Map.ofList [ "window", duration ]
+                else
+                    Map.empty
+
+            Template.render english[key] arguments
 
         let escape (text: string) =
             text.Replace("|", "\\|").Replace("\n", " ")

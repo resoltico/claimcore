@@ -3,7 +3,15 @@ import { Icon } from "../ui/icons";
 import { usePresentation } from "../presentation/context";
 
 /** Precise core rules are available on request; ordinary field descriptions contain hints only. */
-export const FieldHelp = ({ label, ruleId }: { label: string; ruleId: string | null }) => {
+export const FieldHelp = ({
+  label,
+  ruleId,
+  name,
+}: {
+  label: string;
+  ruleId: string | null;
+  name: string | null;
+}) => {
   const p = usePresentation();
   return ruleId === null ? null : (
     <details className="field-help">
@@ -30,7 +38,7 @@ export const FieldHelp = ({ label, ruleId }: { label: string; ruleId: string | n
       >
         <Icon name="info" />
       </summary>
-      <p>{p.rule(ruleId)}</p>
+      <p>{p.rule(ruleId, name)}</p>
     </details>
   );
 };

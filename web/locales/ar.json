@@ -1,231 +1,914 @@
 {
-  "ui.about": "حول التطبيق",
-  "ui.accent": "لون التمييز",
-  "ui.accentBlue": "أزرق",
-  "ui.accentGreen": "أخضر",
-  "ui.accentSet": "تم تعيين لون التمييز إلى {value}.",
-  "ui.accepted": "معتمدة",
-  "ui.acceptedOperation": "التغيير المسجّل",
-  "ui.accessState.check": "التحقق من الوصول",
-  "ui.accessState.copy": "تفاصيل للمسؤول",
-  "ui.accessState.disabled": "هذا الحساب معطّل",
-  "ui.accessState.provider": "موفّر الهوية",
-  "ui.accessState.requested": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",
-  "ui.accessState.title": "ليس لديك وصول بعد",
-  "ui.account": "الحساب",
-  "ui.actDescription": "{label}: {meaning}",
-  "ui.actor": "الجهة",
-  "ui.actorRequestRetained": "طلبك الحالي محفوظ. تابعه أو تجاهله قبل بدء إجراء آخر.",
-  "ui.addGrant": "إضافة دور",
-  "ui.after": "بعد: {value}",
-  "ui.anyFilter": "الكل",
-  "ui.appearance": "المظهر",
-  "ui.authorityAction": "إجراء الصلاحيات",
-  "ui.backToCases": "العودة إلى الملفات",
-  "ui.before": "قبل: {value}",
-  "ui.calendar": "فتح التقويم",
-  "ui.canonicalCopyHint": "انسخ هذه القيمة.",
-  "ui.caseDetail": "تفاصيل الملف",
-  "ui.cases": "الملفات",
-  "ui.changeActDescription": "هل تريد تجاهل هذه المسودة واختيار أمر آخر؟",
-  "ui.changeActTitle": "تجاهل هذه التغييرات المسودة؟",
-  "ui.changeFact": "تغيير {field}",
-  "ui.checkOutcome": "التحقق من الحالة",
-  "ui.checkUnresolvedOperation": "Check now",
-  "ui.choiceNotAvailable": "غير متاح مع الحقائق الحالية.",
-  "ui.chooseRole": "اختر دورًا",
-  "ui.clearFilters": "مسح عوامل التصفية",
-  "ui.clearValue": "مسح القيمة المسجلة",
-  "ui.close": "إغلاق",
-  "ui.conflict.kept": "احتُفظ بمسودتك. راجع التغييرات قبل إعدادها وفق أحدث نسخة.",
-  "ui.conflict.loading": "جارٍ تحميل أحدث نسخة…",
-  "ui.conflict.reviewLatest": "المراجعة وفق أحدث نسخة",
-  "ui.conflict.title": "تغيّر هذا الملف",
-  "ui.continueAuthorityRequest": "متابعة الطلب الحالي",
-  "ui.contract": "هوية العقد",
-  "ui.copied": "تم نسخ {label}.",
-  "ui.copy": "نسخ {label}",
-  "ui.copyFallback": "نسخ {label} يدويًا",
-  "ui.correctionHint": "اختر إجراء كل مجموعة. تُؤخذ التفاصيل المحتفظ بها من حالة الملف عند التسجيل.",
-  "ui.countryName": "{code}: {name}",
-  "ui.countryUnassigned": "لا يتوفر اسم بلد للرمز {code}. تحقق من الرمز المقصود.",
-  "ui.currentMode": "حاليًا {value}",
-  "ui.defaultAccent": "الافتراضي",
-  "ui.detectedLanguage": "تم اكتشافها من المتصفح",
-  "ui.discardAndChange": "تجاهل وتغيير الإجراء",
-  "ui.discardAndLeave": "تجاهل ومغادرة",
-  "ui.discardUnknownDescription": "قد تكون العملية قد قُبلت بالفعل. يؤدي التجاهل إلى فقدان هذا الطلب الدقيق ولا يلغي العملية. تابع فقط إذا كنت تقبل فقدان إمكانية إعادة المحاولة من هذه الصفحة.",
-  "ui.displayLocale": "تنسيق التواريخ والأرقام",
-  "ui.displayLocaleSet": "تم تعيين تنسيق التاريخ والأرقام إلى {value}.",
-  "ui.emptyInput": "إدخال فارغ",
-  "ui.enterDetails": "إدخال التفاصيل",
-  "ui.exactCaseReference": "{label} (دقيق)",
-  "ui.exactOperationId": "معرّف العملية الدقيق",
-  "ui.exactReference": "{label} (دقيق): {reference}",
-  "ui.exactUtc": "الوقت الدقيق بتوقيت UTC",
-  "ui.explainFields": "شرح الحقول",
-  "ui.filters": "عوامل التصفية",
-  "ui.findCase": "فتح بالمرجع الدقيق",
-  "ui.formatPreview": "معاينة: {date} · {amount}",
-  "ui.generalOperationLookup": "البحث العام عن العمليات",
-  "ui.grantNumber": "الدور {number}",
-  "ui.grantsEnd": "تُعرض جميع الصلاحيات التي أُعيدت لهذه المراجعة.",
-  "ui.grantsPartial": "يُعرض جزء فقط من صلاحيات هذا الفاعل.",
-  "ui.historyNoChanges": "لم تتغير أي حقول مكشوفة.",
-  "ui.includeInactiveWork": "تضمين عمل الملفات غير النشطة",
-  "ui.incompleteResponse": "أعاد الخادم استجابة غير مكتملة أو غير صالحة.",
-  "ui.keepEditing": "متابعة التحرير",
-  "ui.language": "لغة الواجهة",
-  "ui.languageAppearance": "اللغة والمظهر",
-  "ui.languageLoadFailed": "تعذر تحميل اللغة. بقيت اللغة الحالية كما هي.",
-  "ui.languageRegion": "اللغة والمنطقة",
-  "ui.languageSet": "تم تعيين اللغة إلى {value}.",
-  "ui.leaveDraftDescription": "هل تريد تجاهل هذه المسودة ومغادرة المحرر؟",
-  "ui.leaveUnchanged": "إبقاء دون تغيير",
-  "ui.loading": "جارٍ التحميل…",
-  "ui.loadingCases": "جارٍ تحميل الملفات…",
-  "ui.loadingCurrentCase": "جارٍ تحميل الملف الحالي…",
-  "ui.loadingHistory": "جارٍ تحميل سجل الملف…",
-  "ui.loadingLanguage": "جارٍ تحميل اللغة…",
-  "ui.loadingSession": "جارٍ تحميل الجلسة المحلية…",
-  "ui.loginInstructions": "سجّل الدخول باستخدام موفر الهوية التابع لمؤسستك.",
-  "ui.lookingUp": "جارٍ البحث…",
-  "ui.mine": "ضمن مسؤوليتك",
-  "ui.modeSet": "تم تعيين وضع الألوان إلى {value}.",
-  "ui.moreActors": "المزيد من الجهات",
-  "ui.moreCaseActions": "إجراءات إضافية",
-  "ui.moreCases": "تحميل المزيد من الملفات",
-  "ui.moreGrants": "المزيد من الصلاحيات",
-  "ui.moreHistory": "تحميل المزيد من السجل",
-  "ui.moreReminders": "المزيد من التذكيرات",
-  "ui.newReminder": "إضافة تذكير",
-  "ui.nextAccounts": "المزيد من الحسابات",
-  "ui.nextActions": "الإجراءات التالية",
-  "ui.nextMonth": "الشهر التالي",
-  "ui.no": "لا",
-  "ui.noAccessibleActors": "لم تُرجع أي فاعلين متاحين.",
-  "ui.noAccessibleCases": "لم تُرجع أي ملفات متاحة.",
-  "ui.noAccessibleHistory": "لم تُرجع أي سجلات تاريخ متاحة.",
-  "ui.noCasesForView": "لا توجد ملفات تطابق طريقة العرض هذه.",
-  "ui.noEligibleAccounts": "لا توجد حسابات مؤهلة في هذه الصفحة.",
-  "ui.noPendingReminders": "يحتاج هذا الملف النشط المفتوح إلى إجراء تالٍ. أضف تذكيرًا عندما تتوفر خطة.",
-  "ui.noReminders": "لا توجد تذكيرات تطابق هذا العرض.",
-  "ui.noViews": "لا تتوفر عروض مساحة عمل لهذا الفاعل.",
-  "ui.notRecorded": "غير مسجّل",
-  "ui.observeOperation": "البحث عن النتيجة المسجلة",
-  "ui.openExactCase": "فتح {reference}",
-  "ui.operationAccepted": "اعتُمدت العملية {operationId}.",
-  "ui.operationLookup": "البحث عن عملية",
-  "ui.operationUnresolved": "Waiting for a final answer.",
-  "ui.overdueReminders": "التذكيرات المتأخرة",
-  "ui.pageEnd": "عُرضت جميع النتائج.",
-  "ui.pageNotFound": "الصفحة غير موجودة",
-  "ui.pageNotFoundDescription": "لا يشير هذا العنوان إلى صفحة في ClaimCore.",
-  "ui.pagePartial": "تتوفر نتائج أخرى.",
-  "ui.pairedFacts": "{first} و{second}",
-  "ui.pendingReminders": "التذكيرات المعلقة",
-  "ui.people.person": "الشخص",
-  "ui.people.roles": "الأدوار",
-  "ui.planAfterOpen": "فُتح الملف. تخطيط تذكير خطوة تالية منفصلة.",
-  "ui.preferencesNotSaved": "تعمل التفضيلات لهذه الجلسة، لكن تعذر حفظها في هذا المتصفح.",
-  "ui.preparingRecovery": "جارٍ حفظ معرّف الاسترداد…",
-  "ui.previewing": "جارٍ إعداد المراجعة…",
-  "ui.previousAccounts": "الحسابات السابقة",
-  "ui.previousMonth": "الشهر السابق",
-  "ui.primary": "التنقل الرئيسي",
-  "ui.pseudo": "الإنجليزية الموسعة (اختبار التخطيط)",
-  "ui.queueDescription": "ابحث عن أعمال الملفات التي تحتاج إلى اهتمام وتابعها.",
-  "ui.recordOptionalFact": "تسجيل {field} (اختياري)",
-  "ui.recovery": "Unconfirmed changes",
-  "ui.recoveryCleanupUnavailable": "النتيجة معروفة، لكن تعذر مسح هذه المحاولة المحلية. احتُفظ بهويتها؛ يمكنك التحقق من الحالة مجددًا.",
-  "ui.recoveryDescription": "These changes have no confirmed outcome yet. We check them automatically until the answer is final.",
-  "ui.recoveryEmpty": "No unconfirmed changes.",
-  "ui.recoveryListingUnavailable": "تعذر قراءة هويات الاسترداد أو تحديثها. تُحفظ السجلات الحالية. أعد إتاحة التخزين، أو عالج السجلات القديمة باستخدام العميل الموافق قبل إعادة المحاولة.",
-  "ui.recoveryUnavailable": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
-  "ui.reference": "{label}: {reference}",
-  "ui.refreshAccounts": "تحديث الحسابات المؤهلة",
-  "ui.refreshWork": "تحديث العمل",
-  "ui.reloadActors": "إعادة تحميل الجهات",
-  "ui.reloadCases": "إعادة تحميل الملفات",
-  "ui.reloadContract": "إعادة تحميل الصفحة",
-  "ui.reloadCurrentCase": "إعادة تحميل الملف الحالي",
-  "ui.reloadGrants": "إعادة تحميل الصلاحيات",
-  "ui.reloadHistory": "إعادة تحميل السجل",
-  "ui.reloadInterface": "إعادة تحميل الواجهة",
-  "ui.reminderAction": "الإجراء المخطط",
-  "ui.reminderDetails": "تفاصيل التذكير",
-  "ui.reminderDue": "التاريخ المخطط",
-  "ui.reminderQueueHint": "تحدد فلاتر الاستحقاق التذكيرات الفردية؛ وتستخدم فلاتر الملفات أقرب تاريخ معلق لكل ملف.",
-  "ui.reminderState": "حالة التذكير",
-  "ui.reminders": "التذكيرات",
-  "ui.removeGrant": "إزالة الدور",
-  "ui.retryExact": "إرسال مجدداً",
-  "ui.retryExactDescription": "Send again repeats the exact request still held by this page. Checks become final when the operation lifetime ends. After reloading, this page keeps only the identity and checks it automatically under Unconfirmed changes.",
-  "ui.retryLanguage": "إعادة محاولة تحميل اللغة",
-  "ui.retryView": "إعادة محاولة التحميل",
-  "ui.returnToCase": "العودة إلى الملف",
-  "ui.returnToEdit": "العودة إلى التحرير",
-  "ui.returnToWorkspace": "العودة إلى مساحة العمل",
-  "ui.review.basis": "استنادًا إلى الإصدار {revision}، جرى التحقق {when}.",
-  "ui.review.checked": "جرى التحقق {when}.",
-  "ui.reviewDescription": "راجع القيم المقترحة وأكّد هذه العملية بعينها.",
-  "ui.rightToLeft": "من اليمين إلى اليسار",
-  "ui.roleNotAvailableAtScope": "لا تنطبق أي صلاحية على هذا النطاق",
-  "ui.roleNotAvailableForService": "غير متاح لهويات الخدمات",
-  "ui.savedRecoveryAttempt": "محاولة محفوظة",
-  "ui.scalarCount": "{count} من {maximum} قيمة Unicode قياسية",
-  "ui.search": "بحث",
-  "ui.selectedAccount": "الحساب المحدد",
-  "ui.settings": "الإعدادات",
-  "ui.settingsIntroduction": "تنطبق هذه التفضيلات على هذا المتصفح. ولا تغيّر القيم المسجلة.",
-  "ui.shell.administration": "الإدارة",
-  "ui.shell.authorityHistory": "سجل الصلاحيات",
-  "ui.shell.businessDate": "تاريخ العمل",
-  "ui.shell.businessDateChanged": "تاريخ العمل الآن هو {date}. حدّث لتحديث تواريخ الاستحقاق.",
-  "ui.shell.checkNow": "تحقق الآن",
-  "ui.shell.people": "الأشخاص والصلاحيات",
-  "ui.shell.searchCases": "البحث عن الملفات",
-  "ui.shell.unresolved": "قد لا تكون {count} من التغييرات قد سُجلت",
-  "ui.shell.unresolvedOne": "قد لا يكون تغيير واحد قد سُجل",
-  "ui.signIn": "تسجيل الدخول",
-  "ui.signInTitle": "تسجيل الدخول إلى سجل الملفات",
-  "ui.signOut": "تسجيل الخروج",
-  "ui.stage.noDate": "التاريخ غير متاح",
-  "ui.stage.recorded": "مسجّل",
-  "ui.stage.reinstated": "أُعيد الملف. راجع الحقائق الحالية والإجراءات التالية.",
-  "ui.submitting": "جارٍ التسجيل…",
-  "ui.summaryCounts": "الملفات المطابقة: {count}",
-  "ui.summaryDetails": "عرض المجاميع",
-  "ui.theme": "المظهر",
-  "ui.themeAccessibility": "يدعم اللونان الوضعين الفاتح والداكن. تُحترم إعدادات التباين في جهازك تلقائيًا.",
-  "ui.themeDark": "داكن",
-  "ui.themeLight": "فاتح",
-  "ui.themeSystem": "مطابقة الجهاز",
-  "ui.timeline.after": "القيمة الجديدة:",
-  "ui.timeline.all": "الكل",
-  "ui.timeline.before": "القيمة السابقة:",
-  "ui.timeline.details": "عرض التفاصيل",
-  "ui.timeline.empty": "لا يوجد نشاط لعرضه.",
-  "ui.timeline.facts": "الحقائق",
-  "ui.timeline.filter": "تصفية النشاط",
-  "ui.timeline.more": "تحميل 50 أخرى",
-  "ui.timeline.nextReminder": "التذكير التالي",
-  "ui.timeline.title": "النشاط",
-  "ui.timeline.withheld": "هذه التغييرات غير متاحة لهذا الحساب.",
-  "ui.timeline.work": "العمل",
-  "ui.tryAgain": "المحاولة مجددًا",
-  "ui.unchangedUntilSubmit": "المراجعة استشارية. لا يُسجّل شيء حتى تُقبل العملية.",
-  "ui.version": "الإصدار",
-  "ui.viewLoadFailed": "تعذر تحميل هذا العرض. أعد محاولة التحميل أو أعد تحميل الواجهة عندما تكون مستعدًا لمغادرة العمل الحالي.",
-  "ui.viewLoading": "جارٍ تحميل العرض…",
-  "ui.workDateBasis": "تاريخ العمل {date} ({zone}).",
-  "ui.workQueue": "قائمة العمل",
-  "ui.worklistSearch": "تصفية هذا العرض",
-  "ui.yes": "نعم",
-  "ui.requests.empty": "لا توجد طلبات وصول معلّقة.",
-  "ui.requests.more": "تحميل المزيد من طلبات الوصول",
-  "ui.requests.refresh": "تحديث طلبات الوصول",
-  "ui.manualFilters": "عوامل التصفية اليدوية",
-  "ui.manualFiltersHint": "استخدم عوامل التصفية اليدوية لتضمين عمل الملفات غير النشطة.",
-  "ui.unconfirmedUntil": "Waiting for a final answer until {finalAt}."
+  "ui.about": {
+    "text": "حول التطبيق",
+    "source": "4efca0d10c5f"
+  },
+  "ui.accent": {
+    "text": "لون التمييز",
+    "source": "12376f4cbd6c"
+  },
+  "ui.accentBlue": {
+    "text": "أزرق",
+    "source": "ec7d56a01607"
+  },
+  "ui.accentGreen": {
+    "text": "أخضر",
+    "source": "d486dfbd5fb5"
+  },
+  "ui.accentSet": {
+    "text": "تم تعيين لون التمييز إلى {value}.",
+    "source": "f4c95f4f6a4b"
+  },
+  "ui.accepted": {
+    "text": "معتمدة",
+    "source": "070c160a6299"
+  },
+  "ui.acceptedOperation": {
+    "text": "التغيير المسجّل",
+    "source": "595214b94033"
+  },
+  "ui.accessState.check": {
+    "text": "التحقق من الوصول",
+    "source": "abb9a172a69b"
+  },
+  "ui.accessState.copy": {
+    "text": "تفاصيل للمسؤول",
+    "source": "8e079334f6ea"
+  },
+  "ui.accessState.disabled": {
+    "text": "هذا الحساب معطّل",
+    "source": "3c476460f303"
+  },
+  "ui.accessState.provider": {
+    "text": "موفّر الهوية",
+    "source": "472590ae974d"
+  },
+  "ui.accessState.requested": {
+    "text": "لقد أبلغنا المالكين. يمكن للمالك منح هذا الحساب الوصول.",
+    "source": "fbdca8dba390"
+  },
+  "ui.accessState.title": {
+    "text": "ليس لديك وصول بعد",
+    "source": "329f122dcf0f"
+  },
+  "ui.account": {
+    "text": "الحساب",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actDescription": {
+    "text": "{label}: {meaning}",
+    "source": "7216b2a9dae5"
+  },
+  "ui.actor": {
+    "text": "الحساب",
+    "source": "7e1b0d5641f2"
+  },
+  "ui.actorRequestRetained": {
+    "text": "طلبك الحالي محفوظ. تابعه أو تجاهله قبل بدء إجراء آخر.",
+    "source": "700957242358"
+  },
+  "ui.addGrant": {
+    "text": "إضافة دور",
+    "source": "e53a93625e74"
+  },
+  "ui.after": {
+    "text": "بعد: {value}",
+    "source": "7b7c2d72857a"
+  },
+  "ui.anyFilter": {
+    "text": "الكل",
+    "source": "2b505597daa7"
+  },
+  "ui.appearance": {
+    "text": "المظهر",
+    "source": "3907fa7f8072"
+  },
+  "ui.authorityAction": {
+    "text": "تغيير الصلاحيات",
+    "source": "295239c1b29a"
+  },
+  "ui.backToCases": {
+    "text": "العودة إلى الملفات",
+    "source": "99d9b7b14d23"
+  },
+  "ui.before": {
+    "text": "قبل: {value}",
+    "source": "f1db066ec43d"
+  },
+  "ui.calendar": {
+    "text": "فتح التقويم",
+    "source": "a1ad37d0c5e8"
+  },
+  "ui.canonicalCopyHint": {
+    "text": "انسخ هذه القيمة.",
+    "source": "8a31fb4c608d"
+  },
+  "ui.caseDetail": {
+    "text": "تفاصيل الملف",
+    "source": "e6aad002458d"
+  },
+  "ui.cases": {
+    "text": "الملفات",
+    "source": "2249bd503ec4"
+  },
+  "ui.changeActDescription": {
+    "text": "هل تريد تجاهل هذه المسودة واختيار أمر آخر؟",
+    "source": "0db8e85a3b26"
+  },
+  "ui.changeActTitle": {
+    "text": "تجاهل هذه التغييرات المسودة؟",
+    "source": "7dbba5ad2b76"
+  },
+  "ui.changeFact": {
+    "text": "تغيير {field}",
+    "source": "b8abd919ebef"
+  },
+  "ui.checkOutcome": {
+    "text": "التحقق من الحالة",
+    "source": "69cd3590300a"
+  },
+  "ui.checkUnresolvedOperation": {
+    "text": "تحقق الآن",
+    "source": "2937cffb37ab"
+  },
+  "ui.choiceNotAvailable": {
+    "text": "غير متاح مع الحقائق الحالية.",
+    "source": "d43925e74ff6"
+  },
+  "ui.chooseRole": {
+    "text": "اختر دورًا",
+    "source": "a49c49b04c4d"
+  },
+  "ui.clearFilters": {
+    "text": "مسح عوامل التصفية",
+    "source": "7179ea0035fc"
+  },
+  "ui.clearValue": {
+    "text": "مسح القيمة المسجلة",
+    "source": "726a6f95d697"
+  },
+  "ui.close": {
+    "text": "إغلاق",
+    "source": "7d9eb7acb13e"
+  },
+  "ui.conflict.kept": {
+    "text": "احتُفظ بمسودتك. راجع التغييرات قبل إعدادها وفق أحدث نسخة.",
+    "source": "8613834e4066"
+  },
+  "ui.conflict.loading": {
+    "text": "جارٍ تحميل أحدث نسخة…",
+    "source": "69b1810710e3"
+  },
+  "ui.conflict.reviewLatest": {
+    "text": "المراجعة وفق أحدث نسخة",
+    "source": "f0124537d549"
+  },
+  "ui.conflict.title": {
+    "text": "تغيّر هذا الملف",
+    "source": "ae4ec9da2e36"
+  },
+  "ui.continueAuthorityRequest": {
+    "text": "متابعة الطلب الحالي",
+    "source": "ec9e7079a21a"
+  },
+  "ui.contract": {
+    "text": "هوية العقد",
+    "source": "002a152b2dfc"
+  },
+  "ui.copied": {
+    "text": "تم نسخ {label}.",
+    "source": "80a056eab235"
+  },
+  "ui.copy": {
+    "text": "نسخ {label}",
+    "source": "63ba394601c5"
+  },
+  "ui.copyFallback": {
+    "text": "نسخ {label} يدويًا",
+    "source": "540c6468b0a7"
+  },
+  "ui.correctionHint": {
+    "text": "اختر ما ينبغي فعله بكل مجموعة من التفاصيل.",
+    "source": "fe14963d4faf"
+  },
+  "ui.countryName": {
+    "text": "{code}: {name}",
+    "source": "e92cdbf79c10"
+  },
+  "ui.countryUnassigned": {
+    "text": "{code} ليس رمز بلد معروفًا. تحقق منه.",
+    "source": "c16222b929b3"
+  },
+  "ui.currentMode": {
+    "text": "حاليًا {value}",
+    "source": "dbdd7aa26011"
+  },
+  "ui.defaultAccent": {
+    "text": "الافتراضي",
+    "source": "21b111cbfe6e"
+  },
+  "ui.detectedLanguage": {
+    "text": "تم اكتشافها من المتصفح",
+    "source": "1bec1fb0289f"
+  },
+  "ui.discardAndChange": {
+    "text": "تجاهل وتغيير الإجراء",
+    "source": "ffdb3f134a5e"
+  },
+  "ui.discardAndLeave": {
+    "text": "تجاهل ومغادرة",
+    "source": "07e5b9156de3"
+  },
+  "ui.discardUnknownDescription": {
+    "text": "قد يكون هذا التغيير مسجلًا بالفعل. إذا تجاهلته، فلن تتمكن هذه الصفحة من إعادة إرساله.",
+    "source": "28b3f2ec4ecf"
+  },
+  "ui.displayLocale": {
+    "text": "تنسيق التواريخ والأرقام",
+    "source": "c3e8e25f37a9"
+  },
+  "ui.displayLocaleSet": {
+    "text": "تم تعيين تنسيق التاريخ والأرقام إلى {value}.",
+    "source": "ad65deea3ecb"
+  },
+  "ui.emptyInput": {
+    "text": "إدخال فارغ",
+    "source": "63ed0b2ee921"
+  },
+  "ui.enterDetails": {
+    "text": "إدخال التفاصيل",
+    "source": "ebaf73345eea"
+  },
+  "ui.exactCaseReference": {
+    "text": "{label} (دقيق)",
+    "source": "cf3a934bfd96"
+  },
+  "ui.exactOperationId": {
+    "text": "معرّف العملية الدقيق",
+    "source": "dbdca09f6e48"
+  },
+  "ui.exactReference": {
+    "text": "{label} (دقيق): {reference}",
+    "source": "e26d7a9b269c"
+  },
+  "ui.exactUtc": {
+    "text": "الوقت الدقيق بتوقيت UTC",
+    "source": "460d31945df9"
+  },
+  "ui.explainFields": {
+    "text": "شرح الحقول",
+    "source": "3593737e2657"
+  },
+  "ui.filters": {
+    "text": "عوامل التصفية",
+    "source": "546ebb8eb993"
+  },
+  "ui.findCase": {
+    "text": "فتح بالمرجع الدقيق",
+    "source": "0ff7411177ad"
+  },
+  "ui.formatPreview": {
+    "text": "معاينة: {date} · {amount}",
+    "source": "e598c70b2351"
+  },
+  "ui.generalOperationLookup": {
+    "text": "البحث العام عن العمليات",
+    "source": "a87469ec1ea3"
+  },
+  "ui.grantNumber": {
+    "text": "الدور {number}",
+    "source": "00fa69a81cab"
+  },
+  "ui.grantsEnd": {
+    "text": "تظهر جميع الأدوار.",
+    "source": "d7fa749d2b8a"
+  },
+  "ui.grantsPartial": {
+    "text": "تظهر بعض الأدوار فقط.",
+    "source": "391d53d153f3"
+  },
+  "ui.historyNoChanges": {
+    "text": "لم تتغير التفاصيل.",
+    "source": "0b70fc56218c"
+  },
+  "ui.includeInactiveWork": {
+    "text": "تضمين عمل الملفات غير النشطة",
+    "source": "8ca6c3a219c2"
+  },
+  "ui.incompleteResponse": {
+    "text": "أرسل ClaimCore استجابة غير مكتملة.",
+    "source": "3fad4a1c8c5d"
+  },
+  "ui.keepEditing": {
+    "text": "متابعة التحرير",
+    "source": "e76fd2add010"
+  },
+  "ui.language": {
+    "text": "لغة الواجهة",
+    "source": "8027f432a7fb"
+  },
+  "ui.languageAppearance": {
+    "text": "اللغة والمظهر",
+    "source": "03ccd687bd8a"
+  },
+  "ui.languageLoadFailed": {
+    "text": "تعذر تحميل اللغة. بقيت اللغة الحالية كما هي.",
+    "source": "7a416cc61349"
+  },
+  "ui.languageRegion": {
+    "text": "اللغة والمنطقة",
+    "source": "003e875495c3"
+  },
+  "ui.languageSet": {
+    "text": "تم تعيين اللغة إلى {value}.",
+    "source": "0861f62cf939"
+  },
+  "ui.leaveDraftDescription": {
+    "text": "هل تريد تجاهل هذه المسودة ومغادرة المحرر؟",
+    "source": "a7e0213e137c"
+  },
+  "ui.leaveUnchanged": {
+    "text": "إبقاء دون تغيير",
+    "source": "819f6b9f3880"
+  },
+  "ui.loading": {
+    "text": "جارٍ التحميل…",
+    "source": "ba3bbbe10d8b"
+  },
+  "ui.loadingCases": {
+    "text": "جارٍ تحميل الملفات…",
+    "source": "ac19ccc4e348"
+  },
+  "ui.loadingCurrentCase": {
+    "text": "جارٍ تحميل الملف الحالي…",
+    "source": "961f74c56236"
+  },
+  "ui.loadingHistory": {
+    "text": "جارٍ تحميل النشاط…",
+    "source": "a389c395010e"
+  },
+  "ui.loadingLanguage": {
+    "text": "جارٍ تحميل اللغة…",
+    "source": "42609e39e159"
+  },
+  "ui.loadingSession": {
+    "text": "جارٍ تحميل الجلسة…",
+    "source": "3d3c04cbc07b"
+  },
+  "ui.loginInstructions": {
+    "text": "سجل الدخول بحساب مؤسستك.",
+    "source": "2d954a0e8a31"
+  },
+  "ui.lookingUp": {
+    "text": "جارٍ البحث…",
+    "source": "a84f1079ee0e"
+  },
+  "ui.mine": {
+    "text": "ملفاتي",
+    "source": "f57afb7d275a"
+  },
+  "ui.modeSet": {
+    "text": "تم تعيين وضع الألوان إلى {value}.",
+    "source": "b525fa9e5b37"
+  },
+  "ui.moreActors": {
+    "text": "المزيد من الأشخاص",
+    "source": "95baf92809bb"
+  },
+  "ui.moreCaseActions": {
+    "text": "إجراءات إضافية",
+    "source": "f8d46c2570e7"
+  },
+  "ui.moreCases": {
+    "text": "تحميل المزيد من الملفات",
+    "source": "cd681597c17e"
+  },
+  "ui.moreGrants": {
+    "text": "المزيد من الصلاحيات",
+    "source": "27f0be44c2db"
+  },
+  "ui.moreHistory": {
+    "text": "تحميل المزيد من النشاط",
+    "source": "e3f0587b4839"
+  },
+  "ui.moreReminders": {
+    "text": "المزيد من التذكيرات",
+    "source": "b36b0a1b10e1"
+  },
+  "ui.newReminder": {
+    "text": "إضافة تذكير",
+    "source": "cd566803bf39"
+  },
+  "ui.nextAccounts": {
+    "text": "المزيد من الحسابات",
+    "source": "743e1725ebd5"
+  },
+  "ui.nextActions": {
+    "text": "الإجراءات التالية",
+    "source": "f6eb77625278"
+  },
+  "ui.nextMonth": {
+    "text": "الشهر التالي",
+    "source": "74e53211fef4"
+  },
+  "ui.no": {
+    "text": "لا",
+    "source": "1ea442a134b2"
+  },
+  "ui.noAccessibleActors": {
+    "text": "لا يوجد أشخاص لعرضهم.",
+    "source": "6a83dad36c14"
+  },
+  "ui.noAccessibleCases": {
+    "text": "لا توجد ملفات لعرضها.",
+    "source": "4b74e082b9b3"
+  },
+  "ui.noAccessibleHistory": {
+    "text": "لا يوجد نشاط لعرضه.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.noCasesForView": {
+    "text": "لا توجد ملفات تطابق طريقة العرض هذه.",
+    "source": "8b8a577e5f3b"
+  },
+  "ui.noEligibleAccounts": {
+    "text": "لا توجد حسابات مؤهلة في هذه الصفحة.",
+    "source": "f9c5ece19d4b"
+  },
+  "ui.noPendingReminders": {
+    "text": "يحتاج هذا الملف النشط المفتوح إلى إجراء تالٍ. أضف تذكيرًا عندما تتوفر خطة.",
+    "source": "c7a49fc6cf67"
+  },
+  "ui.noReminders": {
+    "text": "لا توجد تذكيرات تطابق هذا العرض.",
+    "source": "3200239466d8"
+  },
+  "ui.noViews": {
+    "text": "لا توجد عروض عمل متاحة.",
+    "source": "3e86bd3913b7"
+  },
+  "ui.notRecorded": {
+    "text": "غير مسجّل",
+    "source": "b37c7879f6c3"
+  },
+  "ui.observeOperation": {
+    "text": "البحث عن النتيجة المسجلة",
+    "source": "6afd2a4b367f"
+  },
+  "ui.openExactCase": {
+    "text": "فتح {reference}",
+    "source": "544235b8ff17"
+  },
+  "ui.operationAccepted": {
+    "text": "اعتُمدت العملية {operationId}.",
+    "source": "f2ada3346a34"
+  },
+  "ui.operationLookup": {
+    "text": "البحث عن عملية",
+    "source": "2bc69d814487"
+  },
+  "ui.operationUnresolved": {
+    "text": "لم يُؤكد بعد.",
+    "source": "3ce10de819f7"
+  },
+  "ui.overdueReminders": {
+    "text": "التذكيرات المتأخرة",
+    "source": "051cc2b13b7f"
+  },
+  "ui.pageEnd": {
+    "text": "عُرضت جميع النتائج.",
+    "source": "959b6e22691e"
+  },
+  "ui.pageNotFound": {
+    "text": "الصفحة غير موجودة",
+    "source": "a469ab4ca4e5"
+  },
+  "ui.pageNotFoundDescription": {
+    "text": "لا يشير هذا العنوان إلى صفحة في ClaimCore.",
+    "source": "d35b48f97478"
+  },
+  "ui.pagePartial": {
+    "text": "تتوفر نتائج أخرى.",
+    "source": "ff02dd781a42"
+  },
+  "ui.pairedFacts": {
+    "text": "{first} و{second}",
+    "source": "a8c60ace0cf1"
+  },
+  "ui.pendingReminders": {
+    "text": "التذكيرات المعلقة",
+    "source": "352897daa5d5"
+  },
+  "ui.people.person": {
+    "text": "الشخص",
+    "source": "6007db63e18e"
+  },
+  "ui.people.roles": {
+    "text": "الأدوار",
+    "source": "c25337055464"
+  },
+  "ui.planAfterOpen": {
+    "text": "فُتح الملف. تخطيط تذكير خطوة تالية منفصلة.",
+    "source": "fa8a15963b74"
+  },
+  "ui.preferencesNotSaved": {
+    "text": "تعمل التفضيلات لهذه الجلسة، لكن تعذر حفظها في هذا المتصفح.",
+    "source": "861ebb38b269"
+  },
+  "ui.preparingRecovery": {
+    "text": "جارٍ الحفظ…",
+    "source": "23e39291d613"
+  },
+  "ui.previewing": {
+    "text": "جارٍ إعداد المراجعة…",
+    "source": "fcc53388888f"
+  },
+  "ui.previousAccounts": {
+    "text": "الحسابات السابقة",
+    "source": "c74522075fca"
+  },
+  "ui.previousMonth": {
+    "text": "الشهر السابق",
+    "source": "6a2769502a5d"
+  },
+  "ui.primary": {
+    "text": "التنقل الرئيسي",
+    "source": "efe10c80ec8a"
+  },
+  "ui.pseudo": {
+    "text": "الإنجليزية الموسعة (اختبار التخطيط)",
+    "source": "6f81f6466cb2"
+  },
+  "ui.queueDescription": {
+    "text": "ابحث عن أعمال الملفات التي تحتاج إلى اهتمام وتابعها.",
+    "source": "758595a14f42"
+  },
+  "ui.recordOptionalFact": {
+    "text": "تسجيل {field} (اختياري)",
+    "source": "da9e7bdfead7"
+  },
+  "ui.recovery": {
+    "text": "التغييرات غير المؤكدة",
+    "source": "5907dc3e66b9"
+  },
+  "ui.recoveryCleanupUnavailable": {
+    "text": "النتيجة معروفة، لكن تعذر مسح هذه المحاولة المحلية. احتُفظ بهويتها؛ يمكنك التحقق من الحالة مجددًا.",
+    "source": "1dc1592f82ad"
+  },
+  "ui.recoveryDescription": {
+    "text": "تعذر تأكيد تسجيل هذه التغييرات. يتحقق ClaimCore منها نيابةً عنك. تصبح كل إجابة نهائية خلال {window}.",
+    "source": "eff410b18411"
+  },
+  "ui.recoveryEmpty": {
+    "text": "لا توجد تغييرات غير مؤكدة.",
+    "source": "c2d34418a5dd"
+  },
+  "ui.recoveryListingUnavailable": {
+    "text": "تعذر قراءة هويات الاسترداد أو تحديثها. تُحفظ السجلات الحالية. أعد إتاحة التخزين، أو عالج السجلات القديمة باستخدام العميل الموافق قبل إعادة المحاولة.",
+    "source": "e2277d9e955f"
+  },
+  "ui.recoveryUnavailable": {
+    "text": "لم يُرسل الطلب: تخزين الاسترداد غير متاح. اسمح بتخزين الموقع أو وفّر مساحة ثم أعد المحاولة. لم يُرسل طلبك.",
+    "source": "d65945e86bb7"
+  },
+  "ui.reference": {
+    "text": "{label}: {reference}",
+    "source": "73fe9c967c0c"
+  },
+  "ui.refreshAccounts": {
+    "text": "تحديث الحسابات المؤهلة",
+    "source": "792e2d92a7aa"
+  },
+  "ui.refreshWork": {
+    "text": "تحديث العمل",
+    "source": "d8c38c942d9d"
+  },
+  "ui.reloadActors": {
+    "text": "إعادة تحميل الأشخاص",
+    "source": "8a0c53553115"
+  },
+  "ui.reloadCases": {
+    "text": "إعادة تحميل الملفات",
+    "source": "1e208585b01e"
+  },
+  "ui.reloadContract": {
+    "text": "إعادة تحميل الصفحة",
+    "source": "437d0d63bfbd"
+  },
+  "ui.reloadCurrentCase": {
+    "text": "إعادة تحميل الملف الحالي",
+    "source": "dfad4aa77ca3"
+  },
+  "ui.reloadGrants": {
+    "text": "إعادة تحميل الصلاحيات",
+    "source": "6e21644bbc15"
+  },
+  "ui.reloadHistory": {
+    "text": "إعادة تحميل النشاط",
+    "source": "10d39b0ca399"
+  },
+  "ui.reloadInterface": {
+    "text": "إعادة تحميل الواجهة",
+    "source": "bdc3a5a1699e"
+  },
+  "ui.reminderAction": {
+    "text": "الإجراء المخطط",
+    "source": "5818bdba66cb"
+  },
+  "ui.reminderDetails": {
+    "text": "تفاصيل التذكير",
+    "source": "1cd27d608c31"
+  },
+  "ui.reminderDue": {
+    "text": "التاريخ المخطط",
+    "source": "37b3b31a9fbe"
+  },
+  "ui.reminderQueueHint": {
+    "text": "تنطبق عوامل تصفية الاستحقاق هنا على كل تذكير. تستخدم قوائم الملفات أقرب تذكير لكل ملف.",
+    "source": "f1ad60c57bf8"
+  },
+  "ui.reminderState": {
+    "text": "حالة التذكير",
+    "source": "9320b222ccb0"
+  },
+  "ui.reminders": {
+    "text": "التذكيرات",
+    "source": "7971dd752669"
+  },
+  "ui.removeGrant": {
+    "text": "إزالة الدور",
+    "source": "9a1fb81f279f"
+  },
+  "ui.retryExact": {
+    "text": "إرسال مجدداً",
+    "source": "feead925e260"
+  },
+  "ui.retryExactDescription": {
+    "text": "تعيد إعادة الإرسال التغيير نفسه تمامًا؛ ولا يمكن تسجيله مرتين. إذا غادرت هذه الصفحة، فافتح التغييرات غير المؤكدة لرؤية الإجابة.",
+    "source": "534e3823f248"
+  },
+  "ui.retryLanguage": {
+    "text": "إعادة محاولة تحميل اللغة",
+    "source": "0c776ceb4592"
+  },
+  "ui.retryView": {
+    "text": "إعادة محاولة التحميل",
+    "source": "a0f859bc4db2"
+  },
+  "ui.returnToCase": {
+    "text": "العودة إلى الملف",
+    "source": "7a55d0a50325"
+  },
+  "ui.returnToEdit": {
+    "text": "العودة إلى التحرير",
+    "source": "afc22f861264"
+  },
+  "ui.returnToWorkspace": {
+    "text": "العودة إلى مساحة العمل",
+    "source": "02e565ef63bc"
+  },
+  "ui.review.basis": {
+    "text": "استنادًا إلى الإصدار {revision}، جرى التحقق {when}.",
+    "source": "864dfe115c55"
+  },
+  "ui.review.checked": {
+    "text": "جرى التحقق {when}.",
+    "source": "e249af3ff82a"
+  },
+  "ui.reviewDescription": {
+    "text": "تحقق من التغييرات، ثم أكدها.",
+    "source": "5c2b1066dca1"
+  },
+  "ui.rightToLeft": {
+    "text": "من اليمين إلى اليسار",
+    "source": "4667424121a6"
+  },
+  "ui.roleNotAvailableAtScope": {
+    "text": "غير متاح للملفات المحددة",
+    "source": "008dd6597126"
+  },
+  "ui.roleNotAvailableForService": {
+    "text": "غير متاح لحسابات الخدمة",
+    "source": "23a43af3092c"
+  },
+  "ui.savedRecoveryAttempt": {
+    "text": "محاولة محفوظة",
+    "source": "d152ac80fa8b"
+  },
+  "ui.scalarCount": {
+    "text": "الأحرف: {count}/{maximum}",
+    "source": "907b0d890dff"
+  },
+  "ui.search": {
+    "text": "بحث",
+    "source": "49c266baaaa7"
+  },
+  "ui.selectedAccount": {
+    "text": "الحساب المحدد",
+    "source": "8b63d9475c25"
+  },
+  "ui.settings": {
+    "text": "الإعدادات",
+    "source": "74a883a037bc"
+  },
+  "ui.settingsIntroduction": {
+    "text": "تنطبق هذه التفضيلات على هذا المتصفح. ولا تغيّر القيم المسجلة.",
+    "source": "2364c3aaf5d9"
+  },
+  "ui.shell.administration": {
+    "text": "الإدارة",
+    "source": "4b42c6690ebe"
+  },
+  "ui.shell.authorityHistory": {
+    "text": "سجل الصلاحيات",
+    "source": "2023c056fe61"
+  },
+  "ui.shell.businessDate": {
+    "text": "تاريخ العمل",
+    "source": "e727f917d3c3"
+  },
+  "ui.shell.businessDateChanged": {
+    "text": "تاريخ العمل الآن هو {date}. حدّث لتحديث تواريخ الاستحقاق.",
+    "source": "efb3f0ec78c4"
+  },
+  "ui.shell.checkNow": {
+    "text": "تحقق الآن",
+    "source": "2937cffb37ab"
+  },
+  "ui.shell.people": {
+    "text": "الأشخاص والصلاحيات",
+    "source": "8df747cef67a"
+  },
+  "ui.shell.searchCases": {
+    "text": "البحث عن الملفات",
+    "source": "22c2a4061665"
+  },
+  "ui.shell.unresolved": {
+    "text": "التغييرات غير المؤكدة: {count}",
+    "source": "dbbc216f94f3"
+  },
+  "ui.signIn": {
+    "text": "تسجيل الدخول",
+    "source": "bfd402b2f6f3"
+  },
+  "ui.signInTitle": {
+    "text": "تسجيل الدخول إلى سجل الملفات",
+    "source": "df2702f36960"
+  },
+  "ui.signOut": {
+    "text": "تسجيل الخروج",
+    "source": "48f0d3d397d4"
+  },
+  "ui.stage.noDate": {
+    "text": "التاريخ غير متاح",
+    "source": "a0aa75ba71d2"
+  },
+  "ui.stage.recorded": {
+    "text": "مسجّل",
+    "source": "c7175fa7a0db"
+  },
+  "ui.stage.reinstated": {
+    "text": "أُعيد الملف. راجع الحقائق الحالية والإجراءات التالية.",
+    "source": "a7a3e603b99e"
+  },
+  "ui.submitting": {
+    "text": "جارٍ التسجيل…",
+    "source": "7ea93caac0f5"
+  },
+  "ui.summaryCounts": {
+    "text": "الملفات المطابقة: {count}",
+    "source": "2b9110dcd544"
+  },
+  "ui.summaryDetails": {
+    "text": "عرض المجاميع",
+    "source": "aa9b920c97a9"
+  },
+  "ui.theme": {
+    "text": "المظهر",
+    "source": "efb52e7172b7"
+  },
+  "ui.themeAccessibility": {
+    "text": "يدعم اللونان الوضعين الفاتح والداكن. تُحترم إعدادات التباين في جهازك تلقائيًا.",
+    "source": "efad81ae5929"
+  },
+  "ui.themeDark": {
+    "text": "داكن",
+    "source": "60acc53f13a5"
+  },
+  "ui.themeLight": {
+    "text": "فاتح",
+    "source": "dbcd5e7bb7a0"
+  },
+  "ui.themeSystem": {
+    "text": "مطابقة الجهاز",
+    "source": "5e4aca65d4a4"
+  },
+  "ui.timeline.after": {
+    "text": "القيمة الجديدة:",
+    "source": "dca4696d7a91"
+  },
+  "ui.timeline.all": {
+    "text": "الكل",
+    "source": "75304cf77db0"
+  },
+  "ui.timeline.before": {
+    "text": "القيمة السابقة:",
+    "source": "fca574a5a363"
+  },
+  "ui.timeline.details": {
+    "text": "عرض التفاصيل",
+    "source": "1af77ee273cb"
+  },
+  "ui.timeline.empty": {
+    "text": "لا يوجد نشاط لعرضه.",
+    "source": "5ddccb9ef206"
+  },
+  "ui.timeline.facts": {
+    "text": "الحقائق",
+    "source": "3683709dabc0"
+  },
+  "ui.timeline.filter": {
+    "text": "تصفية النشاط",
+    "source": "3b9995d82ed9"
+  },
+  "ui.timeline.more": {
+    "text": "تحميل المزيد",
+    "source": "ac8991ef0101"
+  },
+  "ui.timeline.nextReminder": {
+    "text": "التذكير التالي",
+    "source": "153fddb917f5"
+  },
+  "ui.timeline.title": {
+    "text": "النشاط",
+    "source": "38da1505ca83"
+  },
+  "ui.timeline.withheld": {
+    "text": "ليس لديك صلاحية الوصول إلى هذه التغييرات.",
+    "source": "d6194fd34931"
+  },
+  "ui.timeline.work": {
+    "text": "العمل",
+    "source": "104ab9213e28"
+  },
+  "ui.tryAgain": {
+    "text": "المحاولة مجددًا",
+    "source": "d8b8392e2c54"
+  },
+  "ui.unchangedUntilSubmit": {
+    "text": "لا يُسجل شيء حتى تؤكد.",
+    "source": "23eba3cab92a"
+  },
+  "ui.version": {
+    "text": "الإصدار",
+    "source": "dd167905de0d"
+  },
+  "ui.viewLoadFailed": {
+    "text": "تعذر تحميل هذا العرض. أعد محاولة التحميل أو أعد تحميل الواجهة عندما تكون مستعدًا لمغادرة العمل الحالي.",
+    "source": "8d021b7893a2"
+  },
+  "ui.viewLoading": {
+    "text": "جارٍ تحميل العرض…",
+    "source": "a91ca23dc6a9"
+  },
+  "ui.workDateBasis": {
+    "text": "تاريخ العمل {date} ({zone}).",
+    "source": "10dbbbcb3088"
+  },
+  "ui.workQueue": {
+    "text": "قائمة العمل",
+    "source": "696e7291ea90"
+  },
+  "ui.worklistSearch": {
+    "text": "تصفية هذا العرض",
+    "source": "c2eec812666c"
+  },
+  "ui.yes": {
+    "text": "نعم",
+    "source": "85a39ab345d6"
+  },
+  "ui.requests.empty": {
+    "text": "لا توجد طلبات وصول معلّقة.",
+    "source": "f258e3645b02"
+  },
+  "ui.requests.more": {
+    "text": "تحميل المزيد من طلبات الوصول",
+    "source": "ffd6062030c9"
+  },
+  "ui.requests.refresh": {
+    "text": "تحديث طلبات الوصول",
+    "source": "0777c623824e"
+  },
+  "ui.manualFilters": {
+    "text": "عوامل التصفية اليدوية",
+    "source": "8184694f3ff6"
+  },
+  "ui.manualFiltersHint": {
+    "text": "استخدم عوامل التصفية اليدوية لتضمين عمل الملفات غير النشطة.",
+    "source": "dc4f2d354574"
+  },
+  "ui.unconfirmedUntil": {
+    "text": "لم يُؤكد بعد. ستكون الإجابة نهائية بحلول {finalAt}.",
+    "source": "fc1019052c76"
+  }
 }

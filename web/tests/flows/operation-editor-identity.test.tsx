@@ -92,7 +92,9 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.click(getButton("Review changes"));
   await waitForReviewConfirm();
   await user.click(reviewConfirm());
-  await screen.findByText("This operation ID belongs to different act content. Do not reuse it.");
+  await screen.findByText(
+    "This operation ID was already used for a different change. Use a new ID.",
+  );
   selectFact("claimantName");
   const claimant = screen.getByLabelText("Claimant name", {
     exact: true,
@@ -100,7 +102,7 @@ it("allocates a new ID when editing a definitely refused reviewed request", asyn
   await user.clear(claimant);
   await user.type(claimant, "Synthetic B");
   await user.click(getButton("Review changes"));
-  expect(await screen.findByRole("alert")).toHaveTextContent("Input problems: 1.");
+  expect(await screen.findByRole("alert")).toHaveTextContent("Fields to check: 1.");
   expect(claimant).toHaveAccessibleDescription(
     "The person or company making the claim. A non-blank value is required.",
   );

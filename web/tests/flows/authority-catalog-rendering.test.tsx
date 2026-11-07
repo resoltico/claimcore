@@ -132,7 +132,7 @@ const authorityTransport = (calls: Dispatch<AuthorityInput>[]) =>
   });
 const authorAuthority = async (kind: AuthorityInput["act"]["kind"]) => {
   const user = userEvent.setup();
-  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  const control = await screen.findByRole("combobox", { name: "Access change" });
   await user.click(control);
   await waitFor(() => {
     expect(optionValues(control)).toHaveLength(8);
@@ -206,22 +206,22 @@ it("requires an explicit role and disables service-incompatible roles from catal
   vi.stubGlobal("fetch", authorityTransport(calls));
   render(<AuthorityBinding />);
   const user = userEvent.setup();
-  const control = await screen.findByRole("combobox", { name: "Authority action" });
+  const control = await screen.findByRole("combobox", { name: "Access change" });
   await user.click(control);
   await waitFor(() => {
     expect(optionValues(control)).toHaveLength(8);
   });
-  await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "GRANT");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Access change" }), "GRANT");
   const group = screen.getByRole("radiogroup", { name: "Role" });
   expect(group.querySelector("input:checked")).toBeNull();
   const owner = screen.getByRole("radio", { name: "Owner" });
   await user.click(owner);
   expect(owner).toBeChecked();
-  await user.click(screen.getByRole("radio", { name: "Service" }));
+  await user.click(screen.getByRole("radio", { name: "Service account" }));
   expect(owner).toBeDisabled();
   expect(group.querySelector("input:checked")).toBeNull();
   expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
-  expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
+  expect(owner).toHaveAccessibleDescription(/Not available for service accounts/u);
   expect(calls).toHaveLength(0);
 });
 
@@ -237,10 +237,10 @@ it("disallows new case-scoped Owner grants and preserves revocation choices", as
   expect(screen.getByRole("radio", { name: "Owner" })).toBeDisabled();
   expect(screen.getByRole("radio", { name: "Owner" })).not.toBeChecked();
   expect(screen.getByRole("radio", { name: "Owner" })).toHaveAccessibleDescription(
-    /No capability applies at this scope/u,
+    /Not available for the selected cases/u,
   );
   expect(screen.getByRole("radio", { name: "Case reader" })).not.toBeDisabled();
-  await chooseOption(user, screen.getByRole("combobox", { name: "Authority action" }), "REVOKE");
+  await chooseOption(user, screen.getByRole("combobox", { name: "Access change" }), "REVOKE");
   await user.click(screen.getByRole("button", { name: "Discard and change action" }));
   expect(screen.getByRole("radio", { name: "Owner" })).not.toBeDisabled();
   expect(calls).toHaveLength(0);

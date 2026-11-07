@@ -6,6 +6,7 @@
 - Operation IDs must be UUIDv7; first execution expires after 10 minutes with 2 minutes of future clock allowance. Expiry alone does not prevent replay.
 - operation.get replaces operation.observe, operation.status and operation.resolve; supply the installation binding and handle ACCEPTED, PENDING with finalAt, and final NOT_ACCEPTED.
 - work.views replaces case.views and reminder.views in one snapshot; case.history, case.activity and work.overview are removed. Use case.timeline and CLI work views.
+- Non-English source catalogs now use `{text, source}` with English hashes; regenerate runtime catalogs. Missing or stale text falls back to English; en, lv and ar are required.
 - Read replies and accepted receipts now include a locale-neutral view; regenerate strict clients. Web and CLI render the supplied records and tables.
 - Case advice.history is now NONE, SUMMARY or FULL; case.timeline applies current disclosure rights automatically, with no request-level detail selector.
 - Reads use a per-principal FIFO of eight with two active requests and a five-second wait; full or expired queues return HTTP 429 with Retry-After: 1.
@@ -24,6 +25,7 @@
 - Contributor verification drops performance qualification and comparison tooling; the optional CLAIMCORE_TIMING probe prints read timings without thresholds.
 - Browser acceptance runs all Chromium cases and an @engine subset on Firefox/WebKit; the design matrix uses six representative Chromium contexts.
 - Browser file selection passes directly to Playwright; native runner filters replace TRX partitioning, and verification checks of checks are removed.
+- English and eight translations use plainer wording; counts avoid singular/plural selection, and shorter CLI help links to exact integration rules.
 
 ## [0.16.0] - 2026-11-06
 
