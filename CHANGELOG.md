@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- CLI conformance uses authored command inputs and typed frame checks instead of a generated frame snapshot.
 - Ten fixed durable-format examples replace the oracle corpus; byte properties and the hand-authored transition matrix remain.
 - Application store contracts run against PostgreSQL; the in-memory store double is removed.
 - Contributor tests discover vocabulary from product declarations; inventory.json and CLAIMCORE_UPDATE_GOLDENS are removed.

@@ -436,10 +436,9 @@ let closedFlagsBeforeInput =
             let cli = PublishedProcesses.publish root directory.FullName "ClaimCore.Cli"
 
             let captured =
-                File.ReadAllLines(Path.Combine(root, "tests/fixtures/cli-frames.tsv"))
+                File.ReadAllLines(Path.Combine(root, "tests/fixtures/cli-commands.txt"))
                 |> Array.map (fun row ->
-                    (row.Split('\t', 2)[0]).Split(' ', StringSplitOptions.RemoveEmptyEntries)
-                    |> List.ofArray)
+                    row.Split(' ', StringSplitOptions.RemoveEmptyEntries) |> List.ofArray)
                 |> Array.toList
 
             let host =

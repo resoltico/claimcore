@@ -14,9 +14,9 @@ open ClaimCore.Json
 open ClaimCore.TestSupport
 
 let private capturedArguments () =
-    File.ReadAllLines(Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-frames.tsv"))
+    File.ReadAllLines(Path.Combine(RepositoryRoot.find (), "tests/fixtures/cli-commands.txt"))
     |> Array.map (fun row ->
-        (row.Split('\t', 2)[0]).Split(' ', StringSplitOptions.RemoveEmptyEntries)
+        row.Split(' ', StringSplitOptions.RemoveEmptyEntries)
         |> List.ofArray
         |> CliExamples.complete)
     |> Array.toList

@@ -40,7 +40,7 @@ let private selectedInputs cli =
                     "Published input labels survive"
 
 // These historical grammar captures intentionally retain a noncanonical bare-host issuer.
-// L6 now refuses their business syntax locally; they remain valid structural frame oracles.
+// L6 now refuses their business syntax locally; they remain authored structural command examples.
 let private noncanonicalAuthorityExample arguments =
     match arguments with
     | "authority" :: act :: _ ->
@@ -82,23 +82,20 @@ let private principalRefusal cli arguments =
         "PRINCIPAL_FORMAT"
         "Canonical issuer rule"
 
-let private frameOracle cli =
+let private commandExamples cli =
     let rows =
         System.IO.File.ReadAllLines(
             System.IO.Path.Combine(
                 ClaimCore.TestSupport.RepositoryRoot.find (),
-                "tests/fixtures/cli-frames.tsv"
+                "tests/fixtures/cli-commands.txt"
             )
         )
 
     let captured =
         rows
         |> Array.map (fun row ->
-            let cells = row.Split('\t', 2)
-
             let arguments =
-                cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
-                |> List.ofArray
+                row.Split(' ', System.StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
 
             CommandGrammar.operations
             |> List.sortByDescending (CommandGrammar.words >> List.length)
@@ -109,34 +106,29 @@ let private frameOracle cli =
 
     let expected = CommandGrammar.operations |> Set.ofList
     Expect.equal captured expected "Every catalog operation has an independent captured frame"
-    let arguments = rows |> Array.map (fun row -> row.Split('\t', 2)[0])
 
     Expect.equal
-        (arguments |> Array.distinct |> Array.length)
+        (rows |> Array.distinct |> Array.length)
         rows.Length
         "Captured invocation arguments are distinct"
 
     let mutable localRefusals = 0
 
     for row in rows do
-        let cells = row.Split('\t', 2)
-
         let arguments =
-            cells[0].Split(' ', System.StringSplitOptions.RemoveEmptyEntries)
-            |> List.ofArray
+            row.Split(' ', System.StringSplitOptions.RemoveEmptyEntries) |> List.ofArray
 
         if noncanonicalAuthorityExample arguments then
             localRefusals <- localRefusals + 1
             principalRefusal cli arguments
         else
             let result = invoke cli (arguments @ [ "--dry-run" ]) None
-            Expect.equal result.ExitCode 0 cells[0]
+            Expect.equal result.ExitCode 0 row
             Expect.equal result.StandardError.Length 0 "Offline preparation emits only the frame"
 
-            Expect.equal
-                ((Encoding.UTF8.GetString result.StandardOutput).TrimEnd('\r', '\n'))
-                cells[1]
-                "Published frame bytes match the authored vector"
+            Expect.isOk
+                (Frames.admit result.StandardOutput)
+                "Published dry-run output is an admissible frame"
 
     Expect.equal localRefusals 8 "All eight original noncanonical issuer examples remain exercised"
 
@@ -174,5 +166,5 @@ let private diagnosticRoute cli =
 
 let qualify cli =
     selectedInputs cli
-    frameOracle cli
+    commandExamples cli
     diagnosticRoute cli

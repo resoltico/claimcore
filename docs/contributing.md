@@ -513,6 +513,7 @@ fail when that corpus is invalid; do not turn those failures into skips.
 
 ## Test inputs
 
+[CLI command examples](../tests/fixtures/cli-commands.txt) are authored inputs, with no captured output column.
 Positive behavior examples use input builders. Keep the values under test literal. Test expectations
 are hand-authored; there is no fixture update mode. Review expected contract changes explicitly.
 
