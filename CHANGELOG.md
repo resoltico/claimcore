@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Remove CLAIMCORE_UPDATE_GOLDENS; test fixtures no longer have an automatic update mode.
 - Contributor verification drops performance qualification and comparison tooling; the optional CLAIMCORE_TIMING probe prints read timings without thresholds.
 - Browser acceptance runs all Chromium cases and an @engine subset on Firefox/WebKit; the design matrix uses six representative Chromium contexts.
 - Browser file selection passes directly to Playwright; native runner filters replace TRX partitioning, and verification checks of checks are removed.

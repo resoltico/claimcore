@@ -5,7 +5,7 @@ open System.Text.Json
 open ClaimCore.Json
 open ClaimCore.Protocol
 
-/// Supply behavior-test inputs only. Golden and permanent-byte assertions read their raw sources.
+/// Supply behavior-test inputs only. Exact-byte assertions read their raw sources.
 let value (sample: JsonElement) =
     let raw =
         sample.GetProperty("value").GetRawText()

@@ -4,6 +4,4 @@ open System.Reflection
 open Expecto
 
 [<Tests>]
-let tests =
-    GoldenPreparation.prepare ()
-    ClaimCore.TestSupport.TestGuards.tests (Assembly.GetExecutingAssembly())
+let tests = ClaimCore.TestSupport.TestGuards.tests (Assembly.GetExecutingAssembly())
