@@ -23,6 +23,7 @@ uuid() {
   hex="$(openssl rand -hex 16)"
   printf '%s-%s-%s-%s-%s' "${hex:0:8}" "${hex:8:4}" "${hex:12:4}" "${hex:16:4}" "${hex:20:12}"
 }
+
 project="claimcore-$(openssl rand -hex 8)"
 mkdir -m 700 "${configuration}"
 mkdir -m 700 "${configuration}/key-ring"
@@ -51,7 +52,8 @@ web_secret="$(openssl rand -hex 32)"
 service_secret="$(openssl rand -hex 32)"
 owner_login="$(openssl rand -hex 32)"
 owner_subject="$(uuid)"
-owner_operation_id="$(uuid)"
+# Provisioning uses the same bounded UUIDv7 contract as every recorded change.
+owner_operation_id="$(node -e 'const b=require("node:crypto").randomBytes(16); b.writeUIntBE(Date.now(),0,6); b[6]=(b[6]&15)|0x70; b[8]=(b[8]&63)|0x80; const h=b.toString("hex"); console.log([h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join("-"));')"
 printf '%s' "${owner_password}" >"${configuration}/postgres/owner.password"
 printf '%s' "${runtime_password}" >"${configuration}/postgres/runtime.password"
 printf '%s' "${web_secret}" >"${configuration}/web/client.secret"

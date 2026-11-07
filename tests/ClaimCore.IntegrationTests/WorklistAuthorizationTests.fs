@@ -27,6 +27,8 @@ let tests =
                 member _.Dispose() = database.Fixture.Dispose()
             }
 
+        let operationId = StoreFixtures.id database.Fixture
+
         let admin =
             StoreFixtures.caseWorker database.Fixture
             |> fun pending -> pending.GetAwaiter().GetResult()
@@ -53,8 +55,7 @@ let tests =
                     (core adminPrincipal)
                     (ClaimCore.TestSupport.Inputs.caseOperation
                         {
-                            OperationId =
-                                Guid.Parse(sprintf "b0000000-0000-4000-8000-%012d" (3 + index))
+                            OperationId = operationId (3 + index)
                             CaseReference = reference
                             ExpectedRevision = 0L
                             Act = AuthoredCaseAct.Open Inputs.registration
@@ -70,7 +71,7 @@ let tests =
             PrincipalKey.service "https://scope.example/" "service"
             |> Result.defaultWith (string >> failtest)
 
-        let serviceId = Guid.Parse "b0000000-0000-4000-8000-000000000010"
+        let serviceId = operationId 10
 
         let registered =
             Service.execute
@@ -89,7 +90,7 @@ let tests =
         let granted =
             StoreFixtures.grant
                 admin
-                (Guid.Parse "b0000000-0000-4000-8000-000000000011")
+                (operationId 11)
                 servicePrincipal
                 {
                     Role = Role.CaseReader
@@ -108,10 +109,7 @@ let tests =
                     DatabaseSession.execute
                         connection
                         "INSERT INTO claimcore.grants(actor_id,role,case_id) VALUES ($1,'DATA_STEWARD',$2)"
-                        [|
-                            box serviceId
-                            box (Guid.Parse "b0000000-0000-4000-8000-000000000003")
-                        |]
+                        [| box serviceId; box (operationId 3) |]
                         CancellationToken.None
             }
             |> fun pending -> pending.GetAwaiter().GetResult()
@@ -121,8 +119,7 @@ let tests =
             1
             "The negative control inserts exactly one forbidden scoped projection role"
 
-        let corruptedCase =
-            CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")
+        let corruptedCase = CaseFixtures.caseId (operationId 3)
 
         let persisted =
             database.Fixture.Store.Read
@@ -244,7 +241,7 @@ let tests =
                     "Detail and listing agree"
             | result -> failtestf "Expected readable detail, got %A" result
 
-        let reminderId = Guid.Parse "b0000000-0000-4000-8000-000000000020"
+        let reminderId = operationId 20
 
         let created =
             Service.execute

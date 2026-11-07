@@ -244,7 +244,7 @@ let tests =
                             }
 
                         let! service = owner db.Fixture
-                        let issued = DateTimeOffset.UtcNow.AddMinutes(-11.)
+                        let issued = DateTimeOffset.UtcNow
                         let operation = OperationIds.at issued
 
                         let prepared =
@@ -265,7 +265,7 @@ let tests =
                         let writer =
                             ControlledStore(
                                 db.Fixture.Store,
-                                Some(issued.AddMinutes(1.)),
+                                None,
                                 Some prepared,
                                 Some release.Task,
                                 None
@@ -278,7 +278,18 @@ let tests =
                                 CancellationToken.None
 
                         do! prepared.Task.WaitAsync(TimeSpan.FromSeconds 10.)
-                        let reader = ControlledStore(db.Fixture.Store, None, None, None, Some read)
+                        let finalInstant = issued.AddMinutes(11.)
+
+                        let reader =
+                            ControlledStore(
+                                db.Fixture.Store,
+                                Some finalInstant,
+                                None,
+                                None,
+                                Some read,
+                                readInstant = finalInstant
+                            )
+
                         let getting = lookup { service with Store = reader } operation
                         do! read.Task.WaitAsync(TimeSpan.FromSeconds 10.)
                         do! Task.Delay 50
@@ -398,7 +409,7 @@ let tests =
                             }
 
                         let! service = owner db.Fixture
-                        let issued = DateTimeOffset.UtcNow.AddMinutes(-11.)
+                        let issued = DateTimeOffset.UtcNow
                         let operation = OperationIds.at issued
 
                         let confirmation =

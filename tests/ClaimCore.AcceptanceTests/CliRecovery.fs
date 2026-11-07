@@ -152,7 +152,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
                 fixture.Environment
                 None
 
-        let reply = parse 0 resolved |> require "ACCEPTED"
+        let reply = (parse 0 resolved |> require "ACCEPTED").GetProperty("receipt")
 
         Expect.equal
             (reply.GetProperty("operationId").GetString())

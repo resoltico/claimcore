@@ -38,8 +38,8 @@ let tests =
                         return (accepted reply |> caseReceipt).CaseId
                     }
 
-                let! parent = openCase 2 "ASSIGNMENT-PARENT" |> Async.AwaitTask
-                let! other = openCase 3 "ASSIGNMENT-OTHER" |> Async.AwaitTask
+                let! parent = openCase 1002 "ASSIGNMENT-PARENT" |> Async.AwaitTask
+                let! other = openCase 1003 "ASSIGNMENT-OTHER" |> Async.AwaitTask
 
                 let register number name create =
                     task {

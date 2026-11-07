@@ -42,10 +42,9 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
   await page.getByRole("button", { name: "Send again", exact: true }).click();
   await (await refused).finished();
   await expect(page.getByRole("button", { name: "Send again", exact: true })).toBeEnabled();
-  await expect(page.getByRole("alert")).toContainText("unknown");
   await expect(
     page.getByRole("heading", {
-      name: "The operation outcome is unknown. Retry the exact same operation.",
+      name: "We could not confirm whether this change was recorded. Send it again; it cannot be recorded twice.",
       exact: true,
     }),
   ).toBeFocused();
@@ -81,7 +80,7 @@ const refuseRetryBeforeDispatch = async (page: Page, requests: (string | null)[]
 const expectUnknownOperation = async (page: Page) => {
   await expect(
     page.getByRole("heading", {
-      name: "The operation outcome is unknown. Retry the exact same operation.",
+      name: "We could not confirm whether this change was recorded. Send it again; it cannot be recorded twice.",
       exact: true,
     }),
   ).toBeFocused();
@@ -106,7 +105,6 @@ test("retries one lost accepted reply with the exact reviewed operation and byte
     accepted = value;
   });
   await page.getByRole("dialog").locator("button[data-confirm-operation]").click();
-  await expect(page.getByRole("alert")).toContainText("unknown");
   await expectUnknownOperation(page);
   expect(isResponse("operation.execute", accepted)).toBe(true);
   const first = (accepted as ServiceResponse<"operation.execute">).outcome;

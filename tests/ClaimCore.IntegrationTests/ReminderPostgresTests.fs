@@ -901,10 +901,17 @@ let private currentLookup database =
                 }
                 token
 
-        Expect.equal
-            history
-            (Outcome.Rejected(Refusal.Access AccessRefusal.ResourceUnavailable))
-            "ReadCase does not disclose prior reminder database.Fixture versions"
+        let historical = read history
+
+        Expect.isNonEmpty
+            historical.Items
+            "Basic history remains available under current read rights."
+
+        for entry in historical.Items do
+            Expect.equal
+                entry.Changes
+                TimelineChanges.Withheld
+                "ReadCase never discloses earlier reminder payloads."
 
         let! other =
             Service.execute

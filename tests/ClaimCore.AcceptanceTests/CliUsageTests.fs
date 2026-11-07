@@ -369,13 +369,13 @@ let localizedDiscovery =
         // Hand-authored literals keep these process checks independent of catalog lookups.
         let languages =
             [
-                "en", "Case facts and decisions", "Open a case", "Amount claimed"
+                "en", "Case facts and decisions", "Open a case", "Claimed amount"
                 "lv", "Lietu fakti un lēmumi", "Atvērt lietu", "Pieprasītā summa"
                 "ar", "وقائع الملفات والقرارات", "فتح ملف", "المبلغ المطالب به"
-                "ko", "건 정보 및 결정", "건 등록", "청구 금액"
+                "ko", "청구 건 정보 및 결정", "청구 건 등록", "청구 금액"
                 "ja", "案件情報と決定", "案件を登録", "請求額"
-                "zh-Hans", "档案资料与决定", "新建理赔档案", "索赔金额"
-                "zh-Hant", "檔案資料與決定", "新建理賠檔案", "索賠金額"
+                "zh-Hans", "案件资料与决定", "新建理赔案件", "索赔金额"
+                "zh-Hant", "案件資料與決定", "新建理賠案件", "索賠金額"
                 "es",
                 "Datos del expediente y decisiones",
                 "Abrir un expediente",

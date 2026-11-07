@@ -91,12 +91,13 @@ let private withProbe check =
             member _.Dispose() = database.Fixture.Dispose()
         }
 
+    let operationId = StoreFixtures.id database.Fixture
     let admin = StoreFixtures.core database.Fixture principal
 
     let provisioned =
         Service.provisionOwner
             admin
-            (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000002")
+            (operationId 2)
             {
                 DisplayName = "Reader"
                 Contact = None
@@ -110,7 +111,7 @@ let private withProbe check =
 
     for number, role in
         [ 10000, Role.CaseReader; 10001, Role.CaseRegistrar; 10002, Role.DataSteward ] do
-        let operation = Guid.Parse(sprintf "bbbbbbbb-0000-4000-8000-%012d" number)
+        let operation = operationId number
 
         let granted =
             StoreFixtures.grant
@@ -144,8 +145,7 @@ let private withProbe check =
                 current
                 (Inputs.caseOperation
                     {
-                        OperationId =
-                            Guid.Parse(sprintf "bbbbbbbb-0000-4000-8000-%012d" (index + 3))
+                        OperationId = operationId (index + 3)
                         CaseReference = reference
                         ExpectedRevision = 0L
                         Act = AuthoredCaseAct.Open Inputs.registration
@@ -165,7 +165,7 @@ let private withProbe check =
             admin
             (OperationInput.Authority(
                 StoreFixtures.authorityRequest
-                    (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000010")
+                    (operationId 10)
                     scopedPrincipal
                     (AuthorityAct.Register Inputs.actorProfile)
             ))
@@ -177,14 +177,11 @@ let private withProbe check =
     let granted =
         StoreFixtures.grant
             admin
-            (Guid.Parse "bbbbbbbb-0000-4000-8000-000000010003")
+            (operationId 10003)
             scopedPrincipal
             {
                 Role = Role.CaseReader
-                Scope =
-                    GrantTarget.CaseId(
-                        CaseFixtures.caseId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000003")
-                    )
+                Scope = GrantTarget.CaseId(CaseFixtures.caseId (operationId 3))
             }
             true
         |> fun pending -> pending.GetAwaiter().GetResult()
@@ -192,7 +189,7 @@ let private withProbe check =
     StoreFixtures.acceptedAuthority granted
     let scoped = core scopedPrincipal
     traced.Calls.Clear()
-    check current scoped traced
+    check current scoped traced operationId
 
 let private read core text statuses limit =
     Service.list
@@ -209,12 +206,12 @@ let private page =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Expected successful list: %A" other
 
-let private expectExact (value: CaseSummaryPage) =
+let private expectExact operationId (value: CaseSummaryPage) =
     Expect.equal
         value.ExactReference
         (Some
             {
-                CaseId = CaseFixtures.caseId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000004")
+                CaseId = CaseFixtures.caseId (operationId 4)
                 CaseReference = CaseReference.parse "Match-1" |> accepted
             })
         "Original authored reference and creation identity"
@@ -227,7 +224,7 @@ let tests =
             testCase
                 "summary integrity failure wins and prevents later lookup or authority reads"
                 (fun () ->
-                    withProbe (fun core _ traced ->
+                    withProbe (fun core _ traced _operationId ->
                         traced.CorruptPage <- true
                         traced.FailLookup <- true
 
@@ -245,10 +242,10 @@ let tests =
                             "No later target authority read"))
 
             testCase "validated visible exact hit reuses disclosure without later reads" (fun () ->
-                withProbe (fun core _ traced ->
+                withProbe (fun core _ traced operationId ->
                     traced.FailLookup <- true
                     let result = read core "match-1" [] 50 |> page
-                    expectExact result
+                    expectExact operationId result
 
                     Expect.equal
                         (result.Items
@@ -266,9 +263,9 @@ let tests =
             testCase
                 "readable exact reference outside a page still needs lookup and authorization"
                 (fun () ->
-                    withProbe (fun core _ traced ->
+                    withProbe (fun core _ traced operationId ->
                         let result = read core "match-1" [] 1 |> page
-                        expectExact result
+                        expectExact operationId result
 
                         Expect.equal
                             (result.Items
@@ -286,10 +283,10 @@ let tests =
                             1
                             "Independent target authorization"))
             testCase "readable exact reference survives an empty filtered page" (fun () ->
-                withProbe (fun core _ traced ->
+                withProbe (fun core _ traced operationId ->
                     let result = read core "match-1" [ CaseStatus.Closed ] 50 |> page
                     Expect.isEmpty result.Items "No closed case is in the fixture"
-                    expectExact result
+                    expectExact operationId result
 
                     Expect.isTrue
                         (traced.Calls.Contains "FindCaseByReference")
@@ -301,7 +298,7 @@ let tests =
             testCase
                 "partial and absent reference searches retain fallback and nonmatches"
                 (fun () ->
-                    withProbe (fun core _ traced ->
+                    withProbe (fun core _ traced _operationId ->
                         for query, count in [ "match", 2; "MISSING", 0 ] do
                             traced.Calls.Clear()
                             let result = read core query [] 50 |> page
@@ -324,7 +321,7 @@ let tests =
             testCase
                 "unreadable exact target remains undisclosed beside a visible partial match"
                 (fun () ->
-                    withProbe (fun _ scoped traced ->
+                    withProbe (fun _ scoped traced _operationId ->
                         let result = read scoped "match-1" [] 50 |> page
 
                         Expect.equal
@@ -341,7 +338,7 @@ let tests =
             testCase
                 "scoped visible match avoids rereads and malformed reference syntax does not probe"
                 (fun () ->
-                    withProbe (fun _ scoped traced ->
+                    withProbe (fun _ scoped traced _operationId ->
                         traced.FailLookup <- true
                         let result = read scoped "a-match-1" [] 50 |> page
 
@@ -363,7 +360,7 @@ let tests =
                             (traced.Calls.Contains "FindCaseByReference")
                             "Parse guard remains"))
             testCase "erasure preserves exact authorized reference identity" (fun () ->
-                withProbe (fun core _ traced ->
+                withProbe (fun core _ traced operationId ->
                     for operation, revision, act in
                         [
                             31, 1L, AuthoredCaseAct.Void "Retained reason"
@@ -374,10 +371,7 @@ let tests =
                                 core
                                 (Inputs.caseOperation
                                     {
-                                        OperationId =
-                                            Guid.Parse(
-                                                sprintf "bbbbbbbb-0000-4000-8000-%012d" operation
-                                            )
+                                        OperationId = operationId operation
                                         CaseReference = "Match-1"
                                         ExpectedRevision = revision
                                         Act = act
@@ -390,5 +384,5 @@ let tests =
                         | other -> failtestf "Fixture erasure failed: %A" other
 
                     traced.Calls.Clear()
-                    read core "match-1" [] 50 |> page |> expectExact))
+                    read core "match-1" [] 50 |> page |> expectExact operationId))
         ]

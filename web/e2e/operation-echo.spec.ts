@@ -27,7 +27,7 @@ test("a mismatched operation echo retains the draft and cannot enable confirmati
   });
   await page.getByRole("button", { name: "Review changes", exact: true }).click();
   await expect(page.getByRole("alert")).toContainText(
-    "The local service returned an invalid HTTP 200 response.",
+    "ClaimCore sent an unexpected response (HTTP 200).",
   );
   await expect(page.getByLabel("Case reference", { exact: true })).toHaveValue(reference);
   await expect(page.getByRole("button", { name: "Review changes", exact: true })).toBeEnabled();

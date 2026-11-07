@@ -3,6 +3,7 @@ module ClaimCore.AcceptanceTests.BrowserTests
 open System
 open System.Collections.Generic
 open System.IO
+open System.Text.Json
 open Expecto
 
 let private engines =
@@ -16,6 +17,41 @@ let private engines =
 let private specification =
     Environment.GetEnvironmentVariable "CLAIMCORE_ACCEPTANCE_BROWSER_SPEC"
     |> Option.ofObj
+
+let private failedSources output =
+    try
+        use document =
+            JsonDocument.Parse(File.ReadAllBytes(Path.Combine(output, "playwright.json")))
+
+        let rec collect (suite: JsonElement) =
+            let mutable children = Unchecked.defaultof<JsonElement>
+
+            let nested =
+                if suite.TryGetProperty("suites", &children) then
+                    children.EnumerateArray() |> Seq.toList |> List.collect collect
+                else
+                    []
+
+            let mutable specs = Unchecked.defaultof<JsonElement>
+
+            let failed =
+                if suite.TryGetProperty("specs", &specs) then
+                    specs.EnumerateArray()
+                    |> Seq.toList
+                    |> List.filter (fun spec -> not (spec.GetProperty("ok").GetBoolean()))
+                    |> List.map (fun spec ->
+                        (Path.GetFileName(spec.GetProperty("file").GetString() |> nonNull)
+                         |> nonNull)
+                        + ":"
+                        + string (spec.GetProperty("line").GetInt32()))
+                else
+                    []
+
+            nested @ failed
+
+        collect document.RootElement |> List.distinct |> String.concat ", "
+    with _ ->
+        "standard report unavailable"
 
 let private run engine =
     task {
@@ -56,7 +92,17 @@ let private run engine =
 
         FixtureFiles.write output "playwright.stdout" result.StandardOutput |> ignore
         FixtureFiles.write output "playwright.stderr" result.StandardError |> ignore
-        Expect.equal result.ExitCode 0 ("Playwright " + engine + "; private evidence: " + output)
+
+        let sources =
+            if result.ExitCode = 0 then
+                ""
+            else
+                "; failed sources: " + failedSources output
+
+        Expect.equal
+            result.ExitCode
+            0
+            ("Playwright " + engine + sources + "; private evidence: " + output)
 
         if
             engine = "chromium"

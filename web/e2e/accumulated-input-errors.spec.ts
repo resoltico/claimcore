@@ -12,8 +12,8 @@ test("one submit reports every invalid input in summary order and links to its f
   await openAuthenticated(page);
   await startOpen(page, `ACCUMULATE-${randomUUID()}`);
   const incident = page.locator('[data-field-name="incidentDate"]').getByRole("spinbutton").first();
-  const amount = page.getByLabel("Amount claimed", { exact: true });
-  const currency = page.getByRole("combobox", { name: "Currency of claimed amount", exact: true });
+  const amount = page.getByLabel("Claimed amount", { exact: true });
+  const currency = page.getByRole("combobox", { name: "Claimed currency", exact: true });
   await fillBusinessField(page, "incidentDate", "");
   await amount.fill("00.10");
   await currency.fill("euros");
@@ -36,7 +36,7 @@ test("one submit reports every invalid input in summary order and links to its f
     { field: "claimedCurrency", code: "CURRENCY_FORMAT" },
   ]);
   expect(requests).toEqual(["POST /api/operation.preview"]);
-  await expect(page.getByRole("alert")).toContainText("Input problems: 3.");
+  await expect(page.getByRole("alert")).toContainText("Fields to check: 3.");
   for (const control of [incident, amount, currency]) {
     await expect(control).toHaveAttribute("aria-invalid", "true");
     await expect(control).toHaveAttribute("aria-describedby", /\S/u);

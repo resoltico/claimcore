@@ -3,7 +3,7 @@
 ## [Unreleased]
 
 - Recreate databases for ledger entry format 6. Durable changes require fresh installations; no migration or cross-version reader is provided.
-- Operation IDs must be UUIDv7. First execution expires after 10 minutes, with two minutes of future clock allowance; replay is checked before expiry.
+- Operation IDs, including first-owner provisioning, must be UUIDv7. First execution expires after 10 minutes with two minutes of future allowance; replay is checked first.
 - operation.get replaces operation.observe, operation.status and operation.resolve; handle ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED.
 - work.views combines case/reminder counts. case.history, case.activity, work.overview, case.views and reminder.views are removed; use case.timeline for activity.
 - Read replies and accepted receipts include a locale-neutral view; regenerate strict clients. Browser and CLI render supplied records and tables; JSON/CSV retain typed data.

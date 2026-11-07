@@ -120,7 +120,7 @@ test("real IndexedDB keeps independent attempts across pages with one operation 
   const status: unknown = await (await checked).json();
   expect(isResponse("operation.get", status) && status.outcome.kind === "PENDING").toBe(true);
   await expect(
-    second.getByText("Waiting for a final answer until", { exact: false }),
+    second.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
   ).toBeVisible();
   expect(await records(page, scope)).toEqual([secondRecord]);
   await page.close();
@@ -211,7 +211,7 @@ test("tab loss after transaction commit and before notification leaves identity 
   const reply: unknown = await (await checked).json();
   expect(isResponse("operation.get", reply) && reply.outcome.kind === "PENDING").toBe(true);
   await expect(
-    replacement.getByText("Waiting for a final answer until", { exact: false }),
+    replacement.getByText("Not confirmed yet. The answer will be final by", { exact: false }),
   ).toBeVisible();
   expect(await records(replacement, scope)).toHaveLength(1);
   expect(executions).toBe(0);

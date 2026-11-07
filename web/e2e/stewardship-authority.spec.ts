@@ -42,7 +42,7 @@ const stewardAct = async (
     await dialog.getByLabel("Reason", { exact: true }).fill(reason);
   }
   if (kind === "ERASE") {
-    await expect(dialog).toContainText("Copies held elsewhere remain.");
+    await expect(dialog).toContainText("Copies held elsewhere are not affected.");
   }
   const previewed = page.waitForResponse(
     (reply) => new URL(reply.url()).pathname === "/api/operation.preview",
@@ -103,7 +103,7 @@ test("browser renders void, reinstatement and live payload erasure through autho
     await stewardAct(steward, reference, "REINSTATE", "Synthetic correction");
     await stewardAct(steward, reference, "ERASE");
     await expect(steward.locator(".case-detail > p.case-lifecycle-erased")).toContainText(
-      "Erased — only",
+      "Erased. Only",
     );
     await expect(steward.locator(".record-view [data-entry='claimantName']")).toHaveCount(0);
     await expectAccessible(steward);
@@ -262,7 +262,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   await beginActorAct(page, name, "GRANT", "en");
   const owner = page.locator('input[name="act.role"][value="OWNER"]');
   await expect(owner).toBeDisabled();
-  await expect(owner).toHaveAccessibleDescription(/Not available for service principals/u);
+  await expect(owner).toHaveAccessibleDescription(/Not available for service accounts/u);
   await assertHumanOnlyBoundary(page, source.issuer, subject);
   // The active authority manager retains the existing missing-target diagnostic.
   // Unavailable callers remain non-disclosing at the service boundary.
@@ -297,7 +297,7 @@ test("browser admits service principals, reaffirms scoped grants and enablement,
   await openAdmission(page, source.issuer, subject, name, reference);
   await submitAuthority(page, "REJECTED");
   await expect(page.getByRole("dialog").getByRole("alert")).toContainText(
-    "This principal is already registered.",
+    "This account is already registered.",
   );
   await expectAccessible(page);
 });

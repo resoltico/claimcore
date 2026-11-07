@@ -64,7 +64,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
   const history = page.locator(".case-timeline-panel");
   await expect(history.locator(".table-view tbody > tr")).toHaveCount(1);
   if (role !== "CASE_HANDLER") {
-    await expect(history).toContainText("Changes are not disclosed.");
+    await expect(history).toContainText("You do not have access to these changes.");
     await expect(history).not.toContainText("Synthetic claimant");
     await expect(history).not.toContainText("Synthetic insurer");
   }

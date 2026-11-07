@@ -330,7 +330,7 @@ test("a busy read shows one notice and waits for explicit retry under CSP", asyn
     });
   });
   await page.goto("/settings", { waitUntil: "commit" });
-  await expect(page.getByRole("alert")).toContainText("Request admission is busy.");
+  await expect(page.getByRole("alert")).toContainText("ClaimCore is busy. Try again in a moment.");
   await expect(page.getByRole("dialog")).toHaveCount(0);
   await page.getByRole("radio", { name: "Blue", exact: true }).check();
   await expect(page.locator("html")).toHaveAttribute("data-accent", "blue");

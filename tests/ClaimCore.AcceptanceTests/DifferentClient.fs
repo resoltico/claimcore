@@ -135,7 +135,7 @@ let private publish (fixture: PublishedFixture.Fixture) directory name =
     output
 
 let private changeLocaleText directory =
-    let path = Path.Combine(directory, "src/ClaimCore.Cli/Localization/en.json")
+    let path = Path.Combine(directory, "src/ClaimCore.Cli/Localization/Runtime/en.json")
     let locale = JsonNode.Parse(File.ReadAllBytes path) |> nonNull
     let original = (locale["cli.text.code"] |> nonNull).GetValue<string>()
     locale["cli.text.code"] <- JsonValue.Create(original + " synthetic locale control")
@@ -180,7 +180,7 @@ let qualify (fixture: PublishedFixture.Fixture) =
         |> nonNull
 
     let input = authored["input"] |> nonNull
-    input["operationId"] <- JsonValue.Create(Guid.NewGuid().ToString("D"))
+    input["operationId"] <- JsonValue.Create(Guid.CreateVersion7().ToString("D"))
     (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create "SYNTHETIC-CONTRACT-MISMATCH"
 
     let result =

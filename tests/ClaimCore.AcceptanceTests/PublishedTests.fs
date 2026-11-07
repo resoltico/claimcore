@@ -245,16 +245,12 @@ let private erasedView (tombstone: JsonElement) =
         0
         "Erased records offer no business or stewardship act"
 
-    let history =
-        advice.GetProperty("history").EnumerateArray()
-        |> Seq.map (fun detail -> detail.GetString() |> nonNull)
-        |> Seq.sort
-        |> Seq.toList
+    let history = advice.GetProperty("history").GetString()
 
     Expect.equal
         history
-        [ "FULL"; "SUMMARY" ]
-        "Only authorized retained history details are offered"
+        "FULL"
+        "Current full-history authority remains visible for erased identities"
 
 
 let private stewardship (fixture: PublishedFixture.Fixture) =

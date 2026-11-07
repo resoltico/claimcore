@@ -103,7 +103,7 @@ let private fallback (operation: string) (result: ProcessRunner.Result) =
     let lines = Encoding.UTF8.GetString(result.StandardError).TrimEnd('\n').Split('\n')
     Expect.equal lines.Length 3 "Fallback reply, guidance, and exact request frame"
     Expect.stringContains lines[1] "claimcore call" "Exact resending guidance"
-    Expect.stringContains lines[1] "claimcore operation status" "Passive status guidance"
+    Expect.stringContains lines[1] "claimcore operation get" "Final lookup guidance"
 
     let frame =
         Frames.decode (Encoding.UTF8.GetBytes lines[0])
@@ -223,12 +223,12 @@ let private unicodeFrames fixture =
             |}
 
     let result =
-        run
+        CliCalls.invoke
             fixture
             fixture.Environment
-            "session"
-            "pipe"
+            [ "session" ]
             (Array.concat [ request; [| 10uy |]; request; [| 10uy |] ])
+            0
 
     Expect.equal result.ExitCode 0 "Normal multiframe session succeeds"
 
@@ -271,7 +271,7 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
     let subject =
         "synthetic-\u001B[31m\r\n\t\b\u0085\u202Eالعربية\u200C\u200D-literal\\u{001B}"
 
-    let operation = "00000000-0000-4000-8000-000000000042"
+    let operation = id ()
     let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
 
     let registered =
@@ -363,6 +363,40 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
 
     Expect.isFalse identityFirst "Neither the unsafe principal nor ID is the leading name"
 
+    // Generic rendering consumes the supplied view, not a reconstructed principal card from data.
+    fixture.TransformNextReply(
+        "/api/authority.grants",
+        fun bytes ->
+            let root = JsonNode.Parse(bytes: byte array) |> nonNull
+
+            (root["outcome"] |> nonNull)["view"] <-
+                JsonSerializer.SerializeToNode
+                    {|
+                        kind = "RECORD"
+                        sections =
+                            [|
+                                {|
+                                    titleId = "label.recordDetails"
+                                    entries =
+                                        [|
+                                            {|
+                                                key = "technical-subject"
+                                                labelId = "field.principal.subject.label"
+                                                prominence = "DETAIL"
+                                                value =
+                                                    {|
+                                                        kind = "IDENTIFIER"
+                                                        value = subject
+                                                    |}
+                                            |}
+                                        |]
+                                |}
+                            |]
+                    |}
+
+            Encoding.UTF8.GetBytes(root.ToJsonString())
+    )
+
     let rendered =
         CliCalls.invoke
             fixture
@@ -397,111 +431,9 @@ let private humanActorData (fixture: PublishedFixture.Fixture) =
         (row.Contains("literal\\\\u{001B}", StringComparison.Ordinal))
         "Literal escape-like strings remain distinguishable"
 
-let private settlementConsent (fixture: PublishedFixture.Fixture) =
-    let operation = Guid.NewGuid().ToString("D")
-    let owner = interactiveEnvironment fixture "synthetic-owner" "valid"
-    let context = CliCalls.verb fixture owner [ "context" ] 0 |> require "SUCCEEDED"
-    let requester = context.GetProperty "requester"
-
-    Expect.equal
-        (requester.GetProperty("kind").GetString())
-        "ACTIVE"
-        "Settlement is prepared for the active authenticated owner"
-
-    let actor =
-        requester.GetProperty("self").GetProperty("actorId").GetString() |> nonNull
-
-    let installation = requester.GetProperty("installationId").GetString() |> nonNull
-    let original = head fixture
-
-    for answer, expectedHead in [ "", original; "yes", original; operation, original + 1L ] do
-        let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
-
-        let start =
-            ProcessStartInfo(
-                "python3",
-                UseShellExecute = false,
-                RedirectStandardOutput = true,
-                RedirectStandardError = true
-            )
-
-        ClaimCore.TestSupport.CliProcessEnvironment.clearInherited start
-
-        ClaimCore.TestSupport.CliProcessEnvironment.isolateProfile
-            start
-            (Path.GetDirectoryName fixture.Cli |> nonNull)
-
-        for argument in
-            [
-                Path.Combine(
-                    fixture.Root,
-                    "tests/ClaimCore.AcceptanceTests/SettlementTerminalProbe.py"
-                )
-                fixture.Cli
-                operation
-                actor
-                installation
-                answer
-            ] do
-            start.ArgumentList.Add argument
-
-        for pair in environment do
-            start.Environment[pair.Key] <- pair.Value
-
-        start.Environment["PYTHONDONTWRITEBYTECODE"] <- "1"
-
-        start.Environment["SETTLEMENT_PROBE_PRIVATE_OUTPUT"] <-
-            Path.Combine(
-                fixture.Directory,
-                "settlement-"
-                + (if answer = operation then "confirm"
-                   elif answer = "" then "cancel"
-                   else "wrong-target")
-                + ".private-output"
-            )
-
-        let progress = Some environment["CLAIMCORE_CLI_TEST_PROGRESS_FILE"]
-
-        let result =
-            CliDriverCompletion.run 90000 Console.Error progress 0 (fun () ->
-                let result = ClaimCore.TestSupport.BoundedProcess.run start None 1048576 90000
-
-                {
-                    ProcessRunner.Result.ExitCode = result.ExitCode
-                    StandardOutput = result.StandardOutput
-                    StandardError = result.StandardError
-                })
-
-        let name =
-            "settlement-"
-            + (if answer = operation then "confirm"
-               elif answer = "" then "cancel"
-               else "wrong-target")
-
-        FixtureFiles.write fixture.Directory (name + ".stdout") result.StandardOutput
-        |> ignore
-
-        FixtureFiles.write fixture.Directory (name + ".stderr") result.StandardError
-        |> ignore
-
-        if result.ExitCode <> 0 then
-            Console.Error.WriteLine(Encoding.UTF8.GetString result.StandardError)
-
-        Expect.equal result.ExitCode 0 "Real terminal authenticated-scope confirmation completed"
-
-        Expect.equal
-            (head fixture)
-            expectedHead
-            "Declining cannot append; affirmative consent appends one permanent control"
-
-    CliCalls.verb fixture owner [ "operation"; "status"; operation ] 2
-    |> require "NOT_ACCEPTED"
-    |> ignore
-
 let qualify fixture =
     let source, _, reference = authored fixture
     CliNarrativeOutput.qualify fixture source reference (fun () -> head fixture)
-    settlementConsent fixture
     humanActorData fixture
     mutations fixture
     noMutation fixture

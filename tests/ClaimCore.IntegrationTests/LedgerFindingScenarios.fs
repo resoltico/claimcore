@@ -119,6 +119,8 @@ let internal revision (database: PostgresFixture.Database) =
 let internal start (database: PostgresFixture.Database) =
     task {
         let! _ = populated database
+        // Exercise the fold after a trusted owner bypasses the structural first-version guard.
+        do! sql database "ALTER TABLE claimcore.ledger DROP CONSTRAINT ledger_creation_shape" [||]
 
         let change value =
             let request, snapshot = livePayload value

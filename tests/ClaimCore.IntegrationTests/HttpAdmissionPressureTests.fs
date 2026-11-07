@@ -261,7 +261,7 @@ let private qualify () =
                         "Both noisy requests actually hold ordinary-read capacity while their bodies are incomplete"
                         (fun () -> admission.ActiveReads = 2L)
 
-                let! rejected, _ =
+                let refusing =
                     send
                         host
                         noisy
@@ -270,12 +270,25 @@ let private qualify () =
                         (json "{}")
                         CancellationToken.None
 
-                Expect.equal
-                    rejected
-                    429
-                    "Client-chosen request values cannot evade the authenticated principal limit"
+                let statusInput =
+                    JsonSerializer.Serialize
+                        {|
+                            operationId = OperationIds.fresh ()
+                        |}
 
+                let looking =
+                    send
+                        host
+                        noisy
+                        fixture.InstallationId
+                        "operation.get"
+                        (json statusInput)
+                        CancellationToken.None
 
+                do!
+                    awaitCondition
+                        "Ordinary reads and lookup both enter the principal FIFO"
+                        (fun () -> admission.QueuedReads = 2L)
 
                 for _ in 1..3 do
 
@@ -306,20 +319,14 @@ let private qualify () =
                         "The normal reader observes the independently created PostgreSQL case"
 
 
-                let statusInput =
-                    JsonSerializer.Serialize
-                        {|
-                            operationId = OperationIds.fresh ()
-                        |}
+                let! rejected, _ = refusing
 
-                let! status, statusBytes =
-                    send
-                        host
-                        noisy
-                        fixture.InstallationId
-                        "operation.get"
-                        (json statusInput)
-                        CancellationToken.None
+                Expect.equal
+                    rejected
+                    429
+                    "Queued ordinary reads expire while both slow bodies retain their permits"
+
+                let! status, statusBytes = looking
 
                 Expect.equal status 429 "Lookup cannot bypass the held ordinary-read budget"
                 use passive = JsonDocument.Parse statusBytes
@@ -408,11 +415,17 @@ let private qualify () =
                 2L
                 "Client cancellation cannot reuse capacity before actual provider cleanup"
 
-            let! busy, _ =
+            let busy =
                 send host noisy fixture.InstallationId "context" (json "{}") CancellationToken.None
 
-            Expect.equal busy 429 "A canceled client's unfinished provider work remains protected"
+            do!
+                awaitCondition "New work queues behind canceled but unfinished reads" (fun () ->
+                    admission.QueuedReads = 1L)
+
+            Expect.isFalse busy.IsCompleted "No capacity is reused before actual provider cleanup"
             do! transaction.CommitAsync()
+            let! busyStatus, _ = busy
+            Expect.equal busyStatus 200 "Queued work runs only after the blocked readers finish"
 
             for pending in [ heldFirst; heldSecond ] do
                 try
@@ -431,6 +444,7 @@ let private qualify () =
             use poolCancellation = new CancellationTokenSource()
             let mutable pooled: Task<int * byte array> list = []
             let mutable passivePool: Task<int * byte array> option = None
+            let mutable excessPool: Task<int * byte array> option = None
             let mutable physicalConnections = 0L
 
             try
@@ -515,10 +529,10 @@ let private qualify () =
 
                 Expect.equal
                     admission.ActiveReads
-                    2L
-                    "Pool waiters retain their read permits until actual provider completion"
+                    3L
+                    "Both pool waiters and lookup retain their ordinary read permits"
 
-                let! excess, _ =
+                let excess =
                     send
                         host
                         noisy
@@ -527,10 +541,16 @@ let private qualify () =
                         (json "{}")
                         CancellationToken.None
 
-                Expect.equal
-                    excess
-                    429
-                    "Client cancellation cannot evade the principal limit while pool cleanup is unfinished"
+                excessPool <- Some excess
+
+                do!
+                    awaitCondition
+                        "New work queues until the canceled pool waiters finish"
+                        (fun () -> admission.QueuedReads = 1L)
+
+                Expect.isFalse
+                    excess.IsCompleted
+                    "Cancellation cannot dispatch another read before provider cleanup"
             finally
                 for connection in holders do
                     connection.Dispose()
@@ -540,6 +560,9 @@ let private qualify () =
                     let! _ = pending in ()
                 with :? OperationCanceledException ->
                     ()
+
+            let! excessStatus, _ = excessPool.Value
+            Expect.equal excessStatus 200 "Queued context resumes after actual pool cleanup"
 
             let! poolStatus, poolBytes = passivePool.Value
 

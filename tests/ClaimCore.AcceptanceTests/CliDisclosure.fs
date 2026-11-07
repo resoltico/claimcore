@@ -152,12 +152,8 @@ let private qualify fixture =
         2L
         "Current snapshot remains disclosed"
 
-    let history =
-        current.GetProperty("advice").GetProperty("history").EnumerateArray()
-        |> Seq.map (fun detail -> detail.GetString() |> nonNull)
-        |> Seq.toList
-
-    Expect.equal history [ "SUMMARY" ] "Revoked full history disappears from scoped advice"
+    let history = current.GetProperty("advice").GetProperty("history").GetString()
+    Expect.equal history "SUMMARY" "Revoked full history disappears from scoped advice"
 
     run fixture fixture.Environment source 0 |> withheld "ALREADY_ACCEPTED"
     automation fixture "operation.preview" input 0 |> withheld "ALREADY_ACCEPTED"
