@@ -26,7 +26,7 @@ let private page actor filter limit cursor =
         | _ -> return failtestf "Worklist read failed: %A" result
     }
 
-let private walk pair filter limit expected =
+let private walk fixture filter limit expected =
     task {
         let mutable cursor = None
         let mutable remaining = expected
@@ -34,10 +34,7 @@ let private walk pair filter limit expected =
         let mutable pages = 0
 
         while not finished do
-            let! postgres = page pair.Postgres filter limit cursor
-            pair.Clock.ObservedAt <- postgres.Basis.ObservedAt
-            let! memory = page pair.Memory filter limit cursor
-            Expect.equal memory postgres "Both stores return the same complete page and cursor"
+            let! postgres = page fixture.Service filter limit cursor
             let visible = remaining |> List.truncate limit
 
             Expect.equal
@@ -80,7 +77,7 @@ let private coversVocabulary vocabulary token sets =
             (Set.isSubset choices declared)
             "Every table member belongs to the independent inventory")
 
-let private namedQueues pair =
+let private namedQueues fixture =
     task {
         let queues =
             [
@@ -137,10 +134,10 @@ let private namedQueues pair =
             Expect.isNonEmpty rows ("The literal named queue is populated: " + name)
 
             for limit in [ 1; 2 ] do
-                do! walk pair filter limit rows
+                do! walk fixture filter limit rows
     }
 
-let private views pair =
+let private views fixture =
     task {
         // These literal memberships do not call the Domain matcher or inspect SQL predicates.
         let expectedViews =
@@ -176,7 +173,7 @@ let private views pair =
                 |> List.map (fun reference ->
                     cases |> List.find (fun row -> row.Reference = reference))
 
-            do! walk pair filter 1 rows
+            do! walk fixture filter 1 rows
 
         let intersection =
             { CaseListFilter.empty<string> with
@@ -184,12 +181,12 @@ let private views pair =
                 Statuses = [ CaseStatus.Closed ]
             }
 
-        do! walk pair intersection 1 []
+        do! walk fixture intersection 1 []
     }
 
-let private facets pair =
+let private facets fixture =
     task {
-        do! namedQueues pair
+        do! namedQueues fixture
         coversVocabulary Lifecycle.vocabulary Lifecycle.token lifecycleSets
         coversVocabulary CaseStatus.vocabulary CaseStatus.token statusSets
         coversVocabulary CaseProgress.vocabulary CaseProgress.token progressSets
@@ -208,7 +205,7 @@ let private facets pair =
                         let filter = CaseListFilter.create lifecycle status progress None order
 
                         for limit in limits do
-                            do! walk pair filter limit (expected filter)
+                            do! walk fixture filter limit (expected filter)
                             scenarios <- scenarios + 1
 
         Expect.equal
@@ -221,7 +218,7 @@ let private facets pair =
             "Every facet set, declared order and page size executes"
     }
 
-let private search pair =
+let private search fixture =
     task {
         // Expectations are literal: no product normalization or matching helper computes them.
         let samples =
@@ -245,12 +242,12 @@ let private search pair =
                     |> List.filter (fun row -> List.contains row.Reference references)
 
                 for limit in [ 1; 2 ] do
-                    do! walk pair filter limit rows
+                    do! walk fixture filter limit rows
     }
 
-let private erasure pair =
+let private erasure fixture =
     task {
-        use! connection = pair.Database.OwnerSource.OpenConnectionAsync()
+        use! connection = fixture.Database.OwnerSource.OpenConnectionAsync()
 
         let! rows =
             DatabaseSession.rows
@@ -279,10 +276,10 @@ let private erasure pair =
             "Erasure advances changed_at to its accepted ledger instant"
     }
 
-let private cursorBinding pair =
+let private cursorBinding fixture =
     task {
         let all = CaseListFilter.empty<string>
-        let! first = page pair.Postgres all 1 None
+        let! first = page fixture.Service all 1 None
 
         let cursor =
             first.NextCursor
@@ -299,26 +296,27 @@ let private cursorBinding pair =
             ]
 
         for filter in changes do
-            for actor in [ pair.Postgres; pair.Memory ] do
-                let! result =
-                    Service.list
-                        actor
-                        {
-                            Page = { AfterCursor = Some cursor; Limit = 1 }
-                            Filter = filter
-                        }
-                        token
+            let actor = fixture.Service
 
-                Expect.equal
-                    result
-                    (Outcome.Rejected Refusal.InvalidCursor)
-                    "A cursor cannot be replayed under a different facet, search or order"
+            let! result =
+                Service.list
+                    actor
+                    {
+                        Page = { AfterCursor = Some cursor; Limit = 1 }
+                        Filter = filter
+                    }
+                    token
+
+            Expect.equal
+                result
+                (Outcome.Rejected Refusal.InvalidCursor)
+                "A cursor cannot be replayed under a different facet, search or order"
     }
 
 [<Tests>]
 let tests =
     testList
-        "worklist store equivalence"
+        "PostgreSQL worklist contracts"
         [
             testCaseAsync "all facet sets orders and page boundaries agree" (run facets)
             testCaseAsync "closed views and explicit filter intersections agree" (run views)

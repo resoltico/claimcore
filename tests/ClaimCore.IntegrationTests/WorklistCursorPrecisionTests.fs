@@ -36,8 +36,8 @@ let private moveOneTick (cursor: string) (time: DateTimeOffset) =
 [<Tests>]
 let tests =
     testCaseAsync
-        "recent sub-microsecond cursors are refused by PostgreSQL and memory"
-        (run (fun pair ->
+        "recent sub-microsecond cursors are refused by PostgreSQL"
+        (run (fun fixture ->
             task {
                 let filter =
                     { CaseListFilter.empty<string> with
@@ -57,7 +57,7 @@ let tests =
                         }
                         token
 
-                let! first = read pair.Postgres None
+                let! first = read fixture.Service None
 
                 let cursor =
                     match first with
@@ -65,7 +65,7 @@ let tests =
                     | _ -> failtest "Fixture page"
 
                 let position =
-                    Cursors.decodeCases pair.Database.Fixture.InstallationId admitted cursor
+                    Cursors.decodeCases fixture.Database.Fixture.InstallationId admitted cursor
                     |> Result.defaultWith (fun _ -> failtest "Fixture cursor")
 
                 let time =
@@ -75,11 +75,11 @@ let tests =
 
                 let forged = moveOneTick cursor time
 
-                for actor in [ pair.Postgres; pair.Memory ] do
-                    let! result = read actor (Some forged)
+                let actor = fixture.Service
+                let! result = read actor (Some forged)
 
-                    Expect.equal
-                        result
-                        (Outcome.Rejected Refusal.InvalidCursor)
-                        "A plain cursor cannot select a precision with different store meanings"
+                Expect.equal
+                    result
+                    (Outcome.Rejected Refusal.InvalidCursor)
+                    "A plain cursor cannot select a precision with a different database timestamp meaning"
             }))

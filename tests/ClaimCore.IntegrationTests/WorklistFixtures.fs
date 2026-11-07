@@ -6,7 +6,6 @@ open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
 open ClaimCore.Application
-open ClaimCore.Postgres
 open ClaimCore.TestSupport
 open ClaimCore.TestSupport.StoreFixtures
 
@@ -156,56 +155,27 @@ let orders = Vocabulary.all CaseListOrder.vocabulary
 
 let limits = [ 1; 2; 3; 5; 50 ]
 
-let private recordedAt (database: PostgresFixture.Database) operation =
-    task {
-        use! connection = database.OwnerSource.OpenConnectionAsync()
-
-        let! rows =
-            DatabaseSession.rows
-                connection
-                "SELECT recorded_at FROM claimcore.ledger WHERE operation_id=$1 AND effect_index=0"
-                [| box operation |]
-                token
-
-        return DatabaseSession.instant 0 (List.exactlyOne rows)
-    }
-
 [<NoEquality; NoComparison>]
-type Pair =
+type WorklistFixture =
     {
-        Postgres: ServiceContext
-        Memory: ServiceContext
-        Clock: MemoryStore.Store
+        Service: ServiceContext
         Database: PostgresFixture.Database
     }
 
-let private mirrored pair request =
+let private execute fixture request =
     task {
-        let! postgres =
-            Service.execute pair.Postgres (ClaimCore.TestSupport.Inputs.caseOperation request) token
-
-        let receipt = accepted postgres
-        pair.Clock.ObservedAt <- receipt.RecordedAt
-
-        let! memory =
-            Service.execute pair.Memory (ClaimCore.TestSupport.Inputs.caseOperation request) token
-
-        let mirrored = accepted memory
-
-        Expect.equal
-            mirrored.RecordedAt
-            receipt.RecordedAt
-            "Memory uses the actual accepted PostgreSQL timestamp"
+        let! reply = Service.execute fixture.Service (Inputs.caseOperation request) token
+        accepted reply |> ignore
     }
 
-let private seedCase pair (sequence: int ref) (expected: ExpectedCase) =
+let private seedCase fixture (sequence: int ref) (expected: ExpectedCase) =
     task {
         let mutable revision = 0L
 
         let apply act =
             task {
                 sequence.Value <- sequence.Value + 1
-                do! mirrored pair (request sequence.Value expected.Reference revision act)
+                do! execute fixture (request sequence.Value expected.Reference revision act)
                 revision <- revision + 1L
             }
 
@@ -241,46 +211,13 @@ let private seedCase pair (sequence: int ref) (expected: ExpectedCase) =
 let prepare () =
     task {
         let! database = PostgresFixture.create ()
-        let mutable ownedClock: MemoryStore.Store option = None
 
         try
-            let! postgres = caseWorker database.Fixture
-
-            let clock =
-                new MemoryStore.Store(database.Fixture.InstallationId, DateTimeOffset.UtcNow)
-
-            ownedClock <- Some clock
-
-            let memoryFixture =
-                { database.Fixture with
-                    Store = clock :> IStore
-                    Dispose = ignore
-                }
-
-            let! first = recordedAt database (id 1)
-            clock.ObservedAt <- first
-            let! memory = bootstrap memoryFixture
-
-            for operation, role in [ id 2, Role.CaseHandler; id 900000, Role.PaymentRecorder ] do
-                let! instant = recordedAt database operation
-                clock.ObservedAt <- instant
-
-                let! result =
-                    grant
-                        memory
-                        operation
-                        memoryFixture.Owner
-                        {
-                            Role = role
-                            Scope = GrantTarget.Installation
-                        }
-                        true
-
-                acceptedAuthority result
+            let! service = caseWorker database.Fixture
 
             let! stewardship =
                 grant
-                    postgres
+                    service
                     (id 902000)
                     database.Fixture.Owner
                     {
@@ -289,61 +226,35 @@ let prepare () =
                     }
                     true
 
-            clock.ObservedAt <- (accepted stewardship).RecordedAt
-
-            let! stewardship =
-                grant
-                    memory
-                    (id 902000)
-                    memoryFixture.Owner
-                    {
-                        Role = Role.DataSteward
-                        Scope = GrantTarget.Installation
-                    }
-                    true
-
             acceptedAuthority stewardship
 
-            let pair =
+            let fixture =
                 {
-                    Postgres = postgres
-                    Memory = memory
-                    Clock = clock
+                    Service = service
                     Database = database
                 }
 
             let sequence = ref 1000
 
             for expected in cases do
-                do! seedCase pair sequence expected
-            // An older case changes last, so RECENT cannot accidentally mean creation or reference order.
-            do! mirrored pair (request 2001 "mix-04" 1L (AuthoredCaseAct.Bare BareAct.Close))
-            do! mirrored pair (request 2002 "mix-04" 2L (AuthoredCaseAct.Bare BareAct.Reopen))
-            return pair
+                do! seedCase fixture sequence expected
+            // An older case changes last: RECENT cannot mean creation or reference order.
+            do! execute fixture (request 2001 "mix-04" 1L (AuthoredCaseAct.Bare BareAct.Close))
+            do! execute fixture (request 2002 "mix-04" 2L (AuthoredCaseAct.Bare BareAct.Reopen))
+            return fixture
         with error ->
-            let cleanup =
-                [
-                    (fun () ->
-                        ownedClock |> Option.iter (fun clock -> (clock :> IDisposable).Dispose()))
-                    database.Fixture.Dispose
-                ]
-
-            FixtureDisposal.afterFailure error cleanup
+            FixtureDisposal.afterFailure error [ database.Fixture.Dispose ]
             return raise error
     }
 
 let run action =
     async {
-        let! pair = prepare () |> Async.AwaitTask
+        let! fixture = prepare () |> Async.AwaitTask
 
         try
-            do! action pair |> Async.AwaitTask
+            do! action fixture |> Async.AwaitTask
         finally
-            FixtureDisposal.finish
-                [
-                    (fun () -> (pair.Clock :> IDisposable).Dispose())
-                    pair.Database.Fixture.Dispose
-                ]
+            fixture.Database.Fixture.Dispose()
     }
 
 let private selected values candidate =

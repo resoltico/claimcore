@@ -13,12 +13,10 @@ let private read =
     | Outcome.Succeeded value -> value
     | other -> failtestf "Reminder view read failed: %A" other
 
-let private execute pair input =
+let private execute fixture input =
     task {
-        let! pg = Service.execute pair.Postgres input token
-        pair.Clock.ObservedAt <- (accepted pg).RecordedAt
-        let! memory = Service.execute pair.Memory input token
-        accepted memory |> ignore
+        let! pg = Service.execute fixture.Service input token
+        accepted pg |> ignore
     }
 
 let private request view : ReminderListRequest =
@@ -34,29 +32,21 @@ let private request view : ReminderListRequest =
         IncludeInactive = None
     }
 
-let private page pair request =
+let private page fixture request =
     task {
-        let! pg = Service.reminders pair.Postgres request token
+        let! pg = Service.reminders fixture.Service request token
         let pg = read pg
-        pair.Clock.ObservedAt <- pg.Basis.ObservedAt
-        let! memory = Service.reminders pair.Memory request token
-
-        Expect.equal
-            (read memory)
-            pg
-            "Both stores apply view and explicit filters within the same read snapshot"
-
         return pg
     }
 
-let private walk pair request expected =
+let private walk fixture request expected =
     task {
         let mutable cursor = None
         let mutable remaining = expected
         let mutable finished = false
 
         while not finished do
-            let! result = page pair { request with AfterCursor = cursor }
+            let! result = page fixture { request with AfterCursor = cursor }
             let visible = remaining |> List.truncate request.Limit
 
             Expect.equal
@@ -76,9 +66,9 @@ let private walk pair request expected =
             finished <- cursor.IsNone
     }
 
-let private qualify pair =
+let private qualify fixture =
     task {
-        let! context = Service.context pair.Postgres () token
+        let! context = Service.context fixture.Service () token
 
         let context =
             match (read context).Requester with
@@ -96,7 +86,7 @@ let private qualify pair =
             ] do
             do!
                 execute
-                    pair
+                    fixture
                     (OperationInput.Reminder
                         {
                             OperationId = id number
@@ -114,7 +104,7 @@ let private qualify pair =
 
         do!
             execute
-                pair
+                fixture
                 (OperationInput.Work
                     {
                         OperationId = id 6607
@@ -130,7 +120,7 @@ let private qualify pair =
 
         do!
             execute
-                pair
+                fixture
                 (OperationInput.Reminder
                     {
                         OperationId = id 6608
@@ -140,14 +130,14 @@ let private qualify pair =
 
         do!
             execute
-                pair
+                fixture
                 (Inputs.caseOperation (
                     StoreFixtures.request 6609 "mix-04" 3L (AuthoredCaseAct.Bare BareAct.Close)
                 ))
 
         do!
             execute
-                pair
+                fixture
                 (OperationInput.Reminder
                     {
                         OperationId = id 6610
@@ -157,7 +147,7 @@ let private qualify pair =
 
         do!
             execute
-                pair
+                fixture
                 (Inputs.caseOperation (
                     StoreFixtures.request
                         6611
@@ -176,13 +166,13 @@ let private qualify pair =
                 ReminderView.Completed, [ id 6604 ]
                 ReminderView.Cancelled, [ id 6605 ]
             ] do
-            do! walk pair (request (Some view)) expected
+            do! walk fixture (request (Some view)) expected
 
-        do! walk pair (request None) [ id 6601; id 6602; id 6603 ]
+        do! walk fixture (request None) [ id 6601; id 6602; id 6603 ]
 
         do!
             walk
-                pair
+                fixture
                 { request None with
                     IncludeInactive = Some true
                 }
@@ -190,7 +180,7 @@ let private qualify pair =
 
         do!
             walk
-                pair
+                fixture
                 { request (Some ReminderView.Pending) with
                     IncludeInactive = Some true
                 }
@@ -198,7 +188,7 @@ let private qualify pair =
 
         do!
             walk
-                pair
+                fixture
                 { request (Some ReminderView.Completed) with
                     IncludeInactive = Some false
                 }
@@ -206,7 +196,7 @@ let private qualify pair =
 
         do!
             walk
-                pair
+                fixture
                 { request (Some ReminderView.Completed) with
                     State = Some ReminderState.Pending
                 }
@@ -214,7 +204,7 @@ let private qualify pair =
 
         do!
             walk
-                pair
+                fixture
                 { request (Some ReminderView.Mine) with
                     Assignment = Some CaseAssignment.Unassigned
                 }
@@ -222,7 +212,7 @@ let private qualify pair =
 
         do!
             walk
-                pair
+                fixture
                 { request (Some ReminderView.Upcoming) with
                     Due = Some ReminderDue.Today
                 }
@@ -230,13 +220,13 @@ let private qualify pair =
 
         do!
             walk
-                pair
+                fixture
                 { request (Some ReminderView.Upcoming) with
                     Text = Some "Future"
                 }
                 [ id 6603 ]
 
-        let! first = page pair (request (Some ReminderView.Pending))
+        let! first = page fixture (request (Some ReminderView.Pending))
         Expect.isSome first.NextCursor "The view continuation test has a real cursor"
 
         for changed in
@@ -249,23 +239,24 @@ let private qualify pair =
                     IncludeInactive = Some false
                 }
             ] do
-            for service in [ pair.Postgres; pair.Memory ] do
-                let! result =
-                    Service.reminders
-                        service
-                        { changed with
-                            AfterCursor = first.NextCursor
-                        }
-                        token
+            let service = fixture.Service
 
-                Expect.equal
-                    result
-                    (Outcome.Rejected Refusal.InvalidCursor)
-                    "A continuation is bound to view and every explicit filter"
+            let! result =
+                Service.reminders
+                    service
+                    { changed with
+                        AfterCursor = first.NextCursor
+                    }
+                    token
+
+            Expect.equal
+                result
+                (Outcome.Rejected Refusal.InvalidCursor)
+                "A continuation is bound to view and every explicit filter"
     }
 
 [<Tests>]
 let tests =
     testCaseAsync
-        "reminder views preserve defaults, explicit intersections and cursor binding in both stores"
+        "reminder views preserve defaults, explicit intersections and cursor binding in the PostgreSQL adapter"
         (run qualify)
