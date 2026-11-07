@@ -100,25 +100,6 @@
     <Compile Include="RecordFormat/LedgerEntryTests.fs" />
     <Compile Include="Domain/CaseIdentityTests.fs" />
     <Compile Include="HostSecurity/PrivateFileTests.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/StoreContractReads.fs" Link="Application/StoreContractReads.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/LedgerWriteContract.fs" Link="Application/LedgerWriteContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/CaseDisclosureContract.fs" Link="Application/CaseDisclosureContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ScopedAuthorityContract.fs" Link="Application/ScopedAuthorityContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/AuthorityReviewContract.fs" Link="Application/AuthorityReviewContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/OperationRecoveryContract.fs" Link="Application/OperationRecoveryContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/CaseWorkContract.fs" Link="Application/CaseWorkContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/SummaryAttributionContract.fs" Link="Application/SummaryAttributionContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ReminderConcurrencyContract.fs" Link="Application/ReminderConcurrencyContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/AuthorityHistoryContract.fs" Link="Application/AuthorityHistoryContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/WorklistTriageContract.fs" Link="Application/WorklistTriageContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/CaseSelectorContract.fs" Link="Application/CaseSelectorContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ActorNameSearchContract.fs" Link="Application/ActorNameSearchContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/PeopleDirectoryContract.fs" Link="Application/PeopleDirectoryContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/AdmitContract.fs" Link="Application/AdmitContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/ActorProfilesContract.fs" Link="Application/ActorProfilesContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/RequesterAdmissionContract.fs" Link="Application/RequesterAdmissionContract.fs" />
-    <Compile Include="../ClaimCore.IntegrationTests/StoreContractTests.fs" Link="Application/StoreContractTests.fs" />
-    <Compile Include="Application/MemoryStoreTests.fs" />
     <Compile Include="Application/LedgerGroupingTests.fs" />
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/ServiceBoundaryTests.fs" />
