@@ -1,7 +1,9 @@
-module ClaimCore.Tests.ViewCountTests
+module ClaimCore.IntegrationTests.ViewCountTests
 
 open System
 open System.Threading
+open System.Globalization
+open ClaimCore.Postgres
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -20,34 +22,38 @@ let private id number =
 [<Tests>]
 let tests =
     testCase "view counts preserve scope corruption exclusions and non-disclosure" (fun () ->
-        let installation = id 1
+        let adminPrincipal =
+            PrincipalKey.human "https://scope.example/" "admin"
+            |> Result.defaultWith (string >> failtest)
 
-        use store =
-            new MemoryStore.Store(
-                installation,
-                DateTimeOffset(2026, 11, 4, 12, 0, 0, TimeSpan.Zero)
-            )
+        let database =
+            PostgresFixture.createFor adminPrincipal
+            |> fun pending -> pending.GetAwaiter().GetResult()
 
-        let calendar =
-            { new IBusinessCalendar with
-                member _.DateAt _ = DateOnly(2026, 11, 4)
-                member _.TimeZoneId = "Etc/UTC"
+        use _owned =
+            { new IDisposable with
+                member _.Dispose() = database.Fixture.Dispose()
             }
-
-        let adminPrincipal = principal "admin" PrincipalKey.human
 
         let admin =
-            {
-                ActorId = ActorId.create (id 2) |> Option.get
-                Principal = adminPrincipal
-                Enabled = true
-                Profile = None
-            }
-
-        store.SeedActor admin [ Role.CaseHandler, None ]
+            StoreFixtures.caseWorker database.Fixture
+            |> fun pending -> pending.GetAwaiter().GetResult()
 
         let core principal =
-            Service.create "counts" installation (store :> IStore) calendar principal
+            StoreFixtures.core database.Fixture principal
+
+        let context =
+            Service.context admin () CancellationToken.None
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let today =
+            match context with
+            | Outcome.Succeeded {
+                                    Requester = RequesterState.Active current
+                                } -> current.Runtime.Basis.BusinessDate
+            | other -> failtestf "Expected current fixture date: %A" other
+
+        let dueDate = today.AddDays(-7).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
 
         for number in [ 3; 4 ] do
             let result =
@@ -79,7 +85,7 @@ let tests =
                                 AuthoredReminderAct.Create
                                     {
                                         Action = "Inspect evidence"
-                                        Due = "2026-11-03"
+                                        Due = dueDate
                                     }
                         })
                     CancellationToken.None
@@ -90,21 +96,77 @@ let tests =
             | other -> failtestf "Reminder fixture: %A" other
 
         let servicePrincipal = principal "service" PrincipalKey.service
+        let serviceId = id 5
 
-        let serviceActor =
-            {
-                ActorId = ActorId.create (id 5) |> Option.get
-                Principal = servicePrincipal
-                Enabled = true
-                Profile = None
+        let registered =
+            Service.execute
+                admin
+                (OperationInput.Authority(
+                    StoreFixtures.authorityRequest
+                        serviceId
+                        servicePrincipal
+                        (AuthorityAct.Register Inputs.actorProfile)
+                ))
+                CancellationToken.None
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        StoreFixtures.acceptedAuthority registered
+
+        let granted =
+            StoreFixtures.grant
+                admin
+                (id 7)
+                servicePrincipal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                true
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        StoreFixtures.acceptedAuthority granted
+
+        let changed =
+            task {
+                use! connection = database.OwnerSource.OpenConnectionAsync()
+
+                return!
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id) VALUES ($1,'DATA_STEWARD',$2)"
+                        [| box serviceId; box (id 3) |]
+                        CancellationToken.None
             }
+            |> fun pending -> pending.GetAwaiter().GetResult()
 
-        store.SeedActor
-            serviceActor
-            [
-                Role.CaseReader, None
-                Role.DataSteward, Some(CaseId.create (id 3) |> Option.get)
-            ]
+        Expect.equal
+            changed
+            1
+            "The negative control inserts exactly one forbidden scoped projection role"
+
+        let corruptedCase = CaseFixtures.caseId (id 3)
+
+        let persisted =
+            database.Fixture.Store.Read
+                {
+                    Work =
+                        (fun tx ->
+                            tx.Authority
+                                {
+                                    Principal = servicePrincipal
+                                    CaseId = Some corruptedCase
+                                })
+                    CancellationToken = CancellationToken.None
+                }
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let persisted = persisted |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+        Expect.contains
+            (Map.find corruptedCase persisted.Cases)
+            Role.DataSteward
+            "The forbidden scope is committed and visible to the actual authority loader"
+
 
         match Service.caseViews (core servicePrincipal) () CancellationToken.None |> get with
         | Outcome.Succeeded result ->
@@ -136,14 +198,19 @@ let tests =
 
         let denied = principal "no-read" PrincipalKey.human
 
-        store.SeedActor
-            {
-                ActorId = ActorId.create (id 6) |> Option.get
-                Principal = denied
-                Enabled = true
-                Profile = None
-            }
-            []
+        let registered =
+            Service.execute
+                admin
+                (OperationInput.Authority(
+                    StoreFixtures.authorityRequest
+                        (id 6)
+                        denied
+                        (AuthorityAct.Register Inputs.actorProfile)
+                ))
+                CancellationToken.None
+            |> get
+
+        StoreFixtures.acceptedAuthority registered
 
         for deniedPrincipal in [ denied; principal "unknown" PrincipalKey.human ] do
             Expect.equal

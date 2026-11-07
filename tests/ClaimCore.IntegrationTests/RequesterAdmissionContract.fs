@@ -345,14 +345,6 @@ let internal lifecycle fixture =
                     "RESOURCE_UNAVAILABLE"
                     "Unavailable execute caller receives no business input detail"
 
-                match fixture.Store with
-                | :? MemoryStore.Store as memory ->
-                    Expect.equal
-                        memory.Events
-                        [ "lock"; "read" ]
-                        "Refused malformed writes own the write lock but neither append nor allocate a payload nonce"
-                | _ -> ()
-
                 let! reply = Service.preview current input token
                 let! actual = code (Task.FromResult reply.Outcome)
 

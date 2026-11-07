@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 
+- Application store contracts run against PostgreSQL; the in-memory store double is removed.
 - Contributor tests discover vocabulary from product declarations; inventory.json and CLAIMCORE_UPDATE_GOLDENS are removed.
 - Contributor verification drops performance qualification and comparison tooling; the optional CLAIMCORE_TIMING probe prints read timings without thresholds.
 - Browser acceptance runs all Chromium cases and an @engine subset on Firefox/WebKit; the design matrix uses six representative Chromium contexts.

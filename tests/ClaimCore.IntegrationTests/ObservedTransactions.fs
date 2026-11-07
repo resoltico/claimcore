@@ -1,11 +1,14 @@
 module internal ClaimCore.IntegrationTests.ObservedTransactions
 
 open System
+open System.Threading
 open ClaimCore.Application
 
 /// Record the real provider instant without replacing transaction behavior or results.
 type Store(inner: IStore) =
     let mutable observed: DateTimeOffset option = None
+    let mutable calls = 0
+    member _.Calls = Volatile.Read(&calls)
 
     member _.ObservedAt =
         observed
@@ -14,6 +17,7 @@ type Store(inner: IStore) =
     interface IStore with
         member _.Context query =
             task {
+                Interlocked.Increment(&calls) |> ignore
                 let! result = inner.Context query
 
                 match result with
@@ -24,6 +28,8 @@ type Store(inner: IStore) =
             }
 
         member _.Read operation =
+            Interlocked.Increment(&calls) |> ignore
+
             inner.Read
                 { operation with
                     Work =
@@ -33,6 +39,8 @@ type Store(inner: IStore) =
                 }
 
         member _.Write operation =
+            Interlocked.Increment(&calls) |> ignore
+
             inner.Write
                 { operation with
                     Work =

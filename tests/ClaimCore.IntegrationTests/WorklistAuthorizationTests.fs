@@ -1,7 +1,9 @@
-module ClaimCore.Tests.WorklistAuthorizationTests
+module ClaimCore.IntegrationTests.WorklistAuthorizationTests
 
 open System
 open System.Threading
+open System.Globalization
+open ClaimCore.Postgres
 open Expecto
 open ClaimCore.Domain
 open ClaimCore.Application.Contracts
@@ -12,35 +14,38 @@ open ClaimCore.TestSupport
 [<Tests>]
 let tests =
     testCase "installation read retains per-case service corruption exclusion" (fun () ->
-        let installation = Guid.Parse "b0000000-0000-4000-8000-000000000001"
+        let adminPrincipal =
+            PrincipalKey.human "https://scope.example/" "admin"
+            |> Result.defaultWith (string >> failtest)
 
-        use memory =
-            new MemoryStore.Store(installation, DateTimeOffset(2026, 9, 7, 0, 0, 0, TimeSpan.Zero))
+        let database =
+            PostgresFixture.createFor adminPrincipal
+            |> fun pending -> pending.GetAwaiter().GetResult()
 
-        let calendar =
-            { new IBusinessCalendar with
-                member _.DateAt _ = DateOnly(2026, 9, 7)
-                member _.TimeZoneId = "Etc/UTC"
+        use _owned =
+            { new IDisposable with
+                member _.Dispose() = database.Fixture.Dispose()
             }
-
-        let principal subject create =
-            create "https://issuer.example/" subject
-            |> Result.defaultWith (fun _ -> failtest "Fixture principal")
-
-        let adminPrincipal = principal "admin" PrincipalKey.human
 
         let admin =
-            {
-                ActorId = CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000002")
-                Principal = adminPrincipal
-                Enabled = true
-                Profile = None
-            }
-
-        memory.SeedActor admin [ Role.CaseHandler, None ]
+            StoreFixtures.caseWorker database.Fixture
+            |> fun pending -> pending.GetAwaiter().GetResult()
 
         let core principal =
-            Service.create "synthetic" installation (memory :> IStore) calendar principal
+            StoreFixtures.core database.Fixture principal
+
+        let context =
+            Service.context admin () CancellationToken.None
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let today =
+            match context with
+            | Outcome.Succeeded {
+                                    Requester = RequesterState.Active current
+                                } -> current.Runtime.Basis.BusinessDate
+            | other -> failtestf "Expected current fixture date: %A" other
+
+        let dueDate = today.AddDays(7).ToString("yyyy-MM-dd", CultureInfo.InvariantCulture)
 
         for index, reference in List.indexed [ "VISIBLE-1"; "VISIBLE-2" ] do
             let opened =
@@ -61,18 +66,86 @@ let tests =
             | ExecuteResult.Accepted _ -> ()
             | _ -> failtestf "Fixture opening failed: %A" opened
 
-        let servicePrincipal = principal "service" PrincipalKey.service
+        let servicePrincipal =
+            PrincipalKey.service "https://scope.example/" "service"
+            |> Result.defaultWith (string >> failtest)
 
-        let actor =
-            {
-                ActorId = CaseFixtures.actorId (Guid.Parse "b0000000-0000-4000-8000-000000000010")
-                Principal = servicePrincipal
-                Enabled = true
-                Profile = None
+        let serviceId = Guid.Parse "b0000000-0000-4000-8000-000000000010"
+
+        let registered =
+            Service.execute
+                admin
+                (OperationInput.Authority(
+                    StoreFixtures.authorityRequest
+                        serviceId
+                        servicePrincipal
+                        (AuthorityAct.Register Inputs.actorProfile)
+                ))
+                CancellationToken.None
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        StoreFixtures.acceptedAuthority registered
+
+        let granted =
+            StoreFixtures.grant
+                admin
+                (Guid.Parse "b0000000-0000-4000-8000-000000000011")
+                servicePrincipal
+                {
+                    Role = Role.CaseReader
+                    Scope = GrantTarget.Installation
+                }
+                true
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        StoreFixtures.acceptedAuthority granted
+
+        let changed =
+            task {
+                use! connection = database.OwnerSource.OpenConnectionAsync()
+
+                return!
+                    DatabaseSession.execute
+                        connection
+                        "INSERT INTO claimcore.grants(actor_id,role,case_id) VALUES ($1,'DATA_STEWARD',$2)"
+                        [|
+                            box serviceId
+                            box (Guid.Parse "b0000000-0000-4000-8000-000000000003")
+                        |]
+                        CancellationToken.None
             }
+            |> fun pending -> pending.GetAwaiter().GetResult()
 
-        let caseId = CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")
-        memory.SeedActor actor [ Role.CaseReader, None; Role.DataSteward, Some caseId ]
+        Expect.equal
+            changed
+            1
+            "The negative control inserts exactly one forbidden scoped projection role"
+
+        let corruptedCase =
+            CaseFixtures.caseId (Guid.Parse "b0000000-0000-4000-8000-000000000003")
+
+        let persisted =
+            database.Fixture.Store.Read
+                {
+                    Work =
+                        (fun tx ->
+                            tx.Authority
+                                {
+                                    Principal = servicePrincipal
+                                    CaseId = Some corruptedCase
+                                })
+                    CancellationToken = CancellationToken.None
+                }
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        let persisted = persisted |> Result.defaultWith (fun error -> failtestf "%A" error)
+
+        Expect.contains
+            (Map.find corruptedCase persisted.Cases)
+            Role.DataSteward
+            "The forbidden scope is committed and visible to the actual authority loader"
+
+
         let service = core servicePrincipal
 
         let get =
@@ -184,7 +257,7 @@ let tests =
                             AuthoredReminderAct.Create
                                 {
                                     Action = "Review evidence"
-                                    Due = "2026-09-08"
+                                    Due = dueDate
                                 }
                     })
                 CancellationToken.None
@@ -223,7 +296,7 @@ let tests =
 
                 Expect.equal
                     (CalendarDate.format next.Due)
-                    "2026-09-08"
+                    dueDate
                     "The due date belongs to that reminder"
 
                 Expect.equal

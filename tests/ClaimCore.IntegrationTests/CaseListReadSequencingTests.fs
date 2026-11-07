@@ -1,4 +1,4 @@
-module ClaimCore.Tests.CaseListReadSequencingTests
+module ClaimCore.IntegrationTests.CaseListReadSequencingTests
 
 open System
 open System.Reflection
@@ -11,7 +11,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Application
 open ClaimCore.TestSupport
 
-// Delegate to the real memory contract; only the returned identity and later failure are injected.
+// Delegate to PostgreSQL; inject only the returned identity and the later lookup failure.
 type CaseListReadProbe() =
     inherit DispatchProxy()
     member val Inner: IReadTx = Unchecked.defaultof<_> with get, set
@@ -76,42 +76,72 @@ type private ProbedStore(inner: IStore) =
                     return Error StoreFailure.Unavailable
             }
 
+let private accepted result =
+    Result.defaultWith (fun error -> failtestf "%A" error) result
+
 let private withProbe check =
-    let installation = Guid.Parse "bbbbbbbb-0000-4000-8000-000000000001"
+    let principal = PrincipalKey.human "https://issuer.example/" "reader" |> accepted
 
-    use memory =
-        new MemoryStore.Store(installation, DateTimeOffset(2026, 11, 6, 12, 0, 0, TimeSpan.Zero))
+    let database =
+        PostgresFixture.createFor principal
+        |> fun pending -> pending.GetAwaiter().GetResult()
 
-    let traced = ProbedStore(memory :> IStore)
-
-    let principal =
-        PrincipalKey.human "https://issuer.example/" "reader" |> Fixtures.accepted
-
-    let actor =
-        {
-            ActorId = CaseFixtures.actorId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000002")
-            Principal = principal
-            Enabled = true
-            Profile = None
+    use _owned =
+        { new IDisposable with
+            member _.Dispose() = database.Fixture.Dispose()
         }
 
-    memory.SeedActor
-        actor
-        [ Role.CaseReader, None; Role.CaseRegistrar, None; Role.DataSteward, None ]
+    let admin = StoreFixtures.core database.Fixture principal
 
-    let calendar =
-        { new IBusinessCalendar with
-            member _.TimeZoneId = "Etc/UTC"
-            member _.DateAt _ = DateOnly(2026, 11, 6)
-        }
+    let provisioned =
+        Service.provisionOwner
+            admin
+            (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000002")
+            {
+                DisplayName = "Reader"
+                Contact = None
+            }
+            CancellationToken.None
+        |> fun pending -> pending.GetAwaiter().GetResult()
 
-    let core =
-        Service.create "synthetic" installation (traced :> IStore) calendar principal
+    match provisioned with
+    | Ok(Verdict.Proceed _) -> ()
+    | other -> failtestf "Provisioning failed: %A" other
+
+    for number, role in
+        [ 10000, Role.CaseReader; 10001, Role.CaseRegistrar; 10002, Role.DataSteward ] do
+        let operation = Guid.Parse(sprintf "bbbbbbbb-0000-4000-8000-%012d" number)
+
+        let granted =
+            StoreFixtures.grant
+                admin
+                operation
+                principal
+                {
+                    Role = role
+                    Scope = GrantTarget.Installation
+                }
+                true
+            |> fun pending -> pending.GetAwaiter().GetResult()
+
+        StoreFixtures.acceptedAuthority granted
+
+    let traced = ProbedStore(database.Fixture.Store)
+
+    let core principal =
+        Service.create
+            "synthetic"
+            database.Fixture.InstallationId
+            traced
+            database.Fixture.Calendar
+            principal
+
+    let current = core principal
 
     for index, reference in List.indexed [ "A-MATCH-1"; "Match-1" ] do
         let reply =
             Service.execute
-                core
+                current
                 (Inputs.caseOperation
                     {
                         OperationId =
@@ -128,26 +158,41 @@ let private withProbe check =
         | other -> failtestf "Fixture opening failed: %A" other
 
     let scopedPrincipal =
-        PrincipalKey.human "https://issuer.example/" "scoped" |> Fixtures.accepted
+        PrincipalKey.human "https://issuer.example/" "scoped" |> accepted
 
-    let scopedActor =
-        { actor with
-            ActorId = CaseFixtures.actorId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000010")
-            Principal = scopedPrincipal
-        }
+    let registered =
+        Service.execute
+            admin
+            (OperationInput.Authority(
+                StoreFixtures.authorityRequest
+                    (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000010")
+                    scopedPrincipal
+                    (AuthorityAct.Register Inputs.actorProfile)
+            ))
+            CancellationToken.None
+        |> fun pending -> pending.GetAwaiter().GetResult()
 
-    memory.SeedActor
-        scopedActor
-        [
-            Role.CaseReader,
-            Some(CaseFixtures.caseId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000003"))
-        ]
+    StoreFixtures.acceptedAuthority registered
 
-    let scoped =
-        Service.create "synthetic" installation (traced :> IStore) calendar scopedPrincipal
+    let granted =
+        StoreFixtures.grant
+            admin
+            (Guid.Parse "bbbbbbbb-0000-4000-8000-000000010003")
+            scopedPrincipal
+            {
+                Role = Role.CaseReader
+                Scope =
+                    GrantTarget.CaseId(
+                        CaseFixtures.caseId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000003")
+                    )
+            }
+            true
+        |> fun pending -> pending.GetAwaiter().GetResult()
 
+    StoreFixtures.acceptedAuthority granted
+    let scoped = core scopedPrincipal
     traced.Calls.Clear()
-    check core scoped traced
+    check current scoped traced
 
 let private read core text statuses limit =
     Service.list
@@ -170,7 +215,7 @@ let private expectExact (value: CaseSummaryPage) =
         (Some
             {
                 CaseId = CaseFixtures.caseId (Guid.Parse "bbbbbbbb-0000-4000-8000-000000000004")
-                CaseReference = CaseReference.parse "Match-1" |> Fixtures.accepted
+                CaseReference = CaseReference.parse "Match-1" |> accepted
             })
         "Original authored reference and creation identity"
 

@@ -241,7 +241,7 @@ the implementation. Keep those source cases independent of production codecs and
 case headlines, attention, recommendations, change summaries and actor names come from the core.
 CLI and web adapt inputs and render these values; they must not rank actions or recreate business rules.
 Case and reminder view predicates, rows and counts use the same authorized read snapshot. Exercise
-both the memory contract and PostgreSQL implementation when changing a view.
+the PostgreSQL implementation against the literal view expectations when changing a view.
 
 [TimelineOverview](../src/ClaimCore.Application/TimelineOverview.fs) selects concise recorded events and
 highlight references from validated historical effects after disclosure and conflict-range filtering.
@@ -466,9 +466,7 @@ execute in order and stop at failure:
 
 Pure tests restore and build their actual Debug dependency closure without optimization for visible
 compiled negative controls. They do not require a solution-wide Release build; each Release consumer
-builds its own current prerequisites. Shared store-contract scenarios run against both the memory
-double and PostgreSQL. Native
-projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
+builds its own current prerequisites. Shared store-contract scenarios run against PostgreSQL. Native projects use automatic nonempty discovery and explicit stage assignment. Focused runs, smoke selections,
 skipped or pending cases, and test retries do not replace the required stage scope. CI runs native published acceptance once and each browser engine in a separate job. Both are
 required by Gate. Native runner filters select the browser case or its complement, and
 `--zero-tests-policy=strict` rejects unexpectedly empty native runs.

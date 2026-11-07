@@ -1,4 +1,4 @@
-module ClaimCore.Tests.TimelineOverviewReadTests
+module ClaimCore.IntegrationTests.TimelineOverviewReadTests
 
 open System
 open System.Text
@@ -10,6 +10,7 @@ open ClaimCore.Application.Contracts
 open ClaimCore.Protocol
 open ClaimCore.Json
 open ClaimCore.TestSupport
+open ClaimCore.Postgres
 
 let private required =
     function
@@ -36,8 +37,13 @@ let private calendar =
         member _.DateAt value = DateOnly.FromDateTime value.UtcDateTime
     }
 
-let private service (store: IStore) (person: Actor) =
-    Service.create "timeline-overview-tests" (id 1) store calendar person.Principal
+let private service (database: PostgresFixture.Database) (person: Actor) =
+    Service.create
+        "timeline-overview-tests"
+        database.Fixture.InstallationId
+        database.Fixture.Store
+        calendar
+        person.Principal
 
 let private execute core input =
     match (Service.execute core input token |> get).Outcome with
@@ -101,61 +107,131 @@ let private disclosed (entry: CaseTimelineEntry) =
     | other -> failtestf "Expected full disclosure: %A" other
 
 let private fixture () =
-    let store =
-        new MemoryStore.Store(id 1, DateTimeOffset(2026, 11, 5, 12, 0, 0, TimeSpan.Zero))
-
     let owner, assigned, reader, steward =
         actor 2 "Timeline owner",
         actor 3 "Original assignee",
         actor 4 "Summary reader",
         actor 5 "Steward"
 
-    store.SeedActor owner [ Role.Owner, None; Role.CaseHandler, None; Role.PaymentRecorder, None ]
-    store.SeedActor assigned [ Role.CaseHandler, None ]
-    store.SeedActor steward [ Role.DataSteward, None ]
-    let core = service (store :> IStore) owner
-    let receipt = execute core (case 10 0L (AuthoredCaseAct.Open Inputs.registration))
+    let database = PostgresFixture.createFor owner.Principal |> get
 
-    let parent =
-        match receipt.Subject with
-        | ReceiptSubject.Case value -> value.CaseId
-        | _ -> failtest "Expected case"
+    try
+        let core = service database owner
 
-    store.SeedActor reader [ Role.CaseReader, Some parent ]
-    execute core (case 11 1L (AuthoredCaseAct.Decide Inputs.decision)) |> ignore
+        let provisioned =
+            Service.provisionOwner
+                core
+                (id 2)
+                {
+                    DisplayName = "Timeline owner"
+                    Contact = None
+                }
+                token
+            |> get
 
-    for number, action, due in
-        [
-            12, "First authored action", "2026-11-08"
-            13, "Second authored action", "2026-11-09"
-        ] do
+        match provisioned with
+        | Ok(Verdict.Proceed _) -> ()
+        | other -> failtestf "Provisioning failed: %A" other
+
+        for person, number, name in
+            [
+                assigned, 3, "Original assignee"
+                reader, 4, "Summary reader"
+                steward, 5, "Steward"
+            ] do
+            execute
+                core
+                (authority
+                    number
+                    person
+                    (AuthorityAct.Register { DisplayName = name; Contact = None }))
+            |> ignore
+
+        for number, person, role in
+            [
+                1000, owner, Role.CaseHandler
+                1001, owner, Role.PaymentRecorder
+                1002, assigned, Role.CaseHandler
+                1003, steward, Role.DataSteward
+            ] do
+            execute
+                core
+                (authority
+                    number
+                    person
+                    (AuthorityAct.Grant
+                        {
+                            Role = role
+                            Scope = GrantTarget.Installation
+                        }))
+            |> ignore
+
+        let receipt = execute core (case 10 0L (AuthoredCaseAct.Open Inputs.registration))
+
+        let parent =
+            match receipt.Subject with
+            | ReceiptSubject.Case value -> value.CaseId
+            | _ -> failtest "Expected case receipt"
+
         execute
             core
-            (OperationInput.Reminder
+            (authority
+                1004
+                reader
+                (AuthorityAct.Grant
+                    {
+                        Role = Role.CaseReader
+                        Scope = GrantTarget.CaseId parent
+                    }))
+        |> ignore
+
+        execute core (case 11 1L (AuthoredCaseAct.Decide Inputs.decision)) |> ignore
+
+        for number, action, due in
+            [
+                12, "First authored action", "2026-11-08"
+                13, "Second authored action", "2026-11-09"
+            ] do
+            execute
+                core
+                (OperationInput.Reminder
+                    {
+                        OperationId = id number
+                        Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
+                        Act = AuthoredReminderAct.Create { Action = action; Due = due }
+                    })
+            |> ignore
+
+        execute
+            core
+            (OperationInput.Work
                 {
-                    OperationId = id number
+                    OperationId = id 14
                     Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
-                    Act = AuthoredReminderAct.Create { Action = action; Due = due }
+                    ExpectedRevision = 0L
+                    Act =
+                        WorkAct.UpdateWork
+                            {
+                                Responsible = WorkValue.Set(ActorId.format assigned.ActorId)
+                                Summary = WorkValue.Set "Exact authored handling summary"
+                            }
                 })
         |> ignore
 
-    execute
-        core
-        (OperationInput.Work
-            {
-                OperationId = id 14
-                Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
-                ExpectedRevision = 0L
-                Act =
-                    WorkAct.UpdateWork
-                        {
-                            Responsible = WorkValue.Set(ActorId.format assigned.ActorId)
-                            Summary = WorkValue.Set "Exact authored handling summary"
-                        }
-            })
-    |> ignore
+        database, core, owner, assigned, reader, steward
+    with error ->
+        FixtureDisposal.afterFailure error [ database.Fixture.Dispose ]
+        reraise ()
 
-    store, core, owner, assigned, reader, steward
+let private ledgerCount (database: PostgresFixture.Database) =
+    DatabaseSession.read database.OwnerSource token (fun connection ->
+        task {
+            let! rows =
+                DatabaseSession.rows connection "SELECT count(*) FROM claimcore.ledger" [||] token
+
+            return DatabaseSession.value<int64> 0 (List.exactlyOne rows)
+        })
+    |> get
 
 let private reminder number act =
     OperationInput.Reminder
@@ -212,7 +288,14 @@ let tests =
             testCase
                 "zero reminder revisions refuse cleanly without append while revision one stays valid"
                 (fun () ->
-                    let store, core, _, _, _, _ = fixture ()
+                    let database, core, _, _, _, _ = fixture ()
+
+                    use _owned =
+                        { new IDisposable with
+                            member _.Dispose() = database.Fixture.Dispose()
+                        }
+
+                    let before = ledgerCount database
 
                     let target =
                         CaseFixtures.operationId (id 12)
@@ -256,8 +339,9 @@ let tests =
                     | ExecuteResult.Rejected refusal -> check refusal
                     | other -> failtestf "Expected clean execute refusal: %A" other
 
-                    Expect.isFalse
-                        (List.contains "append" store.Events)
+                    Expect.equal
+                        (ledgerCount database)
+                        before
                         "The authorized invalid-input snapshot appends no ledger entry"
 
                     Expect.equal
@@ -285,7 +369,13 @@ let tests =
             testCase
                 "accepted paired effects stay isolated in both stale previews and fixed-range continuations"
                 (fun () ->
-                    let _, core, owner, _, _, _ = fixture ()
+                    let database, core, owner, _, _, _ = fixture ()
+
+                    use _owned =
+                        { new IDisposable with
+                            member _.Dispose() = database.Fixture.Dispose()
+                        }
+
                     let original = ReminderId.ofOperationId (CaseFixtures.operationId (id 12))
 
                     let paired =
@@ -462,7 +552,7 @@ let tests =
 
                     let birthCursor =
                         ClaimCore.RecordFormat.Cursors.encodeTimeline
-                            (id 1)
+                            database.Fixture.InstallationId
                             scope
                             (Some birthRange)
                             before
@@ -541,7 +631,13 @@ let tests =
             testCase
                 "shared snapshot producer pages all five events and honors current names and history rights"
                 (fun () ->
-                    let store, core, _, assigned, reader, _ = fixture ()
+                    let database, core, _, assigned, reader, _ = fixture ()
+
+                    use _owned =
+                        { new IDisposable with
+                            member _.Dispose() = database.Fixture.Dispose()
+                        }
+
                     let initial = collect core None
                     Expect.equal initial.Length 5 "Page boundaries retain every ledger event"
 
@@ -622,7 +718,7 @@ let tests =
                             "Names refresh independently of accepted case-work values"
                     | other -> failtestf "%A" other
 
-                    let summaryOnly = collect (service (store :> IStore) reader) None
+                    let summaryOnly = collect (service database reader) None
 
                     Expect.equal
                         summaryOnly.Length
@@ -659,8 +755,14 @@ let tests =
             testCase
                 "erased parent exposes no overview values and unavailable callers retain non-disclosure"
                 (fun () ->
-                    let store, core, _, _, _, steward = fixture ()
-                    let stewardCore = service (store :> IStore) steward
+                    let database, core, _, _, _, steward = fixture ()
+
+                    use _owned =
+                        { new IDisposable with
+                            member _.Dispose() = database.Fixture.Dispose()
+                        }
+
+                    let stewardCore = service database steward
 
                     execute stewardCore (case 30 2L (AuthoredCaseAct.Void "Retained reason"))
                     |> ignore
@@ -677,7 +779,7 @@ let tests =
 
                     match
                         (Service.timeline
-                            (service (store :> IStore) unknown)
+                            (service database unknown)
                             {
                                 Target = CaseSelector.Reference "TIMELINE-OVERVIEW"
                                 Filter = None

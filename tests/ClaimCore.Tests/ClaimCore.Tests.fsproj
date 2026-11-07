@@ -101,11 +101,7 @@
     <Compile Include="Application/DecisionFixtures.fs" />
     <Compile Include="Application/ServiceBoundaryTests.fs" />
     <Compile Include="Application/QuerySelectionTests.fs" />
-    <Compile Include="Application/WorklistAuthorizationTests.fs" />
-    <Compile Include="Application/CaseListReadSequencingTests.fs" />
     <Compile Include="Application/CaseAdviceTests.fs" />
-    <Compile Include="Application/ActorResponsibilityTests.fs" />
-    <Compile Include="Application/ViewCountTests.fs" />
     <Compile Include="Web/HostingTests.fs" />
     <Compile Include="Application/AuthorityPolicyInputs.fs" />
     <Compile Include="Application/AuthorizationPolicyTests.fs" />
@@ -114,7 +110,6 @@
     <Compile Include="Application/HistoricalEffectTests.fs" />
     <Compile Include="Application/CaseChangesTests.fs" />
     <Compile Include="Application/TimelineOverviewTests.fs" />
-    <Compile Include="Application/TimelineOverviewReadTests.fs" />
     <Compile Include="Application/AuthorityDecisionTests.fs" />
     <Compile Include="Application/AuthorityRefusalOrderTests.fs" />
     <Compile Include="Application/ReceiptDisclosureTests.fs" />
