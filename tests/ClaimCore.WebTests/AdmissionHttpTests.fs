@@ -1,7 +1,6 @@
 module ClaimCore.WebTests.AdmissionHttpTests
 
 open System
-open System.Diagnostics
 open System.Text
 open System.Text.Json
 open System.Threading
@@ -65,9 +64,17 @@ let private pressure () =
             PrincipalKey.human oidc.Issuer.AbsoluteUri "synthetic-human"
             |> Result.defaultWith (string >> failtest)
 
-        // The memory fixture models the ledger's whole-microsecond database timestamps.
         let observed = DateTimeOffset(2026, 10, 1, 12, 0, 0, TimeSpan.Zero)
-        use memory = new MemoryStore.Store(installation, observed)
+
+        let actor =
+            {
+                Actor.ActorId = CaseFixtures.actorId (Guid.NewGuid())
+                Principal = principal
+                Enabled = true
+                Profile = None
+            }
+
+        let storage = HandlerStub.ScriptedStore(observed, Some actor)
 
         let calendar =
             { new IBusinessCalendar with
@@ -80,18 +87,7 @@ let private pressure () =
         let service store actor =
             Service.create "synthetic" installation store calendar actor
 
-        let! provisioned =
-            Service.provisionOwner
-                (service memory principal)
-                (Guid.NewGuid())
-                Inputs.ownerProfile
-                CancellationToken.None
-
-        match provisioned with
-        | Ok(Verdict.Proceed _) -> ()
-        | _ -> failtest "The HTTP principal is independently registered and enabled"
-
-        let held = HeldReads(memory)
+        let held = HeldReads(storage)
         use host = new Host(true, forActor = service held, installationId = installation)
         let! login, _ = host.Login()
         Expect.equal login 200 "Cookie authentication control"
@@ -110,7 +106,6 @@ let private pressure () =
                 "The third request from the same authenticated identity is rejected"
 
             Expect.equal held.Reads 2 "Rejected work never reaches a storage callback"
-            let clock = Stopwatch.StartNew()
 
             let statusBody =
                 JsonSerializer.SerializeToUtf8Bytes {| operationId = Guid.NewGuid() |}
@@ -130,27 +125,6 @@ let private pressure () =
                 "UNRESOLVED"
                 "Admission does not fabricate final nonacceptance"
 
-            Console.WriteLine(
-                $"HTTP pressure observation: heldReads=2; rejectedReads=1; passiveStatusMilliseconds={clock.Elapsed.TotalMilliseconds:F3}"
-            )
-
-            match Environment.GetEnvironmentVariable "CLAIMCORE_TEST_REPORT_DIRECTORY" with
-            | null -> ()
-            | directory ->
-                IO.Directory.CreateDirectory directory |> ignore
-
-                IO.File.WriteAllBytes(
-                    IO.Path.Combine(directory, "admission-http.json"),
-                    JsonSerializer.SerializeToUtf8Bytes
-                        {|
-                            provider = "memory"
-                            heldReads = 2
-                            rejectedReads = 1
-                            rejectedStatus = 429
-                            passiveStatus = 200
-                            passiveStatusMilliseconds = clock.Elapsed.TotalMilliseconds
-                        |}
-                )
         finally
             held.Release()
 
