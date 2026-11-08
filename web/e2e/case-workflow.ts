@@ -175,7 +175,7 @@ export const caseActionButton = async (page: Page, kind: CaseAct["kind"], langua
   const more = page
     .locator(".case-actions > summary, .case-more-actions > summary")
     .filter({ visible: true });
-  await button.or(more).first().waitFor({ state: "visible" });
+  await button.or(more).first().waitFor({ state: "visible", timeout: 10_000 });
   if (!(await button.isVisible())) {
     await showCaseActionMenu(page);
   }

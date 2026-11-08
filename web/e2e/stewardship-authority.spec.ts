@@ -9,7 +9,7 @@ import { goToView, showExactLookup, chooseChoice } from "./workspace-navigation"
 import { randomUUID } from "node:crypto";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
-import { openCase, startAct, recordReviewed } from "./case-workflow";
+import { openCase, caseActionButton, recordReviewed } from "./case-workflow";
 import {
   expectAccessible,
   openAuthenticated,
@@ -40,7 +40,9 @@ const stewardAct = async (
   const p = createPresenter({ ...defaults, language: "en" });
   const label = p.actLabel(kind);
   markStewardshipPhase(`${kind}_OPEN`);
-  await startAct(page, kind, "en");
+  const offered = await caseActionButton(page, kind, "en");
+  markStewardshipPhase(`${kind}_CLICK`);
+  await offered.click({ timeout: 10_000 });
   const dialog = page.getByRole("dialog", { name: label, exact: true });
   if (reason !== undefined) {
     await dialog.getByLabel("Reason", { exact: true }).fill(reason);

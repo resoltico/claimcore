@@ -62,6 +62,31 @@ let private failedResults (spec: JsonElement) =
                     else
                         None
 
+            let actionability =
+                let mutable errors = Unchecked.defaultof<JsonElement>
+
+                if result.TryGetProperty("errors", &errors) then
+                    errors.EnumerateArray()
+                    |> Seq.collect (fun error ->
+                        let mutable message = Unchecked.defaultof<JsonElement>
+
+                        if error.TryGetProperty("message", &message) then
+                            let text = message.GetString() |> nonNull
+
+                            [
+                                "outside of the viewport"
+                                "intercepts pointer events"
+                                "not stable"
+                                "not visible"
+                            ]
+                            |> List.filter text.Contains
+                        else
+                            [])
+                    |> Seq.distinct
+                    |> String.concat ","
+                else
+                    ""
+
             let phase =
                 let basePhases =
                     set
@@ -81,7 +106,14 @@ let private failedResults (spec: JsonElement) =
                         [
                             for action in [ "VOID"; "REINSTATE"; "ERASE" ] do
                                 for stage in
-                                    [ "OPEN"; "REVIEW"; "SUBMIT"; "READ_REPLY"; "CASE_READS" ] do
+                                    [
+                                        "OPEN"
+                                        "CLICK"
+                                        "REVIEW"
+                                        "SUBMIT"
+                                        "READ_REPLY"
+                                        "CASE_READS"
+                                    ] do
                                     yield action + "_" + stage
                         ]
                     |> Set.union basePhases
@@ -111,6 +143,10 @@ let private failedResults (spec: JsonElement) =
                 status
                 + (source |> Option.map (fun value -> " " + value) |> Option.defaultValue "")
                 + (phase |> Option.map (fun value -> " phase=" + value) |> Option.defaultValue "")
+                + (if actionability = "" then
+                       ""
+                   else
+                       " actionability=" + actionability)
             )
         | _ -> None)
     |> Seq.distinct
