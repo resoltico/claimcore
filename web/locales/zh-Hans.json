@@ -35,10 +35,6 @@
     "text": "{label}：{meaning}",
     "source": "7216b2a9dae5"
   },
-  "ui.actor": {
-    "text": "账户",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actorRequestRetained": {
     "text": "已保留您当前的请求。开始其他操作前，请继续或丢弃此请求。",
     "source": "700957242358"
@@ -203,10 +199,6 @@
     "text": "{label}（精确值）：{reference}",
     "source": "e26d7a9b269c"
   },
-  "ui.exactUtc": {
-    "text": "精确 UTC 时刻",
-    "source": "460d31945df9"
-  },
   "ui.explainFields": {
     "text": "字段说明",
     "source": "3593737e2657"
@@ -238,10 +230,6 @@
   "ui.grantsPartial": {
     "text": "仅显示部分角色。",
     "source": "391d53d153f3"
-  },
-  "ui.historyNoChanges": {
-    "text": "没有信息更改。",
-    "source": "0b70fc56218c"
   },
   "ui.includeInactiveWork": {
     "text": "包括非活动案件工作",
@@ -563,14 +551,6 @@
     "text": "重新加载界面",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderAction": {
-    "text": "计划事项",
-    "source": "5818bdba66cb"
-  },
-  "ui.reminderDetails": {
-    "text": "提醒详情",
-    "source": "1cd27d608c31"
-  },
   "ui.reminderDue": {
     "text": "计划日期",
     "source": "37b3b31a9fbe"
@@ -791,14 +771,6 @@
     "text": "工作",
     "source": "104ab9213e28"
   },
-  "ui.timeline.details": {
-    "text": "显示详情",
-    "source": "1af77ee273cb"
-  },
-  "ui.timeline.nextReminder": {
-    "text": "下一提醒",
-    "source": "153fddb917f5"
-  },
   "ui.timeline.empty": {
     "text": "没有可显示的活动。",
     "source": "5ddccb9ef206"
@@ -806,14 +778,6 @@
   "ui.timeline.more": {
     "text": "加载更多",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.before": {
-    "text": "先前的值：",
-    "source": "fca574a5a363"
-  },
-  "ui.timeline.after": {
-    "text": "新的值：",
-    "source": "dca4696d7a91"
   },
   "ui.timeline.withheld": {
     "text": "您无权访问这些更改。",

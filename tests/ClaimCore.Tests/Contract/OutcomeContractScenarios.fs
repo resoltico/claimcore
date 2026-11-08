@@ -142,8 +142,7 @@ let internal queryCodecs () =
         Api.caseTimeline.Output
         (Outcome.Succeeded(
             Presented.create
-                (fun (page: CaseTimelinePage) ->
-                    Descriptor.tableView Descriptor.timelineColumns page.Items)
+                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                 {
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference "WIRE"
@@ -175,7 +174,10 @@ let internal queryCodecs () =
         (Outcome.Succeeded(
             Presented.create
                 (fun (page: ActorReviewPage) ->
-                    Descriptor.tableView Descriptor.actorColumns page.Items)
+                    Descriptor.detailedTableView
+                        (Descriptor.actor >> Descriptor.detail)
+                        Descriptor.actorColumns
+                        page.Items)
                 {
                     Basis = Inputs.workBasis
                     Items = []

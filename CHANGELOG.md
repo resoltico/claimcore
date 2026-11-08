@@ -7,6 +7,7 @@
 - operation.get replaces operation.observe, operation.status and operation.resolve; handle ACCEPTED, PENDING/finalAt and final account-scoped NOT_ACCEPTED.
 - work.views combines case/reminder counts. case.history, case.activity, work.overview, case.views and reminder.views are removed; use case.timeline for activity.
 - Read replies and accepted receipts include a locale-neutral view; regenerate strict clients. Browser and CLI render supplied records and tables; JSON/CSV retain typed data.
+- Regenerate table readers for per-row detail views and conflict page views; timeline pages return up to ten entries with cursors to retain full details within the response cap.
 - Case advice.history is NONE, SUMMARY or FULL; case.timeline applies current disclosure rights without a request-level detail selector.
 - CLI recovery keeps list/check. call/session fill omitted execution IDs and print them to stderr; exact retries retain that ID. Dry runs may omit IDs.
 - Custom stores remove fence/nonacceptance ports. Final absence uses a head-locked write callback without appending, including during maintenance.

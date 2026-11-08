@@ -22,7 +22,7 @@ export const PageRow = ({
           timeZone={basis.timeZone}
           view={{
             kind: "RECORD",
-            sections: [
+            sections: view.details[remaining]?.sections ?? [
               {
                 titleId,
                 entries: view.columns.flatMap((column, position) => {

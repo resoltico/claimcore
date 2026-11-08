@@ -234,7 +234,10 @@ let private pageBounds () =
                 Api.authorityList.Output
                 (Presented.outcome
                     (fun (page: ActorReviewPage) ->
-                        Descriptor.tableView Descriptor.actorColumns page.Items)
+                        Descriptor.detailedTableView
+                            (Descriptor.actor >> Descriptor.detail)
+                            Descriptor.actorColumns
+                            page.Items)
                     (Outcome.Succeeded
                         {
                             ActorReviewPage.Basis = Inputs.workBasis
@@ -245,8 +248,7 @@ let private pageBounds () =
             Codec.encode
                 Api.authorityGrants.Output
                 (Presented.outcome
-                    (fun (page: AuthorityGrantPage) ->
-                        Descriptor.tableView Descriptor.grantColumns page.Items)
+                    (fun (page: AuthorityGrantPage) -> Descriptor.grantPage page)
                     (Outcome.Succeeded
                         { directory with
                             Items =
@@ -261,8 +263,7 @@ let private pageBounds () =
             Codec.encode
                 Api.caseTimeline.Output
                 (Presented.outcome
-                    (fun (page: CaseTimelinePage) ->
-                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                     (Outcome.Succeeded
                         {
                             CaseTimelinePage.Basis = Inputs.workBasis
@@ -274,7 +275,9 @@ let private pageBounds () =
         ]
 
     for endpoint, baseline in pages do
-        for count, expected in [ 0, true; 50, true; 51, false ] do
+        let maximum = if endpoint = "case.timeline" then 10 else 50
+
+        for count, expected in [ 0, true; maximum, true; maximum + 1, false ] do
             let root = JsonNode.Parse baseline |> nonNull
             let data = root["outcome"] |> nonNull |> fun outcome -> outcome["data"] |> nonNull
             let item = (data["items"] |> nonNull).AsArray()[0] |> nonNull
@@ -289,7 +292,7 @@ let private pageBounds () =
                 (admits endpoint "response" (Encoding.UTF8.GetBytes(root.ToJsonString())))
                 expected
                 (sprintf
-                    "%s admits %d items exactly according to its fifty-item bound"
+                    "%s admits %d items exactly according to its declared page bound"
                     endpoint
                     count)
 
@@ -298,7 +301,7 @@ let tests =
     testList
         "production client decoder conformance"
         [
-            testCase "timeline, directory and grant pages are bounded to fifty items" pageBounds
+            testCase "timeline, directory and grant pages enforce their declared bounds" pageBounds
             testCase "independent positive and negative raw bytes" independentByteCases
             testCase
                 "wire admission leaves authoritative identity policy unchanged"

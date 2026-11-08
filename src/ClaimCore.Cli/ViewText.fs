@@ -9,7 +9,7 @@ module internal ViewText =
             match TextDescriptorValue.sections language sections with
             | [] -> [ ReplyTextFormat.label language "view.empty" ]
             | lines -> lines
-        | View.Table(columns, rows) ->
+        | View.Table(columns, rows, details, sections) ->
             let definitions =
                 columns
                 |> List.mapi (fun index column ->
@@ -22,7 +22,30 @@ module internal ViewText =
                     })
 
             let header, render = TextTable.page language options definitions rows
-            (if header = "" || not includeHeader then [] else [ header ]) @ render rows
+
+            let detailLines =
+                function
+                | None -> []
+                | Some(detail: RowDetail) ->
+                    let summary =
+                        detail.Summary
+                        |> Option.map (fun message ->
+                            message.Arguments
+                            |> Map.map (fun _ value -> TextDescriptorValue.render language value)
+                            |> MessageCatalogs.render language message.MessageId)
+                        |> Option.toList
+
+                    summary
+                    @ TextDescriptorValue.sections language detail.Highlights
+                    @ TextDescriptorValue.sections language detail.Sections
+
+            (if includeHeader then
+                 TextDescriptorValue.sections language sections
+             else
+                 [])
+            @ (if header = "" || not includeHeader then [] else [ header ])
+            @ (List.map2 (fun row detail -> render [ row ] @ detailLines detail) rows details
+               |> List.concat)
 
     let renderWith options language view =
         renderWithHeader true options language view

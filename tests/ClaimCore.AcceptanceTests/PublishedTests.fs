@@ -137,6 +137,26 @@ let private walkthrough (fixture: PublishedFixture.Fixture) =
     position
 
 let private erasedHistory fixture =
+    let rendered =
+        invoke
+            fixture
+            fixture.Environment
+            [ "case"; "timeline"; "DEMO-0001"; "--format"; "text" ]
+            Array.empty
+            0
+
+    let text = Encoding.UTF8.GetString rendered.StandardOutput
+
+    for secret in
+        [
+            "Example Translation Services Ltd"
+            "Example Responsible Insurer"
+            "1,000.00 EUR"
+        ] do
+        Expect.isFalse
+            (text.Contains secret)
+            "Erased endpoint views do not restore historical values in human CLI output."
+
     let history =
         automation
             fixture

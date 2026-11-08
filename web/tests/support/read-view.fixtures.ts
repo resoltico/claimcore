@@ -1,5 +1,7 @@
 import type {
   ActorReviewItem,
+  CaseTimelineEntry,
+  PresentedSection,
   CaseFields,
   CaseSummary,
   CaseView,
@@ -123,6 +125,7 @@ type Column<T> = {
 };
 const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): PresentedView => ({
   kind: "TABLE",
+  sections: [],
   columns: columns.map(({ key, labelId, isMoney = false }) => ({
     key,
     labelId,
@@ -130,6 +133,7 @@ const table = <T>(columns: Column<T>[], rows: ReadonlyArray<T>): PresentedView =
     prominence: "PRIMARY",
   })),
   rows: rows.map((row) => columns.map((column) => column.value(row))),
+  details: rows.map(() => null),
 });
 const actorColumns: Column<ActorReviewItem>[] = [
   {
@@ -401,6 +405,61 @@ const views: { [K in ReadId]: (data: Data<K>) => PresentedView } = {
       data.items,
     ),
 };
+export const timelineFixtureView = (items: ReadonlyArray<CaseTimelineEntry>): PresentedView => {
+  const view = views["case.timeline"]({
+    items,
+    basis: {
+      observedAt: "2026-11-04T12:00:00.000000Z",
+      businessDate: "2026-11-04",
+      timeZone: "Etc/UTC",
+    },
+    caseId: "20000000-0000-4000-8000-000000000001",
+    caseReference: "CASE-1",
+    nextCursor: null,
+  });
+  if (view.kind !== "TABLE") {
+    throw Error("Expected fixture table");
+  }
+  return {
+    ...view,
+    details: items.map((item) => {
+      if (item.changes.kind !== "DISCLOSED") {
+        return null;
+      }
+      const sections: PresentedSection[] = item.changes.items.flatMap((change) =>
+        change.kind === "CASE_FIELD"
+          ? [
+              {
+                titleId: `field.${change.change.field}.label`,
+                entries: [
+                  entry(
+                    "before",
+                    "label.before",
+                    change.change.before === null
+                      ? absent
+                      : { ...change.change.before, kind: "TEXT" },
+                  ),
+                  entry(
+                    "after",
+                    "label.after",
+                    change.change.after === null
+                      ? absent
+                      : { ...change.change.after, kind: "TEXT" },
+                  ),
+                ],
+              },
+            ]
+          : [],
+      );
+      return {
+        summary: { messageId: item.changes.overview.event.messageId, arguments: [] },
+        highlights: sections,
+        sections: [],
+      };
+    }),
+  };
+};
+
 const readView = <K extends ReadId>(endpoint: K, data: Data<K>): PresentedView =>
   views[endpoint](data);
 const isRead = (value: string): value is ReadId => Object.hasOwn(views, value);
@@ -428,6 +487,16 @@ const receiptView = (data: OperationReceipt): PresentedView => {
   }
   return record(entries);
 };
+const timelineRead = (endpoint: string, read: unknown): PresentedView | null => {
+  if (
+    endpoint === "case.timeline" &&
+    isResponse("case.timeline", read) &&
+    read.outcome.kind === "SUCCEEDED"
+  ) {
+    return timelineFixtureView(read.outcome.data.items);
+  }
+  return null;
+};
 /** Synthetic HTTP writers use declared fixture facts; invalid wire inputs remain invalid. */
 export const fixtureView = (endpoint: string, kind: string, data: unknown): PresentedView => {
   if (!isEndpointId(endpoint)) {
@@ -438,6 +507,10 @@ export const fixtureView = (endpoint: string, kind: string, data: unknown): Pres
     outcome: { kind, data, view: empty },
   };
   const read = { outcome: reply.outcome };
+  const timeline = timelineRead(endpoint, read);
+  if (timeline !== null) {
+    return timeline;
+  }
   if (isRead(endpoint) && isResponse(endpoint, read) && read.outcome.kind === "SUCCEEDED") {
     return readView(endpoint, read.outcome.data);
   }

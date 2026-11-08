@@ -110,7 +110,10 @@ let private boundedAuthority () =
             (Outcome.Succeeded(
                 Presented.create
                     (fun (page: ActorReviewPage) ->
-                        Descriptor.tableView Descriptor.actorColumns page.Items)
+                        Descriptor.detailedTableView
+                            (Descriptor.actor >> Descriptor.detail)
+                            Descriptor.actorColumns
+                            page.Items)
                     {
                         Basis = Inputs.workBasis
                         Items = List.replicate count (ActorReviewItem.ofActor [] actor)
@@ -123,8 +126,7 @@ let private boundedAuthority () =
             Api.authorityGrants.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (fun (page: AuthorityGrantPage) ->
-                        Descriptor.tableView Descriptor.grantColumns page.Items)
+                    (fun (page: AuthorityGrantPage) -> Descriptor.grantPage page)
                     {
                         Basis = Inputs.workBasis
                         Actor = ActorReviewItem.ofActor [] actor
@@ -214,13 +216,12 @@ let private timelineLimit () =
             Api.caseTimeline.Output
             (Outcome.Succeeded(
                 Presented.create
-                    (fun (page: CaseTimelinePage) ->
-                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                     {
                         CaseTimelinePage.Basis = Inputs.workBasis
                         CaseId = CaseFixtures.caseId id
                         Reference = CaseFixtures.reference reference
-                        Items = List.replicate Paging.MaximumPageSize entry
+                        Items = List.replicate Paging.MaximumTimelinePageSize entry
                         NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
                     }
             ))
@@ -233,6 +234,35 @@ let private timelineLimit () =
     Expect.isOk
         (Codec.decode Limits.MaximumResponseBytes Api.caseTimeline.Output bytes)
         "The actual maximal page decodes under the public limit"
+
+    let conflict =
+        Refusal.RevisionConflict(
+            RevisionConflictInfo.at (CaseFixtures.revision maximum)
+            |> RevisionConflictInfo.explain (
+                ConflictChanges.Page
+                    {
+                        Entries = List.replicate Paging.MaximumTimelinePageSize entry
+                        NextCursor = Some(String('A', Cursors.MaximumTokenCharacters))
+                    }
+            )
+        )
+
+    let conflictBytes =
+        Codec.encode
+            Api.operationExecute.Output
+            {
+                PresentedExecuteReply.OperationId = id
+                Outcome = PresentedExecuteResult.Rejected conflict
+            }
+
+    Expect.isLessThan
+        conflictBytes.Length
+        Limits.MaximumResponseBytes
+        "Full-detail initial conflict pages preserve the same response cap."
+
+    Expect.isOk
+        (Codec.decode Limits.MaximumResponseBytes Api.operationExecute.Output conflictBytes)
+        "The complete conflict view decodes within the unchanged response cap."
 
 let private reminderTimelineLimit () =
     let required =
@@ -350,7 +380,7 @@ let private reminderTimelineLimit () =
                     CaseTimelinePage.Basis = Inputs.workBasis
                     CaseId = CaseFixtures.caseId id
                     Reference = CaseFixtures.reference reference
-                    Items = List.replicate Paging.MaximumPageSize entry
+                    Items = List.replicate Paging.MaximumTimelinePageSize entry
                     NextCursor = None
                 }
 
@@ -358,8 +388,7 @@ let private reminderTimelineLimit () =
             Codec.encode
                 Api.caseTimeline.Output
                 (Presented.outcome
-                    (fun (page: CaseTimelinePage) ->
-                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                    (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                     reply)
 
         Expect.isLessThan
@@ -377,7 +406,7 @@ let tests =
         "bounded response codecs"
         [
             testCase "authority headers and grants have actual bounded codecs" boundedAuthority
-            testCase "fifty typed timeline differences fit the response limit" timelineLimit
+            testCase "maximal full timeline page and view fit the response limit" timelineLimit
             testCase
                 "fifty maximal reminder event contexts fit alongside full differences"
                 reminderTimelineLimit

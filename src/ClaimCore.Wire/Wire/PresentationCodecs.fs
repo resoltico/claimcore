@@ -380,6 +380,53 @@ module PresentationCodecs =
         |> build
         |> named "PresentedColumn"
 
+    let private messageArguments =
+        record (fun key value -> key, value)
+        |> field "key" fst key
+        |> field "value" snd value
+        |> build
+        |> named "PresentedArgument"
+        |> list MaximumEntries
+        |> mapResult
+            (fun path pairs ->
+                let arguments = Map.ofList pairs
+
+                if arguments.Count = pairs.Length then
+                    Ok arguments
+                else
+                    Error
+                        {
+                            Path = path
+                            Reason = "Message argument keys must be unique."
+                        })
+            Map.toList
+
+    let private presentedMessage =
+        (record (fun message arguments ->
+            {
+                PresentedMessage.MessageId = message
+                Arguments = arguments
+            })
+        : Fields<PresentedMessage, _>)
+        |> field "messageId" _.MessageId messageId
+        |> field "arguments" _.Arguments messageArguments
+        |> build
+        |> named "PresentedMessage"
+
+    let private rowDetail =
+        (record (fun summary highlights sections ->
+            {
+                RowDetail.Summary = summary
+                Highlights = highlights
+                Sections = sections
+            })
+        : Fields<RowDetail, _>)
+        |> field "summary" _.Summary (nullable presentedMessage)
+        |> field "highlights" _.Highlights (list MaximumEntries section)
+        |> field "sections" _.Sections (list MaximumEntries section)
+        |> build
+        |> named "PresentedRowDetail"
+
     let view =
         tagged
             "PresentedView"
@@ -395,23 +442,40 @@ module PresentationCodecs =
                     "TABLE"
                     View.Table
                     (function
-                    | View.Table(columns, rows) -> Some(columns, rows)
+                    | View.Table(columns, rows, details, sections) ->
+                        Some(columns, rows, details, sections)
                     | _ -> None)
-                    (record (fun columns rows -> columns, rows)
-                     |> field "columns" fst (list MaximumEntries column)
-                     |> field "rows" snd (list 50 (list MaximumEntries value)))
+                    (record (fun columns rows details sections -> columns, rows, details, sections)
+                     |> field
+                         "columns"
+                         (fun (columns, _, _, _) -> columns)
+                         (list MaximumEntries column)
+                     |> field
+                         "rows"
+                         (fun (_, rows, _, _) -> rows)
+                         (list 50 (list MaximumEntries value))
+                     |> field
+                         "details"
+                         (fun (_, _, details, _) -> details)
+                         (list 50 (nullable rowDetail))
+                     |> field
+                         "sections"
+                         (fun (_, _, _, sections) -> sections)
+                         (list MaximumEntries section))
             ]
 
         |> mapResult
             (fun path view ->
                 match view with
-                | View.Table(columns, rows) when
-                    rows |> List.exists (fun row -> row.Length <> columns.Length)
+                | View.Table(columns, rows, details, _) when
+                    details.Length <> rows.Length
+                    || (rows |> List.exists (fun row -> row.Length <> columns.Length))
                     ->
                     Error
                         {
                             Path = path
-                            Reason = "Each table row must have one value per column."
+                            Reason =
+                                "Each table row must have one value per column and one corresponding detail slot."
                         }
                 | _ -> Ok view)
             id

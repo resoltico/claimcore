@@ -38,7 +38,7 @@ module internal ConflictReads =
                             Filter = None
                             Range = Some range
                             BeforeSequence = None
-                            Limit = RevisionConflictInfo.MaximumChanges
+                            Limit = Paging.MaximumTimelinePageSize
                         }
 
                 if
@@ -48,7 +48,7 @@ module internal ConflictReads =
                             None
                             (Some range)
                             None
-                            RevisionConflictInfo.MaximumChanges
+                            Paging.MaximumTimelinePageSize
                             page
                     )
                 then

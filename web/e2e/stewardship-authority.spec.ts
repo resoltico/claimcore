@@ -106,6 +106,13 @@ test("browser renders void, reinstatement and live payload erasure through autho
       "Erased. Only",
     );
     await expect(steward.locator(".record-view [data-entry='claimantName']")).toHaveCount(0);
+    const history = steward.locator(".case-timeline-panel");
+    for (const summary of await history.locator("details > summary").all()) {
+      await summary.click();
+    }
+    await expect(history).not.toContainText("Synthetic claimant");
+    await expect(history).not.toContainText("Synthetic insurer");
+    await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
     await expectAccessible(steward);
   } finally {
     await context.close();

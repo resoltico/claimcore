@@ -1,3 +1,8 @@
+import { randomUUID } from "node:crypto";
+import type { RequestByEndpoint } from "@contracts/client";
+import { operationId as mintOperationId } from "../src/operation/operationId";
+import { applyAuthority } from "./authority-setup";
+import { openCase } from "./case-workflow";
 import { expect, test, type Page } from "@playwright/test";
 import { isResponse } from "../src/protocol/client";
 import { openAuthenticated, expectAccessible } from "./session-helpers";
@@ -135,4 +140,62 @@ test("selected authority grants use bounded core pages and survive presentation 
       .click();
     await expect(selected).toBeFocused();
   }
+});
+
+test("preserves historical profile contact and distinguishes global and case role summaries", async ({
+  page,
+}) => {
+  await openAuthenticated(page);
+  const subject = `AUDIT-VIEW-${randomUUID()}`;
+  const reference = `ROLE-VIEW-${randomUUID()}`;
+  await openCase(page, reference);
+  const target = { kind: "HUMAN", issuer: "https://historical-issuer.example/", subject } as const;
+  const apply = (
+    act: Extract<RequestByEndpoint["operation.execute"], { kind: "AUTHORITY" }>["act"],
+  ) => applyAuthority(page, { kind: "AUTHORITY", operationId: mintOperationId(), target, act });
+  await apply({
+    kind: "REGISTER",
+    profile: { displayName: subject, contact: "historical-browser-only@example.test" },
+  });
+  await apply({
+    kind: "SET_PROFILE",
+    profile: { displayName: subject, contact: "current-browser-only@example.test" },
+  });
+  await apply({ kind: "GRANT", role: "CASE_READER", scope: { kind: "INSTALLATION" } });
+  await apply({
+    kind: "GRANT",
+    role: "CASE_HANDLER",
+    scope: { kind: "CASE", target: { kind: "REFERENCE", caseReference: reference } },
+  });
+  await page.goto("/people");
+  await page.locator("#people-search").fill(subject);
+  await page.locator(".directory-filters button[type='submit']").click();
+  const row = page.locator(".table-view tbody > tr").filter({ hasText: subject });
+  await expect(row).toHaveCount(1);
+  await row.locator("details > summary").click();
+  const roles = row.locator("[data-section='field.role.label']");
+  await expect(roles).toHaveCount(2);
+  await expect(
+    roles.filter({ hasText: "Case reader" }).locator('[data-entry="installation"]'),
+  ).toContainText("Yes");
+  await expect(
+    roles.filter({ hasText: "Case handler" }).locator('[data-entry="installation"]'),
+  ).toContainText("No");
+  await expect(
+    roles.filter({ hasText: "Case handler" }).locator('[data-entry="cases"]'),
+  ).toContainText("1");
+  await page.goto("/authority-history");
+  const historical = page
+    .locator(".authority-history tbody > tr")
+    .filter({ hasText: "historical-browser-only@example.test" });
+  await expect(historical).toHaveCount(1);
+  await historical.locator("details > summary").click();
+  await expect(historical.locator("details")).toContainText("historical-browser-only@example.test");
+  const registered = page
+    .locator(".authority-history tbody > tr")
+    .filter({ hasText: "https://historical-issuer.example/" })
+    .filter({ hasText: subject });
+  await expect(registered).toHaveCount(1);
+  await registered.locator("details > summary").click();
+  await expect(registered.locator("details")).toContainText(subject);
 });

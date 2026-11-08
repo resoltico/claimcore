@@ -19,7 +19,9 @@ const succeeded = <const T extends CaseView | CaseTimelinePage>(data: T) => ({
       view:
         "items" in data
           ? {
+              details: data.items.map(() => null),
               kind: "TABLE" as const,
+              sections: [],
               columns: [
                 {
                   key: "future-private-fact",

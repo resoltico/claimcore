@@ -6,7 +6,9 @@ it("renders supplied columns and cells without field knowledge", () => {
   const rendered = render(
     <TableView
       view={{
+        details: [null],
         kind: "TABLE",
+        sections: [],
         columns: [
           {
             key: "future-text",

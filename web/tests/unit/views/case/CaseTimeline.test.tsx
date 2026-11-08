@@ -2,11 +2,9 @@ import { act } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { expect, it, vi } from "vitest";
 import { render, screen, waitFor } from "../../../support/presentation-test-support";
-import { actorRefInput } from "../../../support/inputs";
-import { preferenceKey } from "../../../../src/presentation/preferences";
 import { response } from "../../../support/service-ui.fixtures";
 import { timelineEntry, timelinePage } from "../../../support/timeline.fixtures";
-import { CaseTimeline, TimelineEntries } from "../../../../src/views/case/CaseTimeline";
+import { CaseTimeline } from "../../../../src/views/case/CaseTimeline";
 const requestText = (body: unknown): string => {
   if (typeof body !== "string") {
     throw new Error("Expected JSON timeline request bytes.");
@@ -134,8 +132,8 @@ it("uses the supplied event table and appends pages in core order", async () => 
   const user = userEvent.setup();
   const view = render(<CaseTimeline target={target} />);
   await screen.findByText("Timeline recorder");
-  expect(view.container).not.toHaveTextContent("Core before");
-  expect(view.container).not.toHaveTextContent("Core after");
+  expect(view.container).toHaveTextContent("Core before");
+  expect(view.container).toHaveTextContent("Core after");
   expect(fetch).toHaveBeenCalledTimes(1);
   await user.click(screen.getByRole("button", { name: "Load more" }));
   await waitFor(() => {
@@ -146,158 +144,6 @@ it("uses the supplied event table and appends pages in core order", async () => 
   const rows = view.container.querySelectorAll(".case-timeline-panel .table-view tbody > tr");
   expect(rows[0]).toHaveTextContent("Open a case");
   expect(rows[1]).toHaveTextContent("Update case work");
-});
-
-it("renders only Core-selected highlights while keeping every exact difference in details", async () => {
-  const user = userEvent.setup();
-  const supplied = timelineEntry({
-    act: "DECIDE",
-    changes: {
-      kind: "DISCLOSED",
-      overview: {
-        event: { kind: "DECISION_RECORDED", messageId: "timeline.event.decisionRecorded" },
-        highlights: [{ kind: "CHANGE", index: 1 }],
-      },
-      items: [
-        {
-          kind: "CASE_FIELD",
-          change: {
-            field: "paymentDecisionDate",
-            before: { kind: "DATE", value: "2026-10-01" },
-            after: { kind: "DATE", value: "2026-10-10" },
-          },
-        },
-        {
-          kind: "CASE_MONEY",
-          change: {
-            field: "payableAmount",
-            change: {
-              before: { amount: "25000", currency: "AED" },
-              after: { amount: "20000", currency: "AED" },
-            },
-          },
-        },
-      ],
-    },
-  });
-  const view = render(<TimelineEntries items={[supplied]} observedAt={null} detail="CURRENT" />);
-  const entry = view.container.querySelector(".timeline-entry")!;
-  const compact = entry.querySelector(".timeline-changes-compact")!;
-  const details = entry.querySelector("details")!;
-  expect(compact.querySelectorAll(".timeline-change")).toHaveLength(1);
-  expect(compact).toHaveTextContent("25,000.00 AED");
-  expect(compact).toHaveTextContent("20,000.00 AED");
-  expect(compact).not.toHaveTextContent("01/10/2026");
-  expect(compact).not.toHaveTextContent("10/10/2026");
-  expect(details.querySelectorAll(".timeline-change")).toHaveLength(2);
-  expect(details.querySelector(".timeline-changes")).toHaveTextContent("01/10/2026");
-  expect(details.querySelector(".timeline-changes")).toHaveTextContent("10/10/2026");
-  expect(details).not.toHaveAttribute("open");
-  await user.click(details.querySelector("summary")!);
-  expect(details).toHaveAttribute("open");
-  expect(details).toHaveTextContent(supplied.operationId);
-  expect(compact).not.toHaveTextContent(supplied.operationId);
-});
-it.each(["SUMMARY", "ERASED"] as const)(
-  "keeps %s timeline disclosure free of both compact and expanded differences",
-  (detail) => {
-    const view = render(
-      <TimelineEntries
-        items={[
-          timelineEntry({
-            changes: {
-              kind: "DISCLOSED",
-              overview: {
-                event: {
-                  kind: "HANDLING_SUMMARY_ADDED",
-                  messageId: "timeline.event.handlingSummaryAdded",
-                },
-                highlights: [{ kind: "CHANGE", index: 0 }],
-              },
-              items: [
-                {
-                  kind: "HANDLING_SUMMARY",
-                  change: { before: null, after: "Must stay undisclosed" },
-                },
-              ],
-            },
-          }),
-        ]}
-        observedAt={null}
-        detail={detail}
-      />,
-    );
-    expect(view.container.querySelector(".timeline-changes")).toBeNull();
-    expect(view.container).not.toHaveTextContent("Must stay undisclosed");
-  },
-);
-
-it("keeps the visible act, actor and details text in the disclosure's accessible name", () => {
-  const view = render(
-    <TimelineEntries items={[timelineEntry()]} observedAt={null} detail="CURRENT" />,
-  );
-  const summary = view.container.querySelector("summary")!;
-  expect(summary).not.toHaveAttribute("aria-label");
-  expect(summary).not.toHaveAttribute("aria-labelledby");
-  expect(summary.querySelector(":scope > strong")).toHaveTextContent("Case opened");
-  expect(summary).toHaveAccessibleName(/Case opened/u);
-  expect(summary).toHaveAccessibleName(/Timeline recorder/u);
-  expect(summary).toHaveAccessibleName(/Show details/u);
-  expect(summary).toHaveTextContent("Case opened Timeline recorder");
-});
-
-it("names an Arabic responsibility disclosure from its complete visible event and attribution", () => {
-  localStorage.setItem(
-    preferenceKey,
-    JSON.stringify({
-      version: 3,
-      language: "ar",
-      displayLocale: "ar-EG",
-      mode: "light",
-      accent: "blue",
-    }),
-  );
-  try {
-    const original = timelineEntry();
-    const view = render(
-      <TimelineEntries
-        items={[
-          {
-            ...original,
-            kind: "WORK",
-            act: "UPDATE_WORK",
-            recordedBy: actorRefInput({
-              displayName: { kind: "NAMED", value: "Plain Sight Field Owner" },
-            }),
-            changes: {
-              kind: "DISCLOSED",
-              items: [],
-              overview: {
-                event: {
-                  kind: "RESPONSIBILITY_ASSIGNED",
-                  messageId: "timeline.event.responsibilityAssigned",
-                  person: actorRefInput({ displayName: { kind: "NAMED", value: "Alex Handler" } }),
-                },
-                highlights: [],
-              },
-            },
-          },
-        ]}
-        observedAt={null}
-        detail="CURRENT"
-      />,
-    );
-    const summary = view.container.querySelector("summary")!;
-    expect(summary).not.toHaveAttribute("aria-labelledby");
-    expect(summary).not.toHaveAttribute("aria-label");
-    expect(summary).toHaveAccessibleName(
-      /أُسندت المسؤولية إلى Alex Handler Plain Sight Field Owner/u,
-    );
-    expect(summary).toHaveAccessibleName(/عرض التفاصيل/u);
-    expect(summary.querySelectorAll("bdi")).toHaveLength(2);
-  } finally {
-    localStorage.removeItem(preferenceKey);
-  }
 });
 
 it.each([

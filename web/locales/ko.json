@@ -35,10 +35,6 @@
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
   },
-  "ui.actor": {
-    "text": "계정",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actorRequestRetained": {
     "text": "현재 요청이 유지됩니다. 다른 작업을 시작하기 전에 이 요청을 계속하거나 폐기하세요.",
     "source": "700957242358"
@@ -203,10 +199,6 @@
     "text": "{label}(정확한 값): {reference}",
     "source": "e26d7a9b269c"
   },
-  "ui.exactUtc": {
-    "text": "정확한 UTC 시각",
-    "source": "460d31945df9"
-  },
   "ui.explainFields": {
     "text": "필드 설명",
     "source": "3593737e2657"
@@ -238,10 +230,6 @@
   "ui.grantsPartial": {
     "text": "일부 역할만 표시되었습니다.",
     "source": "391d53d153f3"
-  },
-  "ui.historyNoChanges": {
-    "text": "변경된 정보가 없습니다.",
-    "source": "0b70fc56218c"
   },
   "ui.includeInactiveWork": {
     "text": "비활성 청구 건 업무 포함",
@@ -563,14 +551,6 @@
     "text": "인터페이스 다시 불러오기",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderAction": {
-    "text": "계획된 작업",
-    "source": "5818bdba66cb"
-  },
-  "ui.reminderDetails": {
-    "text": "후속 조치 상세",
-    "source": "1cd27d608c31"
-  },
   "ui.reminderDue": {
     "text": "예정일",
     "source": "37b3b31a9fbe"
@@ -791,14 +771,6 @@
     "text": "업무",
     "source": "104ab9213e28"
   },
-  "ui.timeline.details": {
-    "text": "상세 표시",
-    "source": "1af77ee273cb"
-  },
-  "ui.timeline.nextReminder": {
-    "text": "다음 후속 조치",
-    "source": "153fddb917f5"
-  },
   "ui.timeline.empty": {
     "text": "표시할 활동이 없습니다.",
     "source": "5ddccb9ef206"
@@ -806,14 +778,6 @@
   "ui.timeline.more": {
     "text": "더 불러오기",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.before": {
-    "text": "이전 값:",
-    "source": "fca574a5a363"
-  },
-  "ui.timeline.after": {
-    "text": "새 값:",
-    "source": "dca4696d7a91"
   },
   "ui.timeline.withheld": {
     "text": "이 변경에 접근할 권한이 없습니다.",

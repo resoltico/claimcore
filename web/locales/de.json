@@ -35,10 +35,6 @@
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
   },
-  "ui.actor": {
-    "text": "Konto",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actorRequestRetained": {
     "text": "Ihre aktuelle Anfrage bleibt erhalten. Setzen Sie sie fort oder verwerfen Sie sie, bevor Sie eine andere Aktion beginnen.",
     "source": "700957242358"
@@ -203,10 +199,6 @@
     "text": "{label} (genau): {reference}",
     "source": "e26d7a9b269c"
   },
-  "ui.exactUtc": {
-    "text": "Genauer UTC-Zeitpunkt",
-    "source": "460d31945df9"
-  },
   "ui.explainFields": {
     "text": "Felder erklären",
     "source": "3593737e2657"
@@ -238,10 +230,6 @@
   "ui.grantsPartial": {
     "text": "Nur einige Rollen werden angezeigt.",
     "source": "391d53d153f3"
-  },
-  "ui.historyNoChanges": {
-    "text": "Keine Angaben wurden geändert.",
-    "source": "0b70fc56218c"
   },
   "ui.includeInactiveWork": {
     "text": "Inaktive Fallbearbeitung einschließen",
@@ -563,14 +551,6 @@
     "text": "Oberfläche neu laden",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderAction": {
-    "text": "Geplante Aufgabe",
-    "source": "5818bdba66cb"
-  },
-  "ui.reminderDetails": {
-    "text": "Wiedervorlagesdetails",
-    "source": "1cd27d608c31"
-  },
   "ui.reminderDue": {
     "text": "Geplantes Datum",
     "source": "37b3b31a9fbe"
@@ -791,14 +771,6 @@
     "text": "Bearbeitung",
     "source": "104ab9213e28"
   },
-  "ui.timeline.details": {
-    "text": "Einzelheiten anzeigen",
-    "source": "1af77ee273cb"
-  },
-  "ui.timeline.nextReminder": {
-    "text": "Nächste Wiedervorlage",
-    "source": "153fddb917f5"
-  },
   "ui.timeline.empty": {
     "text": "Keine Aktivität anzuzeigen.",
     "source": "5ddccb9ef206"
@@ -806,14 +778,6 @@
   "ui.timeline.more": {
     "text": "Mehr laden",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.before": {
-    "text": "Früherer Wert:",
-    "source": "fca574a5a363"
-  },
-  "ui.timeline.after": {
-    "text": "Neuer Wert:",
-    "source": "dca4696d7a91"
   },
   "ui.timeline.withheld": {
     "text": "Sie haben keinen Zugriff auf diese Änderungen.",

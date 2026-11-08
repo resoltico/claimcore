@@ -49,6 +49,7 @@ let internal listBounds (path: string) =
                 ((Vocabulary.entries CaseProgress.vocabulary |> List.map snd)).Length
                 "CaseWorklistCounts.Assignment", 2
                 "CaseWorklistCounts.Due", 5
+                "CaseTimelinePage.Items", 10
                 "ActorReviewItem.Roles", 7
                 "ActorContext.Roles", 7
                 "AuthorityState.Grants", 48
@@ -392,7 +393,13 @@ let private presentedView =
                             }
                     ]
 
-                return ClaimCore.Presentation.View.Table(columns, rows)
+                return
+                    ClaimCore.Presentation.View.Table(
+                        columns,
+                        rows,
+                        rows |> List.map (fun _ -> None),
+                        []
+                    )
             }
         ]
 

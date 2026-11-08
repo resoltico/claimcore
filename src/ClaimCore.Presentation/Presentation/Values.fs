@@ -69,10 +69,27 @@ type Column =
         IsMoney: bool
     }
 
+type PresentedMessage =
+    {
+        MessageId: string
+        Arguments: Map<string, PresentedValue>
+    }
+
+type RowDetail =
+    {
+        Summary: PresentedMessage option
+        Highlights: Section list
+        Sections: Section list
+    }
+
 [<RequireQualifiedAccess>]
 type View =
     | Record of Section list
-    | Table of columns: Column list * rows: PresentedValue list list
+    | Table of
+        columns: Column list *
+        rows: PresentedValue list list *
+        details: RowDetail option list *
+        sections: Section list
 
 type Presented<'data> = { Data: 'data; View: View }
 

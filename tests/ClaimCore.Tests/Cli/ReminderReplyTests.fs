@@ -46,7 +46,12 @@ let private basis: WorkDateBasis =
 let private render language dateBasis value =
     [
         ViewText.render language (Descriptor.reminder value |> Descriptor.recordView)
-        ViewText.render language (Descriptor.tableView Descriptor.reminderColumns [ value ])
+        ViewText.render
+            language
+            (Descriptor.detailedTableView
+                (Descriptor.reminder >> Descriptor.detail)
+                Descriptor.reminderColumns
+                [ value ])
     ]
     |> List.map (fun lines ->
         lines @ [ TextObservation.line language dateBasis ] |> String.concat "\n")

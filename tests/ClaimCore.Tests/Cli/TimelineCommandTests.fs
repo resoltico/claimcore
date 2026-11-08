@@ -82,8 +82,7 @@ let private run arguments (replies: Outcome<CaseTimelinePage> list) =
                         frame
                         (Api.caseTimeline.Output.Write(
                             Presented.outcome
-                                (fun (page: CaseTimelinePage) ->
-                                    Descriptor.tableView Descriptor.timelineColumns page.Items)
+                                (fun (page: CaseTimelinePage) -> Descriptor.timelineView page.Items)
                                 (pending.Dequeue())
                         ))
                     |> Fixtures.accepted
@@ -425,6 +424,34 @@ let tests =
                             run [ "--language"; language ] [ Outcome.Succeeded value ]
 
                         Expect.equal code 0 "Typed timeline text succeeds"
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.moneyWithScale
+                                language
+                                (Inputs.money "123456789.12" "EUR")
+                                2)
+                            "Exact old money survives the endpoint wire view."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.moneyWithScale language (Inputs.money "0" "USD") 2)
+                            "Exact new money survives."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.date language (Inputs.date "2026-11-03"))
+                            "Old date survives."
+
+                        Expect.stringContains
+                            text
+                            (ReplyTextFormat.date language (Inputs.date "2026-11-04"))
+                            "New date survives."
+
+                        Expect.stringContains
+                            text
+                            "First\nsecond"
+                            "Narrative paragraphs survive generic rendering."
 
                         Expect.stringContains
                             text

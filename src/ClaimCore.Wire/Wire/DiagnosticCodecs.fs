@@ -231,7 +231,7 @@ module DiagnosticCodecs =
 
     let private conflictChanges =
         let page =
-            (record (fun entries next ->
+            (record (fun entries next _view ->
                 {
                     ChangePage.Entries = entries
                     NextCursor = next
@@ -242,6 +242,10 @@ module DiagnosticCodecs =
                 _.Entries
                 (list RevisionConflictInfo.MaximumChanges TimelineCodecs.timelineEntry)
             |> field "nextCursor" _.NextCursor (nullable (boundedText 1 512))
+            |> field
+                "view"
+                (fun page -> Descriptor.timelineView page.Entries)
+                PresentationCodecs.view
             |> build
             |> named "ConflictChangePage"
 

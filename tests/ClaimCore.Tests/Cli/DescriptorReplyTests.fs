@@ -381,3 +381,175 @@ let assigneePresentation =
                 Expect.stringContains text "UTC" "Installation zone is rendered"
                 Expect.isFalse (text.Contains "{\"") "No JSON fallback"
                 Expect.isFalse (text.Contains "field.profile") "No untranslated descriptor key")
+
+[<Tests>]
+let fullDirectoryAndAuditDetails =
+    testCase
+        "directory and access history retain authorized details through wire and CLI"
+        (fun () ->
+            let profile =
+                ActorProfile.parse
+                    {
+                        DisplayName = "Earlier profile"
+                        Contact = Some "historical-only@example.test"
+                    }
+                |> Fixtures.accepted
+
+            let principal =
+                PrincipalKey.human "https://historical-issuer.example/" "historical-subject"
+                |> Fixtures.accepted
+
+            let entries =
+                [
+                    AuthorityHistoryFacts.ProfileSet(Some profile)
+                    AuthorityHistoryFacts.Registered principal
+                    AuthorityHistoryFacts.OwnerProvisioned principal
+                ]
+                |> List.mapi (fun index facts ->
+                    {
+                        AuthorityHistoryEntry.Sequence = CaseFixtures.sequence (int64 (index + 1))
+                        RecordedAt = Inputs.workBasis.ObservedAt
+                        RecordedBy = account.Actor
+                        Target = account.Actor
+                        Facts = facts
+                    })
+
+            let history: AuthorityHistoryPage =
+                {
+                    Basis = Inputs.workBasis
+                    Entries = entries
+                    NextCursor = None
+                }
+
+            let view =
+                Descriptor.detailedTableView
+                    (Descriptor.authorityHistory >> Descriptor.detail)
+                    Descriptor.authorityHistoryColumns
+                    history.Entries
+
+            let wire =
+                Presented.create (fun _ -> view) history
+                |> Outcome.Succeeded
+                |> CliReplies.ofValue Api.authorityHistory
+
+            let text =
+                ReplyText.resultLines "en" None (FrameResult.Reply wire) |> String.concat "\n"
+
+            for expected in
+                [
+                    "historical-only@example.test"
+                    "https://historical-issuer.example/"
+                    "historical-subject"
+                ] do
+                Expect.stringContains
+                    text
+                    expected
+                    "The historical fact is preserved by the delivered view."
+
+            let erased =
+                { history with
+                    Entries =
+                        entries
+                        |> List.map (fun item ->
+                            { item with
+                                Facts = AuthorityHistoryFacts.ProfileSet None
+                            })
+                }
+
+            let erasedView =
+                Descriptor.detailedTableView
+                    (Descriptor.authorityHistory >> Descriptor.detail)
+                    Descriptor.authorityHistoryColumns
+                    erased.Entries
+
+            let erasedText = ViewText.render "en" erasedView |> String.concat "\n"
+
+            Expect.isFalse
+                (erasedText.Contains "historical-only@example.test")
+                "Erased historical profiles disclose no retained contact."
+
+            let mixed =
+                { account with
+                    Roles =
+                        [
+                            {
+                                Role = Role.CaseReader
+                                Installation = true
+                                CaseCount = 37L
+                            }
+                            {
+                                Role = Role.CaseHandler
+                                Installation = false
+                                CaseCount = 12L
+                            }
+                        ]
+                }
+
+            let page: ActorReviewPage =
+                {
+                    Basis = Inputs.workBasis
+                    Items = [ mixed ]
+                    NextCursor = None
+                }
+
+            let directory =
+                Presented.create
+                    (fun (value: ActorReviewPage) ->
+                        Descriptor.detailedTableView
+                            (Descriptor.actor >> Descriptor.detail)
+                            Descriptor.actorColumns
+                            value.Items)
+                    page
+                |> Outcome.Succeeded
+                |> CliReplies.ofValue Api.authorityList
+
+            let detailText =
+                ReplyText.resultLines "en" None (FrameResult.Reply directory)
+                |> String.concat "\n"
+
+            for expected in
+                [
+                    "37"
+                    "12"
+                    ReplyTextFormat.label "en" "label.installationRoleAssigned"
+                    ReplyTextFormat.label "en" "label.caseRoleAssignments"
+                    ReplyTextFormat.label "en" "boolean.TRUE.label"
+                    ReplyTextFormat.label "en" "boolean.FALSE.label"
+                ] do
+                Expect.stringContains
+                    detailText
+                    expected
+                    "Global assignments and case counts stay distinguishable.")
+
+[<Tests>]
+let emptyGrantPageDetails =
+    testCase "empty grant pages retain their account presentation through wire and CLI" (fun () ->
+        let target =
+            { account with
+                Contact = Some(ContactText.parse "empty-grants@example.test" |> Fixtures.accepted)
+            }
+
+        let page: AuthorityGrantPage =
+            {
+                Basis = Inputs.workBasis
+                Actor = target
+                Items = []
+                NextCursor = None
+            }
+
+        let reply =
+            Outcome.Succeeded(Presented.create Descriptor.grantPage page)
+            |> CliReplies.ofValue Api.authorityGrants
+
+        let text =
+            ReplyText.resultLines "en" None (FrameResult.Reply reply) |> String.concat "\n"
+
+        Expect.stringContains
+            text
+            "empty-grants@example.test"
+            "No grant row is needed to carry the authorized account facts."
+
+        Expect.stringContains
+            text
+            "https://fixture.example/"
+            "The page retains the principal identity.")

@@ -58,10 +58,10 @@
     <Compile Include="TextTable.fs" />
     <Compile Include="CsvCell.fs" />
     <Compile Include="TimelineCsv.fs" />
+    <Compile Include="ViewText.fs" />
     <Compile Include="DiagnosticText.fs" />
     <Compile Include="CaseCsv.fs" />
     <Compile Include="AuthorityHistoryCsv.fs" />
-    <Compile Include="ViewText.fs" />
     <Compile Include="OperationText.fs" />
     <Compile Include="ReplyText.fs" />
     <Compile Include="RecoveryCommand.fs" />

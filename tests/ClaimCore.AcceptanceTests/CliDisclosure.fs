@@ -19,6 +19,10 @@ let private original (fixture: PublishedFixture.Fixture) =
     let reference = "CLI-DISCLOSURE-" + id ()
     input["operationId"] <- JsonValue.Create(id ())
     (input["target"] |> nonNull)["caseReference"] <- JsonValue.Create reference
+
+    ((input["act"] |> nonNull)["values"] |> nonNull)["incidentDescription"] <-
+        JsonValue.Create "Earlier history\nOriginal exact paragraph"
+
     Encoding.UTF8.GetBytes(source.ToJsonString()), input, reference
 
 let private amend (input: JsonNode) =
@@ -61,7 +65,21 @@ let private staleReview (fixture: PublishedFixture.Fixture) input reference =
                     caseReference = reference
                 |}
             expectedRevision = 1L
-            act = {| kind = "CLOSE" |}
+            act =
+                {|
+                    kind = "AMEND_REGISTRATION"
+                    values =
+                        {|
+                            claimed =
+                                {|
+                                    amount = "9876.5432"
+                                    currency = "EUR"
+                                |}
+                            incidentDate = "2026-09-07"
+                            incidentNotificationDate = "2026-09-08"
+                            incidentDescription = "Distinctive history\nSecond exact line"
+                        |}
+                |}
         |}
 
     automation fixture "operation.execute" close 0 |> require "ACCEPTED" |> ignore
@@ -125,10 +143,154 @@ let private summaryHistory fixture reference =
 
         Expect.equal (changes.EnumerateObject() |> Seq.length) 1 "No historical facts leak"
 
+let private directoryDetails fixture reference =
+    let environment = interactiveEnvironment fixture "synthetic-owner" "valid"
+    let subject = "detail-person-" + id ()
+    let target = principal fixture "HUMAN" subject
+
+    let apply act =
+        run
+            fixture
+            environment
+            (frame
+                "operation.execute"
+                {|
+                    kind = "AUTHORITY"
+                    operationId = id ()
+                    target = target
+                    act = act
+                |})
+            0
+        |> require "ACCEPTED"
+        |> ignore
+
+    apply
+        {|
+            kind = "REGISTER"
+            profile =
+                {|
+                    displayName = subject
+                    contact = "historical-only@example.test"
+                |}
+        |}
+
+    apply
+        {|
+            kind = "SET_PROFILE"
+            profile =
+                {|
+                    displayName = subject
+                    contact = "current-only@example.test"
+                |}
+        |}
+
+    let accounts =
+        verb fixture environment [ "authority"; "list"; "--text"; subject ] 0
+        |> require "SUCCEEDED"
+
+    let actorId =
+        accounts.GetProperty("items").EnumerateArray()
+        |> Seq.exactlyOne
+        |> fun item -> item.GetProperty("actor").GetProperty("actorId").GetString() |> nonNull
+
+    let noGrants =
+        invoke
+            fixture
+            environment
+            [ "authority"; "grants"; actorId; "--format"; "text" ]
+            Array.empty
+            0
+        |> fun result -> Encoding.UTF8.GetString result.StandardOutput
+
+    Expect.stringContains
+        noGrants
+        "current-only@example.test"
+        "An empty real grant page retains its authorized account details."
+
+    apply
+        {|
+            kind = "GRANT"
+            role = "CASE_READER"
+            scope = {| kind = "INSTALLATION" |}
+        |}
+
+    apply
+        {|
+            kind = "GRANT"
+            role = "CASE_HANDLER"
+            scope =
+                {|
+                    kind = "CASE"
+                    target =
+                        {|
+                            kind = "REFERENCE"
+                            caseReference = reference
+                        |}
+                |}
+        |}
+
+    let directory =
+        invoke
+            fixture
+            environment
+            [ "authority"; "list"; "--text"; subject; "--format"; "text" ]
+            Array.empty
+            0
+        |> fun result -> Encoding.UTF8.GetString result.StandardOutput
+
+    Expect.isTrue
+        (System.Text.RegularExpressions.Regex.IsMatch(directory, "Case role assignments\\s*:\\s*1"))
+        "The real directory includes scoped role counts."
+
+    Expect.stringContains directory "Yes" "Installation-wide roles remain distinguishable."
+    Expect.stringContains directory "No" "Case-only roles remain distinguishable."
+
+    let history =
+        invoke
+            fixture
+            environment
+            [ "authority"; "history"; "--limit"; "50"; "--format"; "text" ]
+            Array.empty
+            0
+        |> fun result -> Encoding.UTF8.GetString result.StandardOutput
+
+    Expect.stringContains
+        history
+        "historical-only@example.test"
+        "Historical contact survives a later profile change."
+
+    Expect.stringContains history subject "Historical registered principal subject remains visible."
+
 let private qualify fixture =
     let source, input, reference = original fixture
     let accepted = run fixture fixture.Environment source 0 |> require "ACCEPTED"
     staleReview fixture input reference
+
+    let textTimeline () =
+        invoke
+            fixture
+            fixture.Environment
+            [ "case"; "timeline"; reference; "--format"; "text" ]
+            Array.empty
+            0
+        |> fun result -> Encoding.UTF8.GetString result.StandardOutput
+
+    let full = textTimeline ()
+
+    for expected in
+        [
+            "1,000.00 EUR"
+            "9,876.5432 EUR"
+            "1 Aug 2026"
+            "7 Sep 2026"
+            "Distinctive history\nSecond exact line"
+            "Earlier history\nOriginal exact paragraph"
+        ] do
+        Expect.stringContains
+            full
+            expected
+            "Real endpoint-to-CLI full history preserves exact earlier and later facts."
+
     let target = principal fixture "SERVICE" "service"
     setGrant fixture target "CASE_REGISTRAR" true
     setGrant fixture target "CASE_HANDLER" false
@@ -161,7 +323,22 @@ let private qualify fixture =
 
     lookupReceipt fixture operationId |> withheldReceipt
 
+    directoryDetails fixture reference
     summaryHistory fixture reference
+    let summary = textTimeline ()
+
+    for secret in
+        [
+            "9,876.5432"
+            "Distinctive history"
+            "Second exact line"
+            "Earlier history"
+            "Original exact paragraph"
+            "7 Sep 2026"
+        ] do
+        Expect.isFalse
+            (summary.Contains secret)
+            "SUMMARY history does not leak exact differences through presentation."
 
 let published () =
     task {

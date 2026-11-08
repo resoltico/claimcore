@@ -6,7 +6,9 @@ it("renders a supplied additional date without consulting business field declara
   render(
     <TableView
       view={{
+        details: [null],
         kind: "TABLE",
+        sections: [],
         columns: [
           {
             key: "future-date",
@@ -26,7 +28,9 @@ it("keeps headers for an empty page", () => {
   render(
     <TableView
       view={{
+        details: [],
         kind: "TABLE",
+        sections: [],
         columns: [
           {
             key: "future-value",

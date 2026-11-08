@@ -259,8 +259,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.caseTimeline
-                (fun (reply: CaseTimelinePage) ->
-                    Descriptor.tableView Descriptor.timelineColumns reply.Items)
+                (fun (reply: CaseTimelinePage) -> Descriptor.timelineView reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -314,7 +313,10 @@ let private replies () : IEndpointOutput list =
             read
                 Api.reminders
                 (fun (reply: ReminderPage) ->
-                    Descriptor.tableView Descriptor.reminderColumns reply.Items)
+                    Descriptor.detailedTableView
+                        (Descriptor.reminder >> Descriptor.detail)
+                        Descriptor.reminderColumns
+                        reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -325,7 +327,10 @@ let private replies () : IEndpointOutput list =
             read
                 Api.authorityList
                 (fun (reply: ActorReviewPage) ->
-                    Descriptor.tableView Descriptor.actorColumns reply.Items)
+                    Descriptor.detailedTableView
+                        (Descriptor.actor >> Descriptor.detail)
+                        Descriptor.actorColumns
+                        reply.Items)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -335,8 +340,7 @@ let private replies () : IEndpointOutput list =
         yield!
             read
                 Api.authorityGrants
-                (fun (reply: AuthorityGrantPage) ->
-                    Descriptor.tableView Descriptor.grantColumns reply.Items)
+                (fun (reply: AuthorityGrantPage) -> Descriptor.grantPage reply)
                 (Outcome.Succeeded
                     {
                         Basis = basis
@@ -348,7 +352,10 @@ let private replies () : IEndpointOutput list =
             read
                 Api.authorityHistory
                 (fun (reply: AuthorityHistoryPage) ->
-                    Descriptor.tableView Descriptor.authorityHistoryColumns reply.Entries)
+                    Descriptor.detailedTableView
+                        (Descriptor.authorityHistory >> Descriptor.detail)
+                        Descriptor.authorityHistoryColumns
+                        reply.Entries)
                 (Outcome.Succeeded
                     {
                         Basis = basis

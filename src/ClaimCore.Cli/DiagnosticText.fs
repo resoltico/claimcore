@@ -88,34 +88,13 @@ module internal DiagnosticText =
                 (CliMessages.key CliMessage.NextLabel)
                 (MessageCatalogs.renderCli language message))
 
-    let private conflictEntry language (entry: CaseTimelineEntry) =
-        let name = actorName language entry.RecordedBy |> Some |> displayed language
-        let heading = name + " · " + instant entry.RecordedAt
-
-        let changes =
-            match entry.Changes with
-            | TimelineChanges.Withheld -> [ label language "label.changesWithheld" ]
-            | TimelineChanges.Erased -> [ label language "label.changesErased" ]
-            | TimelineChanges.Disclosed disclosure ->
-                disclosure.Items
-                |> List.collect TimelineCsv.scalarDifferences
-                |> List.map (fun (key, before, after) ->
-                    let field =
-                        Vocabulary.tryParse BusinessField.vocabulary key
-                        |> Option.map (FieldPresentation.labelId >> label language)
-                        |> Option.defaultValue (TerminalText.data key)
-
-                    field + ": " + TerminalText.data before + " → " + TerminalText.data after)
-
-        heading :: changes
-
-    let private conflictLines language reference =
+    let private conflictLines view language reference =
         function
         | Refusal.RevisionConflict conflict ->
             match conflict.Changes with
             | Some ConflictChanges.Withheld -> [ label language "label.changesWithheld" ]
             | Some(ConflictChanges.Page page) ->
-                (page.Entries |> List.collect (conflictEntry language))
+                (view |> Option.map (ViewText.render language) |> Option.defaultValue [])
                 @ (match reference, page.NextCursor with
                    | Some reference, Some cursor ->
                        [
@@ -139,7 +118,7 @@ module internal DiagnosticText =
             | None -> []
         | _ -> []
 
-    let refusalLinesFor language reference refusal =
+    let refusalLinesWithView view language reference refusal =
         let render code parameters =
             let arguments =
                 parameters
@@ -208,7 +187,7 @@ module internal DiagnosticText =
                 | _ -> [ message ]
 
         messages
-        @ conflictLines language reference refusal
+        @ conflictLines view language reference refusal
         @ [
             line language (CliMessages.key CliMessage.CodeLabel) (DiagnosticCodecs.code refusal)
         ]
@@ -219,6 +198,9 @@ module internal DiagnosticText =
              | Refusal.Access(AccessRefusal.NotAuthorized required) -> Some required
              | _ -> None)
             refusal.Action
+
+    let refusalLinesFor language reference refusal =
+        refusalLinesWithView None language reference refusal
 
     let refusalLines language refusal = refusalLinesFor language None refusal
 

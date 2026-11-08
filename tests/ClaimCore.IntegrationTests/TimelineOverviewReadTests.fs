@@ -279,21 +279,20 @@ let private stalePreview ids core number identity expected =
 let private conflictContinuation core (changes: ChangePage) =
     let cursor =
         changes.NextCursor
-        |> Option.defaultWith (fun () ->
-            failtest "A fifty-entry conflict must issue its continuation")
+        |> Option.defaultWith (fun () -> failtest "A bounded conflict must issue its continuation")
 
-    let page = page core None (Some cursor) 50
+    let rec remaining cursor accumulated =
+        let current = page core None (Some cursor) 50
+        Expect.isLessThanOrEqual current.Items.Length 10 "Full-detail pages remain bounded."
+        let items = accumulated @ current.Items
 
-    Expect.isNone
-        page.NextCursor
-        "Only the scoped paired birth remains after its fifty newer changes"
+        match current.NextCursor with
+        | Some next -> remaining next items
+        | None -> items
 
-    Expect.equal
-        page.Items.Length
-        1
-        "The continuation remains confined to one entity/revision range"
-
-    List.head page.Items
+    let items = remaining cursor []
+    Expect.equal items.Length 41 "Every remaining entry is confined to the observed entity range."
+    List.last items
 
 [<Tests>]
 let tests =
@@ -494,10 +493,10 @@ let tests =
 
                     Expect.equal
                         originalPage.Entries.Length
-                        50
-                        "Existing conflict admission budget remains fifty"
+                        10
+                        "Full-detail conflict pages preserve the response bound"
 
-                    Expect.equal nextPage.Entries.Length 50 "Next range obeys the same budget"
+                    Expect.equal nextPage.Entries.Length 10 "Next range obeys the same budget"
 
                     execute
                         core
@@ -610,7 +609,10 @@ let tests =
                         "Birth context is scoped before overview construction"
 
                     let birthWire =
-                        Codec.encode TimelineCodecs.timelineEntry nextBirth
+                        TimelineCodecs.timelineEntry.Write nextBirth
+                        |> JsonValue.tryMember "changes"
+                        |> Option.get
+                        |> CanonicalWriter.bytes
                         |> Encoding.UTF8.GetString
 
                     for forbidden in
@@ -625,11 +627,17 @@ let tests =
                             "Next paired effect excludes original action/date and later updates"
 
                     let oldWire =
-                        Codec.encode TimelineCodecs.timelineEntry oldEntry
+                        TimelineCodecs.timelineEntry.Write oldEntry
+                        |> JsonValue.tryMember "changes"
+                        |> Option.get
+                        |> CanonicalWriter.bytes
                         |> Encoding.UTF8.GetString
 
                     let nextWire =
-                        Codec.encode TimelineCodecs.timelineEntry nextEntry
+                        TimelineCodecs.timelineEntry.Write nextEntry
+                        |> JsonValue.tryMember "changes"
+                        |> Option.get
+                        |> CanonicalWriter.bytes
                         |> Encoding.UTF8.GetString
 
                     for forbidden in
@@ -768,7 +776,7 @@ let tests =
                             (Outcome.Succeeded(
                                 Presented.create
                                     (fun (page: CaseTimelinePage) ->
-                                        Descriptor.tableView Descriptor.timelineColumns page.Items)
+                                        Descriptor.timelineView page.Items)
                                     reply
                             ))
                         |> Encoding.UTF8.GetString

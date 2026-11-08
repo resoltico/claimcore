@@ -329,9 +329,71 @@ let nextAndConflicts =
                             )
                         )
 
+                    let admitted =
+                        CliReplies.ofValue
+                            Api.operationExecute
+                            {
+                                PresentedExecuteReply.OperationId =
+                                    System.Guid.Parse "10000000-0000-7000-8000-000000000001"
+                                Outcome = PresentedExecuteResult.Rejected refusal
+                            }
+
+                    let supplied =
+                        Descriptor.recordView
+                            [
+                                {
+                                    TitleId = "label.changes"
+                                    Entries =
+                                        [
+                                            {
+                                                Key = "future-server-change"
+                                                LabelId = "label.after"
+                                                Prominence = Prominence.Primary
+                                                Value =
+                                                    PresentedValue.Text
+                                                        "SUPPLIED CLI CONFLICT VIEW"
+                                            }
+                                        ]
+                                }
+                            ]
+
+                    let rec replace =
+                        function
+                        | ClaimCore.Json.JsonValue.Object fields ->
+                            fields
+                            |> List.map (fun (key, value) ->
+                                key,
+                                if key = "view" then
+                                    PresentationCodecs.view.Write supplied
+                                else
+                                    replace value)
+                            |> ClaimCore.Json.JsonValue.Object
+                        | other -> other
+
+                    let custom =
+                        ServiceReply.read admitted.Route (replace admitted.Wire)
+                        |> Fixtures.accepted
+
+                    let customText =
+                        ReplyText.resultLines "en" None (FrameResult.Reply custom)
+                        |> String.concat "\n"
+
+                    Expect.stringContains
+                        customText
+                        "SUPPLIED CLI CONFLICT VIEW"
+                        "CLI consumes the admitted view instead of reconstructing business fields."
+
+                    Expect.isFalse
+                        (customText.Contains "Change 50")
+                        "Typed diagnostic data cannot replace supplied presentation."
+
                     for language in LocalizationPolicy.languages do
                         let output =
-                            DiagnosticText.refusalLinesFor language (Some "CASE-1") refusal
+                            DiagnosticText.refusalLinesWithView
+                                (Some(Descriptor.timelineView entries))
+                                language
+                                (Some "CASE-1")
+                                refusal
                             |> String.concat "\n"
 
                         Expect.stringContains output "Editor 1" "First supplied author"

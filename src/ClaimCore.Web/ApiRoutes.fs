@@ -29,13 +29,15 @@ module internal ApiRoutes =
             Route.read
                 Api.reminders
                 (fun (reply: ReminderPage) ->
-                    Descriptor.tableView Descriptor.reminderColumns reply.Items)
+                    Descriptor.detailedTableView
+                        (Descriptor.reminder >> Descriptor.detail)
+                        Descriptor.reminderColumns
+                        reply.Items)
                 Service.reminders
         | ActorEndpoint.Query QueryEndpoint.CaseTimeline ->
             Route.read
                 Api.caseTimeline
-                (fun (reply: CaseTimelinePage) ->
-                    Descriptor.tableView Descriptor.timelineColumns reply.Items)
+                (fun (reply: CaseTimelinePage) -> Descriptor.timelineView reply.Items)
                 Service.timeline
         | ActorEndpoint.Query QueryEndpoint.Context ->
             Route.read Api.context (Descriptor.context >> Descriptor.recordView) Service.context
@@ -73,19 +75,21 @@ module internal ApiRoutes =
             Route.read
                 Api.authorityList
                 (fun (reply: ActorReviewPage) ->
-                    Descriptor.tableView Descriptor.actorColumns reply.Items)
+                    Descriptor.detailedTableView
+                        (Descriptor.actor >> Descriptor.detail)
+                        Descriptor.actorColumns
+                        reply.Items)
                 Service.actors
         | ActorEndpoint.Query QueryEndpoint.AuthorityGrants ->
-            Route.read
-                Api.authorityGrants
-                (fun (reply: AuthorityGrantPage) ->
-                    Descriptor.tableView Descriptor.grantColumns reply.Items)
-                Service.grants
+            Route.read Api.authorityGrants Descriptor.grantPage Service.grants
         | ActorEndpoint.Query QueryEndpoint.AuthorityHistory ->
             Route.read
                 Api.authorityHistory
                 (fun (reply: AuthorityHistoryPage) ->
-                    Descriptor.tableView Descriptor.authorityHistoryColumns reply.Entries)
+                    Descriptor.detailedTableView
+                        (Descriptor.authorityHistory >> Descriptor.detail)
+                        Descriptor.authorityHistoryColumns
+                        reply.Entries)
                 Service.authorityHistory
         | ActorEndpoint.Query QueryEndpoint.AuthorityRequests ->
             Route.read

@@ -59,10 +59,6 @@
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
   },
-  "ui.actor": {
-    "text": "الحساب",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actorRequestRetained": {
     "text": "طلبك الحالي محفوظ. تابعه أو تجاهله قبل بدء إجراء آخر.",
     "source": "700957242358"
@@ -251,10 +247,6 @@
     "text": "{label} (دقيق): {reference}",
     "source": "e26d7a9b269c"
   },
-  "ui.exactUtc": {
-    "text": "الوقت الدقيق بتوقيت UTC",
-    "source": "460d31945df9"
-  },
   "ui.explainFields": {
     "text": "شرح الحقول",
     "source": "3593737e2657"
@@ -286,10 +278,6 @@
   "ui.grantsPartial": {
     "text": "تظهر بعض الأدوار فقط.",
     "source": "391d53d153f3"
-  },
-  "ui.historyNoChanges": {
-    "text": "لم تتغير التفاصيل.",
-    "source": "0b70fc56218c"
   },
   "ui.includeInactiveWork": {
     "text": "تضمين عمل الملفات غير النشطة",
@@ -611,14 +599,6 @@
     "text": "إعادة تحميل الواجهة",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderAction": {
-    "text": "الإجراء المخطط",
-    "source": "5818bdba66cb"
-  },
-  "ui.reminderDetails": {
-    "text": "تفاصيل التذكير",
-    "source": "1cd27d608c31"
-  },
   "ui.reminderDue": {
     "text": "التاريخ المخطط",
     "source": "37b3b31a9fbe"
@@ -803,21 +783,9 @@
     "text": "مطابقة الجهاز",
     "source": "5e4aca65d4a4"
   },
-  "ui.timeline.after": {
-    "text": "القيمة الجديدة:",
-    "source": "dca4696d7a91"
-  },
   "ui.timeline.all": {
     "text": "الكل",
     "source": "75304cf77db0"
-  },
-  "ui.timeline.before": {
-    "text": "القيمة السابقة:",
-    "source": "fca574a5a363"
-  },
-  "ui.timeline.details": {
-    "text": "عرض التفاصيل",
-    "source": "1af77ee273cb"
   },
   "ui.timeline.empty": {
     "text": "لا يوجد نشاط لعرضه.",
@@ -834,10 +802,6 @@
   "ui.timeline.more": {
     "text": "تحميل المزيد",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.nextReminder": {
-    "text": "التذكير التالي",
-    "source": "153fddb917f5"
   },
   "ui.timeline.title": {
     "text": "النشاط",

@@ -73,8 +73,8 @@ let tests =
 
                 Expect.equal
                     first.Entries.Length
-                    50
-                    "Large ranges honor the owner's fifty-entry budget"
+                    10
+                    "Large ranges preserve full details within the response cap"
 
                 Expect.isSome first.NextCursor "The remaining changes have a continuation"
 
@@ -87,7 +87,7 @@ let tests =
 
                 Expect.equal
                     (revisions first.Entries)
-                    [ 61L .. (-1L) .. 12L ]
+                    [ 61L .. (-1L) .. 52L ]
                     "The first page is the expected-to-observed case range"
 
                 Expect.isTrue
@@ -109,25 +109,37 @@ let tests =
                 let! later = caseWrite fixture owner 77101 61L (update "6000")
                 accepted later |> ignore
 
-                let! rest =
-                    Service.timeline
-                        owner
-                        {
-                            Target = CaseSelector.Reference "CONFLICT-1"
-                            Filter = None
-                            AfterCursor = first.NextCursor
-                            Limit = 50
-                        }
-                        token
+                let all = ResizeArray<CaseTimelineEntry>()
+                let mutable nextCursor = first.NextCursor
 
-                let rest = read rest
+                while nextCursor.IsSome do
+                    let! result =
+                        Service.timeline
+                            owner
+                            {
+                                Target = CaseSelector.Reference "CONFLICT-1"
+                                Filter = None
+                                AfterCursor = nextCursor
+                                Limit = 50
+                            }
+                            token
+
+                    let current = read result
+
+                    Expect.isLessThanOrEqual
+                        current.Items.Length
+                        10
+                        "Continuation respects the full-detail response bound."
+
+                    all.AddRange current.Items
+                    nextCursor <- current.NextCursor
+
+                let rest = List.ofSeq all
 
                 Expect.equal
-                    (revisions rest.Items)
-                    [ 11L .. (-1L) .. 2L ]
-                    "Later writes cannot extend an already observed conflict range"
-
-                Expect.isNone rest.NextCursor "The bounded range finishes exactly"
+                    (revisions rest)
+                    [ 51L .. (-1L) .. 2L ]
+                    "Paging covers the exact observed range without future writes."
 
                 let registrar =
                     PrincipalKey.human "https://issuer.example/" "summary-registrar"

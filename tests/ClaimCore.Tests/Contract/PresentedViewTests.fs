@@ -59,7 +59,7 @@ let tests =
                     "The host must be able to deliver authored payment intent.")
             testCase "table retains empty-page metadata and exact supplied values" (fun () ->
                 let literal =
-                    """{"kind":"TABLE","columns":[{"key":"future-count","labelId":"label.sequence","prominence":"PRIMARY","isMoney":false}],"rows":[[{"kind":"COUNT","value":7}]]}"""
+                    """{"kind":"TABLE","columns":[{"key":"future-count","labelId":"label.sequence","prominence":"PRIMARY","isMoney":false}],"rows":[[{"kind":"COUNT","value":7}]],"details":[null],"sections":[]}"""
 
                 let column =
                     {
@@ -71,15 +71,19 @@ let tests =
 
                 Expect.equal
                     (decode literal)
-                    (Ok(View.Table([ column ], [ [ PresentedValue.Count 7L ] ])))
+                    (Ok(View.Table([ column ], [ [ PresentedValue.Count 7L ] ], [ None ], [])))
                     "Row order and values are supplied."
 
-                let empty = View.Table([ column ], [])
+                let empty = View.Table([ column ], [], [], [])
 
                 Expect.equal
                     (decode (Codec.encode PresentationCodecs.view empty |> Encoding.UTF8.GetString))
                     (Ok empty)
                     "An empty page still owns its columns."
+
+                Expect.isError
+                    (decode (literal.Replace("\"details\":[null]", "\"details\":[]")))
+                    "Every supplied row has exactly one detail slot."
 
                 Expect.isError
                     (decode (literal.Replace("[[{\"kind\":\"COUNT\",\"value\":7}]]", "[[]]")))

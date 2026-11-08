@@ -5,6 +5,7 @@ open System.Globalization
 open System.Text
 open ClaimCore.Wire
 open ClaimCore.Presentation
+open ClaimCore.Application.Contracts
 open ClaimCore.Domain
 open ClaimCore.Json
 
@@ -121,7 +122,30 @@ module internal ReplyText =
             readPresenter Api.logout (fun language reply -> ViewText.render language reply.View)
 
     let private replyLines language request (reply: ServiceReply) =
-        presenterFor reply.Route.Id language request reply
+        let refusal =
+            match reply.Route.Id with
+            | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Preview) ->
+                ServiceReply.value Api.operationPreview reply
+                |> Option.bind (fun value ->
+                    match value.Outcome with
+                    | Outcome.Rejected refusal -> Some refusal
+                    | _ -> None)
+            | EndpointId.Actor(ActorEndpoint.Operation OperationEndpoint.Execute) ->
+                ServiceReply.value Api.operationExecute reply
+                |> Option.bind (fun value ->
+                    match value.Outcome with
+                    | PresentedExecuteResult.Rejected refusal -> Some refusal
+                    | _ -> None)
+            | _ -> None
+
+        match refusal with
+        | Some(Refusal.RevisionConflict _ as refusal) ->
+            DiagnosticText.refusalLinesWithView
+                (ServiceReply.conflictView reply)
+                language
+                (DiagnosticText.reference request)
+                refusal
+        | _ -> presenterFor reply.Route.Id language request reply
 
     let resultLines language request =
         function

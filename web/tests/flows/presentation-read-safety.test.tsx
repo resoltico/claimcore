@@ -95,7 +95,9 @@ const readReply = (url: string, value: string, missing: boolean) => {
   if (url.endsWith("/case.timeline")) {
     if (!missing) {
       return transportResponse("case.timeline", "SUCCEEDED", historyReply(value), 200, {
+        details: [null],
         kind: "TABLE",
+        sections: [],
         columns: [
           {
             key: "serverReference",

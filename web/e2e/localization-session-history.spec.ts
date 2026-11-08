@@ -1,3 +1,5 @@
+import { applyAuthority } from "./authority-setup";
+import { operationId as mintOperationId } from "../src/operation/operationId";
 import { showAccountActions } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { randomUUID } from "node:crypto";
@@ -41,9 +43,10 @@ test("updates supplied records and timeline immediately with independent format 
     ).toBeVisible();
     expect(await history.evaluate((element, prior) => element === prior, original)).toBe(true);
     await expectPreferences(page, { displayLocale: "ar-EG" });
-    await expect(
-      page.locator(".case-workspace .record-view [data-entry='claimedAmount']"),
-    ).toContainText("١٬٢٠٠٫٥٠");
+    await history.locator("details > summary").click();
+    await expect(history.locator("details")).toContainText("١٬٢٠٠٫٥٠");
+    await expect(history.locator("details")).toContainText("Synthetic claimant");
+    await history.locator("details > summary").click();
   }
   expect(requests).toHaveLength(0);
 });
@@ -89,4 +92,56 @@ test("preserves language and independent display preferences through real logout
   });
   await selectLanguage(page, "en");
   await logout(page);
+});
+
+test("keeps exact old and new facts in the real timeline view", async ({ page }) => {
+  await openAuthenticated(page);
+  await selectFormat(page, "en-GB");
+  const reference = `EXACT-HISTORY-${randomUUID()}`;
+  await openCase(page, reference);
+  await applyAuthority(page, {
+    kind: "CASE",
+    operationId: mintOperationId(),
+    target: { kind: "REFERENCE", caseReference: reference },
+    expectedRevision: 1,
+    act: {
+      kind: "AMEND_REGISTRATION",
+      values: { incidentDescription: "Earlier browser history\nOriginal exact paragraph" },
+    },
+  });
+  await applyAuthority(page, {
+    kind: "CASE",
+    operationId: mintOperationId(),
+    target: { kind: "REFERENCE", caseReference: reference },
+    expectedRevision: 2,
+    act: {
+      kind: "AMEND_REGISTRATION",
+      values: {
+        claimed: { amount: "9876.5432", currency: "EUR" },
+        incidentDate: "2026-09-07",
+        incidentNotificationDate: "2026-09-08",
+        incidentDescription: "Distinctive browser history\nSecond exact paragraph",
+      },
+    },
+  });
+  await page.reload();
+  const row = page.locator(".case-timeline-panel tbody > tr").filter({ hasText: "9,876.5432 EUR" });
+  await expect(row).toHaveCount(1);
+  await row.locator("details > summary").click();
+  await expect(row.locator("details")).toContainText("1,200.50 EUR");
+  await expect(row.locator("details")).toContainText("9,876.5432 EUR");
+  await expect(row.locator("details")).toContainText("01/09/2026");
+  await expect(row.locator("details")).toContainText("07/09/2026");
+  expect(
+    await row
+      .locator("details")
+      .locator('[data-section="field.incidentDescription.label"] [data-entry$=".before"] bdi')
+      .textContent(),
+  ).toBe("Earlier browser history\nOriginal exact paragraph");
+  expect(
+    await row
+      .locator("details")
+      .locator('[data-section="field.incidentDescription.label"] [data-entry$=".after"] bdi')
+      .textContent(),
+  ).toBe("Distinctive browser history\nSecond exact paragraph");
 });

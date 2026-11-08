@@ -6771,7 +6771,7 @@
               "$ref": "#/components/schemas/CaseTimelineEntry"
             },
             "minItems": 0,
-            "maxItems": 50
+            "maxItems": 10
           },
           "nextCursor": {
             "oneOf": [
@@ -7404,11 +7404,15 @@
                 "type": "null"
               }
             ]
+          },
+          "view": {
+            "$ref": "#/components/schemas/PresentedView"
           }
         },
         "required": [
           "entries",
-          "nextCursor"
+          "nextCursor",
+          "view"
         ]
       },
       "ConflictChanges": {
@@ -9972,6 +9976,24 @@
           "entryHash"
         ]
       },
+      "PresentedArgument": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "value": {
+            "$ref": "#/components/schemas/PresentedValue"
+          }
+        },
+        "required": [
+          "key",
+          "value"
+        ]
+      },
       "PresentedChange": {
         "type": "object",
         "additionalProperties": false,
@@ -11347,6 +11369,67 @@
           "labelId"
         ]
       },
+      "PresentedMessage": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "messageId": {
+            "type": "string",
+            "pattern": "^[A-Za-z][A-Za-z0-9_.]*(?![\\s\\S])",
+            "minLength": 1,
+            "maxLength": 256
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedArgument"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "messageId",
+          "arguments"
+        ]
+      },
+      "PresentedRowDetail": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "summary": {
+            "oneOf": [
+              {
+                "$ref": "#/components/schemas/PresentedMessage"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
+          }
+        },
+        "required": [
+          "summary",
+          "highlights",
+          "sections"
+        ]
+      },
       "PresentedScalar": {
         "oneOf": [
           {
@@ -11855,12 +11938,37 @@
             },
             "minItems": 0,
             "maxItems": 50
+          },
+          "details": {
+            "type": "array",
+            "items": {
+              "oneOf": [
+                {
+                  "$ref": "#/components/schemas/PresentedRowDetail"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "minItems": 0,
+            "maxItems": 50
+          },
+          "sections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PresentedSection"
+            },
+            "minItems": 0,
+            "maxItems": 324
           }
         },
         "required": [
           "kind",
           "columns",
-          "rows"
+          "rows",
+          "details",
+          "sections"
         ]
       },
       "PreviewReply": {

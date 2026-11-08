@@ -35,10 +35,6 @@
     "text": "{label}：{meaning}",
     "source": "7216b2a9dae5"
   },
-  "ui.actor": {
-    "text": "アカウント",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actorRequestRetained": {
     "text": "現在のリクエストは保持されています。別の操作を始める前に、続行するか破棄してください。",
     "source": "700957242358"
@@ -203,10 +199,6 @@
     "text": "{label}（正確な値）：{reference}",
     "source": "e26d7a9b269c"
   },
-  "ui.exactUtc": {
-    "text": "正確なUTC時刻",
-    "source": "460d31945df9"
-  },
   "ui.explainFields": {
     "text": "項目の説明",
     "source": "3593737e2657"
@@ -238,10 +230,6 @@
   "ui.grantsPartial": {
     "text": "一部の役割だけを表示しています。",
     "source": "391d53d153f3"
-  },
-  "ui.historyNoChanges": {
-    "text": "情報の変更はありません。",
-    "source": "0b70fc56218c"
   },
   "ui.includeInactiveWork": {
     "text": "対象外の案件業務を含める",
@@ -563,14 +551,6 @@
     "text": "画面を再読み込み",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderAction": {
-    "text": "予定された作業",
-    "source": "5818bdba66cb"
-  },
-  "ui.reminderDetails": {
-    "text": "リマインダーの詳細",
-    "source": "1cd27d608c31"
-  },
   "ui.reminderDue": {
     "text": "予定日",
     "source": "37b3b31a9fbe"
@@ -791,14 +771,6 @@
     "text": "業務",
     "source": "104ab9213e28"
   },
-  "ui.timeline.details": {
-    "text": "詳細を表示",
-    "source": "1af77ee273cb"
-  },
-  "ui.timeline.nextReminder": {
-    "text": "次のリマインダー",
-    "source": "153fddb917f5"
-  },
   "ui.timeline.empty": {
     "text": "表示する活動はありません。",
     "source": "5ddccb9ef206"
@@ -806,14 +778,6 @@
   "ui.timeline.more": {
     "text": "さらに読み込む",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.before": {
-    "text": "以前の値：",
-    "source": "fca574a5a363"
-  },
-  "ui.timeline.after": {
-    "text": "新しい値：",
-    "source": "dca4696d7a91"
   },
   "ui.timeline.withheld": {
     "text": "これらの変更へのアクセス権がありません。",

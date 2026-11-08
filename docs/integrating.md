@@ -59,8 +59,12 @@ responsibilities. Contract identity derives from canonical OpenAPI; locale-only 
 
 Successful read outcomes carry sibling `data` and `view`. Accepted/replayed receipts and accepted
 operation lookup do likewise. A `view` is either `RECORD` with labelled sections/entries, or `TABLE` with
-column definitions and equally sized rows. Empty tables retain their columns. Values distinguish exact
-money, dates, instants, actors, references, counts, codes, narratives and explicit absence.
+column definitions, equally sized rows, generic page `sections` and one nullable `details` slot per row.
+Page sections retain facts independent of rows, including the account on an empty grant page. Each detail contains an
+optional localized-message descriptor with typed arguments, Core-selected highlight sections, and full
+record sections. Render these generically; preserve row correspondence and use the supplied view for
+initial conflict pages and successful continuations. Empty tables retain their columns. Values distinguish
+exact money, dates, instants, actors, references, counts, codes, narratives and explicit absence.
 
 The host computes the view through Presentation.Descriptor. Render it generically using the selected
 language and regional formats. Do not maintain a second per-field display list or derive eligibility,
@@ -158,9 +162,13 @@ being entitled to acceptance metadata does not imply access to its business data
 clear disclosed views; an obsolete response cannot populate a replacement context.
 
 `case.timeline` combines case, work and reminder changes by descending ledger sequence. Optional FACTS
-or WORK filtering applies in Core. Disclosed differences include full `items` and a core event/overview;
+or WORK filtering applies in Core. Disclosed differences include full `items` and a core event/overview.
+Timeline and initial conflict pages return at most ten entries, even when `limit` requests up to 50,
+to retain full details within the 4 MiB response envelope. Follow issued cursors for the remaining entries.
+
 WITHHELD and ERASED contain no difference payload. Overview highlights refer to supplied items/facets;
-validate their relationships and use the generated helper rather than choosing other changes.
+integration consumers validate their relationships. Human clients render the supplied highlights and full
+detail sections rather than selecting or reconstructing business fields.
 
 A revision conflict can supply WITHHELD or a bounded page of fifty timeline entries. Its continuation
 uses `case.timeline` for the same target without a filter and retains the observed version range.

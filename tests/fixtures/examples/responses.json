@@ -44,7 +44,9 @@
                 "isMoney": false
               }
             ],
-            "rows": []
+            "rows": [],
+            "details": [],
+            "sections": []
           }
         }
       },
@@ -106,7 +108,11 @@
                   "value": "2026-01-01T00:00:00.000000Z"
                 }
               ]
-            ]
+            ],
+            "details": [
+              null
+            ],
+            "sections": []
           }
         }
       },
@@ -209,7 +215,12 @@
                   }
                 }
               ]
-            ]
+            ],
+            "details": [
+              null,
+              null
+            ],
+            "sections": []
           }
         }
       }
@@ -261,7 +272,11 @@
                   "value": "2026-11-04T00:00:00.000000Z"
                 }
               ]
-            ]
+            ],
+            "details": [
+              null
+            ],
+            "sections": []
           }
         }
       }
@@ -332,7 +347,11 @@
                   }
                 }
               ]
-            ]
+            ],
+            "details": [
+              null
+            ],
+            "sections": []
           }
         }
       }
@@ -717,7 +736,13 @@
                   "value": "CASE-003"
                 }
               ]
-            ]
+            ],
+            "details": [
+              null,
+              null,
+              null
+            ],
+            "sections": []
           }
         }
       }
@@ -1139,7 +1164,13 @@
                   "value": "2026-01-01T12:00:00.000000Z"
                 }
               ]
-            ]
+            ],
+            "details": [
+              null,
+              null,
+              null
+            ],
+            "sections": []
           }
         }
       },
@@ -1822,7 +1853,13 @@
                   "value": "Contact insurer"
                 }
               ]
-            ]
+            ],
+            "details": [
+              null,
+              null,
+              null
+            ],
+            "sections": []
           }
         }
       }

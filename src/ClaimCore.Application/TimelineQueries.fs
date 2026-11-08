@@ -9,6 +9,8 @@ module internal TimelineQueries =
     open TimelineHistory
 
     let read (services: ServiceContext) (request: CaseTimelineRequest) token =
+        let pageLimit = min request.Limit Paging.MaximumTimelinePageSize
+
         task {
             if not (QueryResults.validLimit request.Limit) then
                 return! RequestRefusals.invalidLimit services token
@@ -61,7 +63,7 @@ module internal TimelineQueries =
                                                                 Filter = request.Filter
                                                                 Range = range
                                                                 BeforeSequence = before
-                                                                Limit = request.Limit
+                                                                Limit = pageLimit
                                                             }
 
                                                     if
@@ -71,7 +73,7 @@ module internal TimelineQueries =
                                                                 request.Filter
                                                                 range
                                                                 before
-                                                                request.Limit
+                                                                pageLimit
                                                                 page
                                                         )
                                                     then

@@ -80,7 +80,7 @@ const readCase = async (page: Page, fixture: RoleFixture, role: NarrowRole, scop
     ).toHaveCount(0);
   }
   if (role === "CASE_READER" || role === "DATA_STEWARD") {
-    await expect(history.locator(".timeline-change")).toHaveCount(0);
+    await expect(history.locator('[data-entry$=".before"], [data-entry$=".after"]')).toHaveCount(0);
     await metadataTimeline(page, fixture.reference);
     await expect(page.locator(".case-timeline-panel .table-view tbody > tr")).toHaveCount(1);
   }

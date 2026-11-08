@@ -35,10 +35,6 @@
     "text": "{label}: {meaning}",
     "source": "7216b2a9dae5"
   },
-  "ui.actor": {
-    "text": "Cuenta",
-    "source": "7e1b0d5641f2"
-  },
   "ui.actorRequestRetained": {
     "text": "Se conserva tu solicitud actual. Continúala o descártala antes de iniciar otra acción.",
     "source": "700957242358"
@@ -203,10 +199,6 @@
     "text": "{label} (exacta): {reference}",
     "source": "e26d7a9b269c"
   },
-  "ui.exactUtc": {
-    "text": "Instante UTC exacto",
-    "source": "460d31945df9"
-  },
   "ui.explainFields": {
     "text": "Explicar los campos",
     "source": "3593737e2657"
@@ -238,10 +230,6 @@
   "ui.grantsPartial": {
     "text": "Solo se muestran algunos roles.",
     "source": "391d53d153f3"
-  },
-  "ui.historyNoChanges": {
-    "text": "No cambiaron los datos.",
-    "source": "0b70fc56218c"
   },
   "ui.includeInactiveWork": {
     "text": "Incluir la tramitación inactiva",
@@ -563,14 +551,6 @@
     "text": "Volver a cargar la interfaz",
     "source": "bdc3a5a1699e"
   },
-  "ui.reminderAction": {
-    "text": "Acción planificada",
-    "source": "5818bdba66cb"
-  },
-  "ui.reminderDetails": {
-    "text": "Detalles del recordatorio",
-    "source": "1cd27d608c31"
-  },
   "ui.reminderDue": {
     "text": "Fecha planificada",
     "source": "37b3b31a9fbe"
@@ -791,14 +771,6 @@
     "text": "Tramitación",
     "source": "104ab9213e28"
   },
-  "ui.timeline.details": {
-    "text": "Mostrar los detalles",
-    "source": "1af77ee273cb"
-  },
-  "ui.timeline.nextReminder": {
-    "text": "Próximo recordatorio",
-    "source": "153fddb917f5"
-  },
   "ui.timeline.empty": {
     "text": "No hay actividad que mostrar.",
     "source": "5ddccb9ef206"
@@ -806,14 +778,6 @@
   "ui.timeline.more": {
     "text": "Cargar más",
     "source": "ac8991ef0101"
-  },
-  "ui.timeline.before": {
-    "text": "Valor anterior:",
-    "source": "fca574a5a363"
-  },
-  "ui.timeline.after": {
-    "text": "Valor nuevo:",
-    "source": "dca4696d7a91"
   },
   "ui.timeline.withheld": {
     "text": "No tienes acceso a estos cambios.",

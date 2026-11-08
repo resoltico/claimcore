@@ -1844,7 +1844,7 @@ module Descriptor =
 
     let recordView sections = View.Record sections
 
-    let tableView (definitions: EntryDefinition<'row> list) rows =
+    let detailedTableView describe (definitions: EntryDefinition<'row> list) rows =
         let columns =
             definitions
             |> List.map (fun definition ->
@@ -1858,9 +1858,60 @@ module Descriptor =
         View.Table(
             columns,
             rows
-            |> List.map (fun row -> definitions |> List.map (fun definition -> definition.Read row))
+            |> List.map (fun row -> definitions |> List.map (fun definition -> definition.Read row)),
+            rows |> List.map describe,
+            []
         )
 
+    let tableView definitions rows =
+        detailedTableView (fun _ -> None) definitions rows
+
+    let detail sections =
+        Some
+            {
+                Summary = None
+                Highlights = []
+                Sections = sections
+            }
+
+    let timelineDetail (entry: CaseTimelineEntry) =
+        let summary, highlights =
+            match entry.Changes with
+            | TimelineChanges.Disclosed disclosure ->
+                let event = TimelineEventPresentation.describe disclosure.Overview.Event
+
+                let highlights =
+                    TimelineDisclosure.resolve disclosure
+                    |> Result.defaultWith invalidOp
+                    |> List.collect timelineChange
+
+                Some(
+                    {
+                        MessageId = event.MessageId
+                        Arguments = event.Arguments
+                    }
+                    : PresentedMessage
+                ),
+                highlights
+            | TimelineChanges.Withheld
+            | TimelineChanges.Erased -> None, []
+
+        Some
+            {
+                Summary = summary
+                Highlights = highlights
+                Sections = timelineEntry entry
+            }
+
+    let timelineView rows =
+        detailedTableView timelineDetail timelineColumns rows
+
+
+    let grantPage (page: AuthorityGrantPage) =
+        match tableView grantColumns page.Items with
+        | View.Table(columns, rows, details, _) ->
+            View.Table(columns, rows, details, actor page.Actor)
+        | View.Record _ -> invalidOp "Grant pages use tabular presentation."
 
     let dismissedAccessRequest () =
         [

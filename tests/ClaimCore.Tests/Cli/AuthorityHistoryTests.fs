@@ -79,7 +79,12 @@ let private csvSubjects () =
         }
 
     let text =
-        ViewText.render "en" (Descriptor.tableView Descriptor.authorityHistoryColumns page.Entries)
+        ViewText.render
+            "en"
+            (Descriptor.detailedTableView
+                (Descriptor.authorityHistory >> Descriptor.detail)
+                Descriptor.authorityHistoryColumns
+                page.Entries)
         |> String.concat "\n"
 
     Expect.isFalse
@@ -93,7 +98,10 @@ let private csvSubjects () =
                 (Outcome.Succeeded(
                     Presented.create
                         (fun (page: AuthorityHistoryPage) ->
-                            Descriptor.tableView Descriptor.authorityHistoryColumns page.Entries)
+                            Descriptor.detailedTableView
+                                (Descriptor.authorityHistory >> Descriptor.detail)
+                                Descriptor.authorityHistoryColumns
+                                page.Entries)
                         page
                 ))
         )
