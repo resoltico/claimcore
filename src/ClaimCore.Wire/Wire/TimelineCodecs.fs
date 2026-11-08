@@ -438,13 +438,7 @@ module TimelineCodecs =
             ]
 
     let disclosure =
-        enumeration
-            [
-                HistoryDisclosure.Full, "FULL"
-                HistoryDisclosure.Summary, "SUMMARY"
-                HistoryDisclosure.Erased, "ERASED"
-            ]
-        |> named "HistoryDisclosure"
+        VocabularyCodec.create HistoryDisclosure.vocabulary |> named "HistoryDisclosure"
 
     let page =
         (record (fun disclosure basis parent reference items next ->

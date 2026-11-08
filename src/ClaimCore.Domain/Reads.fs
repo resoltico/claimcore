@@ -21,6 +21,9 @@ type HistoryDisclosure =
     | Erased
 
 module HistoryDisclosure =
+    let vocabulary =
+        Vocabulary.ofUnion<HistoryDisclosure> "historyDisclosure" TokenCasing.ScreamingSnake None
+
     let ofAccess erased full =
         if erased then HistoryDisclosure.Erased
         elif full then HistoryDisclosure.Full
