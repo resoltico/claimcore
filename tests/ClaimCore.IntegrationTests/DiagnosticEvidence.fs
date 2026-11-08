@@ -567,9 +567,9 @@ let internal boundaryEvidence () =
         let! outOfWindow = execute actor pending
 
         let! maintenance =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter ct
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On ct
 
-        Expect.isOk maintenance "The owner explicitly pauses actual register writes"
+        Expect.isTrue maintenance.State.Active "The owner explicitly pauses actual register writes"
 
         let! paused =
             execute actor (request fixture 80 "REACH-1" 1L (AuthoredCaseAct.Bare BareAct.Close))

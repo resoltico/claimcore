@@ -21,7 +21,7 @@ type AuthorityCommand =
 type AuthorityChange =
     | Registered of ActorProfile
     | Admitted of ActorProfile * Grant<Scope> list
-    | OwnerProvisioned of ActorProfile
+    | OwnerProvisioned of ActorProfile * Role list
     | Granted of Role * Scope
     | Revoked of Role * Scope
     | Enabled
@@ -371,16 +371,32 @@ module Authority =
                     parsedPayload target act |> Result.map ignore
                 ]
 
-    let provision operationId target profile =
+    let initialOwnerRoles =
+        [ Role.CaseHandler; Role.PaymentRecorder; Role.DataSteward; Role.Auditor ]
+
+    let initialOwnerRole role = List.contains role initialOwnerRoles
+
+    let validateInitialOwnerRoles roles =
+        if List.distinct roles <> roles then
+            Error(Refusal.invalidInput (InputTarget.Grants, Violation.DuplicateGrant))
+        elif roles |> List.exists (initialOwnerRole >> not) then
+            Error(Refusal.Authority AuthorityRefusal.RoleScopeNotApplicable)
+        else
+            Ok roles
+
+    let provision operationId target profile roles =
         Admission.map2
-            (fun id profile ->
+            (fun (id, profile) roles ->
                 {
                     Id = id
                     Principal = target
-                    Action = AuthorityAct.ProvisionOwner profile
+                    Action = AuthorityAct.ProvisionOwner(profile, roles)
                 })
-            (operationIdentity operationId)
-            (admitProfile profile)
+            (Admission.map2
+                (fun id profile -> id, profile)
+                (operationIdentity operationId)
+                (admitProfile profile))
+            (validateInitialOwnerRoles roles)
 
     let private owner (actor: ActorAuthority) =
         actor.Enabled
@@ -554,8 +570,19 @@ module Authority =
         match change with
         | AuthorityChange.Registered value ->
             registeredActor id principal false |> profile (Some value)
-        | AuthorityChange.OwnerProvisioned value ->
-            registeredActor id principal true |> profile (Some value)
+        | AuthorityChange.OwnerProvisioned(value, roles) ->
+            let actor = registeredActor id principal true |> profile (Some value)
+
+            { actor with
+                Grants =
+                    actor.Grants
+                    @ (roles
+                       |> List.map (fun role ->
+                           {
+                               Grant.Role = role
+                               Scope = Scope.Installation
+                           }))
+            }
         | AuthorityChange.Admitted(value, grants) ->
             { registeredActor id principal false with
                 Grants = grants
@@ -593,9 +620,10 @@ module Authority =
 
     let private change (facts: AuthorityFacts) (command: AuthorityCommand) =
         match command.Act with
-        | AuthorityAct.ProvisionOwner profile ->
+        | AuthorityAct.ProvisionOwner(profile, roles) ->
             decideRegistration facts command.Target true
-            |> Result.map (fun () -> AuthorityChange.OwnerProvisioned profile)
+            |> Result.bind (fun () -> validateInitialOwnerRoles roles)
+            |> Result.map (fun roles -> AuthorityChange.OwnerProvisioned(profile, roles))
         | AuthorityAct.Register profile ->
             decideRegistration facts command.Target false
             |> Result.map (fun () -> AuthorityChange.Registered profile)

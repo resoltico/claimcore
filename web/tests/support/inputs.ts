@@ -23,7 +23,7 @@ export const workBasis: WorkDateBasis = {
   businessDate: "2026-09-01",
   timeZone: "Etc/UTC",
 };
-export const initialMaintenance = { active: false, generation: 0 } as const;
+export const initialMaintenance = { active: false } as const;
 const unscheduledWork: CaseWorkView = {
   changedAt: null,
   recordedBy: null,

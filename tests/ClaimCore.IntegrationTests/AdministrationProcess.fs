@@ -106,11 +106,10 @@ let publishConfiguration configuration directory =
 let publish directory =
     publishConfiguration "Release" directory
 
-let invoke binary connectionFile ownerFile arguments expected =
+let invoke binary connectionFile arguments expected =
     task {
         let config = start (binary :: arguments)
         config.Environment["CLAIMCORE_ADMIN_CONNECTION_FILE"] <- connectionFile
-        config.Environment["CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE"] <- ownerFile
         let! code, output, errors = execute config
 
         Expect.equal

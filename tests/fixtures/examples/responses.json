@@ -424,8 +424,7 @@
               "acts": [],
               "history": "NONE",
               "maintenance": {
-                "active": false,
-                "generation": 0
+                "active": false
               },
               "recommended": null,
               "blocked": [
@@ -1319,8 +1318,7 @@
               "actorId": "10000000-0000-7000-8000-000000000001",
               "installationId": "90000000-0000-7000-8000-000000000001",
               "maintenance": {
-                "active": false,
-                "generation": 0
+                "active": false
               },
               "self": {
                 "actorId": "10000000-0000-7000-8000-000000000001",

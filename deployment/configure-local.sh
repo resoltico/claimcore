@@ -10,6 +10,7 @@ identity_port="${5:-5444}"
 [[ $# -le 5 && "${configuration}" == /* && ! -e "${configuration}" && ! -L "${configuration}" ]] || {
   printf 'Use a new absolute configuration directory.\n' >&2; exit 2;
 }
+[[ "${owner_display_name}" != *$'\n'* && "${owner_display_name}" != *$'\r'* ]] || exit 2
 [[ "${configuration}" != *$'\n'* && "${configuration}" != *$'\r'* && "${zone}" =~ ^[A-Za-z0-9_+/-]+$ ]] || exit 2
 for port in "${web_port}" "${identity_port}"; do
   [[ "${port}" =~ ^[1-9][0-9]{0,4}$ && "${port}" -le 65535 ]] || exit 2
@@ -52,16 +53,12 @@ web_secret="$(openssl rand -hex 32)"
 service_secret="$(openssl rand -hex 32)"
 owner_login="$(openssl rand -hex 32)"
 owner_subject="$(uuid)"
-# Provisioning uses the same bounded UUIDv7 contract as every recorded change.
-owner_operation_id="$(node -e 'const b=require("node:crypto").randomBytes(16); b.writeUIntBE(Date.now(),0,6); b[6]=(b[6]&15)|0x70; b[8]=(b[8]&63)|0x80; const h=b.toString("hex"); console.log([h.slice(0,8),h.slice(8,12),h.slice(12,16),h.slice(16,20),h.slice(20)].join("-"));')"
 printf '%s' "${owner_password}" >"${configuration}/postgres/owner.password"
 printf '%s' "${runtime_password}" >"${configuration}/postgres/runtime.password"
 printf '%s' "${web_secret}" >"${configuration}/web/client.secret"
 printf '%s\n' "${owner_login}" >"${configuration}/owner-login.password"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_owner;Password=${owner_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/ca.pem" >"${configuration}/administration/owner.connection"
 printf '%s\n' "Host=postgres;Database=claimcore;Username=claimcore_runtime;Password=${runtime_password};SSL Mode=VerifyFull;Root Certificate=/etc/claimcore/runtime/ca.pem" >"${configuration}/web/runtime.connection"
-node -e 'const fs=require("node:fs"); const [file,operationId,issuer,subject,displayName]=process.argv.slice(1); fs.writeFileSync(file,JSON.stringify({operationId,issuer,subject,profile:{displayName,contact:null}})+"\n",{mode:0o600});' \
-  "${configuration}/administration/owner.principal" "${owner_operation_id}" "https://identity.localhost:${identity_port}/realms/claimcore" "${owner_subject}" "${owner_display_name}"
 cp "${configuration}/ca.pem" "${configuration}/web/ca.pem"
 cp "${configuration}/ca.pem" "${configuration}/administration/ca.pem"
 cat >"${configuration}/identity/realm/claimcore.json" <<JSON
@@ -92,6 +89,11 @@ dotenv_configuration="${dotenv_configuration//\"/\\\"}"
 dotenv_configuration="${dotenv_configuration//\$/\$\$}"
 printf 'CLAIMCORE_CONFIG_DIR="%s"\n' "${dotenv_configuration}" >"${configuration}/compose.env"
 printf 'CLAIMCORE_COMPOSE_PROJECT=%s\nCLAIMCORE_BUSINESS_ZONE=%s\nCLAIMCORE_HOST_PORT=%s\nCLAIMCORE_IDENTITY_PORT=%s\n' "${project}" "${zone}" "${web_port}" "${identity_port}" >>"${configuration}/compose.env"
+# Owner identity is public configuration; initialize mints the operation identity in its transaction.
+dotenv_owner_name="${owner_display_name//\\/\\\\}"
+dotenv_owner_name="${dotenv_owner_name//\"/\\\"}"
+dotenv_owner_name="${dotenv_owner_name//\$/\$\$}"
+printf 'CLAIMCORE_OWNER_SUBJECT=%s\nCLAIMCORE_OWNER_NAME="%s"\n' "${owner_subject}" "${dotenv_owner_name}" >>"${configuration}/compose.env"
 # Public CLI settings only; argv and JSON serialization preserve the exact host path.
 node --input-type=module - "${configuration}" "${web_port}" "${identity_port}" <<'JAVASCRIPT'
 import { mkdirSync, writeFileSync } from "node:fs";

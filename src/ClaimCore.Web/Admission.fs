@@ -13,13 +13,15 @@ module internal AdmissionPolicy =
     let interactiveAuthentication = 2
     let sessions = 4
     let readiness = 2
+    let housekeeping = 1
     let maximumCorePermits = 4
 
     let maximumQueuedWriters = 8
 
     let maximumPartitions = 64
     // Every concurrently admitted storage user, including both readiness probes, needs a pool slot.
-    let minimumPoolCapacity permits = 2 * permits + sessions + readiness
+    let minimumPoolCapacity permits =
+        2 * permits + sessions + readiness + housekeeping
 
 /// Capacity rejection before an action must not be mistaken for an invalid or expired ticket.
 type internal AdmissionRejectedException() =

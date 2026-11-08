@@ -252,15 +252,7 @@ let private positionValue response context kind =
     else
         None
 
-let private maintenanceValue =
-    gen {
-        let! active = Gen.bool
-
-        let! generation =
-            Gen.int64 (Range.constant (if active then 1L else 0L) 9007199254740991L)
-
-        return RegisterMaintenance.create active generation |> Result.defaultWith invalidOp
-    }
+let private maintenanceValue = Gen.bool |> Gen.map RegisterMaintenance.create
 
 let private listedScalar value =
     let represented parse project generator =

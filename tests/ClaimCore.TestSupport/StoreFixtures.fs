@@ -207,6 +207,7 @@ let internal bootstrap fixture =
                 (core fixture fixture.Owner)
                 (id fixture 1)
                 Inputs.ownerProfile
+                []
                 CancellationToken.None
 
         match result with

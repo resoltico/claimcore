@@ -136,6 +136,7 @@ let private fixture () =
                     DisplayName = "Timeline owner"
                     Contact = None
                 }
+                []
                 token
             |> get
 

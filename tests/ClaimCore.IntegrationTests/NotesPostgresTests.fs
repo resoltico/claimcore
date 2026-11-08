@@ -301,19 +301,10 @@ let private lifecycle database =
              | _ -> false)
             "Maintenance pauses notes"
 
-        let! active =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter token
-
-        let generation =
-            (active |> Result.defaultWith (string >> invalidOp)).State.Generation
-
         let! mode =
-            RegisterMaintenanceStore.change
-                database.OwnerSource
-                (MaintenanceChange.Resume generation)
-                token
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Off token
 
-        Expect.isOk mode "Leave maintenance"
+        Expect.isFalse mode.State.Active "Maintenance is off"
         let! closed = executeCase database owner 130 1L (AuthoredCaseAct.Bare BareAct.Close)
         accepted closed |> ignore
 

@@ -23,7 +23,7 @@ let private lostEntry drop landed (database: PostgresFixture.Database) =
         let mutable unknown = false
 
         try
-            let! _ = RegisterMaintenanceStore.change source MaintenanceChange.Enter token
+            let! _ = RegisterMaintenanceStore.change source MaintenanceChange.On token
             ()
         with :? AdministrationOutcomeUnknownException ->
             unknown <- true
@@ -35,11 +35,6 @@ let private lostEntry drop landed (database: PostgresFixture.Database) =
             observed.Maintenance.Active
             landed
             "A fresh owner status establishes the actual state"
-
-        Expect.equal
-            observed.Maintenance.Generation
-            (if landed then 1L else 0L)
-            "Status, not blind reversal, establishes generation"
 
         Expect.equal
             observed.Position.Sequence
@@ -56,6 +51,6 @@ let tests =
                 "before-commit loss requires explicit status inspection"
                 (run (lostEntry CommitProxy.Drop.BeforeCommit false))
             testCaseAsync
-                "after-commit loss retains active maintenance and its generation"
+                "after-commit loss retains active maintenance"
                 (run (lostEntry CommitProxy.Drop.AfterCommit true))
         ]

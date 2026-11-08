@@ -356,12 +356,7 @@ let private databaseCommands database =
                 + Convert.ToHexStringLower(EntryHash.toBytes checkpoint.EntryHash)
 
             let! before =
-                AdministrationProcess.invoke
-                    binary
-                    connection
-                    ""
-                    [ "verify"; "--expect"; expected ]
-                    0
+                AdministrationProcess.invoke binary connection [ "verify"; "--expect"; expected ] 0
 
             Expect.equal
                 (before.GetProperty("kind").GetString())
@@ -372,12 +367,7 @@ let private databaseCommands database =
             do! sql database "UPDATE claimcore.cases SET status='CLOSED'" [||]
 
             let! rebuilt =
-                AdministrationProcess.invoke
-                    binary
-                    connection
-                    ""
-                    [ "rebuild"; "--expect"; expected ]
-                    0
+                AdministrationProcess.invoke binary connection [ "rebuild"; "--expect"; expected ] 0
 
             Expect.equal
                 (rebuilt.GetProperty("kind").GetString())
@@ -385,12 +375,7 @@ let private databaseCommands database =
                 "The database command repairs projections through replay"
 
             let! after =
-                AdministrationProcess.invoke
-                    binary
-                    connection
-                    ""
-                    [ "verify"; "--expect"; expected ]
-                    0
+                AdministrationProcess.invoke binary connection [ "verify"; "--expect"; expected ] 0
 
             Expect.equal
                 (after.GetProperty("kind").GetString())

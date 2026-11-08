@@ -262,7 +262,7 @@ module internal AuthorityExecution =
 
         match command.Act with
         | AuthorityAct.Register profile
-        | AuthorityAct.ProvisionOwner profile -> created profile
+        | AuthorityAct.ProvisionOwner(profile, _) -> created profile
         | AuthorityAct.Admit admission -> created admission.Profile
         | _ ->
             view.Target.Actor
@@ -365,10 +365,13 @@ module internal AuthorityExecution =
         (services: ServiceContext)
         operation
         profile
+        roles
         (write: AuthorityWriteContext)
         (view: AuthorityExecutionFacts)
         =
-        match Authority.provision (OperationId.value operation) services.Principal profile with
+        match
+            Authority.provision (OperationId.value operation) services.Principal profile roles
+        with
         | Error refusal -> Verdict.Refuse refusal
         | Ok command ->
             executeRecord
@@ -408,46 +411,46 @@ module internal AuthorityExecution =
                 CancellationToken = token
             }
 
-    let provisionStore (services: ServiceContext) operation profile token =
-        match Authority.provision operation services.Principal profile with
+    let private provisionCommand
+        (services: ServiceContext)
+        (tx: IWriteTx)
+        (command: AuthorityCommand)
+        =
+        task {
+            let! view =
+                ExecutionFacts.target
+                    services
+                    tx
+                    (Authority.factsNeeded command.Act)
+                    command.OperationId
+                    command.Target
+                    []
+
+            let verdict =
+                executeRecord
+                    services
+                    command
+                    (fun bytes -> provisionIdentity services command.OperationId bytes tx.Head view)
+                    {
+                        Head = tx.Head
+                        NewPayloadNonce = tx.NewPayloadNonce
+                    }
+                    view
+
+            return! ExecutionFacts.persistOperation tx tx.ProjectAuthority verdict
+        }
+
+    let provisionInTransaction (services: ServiceContext) tx operation profile roles =
+        match Authority.provision operation services.Principal profile roles with
+        | Error refusal -> System.Threading.Tasks.Task.FromResult(Verdict.Refuse refusal)
+        | Ok command -> provisionCommand services tx command
+
+    let provisionStore (services: ServiceContext) operation profile roles token =
+        match Authority.provision operation services.Principal profile roles with
         | Error refusal -> System.Threading.Tasks.Task.FromResult(Ok(Verdict.Refuse refusal))
         | Ok command ->
             services.Store.Write
                 {
-                    Work =
-                        (fun tx ->
-                            task {
-                                let! view =
-                                    ExecutionFacts.target
-                                        services
-                                        tx
-                                        (Authority.factsNeeded command.Act)
-                                        command.OperationId
-                                        command.Target
-                                        []
-
-                                let write =
-                                    {
-                                        AuthorityWriteContext.Head = tx.Head
-                                        NewPayloadNonce = tx.NewPayloadNonce
-                                    }
-
-                                let verdict =
-                                    executeRecord
-                                        services
-                                        command
-                                        (fun bytes ->
-                                            provisionIdentity
-                                                services
-                                                command.OperationId
-                                                bytes
-                                                tx.Head
-                                                view)
-                                        write
-                                        view
-
-                                return!
-                                    ExecutionFacts.persistOperation tx tx.ProjectAuthority verdict
-                            })
+                    Work = fun tx -> provisionCommand services tx command
                     CancellationToken = token
                 }

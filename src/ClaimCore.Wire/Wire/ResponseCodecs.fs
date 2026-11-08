@@ -13,6 +13,8 @@ module ResponseCodecs =
     open Codec
     open ResponseScalars
 
+    let actorRef = ActorCodecs.actorRef
+
     let private principal = PrincipalCodecs.key
 
     let grantScope =
@@ -181,15 +183,9 @@ module ResponseCodecs =
         |> named "CorrectionAdvice"
 
     let registerMaintenance =
-        record (fun active generation -> active, generation)
-        |> field "active" fst boolean
-        |> field "generation" snd (integer 0L SafeInteger.Maximum)
+        (record RegisterMaintenance.create: Fields<RegisterMaintenance, _>)
+        |> field "active" _.Active boolean
         |> build
-        |> mapResult
-            (fun path (active, generation) ->
-                RegisterMaintenance.create active generation
-                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
-            (fun (state: RegisterMaintenance) -> state.Active, state.Generation)
         |> named "RegisterMaintenance"
 
     let private blockedCaseAct =

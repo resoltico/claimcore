@@ -38,9 +38,9 @@ let sql (database: PostgresFixture.Database) statement parameters =
 let enterMaintenance (database: PostgresFixture.Database) =
     task {
         let! mode =
-            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.Enter token
+            RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
 
-        Expect.isOk mode "The owner explicitly enters register-write maintenance"
+        Expect.isTrue mode.State.Active "The owner explicitly pauses register writes"
     }
 
 let position =

@@ -24,8 +24,9 @@ module LedgerEffects =
         match operation with
         | None -> count = 1
         | Some AuthorityKind.Admit -> count >= 3 && count <= MaximumCount
-        | Some AuthorityKind.Register
-        | Some AuthorityKind.ProvisionOwner -> count = 2
+        | Some AuthorityKind.ProvisionOwner ->
+            count >= 2 && count <= 2 + Authority.initialOwnerRoles.Length
+        | Some AuthorityKind.Register -> count = 2
         | Some AuthorityKind.Grant
         | Some AuthorityKind.Revoke
         | Some AuthorityKind.Enable
@@ -79,11 +80,11 @@ module LedgerEffects =
                  else
                      AuthorityKind.SetProfile)
         | Some AuthorityKind.ProvisionOwner ->
-            value.Count = 2
+            value.Count >= 2
+            && value.Count <= 2 + Authority.initialOwnerRoles.Length
             && act =
-                (if value.Index = 0 then
-                     AuthorityKind.ProvisionOwner
-                 else
-                     AuthorityKind.SetProfile)
+                (if value.Index = 0 then AuthorityKind.ProvisionOwner
+                 elif value.Index = 1 then AuthorityKind.SetProfile
+                 else AuthorityKind.Grant)
         | Some operation -> value.Count = 1 && value.Index = 0 && operation = act
         | None -> false

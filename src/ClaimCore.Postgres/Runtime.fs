@@ -11,6 +11,7 @@ open Npgsql
 /// The admitted runtime owns storage lifetime without exposing provider types.
 type IRuntime =
     inherit IDisposable
+    abstract Housekeep: CancellationToken -> System.Threading.Tasks.Task<HousekeepingReport>
     abstract Sessions: ISessionStore
     abstract Installation: Installation
     abstract Ready: CancellationToken -> System.Threading.Tasks.Task<bool>
@@ -21,6 +22,9 @@ type private RuntimeResource(source: NpgsqlDataSource, installation: Installatio
         LedgerStore(source, installation.InstallationId, Transactions.timeouts) :> IStore
 
     interface IRuntime with
+        member _.Housekeep token =
+            Housekeeping.prune source Housekeeping.DefaultBatch token
+
         member _.Sessions = SessionStore(source) :> ISessionStore
         member _.Installation = installation
 
@@ -76,15 +80,12 @@ module Runtime =
                     )
         }
 
-/// Owner provisioning retains its administration-process outcome contract.
-[<RequireQualifiedAccess>]
-type ProvisionOwnerOutcome =
-    | Accepted of OperationReceipt
-    | AlreadyAccepted of OperationReceipt
-    | Rejected of Refusal
-    | Failed of CoreFault
-    | Cancelled
-    | OutcomeUnknown of operationId: OperationId
+type InitialOwner =
+    {
+        Principal: PrincipalKey
+        Profile: ActorProfileInput
+        Roles: Role list
+    }
 
 module internal LedgerAdministration =
     let verify source expected cancellationToken =
@@ -113,47 +114,68 @@ module internal LedgerAdministration =
                 | _ -> return invalidOp "Ledger head is absent."
             })
 
-    let private provisionResult operationId result =
-        match result with
-        | Ok(Verdict.Proceed receipt) -> ProvisionOwnerOutcome.Accepted receipt
-        | Ok(Verdict.Replay receipt) -> ProvisionOwnerOutcome.AlreadyAccepted receipt
-        | Ok(Verdict.Refuse reason) -> ProvisionOwnerOutcome.Rejected reason
-        | Ok(Verdict.Fail fault) -> ProvisionOwnerOutcome.Failed fault
-        | Error StoreFailure.Cancelled -> ProvisionOwnerOutcome.Cancelled
-        | Error StoreFailure.CommitOutcomeUnknown ->
-            ProvisionOwnerOutcome.OutcomeUnknown operationId
-        | Error StoreFailure.SchemaMismatch -> ProvisionOwnerOutcome.Failed CoreFault.SchemaMismatch
-        | Error StoreFailure.Internal -> ProvisionOwnerOutcome.Failed CoreFault.InternalError
-        | Error StoreFailure.Integrity -> ProvisionOwnerOutcome.Failed CoreFault.StoreIntegrityError
-        | Error StoreFailure.Unavailable -> ProvisionOwnerOutcome.Failed CoreFault.StoreUnavailable
+    let initialize source productVersion timeZone (owner: InitialOwner) token =
+        if not (PrincipalKey.isHuman owner.Principal) then
+            invalidArg (nameof owner) "The initial owner must be human."
 
-    let provisionOwner source productVersion operationId principal profile cancellationToken =
-        task {
-            let! installationId, timeZoneId =
-                DatabaseSession.read source cancellationToken (fun connection ->
-                    task {
-                        ServerSupport.require connection.PostgreSqlVersion
+        match ActorProfile.parse owner.Profile, Authority.validateInitialOwnerRoles owner.Roles with
+        | Ok _, Ok _ -> ()
+        | _ -> invalidArg (nameof owner) "The initial owner profile or roles are invalid."
 
-                        return! Baseline.require connection cancellationToken
-                    })
+        let timeZone = Baseline.zone timeZone
 
-            let store = LedgerStore(source, installationId, Transactions.timeouts) :> IStore
+        SchemaAdministration.initialize
+            source
+            timeZone
+            (fun connection installationId ->
+                task {
+                    let! _ = Transactions.configure connection Transactions.timeouts token
+                    let! head, observed = Transactions.head connection token
 
-            let zone = TimeZoneInfo.FindSystemTimeZoneById timeZoneId
+                    let store =
+                        LedgerStore(source, installationId, Transactions.timeouts) :> IStore
 
-            let calendar =
-                { new IBusinessCalendar with
-                    member _.TimeZoneId = timeZoneId
+                    let zone = TimeZoneInfo.FindSystemTimeZoneById timeZone
 
-                    member _.DateAt instant =
-                        DateOnly.FromDateTime(TimeZoneInfo.ConvertTime(instant, zone).DateTime)
-                }
+                    let calendar =
+                        { new IBusinessCalendar with
+                            member _.TimeZoneId = timeZone
 
-            let services = Service.create productVersion installationId store calendar principal
-            let! result = Service.provisionOwner services operationId profile cancellationToken
+                            member _.DateAt instant =
+                                DateOnly.FromDateTime(
+                                    TimeZoneInfo.ConvertTime(instant, zone).DateTime
+                                )
+                        }
 
-            return provisionResult (OperationId.create operationId |> Option.get) result
-        }
+                    let services =
+                        Service.create productVersion installationId store calendar owner.Principal
+
+                    let tx =
+                        LedgerStore.InTransaction(
+                            connection,
+                            installationId,
+                            head,
+                            observed,
+                            token
+                        )
+
+                    let! result =
+                        Service.provisionOwnerInTransaction
+                            services
+                            tx
+                            (Guid.CreateVersion7(observed))
+                            owner.Profile
+                            owner.Roles
+
+                    match result with
+                    | Verdict.Proceed _ -> return ()
+                    | Verdict.Refuse _ ->
+                        return invalidOp "The initial owner could not be recorded."
+                    | Verdict.Fail _
+                    | Verdict.Replay _ ->
+                        return raise (RecordCorruptException "Initial owner recording failed.")
+                })
+            token
 
 [<RequireQualifiedAccess>]
 type AdministrationFailure =
@@ -181,8 +203,8 @@ type Administration(connectionString: string, productVersion: string) =
         InstallationCheck.transport (NpgsqlConnectionStringBuilder connectionString)
         NpgsqlDataSource.Create connectionString
 
-    member _.Initialize(timeZone, cancellationToken) =
-        SchemaAdministration.initialize source timeZone cancellationToken
+    member _.Initialize(timeZone, owner, cancellationToken) =
+        LedgerAdministration.initialize source productVersion timeZone owner cancellationToken
 
     member _.Verify(expected, cancellationToken) =
         LedgerAdministration.verify source expected cancellationToken
@@ -199,20 +221,8 @@ type Administration(connectionString: string, productVersion: string) =
     member _.Maintenance(change, cancellationToken) =
         RegisterMaintenanceStore.change source change cancellationToken
 
-    member _.PruneExpiredSessions(limit, cancellationToken) =
-        SessionPruning.prune source limit cancellationToken
-
     member _.Head(cancellationToken) =
         LedgerAdministration.head source cancellationToken
-
-    member _.ProvisionOwner(operationId, principal, profile, cancellationToken) =
-        LedgerAdministration.provisionOwner
-            source
-            productVersion
-            operationId
-            principal
-            profile
-            cancellationToken
 
     interface IDisposable with
         member _.Dispose() = source.Dispose()

@@ -91,7 +91,16 @@ let private refusedInstallation identifier load =
 
             do!
                 refuses (fun () ->
-                    task { let! _ = Baseline.initialize source "Etc/UTC" token in return () })
+                    task {
+                        let! _ =
+                            Baseline.initialize
+                                source
+                                "Etc/UTC"
+                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                token in
+
+                        return ()
+                    })
                 |> Async.AwaitTask
 
             let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())

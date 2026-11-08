@@ -258,8 +258,6 @@ let private setupFrames fixture =
             :: (roles |> List.map (grantFrame target)))
 
     registrations
-    @ ([ "CASE_HANDLER"; "PAYMENT_RECORDER" ]
-       |> List.map (grantFrame (principal fixture "HUMAN" IdentityRealm.ownerSubject)))
 
 let internal requireAcceptedReplies expected (result: ProcessRunner.Result) =
     Expect.equal result.ExitCode 0 "Published CLI session exit"

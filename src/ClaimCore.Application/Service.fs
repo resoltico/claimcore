@@ -296,8 +296,11 @@ module Service =
     let grants = Queries.grants
     let authorityHistory = Queries.authorityHistory
 
-    let provisionOwner services operationId profile token =
-        AuthorityExecution.provisionStore services operationId profile token
+    let provisionOwnerInTransaction services tx operationId profile roles =
+        AuthorityExecution.provisionInTransaction services tx operationId profile roles
+
+    let provisionOwner services operationId profile roles token =
+        AuthorityExecution.provisionStore services operationId profile roles token
 
     let accessRequests = AccessRequestQueries.page
     let dismissAccessRequest = AccessRequestQueries.dismiss

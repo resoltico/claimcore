@@ -34,9 +34,9 @@ docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.
 docker compose --env-file "$claimcore_config/compose.env" -f deployment/compose.yaml ps -a
 ```
 
-The generated first-owner operation ID is a UUIDv7. Start its first provisioning within ten minutes of
-configuration. If first dispatch is delayed, mint a fresh UUIDv7 in the private owner principal file
-before sending it. After dispatch, preserve the exact ID and input for replay or outcome checking.
+The initializer records the first owner, profile and evaluation roles in one transaction. Its operation
+ID is minted during initialization, so generated configuration has no dispatch deadline. A nonempty
+database refuses initialization; inspect `claimcore-database status` after an uncertain result.
 
 Require a successful initializer exit and healthy Web service; repeat `ps -a` while startup is in progress.
 Compose waits for the identity provider before Web. PostgreSQL has no host port; the identity management
@@ -109,20 +109,16 @@ list. Use its SHA-256 fingerprint to distinguish roots with the same name:
 openssl x509 -in "$claimcore_config/ca.pem" -noout -fingerprint -sha256
 ```
 
-## Sign in and grant case rights
+## Sign in and open Cases
 
 Open People & access at `https://localhost:7443/people` in the trusted browser chosen above and sign in as
 `owner`. Read its generated password locally from `owner-login.password` in the configuration directory. Keep credentials out of
 commands, logs and public reports. The identity provider is
 `https://identity.localhost:7444/realms/claimcore` for these example ports.
 
-Select the fresh installation's sole human owner, then add an installation-scope CASE_HANDLER grant.
-Review the target, role and scope and confirm. OWNER administers authority but grants no case work by
-itself. CASE_HANDLER permits opening, registration, decisions, closing and case-work planning; grant PAYMENT_RECORDER
-separately when that person also records or clears payment facts.
-
-Reload the browser page to obtain current rights, then open Cases. ClaimCore grants remain separate
-from membership in the identity provider.
+The evaluation owner already has installation-scope CASE_HANDLER, PAYMENT_RECORDER and DATA_STEWARD
+roles. Open Cases directly after sign-in. OWNER alone administers authority; the evaluation grants add
+case work, payment entry and stewardship rights. ClaimCore roles remain separate from identity-provider membership.
 
 ## Record a case and find its row
 

@@ -443,6 +443,9 @@ type private WriteTx(connection, installation, head, observedAt, token) =
             Persistence.authority connection projection token
 
 type internal LedgerStore(source: NpgsqlDataSource, installationId, settings) =
+    static member InTransaction(connection, installationId, head, observedAt, token) =
+        WriteTx(connection, installationId, head, observedAt, token) :> IWriteTx
+
     interface IStore with
         member _.Context query =
             Transactions.write source settings query.CancellationToken (fun connection ->

@@ -1,186 +1,143 @@
 module ClaimCore.Tests.OwnerInputTests
 
-open ClaimCore.Domain
-open ClaimCore.Application.Contracts
-
 open System
-open System.Text
-open System.Text.Json
 open Expecto
-open ClaimCore.Application
+open ClaimCore.Domain
 open ClaimCore.Database
-open ClaimCore.Wire
-open ClaimCore.Presentation
-open ClaimCore.Json
 open ClaimCore.Postgres
+open ClaimCore.Presentation
 
-let private operation = Guid.Parse "10000000-0000-7000-8000-000000000001"
-
-let private owner issuer subject =
-    JsonSerializer.SerializeToUtf8Bytes
-        {|
-            operationId = operation
-            issuer = issuer
-            subject = subject
-            profile =
-                {|
-                    displayName = "Authored owner"
-                    contact = (None: string option)
-                |}
-        |}
-
-let private accepted () =
-    let bytes = owner "https://issuer.example/" "human-owner"
-    let original = Array.copy bytes
-    let id, principal, profile = Inputs.decodeOwner bytes
-    Expect.equal id operation "Operation identity retained"
-    Expect.equal profile.DisplayName "Authored owner" "An authored profile is required"
-    Expect.isTrue (PrincipalKey.isHuman principal) "The format denotes a human owner"
-
-    Expect.equal
-        (PrincipalKey.toInput principal).Subject
+let private flags =
+    [
+        "initialize"
+        "Etc/UTC"
+        "--owner-issuer"
+        "https://issuer.example/"
+        "--owner-subject"
         "human-owner"
-        "Immutable identity retained"
+        "--owner-name"
+        "Authored owner"
+    ]
 
-    Expect.equal bytes original "Buffer ownership remains with the caller"
-
-let private refused () =
-    let malformed =
-        [
-            [| 255uy |]
-            Encoding.UTF8.GetBytes "not-json"
-            Encoding.UTF8.GetBytes "{}"
-            JsonSerializer.SerializeToUtf8Bytes
-                {|
-                    operationId = Guid.Empty
-                    issuer = "https://issuer.example/"
-                    subject = "owner"
-                |}
-            JsonSerializer.SerializeToUtf8Bytes
-                {|
-                    operationId = operation
-                    issuer = "https://issuer.example/"
-                    subject = "owner"
-                    kind = "SERVICE"
-                |}
-            owner "http://issuer.example/" "owner"
-            owner "https://issuer.example/?query=1" "owner"
-            owner "https://issuer.example/" " "
-            owner "https://issuer.example/" (String.replicate 513 "A")
-        ]
-
-    for bytes in malformed do
-        let original = Array.copy bytes
-
-        Expect.throwsT<InvalidOperationException>
-            (fun () -> Inputs.decodeOwner bytes |> ignore)
-            "Malformed format or invalid human principal remains a refusal"
-
-        Expect.equal bytes original "Failed decoding leaves caller-owned bytes intact"
-
-let private replies () =
-    let reason =
-        Refusal.invalidInput (InputTarget.PrincipalSubject, Violation.TooLong 512)
-
-    let bytes, code = Replies.authority (ProvisionOwnerOutcome.Rejected reason)
-    use document = JsonDocument.Parse(bytes: byte array)
-    Expect.equal code 2 "A refusal uses the shared rejected exit"
-    Expect.equal (document.RootElement.GetProperty("kind").GetString()) "REJECTED" "Literal outcome"
-    let diagnostic = document.RootElement.GetProperty("diagnostic")
-
-    Expect.equal
-        (diagnostic.GetProperty("code").GetString())
-        "INVALID_INPUT"
-        "The refusal envelope is retained"
-
-    let issues = diagnostic.GetProperty("issues").EnumerateArray() |> Seq.toList
-    Expect.hasLength issues 1 "Every owner input issue is retained"
-    let issue = List.head issues
-    Expect.equal (issue.GetProperty("code").GetString()) "TOO_LONG" "The cause is retained"
-
-    Expect.equal
-        (issue.GetProperty("field").GetString())
-        "principal.subject"
-        "The input target is retained"
-
-    Expect.equal
-        (issue.GetProperty("maximumCharacters").GetInt32())
-        512
-        "Typed parameters are retained"
-
-    Expect.equal
-        (Codec.decode 10000 Replies.codec bytes)
-        (Ok(Reply.Operation(Outcome.Rejected reason)))
-        "The local codec reads its own complete reply"
-
-    let bytes, code =
-        Replies.authority (ProvisionOwnerOutcome.Failed CoreFault.SchemaMismatch)
-
-    use document = JsonDocument.Parse(bytes: byte array)
-    Expect.equal code 3 "A known core failure uses the shared failed exit"
-
-    Expect.equal
-        (document.RootElement.GetProperty("fault").GetProperty("code").GetString())
-        "CORE_SCHEMA_MISMATCH"
-        "The fault is retained"
-
-let private usageAndExits () =
-    let usage =
-        match Inputs.command [ "initialize" ] with
-        | Error usage -> usage
-        | Ok _ -> failtest "A missing zone must produce usage"
-
-    Expect.equal usage.Issue (UsageError.MissingOperand "TIME_ZONE") "Typed grammar error"
-    let bytes, code = Replies.usage usage
-    use document = JsonDocument.Parse(bytes: byte array)
-    Expect.equal code 2 "Usage is a definite refusal"
-
-    Expect.equal
-        (document.RootElement.GetProperty("kind").GetString())
-        "USAGE_ERROR"
-        "Usage is distinct from a domain refusal"
-
-    Expect.equal
-        (document.RootElement.GetProperty("usage").[0].GetString())
-        "claimcore-database initialize TIME_ZONE"
-        "An actionable synopsis is supplied"
-
-    for code, expected in
-        [
-            ExitCode.Success, 0
-            ExitCode.Rejected, 2
-            ExitCode.Failed, 3
-            ExitCode.OutcomeUnknown, 4
-            ExitCode.Diverged, 5
-            ExitCode.Usage, 64
-            ExitCode.InternalError, 70
-            ExitCode.Cancelled, 130
-        ] do
-        Expect.equal (ExitCode.value code) expected "Independent literal exit number"
+let private issue args =
+    match Inputs.command args with
+    | Error value -> value.Issue
+    | Ok _ -> failtest "Expected invalid initialization arguments"
 
 [<Tests>]
 let tests =
     testList
-        "private owner input admission"
+        "initial owner flags"
         [
-            testCase "owner replies preserve refusal cause fields and core faults" replies
-            testCase "typed command usage and shared exit numbers remain explicit" usageAndExits
-            testCase "exact owner format retains identity and caller buffer ownership" accepted
-            testCase "format and principal failures retain the refusal boundary" refused
-        ]
+            testCase
+                "initialization accepts a human profile and allowed installation roles"
+                (fun () ->
+                    match
+                        Inputs.command (
+                            flags
+                            @ [
+                                "--owner-contact"
+                                "owner@example.test"
+                                "--owner-role"
+                                "CASE_HANDLER"
+                                "--owner-role"
+                                "PAYMENT_RECORDER"
+                            ]
+                        )
+                    with
+                    | Ok(Initialize(zone, owner)) ->
+                        Expect.equal zone "Etc/UTC" "Explicit business zone"
 
-[<Tests>]
-let usageToken =
-    testCase "database structured usage retains even escaped unknown command tokens" (fun () ->
-        for token in [ "frobnicate"; "line\nbreak"; "escape\u001b" ] do
-            match Inputs.command [ token ] with
-            | Ok _ -> failtest "An unknown database command cannot execute"
-            | Error usage ->
-                let bytes, code = Replies.usage usage
-                use document = JsonDocument.Parse(bytes: byte array)
-                Expect.equal code 2 "The existing administrative refusal exit stays unchanged"
+                        Expect.equal
+                            owner.Principal
+                            (PrincipalKey.human "https://issuer.example/" "human-owner"
+                             |> Result.defaultWith (string >> invalidOp))
+                            "Human identity"
+
+                        Expect.equal
+                            owner.Profile
+                            {
+                                DisplayName = "Authored owner"
+                                Contact = Some "owner@example.test"
+                            }
+                            "Authored profile"
+
+                        Expect.equal
+                            owner.Roles
+                            [ Role.CaseHandler; Role.PaymentRecorder ]
+                            "Only additional roles are authored"
+                    | other -> failtestf "Expected initialization: %A" other)
+            testCase
+                "owner flags are required without an operation identity or private principal file"
+                (fun () ->
+                    Expect.equal
+                        (issue [ "initialize"; "Etc/UTC" ])
+                        (UsageError.MissingOption "--owner-issuer")
+                        "Missing owner identity"
+
+                    Expect.equal
+                        (issue (flags @ [ "--operation-id"; Guid.NewGuid().ToString("D") ]))
+                        (UsageError.UnknownOption("--operation-id", None))
+                        "Identity is minted inside initialization"
+
+                    Expect.isTrue
+                        (match Inputs.command [ "provision-owner" ] with
+                         | Error _ -> true
+                         | _ -> false)
+                        "Retired command refuses")
+            testCase "initial roles reject unsupported and duplicate grants" (fun () ->
+                for role in [ "OWNER"; "CASE_READER"; "CASE_REGISTRAR"; "case-handler" ] do
+                    Expect.isTrue
+                        (match issue (flags @ [ "--owner-role"; role ]) with
+                         | UsageError.InvalidChoice _ -> true
+                         | _ -> false)
+                        "Only the declared bootstrap role subset is allowed"
+
+                Expect.isTrue
+                    (match
+                        issue (
+                            flags
+                            @ [ "--owner-role"; "CASE_HANDLER"; "--owner-role"; "CASE_HANDLER" ]
+                        )
+                     with
+                     | UsageError.InvalidChoice _ -> true
+                     | _ -> false)
+                    "Duplicate role is not silently discarded")
+            testCase "profile validation identifies the actual owner flag" (fun () ->
+                let invalidName =
+                    flags
+                    |> List.map (fun value -> if value = "Authored owner" then " " else value)
 
                 Expect.equal
-                    (document.RootElement.GetProperty("issue").GetProperty("command").GetString())
-                    token
-                    "The structured contract preserves the authored token")
+                    (issue invalidName)
+                    (UsageError.InvalidValue("--owner-name", " "))
+                    "Name admission is shared with actor profiles"
+
+                Expect.equal
+                    (issue (flags @ [ "--owner-contact"; "\n" ]))
+                    (UsageError.InvalidValue("--owner-contact", "\n"))
+                    "Contact admission is shared"
+
+                Expect.equal
+                    (issue (flags @ [ "--owner-name"; "Second" ]))
+                    (UsageError.DuplicateOption "--owner-name")
+                    "A scalar flag has one value")
+            testCase
+                "maintenance is idempotent on/off syntax and retired generation flags refuse"
+                (fun () ->
+                    Expect.equal
+                        (Inputs.command [ "maintenance"; "on" ])
+                        (Ok(Maintenance ClaimCore.Application.Contracts.MaintenanceChange.On))
+                        "On"
+
+                    Expect.equal
+                        (Inputs.command [ "maintenance"; "off" ])
+                        (Ok(Maintenance ClaimCore.Application.Contracts.MaintenanceChange.Off))
+                        "Off"
+
+                    Expect.isTrue
+                        (match Inputs.command [ "maintenance"; "resume"; "--generation"; "1" ] with
+                         | Error _ -> true
+                         | _ -> false)
+                        "No generation contract remains")
+        ]

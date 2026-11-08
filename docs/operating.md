@@ -16,24 +16,23 @@ and audience, and HTTPS. The [Compose file](../deployment/compose.yaml) and
 [image build](../deployment/Dockerfile) declare deployment inputs. Supported PostgreSQL versions and
 image pins are in [postgresql-baseline.json](../db/postgresql-baseline.json).
 
-Initialize with `claimcore-database initialize ZONE`. The canonical IANA business zone is fixed for
+Initialize with `claimcore-database initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME [--owner-contact TEXT] [--owner-role ROLE]...`. The canonical IANA business zone is fixed for
 that installation. PostgreSQL must provide `pg_trgm` 1.6 before initialization/full restore; the owner
 installs it in protected `public`. Runtime credentials receive no DDL authority.
 
-Set CLAIMCORE_ADMIN_CONNECTION_FILE to a private owner connection file. Provisioning additionally uses
-CLAIMCORE_INITIAL_OWNER_PRINCIPAL_FILE with a fresh UUIDv7 operationId, issuer, subject and an entered
-profile containing displayName and optional contact. Keep the exact input and ID for a retry.
-The profile is not copied from sign-in claims. Remote database connections require verified TLS.
+Set `CLAIMCORE_ADMIN_CONNECTION_FILE` to a private owner connection file. Initialization records the
+human owner, authored profile and optional CASE_HANDLER, PAYMENT_RECORDER, DATA_STEWARD or AUDITOR roles
+in the same transaction as the baseline. It mints the operation ID inside that transaction. The profile
+is not copied from sign-in claims. A nonempty database refuses initialization; use status after an
+uncertain result. Remote database connections require verified TLS.
 
 | Owner command | Task |
 | --- | --- |
-| `initialize ZONE` | Create the current baseline and business zone. |
-| `provision-owner` | Create the first human owner in an empty authority installation. |
+| `initialize ZONE --owner-issuer URL --owner-subject SUBJECT --owner-name NAME` | Create the baseline, zone and first owner atomically. |
 | `head` | Read the current sequence/hash position. |
 | `status` | Read identity, formats, zone, head, maintenance and bounded counts. |
-| `maintenance enter` | Serialize with earlier writes and enter/report maintenance. |
-| `maintenance resume --generation N` | Resume the specified active generation. |
-| `prune-sessions [--limit N]` | Remove expired sessions in a locked/rechecked batch. |
+| `maintenance on` | Serialize with earlier writes and pause register writes. |
+| `maintenance off` | End the current pause after inspecting status. |
 | `verify [--expect SEQUENCE:HASH]` | Check retained history, projections and optionally a trusted checkpoint. |
 | `rebuild --expect SEQUENCE:HASH` | Rebuild projections during explicit maintenance. |
 | `invalidate-restored-sessions` | Remove restored sessions before reopening traffic. |
@@ -49,9 +48,13 @@ commits. It pauses new case, work, reminder, authority and initial-owner changes
 reads and authentication continue. A final operation-absence confirmation may take the head lock during
 maintenance because it appends nothing.
 
-Repeated entry returns the current generation. Resume requires that active generation; a later interval
-advances it. After lost acknowledgement, inspect fresh status before acting again. Maintenance neither
-resumes itself nor retries prepared requests. Advice is a read snapshot; execution checks current mode.
+Both on and off are idempotent. There is one operator: inspect `status` immediately before
+`maintenance off` so an old procedure does not end a newer pause. After lost acknowledgement, inspect
+fresh status. Maintenance does not resume itself or retry prepared requests. Execution checks current mode.
+
+Each host prunes expired sessions and access requests in bounded, locked and rechecked batches every
+ten minutes with jitter. Several hosts may prune concurrently. Access hints are no longer pruned as a
+side effect of refreshing a request.
 
 Maintenance is not database read-only mode or an all-host drain. When a task needs quiescence, remove
 new traffic and gracefully stop each host. Runtime leases remain held until actual provider cleanup
@@ -140,7 +143,7 @@ checkpoint. Preserve prior divergence for investigation. Rebuild restores erased
 Before reopening traffic, run `invalidate-restored-sessions` and confirm restored cookies no longer
 authenticate. This is an explicit restore step, separate from ordinary rebuild.
 Review later erasures and affected copies: a pre-erasure backup can restore erased content.
-Discard old maintenance-resume instructions and inspect the restored generation before resuming.
+Discard old maintenance instructions and inspect restored status before `maintenance off`.
 
 ## Monitoring
 

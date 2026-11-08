@@ -14,7 +14,7 @@ type internal InstallationConfigurationException() =
 
 /// Exact source identity of the only supported installation baseline.
 module internal Baseline =
-    let identifier = "claimcore-ground-and-gates"
+    let identifier = "claimcore"
 
     let private bytes =
         let assembly = Assembly.GetExecutingAssembly()
@@ -151,7 +151,7 @@ module internal Baseline =
             return id
         }
 
-    let initialize (source: NpgsqlDataSource) timeZone token =
+    let initialize (source: NpgsqlDataSource) timeZone initializeOwner token =
         task {
             let timeZone = zone timeZone
 
@@ -174,14 +174,12 @@ module internal Baseline =
                             let! present = exists connection token
 
                             if present then
-                                let! id, storedZone = require connection token
-
-                                if storedZone <> timeZone then
-                                    invalidOp "The installation configuration differs."
-
-                                return id
+                                return
+                                    invalidOp
+                                        "The database is already initialized; run status to inspect it."
                             else
                                 let! id = install connection timeZone token
+                                do! initializeOwner connection id
                                 do! DatabaseSession.commit transaction token
                                 return id
                         })
@@ -189,5 +187,5 @@ module internal Baseline =
 
 /// Owner-only schema initialization; no upgrade, adoption or conversion is provided.
 module internal SchemaAdministration =
-    let initialize source timeZone cancellationToken =
-        Baseline.initialize source timeZone cancellationToken
+    let initialize source timeZone initializeOwner cancellationToken =
+        Baseline.initialize source timeZone initializeOwner cancellationToken

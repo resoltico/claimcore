@@ -40,16 +40,16 @@ it("keeps an authored draft through maintenance entry and explicit resumption wi
     kind: "deliveryFailure",
     notice: { kind: "local", reason: "unreachable" },
   });
-  const view = render(editor({ active: false, generation: 0 }));
+  const view = render(editor({ active: false }));
   await userEvent.setup().click(screen.getByRole("checkbox", { name: "Change Claimant name" }));
   changeField("Claimant name", "Retained local draft");
-  view.rerender(editor({ active: true, generation: 1 }));
+  view.rerender(editor({ active: true }));
   expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(
     "Retained local draft",
   );
   expect(screen.getByRole("button", { name: "Review changes" })).toBeDisabled();
   expect(preview).not.toHaveBeenCalled();
-  view.rerender(editor({ active: false, generation: 1 }));
+  view.rerender(editor({ active: false }));
   expect(screen.getByRole("textbox", { name: "Claimant name" })).toHaveValue(
     "Retained local draft",
   );
@@ -92,7 +92,7 @@ it("automatically checks unconfirmed identity during write maintenance", async (
     },
   });
   render(
-    <RequesterContext value={{ ...requester, maintenance: { active: true, generation: 1 } }}>
+    <RequesterContext value={{ ...requester, maintenance: { active: true } }}>
       <RecoveryProvider>
         <UnresolvedNotice showEmpty />
       </RecoveryProvider>

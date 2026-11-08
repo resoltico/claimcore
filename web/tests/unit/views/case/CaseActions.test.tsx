@@ -44,7 +44,7 @@ it("renders no inferred primary when the view supplies none", () => {
 it.each(["snapshot", "requester"] as const)(
   "keeps the %s maintenance gate on the supplied recommendation",
   (gate) => {
-    const active = { active: true, generation: 1 };
+    const active = { active: true };
     const value = supplied({ kind: "ACTIONS", recommended: "DECIDE", groups: [] });
     render(
       <RequesterContext

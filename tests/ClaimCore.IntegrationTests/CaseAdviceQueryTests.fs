@@ -167,13 +167,10 @@ let tests =
                     "A payment-only actor cannot correct a closed case with no financial group"
 
                 let! entered =
-                    RegisterMaintenanceStore.change
-                        database.OwnerSource
-                        MaintenanceChange.Enter
-                        token
+                    RegisterMaintenanceStore.change database.OwnerSource MaintenanceChange.On token
                     |> Async.AwaitTask
 
-                Expect.isOk entered "The owner enters maintenance"
+                Expect.isTrue entered.State.Active "The owner pauses register writes"
                 let! current = get owner |> Async.AwaitTask
 
                 Expect.equal

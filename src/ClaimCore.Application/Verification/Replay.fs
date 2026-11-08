@@ -1035,7 +1035,7 @@ module Replay =
 
     let private grantEffects previous pending (entry: StoredEntry) payload =
         match LedgerEffects.authorityOperation entry.Effects, payload with
-        | Some AuthorityKind.Admit,
+        | (Some AuthorityKind.Admit | Some AuthorityKind.ProvisionOwner),
           VerifiedPayload.Authority { Effect = AuthorityEffect.Grant grant } ->
             let scope =
                 match grant.Scope with
@@ -1052,7 +1052,10 @@ module Replay =
             require
                 (Some entry.Sequence)
                 VerificationFinding.AuthorityFold
-                (not (Set.contains key seen))
+                (not (Set.contains key seen)
+                 && (LedgerEffects.authorityOperation entry.Effects
+                     <> Some AuthorityKind.ProvisionOwner
+                     || (Authority.initialOwnerRole grant.Role && scope = Scope.Installation)))
             |> Result.map (fun () ->
                 pending
                 |> Option.map (fun (value: PendingEffects) ->

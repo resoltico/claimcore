@@ -106,6 +106,8 @@
     <Compile Include="ProjectionRebuildTests.fs" />
     <Compile Include="ReminderRestoreTests.fs" />
     <Compile Include="DatabaseTests.fs" />
+    <Compile Include="InitializationPostgresTests.fs" />
+    <Compile Include="HousekeepingPostgresTests.fs" />
     <Compile Include="HostingTests.fs" />
     <Compile Include="TransactionTests.fs" />
     <Compile Include="TransactionFailureTests.fs" />

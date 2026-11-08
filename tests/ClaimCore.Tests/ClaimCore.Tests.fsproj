@@ -160,6 +160,7 @@
     <Compile Include="Cli/ShellTokenizerTests.fs" />
     <Compile Include="Cli/ShellTerminalTests.fs" />
     <Compile Include="Cli/ShellTestClock.fs" />
+    <Compile Include="Web/HousekeepingServiceTests.fs" />
     <Compile Include="Cli/ShellIdentityFixture.fs" />
     <Compile Include="Cli/ShellAuthenticationTests.fs" />
     <Compile Include="Cli/ShellIdleTests.fs" />

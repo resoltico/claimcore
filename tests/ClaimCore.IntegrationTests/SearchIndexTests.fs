@@ -79,10 +79,20 @@ let private freshOwner () =
             use owner = NpgsqlDataSource.Create(ownerSettings.ConnectionString)
 
             let! installed =
-                SchemaAdministration.initialize owner "Etc/UTC" token |> Async.AwaitTask
+                SchemaAdministration.initialize
+                    owner
+                    "Etc/UTC"
+                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    token
+                |> Async.AwaitTask
 
             let! repeated =
-                SchemaAdministration.initialize owner "Etc/UTC" token |> Async.AwaitTask
+                SchemaAdministration.initialize
+                    owner
+                    "Etc/UTC"
+                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    token
+                |> Async.AwaitTask
 
             Expect.equal
                 repeated
@@ -195,7 +205,12 @@ let private freshOwner () =
             let! ownerRefused =
                 task {
                     try
-                        let! _ = SchemaAdministration.initialize owner "Etc/UTC" token
+                        let! _ =
+                            SchemaAdministration.initialize
+                                owner
+                                "Etc/UTC"
+                                (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                                token
 
                         return false
                     with :? InvalidOperationException ->
@@ -217,7 +232,12 @@ let private freshOwner () =
                 |> Async.AwaitTask
 
             let! restored =
-                SchemaAdministration.initialize owner "Etc/UTC" token |> Async.AwaitTask
+                SchemaAdministration.initialize
+                    owner
+                    "Etc/UTC"
+                    (fun _ _ -> System.Threading.Tasks.Task.FromResult(()))
+                    token
+                |> Async.AwaitTask
 
             Expect.equal
                 restored

@@ -40,10 +40,16 @@ module internal AuthorityReviews =
                     AuthorityReviewEffect.Register proposal.Principal
                     AuthorityReviewEffect.SetProfile profile
                 ]
-            | AuthorityChange.OwnerProvisioned profile ->
+            | AuthorityChange.OwnerProvisioned(profile, roles) ->
                 [
                     AuthorityReviewEffect.ProvisionOwner proposal.Principal
                     AuthorityReviewEffect.SetProfile profile
+                    for role in roles do
+                        AuthorityReviewEffect.Grant
+                            {
+                                Role = role
+                                Scope = GrantScope.Installation
+                            }
                 ]
             | AuthorityChange.Admitted(profile, grants) ->
                 AuthorityReviewEffect.Register proposal.Principal
@@ -72,7 +78,7 @@ module internal AuthorityReviews =
                     Enabled = true
                     Profile = Some profile
                 }
-            | AuthorityChange.OwnerProvisioned profile ->
+            | AuthorityChange.OwnerProvisioned(profile, roles) ->
                 before,
                 { before with
                     Enabled = true
@@ -83,6 +89,11 @@ module internal AuthorityReviews =
                                 Role = Role.Owner
                                 Scope = GrantScope.Installation
                             }
+                            for role in roles do
+                                {
+                                    Role = role
+                                    Scope = GrantScope.Installation
+                                }
                         ]
                 }
             | AuthorityChange.Admitted(profile, grants) ->
@@ -124,15 +135,20 @@ module internal AuthorityReviews =
         let proposed =
             match proposal.Change with
             | AuthorityChange.Registered profile
-            | AuthorityChange.OwnerProvisioned profile ->
+            | AuthorityChange.OwnerProvisioned(profile, _) ->
                 let grants =
                     match proposal.Change with
-                    | AuthorityChange.OwnerProvisioned _ ->
+                    | AuthorityChange.OwnerProvisioned(_, roles) ->
                         [
                             {
                                 ActorGrant.Role = Role.Owner
                                 Scope = Scope.Installation
                             }
+                            for role in roles do
+                                {
+                                    ActorGrant.Role = role
+                                    Scope = Scope.Installation
+                                }
                         ]
                     | _ -> []
 

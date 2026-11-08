@@ -57,11 +57,9 @@ CREATE TABLE claimcore.installation (
 -- Operational mode is owner-controlled and survives process restarts. It is not a ledger projection.
 CREATE TABLE claimcore.register_maintenance (
     singleton boolean PRIMARY KEY DEFAULT true CHECK (singleton),
-    active boolean NOT NULL,
-    generation bigint NOT NULL CHECK (generation BETWEEN 0 AND 9007199254740991),
-    CHECK (NOT active OR generation > 0)
+    active boolean NOT NULL
 );
-INSERT INTO claimcore.register_maintenance(singleton,active,generation) VALUES (true,false,0);
+INSERT INTO claimcore.register_maintenance(singleton,active) VALUES (true,false);
 
 -- ---------------------------------------------------------------------------------------------
 -- The ledger: the single record of everything ClaimCore has accepted.

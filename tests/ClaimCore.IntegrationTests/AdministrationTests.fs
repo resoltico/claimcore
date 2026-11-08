@@ -18,24 +18,22 @@ open AdministrationProcess
 let private kind (value: JsonElement) =
     value.GetProperty("kind").GetString() |> Option.ofObj |> Option.get
 
-let private owner operationId subject =
-    JsonSerializer.Serialize
-        {|
-            operationId = operationId
-            issuer = "https://issuer.example/"
-            subject = subject
-            profile =
-                {|
-                    displayName = "Administration fixture owner"
-                    contact = (None: string option)
-                |}
-        |}
+let private ownerArguments =
+    [
+        "--owner-issuer"
+        "https://issuer.example/"
+        "--owner-subject"
+        "synthetic-owner"
+        "--owner-name"
+        "Administration fixture owner"
+        "--owner-role"
+        "CASE_HANDLER"
+    ]
 
-let private discovery binary connection principal =
+let private discovery binary connection =
     task {
         for _ in 1..2 do
-            let! help =
-                invoke binary (connection + ".absent") (principal + ".absent") [ "help" ] 0
+            let! help = invoke binary (connection + ".absent") [ "help" ] 0
 
             Expect.equal
                 (help.GetProperty("acts").EnumerateArray()
@@ -43,93 +41,59 @@ let private discovery binary connection principal =
                  |> Seq.toList)
                 [
                     "initialize"
-                    "provision-owner"
                     "verify"
                     "rebuild"
                     "invalidate-restored-sessions"
                     "head"
                     "status"
                     "maintenance"
-                    "prune-sessions"
                     "help"
                     "version"
                 ]
                 "Exact command set"
 
-            let! _ =
-                invoke binary (connection + ".absent") (principal + ".absent") [ "version" ] 0
+            let! _ = invoke binary (connection + ".absent") [ "version" ] 0
 
-            let! refusal = invoke binary connection principal [ "unsupported.synthetic" ] 2
+            let! refusal = invoke binary connection [ "unsupported.synthetic" ] 2
             Expect.equal (kind refusal) "USAGE_ERROR" "Unsupported command has actionable usage"
     }
 
-let private initialize binary connection principal =
+let private initialize binary connection =
     task {
-        let! missing = invoke binary connection principal [ "migrate" ] 2
+        let! missing = invoke binary connection [ "migrate" ] 2
         Expect.equal (kind missing) "USAGE_ERROR" "Removed command reports usage"
-        let! _ = invoke binary connection principal [ "head" ] 2
-        let! _ = invoke binary connection principal [ "verify" ] 2
-        let! _ = invoke binary connection principal [ "initialize"; "UTC" ] 2
-        let! first = invoke binary connection principal [ "initialize"; "Etc/UTC" ] 0
-        let! repeated = invoke binary connection principal [ "initialize"; "Etc/UTC" ] 0
+        let! _ = invoke binary connection [ "head" ] 2
+        let! _ = invoke binary connection [ "verify" ] 2
+        let! _ = invoke binary connection ([ "initialize"; "UTC" ] @ ownerArguments) 2
+
+        let! first =
+            invoke binary connection ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 0
+
+        Expect.equal (kind first) "INITIALIZED" "Schema and owner are committed together"
+
+        let! repeated =
+            invoke binary connection ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
+
+        Expect.equal (kind repeated) "REJECTED" "A nonempty installation is not adopted"
+        let! status = invoke binary connection [ "status" ] 0
 
         Expect.equal
-            (first.GetRawText())
-            (repeated.GetRawText())
-            "Initialize same zone repeats exactly"
+            (status
+                .GetProperty("initialOwner")
+                .GetProperty("displayName")
+                .GetProperty("value")
+                .GetString())
+            "Administration fixture owner"
+            "Status shows the recorded owner"
 
-        let! _ = invoke binary connection principal [ "initialize"; "Europe/Riga" ] 2
+        let! retired = invoke binary connection [ "provision-owner" ] 2
+        Expect.equal (kind retired) "USAGE_ERROR" "The standalone bootstrap command is retired"
         return ()
     }
 
-let private provision binary connection principal =
+let private checkpoints binary connection =
     task {
-        let original = File.ReadAllText principal
-        let extra = original.TrimEnd().TrimEnd('}') + ",\"unexpected\":true}"
-
-        let duplicate =
-            original.Replace("\"issuer\":", "\"issuer\":\"https://issuer.example/\",\"issuer\":")
-
-        for malformed in
-            [
-                "{"
-                "null"
-                "{}"
-                extra
-                duplicate
-                String.replicate 8193 " "
-                owner Guid.Empty "owner"
-            ] do
-            File.WriteAllText(principal, malformed)
-            let! refused = invoke binary connection principal [ "provision-owner" ] 2
-            Expect.equal (kind refused) "REJECTED" "Invalid owner input is refused before bootstrap"
-
-        File.WriteAllText(principal, original)
-        let! first = invoke binary connection principal [ "provision-owner" ] 0
-        Expect.equal (kind first) "ACCEPTED" "First human owner"
-        let! repeated = invoke binary connection principal [ "provision-owner" ] 0
-        Expect.equal (kind repeated) "ALREADY_ACCEPTED" "Exact repeat"
-
-        Expect.equal
-            (first.GetProperty("position").GetRawText())
-            (repeated.GetProperty("position").GetRawText())
-            "Repeat does not append"
-
-        for malformed in
-            [
-                owner (OperationIds.fresh ()) "other"
-                original.Replace("synthetic-owner", "other")
-            ] do
-            File.WriteAllText(principal, malformed)
-            let! refused = invoke binary connection principal [ "provision-owner" ] 2
-            Expect.equal (kind refused) "REJECTED" "Invalid or replacement owner refused"
-
-        File.WriteAllText(principal, original)
-    }
-
-let private checkpoints binary connection principal =
-    task {
-        let! head = invoke binary connection principal [ "head" ] 0
+        let! head = invoke binary connection [ "head" ] 0
         let position = head.GetProperty("position")
 
         let expected =
@@ -141,18 +105,17 @@ let private checkpoints binary connection principal =
             + (position.GetProperty("entryHash").GetString() |> nonNull)
 
         for _ in 1..2 do
-            let! verified =
-                invoke binary connection principal [ "verify"; "--expect"; expected ] 0
+            let! verified = invoke binary connection [ "verify"; "--expect"; expected ] 0
 
             Expect.equal
                 (verified.GetProperty("position").GetRawText())
                 (position.GetRawText())
                 "Verifier agrees with head"
 
-            let! repeated = invoke binary connection principal [ "head" ] 0
+            let! repeated = invoke binary connection [ "head" ] 0
             Expect.equal (repeated.GetRawText()) (head.GetRawText()) "Read-only head repeats"
 
-        let! status = invoke binary connection principal [ "status" ] 0
+        let! status = invoke binary connection [ "status" ] 0
         Expect.equal (kind status) "STATUS" "Owner status has its own read-only result"
 
         Expect.equal
@@ -160,23 +123,21 @@ let private checkpoints binary connection principal =
             (position.GetRawText())
             "Status reports the observed head without verification claims"
 
-        let! required =
-            invoke binary connection principal [ "rebuild"; "--expect"; expected ] 2
+        let! required = invoke binary connection [ "rebuild"; "--expect"; expected ] 2
 
         Expect.equal
             (kind required)
             "MAINTENANCE_REQUIRED"
             "Rebuild cannot implicitly pause the register"
 
-        let! maintenance = invoke binary connection principal [ "maintenance"; "enter" ] 0
+        let! maintenance = invoke binary connection [ "maintenance"; "on" ] 0
 
         Expect.equal
             (kind maintenance)
             "MAINTENANCE"
             "Owner maintenance is explicit before reconstruction"
 
-        let! rebuilt =
-            invoke binary connection principal [ "rebuild"; "--expect"; expected ] 0
+        let! rebuilt = invoke binary connection [ "rebuild"; "--expect"; expected ] 0
 
         Expect.equal
             (kind rebuilt)
@@ -188,39 +149,25 @@ let private checkpoints binary connection principal =
             (position.GetRawText())
             "Owner rebuild preserves the head"
 
-        let! conflict =
-            invoke binary connection principal [ "maintenance"; "resume"; "--generation"; "2" ] 2
+        let! resumed = invoke binary connection [ "maintenance"; "off" ] 0
+        Expect.equal (kind resumed) "MAINTENANCE" "Off is explicit and generation-free"
+        let! repeatedOff = invoke binary connection [ "maintenance"; "off" ] 0
 
-        Expect.equal
-            (kind conflict)
-            "MAINTENANCE_CONFLICT"
-            "A wrong owner generation is a structured refusal"
+        Expect.isFalse
+            (repeatedOff.GetProperty("changed").GetBoolean())
+            "Repeated off is idempotent"
 
-        let! pruned =
-            invoke binary connection principal [ "prune-sessions"; "--limit"; "1" ] 0
+        let! retiredPrune = invoke binary connection [ "prune-sessions" ] 2
+        Expect.equal (kind retiredPrune) "USAGE_ERROR" "Expiry is owned by host housekeeping"
 
-        Expect.equal
-            (kind pruned)
-            "SESSIONS_PRUNED"
-            "Explicit bounded pruning crosses the real owner process boundary"
-
-        let! resumed =
-            invoke binary connection principal [ "maintenance"; "resume"; "--generation"; "1" ] 0
-
-        Expect.equal
-            (kind resumed)
-            "MAINTENANCE"
-            "Explicit generation-bound resume returns the observed state"
-
-        let! sessions =
-            invoke binary connection principal [ "invalidate-restored-sessions" ] 0
+        let! sessions = invoke binary connection [ "invalidate-restored-sessions" ] 0
 
         Expect.equal
             (kind sessions)
             "RESTORED_SESSIONS_INVALIDATED"
             "Explicit restore-session maintenance is owner-only"
 
-        let! _ = invoke binary connection principal [ "rebuild" ] 2
+        let! _ = invoke binary connection [ "rebuild" ] 2
 
         for changed in
             [
@@ -228,11 +175,11 @@ let private checkpoints binary connection principal =
                 "-1:" + String.replicate 64 "0"
                 "1:NOT_A_HASH"
             ] do
-            let! _ = invoke binary connection principal [ "verify"; "--expect"; changed ] 2
+            let! _ = invoke binary connection [ "verify"; "--expect"; changed ] 2
             ()
     }
 
-let private divergence binary connection principal (database: NpgsqlConnection) =
+let private divergence binary connection (database: NpgsqlConnection) =
     task {
         let! _ =
             DatabaseSession.execute
@@ -241,7 +188,7 @@ let private divergence binary connection principal (database: NpgsqlConnection) 
                 [||]
                 CancellationToken.None
 
-        let! result = invoke binary connection principal [ "verify" ] 5
+        let! result = invoke binary connection [ "verify" ] 5
         Expect.equal (kind result) "DIVERGED" "Divergence has its own public kind and exit"
         Expect.equal (result.GetProperty("finding").GetString() |> nonNull) "HEAD" "Exact finding"
 
@@ -258,12 +205,7 @@ let private divergence binary connection principal (database: NpgsqlConnection) 
                 CancellationToken.None
 
         let! _ =
-            invoke
-                binary
-                connection
-                principal
-                [ "verify"; "--expect"; "1:" + String.replicate 64 "0" ]
-                5
+            invoke binary connection [ "verify"; "--expect"; "1:" + String.replicate 64 "0" ] 5
 
         return ()
     }
@@ -271,31 +213,29 @@ let private divergence binary connection principal (database: NpgsqlConnection) 
 let private connectionGuards
     binary
     directory
-    principal
     (database: Testcontainers.PostgreSql.PostgreSqlContainer)
     =
     task {
         let settings = NpgsqlConnectionStringBuilder(database.GetConnectionString())
         settings.Password <- "incorrect-synthetic-password"
         let path = privateText directory "bad-connection" settings.ConnectionString
-        let! failed = invoke binary path principal [ "head" ] 3
+        let! failed = invoke binary path [ "head" ] 3
         Expect.equal (kind failed) "FAILED" "Authentication failure reveals no provider detail"
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.GroupWrite)
-        let! _ = invoke binary path principal [ "head" ] 2
+        let! _ = invoke binary path [ "head" ] 2
         File.SetUnixFileMode(path, UnixFileMode.UserRead ||| UnixFileMode.UserWrite)
         settings.Host <- "external.invalid"
         settings.SslMode <- SslMode.Prefer
         File.WriteAllText(path, settings.ConnectionString)
-        let! _ = invoke binary path principal [ "initialize"; "Etc/UTC" ] 2
+        let! _ = invoke binary path ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 2
         File.WriteAllBytes(path, [| 0xffuy |])
-        let! _ = invoke binary path principal [ "head" ] 2
+        let! _ = invoke binary path [ "head" ] 2
         ()
     }
 
 let private lostCommit
     binary
     directory
-    principal
     (database: Testcontainers.PostgreSql.PostgreSqlContainer)
     (connection: NpgsqlConnection)
     =
@@ -317,7 +257,9 @@ let private lostCommit
         settings.GssEncryptionMode <- GssEncryptionMode.Disable
         settings.Pooling <- false
         let proxyFile = privateText directory "proxy-connection" settings.ConnectionString
-        let! unknown = invoke binary proxyFile principal [ "initialize"; "Etc/UTC" ] 4
+
+        let! unknown =
+            invoke binary proxyFile ([ "initialize"; "Etc/UTC" ] @ ownerArguments) 4
 
         Expect.equal
             (kind unknown)
@@ -327,7 +269,7 @@ let private lostCommit
         let directFile =
             privateText directory "direct-connection" (database.GetConnectionString())
 
-        let! _ = invoke binary directFile principal [ "initialize"; "Etc/UTC" ] 0
+        let! _ = invoke binary directFile [ "status" ] 0
 
         let! rows =
             DatabaseSession.rows
@@ -342,7 +284,7 @@ let private lostCommit
             "Safe repeat does not create another installation"
     }
 
-let private foreignRefusal binary connectionFile principalFile (connection: NpgsqlConnection) =
+let private foreignRefusal binary connectionFile (connection: NpgsqlConnection) =
     async {
         let! _ =
             DatabaseSession.execute
@@ -354,13 +296,13 @@ let private foreignRefusal binary connectionFile principalFile (connection: Npgs
 
         for arguments in
             [
-                [ "initialize"; "Etc/UTC" ]
+                ([ "initialize"; "Etc/UTC" ] @ ownerArguments)
                 [ "migrate" ]
                 [ "provision-owner" ]
                 [ "verify" ]
                 [ "head" ]
             ] do
-            let! _ = invoke binary connectionFile principalFile arguments 2 |> Async.AwaitTask
+            let! _ = invoke binary connectionFile arguments 2 |> Async.AwaitTask
             ()
 
         let! marker =
@@ -409,37 +351,22 @@ let private publishedCommands () =
                                         "connection"
                                         (database.GetConnectionString())
 
-                                let principalFile =
-                                    privateText
-                                        directory
-                                        "principal.json"
-                                        (owner (OperationIds.fresh ()) "synthetic-owner")
+                                do! discovery binary connectionFile |> Async.AwaitTask
 
-                                do! discovery binary connectionFile principalFile |> Async.AwaitTask
+                                do! initialize binary connectionFile |> Async.AwaitTask
 
-                                do!
-                                    initialize binary connectionFile principalFile
-                                    |> Async.AwaitTask
 
-                                do! provision binary connectionFile principalFile |> Async.AwaitTask
+                                do! checkpoints binary connectionFile |> Async.AwaitTask
+
+                                do! divergence binary connectionFile connection |> Async.AwaitTask
+
+                                do! connectionGuards binary directory database |> Async.AwaitTask
 
                                 do!
-                                    checkpoints binary connectionFile principalFile
+                                    lostCommit binary directory database connection
                                     |> Async.AwaitTask
 
-                                do!
-                                    divergence binary connectionFile principalFile connection
-                                    |> Async.AwaitTask
-
-                                do!
-                                    connectionGuards binary directory principalFile database
-                                    |> Async.AwaitTask
-
-                                do!
-                                    lostCommit binary directory principalFile database connection
-                                    |> Async.AwaitTask
-
-                                do! foreignRefusal binary connectionFile principalFile connection
+                                do! foreignRefusal binary connectionFile connection
                                 return Ok()
                             with error ->
                                 return Error error

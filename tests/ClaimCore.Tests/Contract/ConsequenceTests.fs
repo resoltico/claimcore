@@ -29,6 +29,8 @@ let private acts =
         ActKind.Authority AuthorityKind.Disable, Consequence.Stewardship
         ActKind.Authority AuthorityKind.SetProfile, Consequence.Routine
         ActKind.Authority AuthorityKind.EraseProfile, Consequence.Irreversible
+        ActKind.Note NoteActKind.AddNote, Consequence.Routine
+        ActKind.Note NoteActKind.RemoveNote, Consequence.Routine
         ActKind.Work WorkActKind.UpdateWork, Consequence.Routine
         ActKind.Reminder ReminderActKind.Create, Consequence.Routine
         ActKind.Reminder ReminderActKind.Update, Consequence.Routine
@@ -45,6 +47,7 @@ let private queries =
         QueryEndpoint.CaseList, Consequence.Routine
         QueryEndpoint.CaseSummary, Consequence.Routine
         QueryEndpoint.CaseTimeline, Consequence.Routine
+        QueryEndpoint.CaseNotes, Consequence.Routine
         QueryEndpoint.ReminderList, Consequence.Routine
         QueryEndpoint.ReminderGet, Consequence.Routine
         QueryEndpoint.WorkViews, Consequence.Routine

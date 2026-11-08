@@ -18,6 +18,7 @@ type InstallationStatus =
         Position: LedgerPosition
         Maintenance: RegisterMaintenance
         InstallationFormat: int
+        InitialOwner: ActorRef option
         Actors: int64
         Cases: int64
         WorkRecords: int64
@@ -35,6 +36,19 @@ module internal InstallationStatus =
                 let! _ = Transactions.configure connection Transactions.timeouts token
                 let! instant = SessionRows.now connection token
                 let! mode = RegisterMaintenanceStore.read connection token
+
+                let! owner =
+                    DatabaseSession.rows
+                        connection
+                        "SELECT a.actor_id,a.principal_kind,a.issuer,a.subject,a.enabled,a.display_name,a.contact FROM claimcore.actors a JOIN claimcore.ledger l ON l.subject_id=a.actor_id WHERE l.subject_kind='AUTHORITY' AND l.act='PROVISION_OWNER' ORDER BY l.sequence LIMIT 1"
+                        [||]
+                        token
+
+                let owner =
+                    owner
+                    |> List.tryExactlyOne
+                    |> Option.map (Projections.actorRow >> Actor.currentReference)
+
 
                 let! rows =
                     DatabaseSession.rows
@@ -60,6 +74,7 @@ module internal InstallationStatus =
                                     (DatabaseSession.value 1 row)
                             Maintenance = mode
                             InstallationFormat = InstallationFormat.Current
+                            InitialOwner = owner
                             Actors = DatabaseSession.value 2 row
                             Cases = DatabaseSession.value 3 row
                             Sessions = DatabaseSession.value 4 row

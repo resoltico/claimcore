@@ -410,7 +410,7 @@ let authorityActs grants =
         let kind = AuthorityKind.parse token |> Option.get
 
         match kind with
-        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner ownerProfile, token ]
+        | AuthorityKind.ProvisionOwner -> [ AuthorityAct.ProvisionOwner(ownerProfile, []), token ]
         | AuthorityKind.Register -> [ AuthorityAct.Register actorProfile, token ]
         | AuthorityKind.Admit ->
             if List.isEmpty grants then

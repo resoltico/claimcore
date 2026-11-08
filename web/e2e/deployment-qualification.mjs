@@ -8,6 +8,7 @@ import { chromium } from "@playwright/test";
 
 const [root, owned] = process.argv.slice(2);
 const { consumerContractIdentity } = await import(path.join(root, "contracts/client.ts"));
+const { operationId } = await import(path.join(root, "web/src/operation/operationId.ts"));
 const configuration = path.join(owned, "configuration $CLAIMCORE_QA_PATH # :, \" \\\' end\\");
 const composeFile = path.join(root, "deployment/compose.yaml");
 const cleanupImage = JSON.parse(
@@ -180,11 +181,15 @@ const owner = async (context, origin, fingerprint, csrf) => {
     value.outcome.kind !== "SUCCEEDED" ||
     value.outcome.data.requester.kind !== "ACTIVE" ||
     !value.outcome.data.requester.capabilities.includes("MANAGE_AUTHORITY") ||
+    !value.outcome.data.requester.capabilities.includes("REGISTER") ||
+    !value.outcome.data.requester.capabilities.includes("RECORD_PAYMENT") ||
+    !value.outcome.data.requester.capabilities.includes("STEWARD") ||
     value.outcome.data.requester.self.displayName.kind !== "NAMED" ||
     value.outcome.data.requester.self.displayName.value !== "Authored deployment owner"
   ) {
-    throw new Error("Fresh owner authority was not provisioned.");
+    throw new Error("Fresh owner authority was not initialized with its evaluation roles.");
   }
+  return value.outcome.data.requester;
 };
 const login = async (context, origin) => {
   const page = await context.newPage();
@@ -195,7 +200,7 @@ const login = async (context, origin) => {
     await page.locator("#password").fill(password.toString("utf8").trim());
     await page.locator("#kc-login").click();
     await page.waitForURL(
-      (url) => url.origin === origin && ["/", "/people"].includes(url.pathname),
+      (url) => url.origin === origin && ["/", "/people", "/cases"].includes(url.pathname),
     );
   } finally {
     password.fill(0);
@@ -214,7 +219,43 @@ const qualify = async (origin, ca) => {
     await login(context, origin);
     progress("owner-context");
     const csrf = await session(context, origin, fingerprint);
-    await owner(context, origin, fingerprint, csrf);
+    const requester = await owner(context, origin, fingerprint, csrf);
+    const input = {
+      kind: "CASE",
+      operationId: operationId(),
+      target: { kind: "REFERENCE", caseReference: "DEPLOYMENT-001" },
+      expectedRevision: 0,
+      act: {
+        kind: "OPEN",
+        values: {
+          incidentDate: requester.businessDate,
+          incidentNotificationDate: requester.businessDate,
+          incidentCountry: "LV",
+          claimantName: "Synthetic deployment claimant",
+          insurerName: "Synthetic deployment insurer",
+          claimedAmount: "100",
+          claimedCurrency: "EUR",
+        },
+      },
+    };
+    const write = async (endpoint) =>
+      payload(
+        await context.request.post(`${origin}/api/${endpoint}`, {
+          headers: {
+            "ClaimCore-Contract": fingerprint,
+            "ClaimCore-Installation": requester.installationId,
+            "X-ClaimCore-Antiforgery": csrf,
+            Origin: origin,
+          },
+          data: input,
+        }),
+      );
+    if ((await write("operation.preview")).outcome.kind !== "REVIEWED") {
+      throw new Error("The evaluation owner cannot review its first case.");
+    }
+    if ((await write("operation.execute")).outcome.kind !== "ACCEPTED") {
+      throw new Error("The evaluation owner cannot open a case immediately after sign-in.");
+    }
     progress("restart");
     compose("restart", "web");
     await awaitReady(origin, ca);

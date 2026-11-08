@@ -137,7 +137,7 @@ let private malformed () =
         let raw =
             "{\"acts\":[],\"history\":\""
             + token
-            + "\",\"maintenance\":{\"active\":false,\"generation\":0},\"recommended\":null}"
+            + "\",\"maintenance\":{\"active\":false},\"recommended\":null}"
             |> Fixtures.completeAdviceWire
             |> bytes
 
@@ -148,7 +148,7 @@ let private malformed () =
         let raw =
             "{\"acts\":[],\"history\":"
             + oldShape
-            + ",\"maintenance\":{\"active\":false,\"generation\":0},\"recommended\":null}"
+            + ",\"maintenance\":{\"active\":false},\"recommended\":null}"
             |> Fixtures.completeAdviceWire
             |> bytes
 
@@ -157,15 +157,15 @@ let private malformed () =
             "Retired arrays and unknown disclosure levels refuse"
 
     let ordinary =
-        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
+        """{"acts":["CLOSE"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
 
     let missing =
-        """{"acts":["CORRECT"],"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
+        """{"acts":["CORRECT"],"history":"NONE","maintenance":{"active":false},"recommended":null}"""
 
     for valid in
         [
-            """{"acts":["CLOSE"],"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":"CLOSE"}"""
-            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false,"generation":0},"recommended":null}"""
+            """{"acts":["CLOSE"],"history":"NONE","maintenance":{"active":false},"recommended":"CLOSE"}"""
+            """{"acts":["CORRECT"],"correction":{"registration":["KEEP"],"decision":["KEEP"]},"history":"NONE","maintenance":{"active":false},"recommended":null}"""
         ] do
         Expect.isOk
             (Codec.decode

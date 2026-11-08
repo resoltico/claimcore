@@ -74,11 +74,17 @@ module AuthorityRequests =
                         AuthorityEffect.Register(PrincipalKey.toInput command.Target)
                         AuthorityEffect.SetProfile profile
                     ]
-            | AuthorityAct.ProvisionOwner profile ->
+            | AuthorityAct.ProvisionOwner(profile, roles) ->
                 Ok
                     [
                         AuthorityEffect.ProvisionOwner(PrincipalKey.toInput command.Target)
                         AuthorityEffect.SetProfile profile
+                        for role in roles do
+                            AuthorityEffect.Grant
+                                {
+                                    Role = role
+                                    Scope = RecordedGrantScope.Installation
+                                }
                     ]
             | AuthorityAct.SetProfile profile -> Ok [ AuthorityEffect.SetProfile profile ]
             | AuthorityAct.EraseProfile -> Ok [ AuthorityEffect.EraseProfile ]
