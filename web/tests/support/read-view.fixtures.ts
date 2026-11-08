@@ -76,7 +76,8 @@ const fields = (value: CaseFields): PresentedEntry[] => [
   entry(
     "incidentDescription",
     "field.incidentDescription.label",
-    value.registration.incidentDescription === null
+    value.registration.incidentDescription === null ||
+      value.registration.incidentDescription === undefined
       ? absent
       : { kind: "NARRATIVE", value: value.registration.incidentDescription },
   ),

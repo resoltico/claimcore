@@ -13,9 +13,10 @@ import { expectCorrection } from "../../support/correction-serialization-checks"
 const authored = {
   registration: {
     claimantName: "Synthetic replacement",
-    claimed: { amount: "1.0000", currency: "EUR" },
+    claimedAmount: "1.0000",
+    claimedCurrency: "EUR",
   },
-  decision: { paymentDecisionDate: "2026-09-03", payable: { amount: "2.0000", currency: "EUR" } },
+  decision: { paymentDecisionDate: "2026-09-03", payableAmount: "2.0000", payableCurrency: "EUR" },
   payment: payment({ paymentDate: "2026-09-04" }),
 };
 const correction = (
@@ -36,12 +37,12 @@ const correction = (
     ),
     "act.groups.registration.kind": registrationChoice,
     "act.groups.registration.values.claimantName": authored.registration.claimantName,
-    "act.groups.registration.values.claimed.amount": authored.registration.claimed.amount,
-    "act.groups.registration.values.claimed.currency": authored.registration.claimed.currency,
+    "act.groups.registration.values.claimedAmount": authored.registration.claimedAmount,
+    "act.groups.registration.values.claimedCurrency": authored.registration.claimedCurrency,
     "act.groups.decision.kind": decisionChoice,
     "act.groups.decision.values.paymentDecisionDate": authored.decision.paymentDecisionDate,
-    "act.groups.decision.values.payable.amount": authored.decision.payable.amount,
-    "act.groups.decision.values.payable.currency": authored.decision.payable.currency,
+    "act.groups.decision.values.payableAmount": authored.decision.payableAmount,
+    "act.groups.decision.values.payableCurrency": authored.decision.payableCurrency,
     "act.groups.payment.kind": paymentChoice,
     "act.groups.payment.values.paymentDate": authored.payment.paymentDate,
   };

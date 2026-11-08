@@ -1309,15 +1309,9 @@ let internal partialUpdatesAndReaffirmation fixture =
         let caseId = accepted opened |> caseReceipt |> _.CaseId
 
         let partial: RegistrationUpdateInput =
-            {
-                IncidentDate = None
-                NotificationDate = None
-                Country = None
-                Claimant = Some "Only selected claimant"
-                Insurer = None
-                Claimed = None
-                IncidentDescription = WorkValue.Keep
-            }
+            (RegistrationUpdateInput.create
+                [ BusinessField.ClaimantName, Some "Only selected claimant" ]
+             |> Result.defaultWith failtest)
 
         let! edited =
             execute fixture owner 41 "PARTIAL-FACTS" 1L (CaseAct.AmendRegistration partial)
@@ -1336,10 +1330,12 @@ let internal partialUpdatesAndReaffirmation fixture =
                 42
                 "PARTIAL-FACTS"
                 1L
-                (CaseAct.AmendRegistration
-                    { partial with
-                        Claimant = Some "Stale edit"
-                    })
+                (CaseAct.AmendRegistration(
+                    RegistrationUpdateInput.replace
+                        [ BusinessField.ClaimantName, Some "Stale edit" ]
+                        (partial)
+                    |> Result.defaultWith failtest
+                ))
 
         match stale.Outcome with
         | ExecuteResult.Rejected(Refusal.RevisionConflict conflict) ->

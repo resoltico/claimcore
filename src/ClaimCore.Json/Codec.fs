@@ -39,6 +39,10 @@ module Codec =
 
     let build fields = CodecRecords.build fields
     let fieldMap members = CodecRecords.fieldMap members
+
+    let fieldMapWithPresence members =
+        CodecRecords.fieldMapWithPresence members
+
     let flatten get part fields = CodecRecords.flatten get part fields
 
     let buildResult describe fields =

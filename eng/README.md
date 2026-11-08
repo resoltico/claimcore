@@ -5,9 +5,8 @@ the applicable final stages once, choosing CI or local execution as their owner.
 [verification policy](../docs/contributing.md#verification) for scope and evidence reuse.
 | Tool | Responsibility |
 | --- | --- |
-| [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and bounded native report retention |
+| [verify.sh](verify.sh) | Preflight, shared restore/build work, checks and per-stage TRX reports |
 | [ContractGenerator](ClaimCore.ContractGenerator/Program.fs) | Contracts, CLI reference and complete web/CLI runtime catalogs; [generation instructions](../docs/contributing.md#generated-contracts) |
-| [Check-FSharpLint.sh](Check-FSharpLint.sh) | F# rules, collecting failures across source roots |
 | [third-party-notices.json](licenses/third-party-notices.json) | Reviewed package/apphost notices; acceptance checks actual publication contents |
 
 The [source release procedure](../docs/contributing.md#source-releases) explains the owner's inputs to the

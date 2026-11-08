@@ -32,7 +32,7 @@ it("changes only the declared identity/assumption while preserving captured auth
   const values = {
     operationId: firstId,
     expectedRevision: "1",
-    "act.values.claimed.amount": amount,
+    "act.values.claimedAmount": amount,
     "target.caseReference": "CASE-SERIALIZATION",
   };
   const result = latestOperationValues(
@@ -43,7 +43,7 @@ it("changes only the declared identity/assumption while preserving captured auth
   );
   expect(result["operationId"]).toBe(secondId);
   expect(result["expectedRevision"]).toBe("8");
-  expect(result["act.values.claimed.amount"]).toBe(amount);
+  expect(result["act.values.claimedAmount"]).toBe(amount);
   expect(result["target.caseReference"]).toBe("CASE-SERIALIZATION");
 });
 it("does not rebase an uncertain request when its exact retry returns a revision conflict", () => {

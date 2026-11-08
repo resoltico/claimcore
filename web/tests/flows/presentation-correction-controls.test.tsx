@@ -75,7 +75,7 @@ it.each(["en", "lv", "ar"])("submits machine correction modes in %s", async (lan
   expect(draftAt(0).act).toMatchObject({
     kind: "CORRECT",
     groups: {
-      registration: { kind: "UPDATE", values: { claimed: { amount: "1.0000", currency: "EUR" } } },
+      registration: { kind: "UPDATE", values: { claimedAmount: "1.0000", claimedCurrency: "EUR" } },
       decision: { kind: "CLEAR" },
       payment: { kind: "CLEAR" },
     },

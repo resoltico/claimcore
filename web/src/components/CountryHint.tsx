@@ -1,10 +1,10 @@
-import { productMetadata } from "../protocol/productMetadata";
+import type { FieldCatalogEntry } from "../api/service";
 import { usePresentation } from "../presentation/context";
 
-export const CountryHint = ({ code }: { code: string }) => {
+export const CountryHint = ({ code, field }: { code: string; field: FieldCatalogEntry }) => {
   const p = usePresentation();
-  const country = productMetadata.catalog.fields.find((field) => field.name === "incidentCountry");
-  const format = country?.scalar.kind === "TEXT" ? country.scalar.format : undefined;
+  const format =
+    field.valueKind === "COUNTRY" && field.scalar.kind === "TEXT" ? field.scalar.format : undefined;
   if (
     format?.grammar === undefined ||
     format.grammar === null ||

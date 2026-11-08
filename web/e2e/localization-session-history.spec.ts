@@ -117,7 +117,8 @@ test("keeps exact old and new facts in the real timeline view", async ({ page })
     act: {
       kind: "AMEND_REGISTRATION",
       values: {
-        claimed: { amount: "9876.5432", currency: "EUR" },
+        claimedAmount: "9876.5432",
+        claimedCurrency: "EUR",
         incidentDate: "2026-09-07",
         incidentNotificationDate: "2026-09-08",
         incidentDescription: "Distinctive browser history\nSecond exact paragraph",

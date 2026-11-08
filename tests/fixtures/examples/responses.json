@@ -377,8 +377,7 @@
                   "claimantName": "x",
                   "insurerName": "x",
                   "claimedAmount": "0",
-                  "claimedCurrency": "EUR",
-                  "incidentDescription": null
+                  "claimedCurrency": "EUR"
                 },
                 "decision": {
                   "paymentDecisionDate": "2026-01-01",
@@ -1306,8 +1305,7 @@
                       "claimantName": "x",
                       "insurerName": "x",
                       "claimedAmount": "0",
-                      "claimedCurrency": "EUR",
-                      "incidentDescription": null
+                      "claimedCurrency": "EUR"
                     },
                     "decision": {
                       "paymentDecisionDate": "2026-01-01",
@@ -1393,8 +1391,7 @@
                         "claimantName": "x",
                         "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR",
-                        "incidentDescription": null
+                        "claimedCurrency": "EUR"
                       },
                       "decision": {
                         "paymentDecisionDate": "2026-01-01",
@@ -1468,8 +1465,7 @@
                         "claimantName": "x",
                         "insurerName": "x",
                         "claimedAmount": "0",
-                        "claimedCurrency": "EUR",
-                        "incidentDescription": null
+                        "claimedCurrency": "EUR"
                       },
                       "decision": {
                         "paymentDecisionDate": "2026-01-01",

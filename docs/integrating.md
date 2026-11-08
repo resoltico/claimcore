@@ -18,6 +18,10 @@ both its CaseId and original reference.
 format, stored with the installation and each ledger entry. Payloads have no format tags. A durable
 change requires a fresh installation. Initialization accepts only the current baseline and an empty database.
 
+Registration and decision inputs use flat amount/currency pairs, including amendments and corrections:
+`claimedAmount` with `claimedCurrency`, and `payableAmount` with `payableCurrency`. Updates require both
+members together. Optional registration facts may be omitted or explicitly cleared with `null`.
+
 ## HTTPS contract
 
 Session bootstrap uses GET. Other endpoints use POST `/api/<endpoint>` with literal dots and the input

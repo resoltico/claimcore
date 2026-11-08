@@ -2474,5 +2474,21 @@
   "diagnostic.PRINCIPAL_FORMAT.gui": {
     "text": "Pārbaudiet pieteikšanās nodrošinātāju un konta ID.",
     "source": "5a875ddb5598"
+  },
+  "field.policyNumber.label": {
+    "text": "Polises numurs",
+    "source": "10ca5fde6a02"
+  },
+  "field.policyNumber.hint": {
+    "text": "Apdrošinātāja izmantotais polises numurs.",
+    "source": "f0e7244930f5"
+  },
+  "field.insurerClaimReference.label": {
+    "text": "Apdrošinātāja atlīdzības lietas atsauce",
+    "source": "2d8dd08ee82e"
+  },
+  "field.insurerClaimReference.hint": {
+    "text": "Atsauce, ko apdrošinātājs izmanto šai atlīdzības lietai.",
+    "source": "7686a3e64d99"
   }
 }

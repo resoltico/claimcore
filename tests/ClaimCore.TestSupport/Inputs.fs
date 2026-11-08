@@ -248,25 +248,10 @@ let correction: AuthoredCorrection =
 
 /// Build a request asserting all registration values; this is not a compatibility reader or an oracle.
 let registrationUpdate (input: RegistrationInput) : RegistrationUpdateInput =
-    let value field = RegistrationInput.value field input
-
-    {
-        IncidentDate = Some(value BusinessField.IncidentDate)
-        NotificationDate = Some(value BusinessField.IncidentNotificationDate)
-        Country = Some(value BusinessField.IncidentCountry)
-        Claimant = Some(value BusinessField.ClaimantName)
-        Insurer = Some(value BusinessField.InsurerName)
-        IncidentDescription =
-            RegistrationInput.description input
-            |> Option.map WorkValue.Set
-            |> Option.defaultValue WorkValue.Keep
-        Claimed =
-            Some
-                {
-                    Amount = value BusinessField.ClaimedAmount
-                    Currency = value BusinessField.ClaimedCurrency
-                }
-    }
+    RegistrationInput.values input
+    |> List.map (fun (field, value) -> field, Some value)
+    |> RegistrationUpdateInput.create
+    |> accepted
 
 let decisionUpdate (input: DecisionInput) : DecisionUpdateInput =
     let value field = DecisionInput.value field input

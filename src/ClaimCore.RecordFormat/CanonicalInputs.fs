@@ -14,115 +14,61 @@ module CanonicalInputs =
     let reminderRevision =
         integer (Revision.value Revision.first) JsonValue.MaximumInteger
 
-    let private inputGroup group create values =
+    let private inputFields group updating =
         CaseFields.ofGroup group
-        |> List.map (fun field -> field, BusinessField.key field, Codec.text)
-        |> Codec.fieldMap
-        |> Codec.mapResult
+        |> List.map (fun field ->
+            let declaration = BusinessField.describe field
+
+            let value =
+                if declaration.AllowsAbsence then
+                    nullable text
+                else
+                    text |> map Some Option.get
+
+            field, declaration.Key, updating || declaration.AllowsAbsence, value)
+        |> Codec.fieldMapWithPresence
+
+    let private inputGroup group create values =
+        inputFields group false
+        |> mapResult
+            (fun path fields ->
+                fields
+                |> Map.toList
+                |> List.choose (fun (field, value) ->
+                    value |> Option.map (fun value -> field, value))
+                |> create
+                |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
+            (values >> List.map (fun (field, value) -> field, Some value) >> Map.ofList)
+
+    let registration =
+        inputGroup RecordGroup.Registration RegistrationInput.create RegistrationInput.values
+        |> named "Registration"
+
+    let decision =
+        inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
+        |> named "Decision"
+
+    let payment =
+        inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
+        |> named "Payment"
+
+    let private update group create values =
+        inputFields group true
+        |> mapResult
             (fun path fields ->
                 create (Map.toList fields)
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
             (values >> Map.ofList)
 
-    let registration =
-        (record (fun incident notification country claimant insurer amount currency description ->
-            [
-                BusinessField.IncidentDate, incident
-                BusinessField.IncidentNotificationDate, notification
-                BusinessField.IncidentCountry, country
-                BusinessField.ClaimantName, claimant
-                BusinessField.InsurerName, insurer
-                BusinessField.ClaimedAmount, amount
-                BusinessField.ClaimedCurrency, currency
-                yield!
-                    description
-                    |> Option.flatten
-                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
-                    |> Option.toList
-            ]
-            |> RegistrationInput.create
-            |> Result.defaultWith invalidOp)
-        : Fields<RegistrationInput, _>)
-        |> field "incidentDate" (RegistrationInput.value BusinessField.IncidentDate) text
-        |> field
-            "incidentNotificationDate"
-            (RegistrationInput.value BusinessField.IncidentNotificationDate)
-            text
-        |> field "incidentCountry" (RegistrationInput.value BusinessField.IncidentCountry) text
-        |> field "claimantName" (RegistrationInput.value BusinessField.ClaimantName) text
-        |> field "insurerName" (RegistrationInput.value BusinessField.InsurerName) text
-        |> field "claimedAmount" (RegistrationInput.value BusinessField.ClaimedAmount) text
-        |> field "claimedCurrency" (RegistrationInput.value BusinessField.ClaimedCurrency) text
-        |> optionalField
-            "incidentDescription"
-            (RegistrationInput.description >> Option.map Some)
-            (nullable text)
-        |> build
-        |> named "Registration"
-
-    let decision =
-        inputGroup RecordGroup.Decision DecisionInput.create DecisionInput.values
-        |> Codec.named "Decision"
-
-    let payment =
-        inputGroup RecordGroup.Payment PaymentInput.create PaymentInput.values
-        |> Codec.named "Payment"
-
-
-    let private moneyInput =
-        (record (fun amount currency ->
-            {
-                MoneyInput.Amount = amount
-                Currency = currency
-            })
-        : Fields<MoneyInput, _>)
-        |> field "amount" _.Amount text
-        |> field "currency" _.Currency text
-        |> build
-
     let registrationUpdate =
-        (record (fun incident notification country claimant insurer claimed description ->
-            {
-                RegistrationUpdateInput.IncidentDate = incident
-                NotificationDate = notification
-                Country = country
-                Claimant = claimant
-                Insurer = insurer
-                Claimed = claimed
-                IncidentDescription =
-                    match description with
-                    | None -> WorkValue.Keep
-                    | Some None -> WorkValue.Clear
-                    | Some(Some value) -> WorkValue.Set value
-            })
-        : Fields<RegistrationUpdateInput, _>)
-        |> optionalField "incidentDate" _.IncidentDate text
-        |> optionalField "incidentNotificationDate" _.NotificationDate text
-        |> optionalField "incidentCountry" _.Country text
-        |> optionalField "claimantName" _.Claimant text
-        |> optionalField "insurerName" _.Insurer text
-        |> optionalField "claimed" _.Claimed moneyInput
-        |> optionalField
-            "incidentDescription"
-            (fun value ->
-                match value.IncidentDescription with
-                | WorkValue.Keep -> None
-                | WorkValue.Clear -> Some None
-                | WorkValue.Set text -> Some(Some text))
-            (nullable text)
-        |> build
+        update
+            RecordGroup.Registration
+            RegistrationUpdateInput.create
+            RegistrationUpdateInput.values
         |> named "RegistrationUpdate"
 
     let decisionUpdate =
-        (record (fun date payable ->
-            {
-                DecisionUpdateInput.Date = date
-                Payable = payable
-            })
-        : Fields<DecisionUpdateInput, _>)
-        |> optionalField "paymentDecisionDate" _.Date text
-        |> optionalField "payable" _.Payable moneyInput
-        |> build
+        update RecordGroup.Decision DecisionUpdateInput.create DecisionUpdateInput.values
         |> named "DecisionUpdate"
 
     let private workValue name =

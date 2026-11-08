@@ -182,9 +182,10 @@ module CatalogCodecs =
         tagged "Presentation.ScalarRule" (textRules @ dateRules @ moneyRules @ statusRules)
 
     let private businessField =
-        (record (fun v0 v1 v2 rule v3 v4 v5 section pairs prominence listed ->
+        (record (fun v0 valueKind v1 v2 rule v3 v4 v5 section pairs prominence listed ->
             {
                 FieldPresentationDefinition.Name = v0
+                ValueKind = valueKind
                 LabelId = v1
                 HintId = v2
                 RuleId = rule
@@ -198,6 +199,7 @@ module CatalogCodecs =
             })
         : Fields<FieldPresentationDefinition, _>)
         |> field "name" _.Name (fieldName)
+        |> field "valueKind" _.ValueKind (VocabularyCodec.create FieldValueKind.vocabulary)
         |> field "labelId" _.LabelId (text)
         |> field "hintId" _.HintId text
         |> field "ruleId" _.RuleId text

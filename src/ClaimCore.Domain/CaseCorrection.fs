@@ -73,7 +73,8 @@ module internal CaseCorrections =
             | Amendment.Keep -> Registration.incidentNotificationDate before.Facts
             | Amendment.Update update ->
                 defaultArg
-                    update.NotificationDate
+                    (RegistrationUpdate.tryValue BusinessField.IncidentNotificationDate update
+                     |> Option.map FieldValue.date)
                     (Registration.incidentNotificationDate before.Facts)
 
         Admission.collect

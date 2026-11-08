@@ -9,9 +9,7 @@ import { CaseHeadline } from "./CaseHeadline";
 import { CountryValue } from "./CountryValue";
 import { IdentifierValue } from "./IdentifierValue";
 
-const country = productMetadata.catalog.fields.find(
-  (field) => field.scalar.kind === "TEXT" && field.scalar.format.unknownCode !== undefined,
-)!;
+const country = productMetadata.catalog.fields.find((field) => field.valueKind === "COUNTRY")!;
 type Scalar = Extract<
   Value,
   {

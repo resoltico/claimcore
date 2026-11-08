@@ -135,12 +135,10 @@ let private actGroups () =
             "Correction replacements retain their field order"
 
 let private locales () =
-    let directory =
-        Path.Combine(RepositoryRoot.find (), "src/ClaimCore.Presentation/Messages/Localization")
+    let catalogs = CatalogValidation.validate ()
 
     for language in LocalizationPolicy.languages do
-        use document =
-            JsonDocument.Parse(File.ReadAllBytes(Path.Combine(directory, language + ".json")))
+        let catalog = catalogs[language]
 
         for row in CaseFields.declarations do
             for key in
@@ -150,8 +148,8 @@ let private locales () =
                     FieldPresentation.ruleId row.Field
                 ] do
                 Expect.isTrue
-                    (document.RootElement.TryGetProperty key |> fst)
-                    "Locale has label, hint and precise rule"
+                    (Map.containsKey key catalog)
+                    "Resolved locale has label, hint and precise rule"
 
 [<Tests>]
 let tests =

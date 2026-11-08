@@ -34,68 +34,30 @@ module ResponseCodecs =
 
     let private group group create values =
         CaseFields.ofGroup group
-        |> List.filter ((<>) BusinessField.IncidentDescription)
         |> List.map (fun field ->
-            field,
-            BusinessField.key field,
-            CaseFieldCodecs.scalar (BusinessField.describe field).Kind)
-        |> Codec.fieldMap
+            let declaration = BusinessField.describe field
+            let value = CaseFieldCodecs.scalar declaration.Kind
+
+            let value =
+                if declaration.AllowsAbsence then
+                    nullable value
+                else
+                    value |> map Some Option.get
+
+            field, declaration.Key, declaration.AllowsAbsence, value)
+        |> Codec.fieldMapWithPresence
         |> mapResult
             (fun path fields ->
-                create (Map.toList fields)
+                fields
+                |> Map.toList
+                |> List.choose (fun (field, value) ->
+                    value |> Option.map (fun value -> field, value))
+                |> create
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
-            (values >> Map.ofList)
+            (values >> List.map (fun (field, value) -> field, Some value) >> Map.ofList)
 
     let private registration =
-        (record (fun incident notification country claimant insurer amount currency description ->
-            [
-                BusinessField.IncidentDate, incident
-                BusinessField.IncidentNotificationDate, notification
-                BusinessField.IncidentCountry, country
-                BusinessField.ClaimantName, claimant
-                BusinessField.InsurerName, insurer
-                BusinessField.ClaimedAmount, amount
-                BusinessField.ClaimedCurrency, currency
-                yield!
-                    description
-                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
-                    |> Option.toList
-            ]
-            |> Registration.create)
-        : Fields<Registration, _>)
-        |> field
-            "incidentDate"
-            (Registration.incidentDate >> Admitted.Date)
-            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
-        |> field
-            "incidentNotificationDate"
-            (Registration.incidentNotificationDate >> Admitted.Date)
-            (CaseFieldCodecs.scalar FieldValueKind.CalendarDate)
-        |> field
-            "incidentCountry"
-            (Registration.country >> Admitted.Country)
-            (CaseFieldCodecs.scalar FieldValueKind.Country)
-        |> field
-            "claimantName"
-            (Registration.claimant >> Admitted.Name)
-            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
-        |> field
-            "insurerName"
-            (Registration.insurer >> Admitted.Name)
-            (CaseFieldCodecs.scalar FieldValueKind.PartyName)
-        |> field
-            "claimedAmount"
-            (Registration.claimed >> Money.amount >> Admitted.Amount)
-            (CaseFieldCodecs.scalar FieldValueKind.Amount)
-        |> field
-            "claimedCurrency"
-            (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
-            (CaseFieldCodecs.scalar FieldValueKind.Currency)
-        |> field
-            "incidentDescription"
-            (Registration.description >> Option.map Admitted.Description)
-            (nullable (CaseFieldCodecs.scalar FieldValueKind.IncidentDescription))
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
+        group RecordGroup.Registration Registration.create Registration.values
 
     let private decision = group RecordGroup.Decision Decision.create Decision.values
     let private payment = group RecordGroup.Payment Payment.create Payment.values

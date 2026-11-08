@@ -617,5 +617,9 @@
   "scalar.text.guidance": "Up to {maximumCharacters} characters.",
   "scalar.narrative.guidance": "Optional. Up to {maximumScalars} characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed.",
   "label.operationWindow": "{minutes} minutes",
-  "diagnostic.PRINCIPAL_FORMAT.gui": "Check the sign-in provider and account ID."
+  "diagnostic.PRINCIPAL_FORMAT.gui": "Check the sign-in provider and account ID.",
+  "field.policyNumber.label": "Policy number",
+  "field.policyNumber.hint": "The policy number used by the insurer.",
+  "field.insurerClaimReference.label": "Insurer claim reference",
+  "field.insurerClaimReference.hint": "The reference the insurer uses for this claim."
 }

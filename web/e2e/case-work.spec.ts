@@ -115,7 +115,7 @@ for (const [entered, expected] of [
     expect(JSON.parse(captured.bytes.toString("utf8"))).toMatchObject({
       act: {
         kind: "AMEND_REGISTRATION",
-        values: { claimed: { amount: expected, currency: "EUR" } },
+        values: { claimedAmount: expected, claimedCurrency: "EUR" },
       },
     });
     expect(captured.reply.outcome.kind).toBe("REVIEWED");

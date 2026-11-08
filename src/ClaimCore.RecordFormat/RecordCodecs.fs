@@ -85,67 +85,29 @@ module internal RecordCodecs =
     let private acceptedGroup group create values =
         members group
         |> List.map (fun (field, kind) ->
-            field, BusinessField.key field, scalar (FieldValue.parse kind) FieldValue.format)
-        |> Codec.fieldMap
+            let declaration = BusinessField.describe field
+            let value = scalar (FieldValue.parse kind) FieldValue.format
+
+            let value =
+                if declaration.AllowsAbsence then
+                    nullable value
+                else
+                    value |> map Some Option.get
+
+            field, declaration.Key, declaration.AllowsAbsence, value)
+        |> Codec.fieldMapWithPresence
         |> mapResult
             (fun path fields ->
-                create (Map.toList fields)
+                fields
+                |> Map.toList
+                |> List.choose (fun (field, value) ->
+                    value |> Option.map (fun value -> field, value))
+                |> create
                 |> Result.mapError (fun reason -> { Path = path; Reason = reason }))
-            (values >> Map.ofList)
+            (values >> List.map (fun (field, value) -> field, Some value) >> Map.ofList)
 
     let private acceptedRegistration =
-        (record (fun incident notification country claimant insurer amount currency description ->
-            [
-                BusinessField.IncidentDate, incident
-                BusinessField.IncidentNotificationDate, notification
-                BusinessField.IncidentCountry, country
-                BusinessField.ClaimantName, claimant
-                BusinessField.InsurerName, insurer
-                BusinessField.ClaimedAmount, amount
-                BusinessField.ClaimedCurrency, currency
-                yield!
-                    description
-                    |> Option.map (fun value -> BusinessField.IncidentDescription, value)
-                    |> Option.toList
-            ]
-            |> Registration.create)
-        : Fields<Registration, _>)
-        |> field
-            "incidentDate"
-            (Registration.incidentDate >> Admitted.Date)
-            (scalar (FieldValue.parse FieldValueKind.CalendarDate) FieldValue.format)
-        |> field
-            "incidentNotificationDate"
-            (Registration.incidentNotificationDate >> Admitted.Date)
-            (scalar (FieldValue.parse FieldValueKind.CalendarDate) FieldValue.format)
-        |> field
-            "incidentCountry"
-            (Registration.country >> Admitted.Country)
-            (scalar (FieldValue.parse FieldValueKind.Country) FieldValue.format)
-        |> field
-            "claimantName"
-            (Registration.claimant >> Admitted.Name)
-            (scalar (FieldValue.parse FieldValueKind.PartyName) FieldValue.format)
-        |> field
-            "insurerName"
-            (Registration.insurer >> Admitted.Name)
-            (scalar (FieldValue.parse FieldValueKind.PartyName) FieldValue.format)
-        |> field
-            "claimedAmount"
-            (Registration.claimed >> Money.amount >> Admitted.Amount)
-            (scalar (FieldValue.parse FieldValueKind.Amount) FieldValue.format)
-        |> field
-            "claimedCurrency"
-            (Registration.claimed >> Money.currencyValue >> Admitted.Currency)
-            (scalar (FieldValue.parse FieldValueKind.Currency) FieldValue.format)
-        |> field
-            "incidentDescription"
-            (Registration.description >> Option.map Admitted.Description)
-            (nullable (
-                scalar (FieldValue.parse FieldValueKind.IncidentDescription) FieldValue.format
-            ))
-        |> buildResult (fun path reason -> { Path = path; Reason = reason })
-        |> named "Registration"
+        acceptedGroup RecordGroup.Registration Registration.create Registration.values
 
     let private acceptedDecision =
         acceptedGroup RecordGroup.Decision Decision.create Decision.values

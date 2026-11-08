@@ -96,7 +96,7 @@ const preserveChoice = async (page: Page, modes: Modes) => {
     }
     if (modes.registration === "UPDATE") {
       await expect(
-        page.locator('input[name="act.groups.registration.values.claimed.amount"]'),
+        page.locator('input[name="act.groups.registration.values.claimedAmount"]'),
       ).toHaveValue("1.0000");
     }
   }

@@ -56,8 +56,8 @@ let tests =
                         "let wrong (record: Registration) = Registration.value BusinessField.PaymentDate record"
 
                 Expect.isTrue
-                    (code <> 0 && errors.Contains("FS0039", StringComparison.Ordinal))
-                    "An arbitrary-field accessor is unavailable"
+                    (code <> 0 && errors.Contains("FS1093", StringComparison.Ordinal))
+                    "The private registration representation cannot expose an arbitrary-field accessor"
 
                 let code, errors =
                     compile

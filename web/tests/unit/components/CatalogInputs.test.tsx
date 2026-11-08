@@ -156,3 +156,45 @@ it("edits admission rows independently with catalog scope and principal admissio
   expect(screen.getAllByRole("radiogroup", { name: "Role" })).toHaveLength(1);
   expect(screen.getByRole("radio", { name: "Case reader" })).toBeChecked();
 });
+
+it("renders and binds optional policy identifiers from the ordinary case catalog", async () => {
+  const user = userEvent.setup();
+  const Wrapper = () => {
+    const [values, setValues] = useState(initialOperationValues("CASE", "OPEN", null));
+    return (
+      <>
+        <CatalogInputs
+          entry={operationEntry({ subject: "CASE", kind: "OPEN" })}
+          current={null}
+          values={values}
+          disabled={false}
+          fieldErrors={{}}
+          onChange={(path, value) => {
+            setValues((previous) => ({ ...previous, [path]: value }));
+          }}
+          onFieldsChange={(changes, omitted = []) => {
+            setValues((previous) =>
+              Object.fromEntries(
+                Object.entries({ ...previous, ...changes }).filter(
+                  ([key]) => !omitted.includes(key),
+                ),
+              ),
+            );
+          }}
+        />
+        <output data-testid="identifier-draft">{JSON.stringify(values)}</output>
+      </>
+    );
+  };
+  render(<Wrapper />);
+  await user.click(screen.getByRole("checkbox", { name: "Record Policy number (optional)" }));
+  await user.click(
+    screen.getByRole("checkbox", { name: "Record Insurer claim reference (optional)" }),
+  );
+  await user.type(screen.getByRole("textbox", { name: "Policy number" }), "Policy / 42");
+  await user.type(screen.getByRole("textbox", { name: "Insurer claim reference" }), "Insurer / 17");
+  expect(JSON.parse(screen.getByTestId("identifier-draft").textContent)).toMatchObject({
+    "act.values.policyNumber": "Policy / 42",
+    "act.values.insurerClaimReference": "Insurer / 17",
+  });
+});

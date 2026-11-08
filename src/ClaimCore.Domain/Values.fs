@@ -262,6 +262,26 @@ module PartyName =
         ScalarText.admit MaximumCharacters value |> Result.map PartyName
 
 [<Struct; System.Runtime.CompilerServices.IsReadOnly>]
+type Identifier = private Identifier of string
+
+module Identifier =
+    [<Literal>]
+    let MaximumCharacters = 80
+
+    [<Literal>]
+    let MaximumBytes = 320
+
+    let descriptor = ScalarText.descriptor None (Some MaximumCharacters)
+    let format (Identifier value) = value
+
+    let parse value =
+        ScalarText.parse (Some MaximumBytes) MaximumCharacters value
+        |> Result.map Identifier
+
+    let admit (Identifier value) =
+        ScalarText.admit MaximumCharacters value |> Result.map Identifier
+
+[<Struct; System.Runtime.CompilerServices.IsReadOnly>]
 type Reason = private Reason of PartyName
 
 module Reason =

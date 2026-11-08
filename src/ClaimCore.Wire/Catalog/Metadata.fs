@@ -205,6 +205,7 @@ type CatalogEntry =
 type FieldPresentationDefinition =
     {
         Name: BusinessField
+        ValueKind: FieldValueKind
         Group: RecordGroup option
         Section: CaseSection option
         Pairs: BusinessField option

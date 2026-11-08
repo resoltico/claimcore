@@ -81,6 +81,12 @@ module ScalarGuidance =
                     "scalar.narrative.guidance"
                     [ "maximumScalars", GuidanceArgument.Count IncidentDescription.MaximumScalars ]
             )
+        | FieldValueKind.Identifier ->
+            Some(
+                message
+                    "scalar.text.guidance"
+                    [ "maximumCharacters", GuidanceArgument.Count Identifier.MaximumCharacters ]
+            )
         | FieldValueKind.PartyName ->
             Some(
                 message

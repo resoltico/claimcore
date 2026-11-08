@@ -16,6 +16,7 @@ module internal CaseFieldCodecs =
             | FieldValueKind.CalendarDate -> date
             | FieldValueKind.Country -> country
             | FieldValueKind.PartyName -> boundedUtf8Text 1 PartyName.MaximumBytes
+            | FieldValueKind.Identifier -> boundedUtf8Text 1 Identifier.MaximumBytes
             | FieldValueKind.IncidentDescription ->
                 boundedUtf8Text 1 IncidentDescription.MaximumBytes
             | FieldValueKind.HandlingSummary -> nonempty
@@ -71,6 +72,7 @@ module internal CaseFieldCodecs =
                 business "DATE" FieldValueKind.CalendarDate
                 business "COUNTRY" FieldValueKind.Country
                 business "PARTY" FieldValueKind.PartyName
+                business "IDENTIFIER" FieldValueKind.Identifier
                 business "TEXT" FieldValueKind.IncidentDescription
                 business "AMOUNT" FieldValueKind.Amount
                 business "CURRENCY" FieldValueKind.Currency

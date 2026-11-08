@@ -49,7 +49,7 @@ Open a case
 Register the incident, claimant, insurer and amount claimed.
 
 ```sh
-claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE [--incident-description VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE --incident-notification-date VALUE --incident-country VALUE [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] --claimant-name VALUE --insurer-name VALUE --claimed-amount VALUE --claimed-currency VALUE [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -59,11 +59,13 @@ claimcore case open [--operation-id VALUE] CASE-REFERENCE --incident-date VALUE 
 | `--incident-date` | Incident date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--incident-notification-date` | Notification date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
+| `--incident-description` | Incident description — Optional. Up to 600 characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed. |  |  |
+| `--policy-number` | Policy number — Up to 80 characters. |  |  |
+| `--insurer-claim-reference` | Insurer claim reference — Up to 80 characters. |  |  |
 | `--claimant-name` | Claimant name — Up to 200 characters. |  |  |
 | `--insurer-name` | Insurer — Up to 200 characters. |  |  |
 | `--claimed-amount` | Claimed amount — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
 | `--claimed-currency` | Claimed currency — 3 uppercase ASCII letters (A–Z). |  |  |
-| `--incident-description` | Incident description — Optional. Up to 600 characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed. |  |  |
 
 ## case amend-registration
 
@@ -72,7 +74,7 @@ Update claim details
 Change selected claim details. Details you leave out and the case reference stay as they are.
 
 ```sh
-claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] [--incident-description VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expected-revision N [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--clear-policy-number] [--clear-insurer-claim-reference] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -83,11 +85,13 @@ claimcore case amend-registration [--operation-id VALUE] CASE-REFERENCE --expect
 | `--incident-date` | Incident date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--incident-notification-date` | Notification date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
+| `--incident-description` | Incident description — Optional. Up to 600 characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed. |  |  |
+| `--policy-number` | Policy number — Up to 80 characters. |  |  |
+| `--insurer-claim-reference` | Insurer claim reference — Up to 80 characters. |  |  |
 | `--claimant-name` | Claimant name — Up to 200 characters. |  |  |
 | `--insurer-name` | Insurer — Up to 200 characters. |  |  |
 | `--claimed-amount` | Claimed amount — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
 | `--claimed-currency` | Claimed currency — 3 uppercase ASCII letters (A–Z). |  |  |
-| `--incident-description` | Incident description — Optional. Up to 600 characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed. |  |  |
 
 ## case correct
 
@@ -96,7 +100,7 @@ Correct case facts
 Correct details that were recorded wrongly. If the case is already paid and you change the decision, also confirm, replace or clear the payment date. Clearing a payment date does not refund money.
 
 ```sh
-claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|update [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] [--incident-description VALUE] --decision keep|update|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|reaffirm|clear [--payment-date VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
+claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision N --registration keep|update [--incident-date VALUE] [--incident-notification-date VALUE] [--incident-country VALUE] [--incident-description VALUE] [--policy-number VALUE] [--insurer-claim-reference VALUE] [--claimant-name VALUE] [--insurer-name VALUE] [--claimed-amount VALUE] [--claimed-currency VALUE] --decision keep|update|clear [--payment-decision-date VALUE] [--payable-amount VALUE] [--payable-currency VALUE] --payment keep|replace|reaffirm|clear [--payment-date VALUE] [--incident-description-file PATH | --incident-description-stdin | --incident-description-editor] [--clear-incident-description] [--clear-policy-number] [--clear-insurer-claim-reference] [--format text|json] [--language en|lv|ar|ko|zh-Hans|zh-Hant|ja|es|de] [--dry-run] [--preview]
 ```
 
 | Input | Meaning | Choices | Default |
@@ -108,11 +112,13 @@ claimcore case correct [--operation-id VALUE] CASE-REFERENCE --expected-revision
 | `--incident-date` | Incident date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--incident-notification-date` | Notification date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--incident-country` | Country — Use two uppercase letters. ZZ means unknown or international. |  |  |
+| `--incident-description` | Incident description — Optional. Up to 600 characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed. |  |  |
+| `--policy-number` | Policy number — Up to 80 characters. |  |  |
+| `--insurer-claim-reference` | Insurer claim reference — Up to 80 characters. |  |  |
 | `--claimant-name` | Claimant name — Up to 200 characters. |  |  |
 | `--insurer-name` | Insurer — Up to 200 characters. |  |  |
 | `--claimed-amount` | Claimed amount — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |
 | `--claimed-currency` | Claimed currency — 3 uppercase ASCII letters (A–Z). |  |  |
-| `--incident-description` | Incident description — Optional. Up to 600 characters; line breaks allowed. Spaces and spelling are kept as typed; control and text-direction characters are not allowed. |  |  |
 | `--decision` | Payment decision — Keep the decision, update selected facts, or clear it. Amount and currency must be asserted together. | keep, update, clear |  |
 | `--payment-decision-date` | Payment decision date — Use YYYY-MM-DD, for example 2026-10-06. |  |  |
 | `--payable-amount` | Payable amount — Use up to 18 digits before the decimal point and up to 4 after it. Use ASCII digits and a dot; no spaces, signs, commas or redundant leading zeros. |  |  |

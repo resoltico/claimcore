@@ -79,18 +79,27 @@ let offered state =
 // The fixed synthetic witnesses assert all registration fields. This literal boundary adapter
 // is independent of the product partial merge and does not model arbitrary omitted fields.
 let private registration (value: RegistrationUpdateInput) (fields: CaseFields) =
-    let money = Option.get value.Claimed
 
     let complete =
         RegistrationInput.create
             [
-                BusinessField.IncidentDate, Option.get value.IncidentDate
-                BusinessField.IncidentNotificationDate, Option.get value.NotificationDate
-                BusinessField.IncidentCountry, Option.get value.Country
-                BusinessField.ClaimantName, Option.get value.Claimant
-                BusinessField.InsurerName, Option.get value.Insurer
-                BusinessField.ClaimedAmount, money.Amount
-                BusinessField.ClaimedCurrency, money.Currency
+                BusinessField.IncidentDate,
+                (RegistrationUpdateInput.tryValue BusinessField.IncidentDate value |> Option.get)
+                BusinessField.IncidentNotificationDate,
+                (RegistrationUpdateInput.tryValue BusinessField.IncidentNotificationDate value
+                 |> Option.get)
+                BusinessField.IncidentCountry,
+                (RegistrationUpdateInput.tryValue BusinessField.IncidentCountry value
+                 |> Option.get)
+                BusinessField.ClaimantName,
+                (RegistrationUpdateInput.tryValue BusinessField.ClaimantName value |> Option.get)
+                BusinessField.InsurerName,
+                (RegistrationUpdateInput.tryValue BusinessField.InsurerName value |> Option.get)
+                BusinessField.ClaimedAmount,
+                (RegistrationUpdateInput.tryValue BusinessField.ClaimedAmount value |> Option.get)
+                BusinessField.ClaimedCurrency,
+                (RegistrationUpdateInput.tryValue BusinessField.ClaimedCurrency value
+                 |> Option.get)
             ]
         |> Result.defaultWith failtest
 

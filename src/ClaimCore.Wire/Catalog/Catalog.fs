@@ -13,6 +13,7 @@ module Catalog =
                 |> List.map (fun row ->
                     {
                         Name = row.Field
+                        ValueKind = row.Kind
                         Group = row.Group
                         Section = row.Section
                         Pairs = row.Pairs

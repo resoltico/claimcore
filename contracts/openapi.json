@@ -5137,6 +5137,8 @@
               "incidentNotificationDate",
               "incidentCountry",
               "incidentDescription",
+              "policyNumber",
+              "insurerClaimReference",
               "claimantName",
               "insurerName",
               "claimedAmount",
@@ -5190,6 +5192,9 @@
             "$ref": "#/components/schemas/CaseFieldValue.PARTY"
           },
           {
+            "$ref": "#/components/schemas/CaseFieldValue.IDENTIFIER"
+          },
+          {
             "$ref": "#/components/schemas/CaseFieldValue.TEXT"
           },
           {
@@ -5211,6 +5216,7 @@
             "DATE": "#/components/schemas/CaseFieldValue.DATE",
             "COUNTRY": "#/components/schemas/CaseFieldValue.COUNTRY",
             "PARTY": "#/components/schemas/CaseFieldValue.PARTY",
+            "IDENTIFIER": "#/components/schemas/CaseFieldValue.IDENTIFIER",
             "TEXT": "#/components/schemas/CaseFieldValue.TEXT",
             "AMOUNT": "#/components/schemas/CaseFieldValue.AMOUNT",
             "CURRENCY": "#/components/schemas/CaseFieldValue.CURRENCY",
@@ -5289,6 +5295,25 @@
             "format": "date",
             "minLength": 10,
             "maxLength": 10
+          }
+        },
+        "required": [
+          "kind",
+          "value"
+        ]
+      },
+      "CaseFieldValue.IDENTIFIER": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "kind": {
+            "const": "IDENTIFIER"
+          },
+          "value": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 320,
+            "x-claimcore-maxUtf8Bytes": 320
           }
         },
         "required": [
@@ -5412,6 +5437,45 @@
                 "minLength": 2,
                 "maxLength": 2
               },
+              "incidentDescription": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 4096,
+                    "x-claimcore-maxUtf8Bytes": 4096
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "policyNumber": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 320,
+                    "x-claimcore-maxUtf8Bytes": 320
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "insurerClaimReference": {
+                "oneOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1,
+                    "maxLength": 320,
+                    "x-claimcore-maxUtf8Bytes": 320
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
               "claimantName": {
                 "type": "string",
                 "minLength": 1,
@@ -5435,19 +5499,6 @@
                 "pattern": "^(?:[A-Z]{3})(?![\\s\\S])",
                 "minLength": 3,
                 "maxLength": 3
-              },
-              "incidentDescription": {
-                "oneOf": [
-                  {
-                    "type": "string",
-                    "minLength": 1,
-                    "maxLength": 4096,
-                    "x-claimcore-maxUtf8Bytes": 4096
-                  },
-                  {
-                    "type": "null"
-                  }
-                ]
               }
             },
             "required": [
@@ -5457,8 +5508,7 @@
               "claimantName",
               "insurerName",
               "claimedAmount",
-              "claimedCurrency",
-              "incidentDescription"
+              "claimedCurrency"
             ]
           },
           "decision": {
@@ -7732,21 +7782,11 @@
           "paymentDecisionDate": {
             "type": "string"
           },
-          "payable": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "amount": {
-                "type": "string"
-              },
-              "currency": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "amount",
-              "currency"
-            ]
+          "payableAmount": {
+            "type": "string"
+          },
+          "payableCurrency": {
+            "type": "string"
           }
         },
         "required": []
@@ -9097,6 +9137,8 @@
           "incidentNotificationDate",
           "incidentCountry",
           "incidentDescription",
+          "policyNumber",
+          "insurerClaimReference",
           "claimantName",
           "insurerName",
           "claimedAmount",
@@ -12436,6 +12478,36 @@
           "incidentCountry": {
             "type": "string"
           },
+          "incidentDescription": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "claimantName": {
             "type": "string"
           },
@@ -12447,16 +12519,6 @@
           },
           "claimedCurrency": {
             "type": "string"
-          },
-          "incidentDescription": {
-            "oneOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ]
           }
         },
         "required": [
@@ -12527,28 +12589,6 @@
           "incidentCountry": {
             "type": "string"
           },
-          "claimantName": {
-            "type": "string"
-          },
-          "insurerName": {
-            "type": "string"
-          },
-          "claimed": {
-            "type": "object",
-            "additionalProperties": false,
-            "properties": {
-              "amount": {
-                "type": "string"
-              },
-              "currency": {
-                "type": "string"
-              }
-            },
-            "required": [
-              "amount",
-              "currency"
-            ]
-          },
           "incidentDescription": {
             "oneOf": [
               {
@@ -12558,6 +12598,38 @@
                 "type": "null"
               }
             ]
+          },
+          "policyNumber": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "insurerClaimReference": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "claimantName": {
+            "type": "string"
+          },
+          "insurerName": {
+            "type": "string"
+          },
+          "claimedAmount": {
+            "type": "string"
+          },
+          "claimedCurrency": {
+            "type": "string"
           }
         },
         "required": []
@@ -12572,6 +12644,8 @@
               "incidentNotificationDate",
               "incidentCountry",
               "incidentDescription",
+              "policyNumber",
+              "insurerClaimReference",
               "claimantName",
               "insurerName",
               "claimedAmount",
@@ -14563,7 +14637,7 @@
               "$ref": "#/components/schemas/TimelineChange"
             },
             "minItems": 0,
-            "maxItems": 17
+            "maxItems": 19
           },
           "overview": {
             "$ref": "#/components/schemas/TimelineOverview"
@@ -15203,7 +15277,7 @@
           "index": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 16
+            "maximum": 18
           }
         },
         "required": [
@@ -15221,7 +15295,7 @@
           "index": {
             "type": "integer",
             "minimum": 0,
-            "maximum": 16
+            "maximum": 18
           },
           "facets": {
             "type": "array",
@@ -15251,7 +15325,7 @@
               "$ref": "#/components/schemas/TimelineHighlight"
             },
             "minItems": 0,
-            "maxItems": 17
+            "maxItems": 19
           }
         },
         "required": [

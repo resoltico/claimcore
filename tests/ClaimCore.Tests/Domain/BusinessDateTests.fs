@@ -53,15 +53,7 @@ let private openingAccumulatesAssertions =
             | other -> failtestf "Expected accumulated assertions, got %A" other)
 
 let private registrationPatch: RegistrationUpdateInput =
-    {
-        IncidentDate = None
-        NotificationDate = None
-        Country = None
-        Claimant = None
-        Insurer = None
-        Claimed = None
-        IncidentDescription = WorkValue.Keep
-    }
+    (RegistrationUpdateInput.create [] |> Result.defaultWith failtest)
 
 let private amendmentRetainsDates =
     testCase "partial amendment retains omitted accepted dates after clock rollback" (fun () ->
@@ -69,10 +61,12 @@ let private amendmentRetainsDates =
             opened ()
             |> applyAt
                 (DateOnly(2026, 7, 31))
-                (CaseAct.AmendRegistration
-                    { registrationPatch with
-                        Claimant = Some "Synthetic amended party"
-                    })
+                (CaseAct.AmendRegistration(
+                    RegistrationUpdateInput.replace
+                        [ BusinessField.ClaimantName, Some "Synthetic amended party" ]
+                        (registrationPatch)
+                    |> Result.defaultWith failtest
+                ))
             |> accepted
             |> Case.snapshot
 
@@ -89,10 +83,12 @@ let private newIncidentIsBounded =
         opened ()
         |> applyAt
             (DateOnly(2026, 7, 31))
-            (CaseAct.AmendRegistration
-                { registrationPatch with
-                    IncidentDate = Some "2026-08-02"
-                })
+            (CaseAct.AmendRegistration(
+                RegistrationUpdateInput.replace
+                    [ BusinessField.IncidentDate, Some "2026-08-02" ]
+                    (registrationPatch)
+                |> Result.defaultWith failtest
+            ))
         |> future (InputTarget.Field BusinessField.IncidentDate))
 
 let private newNotificationIsBounded =
@@ -100,10 +96,12 @@ let private newNotificationIsBounded =
         opened ()
         |> applyAt
             (DateOnly(2026, 8, 3))
-            (CaseAct.AmendRegistration
-                { registrationPatch with
-                    NotificationDate = Some "2026-08-04"
-                })
+            (CaseAct.AmendRegistration(
+                RegistrationUpdateInput.replace
+                    [ BusinessField.IncidentNotificationDate, Some "2026-08-04" ]
+                    (registrationPatch)
+                |> Result.defaultWith failtest
+            ))
         |> future (InputTarget.Field BusinessField.IncidentNotificationDate))
 
 let private decisionRetainsDate =
@@ -179,10 +177,12 @@ let private closedCorrectionRetainsDates =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Update
-                            { registrationPatch with
-                                Claimant = Some "Synthetic corrected party"
-                            }
+                        Amendment.Update(
+                            RegistrationUpdateInput.replace
+                                [ BusinessField.ClaimantName, Some "Synthetic corrected party" ]
+                                (registrationPatch)
+                            |> Result.defaultWith failtest
+                        )
                     Decision =
                         Change.Update
                             {
@@ -217,10 +217,12 @@ let private correctionIncidentIsBounded =
             AuthoredCaseAct.Correct
                 {
                     Registration =
-                        Amendment.Update
-                            { registrationPatch with
-                                IncidentDate = Some "2026-08-02"
-                            }
+                        Amendment.Update(
+                            RegistrationUpdateInput.replace
+                                [ BusinessField.IncidentDate, Some "2026-08-02" ]
+                                (registrationPatch)
+                            |> Result.defaultWith failtest
+                        )
                     Decision = Change.Keep
                     Payment = PaymentChange.Keep
                 }
@@ -237,11 +239,15 @@ let private incompleteCorrectionAccumulatesAssertions =
                 AuthoredCaseAct.Correct
                     {
                         Registration =
-                            Amendment.Update
-                                { registrationPatch with
-                                    IncidentDate = Some "2026-08-02"
-                                    Claimant = Some " New claimant "
-                                }
+                            Amendment.Update(
+                                RegistrationUpdateInput.replace
+                                    [
+                                        BusinessField.IncidentDate, Some "2026-08-02"
+                                        BusinessField.ClaimantName, Some " New claimant "
+                                    ]
+                                    (registrationPatch)
+                                |> Result.defaultWith failtest
+                            )
                         Decision = Change.Clear
                         Payment =
                             PaymentChange.Replace(

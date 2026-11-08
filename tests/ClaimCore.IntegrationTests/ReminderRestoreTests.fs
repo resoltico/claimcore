@@ -181,9 +181,12 @@ let private seeded database =
         let! actor = populated database
 
         let patch =
-            { Inputs.registrationUpdate registration with
-                IncidentDescription = WorkValue.Set "Restorable incident\nSecond paragraph"
-            }
+            (RegistrationUpdateInput.replace
+                [
+                    BusinessField.IncidentDescription, Some("Restorable incident\nSecond paragraph")
+                ]
+                (Inputs.registrationUpdate registration)
+             |> Result.defaultWith failtest)
 
         let! description =
             Service.execute

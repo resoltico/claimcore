@@ -96,8 +96,10 @@ module internal StateValidation =
     let authoredChronology (before: Claim option) (act: AuthoredCaseAct) =
         let registrationUpdate (update: RegistrationUpdateInput) =
             [
-                BusinessField.IncidentDate, update.IncidentDate
-                BusinessField.IncidentNotificationDate, update.NotificationDate
+                BusinessField.IncidentDate,
+                RegistrationUpdateInput.tryValue BusinessField.IncidentDate update
+                BusinessField.IncidentNotificationDate,
+                RegistrationUpdateInput.tryValue BusinessField.IncidentNotificationDate update
             ]
             |> List.choose (fun (field, raw) ->
                 raw |> Option.map (fun raw -> field, CalendarDate.parse raw))

@@ -2474,5 +2474,21 @@
   "diagnostic.PRINCIPAL_FORMAT.gui": {
     "text": "تحقق من موفر تسجيل الدخول ومعرّف الحساب.",
     "source": "5a875ddb5598"
+  },
+  "field.policyNumber.label": {
+    "text": "رقم وثيقة التأمين",
+    "source": "10ca5fde6a02"
+  },
+  "field.policyNumber.hint": {
+    "text": "رقم وثيقة التأمين الذي تستخدمه شركة التأمين.",
+    "source": "f0e7244930f5"
+  },
+  "field.insurerClaimReference.label": {
+    "text": "مرجع المطالبة لدى شركة التأمين",
+    "source": "2d8dd08ee82e"
+  },
+  "field.insurerClaimReference.hint": {
+    "text": "المرجع الذي تستخدمه شركة التأمين لهذه المطالبة.",
+    "source": "7686a3e64d99"
   }
 }

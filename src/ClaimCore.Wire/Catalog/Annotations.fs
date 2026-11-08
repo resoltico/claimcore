@@ -180,33 +180,7 @@ module CatalogAnnotations =
                     "DecisionUpdate", RecordGroup.Decision
                 ] do
                 for value in CaseFields.ofGroup group do
-                    if
-                        (owner <> "RegistrationUpdate" && owner <> "DecisionUpdate")
-                        || not (
-                            List.contains
-                                value
-                                [
-                                    BusinessField.ClaimedAmount
-                                    BusinessField.ClaimedCurrency
-                                    BusinessField.PayableAmount
-                                    BusinessField.PayableCurrency
-                                ]
-                        )
-                    then
-                        yield (owner, BusinessField.key value), business group value
-            for owner, group, amount, currency in
-                [
-                    "RegistrationUpdate",
-                    RecordGroup.Registration,
-                    BusinessField.ClaimedAmount,
-                    BusinessField.ClaimedCurrency
-                    "DecisionUpdate",
-                    RecordGroup.Decision,
-                    BusinessField.PayableAmount,
-                    BusinessField.PayableCurrency
-                ] do
-                yield (owner, "amount"), business group amount
-                yield (owner, "currency"), business group currency
+                    yield (owner, BusinessField.key value), business group value
             for owner, value in [ "ResponsibleActorChange", BusinessField.ResponsibleActor ] do
                 yield (owner, "kind"), constant (annotation (InteractionInput.WorkChoice value))
                 let set = Bindings.branchDefinition definitions owner "SET"

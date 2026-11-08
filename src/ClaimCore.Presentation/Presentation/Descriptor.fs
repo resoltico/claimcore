@@ -27,6 +27,8 @@ module Descriptor =
         | CaseFieldValue.Business(Admitted.Country value) ->
             PresentedValue.Code("country", CountryCode.format value)
         | CaseFieldValue.Business(Admitted.Name value) -> PresentedValue.Party value
+        | CaseFieldValue.Business(Admitted.Identifier value) ->
+            PresentedValue.Text(Identifier.format value)
         | CaseFieldValue.Business(Admitted.Description value) ->
             PresentedValue.Narrative(IncidentDescription.format value)
         | CaseFieldValue.Business(Admitted.Amount value) -> PresentedValue.Text(Amount.format value)

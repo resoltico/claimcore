@@ -280,6 +280,8 @@ let private listedScalar value =
             | Admitted.Date _ -> represented CalendarDate.parse Admitted.Date date
             | Admitted.Country _ -> represented CountryCode.parse Admitted.Country (uppercase 2)
             | Admitted.Name _ -> represented PartyName.parse Admitted.Name scalarText
+            | Admitted.Identifier _ ->
+                represented Identifier.parse Admitted.Identifier (Gen.constant "Policy 42")
             | Admitted.Description _ ->
                 represented IncidentDescription.parse Admitted.Description scalarText
             | Admitted.Amount _ -> represented Amount.parse Admitted.Amount amount

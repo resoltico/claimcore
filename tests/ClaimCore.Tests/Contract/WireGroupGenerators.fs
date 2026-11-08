@@ -22,6 +22,7 @@ let private members group admitted =
                 | FieldValueKind.Country -> uppercase 2
                 | FieldValueKind.Currency -> uppercase 3
                 | FieldValueKind.Amount -> amount
+                | FieldValueKind.Identifier
                 | FieldValueKind.PartyName
                 | FieldValueKind.IncidentDescription -> scalarText
                 | _ -> invalidOp "The independent group inventory requires a value generator."
@@ -47,6 +48,16 @@ let private members group admitted =
 let groupValue (kind: Type) =
     if kind = typeof<RegistrationInput> then
         Some(members "registration" false |> Gen.map (Inputs.registrationFrom >> box))
+    elif kind = typeof<RegistrationUpdateInput> then
+        Some(
+            members "registration" false
+            |> Gen.map (fun values ->
+                values
+                |> List.map (fun (field, value) -> field, Some value)
+                |> RegistrationUpdateInput.create
+                |> Result.defaultWith invalidOp
+                |> box)
+        )
     elif kind = typeof<DecisionInput> then
         Some(members "decision" false |> Gen.map (Inputs.decisionFrom >> box))
     elif kind = typeof<PaymentInput> then

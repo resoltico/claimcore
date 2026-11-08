@@ -232,22 +232,12 @@ let tests =
                         (fun () -> check inputs wrong)
                         "A missing revision constant is detected")
             testCase
-                "every entry and input has authored labels and meanings in all languages"
+                "every entry and input resolves labels and meanings in all supported languages"
                 (fun () ->
-                    for language in LocalizationPolicy.languages do
-                        use document =
-                            JsonDocument.Parse(
-                                File.ReadAllBytes(
-                                    Path.Combine(
-                                        RepositoryRoot.find (),
-                                        "src/ClaimCore.Presentation/Messages/Localization",
-                                        language + ".json"
-                                    )
-                                )
-                            )
+                    let catalogs = CatalogValidation.validate ()
 
-                        let known =
-                            document.RootElement.EnumerateObject() |> Seq.map _.Name |> Set.ofSeq
+                    for language in LocalizationPolicy.languages do
+                        let known = catalogs[language] |> Map.keys |> Set.ofSeq
 
                         for entry in OperationCatalog.entries do
                             for key in

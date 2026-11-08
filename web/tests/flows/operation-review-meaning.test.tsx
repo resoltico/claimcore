@@ -29,7 +29,7 @@ const correction: OperationInput = {
     groups: {
       registration: {
         kind: "UPDATE",
-        values: { claimantName: "KEEP", claimed: { amount: "12.3400", currency: "EUR" } },
+        values: { claimantName: "KEEP", claimedAmount: "12.3400", claimedCurrency: "EUR" },
       },
       decision: {
         kind: "KEEP",

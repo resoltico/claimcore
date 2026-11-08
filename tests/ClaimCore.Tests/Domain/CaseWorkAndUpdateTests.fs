@@ -46,15 +46,7 @@ let private fields record =
     (Case.snapshot record).State |> CaseState.fields |> Option.get
 
 let private patch: RegistrationUpdateInput =
-    {
-        IncidentDate = None
-        NotificationDate = None
-        Country = None
-        Claimant = None
-        Insurer = None
-        Claimed = None
-        IncidentDescription = WorkValue.Keep
-    }
+    (RegistrationUpdateInput.create [] |> Result.defaultWith failtest)
 
 let private correction decision payment : AuthoredCorrection =
     {
@@ -138,10 +130,12 @@ let tests =
                         run
                             4
                             1L
-                            (CaseAct.AmendRegistration
-                                { patch with
-                                    Claimant = Some "Changed claimant"
-                                })
+                            (CaseAct.AmendRegistration(
+                                RegistrationUpdateInput.replace
+                                    [ BusinessField.ClaimantName, Some "Changed claimant" ]
+                                    (patch)
+                                |> Result.defaultWith failtest
+                            ))
                             (Some initial)
                         |> required
 
@@ -173,10 +167,12 @@ let tests =
                         (run
                             6
                             1L
-                            (CaseAct.AmendRegistration
-                                { patch with
-                                    Insurer = Some "Another insurer"
-                                })
+                            (CaseAct.AmendRegistration(
+                                RegistrationUpdateInput.replace
+                                    [ BusinessField.InsurerName, Some "Another insurer" ]
+                                    (patch)
+                                |> Result.defaultWith failtest
+                            ))
                             (Some changed))
                         (Error(Refusal.revisionConflict (Revision.create 2L |> Option.get)))
                         "Stale intent refuses")

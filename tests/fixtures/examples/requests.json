@@ -298,20 +298,16 @@
                 "incidentCountry": "LV",
                 "claimantName": "x",
                 "insurerName": "x",
-                "claimed": {
-                  "amount": "0",
-                  "currency": "EUR"
-                }
+                "claimedAmount": "0",
+                "claimedCurrency": "EUR"
               }
             },
             "decision": {
               "kind": "UPDATE",
               "values": {
                 "paymentDecisionDate": "2026-01-01",
-                "payable": {
-                  "amount": "0",
-                  "currency": "EUR"
-                }
+                "payableAmount": "0",
+                "payableCurrency": "EUR"
               }
             },
             "payment": {

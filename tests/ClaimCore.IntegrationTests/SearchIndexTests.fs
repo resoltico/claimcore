@@ -425,12 +425,126 @@ let private literalLifecycle (database: PostgresFixture.Database) =
         return ()
     }
 
+let private registrationIdentifiers (database: PostgresFixture.Database) =
+    task {
+        let! actor = caseWorker database.Fixture
+        let reference = "POLICY-SEARCH"
+
+        let write number revision act =
+            Service.execute
+                actor
+                (Inputs.caseOperation (request database.Fixture number reference revision act))
+                token
+
+        let search text =
+            task {
+                let! reply =
+                    Service.list
+                        actor
+                        {
+                            Filter =
+                                { CaseListFilter.empty<string> with
+                                    Text = Some text
+                                }
+                            Page = { AfterCursor = None; Limit = 20 }
+                        }
+                        token
+
+                return (read reply).Items |> List.map (_.Reference >> CaseReference.format)
+            }
+
+        let facts =
+            Inputs.registrationWith
+                [
+                    BusinessField.PolicyNumber, "POLICY-UNIQUE-42"
+                    BusinessField.InsurerClaimReference, "INSURER-UNIQUE-17"
+                ]
+                registration
+
+        let! opened = write 700 0L (CaseAct.Open facts)
+        accepted opened |> ignore
+
+        for term in [ "policy-unique-42"; "insurer-unique-17" ] do
+            let! found = search term
+
+            Expect.equal
+                found
+                [ reference ]
+                "The declared optional fact reaches the real search projection"
+
+        let update members =
+            RegistrationUpdateInput.create members |> Result.defaultWith failtest
+
+        let! amended =
+            write
+                701
+                1L
+                (CaseAct.AmendRegistration(
+                    update [ BusinessField.PolicyNumber, Some "POLICY-UPDATED-43" ]
+                ))
+
+        accepted amended |> ignore
+        let! oldPolicy = search "policy-unique-42"
+        let! newPolicy = search "policy-updated-43"
+        Expect.isEmpty oldPolicy "Amendment replaces searchable policy text"
+        Expect.equal newPolicy [ reference ] "Replacement policy is searchable"
+        let! decided = write 702 2L (CaseAct.Decide Inputs.decision)
+        accepted decided |> ignore
+
+        let! corrected =
+            write
+                703
+                3L
+                (CaseAct.Correct
+                    {
+                        Registration =
+                            Amendment.Update(
+                                update
+                                    [
+                                        BusinessField.InsurerClaimReference,
+                                        Some "INSURER-UPDATED-18"
+                                    ]
+                            )
+                        Decision = Change.Keep
+                        Payment = PaymentChange.Keep
+                    })
+
+        accepted corrected |> ignore
+        let! correctedReference = search "insurer-updated-18"
+        Expect.equal correctedReference [ reference ] "Correction updates the same projection"
+
+        let! steward =
+            grant
+                actor
+                (id database.Fixture 704)
+                database.Fixture.Owner
+                {
+                    Role = Role.DataSteward
+                    Scope = GrantTarget.Installation
+                }
+                true
+
+        acceptedAuthority steward
+        let! erased = write 705 4L (CaseAct.Bare BareAct.Erase)
+        accepted erased |> ignore
+
+        for term in [ "policy-updated-43"; "insurer-updated-18" ] do
+            let! found = search term
+            Expect.isEmpty found "Erased identifiers cannot be searched"
+
+        let! _ = verified database
+        return ()
+    }
+
 [<Tests>]
 let tests =
     testSequenced
     <| testList
         "literal search indexes"
         [
+            testCaseAsync
+                "declared policy identifiers follow open amendment correction search and erasure"
+                (run registrationIdentifiers)
             testCaseAsync
                 "fresh pinned module installation is idempotent for a nonsuper owner and preserves runtime limits"
                 (freshOwner ())

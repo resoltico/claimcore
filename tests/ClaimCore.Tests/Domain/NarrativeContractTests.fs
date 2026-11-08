@@ -44,15 +44,13 @@ let private description value =
     |> Option.map IncidentDescription.format
 
 let private patch choice : RegistrationUpdateInput =
-    {
-        IncidentDate = None
-        NotificationDate = None
-        Country = None
-        Claimant = None
-        Insurer = None
-        Claimed = None
-        IncidentDescription = choice
-    }
+    (RegistrationUpdateInput.create (
+        match choice with
+        | WorkValue.Keep -> []
+        | WorkValue.Clear -> [ BusinessField.IncidentDescription, None ]
+        | WorkValue.Set value -> [ BusinessField.IncidentDescription, Some value ]
+     )
+     |> Result.defaultWith failtest)
 
 let private opened description =
     run 1 0L (CaseAct.Open(registration description)) None |> required
@@ -113,9 +111,10 @@ let tests =
                     let original = opened (Some "Original description")
 
                     let rename =
-                        { patch WorkValue.Keep with
-                            Claimant = Some "Renamed claimant"
-                        }
+                        (RegistrationUpdateInput.replace
+                            [ BusinessField.ClaimantName, Some "Renamed claimant" ]
+                            (patch WorkValue.Keep)
+                         |> Result.defaultWith failtest)
 
                     let renamed =
                         run 2 1L (CaseAct.AmendRegistration rename) (Some original) |> required
