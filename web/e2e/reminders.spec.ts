@@ -1,6 +1,6 @@
 import { expectCaseReadsSettled } from "./case-readiness";
 import { operationId as mintOperationId } from "../src/operation/operationId";
-import { chooseChoice } from "./workspace-navigation";
+import { chooseChoice, settlePopupTriggerScroll } from "./workspace-navigation";
 import { freshLoginWorkflowTimeout } from "./admission-window";
 import { registration } from "../tests/support/inputs";
 import { seedPresentation, selectLanguage, ui } from "./localization-support";
@@ -426,7 +426,9 @@ test("paid description correction preserves payment, then a closed case accepts 
   await expect(pending.locator("[data-column='timing']")).toHaveText(
     ui("en", "due.INACTIVE.label"),
   );
-  await pending.getByRole("button", { name: "Available actions", exact: false }).click();
+  const overflow = pending.getByRole("button", { name: "Available actions", exact: false });
+  await settlePopupTriggerScroll(overflow);
+  await overflow.click();
   const menu = page.getByRole("menu");
   await expect(menu.getByRole("menuitem", { name: "Cancel reminder", exact: true })).toBeVisible();
   await expect(menu.getByRole("menuitem", { name: "Update reminder", exact: true })).toHaveCount(0);
